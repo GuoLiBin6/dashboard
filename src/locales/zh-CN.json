@@ -4952,5 +4952,7 @@
   "common.load_no_more": "没有更多了",
   "error_title": {
     "ForbiddenError": "权限不足"
-  }
+  },
+  "common.backup": "备份",
+  "common.field_required_placeholder": "请填写{0}"
 }
