@@ -86,7 +86,9 @@
           :sku="form.fd.sku"
           :capability-data="form.fi.capability"
           :image="form.fi.imageMsg"
-          :sizeDisabled="disabledSysDiskSize" />
+          :defaultSize="systemdiskDefaultSize"
+          :sizeDisabled="disabledSysDiskSize"
+          :disabled="systemDiskTypeDisabled" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_50')">
         <data-disk
@@ -324,6 +326,13 @@ export default {
         params.zone = this.form.fd.zone
       }
       return params
+    },
+    showSecgroup () {
+      const hiddenSecCloudprovider = ['Nutanix']
+      return !hiddenSecCloudprovider.includes(this.cloudprovider)
+    },
+    systemDiskTypeDisabled () {
+      return this.form.fd.hypervisor === HYPERVISORS_MAP.nutanix.key
     },
   },
   methods: {
