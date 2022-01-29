@@ -23,7 +23,7 @@
         <loader :loading="loading" :noDataText="noDataText" />
       </template>
     </vxe-grid>
-    <template v-if="tableData.length > 0 && nextMarker">
+    <template v-if="tableData.length > 0 && typeof(nextMarker) !== 'undefined'">
       <div class="text-center mt-4">
         <a-button :loading="loading" type="link" @click="handleNextMarkerChange">{{ loading ? $t('common.loding') : $t('common.LoadMore') }}</a-button>
       </div>
