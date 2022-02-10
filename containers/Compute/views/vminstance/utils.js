@@ -37,6 +37,7 @@ const actionEableMap = {
       ctyun: ['ready'],
       google: ['ready'],
       apsara: ['running', 'ready'],
+      nutanix: false,
     },
   },
   resetPassword: {
@@ -59,6 +60,7 @@ const actionEableMap = {
       ctyun: ['ready'],
       google: ['ready'],
       apsara: ['running'],
+      nutanix: false,
     },
   },
   bindKeyPair: {
@@ -81,6 +83,7 @@ const actionEableMap = {
       ctyun: false,
       google: ['ready'],
       apsara: ['running'],
+      nutanix: false,
     },
   },
   unBindKeyPair: {
@@ -103,6 +106,7 @@ const actionEableMap = {
       ctyun: false,
       google: ['ready'],
       apsara: ['running'],
+      nutanix: false,
     },
   },
   adjustConfig: {
@@ -125,6 +129,7 @@ const actionEableMap = {
       ctyun: ['ready'],
       google: ['ready'],
       apsara: ['ready'],
+      nutanix: ['ready'],
     },
   },
   vnc: {
@@ -149,6 +154,7 @@ const actionEableMap = {
       apsara: ['running'],
       jdcloud: ['running'],
       ecloud: ['running'],
+      nutanix: false,
     },
   },
   'EIP SSH': {
@@ -173,6 +179,7 @@ const actionEableMap = {
       apsara: ['running'],
       jdcloud: ['running'],
       ecloud: ['running'],
+      nutanix: ['running'],
     },
   },
   'IP SSH': {
@@ -197,6 +204,7 @@ const actionEableMap = {
       apsara: false,
       jdcloud: false,
       ecloud: false,
+      nutanix: ['running'],
     },
   },
   createSnapshot: {
@@ -219,6 +227,7 @@ const actionEableMap = {
       ctyun: false,
       google: ['running', 'ready'],
       apsara: false,
+      nutanix: false,
     },
   },
   createBackup: {
@@ -263,6 +272,7 @@ const actionEableMap = {
       ctyun: false,
       google: false,
       apsara: false,
+      nutanix: false,
     },
   },
   assignSecgroup: {
@@ -285,6 +295,7 @@ const actionEableMap = {
       ctyun: true,
       google: true,
       apsara: false,
+      nutanix: false,
     },
   },
   insertiso: {
@@ -306,6 +317,7 @@ const actionEableMap = {
       ctyun: false,
       google: false,
       apsara: false,
+      nutanix: false,
     },
   },
   ejectiso: {
@@ -327,6 +339,7 @@ const actionEableMap = {
       ctyun: false,
       google: false,
       apsara: false,
+      nutanix: false,
     },
   },
   bindEip: {
@@ -349,6 +362,7 @@ const actionEableMap = {
       ctyun: ['running', 'ready'],
       google: ['running', 'ready'],
       apsara: false,
+      nutanix: false,
     },
   },
   unbindEip: {
@@ -371,6 +385,7 @@ const actionEableMap = {
       ctyun: ['running', 'ready'],
       google: ['running', 'ready'],
       apsara: false,
+      nutanix: false,
     },
   },
   acttachGpu: {
