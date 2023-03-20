@@ -133,12 +133,17 @@ export const LicenseFeatures = {
                 label: '鹏博士',
                 value: 'p',
               },
-
               {
                 checked: true,
-                key: 'p',
-                label: '鹏博士',
-                value: 'p',
+                key: 'zj',
+                label: '中金数据',
+                value: 'zj',
+              },
+              {
+                checked: true,
+                key: 'sd',
+                label: '首都在线',
+                value: 'sd',
               },
             ]
             // g.selected = g.items.map(item => item.key)
