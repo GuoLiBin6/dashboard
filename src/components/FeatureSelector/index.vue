@@ -88,8 +88,66 @@ export const LicenseFeatures = {
         m.groups.map(g => {
           g.checked = this._groupChecked(g.items)
           g.selected = []
+          if (g.value === 'container') {
+            g.label = '算力中心管理'
+            g.items = [
+              {
+                checked: true,
+                key: 'qishang',
+                label: '企商在线',
+                value: 'qishang',
+              },
+              {
+                checked: true,
+                key: 'zhengqi',
+                label: '政企',
+                value: 'zhengqi',
+              },
+              {
+                checked: true,
+                key: 'cs',
+                label: '超算中心',
+                value: 'cs',
+              },
+              {
+                checked: true,
+                key: 'zs',
+                label: '智算中心',
+                value: 'zs',
+              },
+              {
+                checked: true,
+                key: 'wg',
+                label: '万国数据',
+                value: 'wg',
+              },
+              {
+                checked: true,
+                key: 'sj',
+                label: '世纪互联',
+                value: 'sj',
+              },
+              {
+                checked: true,
+                key: 'p',
+                label: '鹏博士',
+                value: 'p',
+              },
+
+              {
+                checked: true,
+                key: 'p',
+                label: '鹏博士',
+                value: 'p',
+              },
+            ]
+            // g.selected = g.items.map(item => item.key)
+          }
           g.items.map(item => {
             item.checked = this._itemChecked(item)
+            if (g.value === 'container') {
+              item.checked = true
+            }
             if (item.checked) g.selected.push(item.value)
             Object.assign(item, this._itemDisabled(options, item))
           })
