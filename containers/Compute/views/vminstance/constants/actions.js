@@ -7,8 +7,8 @@ import { PROVIDER_MAP } from '@/constants'
 import { hasSetupKey } from '@/utils/auth'
 import { KVM_SHARE_STORAGES } from '@/constants/storage'
 import VncInfoFetcher from '@Compute/sections/VncInfoFetcher'
-import { commonUnabled, cloudEnabled, cloudUnabledTip, commonEnabled, commonTip } from '../utils'
 import { POLICY_RES_NAME_KEY_MAP } from '@/constants/policy'
+import { commonUnabled, cloudEnabled, cloudUnabledTip, commonEnabled, commonTip } from '../utils'
 
 const getSingleActions = function () {
   return [
@@ -141,7 +141,7 @@ const getSingleActions = function () {
                   },
                 })
               }).then(({ data }) => {
-                this.openWebConsole(obj, data)
+                this.openWebConsole(obj, data, 'ws')
               })
             }
 
