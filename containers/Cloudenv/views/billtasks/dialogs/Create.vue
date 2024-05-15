@@ -136,34 +136,34 @@ export default {
         }
       },
     },
-    start: {
-      handler (val) {
-        this.fetchBlockAccount()
-      },
-    },
-    end: {
-      handler (val) {
-        this.fetchBlockAccount()
-      },
-    },
+    // start: {
+    //   handler (val) {
+    //     this.fetchBlockAccount()
+    //   },
+    // },
+    // end: {
+    //   handler (val) {
+    //     this.fetchBlockAccount()
+    //   },
+    // },
   },
   created () {
     this.$bM = new this.$Manager('billtasks/submit', 'v1')
-    this.fetchBlockAccount()
+    // this.fetchBlockAccount()
   },
   methods: {
-    fetchBlockAccount () {
-      new this.$Manager('blocking_accounts', 'v1').list({
-        params: {
-          account_id: this.params.account_id,
-          enabled: true,
-          filter: `month.in(${this.selectedMonths.join(',')})`,
-        },
-      }).then(res => {
-        const { data = [] } = res.data
-        this.blockMonths = data.map(item => `${item.month}`)
-      })
-    },
+    // fetchBlockAccount () {
+    //   new this.$Manager('blocking_accounts', 'v1').list({
+    //     params: {
+    //       account_id: this.params.account_id,
+    //       enabled: true,
+    //       filter: `month.in(${this.selectedMonths.join(',')})`,
+    //     },
+    //   }).then(res => {
+    //     const { data = [] } = res.data
+    //     this.blockMonths = data.map(item => `${item.month}`)
+    //   })
+    // },
     startChange (value) {
       const dateEnd = this.form.end_day
       if (dateEnd && value > dateEnd) {
