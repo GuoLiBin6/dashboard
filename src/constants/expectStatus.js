@@ -579,4 +579,8 @@ export default {
     info: ['cancel'],
     danger: ['failed'],
   },
+  offlineExport: {
+    danger: ['expired'],
+    success: ['available'],
+  },
 }

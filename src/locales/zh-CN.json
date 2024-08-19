@@ -1220,6 +1220,11 @@
       "process": "执行中",
       "failed": "失败",
       "cancel": "取消"
+    },
+    "offlineExport": {
+      "expired": "已过期",
+      "available": "可用",
+      "creating": "创建中"
     }
   },
   "skuCategoryOptions": {
@@ -5982,5 +5987,7 @@
   "common.no_data_start_month": "月初费用为空说明",
   "common.no_data_start_month_tip": "由于公有云账单延迟一天出账，所以每月1号账单需在2号同步，建议您切换查询时间范围。",
   "common.switch_to_last_month": "切换到上月",
-  "common.no_tip_in_this_month": "本月不再提示"
+  "common.no_tip_in_this_month": "本月不再提示",
+  "common.offline_export": "离线下载",
+  "common.file_size": "文件大小"
 }
