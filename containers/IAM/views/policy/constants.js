@@ -758,6 +758,9 @@ export const RESOURCES_MAP = {
   predictions: {
     i18n: 'dictionary.predictions',
   },
+  offline_exports: {
+    i18n: 'common.offline_export',
+  },
   ...extraResources,
 }
 

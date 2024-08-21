@@ -1466,6 +1466,11 @@ export const PERMISSION = {
   ext_resource_types_perform_enable: ['report', 'ext_resource_types', 'perform', 'enable'],
   ext_resource_types_perform_disable: ['report', 'ext_resource_types', 'perform', 'disable'],
 
+  // 离线下载
+  offline_exports_list: ['meter', 'offline_exports', 'list'],
+  offline_exports_create: ['meter', 'offline_exports', 'create'],
+  offline_exports_delete: ['meter', 'offline_exports', 'delete'],
+
   ...extraPermissions,
 }
 
