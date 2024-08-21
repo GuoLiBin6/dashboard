@@ -266,7 +266,7 @@ export const RESOURCES_MAP = {
   releases: {
     i18n: 'system.text_390',
   },
-  bill_details: {
+  payment_bills: {
     i18n: 'system.text_391',
   },
   // bill_conditions: {
@@ -278,7 +278,7 @@ export const RESOURCES_MAP = {
   bill_balances: {
     i18n: 'system.text_50',
   },
-  bill_resources: {
+  monthly_bills: {
     i18n: 'system.text_393',
   },
   budgets: {
