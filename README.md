@@ -83,3 +83,5 @@ yarn build
 ```bash
 REGISTRY=registry.cn-beijing.aliyuncs.com/yunionio TAG=your-tag ./scripts/docker-push.sh
 ```
+
+客户 温州 基线版本 3.11
