@@ -1055,7 +1055,13 @@ export function getColorByCache () {
 
 export const getWorkflowParamter = (variables = {}, defaultValue = {}) => {
   const keys = Object.keys(variables)
-  const paramKey = variables.parameter ? 'parameter' : 'paramter'
+  let paramKey = variables.hasOwnProperty('paramter') ? 'paramter' : 'parameter'
+  if (keys.filter(key => key.startsWith('parameter_').length > 0)) {
+    paramKey = 'parameter'
+  }
+  if (keys.filter(key => key.startsWith('paramter_').length > 0)) {
+    paramKey = 'paramter'
+  }
   const p_list = keys.filter(key => key.startsWith(`${paramKey}_`))
   const paramterList = p_list.length ? p_list : [paramKey]
   paramterList.sort((a, b) => {
@@ -1066,6 +1072,7 @@ export const getWorkflowParamter = (variables = {}, defaultValue = {}) => {
     paramter += variables[key] || ''
   })
   try {
+    console.log(paramter)
     return paramter ? JSON.parse(paramter) : defaultValue
   } catch (err) {
     console.warn(err)
@@ -1073,9 +1080,12 @@ export const getWorkflowParamter = (variables = {}, defaultValue = {}) => {
   }
 }
 
-export const getWorkflowParamterParams = (paramter) => {
+export const getWorkflowParamterParams = (paramter, variables = {}) => {
   const len = 3999
   const ret = {}
+  Object.keys(variables).filter(key => key.startsWith('paramter')).map(key => {
+    ret[key] = ''
+  })
   const p_str_list = []
   for (let i = 0; i < paramter.length; i += len) {
     p_str_list.push(paramter.slice(i, i + len))
