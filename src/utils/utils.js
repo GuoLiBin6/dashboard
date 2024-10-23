@@ -1072,7 +1072,6 @@ export const getWorkflowParamter = (variables = {}, defaultValue = {}) => {
     paramter += variables[key] || ''
   })
   try {
-    console.log(paramter)
     return paramter ? JSON.parse(paramter) : defaultValue
   } catch (err) {
     console.warn(err)
