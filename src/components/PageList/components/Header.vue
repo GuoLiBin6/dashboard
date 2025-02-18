@@ -249,6 +249,8 @@ export default {
     ignoreWithUserMetaParam2: Boolean,
     ignoreWithUserMetaParam3: Boolean,
     tagBtnText: String,
+    idKey: String,
+    exportUseIdKey: Boolean,
   },
   computed: {
     _filterOptions () {
@@ -309,6 +311,8 @@ export default {
         showTagColumns2: this.showTagColumns2,
         showTagColumns3: this.showTagColumns3,
         callback: this.exportDataOptions.callback,
+        idKey: this.idKey,
+        exportUseIdKey: this.exportUseIdKey,
       })
     },
     handleCustomList () {
