@@ -551,6 +551,7 @@ class CreateList {
       show_fail_reason: true,
       ...this.getOptionParams(),
     }
+    params.summary_stats = true
     if (showDetails) {
       params.details = true
     } else {
