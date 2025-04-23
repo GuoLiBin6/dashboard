@@ -8,11 +8,11 @@
 
 <script>
 import * as R from 'ramda'
-import ColumnsMixin from '../mixins/columns'
-import SingleActionsMixin from '../mixins/singleActions'
 import WindowsMixin from '@/mixins/windows'
 import ListMixin from '@/mixins/list'
-import { getNameFilter, getStatusFilter, getDescriptionFilter } from '@/utils/common/tableFilter'
+import { getNameFilter, getStatusFilter, getDescriptionFilter, getDistinctFieldFilter } from '@/utils/common/tableFilter'
+import ColumnsMixin from '../mixins/columns'
+import SingleActionsMixin from '../mixins/singleActions'
 
 export default {
   name: 'List',
@@ -40,6 +40,11 @@ export default {
             field: 'alert_state',
             statusModule: 'monitorresources',
             title: this.$t('monitor.monitorresources.alert_state'),
+          }),
+          projects: getDistinctFieldFilter({
+            field: 'tenant',
+            label: this.$t('dictionary.project'),
+            type: 'extra_field',
           }),
         },
       }),
