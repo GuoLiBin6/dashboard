@@ -297,5 +297,10 @@
   "monitor.inside_addr": "内网地址",
   "monitor.outside_addr": "外网地址",
   "monitor.currency": "货币",
-  "monitor.currency_select_tip": "请注意选择货币"
+  "monitor.currency_select_tip": "请注意选择货币",
+  "monitor.func.MIN": "最小值",
+  "monitor.func.MAX": "最大值",
+  "monitor.func.MEAN": "平均值",
+  "monitor.func.SUM": "求和",
+  "monitor.k8s_node": "节点"
 }

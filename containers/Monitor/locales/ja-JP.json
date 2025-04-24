@@ -297,5 +297,10 @@
   "monitor.inside_addr": "イントラネット アドレス",
   "monitor.outside_addr": "インターネットアドレス",
   "monitor.currency": "通貨",
-  "monitor.currency_select_tip": "通貨の選択に注意してください"
+  "monitor.currency_select_tip": "通貨の選択に注意してください",
+  "monitor.func.MIN": "最小値",
+  "monitor.func.MAX": "最大値",
+  "monitor.func.MEAN": "平均値",
+  "monitor.func.SUM": "合計",
+  "monitor.k8s_node": "ノード"
 }

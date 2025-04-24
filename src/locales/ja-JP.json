@@ -2787,7 +2787,8 @@
     "predictions": "業務タグ",
     "instance_tag": "リソースタグ",
     "external_id": "クラウド上のID",
-    "external_project": "クラウド上のプロジェクト"
+    "external_project": "クラウド上のプロジェクト",
+    "k8s": "K8S"
   },
   "res": {
     "role": "@:dictionary.role",
