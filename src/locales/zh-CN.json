@@ -2787,7 +2787,8 @@
     "predictions": "费用预测",
     "instance_tag": "资源标签",
     "external_id": "云上ID",
-    "external_project": "云上项目"
+    "external_project": "云上项目",
+    "k8s": "K8S"
   },
   "res": {
     "role": "@:dictionary.role",

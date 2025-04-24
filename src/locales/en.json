@@ -2767,7 +2767,8 @@
     "predictions": "Bill prediction",
     "instance_tag": "Resource tag",
     "external_id": "External ID",
-    "external_project": "External project"
+    "external_project": "External project",
+    "k8s": "K8S"
   },
   "res": {
     "role": "Role",
