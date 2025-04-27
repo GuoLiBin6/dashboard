@@ -104,44 +104,56 @@ const getCellSign = (col, row) => {
 export const addDataToSheetAfterFormat = ({ data: originData = [], titleRowLen = 1, t = [], z = [], ignoreColsIndex = [] } = {}) => {
   const data = R.clone(originData)
   const formatObj = {}
-  if (t.length || z.length) {
-    // 只针对指定的单元格进行格式化
-
-  } else {
-    // 未指定要格式化的单元格，开始除标题外自动分析
-    data.map((row, index) => {
-      if (index > titleRowLen - 1) {
-        row.map((col, index2) => {
-          if (!ignoreColsIndex.includes(index2)) {
-            const fData = matchDataFormat(col)
-            const cellSign = getCellSign(index2, index)
-            if (fData.isBill) {
-              formatObj[cellSign] = formatObj[cellSign] || {}
-              formatObj[cellSign].t = 'n' // 数字格式
-              formatObj[cellSign].z = `${fData.currency} #,##0.00` // 货币format
-              data[index][index2] = fData.value
-            }
-            if (fData.isPercent) {
-              formatObj[cellSign] = formatObj[cellSign] || {}
-              formatObj[cellSign].t = 'n' // 数字格式
-              formatObj[cellSign].z = '0.00%' // 百分比format
-              data[index][index2] = fData.value
-            }
-            if (fData.isNumber) {
-              formatObj[cellSign] = formatObj[cellSign] || {}
-              formatObj[cellSign].t = 'n' // 数字格式
-              data[index][index2] = fData.value
-            }
+  // 除标题外自动分析
+  data.map((row, index) => {
+    if (index > titleRowLen - 1) {
+      row.map((col, index2) => {
+        if (!ignoreColsIndex.includes(index2)) {
+          const fData = matchDataFormat(col)
+          const cellSign = getCellSign(index2, index)
+          if (fData.isBill) {
+            formatObj[cellSign] = formatObj[cellSign] || {}
+            formatObj[cellSign].t = 'n' // 数字格式
+            formatObj[cellSign].z = `${fData.currency} #,##0.00` // 货币format
+            data[index][index2] = fData.value
           }
-        })
-      }
+          if (fData.isPercent) {
+            formatObj[cellSign] = formatObj[cellSign] || {}
+            formatObj[cellSign].t = 'n' // 数字格式
+            formatObj[cellSign].z = '0.00%' // 百分比format
+            data[index][index2] = fData.value
+          }
+          if (fData.isNumber) {
+            formatObj[cellSign] = formatObj[cellSign] || {}
+            formatObj[cellSign].t = 'n' // 数字格式
+            data[index][index2] = fData.value
+          }
+        }
+      })
+    }
+  })
+  // 指定单元格
+  if (t.length) {
+    t.forEach(item => {
+      const cellSign = getCellSign(item.row, item.col)
+      formatObj[cellSign] = formatObj[cellSign] || {}
+      formatObj[cellSign].t = item.value
+    })
+  }
+  if (z.length) {
+    z.forEach(item => {
+      const cellSign = getCellSign(item.row, item.col)
+      formatObj[cellSign] = formatObj[cellSign] || {}
+      formatObj[cellSign].z = item.value
     })
   }
   // 添加单元格格式至ws
   const ws = XLSX.utils.aoa_to_sheet(data)
   for (const cellSign in formatObj) {
     for (const key in formatObj[cellSign]) {
-      ws[cellSign][key] = formatObj[cellSign][key]
+      if (ws[cellSign]) {
+        ws[cellSign][key] = formatObj[cellSign][key]
+      }
     }
   }
   return ws
