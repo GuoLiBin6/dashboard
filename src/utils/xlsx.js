@@ -6,8 +6,8 @@ const strMatchMap = {
   $Bill: ['$', ',', ' ', '.', '-', /\d/],
   '￥Bill': ['￥', ',', ' ', '.', '-', /\d/],
   R$Bill: ['R', '$', ',', ' ', '.', '-', /\d/],
-  percent: ['.', '%', ' ', /\d/],
-  number: ['.', /\d/],
+  percent: ['-', '.', '%', ' ', /\d/],
+  number: ['-', '.', /\d/],
 }
 
 /**
@@ -135,14 +135,14 @@ export const addDataToSheetAfterFormat = ({ data: originData = [], titleRowLen =
   // 指定单元格
   if (t.length) {
     t.forEach(item => {
-      const cellSign = getCellSign(item.row, item.col)
+      const cellSign = getCellSign(item.col, item.row)
       formatObj[cellSign] = formatObj[cellSign] || {}
       formatObj[cellSign].t = item.value
     })
   }
   if (z.length) {
     z.forEach(item => {
-      const cellSign = getCellSign(item.row, item.col)
+      const cellSign = getCellSign(item.col, item.row)
       formatObj[cellSign] = formatObj[cellSign] || {}
       formatObj[cellSign].z = item.value
     })
