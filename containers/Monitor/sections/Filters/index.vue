@@ -43,10 +43,7 @@
             :select-props="{ mode: 'multiple', placeholder: $t('monitor.text_110'), allowClear: true, loading }" />
         </a-form-item>
         <a-form-item style="width: 20px;" v-if="!disabled && i !== 0">
-          <a-icon
-            class="dynamic-delete-button ml-1"
-            type="minus-circle-o"
-            @click="remove(i)" />
+          <a-button shape="circle" icon="minus" size="small" @click="remove(i)" class="mt-2 ml-2" />
         </a-form-item>
       </a-col>
     </a-row>
@@ -133,10 +130,16 @@ export default {
     },
   },
   watch: {
-    metricInfo () {
-      if (this.tags && this.tags.length) {
-        this.fillFilters(this.tags)
-      }
+    metricInfo: {
+      deep: true,
+      handler: function (val1, val2) {
+        if (!R.equals(val1, val2)) {
+          if (this.tags && this.tags.length) {
+            this.fillFilters(this.tags)
+          }
+          this.fillFilterValues()
+        }
+      },
     },
   },
   mounted () {
@@ -164,6 +167,22 @@ export default {
         this.$forceUpdate()
       })
     },
+    fillFilterValues () {
+      const values = this.form.fc.getFieldsValue()
+      const filters = R.clone(this.filters)
+      this.filters = filters.map(item => {
+        const { key = '', tagValueOpts = [] } = item
+        if (key && !tagValueOpts.length) {
+          const { tagKeys = {} } = values
+          if (tagKeys[key]) {
+            const tagKey = tagKeys[key]
+            const opts = this.tagValueOpts(tagKey)
+            item.tagValueOpts = [...opts]
+          }
+        }
+        return item
+      })
+    },
     reset () {
       this.filters = [{ key: uuid(), tagValueOpts: [] }]
     },
@@ -184,7 +203,9 @@ export default {
     },
     tagValueOpts (tagKey) {
       if (R.is(Object, this.metricInfo.tag_value) && tagKey) {
-        return (this.metricInfo.tag_value[tagKey] || []).map(v => {
+        const vals = (this.metricInfo.tag_value[tagKey] || [])
+        vals.sort()
+        return vals.map(v => {
           let label = v
           if (v === 'OneCloud') {
             label = this.$t('brand')
