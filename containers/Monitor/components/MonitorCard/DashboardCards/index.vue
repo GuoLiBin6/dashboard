@@ -1,36 +1,111 @@
 <template>
   <div :class="card_style">
-    <div v-if="!readOnly">
-      <filter-bar :create-chart="createChart" :loading="loading" @refresh="handleRefresh" />
+    <div v-if="!readOnly" class="d-flex align-items-center justify-content-between">
+      <monitor-header
+        :time.sync="time"
+        :timeGroup.sync="timeGroup"
+        :showTimegroup="true"
+        :showGroupFunc="true"
+        :groupFunc.sync="groupFunc"
+        :customTime.sync="customTime"
+        :showCustomTimeText="time==='custom'"
+        showAutoRefresh
+        customTimeUseTimeStamp
+        @refresh="handleRefresh" />
+      <a-dropdown-button
+        v-if="!readOnly && panels.length > 1"
+        :title="$t('monitor.dashboard.dialog.project.create')"
+        class="text-truncate"
+        @click="createChart"
+        placement="topLeft">
+        <a-icon type="plus-circle" />
+        {{ $t('monitor.dashboard.dialog.project.create') }}
+        <a-menu slot="overlay" @click="handleMenuClick">
+          <a-menu-item key="adjust_order">
+            {{ $t('monitor.adjust_chart_order') }}
+          </a-menu-item>
+        </a-menu>
+        <a-icon slot="icon" type="down" />
+      </a-dropdown-button>
+      <a-button v-else style="margin-left: 8px;" icon="plus-circle" @click="createChart">
+        {{ $t('monitor.dashboard.dialog.project.create')}}
+      </a-button>
     </div>
     <div :class="card_style" :style="readOnly && !selectable ? '' :'padding-top: 20px;'">
       <dashboard-card ref="dashboardCard" v-if="readOnly && !selectable" :card_style="card_style" :chartHeigth="chartHeigth" @chose_panel="chose_panel" :panel="panels.length > 0 ? panels[0] : {}" :focusPanelId="focusPanelId" :selectable="selectable" :readOnly="readOnly" :dashboard_id="id" :edit-chart="editChart" :updated_at="updatedAt" :extraParams="extraParams" @delete="handleDelete" />
-      <a-list v-else :grid="readOnly?{ gutter: 24, column: 1 }:{ gutter: 16, column: 2 }" :data-source="panels">
-        <a-list-item slot="renderItem" slot-scope="item">
-          <dashboard-card :card_style="card_style" :chartHeigth="chartHeigth" @chose_panel="chose_panel" :panel="item" :focusPanelId="focusPanelId" :selectable="selectable" :readOnly="readOnly" :dashboard_id="id" :edit-chart="editChart" :updated_at="updatedAt" :extraParams="extraParams" @delete="handleDelete" />
+      <template v-else>
+        <div v-for="(item, index) in panels" :key="index">
+          <dashboard-card
+           :card_style="card_style"
+           :chartHeigth="chartHeigth"
+           :panel="item"
+           :focusPanelId="focusPanelId"
+           :selectable="selectable"
+           :readOnly="readOnly"
+           :dashboard_id="id"
+           :edit-chart="editChart"
+           :updated_at="updatedAt"
+           :extraParams="extraParams"
+           :time="time"
+           :timeGroup="timeGroup"
+           :customTime="customTime"
+           :groupFunc="groupFunc"
+           :tablePageSize="tablePageSize"
+           @pageChange="(pager) => pageChange(item, pager)"
+           @chose_panel="chose_panel"
+           @delete="handleDelete" />
+        </div>
+      </template>
+      <!-- <a-list v-else :grid="{ column: 1 }" :data-source="panels">
+        <a-list-item slot="renderItem" slot-scope="item" className="owner-item">
+          <dashboard-card
+           :card_style="card_style"
+           :chartHeigth="chartHeigth"
+           :panel="item"
+           :focusPanelId="focusPanelId"
+           :selectable="selectable"
+           :readOnly="readOnly"
+           :dashboard_id="id"
+           :edit-chart="editChart"
+           :updated_at="updatedAt"
+           :extraParams="extraParams"
+           :time="time"
+           :timeGroup="timeGroup"
+           :customTime="customTime"
+           :groupFunc="groupFunc"
+           :tablePageSize="tablePageSize"
+           @pageChange="(pager) => pageChange(item, pager)"
+           @chose_panel="chose_panel"
+           @delete="handleDelete" />
         </a-list-item>
-      </a-list>
+      </a-list> -->
     </div>
   </div>
 </template>
 
 <script>
-import DashboardCard from '../DashboardCard'
-import filterBar from './filterbar'
 import { uuid } from '@/utils/utils'
+import MonitorHeader from '@/sections/Monitor/Header'
+import MonitorTimeMixin from '@/mixins/monitorTime'
+import DashboardCard from '../DashboardCard'
 
 export default {
   name: 'DashboardCards',
   components: {
-    filterBar,
     DashboardCard,
+    MonitorHeader,
   },
+  mixins: [MonitorTimeMixin],
   props: {
     id: {
       type: String,
       default: '',
     },
     createChart: {
+      type: Function,
+      required: true,
+    },
+    adjustChartOrder: {
       type: Function,
       required: true,
     },
@@ -80,6 +155,11 @@ export default {
       dashboardMan: new this.$Manager('alertdashboards', 'v1'),
       charts: [],
       updatedAt: '',
+      time: '1h',
+      timeGroup: '1m',
+      customTime: null,
+      groupFunc: 'mean',
+      tablePageSize: 10,
     }
   },
   computed: {
@@ -99,11 +179,35 @@ export default {
         this.fetchCharts()
       },
     },
+    time () {
+      this.saveMonitorConfig()
+    },
+    timeGroup () {
+      this.saveMonitorConfig()
+    },
+    groupFunc () {
+      this.saveMonitorConfig()
+    },
   },
   mounted () {
     this.fetchCharts()
   },
   methods: {
+    pageChange (panel, pager) {
+      this.saveMonitorConfig({ tablePageSize: pager.limit })
+    },
+    initTablePageSize (size) {
+      this.tablePageSize = size
+    },
+    handleMenuClick () {
+      this.$emit('adjustChartOrder', this.dashboard)
+    },
+    changePanelsOrder (panels) {
+      this.dashboard.alert_panel_details = [...panels]
+    },
+    fetchDataSuccess () {
+      this.saveMonitorConfig()
+    },
     resize () {
       this.$refs.dashboardCard && this.$refs.dashboardCard.resize()
     },
@@ -126,6 +230,7 @@ export default {
     },
     async fetchCharts () {
       this.loading = true
+      this.saveMonitorConfig()
       try {
         const params = {
           scope: this.scope,
@@ -157,5 +262,7 @@ export default {
 </script>
 
 <style scoped>
-
+.owner-item {
+  margin: 0;
+}
 </style>

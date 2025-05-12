@@ -34,14 +34,24 @@
           :options="groupbyOpts"
           @change="groupbyChange"
           class="w-100"
-          :select-props="{ placeholder: $t('monitor.text_114'), allowClear: true }" />
+          :select-props="{ mode: 'multiple', placeholder: $t('monitor.text_114'), allowClear: true }" />
       </a-form-item>
       <a-form-item :label="$t('monitor.monitor_function')">
         <base-select
           v-decorator="decorators.function"
           :options="functionOpts"
           class="w-100"
+          :select-props="{ placeholder: $t('monitor.text_115'), allowClear: allowClearGroupFunction }" />
+      </a-form-item>
+      <a-form-item :label="$t('monitor.monitor_result_function')">
+        <base-select
+          v-decorator="decorators.result_function"
+          :options="resultFunctionOpts"
+          class="w-100"
           :select-props="{ placeholder: $t('monitor.text_115'), allowClear: true }" />
+      </a-form-item>
+      <a-form-item v-if="form.fd.result_function === 'percentile'" :label="$t('monitor.monitor_percentile')">
+        <a-input-number :min="1" :max="99" v-decorator="decorators.percentile" placeholder="1~99" />
       </a-form-item>
       <a-form-item :label="$t('common.name')" v-if="!queryOnly">
         <a-input v-decorator="decorators.name" :placeholder="$t('common.placeholder')" />
@@ -108,6 +118,7 @@ export default {
     if (this.panel && this.panel.common_alert_metric_details && this.panel.common_alert_metric_details.length > 0) {
       const f = this.panel.common_alert_metric_details[0]
       const q = _.get(this.panel, 'settings.conditions[0].query.model')
+      const r = _.get(this.panel, 'settings.conditions[0].query.result_reducer')
       initialValue.name = this.panel.name || this.panel.panel_name || ''
       initialValue.res_type = f.res_type
       initialValue.metric_key = f.measurement
@@ -115,8 +126,12 @@ export default {
       initialValue.tags = {}
       if (q) {
         if (q.group_by) {
-          const _g = q.group_by.filter((g) => { return g.type === 'tag' })
-          if (_g) initialValue.group_by = _g[0] && _g[0].params && _g[0].params[0] ? _g[0].params[0] : ''
+          const _g = q.group_by.filter((g) => { return g.type === 'tag' && g.params && g.params[0] })
+          if (_g.length) {
+            initialValue.group_by = _g.map(item => {
+              return item.params[0]
+            })
+          }
         }
         if (q.tags) {
           q.tags.map((tag) => {
@@ -131,6 +146,18 @@ export default {
           const s = q.select[0]
           const _t = s[s.length - 1].type
           if (_t) initialValue.function = _t.toUpperCase()
+        }
+      }
+      if (r) {
+        initialValue.result_function = r.type
+        if (r.params && r.params.length) {
+          if (r.params[0] === 50) {
+            initialValue.result_function = 'p50'
+          } else if (r.params[0] === 95) {
+            initialValue.result_function = 'p95'
+          } else {
+            initialValue.percentile = r.params[0]
+          }
         }
       }
     }
@@ -230,13 +257,26 @@ export default {
       group_by: [
         'group_by',
         {
-          initialValue: initialValue.group_by,
+          initialValue: initialValue.group_by || [],
         },
       ],
       function: [
         'function',
         {
           initialValue: initialValue.function,
+        },
+      ],
+      result_function: [
+        'result_function',
+        {
+          initialValue: initialValue.result_function,
+        },
+      ],
+      percentile: [
+        'percentile',
+        {
+          initialValue: initialValue.percentile,
+          rules: [{ required: true, message: this.$t('common.tips.input', [this.$t('monitor.monitor_percentile')]) }],
         },
       ],
     }
@@ -260,6 +300,7 @@ export default {
           onValuesChange: this.onValuesChange,
         }),
         fd: {
+          result_function: initialValue.result_function,
           tagOperators: initTagOperators,
         },
       },
@@ -267,16 +308,52 @@ export default {
       initFilters: initFilters,
       groupbyOpts: [],
       functionOpts: [],
+      resultFunctionOpts: [
+        {
+          key: 'p50',
+          label: 'P50',
+        },
+        {
+          key: 'p95',
+          label: 'P95',
+        },
+        {
+          key: 'min',
+          label: 'MIN',
+        },
+        {
+          key: 'max',
+          label: 'MAX',
+        },
+        {
+          key: 'avg',
+          label: 'MEAN',
+        },
+        {
+          key: 'sum',
+          label: 'SUM',
+        },
+        {
+          key: 'count',
+          label: 'COUNT',
+        },
+        {
+          key: 'percentile',
+          label: 'PERCENTILE',
+        },
+      ],
       metricKeyOpts: [],
       metricInfo: {},
       metricKeyItem: {},
       mertricItem: {},
       panelShow: this.defaultPanelShow,
       oldParams: {},
+      oldResParams: {},
       metricLoading: false,
       metricInfoLoading: false,
       res_type_measurements: {},
       res_types: [],
+      allowClearGroupFunction: true,
     }
   },
   computed: {
@@ -307,8 +384,9 @@ export default {
       let label = this.metricKeyItem && this.metricKeyItem.metric_res_type ? this.$t(`dictionary.${this.metricKeyItem.metric_res_type}`) + padding : ''
       label += this.metricKeyItem && this.metricKeyItem.label ? this.metricKeyItem.label : '-'
       const metricLabel = _.get(this.mertricItem, 'description.display_name')
+      const metricName = _.get(this.mertricItem, 'description.name')
       if (metricLabel) {
-        label += `(${metric_zh[metricLabel] ? metric_zh[metricLabel] : metricLabel})`
+        label += `(${metric_zh[metricLabel] ? metric_zh[metricLabel] + ' ' + metricName : metricLabel + ' ' + metricName})`
       }
       return label
     },
@@ -320,11 +398,19 @@ export default {
       this.$emit('remove')
     },
     groupbyChange (a) {
-      if (this.functionOpts && this.functionOpts.length) {
-        const mean = this.functionOpts.find(val => val.key.toLowerCase() === 'mean')
+      if (!a || a.length === 0) {
         this.form.fc.setFieldsValue({
-          [this.decorators.function[0]]: mean.key,
+          [this.decorators.function[0]]: '',
         })
+        this.allowClearGroupFunction = true
+      } else {
+        this.allowClearGroupFunction = false
+        if (this.functionOpts && this.functionOpts.length) {
+          const mean = this.functionOpts.find(val => val.key.toLowerCase() === 'mean')
+          this.form.fc.setFieldsValue({
+            [this.decorators.function[0]]: mean.key,
+          })
+        }
       }
     },
     onValuesChange (props, values) {
@@ -336,6 +422,11 @@ export default {
           this.$set(this.form.fd, key, item)
         }
       }, newField)
+      const changedKeys = Object.keys(values)
+      if (changedKeys.length === 1 && changedKeys[0] === 'name') {
+        this.$emit('nameChange', this.form.fd.name)
+        return
+      }
       this.$nextTick(this.toParams)
       if ((values.hasOwnProperty('metric_key') && !values.metric_key) || (values.hasOwnProperty('metric_value') && !values.metric_value)) {
         this.resetChart()
@@ -385,10 +476,9 @@ export default {
         }
         const { group_by: groupBy, function: func } = this.form.fc.getFieldsValue([this.decorators.group_by[0], this.decorators.function[0]])
         const resetFields = {}
-        if (!~this.metricInfo.tag_key.indexOf(groupBy)) {
-          resetFields[this.decorators.group_by[0]] = undefined
-        }
-        if (!~Aggregations.indexOf(func)) {
+        const resetGroupBy = groupBy.filter(key => (this.metricInfo?.tag_key || []).includes(key))
+        resetFields[this.decorators.group_by[0]] = resetGroupBy
+        if (!~(Aggregations || []).indexOf(func)) {
           resetFields[this.decorators.function[0]] = undefined
         }
         this.form.fc.setFieldsValue(resetFields)
@@ -403,11 +493,12 @@ export default {
     toggle () {
       this.panelShow = !this.panelShow
     },
-    toParams () {
+    toParams (ignoreEmit) {
       const fd = this.form.fc.getFieldsValue()
       const params = {
         database: this.metricKeyItem && this.metricKeyItem.database ? this.metricKeyItem.database : 'telegraf',
       }
+      const resParams = {}
       const tags = []
       if (!this.queryOnly) {
         let formErr
@@ -441,19 +532,38 @@ export default {
       if (tags.length) {
         params.tags = tags
       }
-      if (fd.group_by) {
-        // eslint-disable-next-line no-template-curly-in-string
-        params.group_by = [{ type: 'tag', params: [fd.group_by] }]
+      if ((R.is(Array, fd.group_by) && fd.group_by.length)) {
+        params.group_by = fd.group_by.map(group_by => {
+          return { type: 'tag', params: [group_by] }
+        })
+      }
+      if (fd.result_function) {
+        resParams.type = fd.result_function
+        if (fd.result_function === 'percentile') {
+          if (fd.percentile) {
+            resParams.params = [Math.max(1, Math.min(fd.percentile, 99))]
+          } else {
+            delete resParams.params
+            delete resParams.type
+          }
+        } else if (fd.result_function === 'p50') {
+          resParams.type = 'percentile'
+          resParams.params = [50]
+        } else if (fd.result_function === 'p95') {
+          resParams.type = 'percentile'
+          resParams.params = [95]
+        }
       }
       if (!fd.metric_key || !fd.metric_value) {
         this.oldParams = params
         return params
       }
-      if (R.is(String, fd.function)) {
+      if (R.is(String, fd.function) && fd.function.length) {
         params.select[0].push({ type: fd.function.toLowerCase(), params: [] })
       }
-      if (R.equals(this.oldParams, params)) return params
-      this.$emit('paramsChange', params)
+      if (R.equals(this.oldParams, params) && R.equals(this.oldResParams, resParams)) return params
+      this.$emit('paramsChange', params, resParams)
+      this.oldResParams = resParams
       this.oldParams = params // 记录为上一次 params
     },
   },
