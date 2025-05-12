@@ -113,7 +113,7 @@ export default {
       })
       this.tooltipStyle.boxShadow = '1px 1px 10px rgba(0, 0, 0, 0.2)'
       if (x + 90 + width > cursor.width - 110) {
-        this.tooltipStyle.left = `${x - width - 50}px`
+        this.tooltipStyle.left = `${x - width - 80}px`
       } else {
         this.tooltipStyle.left = `${x + 90}px`
       }
