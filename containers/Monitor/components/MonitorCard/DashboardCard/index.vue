@@ -36,7 +36,6 @@
               </a-menu>
             </a-dropdown>
           </a-col>
-          <a-col :span="20" />
         </a-row>
       </div>
       <div v-if="selectable">
