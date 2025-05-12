@@ -977,6 +977,14 @@ export const PERMISSION = {
   meter_instances_perform_change_owner: ['meter', 'meter_instances', 'perform', 'change-owner'],
   meter_instances_perform_set_user_metadata: ['meter', 'meter_instances', 'perform', 'set-user-metadata'],
 
+  bill_analysis_alarms_list: ['meter', 'bill_analysis_alarms', 'list'],
+  bill_analysis_alarms_create: ['meter', 'bill_analysis_alarms', 'create'],
+  bill_analysis_alarms_update: ['meter', 'bill_analysis_alarms', 'update'],
+  bill_analysis_alarms_delete: ['meter', 'bill_analysis_alarms', 'delete'],
+  bill_analysis_alarms_perform_enable: ['meter', 'bill_analysis_alarms', 'perform', 'enable'],
+  bill_analysis_alarms_perform_disable: ['meter', 'bill_analysis_alarms', 'perform', 'disable'],
+  bill_analysis_alarms_perform_check: ['meter', 'bill_analysis_alarms', 'perform', 'check'],
+
   /**
    * billsdimensions 维度管理
    */
