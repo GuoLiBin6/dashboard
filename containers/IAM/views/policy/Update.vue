@@ -105,7 +105,11 @@ export default {
           const resource = item.resources[j]
           for (let k = 0, klen = DEFAULT_ACTIONS_KEY.length; k < klen; k++) {
             const action = DEFAULT_ACTIONS_KEY[k]
-            ret[`${resource.resource}_${action}`] = [scope, item.service, resource.resource, action]
+            if (resource.resource === '*') {
+              ret[`${item.service}_${resource.resource}_${action}`] = [scope, item.service, resource.resource, action]
+            } else {
+              ret[`${resource.resource}_${action}`] = [scope, item.service, resource.resource, action]
+            }
           }
           if (resource.extras && resource.extras) {
             resource.extras.forEach(extras => {
