@@ -95,7 +95,7 @@ export default {
         if (!R.isEmpty(val) && !R.isNil(val)) {
           const checked = [...this.resource.checked]
           this.resource.actions.forEach(action => {
-            const permission = val[`${this.resource.resource}_${action.action}`]
+            const permission = val[`${this.resource.resource === '*' ? this.resource.service + '_*' : this.resource.resource}_${action.action}`]
             if (
               permission[permission.length - 2] === 'allow' &&
               permission[permission.length - 1] === 'allow' &&

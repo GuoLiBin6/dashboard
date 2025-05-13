@@ -118,17 +118,19 @@ const genPolicyRuleOptions = (scopeResource, isUpdate, permissions) => {
         let operatorPolicy = 'allow'
         let currentPolicy = 'allow'
         if (isUpdate) {
-          const permissionItem = permissions[`${resource.resource}_${action}`]
-          // 操作者权限
-          operatorPolicy = permissionItem[permissionItem.length - 1]
-          // 当前权限
-          currentPolicy = permissionItem[permissionItem.length - 2]
-          // 当前权限大于操作权限属于逾越权限，需要disabled
-          if (
-            operatorPolicy === 'allow' &&
-            policyLevel[currentPolicy] <= policyLevel[operatorPolicy]
-          ) {
-            actionDisabled = false
+          const permissionItem = permissions[`${resource.resource === '*' ? `${item.service}_${resource.resource}_${action}` : `${resource.resource}_${action}`}`]
+          if (permissionItem) {
+            // 操作者权限
+            operatorPolicy = permissionItem[permissionItem.length - 1]
+            // 当前权限
+            currentPolicy = permissionItem[permissionItem.length - 2]
+            // 当前权限大于操作权限属于逾越权限，需要disabled
+            if (
+              operatorPolicy === 'allow' &&
+              policyLevel[currentPolicy] <= policyLevel[operatorPolicy]
+            ) {
+              actionDisabled = false
+            }
           }
         } else {
           actionDisabled = false
