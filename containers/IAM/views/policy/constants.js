@@ -761,6 +761,66 @@ export const RESOURCES_MAP = {
   offline_exports: {
     i18n: 'common.offline_export',
   },
+  ext_resources: {
+    i18n: 'dictionary.custom_data',
+  },
+  ext_resource_types: {
+    i18n: 'dictionary.ext_resource_type',
+  },
+  month_reports: {
+    i18n: 'dictionary.month_report',
+  },
+  daily_reports: {
+    i18n: 'dictionary.daily_report',
+  },
+  scirptapplys: {
+    i18n: 'system.scirptapplys',
+  },
+  scriptapplyrecords: {
+    i18n: 'system.scriptapplyrecords',
+  },
+  meter_instances: {
+    i18n: 'dictionary.meter_instance',
+  },
+  modelarts_pools: {
+    i18n: 'ModelArts',
+  },
+  container_registries: {
+    i18n: 'dictionary.container_registry',
+  },
+  organizations: {
+    i18n: 'dictionary.organization',
+  },
+  ratesets: {
+    i18n: 'dictionary.rateset',
+  },
+  block_accounts: {
+    i18n: 'dictionary.block_account',
+  },
+  prices: {
+    i18n: 'dictionary.price',
+  },
+  bill_alert_settings: {
+    i18n: 'dictionary.bill_alert_setting',
+  },
+  bill_alerts: {
+    i18n: 'dictionary.bill_alert',
+  },
+  reports: {
+    i18n: 'dictionary.report',
+  },
+  bastion_hosts: {
+    i18n: 'dictionary.bastion_host',
+  },
+  bastion_servers: {
+    i18n: 'dictionary.bastion_server',
+  },
+  checks: {
+    i18n: 'dictionary.check',
+  },
+  bill_analysis_alarms: {
+    i18n: 'dictionary.bill_analysis_alarms',
+  },
   ...extraResources,
 }
 
