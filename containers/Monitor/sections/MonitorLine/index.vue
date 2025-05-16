@@ -75,6 +75,7 @@ import { metric_zh, tableColumnMaps } from '@Monitor/constants'
 // import LineChart from '@/sections/Charts/Line'
 import { ColorHash } from '@/utils/colorHash'
 import { transformUnit } from '@/utils/utils'
+import { getChartTooltipLabel } from '@Monitor/utils'
 // import { BRAND_MAP } from '@/constants'
 // import { currencyUnitMap } from '@/constants/currency'
 // import { getChartTooltipPosition } from '@/utils/echart'
@@ -477,7 +478,8 @@ export default {
       this.series.forEach((item, i) => {
         const color = (this.colors && this.colors[i]) || this.colorHash.hex(`${i * 1000}`)
         if (this.highlights.some(item => item.index === i)) {
-          ret.series.push({ label: item.raw_name, width: 1, stroke: color, unit, color })
+          const label = getChartTooltipLabel(item)
+          ret.series.push({ label, width: 1, stroke: color, unit, color })
         }
       })
       return ret
@@ -622,20 +624,6 @@ export default {
         }
       })
       this.highlights = highlights
-        // const target = this.highlights.filter(item => item.index === rowIndex)
-        // if (target.length) {
-        //   const list = this.highlights.filter(item => item.index !== rowIndex)
-        //   this.highlights = list
-        // } else {
-        //   this.highlights = [...this.highlights, { index: rowIndex, color: row.__color }]
-        // }
-        // const seriesNames = this.highlights.map(item => {
-        //   let seriesName = _.get(this.chartInstanceOption, `series[${item.index}].name`)
-        //   seriesName = seriesName || `series${item.index}`
-        //   return seriesName
-        // })
-        // this._setHighlights(seriesNames)
-      // }
     },
     _cancelHighlight () {
       const selected = {}
