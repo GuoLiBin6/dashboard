@@ -1210,6 +1210,11 @@
       "expired": "Expired",
       "available": "Available",
       "creating": "Creating"
+    },
+    "billProduct": {
+      "available": "Available",
+      "failed": "Failed",
+      "running": "Running"
     }
   },
   "skuCategoryOptions": {
