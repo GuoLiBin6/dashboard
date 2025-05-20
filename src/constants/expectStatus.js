@@ -583,4 +583,8 @@ export default {
     danger: ['expired'],
     success: ['available'],
   },
+  billProduct: {
+    success: ['available'],
+    danger: ['failed'],
+  },
 }
