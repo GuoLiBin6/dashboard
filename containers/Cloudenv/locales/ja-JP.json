@@ -821,6 +821,7 @@
   "cloudenv.task_type.delete_bill": "請求書を削除する",
   "cloudenv.task_type.sync_resource": "リソース情報の同期",
   "cloudenv.task_type.predict": "ひようよそく",
+  "cloudenv.task_type.sync_product": "製品カテゴリの同期",
   "cloudenv.month": "月",
   "cloudenv.billtask_cannot_cancel": "現在の請求タスクはキャンセルできません",
   "cloudenv.title.project_type": "アトリビューションモード",
@@ -884,5 +885,6 @@
   "cloudenv.priority": "優先度",
   "cloudenv.set_priority": "優先度の設定",
   "cloudenv.priority_extra": "数値が大きいほど優先度が高くなります。リソースを作成する際に、選択したローカルプロジェクトが複数のクラウド上プロジェクトを同時にマッピングする場合、最も優先度の高いクラウド上プロジェクトを選択してリソースを作成します",
-  "cloudenv.block_month_tip": "{0}封帳しました。クラウドアカウントの詳細ページ--帳簿期間リストは封帳を解除してから再試行することをお勧めします。そうしないと、確認後に対応する請求書タスクがキャンセルされます。"
+  "cloudenv.block_month_tip": "{0}封帳しました。クラウドアカウントの詳細ページ--帳簿期間リストは封帳を解除してから再試行することをお勧めします。そうしないと、確認後に対応する請求書タスクがキャンセルされます。",
+  "cloudenv.run_all_bills": "履歴を含むすべての請求書"
 }

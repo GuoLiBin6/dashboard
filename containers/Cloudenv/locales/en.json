@@ -822,6 +822,7 @@
   "cloudenv.task_type.delete_bill": "Delete bills",
   "cloudenv.task_type.sync_resource": "Sync resource",
   "cloudenv.task_type.predict": "Bill prediction",
+  "cloudenv.task_type.sync_product": "Sync product",
   "cloudenv.month": "Month",
   "cloudenv.billtask_cannot_cancel": "The current billing task cannot be canceled",
   "cloudenv.title.project_type": "Assignment",
@@ -883,5 +884,6 @@
   "cloudenv.priority": "Priority",
   "cloudenv.set_priority": "Set the priority",
   "cloudenv.priority_extra": "The larger the number, the higher the priority. When creating resources, if the selected local project maps multiple cloud projects simultaneously, the cloud project with the highest priority will be selected to create resources",
-  "cloudenv.block_month_tip": "{0} has been suspended. It is recommended to go to the cloud account details page - billing period list to lift the suspension and try again. Otherwise, the corresponding billing task will be cancelled after confirmation."
+  "cloudenv.block_month_tip": "{0} has been suspended. It is recommended to go to the cloud account details page - billing period list to lift the suspension and try again. Otherwise, the corresponding billing task will be cancelled after confirmation.",
+  "cloudenv.run_all_bills": "Include all historical bills"
 }
