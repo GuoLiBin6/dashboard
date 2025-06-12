@@ -329,5 +329,6 @@
   "monitor.func.MAX": "Max",
   "monitor.func.MEAN": "Average",
   "monitor.func.SUM": "Sum",
-  "monitor.k8s_node": "node"
+  "monitor.k8s_node": "node",
+  "monitor.dashboard.account.title": "Account Overview"
 }

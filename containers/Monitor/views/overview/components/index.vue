@@ -11,7 +11,17 @@
             <help-tooltip name="monitorDashboardOverviewTips" />
           </div>
         </div>
-        <summary-cards :scope="curNav.scope" :scopeId="curNav.id" style="padding-top: 1em;" />
+        <summary-cards :scope="curNav.scope" :accountTopology="accountTopology" :scopeId="curNav.id" style="padding-top: 1em;" />
+      </div>
+    </a-row>
+    <a-row>
+      <div class="monitor-overview-chart mb-2">
+        <div class="title-wrapper">
+          <div class="title">
+            {{ $t('monitor.dashboard.account.title') }}
+          </div>
+        </div>
+        <account-cards :data="accountTopology" :loading="topologyLoading" style="padding-top: 1em;" />
       </div>
     </a-row>
     <a-row>
@@ -60,6 +70,7 @@ import OverviewCard from '@Monitor/components/MonitorCard/OverviewCard'
 import OverviewNav from '@Monitor/components/MonitorCard/sections/nav'
 import { getSignature } from '@/utils/crypto'
 import SummaryCards from './SummaryCards'
+import AccountCards from './AccountCards'
 
 export default {
   name: 'OverviewIndex',
@@ -69,6 +80,7 @@ export default {
     OverviewLine,
     OverviewCard,
     OverviewNav,
+    AccountCards,
   },
   data () {
     const scope = this.$store.getters.scope
@@ -92,6 +104,7 @@ export default {
         chartData: { rows: [], columns: [] },
       },
       loading: false,
+      topologyLoading: false,
       exportExcelColumns: {
         [this.$t('common_151')]: {
           field: 'name',
@@ -100,6 +113,7 @@ export default {
           field: 'count',
         },
       },
+      accountTopology: {},
     }
   },
   computed: {
@@ -121,7 +135,9 @@ export default {
     },
   },
   created () {
+    this.manager = new this.$Manager('global_topology', 'v1')
     this.fetchAllCharts()
+    this.fetchData()
   },
   methods: {
     updateNavs (row) {
@@ -313,6 +329,267 @@ export default {
         this.ringChart.loading = false
         throw error
       }
+    },
+    async fetchData () {
+      this.topologyLoading = true
+      try {
+        this.manager.list({
+          params: {
+            scope: this.$store.getters.scope,
+            simple: false,
+          },
+        }).then((res) => {
+          const data = res.data?.data || []
+          this.accountTopology = this.arrangeData(data[0] || {})
+          this.topologyLoading = false
+        })
+      } catch (e) {
+        this.topologyLoading = false
+        throw e
+      }
+    },
+    arrangeData (dataSource) {
+      const { accounts = [] } = dataSource
+      const root = {
+        name: this.brandName,
+        id: '1',
+        type: 'brand',
+        cpu_count: 0,
+        mem_size: 0,
+        vcpu_count: 0,
+        vmem_size: 0,
+        server_count: 0,
+        host_count: 0,
+        storage_size: 0,
+        storage_size_mb: 0,
+        storage_actual_size: 0,
+        storage_actual_size_mb: 0,
+        showStorageVirtualSize: false,
+        storage_virtual_size: 0,
+        storage_virtual_size_mb: 0,
+        gpu_count: 0,
+        gpu_used_count: 0,
+        children: [],
+      }
+      accounts.forEach((account, accountIdx) => {
+        const acc = {
+          ...account,
+          type: 'account',
+          cpu_count: 0,
+          mem_size: 0,
+          vcpu_count: 0,
+          vmem_size: 0,
+          server_count: 0,
+          host_count: 0,
+          storage_size: 0,
+          storage_actual_size: 0,
+          showStorageVirtualSize: false,
+          storage_virtual_size: 0,
+          storage_size_mb: (account.storage_size_gb || 0) * 1024,
+          storage_actual_size_mb: (account.storage_size_used_gb || 0) * 1024,
+          storage_virtual_size_mb: (account.storage_size_gb || 0) * 1024 * (account.storage_cmt_bound || 0),
+          gpu_count: 0,
+          gpu_used_count: 0,
+          name: account.name,
+          children: [],
+        }
+        const { regions = [] } = account
+        regions.map((region, regionIdx) => {
+          const reg = {
+            ...region,
+            type: 'region',
+            cpu_count: 0,
+            mem_size: 0,
+            vcpu_count: 0,
+            vmem_size: 0,
+            server_count: 0,
+            host_count: 0,
+            storage_size: 0,
+            storage_actual_size: 0,
+            showStorageVirtualSize: false,
+            storage_virtual_size: 0,
+            gpu_count: 0,
+            gpu_used_count: 0,
+            children: [],
+          }
+          const { zones = [] } = region
+          zones.forEach((zone, zoneIdx) => {
+            const zo = {
+              ...zone,
+              type: 'zone',
+              cpu_count: 0,
+              mem_size: 0,
+              vcpu_count: 0,
+              vmem_size: 0,
+              server_count: 0,
+              host_count: 0,
+              storage_size: 0,
+              storage_actual_size: 0,
+              showStorageVirtualSize: false,
+              storage_virtual_size: 0,
+              gpu_count: 0,
+              gpu_used_count: 0,
+              children: [],
+            }
+            const { hosts = [], storages = [] } = zone
+            hosts.forEach((host, hostIdx) => {
+              const ho = {
+                ...host,
+                type: 'host',
+                children: [],
+                vcpu_count: 0,
+                vmem_size: 0,
+              }
+              delete ho.servers
+              delete ho.isolate_devices
+              const { servers = [], isolate_devices = [] } = host
+              ho.server_count = servers.length
+              ho.gpu_count = isolate_devices.length
+              ho.gpu_used_count = isolate_devices.filter(item => item.guest_id).length
+              const serverList = servers.map((server, serverIdx) => {
+                ho.vcpu_count += (server.vcpu_count || 0)
+                ho.vmem_size += (server.vmem_size || 0)
+                return {
+                  ...server,
+                  type: 'server',
+                }
+              })
+              const gpuList = isolate_devices.map((gpu, gpuIdx) => {
+                return {
+                  ...gpu,
+                  type: 'gpu',
+                }
+              })
+              if (serverList.length) {
+                ho.children.push({
+                  name: 'serverList',
+                  type: 'server',
+                  id: `vm-${accountIdx}-${regionIdx}-${zoneIdx}-${hostIdx}-1`,
+                  list: [...serverList],
+                  otherList: [...gpuList],
+                })
+              }
+              if (gpuList.length) {
+                ho.children.push({
+                  name: 'gpuList',
+                  type: 'isolate_device',
+                  id: `gpu-${accountIdx}-${regionIdx}-${zoneIdx}-${hostIdx}-2`,
+                  otherList: [...serverList],
+                  list: [...gpuList],
+                })
+              }
+              zo.cpu_count += ho.cpu_count
+              zo.mem_size += ho.mem_size
+              zo.vcpu_count += ho.vcpu_count
+              zo.vmem_size += ho.vmem_size
+              zo.server_count += ho.server_count
+              zo.gpu_count += ho.gpu_count
+              zo.gpu_used_count += ho.gpu_used_count
+              zo.children.push(ho)
+            })
+            storages.forEach((storage, storageIdx) => {
+              // const sto = {
+              //   name: storage.name,
+              //   id: storage.id,
+              //   icon: storageImg,
+              //   type: 'storage',
+              //   children: [],
+              // }
+              zo.storage_size += storage.capacity || 0
+              zo.storage_actual_size += storage.actual_capacity_used || 0
+              if (storage.hasOwnProperty('cmtbound')) {
+                zo.showStorageVirtualSize = true
+                zo.storage_virtual_size += storage.capacity * (storage.cmtbound || 1)
+              }
+              // zo.children.push(sto)
+            })
+            reg.cpu_count += zo.cpu_count
+            reg.mem_size += zo.mem_size
+            reg.vcpu_count += zo.vcpu_count
+            reg.vmem_size += zo.vmem_size
+            reg.server_count += zo.server_count
+            reg.gpu_count += zo.gpu_count
+            reg.gpu_used_count += zo.gpu_used_count
+            reg.host_count += hosts.length
+            reg.storage_size += zo.storage_size
+            reg.storage_actual_size += zo.storage_actual_size
+            reg.storage_virtual_size += zo.storage_virtual_size
+            if (zo.showStorageVirtualSize) {
+              reg.showStorageVirtualSize = true
+            }
+            reg.children.push(zo)
+          })
+          // vpcs.forEach((vpc, vpcIdx) => {
+          //   const vp = {
+          //     ...vpc,
+          //     icon: vpcImg,
+          //     type: 'vpc',
+          //     iconWidth: 50,
+          //     iconHeight: 50,
+          //     children: [],
+          //   }
+          //   const { wires = [] } = vpc
+          //   wires.forEach((wire, wireIdx) => {
+          //     const wi = {
+          //       ...wire,
+          //       icon: wireImg,
+          //       type: 'wire',
+          //       iconWidth: 45,
+          //       iconHeight: 45,
+          //       children: [],
+          //     }
+          //     const { networks = [] } = wire
+          //     networks.forEach((network, networkIdx) => {
+          //       const net = {
+          //         ...network,
+          //         icon: netImg,
+          //         type: 'network',
+          //         iconWidth: 40,
+          //         iconHeight: 40,
+          //         children: [],
+          //       }
+          //       wi.children.push(net)
+          //     })
+          //     vp.children.push(wi)
+          //   })
+          //   reg.children.push(vp)
+          // })
+          acc.cpu_count += reg.cpu_count
+          acc.mem_size += reg.mem_size
+          acc.vcpu_count += reg.vcpu_count
+          acc.vmem_size += reg.vmem_size
+          acc.server_count += reg.server_count
+          acc.host_count += reg.host_count
+          acc.gpu_count += reg.gpu_count
+          acc.gpu_used_count += reg.gpu_used_count
+          acc.storage_size += reg.storage_size
+          acc.storage_actual_size += reg.storage_actual_size
+          acc.storage_virtual_size += reg.storage_virtual_size
+          if (reg.showStorageVirtualSize || acc.storage_virtual_size_mb > 0) {
+            acc.showStorageVirtualSize = true
+          }
+          acc.children.push(reg)
+        })
+        root.cpu_count += acc.cpu_count
+        root.mem_size += acc.mem_size
+        root.vcpu_count += acc.vcpu_count
+        root.vmem_size += acc.vmem_size
+        root.server_count += acc.server_count
+        root.host_count += acc.host_count
+        root.storage_size += acc.storage_size
+        root.storage_size_mb += (acc.storage_size_mb || acc.storage_size)
+        root.storage_virtual_size_mb += (acc.storage_virtual_size_mb || acc.storage_virtual_size)
+        root.storage_actual_size += acc.storage_actual_size
+        root.storage_actual_size_mb += (acc.storage_actual_size_mb || acc.storage_actual_size)
+        root.storage_virtual_size += acc.storage_virtual_size
+        if (acc.showStorageVirtualSize || acc.storage_virtual_size_mb > 0) {
+          root.showStorageVirtualSize = true
+        }
+        root.gpu_count += acc.gpu_count
+        root.gpu_used_count += acc.gpu_used_count
+        root.children.push(acc)
+      })
+      return root
     },
   },
 }

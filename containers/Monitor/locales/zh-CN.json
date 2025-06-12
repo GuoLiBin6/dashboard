@@ -329,5 +329,6 @@
   "monitor.func.MAX": "最大值",
   "monitor.func.MEAN": "平均值",
   "monitor.func.SUM": "求和",
-  "monitor.k8s_node": "节点"
+  "monitor.k8s_node": "节点",
+  "monitor.dashboard.account.title": "云账号概览"
 }

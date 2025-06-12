@@ -329,5 +329,6 @@
   "monitor.func.MAX": "最大値",
   "monitor.func.MEAN": "平均値",
   "monitor.func.SUM": "合計",
-  "monitor.k8s_node": "ノード"
+  "monitor.k8s_node": "ノード",
+  "monitor.dashboard.account.title": "クラウドアカウントの概要"
 }

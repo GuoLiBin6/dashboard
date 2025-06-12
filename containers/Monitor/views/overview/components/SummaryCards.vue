@@ -2,6 +2,9 @@
   <div>
     <a-icon type="sync" spin v-if="loading" />
     <a-row v-else-if="cards.length > 0" type="flex" style="margin-left: 128px;">
+      <a-col :span="8" style="width: 400px" class="mt-4">
+        <account-card :card="{ ...accountTopology, name: brandName }" />
+      </a-col>
       <a-col v-for="card in cards" :key="card.title" :span="8" style="width: 400px" class="mt-4">
         <overview-summary-card :card="card" @resourceClick="handleResClick" />
       </a-col>
@@ -13,48 +16,63 @@
 </template>
 
 <script>
+import i18n from '@/locales'
+import { getProductName } from '@/utils/auth'
+import setting from '@/config/setting'
 import OverviewSummaryCard from '../../../components/MonitorCard/sections/card'
+import AccountCard from './AccountCard'
 
 const cardsTypeMap = {
   guest: {
     icon: 'res-vminstance',
     index: 1,
+    unit: i18n.t('common_62'),
   },
   host: {
     icon: 'res-host',
     index: 2,
+    unit: i18n.t('common_62'),
   },
   cloudaccount: {
     icon: 'res-cloudaccount',
     index: 3,
+    unit: i18n.t('dashboard.each'),
   },
   oss: {
     icon: 'res-bucket',
     index: 4,
+    unit: i18n.t('dashboard.each'),
   },
   storage: {
     icon: 'res-blockstorage',
     index: 5,
+    unit: i18n.t('compute.text_131'),
   },
   rds: {
     icon: 'res-rds',
     index: 6,
+    unit: i18n.t('dashboard.each'),
   },
   redis: {
     icon: 'res-redis',
     index: 7,
+    unit: i18n.t('dashboard.each'),
   },
 }
 
 export default {
   name: 'SummaryCards',
-  components: { OverviewSummaryCard },
+  components: { OverviewSummaryCard, AccountCard },
   props: {
     scope: {
       type: String,
     },
     scopeId: {
       type: String,
+    },
+    accountTopology: {
+      type: Object,
+      required: true,
     },
   },
   data () {
@@ -91,6 +109,7 @@ export default {
           total: total,
           items: items,
           index: cardsTypeMap[k]?.index || 10,
+          unit: cardsTypeMap[k]?.unit,
           resType: k,
         })
       }
@@ -98,6 +117,14 @@ export default {
         return a.index - b.index
       })
       return cards
+    },
+    brandName () {
+      const { companyInfo = {} } = this.$store.state.app
+      const { name, name_en } = companyInfo
+      if (name || name_en) {
+        return setting.language === 'en' ? name_en : name
+      }
+      return getProductName()
     },
   },
   watch: {
