@@ -1,13 +1,15 @@
 <template>
   <div>
     <a-icon type="sync" spin v-if="loading" />
-    <a-row v-else-if="cards.length > 0" type="flex" style="margin-left: 128px;">
-      <a-col :span="8" style="width: 400px" class="mt-4">
+    <a-row v-else-if="cards.length > 0" class="d-flex align-items-center" style="margin-left: 50px;">
+      <a-col :span="8" style="flex: 0 0 400px" class="mt-4">
         <account-card :card="{ ...accountTopology, name: brandName }" />
       </a-col>
-      <a-col v-for="card in cards" :key="card.title" :span="8" style="width: 400px" class="mt-4">
-        <overview-summary-card :card="card" @resourceClick="handleResClick" />
-      </a-col>
+      <div style="flex: 1 1 auto" class="d-flex flex-wrap">
+        <a-col v-for="card in cards" :key="card.title" :span="8" style="width: 400px" class="mt-4">
+          <overview-summary-card :card="card" @resourceClick="handleResClick" />
+        </a-col>
+      </div>
     </a-row>
     <a-row v-else type="flex" style="justify-content:center">
       <data-empty :description="emptyContent" />

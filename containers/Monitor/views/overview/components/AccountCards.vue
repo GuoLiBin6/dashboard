@@ -1,7 +1,7 @@
 <template>
   <div>
     <a-icon type="sync" spin v-if="loading" />
-    <a-row v-else-if="cards.length > 0" type="flex" style="margin-left: 128px;">
+    <a-row v-else-if="cards.length > 0" type="flex" style="margin-left: 50px;">
       <a-col v-for="card in cards" :key="card.title" :span="8" style="width: 400px" class="mt-4">
         <account-card :card="card" />
       </a-col>
