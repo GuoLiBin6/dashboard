@@ -360,3 +360,34 @@ export const hasMeterService = function () {
   }
   return false
 }
+
+export const billSupportBrands = ['aliyun', 'aws', 'azure', 'google', 'huawei', 'jdcloud', 'qcloud', 'volcengine', 'ksyun']
+
+export const billItems = billSupportBrands.map(key => `bill_${key}`)
+
+export const fillBillSupportFeatures = (data = [], fillOriginBrand = false) => {
+  const list = [...data]
+  const billTargetItems = list.filter(key => billItems.includes(key) || key === 'suggestion')
+  // 旧版本只签发bill，新版本签发bill与billItem + suggestion
+  // 旧版本 有费用模块
+  if (!billTargetItems.length && list.includes('bill')) {
+    return [...list, ...billItems, 'suggestion']
+  }
+  // 新版本 有费用模块
+  if (billTargetItems.length) {
+    if (!list.includes('bill')) {
+      list.push('bill')
+    }
+    // 填充平台
+    if (fillOriginBrand) {
+      // 选择了平台，漏选了该平台费用，有费用模块时，该平台费用也生效
+      billItems.map(key => {
+        const brand = key.split('_')[1]
+        if (list.includes(brand) && !list.includes(key)) {
+          list.push(key)
+        }
+      })
+    }
+  }
+  return list
+}

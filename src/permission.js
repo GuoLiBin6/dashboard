@@ -85,12 +85,14 @@ router.beforeEach(async (to, from, next) => {
   const hasGlobalConfig = !R.isEmpty(store.state.common.globalConfig) && !R.isNil(store.state.common.globalConfig)
   const hasGlobalServices = !R.isEmpty(store.state.common.globalServices) && !R.isNil(store.state.common.globalServices)
   const hasMonitorResourceAlerts = !R.isNil(store.state.monitor.monitorResourceAlerts)
+  const hasLicense = !R.isEmpty(store.state.app?.license?.compute) && !R.isNil(store.state.app?.license?.compute)
 
   try {
     !hasRoles && await store.dispatch('auth/getInfo')
     !hasCapability && await store.dispatch('auth/getCapabilities')
     !hasPermission && await store.dispatch('auth/getPermission')
     !hasScopeResource && await store.dispatch('auth/getScopeResource')
+    !hasLicense && await store.dispatch('app/fetchLicense')
     !hasGlobalSettings && await store.dispatch('globalSetting/getFetchGlobalSetting')
     !hasProfile && await store.dispatch('profile/get')
     !hasStats && await store.dispatch('auth/getStats')
