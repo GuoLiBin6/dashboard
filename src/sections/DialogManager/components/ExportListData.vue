@@ -164,9 +164,9 @@ export default {
       const textKeyMap = {}
       for (let i = 0, len = formValues.selected.length; i < len; i++) {
         const item = R.find(R.propEq('key', formValues.selected[i]))(this.exportOptionItems)
-        keys.push(item.key)
+        keys.push(item.key.endsWith('_ignore_suffix') ? item.key.replace('_ignore_suffix', '') : item.key)
         texts.push(item.label)
-        textKeyMap[item.label] = item.key
+        textKeyMap[item.label] = item.key.endsWith('_ignore_suffix') ? item.key.replace('_ignore_suffix', '') : item.key
       }
       let params = {
         export: this.params.options.fileType || 'xls',
