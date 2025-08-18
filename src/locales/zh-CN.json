@@ -6016,5 +6016,7 @@
   "common.switch_to_last_month": "切换到上月",
   "common.no_tip_in_this_month": "本月不再提示",
   "common.offline_export": "离线下载",
-  "common.file_size": "文件大小"
+  "common.file_size": "文件大小",
+  "common.switch_to_input": "切换输入",
+  "common.switch_to_select": "切换选择"
 }

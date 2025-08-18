@@ -6016,5 +6016,7 @@
   "common.switch_to_last_month": "先月に切り替え",
   "common.no_tip_in_this_month": "今月は提示しない",
   "common.offline_export": "オフラインダウンロード",
-  "common.file_size": "ファイルサイズ"
+  "common.file_size": "ファイルサイズ",
+  "common.switch_to_input": "入力に切り替え",
+  "common.switch_to_select": "選択に切り替え"
 }

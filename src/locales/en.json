@@ -5999,5 +5999,7 @@
   "common.switch_to_last_month": "Switch to last month",
   "common.no_tip_in_this_month": "No more prompts this month",
   "common.offline_export": "Offline Download",
-  "common.file_size": "File size"
+  "common.file_size": "File size",
+  "common.switch_to_input": "Switch to input",
+  "common.switch_to_select": "Switch to select"
 }
