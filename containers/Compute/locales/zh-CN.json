@@ -1762,5 +1762,7 @@
   "compute.stop_rescue": "退出紧急模式",
   "compute.stop_rescue.validate_tooltip": "请进入紧急模式后重试",
   "compute.associated_instances": "关联实例",
-  "compute.lvm_shared_storage.validate_tooltip": "LVM磁盘主机不支持该操作"
+  "compute.lvm_shared_storage.validate_tooltip": "LVM磁盘主机不支持该操作",
+  "compute.deadly_resource": "临期资源",
+  "compute.check_deadly_resource": "扫描临期资源"
 }

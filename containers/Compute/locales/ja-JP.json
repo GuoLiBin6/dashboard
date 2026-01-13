@@ -1762,5 +1762,7 @@
   "compute.stop_rescue": "緊急モードを終了",
   "compute.stop_rescue.validate_tooltip": "緊急モードに入って再試行してください。",
   "compute.associated_instances": "関連付けられたインスタンス",
-  "compute.lvm_shared_storage.validate_tooltip": "LVM ディスク ホストはこの操作をサポートしていません"
+  "compute.lvm_shared_storage.validate_tooltip": "LVM ディスク ホストはこの操作をサポートしていません",
+  "compute.deadly_resource": "期限切れリソース",
+  "compute.check_deadly_resource": "期限切れリソースをチェック"
 }

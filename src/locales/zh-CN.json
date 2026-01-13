@@ -2853,7 +2853,9 @@
     "scopedpolicy": "@:dictionary.scopedpolicies",
     "scopedpolicies": "@:dictionary.scopedpolicies",
     "samluser": "@:dictionary.samluser",
-    "samlusers": "@:dictionary.samluser"
+    "samlusers": "@:dictionary.samluser",
+    "dbinstance": "@:dictionary.dbinstances",
+    "elasticcache": "@:dictionary.elasticcache"
   },
   "table": {
     "title": {

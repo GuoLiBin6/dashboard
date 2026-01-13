@@ -2836,7 +2836,9 @@
     "samlusers": "SAML users",
     "shield_bills": "Billing Config",
     "report_settings": "Report Template",
-    "report_elements": "Report Fields"
+    "report_elements": "Report Fields",
+    "dbinstance": "@:dictionary.dbinstances",
+    "elasticcache": "@:dictionary.elasticcache"
   },
   "table": {
     "title": {
