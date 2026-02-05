@@ -1,6 +1,6 @@
 <template>
   <div>
-    <page-header :title="$t('compute.text_1100')" style="margin-bottom: 7px;" />
+    <page-header :title="title" style="margin-bottom: 7px;" />
     <a-alert class="mb-2" type="warning" v-if="tips">
       <div slot="message">
         {{ tips }}
@@ -149,7 +149,7 @@ import {
 import { findPlatform, diskSupportTypeMedium, getOriginDiskKey } from '@/utils/common/hypervisor'
 import { isRequired } from '@/utils/validate'
 import { sizestr } from '@/utils/utils'
-import { STORAGE_TYPES } from '@/constants/compute'
+import { STORAGE_TYPES, HOST_CPU_ARCHS } from '@/constants/compute'
 import DiscountPrice from '@/sections/DiscountPrice'
 
 export default {
@@ -431,6 +431,9 @@ export default {
   },
   computed: {
     ...mapGetters(['isAdminMode', 'scope', 'userInfo']),
+    title () {
+      return this.isOpenWorkflow ? `${this.$t('compute.text_1100')} ${this.$route.query.workflow ? `(${this.$t('common.modify_workflow')})` : ''}` : this.$t('compute.text_1100')
+    },
     scopeParams () {
       if (this.$store.getters.isAdminMode) {
         return {
@@ -466,7 +469,7 @@ export default {
     },
     runningOther () {
       return this.dataList.some(val => {
-        if (val.status === 'running' && [HYPERVISORS_MAP.aliyun.hypervisor, HYPERVISORS_MAP.aws.hypervisor, HYPERVISORS_MAP.google.hypervisor, HYPERVISORS_MAP.huawei.hypervisor, HYPERVISORS_MAP.ctyun.hypervisor, HYPERVISORS_MAP.volcengine.hypervisor].includes(val.hypervisor)) {
+        if (val.status === 'running' && [HYPERVISORS_MAP.aliyun.hypervisor, HYPERVISORS_MAP.aws.hypervisor, HYPERVISORS_MAP.google.hypervisor, HYPERVISORS_MAP.huawei.hypervisor, HYPERVISORS_MAP.ctyun.hypervisor, HYPERVISORS_MAP.volcengine.hypervisor, HYPERVISORS_MAP.ksyun.hypervisor].includes(val.hypervisor)) {
           return true
         }
         return false
@@ -528,6 +531,8 @@ export default {
         // nutanix vmware incloudshpere proxmox sangfor
         if (this.selectedItem && (this.selectedItem.provider === HYPERVISORS_MAP.nutanix.provider || this.selectedItem.provider === HYPERVISORS_MAP.incloudsphere.provider || this.selectedItem.provider === HYPERVISORS_MAP.proxmox.provider || this.selectedItem.provider === HYPERVISORS_MAP.sangfor.provider || this.selectedItem.provider === HYPERVISORS_MAP.uis.provider)) {
           params['provider.0'] = HYPERVISORS_MAP.kvm.provider
+        } else if (this.selectedItem.provider === HYPERVISORS_MAP.cnware.provider) {
+          params.usable = false
         } else {
           params.cloudregion_id = this.selectedItem.cloudregion_id
         }
@@ -543,6 +548,13 @@ export default {
           params.postpaid_status = 'available'
         } else if (this.selectedItem.billing_type === 'prepaid') {
           params.prepaid_status = 'available'
+        }
+      }
+      if (this.selectedItem.os_arch) {
+        if (this.selectedItem.os_arch.includes('x86')) {
+          params.cpu_arch = HOST_CPU_ARCHS.x86.key
+        } else if (this.selectedItem.os_arch.includes('arm') || this.selectedItem.os_arch.includes('aarch64')) {
+          params.cpu_arch = HOST_CPU_ARCHS.arm.key
         }
       }
       return params
@@ -660,7 +672,7 @@ export default {
       return diskValueArr.reduce((prevDisk, diskValue) => prevDisk + diskValue, 0)
     },
     confirmText () {
-      return this.isOpenWorkflow ? this.$t('compute.text_288') : this.$t('compute.text_907')
+      return this.isOpenWorkflow ? (this.$route.query.workflow ? this.$t('common.modify_workflow') : this.$t('compute.text_288')) : this.$t('compute.text_907')
     },
     cpuExtra () {
       if (this.runningArm) {
@@ -737,6 +749,9 @@ export default {
       return this.hypervisor && this.form.fi.capability.storage_types3 && this.form.fd.defaultType
     },
     isRenderDataDisk () {
+      if (this.hypervisor === HYPERVISORS_MAP.cnware.key) {
+        return false
+      }
       return this.hypervisor && this.form.fi.capability.storage_types3 && this.form.fd.sku
     },
     isShowCpu () {
@@ -783,18 +798,7 @@ export default {
   methods: {
     skuFilter (items) {
       if (!items) return []
-      let os_arch = R.path(['metadata', 'sys:os_arch'], this.selectedItem)
-      return items.filter(item => {
-        if (os_arch) {
-          os_arch = os_arch.toLowerCase()
-          if (os_arch === 'aarch64') {
-            return item.cpu_arch === 'aarch64'
-          } else if (os_arch.indexOf('x86') >= 0) {
-            return item.cpu_arch && item.cpu_arch.indexOf('x86') >= 0
-          }
-        }
-        return true
-      })
+      return items
     },
     async loadData (data) {
       this.data = data
@@ -946,7 +950,11 @@ export default {
         serverConf: JSON.stringify(serverConf),
         description: values.reason,
       }
-      await this.createWorkflow(variables)
+      if (this.$route.query.workflow) {
+        await this.updateWorkflow(variables, this.$route.query.workflow)
+      } else {
+        await this.createWorkflow(variables)
+      }
       this.$message.success(this.$t('compute.text_1109'))
       this.$router.push('/workflow')
     },
@@ -957,7 +965,7 @@ export default {
       }
       const { showCpuSockets, cpuSockets } = this.form.fi
       const ids = this.dataList.map(item => item.id)
-      if (ids.length === 1) {
+      if (ids.length === 1 && this.selectedItem.provider !== HYPERVISORS_MAP.cnware.provider) {
         params.disks = this.genDiskData(values)
       }
       if (showCpuSockets) {
@@ -1022,6 +1030,11 @@ export default {
       if (this.type === SERVER_TYPE.private) {
         if (this.selectedItem && (this.selectedItem.provider === HYPERVISORS_MAP.hcso.provider || this.selectedItem.provider === HYPERVISORS_MAP.hcs.provider)) {
           params.cloudregion_id = this.selectedItem.cloudregion_id
+        } else if (this.selectedItem.provider === HYPERVISORS_MAP.cnware.provider) {
+          params.usable = false
+          delete params.provider
+          params['provider.0'] = HYPERVISORS_MAP.kvm.provider
+          params['provider.1'] = this.selectedItem.provider
         } else {
           params.provider = HYPERVISORS_MAP.kvm.provider
         }

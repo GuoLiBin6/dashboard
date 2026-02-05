@@ -9,7 +9,7 @@ export default {
         },
         meta: (obj) => {
           const ret = { validate: true }
-          if (obj.status !== 'running') {
+          if (obj.status !== 'running' && obj.status !== 'probing') {
             ret.tooltip = this.$t('compute.repo.helper.terminal', [this.$t('dictionary.container')])
             ret.validate = false
           }
@@ -20,6 +20,20 @@ export default {
         label: this.$t('common.more'),
         actions: (obj) => {
           return [
+            // 同步状态
+            {
+              label: this.$t('compute.perform_sync_status'),
+              permission: 'containers_perform_syncstatus',
+              action: () => {
+                this.onManager('performAction', {
+                  steadyStatus: ['running', 'ready'],
+                  id: obj.id,
+                  managerArgs: {
+                    action: 'syncstatus',
+                  },
+                })
+              },
+            },
             {
               label: this.$t('compute.repo.start'),
               action: () => {

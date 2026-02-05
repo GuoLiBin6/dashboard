@@ -14,7 +14,7 @@ import { commonUnabled, cloudEnabled, cloudUnabledTip, commonEnabled, commonTip,
 const getSingleActions = function (ctx) {
   let hasBastionService = false
   const that = ctx || this
-  const { services } = that.$store.getters.userInfo
+  const { services = [] } = that.$store?.getters?.userInfo || {}
   const bastionService = services.find(val => val.type === 'bastionhost')
   if (bastionService && bastionService.status === true) {
     hasBastionService = true
@@ -63,13 +63,19 @@ const getSingleActions = function (ctx) {
           },
           meta: () => {
             const ret = {
-              validate: obj.power_states === 'unknown' ? cloudEnabled('vnc', obj) : obj.power_states === 'on',
-              tooltip: obj.power_states === 'unknown' ? cloudUnabledTip('vnc', obj) : '',
+              validate: true,
+              tooltip: '',
             }
-            if (cloudEnabled('vnc', obj) === false) {
-              ret.validate = false
-              ret.tooltip = cloudUnabledTip('vnc', obj)
-              return ret
+            if (obj.provider === 'OneCloud') {
+              ret.validate = obj.power_states === 'on'
+              ret.tooltip = obj.power_states === 'on' ? '' : i18n.t('compute.power_states_check_tip', [i18n.t('common_239'), `【${i18n.t('compute.text_574')}】`])
+            } else {
+              ret.validate = obj.power_states === 'unknown' ? cloudEnabled('vnc', obj) : obj.power_states === 'on'
+              ret.tooltip = obj.power_states === 'unknown' ? cloudUnabledTip('vnc', obj) : (obj.power_states === 'on' ? '' : i18n.t('compute.power_states_check_tip', [i18n.t('common_239'), `【${i18n.t('compute.text_574')}】`]))
+              if (cloudEnabled('vnc', obj) === false) {
+                ret.validate = false
+                ret.tooltip = cloudUnabledTip('vnc', obj)
+              }
             }
             return ret
           },
@@ -598,6 +604,45 @@ const getSingleActions = function (ctx) {
                   return ret
                 },
                 hidden: () => !(hasSetupKey(['onecloud'])) || this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_sync_config'),
+              },
+              // VNC 截图
+              {
+                label: i18n.t('compute.vnc_panic_screenshot'),
+                permission: 'server_perform_screen_dump',
+                action: async () => {
+                  try {
+                    const res = await new this.$Manager('servers', 'v2').performAction({
+                      id: obj.id,
+                      action: 'screen-dump',
+                    })
+                    if (res.data?.screen_dump) {
+                      this.createDialog('VmVncScreenshotDialog', {
+                        data: obj,
+                        screenshotUrl: res.data.screen_dump,
+                      })
+                    } else {
+                      this.$message.error(this.$t('compute.get_screenshot_error'))
+                    }
+                  } catch (error) {
+                    this.$message.error(this.$t('compute.get_screenshot_error'))
+                    throw error
+                  }
+                },
+                meta: (row) => {
+                  const isOneCloud = row.brand === 'OneCloud'
+                  const provider = obj.provider
+                  if (!isOneCloud) {
+                    return {
+                      validate: false,
+                      tooltip: i18n.t('compute.text_473', [PROVIDER_MAP[provider].label]),
+                    }
+                  }
+                  return {
+                    validate: obj.power_states === 'on',
+                    tooltip: obj.power_states === 'on' ? '' : i18n.t('compute.power_states_check_tip', [i18n.t('common_239'), `【${i18n.t('compute.text_574')}】`]),
+                  }
+                },
+                hidden: (row) => !(hasSetupKey(['onecloud'])) || this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_screen_dump'),
               },
             ],
           },
@@ -1224,7 +1269,7 @@ const getSingleActions = function (ctx) {
                     return ret
                   }
                   const osType = obj.metadata && obj.metadata.os_name
-                  if (['aws', 'azure', 'google', 'aliyun'].includes(obj.hypervisor) && osType === 'Windows') {
+                  if (['aws', 'azure', 'google', 'aliyun', 'ksyun'].includes(obj.hypervisor) && osType === 'Windows') {
                     ret.tooltip = i18n.t('compute.text_1285')
                     return ret
                   }

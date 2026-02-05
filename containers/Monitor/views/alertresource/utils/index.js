@@ -200,6 +200,16 @@ export function getMetircAlertUtil (row, field, condition) {
       txt = `[${detail.within_range[0]}${threshold.unit}, ${detail.within_range[1]}${threshold.unit}]`
       strategyConfig.within_range = detail.within_range
     }
+    if (detail.comparator === 'within_range' && detail.threshold_range) {
+      comparator = ''
+      txt = i18n.t('monitor.threshold_range_in', [`${detail.threshold_range[0]}${unit || detail.unit || ''}`, `${detail.threshold_range[1]}${unit || detail.unit || ''}`])
+      strategyConfig.within_range = detail.threshold_range
+    }
+    if (detail.comparator === 'outside_range' && detail.threshold_range) {
+      comparator = ''
+      txt = i18n.t('monitor.threshold_range_out', [`${detail.threshold_range[0]}${unit || detail.unit || ''}`, `${detail.threshold_range[1]}${unit || detail.unit || ''}`])
+      strategyConfig.outside_range = detail.threshold_range
+    }
     strategyConfig.comparator = detail.comparator
     strategyConfig.threshold = detail.threshold
     strategyConfig.unit = unit
@@ -327,7 +337,7 @@ export const getValueWithUnit = (value = 0, unit = '') => {
   // 金额类型的单位
   for (let i = 0; i < currencyUnitList.length; i++) {
     if (unit.indexOf(currencyUnitList[i]) !== -1) {
-      return `${currencyUnitMap[currencyUnitList[i]].sign}${value}`
+      return `${currencyUnitMap[currencyUnitList[i]].sign} ${value}`
     }
   }
   return value

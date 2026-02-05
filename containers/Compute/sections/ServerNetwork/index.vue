@@ -28,10 +28,13 @@
         :is-dialog="isDialog"
         :showMacConfig="showMacConfig"
         :showDeviceConfig="showDeviceConfig"
+        :showSecgroupConfig="showSecgroupConfig"
+        :secgroupParams="secgroupParams"
         :hiddenAdd="hiddenAdd" />
     </a-form-item>
     <a-form-item v-if="networkComponent === 'schedtag'">
       <network-schedtag
+        ref="networkSchedtagRef"
         :form="form"
         :decorator="decorator.networkSchedtag"
         :isBonding="isBonding"
@@ -132,6 +135,14 @@ export default {
     showDeviceConfig: {
       type: Boolean,
       default: false,
+    },
+    showSecgroupConfig: {
+      type: Boolean,
+      default: false,
+    },
+    secgroupParams: {
+      type: Object,
+      default: () => ({}),
     },
     hiddenNetworkOptions: {
       type: Array,

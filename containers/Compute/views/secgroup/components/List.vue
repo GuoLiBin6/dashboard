@@ -4,13 +4,15 @@
     show-tag-filter
     ref="pageList"
     :list="list"
-    :columns="columns"
+    :columns="[...(templateListColumns || columns), ...extraColumns]"
     :group-actions="groupActions"
     :single-actions="customSingleActions || singleActions"
     :export-data-options="exportDataOptions"
     :showSearchbox="showSearchbox"
     :defaultSearchKey="defaultSearchKey"
-    :showGroupActions="showGroupActions" />
+    :showGroupActions="showGroupActions"
+    :show-single-actions="!isTemplate"
+    :show-page="!isTemplate" />
 </template>
 
 <script>
@@ -18,6 +20,7 @@ import * as R from 'ramda'
 import { mapGetters } from 'vuex'
 import ListMixin from '@/mixins/list'
 import WindowsMixin from '@/mixins/windows'
+import ResTemplateListMixin from '@/mixins/resTemplateList'
 import { getNameFilter, getTenantFilter, getDomainFilter, getRegionFilter, getBrandFilter, getAccountFilter, getDescriptionFilter, getCreatedAtFilter } from '@/utils/common/tableFilter'
 import globalSearchMixins from '@/mixins/globalSearch'
 import { getSetPublicAction } from '@/utils/common/tableActions'
@@ -29,7 +32,7 @@ import { exportDataOptions } from '../utils'
 
 export default {
   name: 'SecgroupList',
-  mixins: [WindowsMixin, ListMixin, globalSearchMixins, ColumnsMixin, SingleActionsMixin],
+  mixins: [WindowsMixin, ListMixin, globalSearchMixins, ColumnsMixin, SingleActionsMixin, ResTemplateListMixin],
   props: {
     id: String,
     getParams: {
@@ -37,6 +40,10 @@ export default {
       default: () => ({
         details: true,
       }),
+    },
+    secgroupType: {
+      type: String,
+      default: 'default',
     },
     frontGroupActions: {
       type: Function,
@@ -70,35 +77,37 @@ export default {
       },
     },
     cloudEnv: String,
+    extraColumns: {
+      type: Array,
+      default: () => ([]),
+    },
   },
   data () {
     return {
       list: this.$list.createList(this, {
+        ctx: this,
         id: this.id,
-        resource: 'secgroups',
+        idKey: this.secgroupType === 'network' ? 'guest_network' : 'id',
+        resource: this.secgroupType === 'network' ? 'guestnetworksecgroups' : 'secgroups',
         getParams: this.getParam,
-        steadyStatus: Object.values(expectStatus.secgroup).flat(),
+        isTemplate: this.isTemplate,
+        templateLimit: this.templateLimit,
+        steadyStatus: this.secgroupType === 'network' ? null : Object.values(expectStatus.secgroup).flat(),
         filterOptions: {
           name: getNameFilter(),
           id: {
             label: 'ID',
           },
           description: getDescriptionFilter(),
-          ip: {
-            label: this.$t('compute.text_985'),
-          },
-          ports: {
-            label: this.$t('compute.text_349'),
-          },
           region: getRegionFilter(),
           cloudaccount: getAccountFilter(),
-          brand: getBrandFilter('brands', ['VMware', 'OneCloud']),
+          brand: getBrandFilter('brands'),
           projects: getTenantFilter(),
           project_domains: getDomainFilter(),
           created_at: getCreatedAtFilter(),
         },
         responseData: this.responseData,
-        hiddenColumns: ['created_at'],
+        hiddenColumns: this.hiddenColumns && this.hiddenColumns.length ? this.hiddenColumns : ['created_at'],
       }),
       exportDataOptions,
     }
@@ -261,13 +270,19 @@ export default {
         ...(R.is(Function, this.getParams) ? this.getParams() : this.getParams),
       }
       if (this.cloudEnv) ret.cloud_env = this.cloudEnv
+      if (ret.project_id) {
+        ret.project_ids = [ret.project_id]
+        delete ret.project_id
+      }
       return ret
     },
     handleOpenSidepage (row, tab) {
+      const params = this.getParam()
+      delete params.server
       this.sidePageTriggerHandle(this, 'SecGroupSidePage', {
-        id: row.id,
+        id: row.id || row.secgroup_id,
         resource: 'secgroups',
-        getParams: this.getParam,
+        getParams: params,
       }, {
         list: this.list,
         hiddenSidepageTabs: this.hiddenSidepageTabs,

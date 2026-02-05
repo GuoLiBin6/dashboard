@@ -120,6 +120,7 @@ export default {
               data: [this.data],
               columns: this.columns,
               title: this.$t('compute.text_483', [this.$t('dictionary.server')]),
+              resourceName: this.$t('dictionary.server'),
               onManager: this.onManager,
               refresh: this.refresh,
             })
@@ -205,7 +206,7 @@ export default {
       const ret = {
         details: true,
         with_meta: true,
-        filter: 'hypervisor.notin(baremetal,container)',
+        filter: 'hypervisor.notin(baremetal,container,pod)',
         ...this.getParams,
       }
       return ret

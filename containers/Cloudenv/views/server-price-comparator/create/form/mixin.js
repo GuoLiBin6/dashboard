@@ -31,6 +31,7 @@ import { HYPERVISORS_MAP } from '@/constants'
 import i18n from '@/locales'
 import { PRICE_COMPARA_KEY_SUFFIX } from '@Cloudenv/constants'
 import { uuid } from '@/utils/utils'
+import { currencyUnitMap } from '@/constants/currency'
 import BottomBar from '../components/BottomBar'
 import SystemDisk from '../components/SystemDisk'
 import Tag from '../components/Tag'
@@ -251,11 +252,16 @@ export default {
       }
     },
     policySchedtagParams () { // 高级配置里面调度策略选择 指定调度标签
-      return {
+      const ret = {
         limit: 0,
         'filter.0': 'resource_type.equals(hosts)',
         ...this.scopeParams,
       }
+      const zone = _.get(this.form.fd, 'zone.key')
+      if (zone) {
+        ret.zone_id = zone
+      }
+      return ret
     },
     isWindows () {
       let isWindows = false
@@ -345,13 +351,9 @@ export default {
         if (isNaN(parseFloat(originPrice))) {
           return '-'
         }
-        let currency = '¥'
-        if (sku.currency === 'USD') {
-          currency = '$'
-        } else if (sku.currency === 'BRL') {
-          currency = 'R$'
-        } else if (sku.currency === 'EUR') {
-          currency = '€'
+        let currency = currencyUnitMap.CNY.sign
+        if (sku.currency && currencyUnitMap[sku.currency]) {
+          currency = currencyUnitMap[sku.currency].sign
         }
         return `${currency}${parseFloat(originPrice).toFixed(2)}`
       }

@@ -13,7 +13,7 @@
         <a-form-item class="mr-1" :style="{ width: `calc(100% - ${i === 0 ? 0 : 70}px)` }">
           <base-select
             class="w-100"
-            :minWidth="`calc(100% - ${i === 0 ? 0 : 70}px)`"
+            :minWidth="`max(170px, calc(100% - ${i === 0 ? 0 : 70}px))`"
             v-decorator="decorators.tagKey(item.key)"
             :options="tagKeyOpts"
             filterable
@@ -158,9 +158,21 @@ export default {
       this.filters = tags.map(item => {
         const key = uuid()
         const { tagCondition, tagKey, tagValue, tagOperator } = this.decorators
+        let operator = item.operator
+        let value = item.value
+        if (operator === '=') {
+          operator = '=~'
+        } else if (operator === '!=') {
+          operator = '!~'
+        }
+        if (value.startsWith('/^') && value.endsWith('$/')) {
+          value = value.replace('/^', '').replace('$/', '').split('|').map(v => v.replace('^', '').replace('$', ''))
+        } else if (value.startsWith('["') && value.endsWith('"]')) {
+          value = value.replace('[', '').replace(']', '').split(',').map(v => v.replaceAll('"', ''))
+        }
         tagFields[tagKey(key)[0]] = item.key
-        tagFields[tagValue(key)[0]] = item.value
-        tagFields[tagOperator(key)[0]] = item.operator
+        tagFields[tagValue(key)[0]] = value
+        tagFields[tagOperator(key)[0]] = operator
         if (item.condition) tagFields[tagCondition(key)[0]] = item.condition
         return {
           key,

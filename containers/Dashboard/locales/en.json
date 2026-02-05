@@ -135,7 +135,7 @@
   "dashboard.text_131": "Operation Log",
   "dashboard.text_132": "Memory Usage",
   "dashboard.text_133": "Disk read throughput TOP5",
-  "dashboard.text_134": "Number of Machine",
+  "dashboard.text_134": "Number of Physical Machine",
   "dashboard.text_135": "CPU Usage",
   "dashboard.text_136": "Number of Host",
   "dashboard.text_137": "Overview of Historical Resources",
@@ -334,5 +334,11 @@
   "dashboard.statisic_value_type": "Statistics through billing",
   "dashboard.value_fee": "Cost amount",
   "dashboard.value_count": "Resource quantity",
-  "dashboard.data_type": "Data type"
+  "dashboard.data_type": "Data type",
+  "dashboard.current_system": "Current system",
+  "dashboard.current_domain": "Current @:dictionary.domain",
+  "dashboard.specified_domain": "Specified @:dictionary.domain",
+  "dashboard.specified_project": "Specified @:dictionary.project",
+  "dashboard.usage_key_deny_tips": "After switching the data range, the original data indicators may not have permission to view in the new data view, that is, the indicators are invalid",
+  "dashboard.usage_key_deny_tips_2": "Indicators are invalid"
 }

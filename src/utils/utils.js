@@ -4,7 +4,7 @@ import _ from 'lodash'
 import i18n from '@/locales'
 import { numerify } from '@/filters'
 import setting from '@/config/setting'
-
+import { currencyUnitMap } from '@/constants/currency'
 import { getLanguage } from '@/utils/common/cookie'
 // import { encodeURI } from 'js-base64'
 
@@ -716,10 +716,26 @@ export const transformUnit = (value, originUnit = '', base = 1000, numerifyForma
       b = 'B'
     }
     obj = splitUnit(sizestr(value, sizestrUnit, base))
-    if (obj.text.endsWith('B')) {
-      obj.text = `${obj.value} ${b}ps`
+    // 使用 numerifyFormat 格式化数值
+    const numValue = parseFloat(obj.value)
+    const formattedValue = parseFloat(numerify(numValue, numerifyFormat))
+    obj.value = formattedValue
+    // 替换 text 中的数值部分为格式化后的值
+    const textMatch = obj.text.match(/^(\d+\.?\d*)\s*(.*)$/)
+    if (textMatch) {
+      const originalUnit = textMatch[2]
+      if (obj.text.endsWith('B')) {
+        obj.text = `${formattedValue} ${b}ps`
+      } else {
+        obj.text = `${formattedValue} ${originalUnit}${b}ps`
+      }
     } else {
-      obj.text += `${b}ps`
+      // 如果匹配失败，使用原来的逻辑
+      if (obj.text.endsWith('B')) {
+        obj.text = `${formattedValue} ${b}ps`
+      } else {
+        obj.text += `${b}ps`
+      }
     }
   } else if (unit === 'byte') {
     obj = splitUnit(sizestr(value, 'B', 1024))
@@ -1152,4 +1168,85 @@ export const deleteInvalid = obj => {
     }
   })
   return obj
+}
+
+export const getDurationLabel = (item) => {
+  if (item === 'none' || item === 'custom') {
+    return i18n.t(`common.duration.${item}`)
+  }
+  if (item.endsWith('h')) return i18n.t('common.date.hours', [parseInt(item)])
+  if (item.endsWith('d')) return i18n.t('common.date.days', [parseInt(item)])
+  if (item.endsWith('w')) return i18n.t('common.date.weeks', [parseInt(item)])
+  if (item.endsWith('m')) return i18n.t('common.date.months', [parseInt(item)])
+  if (item.endsWith('y')) return i18n.t('common.date.years', [parseInt(item)])
+  return item
+}
+
+export const ppmToPNGDataURL = (base64Data) => {
+  // 解码 Base64
+  const binaryStr = atob(base64Data)
+  // 解析 PPM 头信息
+  const lines = binaryStr.split('\n')
+  let width = 720
+  let height = 400
+  if (lines.length > 3) {
+    const size = lines[1].split(' ')
+    if (size.length === 2) {
+      width = parseInt(size[0])
+      height = parseInt(size[1])
+    }
+  }
+  // 创建 Canvas
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')
+  const imageData = ctx.createImageData(width, height)
+  // 找到像素数据开始位置（跳过3行头部）
+  let dataStart = 0
+  let lineCount = 0
+  for (let i = 0; i < binaryStr.length; i++) {
+    if (binaryStr[i] === '\n') {
+      lineCount++
+      if (lineCount === 3) {
+        dataStart = i + 1
+        break
+      }
+    }
+  }
+  // 解析 RGB 像素数据
+  const pixelData = new Uint8Array(binaryStr.length - dataStart)
+  for (let i = 0; i < pixelData.length; i++) {
+    pixelData[i] = binaryStr.charCodeAt(dataStart + i)
+  }
+  // 填充到 ImageData
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const idx = (y * width + x) * 4
+      const pixelIdx = (y * width + x) * 3
+      if (pixelIdx + 2 < pixelData.length) {
+        imageData.data[idx] = pixelData[pixelIdx] // R
+        imageData.data[idx + 1] = pixelData[pixelIdx + 1] // G
+        imageData.data[idx + 2] = pixelData[pixelIdx + 2] // B
+        imageData.data[idx + 3] = 255 // Alpha
+      }
+    }
+  }
+  ctx.putImageData(imageData, 0, 0)
+  // 转换为 PNG Data URL
+  return { canvas, url: canvas.toDataURL('image/png') }
+}
+
+export const getBillFormatter = (num, currency, formatter = '0,0.00', { showSign = true, showCn = false } = {}) => {
+  if (!currency || !currencyUnitMap[currency]) {
+    return `${numerify(num, formatter)}`
+  }
+  const { sign, cn } = currencyUnitMap[currency]
+  if (showSign) {
+    return `${sign} ${numerify(num, formatter)}`
+  }
+  if (showCn) {
+    return `${numerify(num, formatter)} ${cn}`
+  }
+  return `${numerify(num, formatter)}`
 }

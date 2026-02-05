@@ -26,18 +26,27 @@ export default {
     const detailData = {
       baseInfo: [
         {
-          filed: 'binding_disk_count',
-          title: this.$t('table.title.bind_disk_count'),
-          width: 120,
+          field: 'binding_disk_count',
+          title: this.$t('compute.bind_resource_count'),
+          minWidth: 120,
           slots: {
             default: ({ row }) => {
+              if (row.binding_disk_count === undefined) return [<data-loading />]
+              if (row.type === 'server') {
+                if (row.binding_resource_count <= 0) return row.binding_resource_count
+                return [
+                  <side-page-trigger name='SnapshotPolicySidePage' id={row.id} tab='snapshot-policy-server' vm={this}>{row.binding_resource_count}</side-page-trigger>,
+                ]
+              }
               if (row.binding_disk_count <= 0) return row.binding_disk_count
-              return [<a onClick={ () => this.$emit('tab-change', 'snapshot-policy-disk') }>{row.binding_disk_count}</a>]
+              return [
+                <side-page-trigger name='SnapshotPolicySidePage' id={row.id} tab='snapshot-policy-disk' vm={this}>{row.binding_disk_count}</side-page-trigger>,
+              ]
             },
           },
         },
         {
-          field: 'time_points_display',
+          field: 'time_points',
           title: this.$t('compute.text_432'),
           formatter: ({ cellValue }) => {
             let text = ''
@@ -48,7 +57,7 @@ export default {
           },
         },
         {
-          field: 'repeat_weekdays_display',
+          field: 'repeat_weekdays',
           title: this.$t('compute.text_431'),
           formatter: ({ cellValue }) => {
             let text = ''
@@ -61,11 +70,21 @@ export default {
         {
           field: 'retention_days',
           title: this.$t('compute.text_433'),
-          formatter: ({ cellValue }) => {
-            if (cellValue !== -1) {
-              return this.$t('compute.text_438', [cellValue])
+          formatter: ({ row }) => {
+            if (row.retention_count) {
+              return `${this.$t('compute.retention_count_prefix')} ${row.retention_count} ${this.$t('compute.retention_count_suffix')}`
+            }
+            if (row.retention_days !== -1) {
+              return this.$t('compute.text_438', [row.retention_days])
             }
             return this.$t('compute.text_1094')
+          },
+        },
+        {
+          field: 'snapshot_count',
+          title: this.$t('compute.snapshot_count'),
+          formatter: ({ row }) => {
+            return row.snapshot_count || '-'
           },
         },
       ],

@@ -5,7 +5,8 @@
     :obj-id="resId"
     :list-id="id || 'TaskListForCustomResourceSidePage'"
     :getParams="getParams"
-    isSidepage />
+    isSidepage
+    root />
 </template>
 
 <script>
@@ -21,7 +22,7 @@ export default {
   props: {
     taskResource: {
       type: String,
-      default: 'cloud-phone-tasks',
+      default: 'compute-tasks',
     },
     id: {
       type: String,

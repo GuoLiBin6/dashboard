@@ -1,5 +1,5 @@
 <template>
-  <div class="d-flex flex-column flex-fill">
+  <div class="d-flex flex-column flex-fill h-100">
     <template v-if="optionsLoaded">
       <div style="padding-left: 5px;">
         <dashboard-header
@@ -9,13 +9,15 @@
           :check-options-created="checkCustomOptionsCreated"
           :init-options="initCustomOptions"
           :is-default-option="isDefault"
+          :dataRangeParams="dataRangeParams"
           @select="handleCurrentOptionSelect"
           @update-options="updateOptions"
+          @updateDataRange="updateDataRange"
           @refresh="refresh" />
       </div>
       <div class="flex-fill position-relative">
         <div class="position-absolute" style="top: 0; left: 0; right: 0; bottom: 0;">
-          <dashboard-content ref="content" :data="dashboard" class="mt-2" />
+          <dashboard-content ref="content" :data="dashboard" :dataRangeParams="dataRangeParams" />
         </div>
       </div>
     </template>
@@ -31,7 +33,6 @@ import { mapGetters, mapState } from 'vuex'
 import store from '@/store'
 import storage from '@/utils/storage'
 import { addClass, removeClass, hasClass } from '@/utils/dom'
-import { generateFitLayout } from '@Dashboard/utils/fit'
 import publicDefaultConfig from './config/public-default'
 import defaultConfig from './config/default'
 import DashboardHeader from './components/Header'
@@ -61,6 +62,11 @@ export default {
       currentOption: {},
       // 面板卡片的配置 Object, Array;
       dashboard: {},
+      dataRangeParams: storage.get('__oc_dashboard_data_range__') || {
+        scope: this.$store.getters.scope,
+        domain: '',
+        project: '',
+      },
     }
   },
   computed: {
@@ -95,6 +101,19 @@ export default {
     l2MenuVisible (val) {
       this.addAppPageClass()
     },
+    dataRangeParams: {
+      handler (val) {
+        if (val.scope) {
+          if ((this.$store.getters.isProjectMode && (val.scope === 'domain' || val.scope === 'system')) || (this.$store.getters.isDomainMode && val.scope === 'system')) {
+            this.dataRangeParams.scope = this.$store.getters.scope
+            this.dataRangeParams.domain = ''
+            this.dataRangeParams.project = ''
+          }
+        }
+      },
+      deep: true,
+      immediate: true,
+    },
   },
   beforeDestroy () {
     this.pm = null
@@ -120,6 +139,9 @@ export default {
     this.addAppPageClass()
   },
   methods: {
+    updateDataRange (params) {
+      this.dataRangeParams = params
+    },
     addAppPageClass () {
       if (!this.$appPage) this.$appPage = document.getElementById('app-page')
       if (!this.$appPage) return
@@ -138,7 +160,7 @@ export default {
       // 按scope维度记录选择的面板信息
       storage.set(this.optionStorageKey, option)
       const dashboard = await this.getDashboard()
-      this.dashboard = generateFitLayout(dashboard)
+      this.dashboard = dashboard
     },
     // 获取自定义面板配置
     async getCustomOptions () {

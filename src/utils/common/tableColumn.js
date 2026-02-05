@@ -857,9 +857,9 @@ export const getAccountTableColumn = ({
       default: ({ row }, h) => {
         let val = _.get(row, field)
         if (vm.isPreLoad && !val) return [<data-loading />]
-        // OneStack => oem en
+        // OneStack => oem name
         if (val === 'OneStack' && row[brandField] && row[brandField] === 'OneCloud') {
-          val = setting.brand.en || val
+          val = setting.brand[setting.language] || setting.brand.en || val
         }
         const ret = []
         ret.push(
@@ -1042,6 +1042,132 @@ export const getProjectDomainTableColumn = ({
   })
 }
 
+export const getApplicationScopeTableColumn = ({
+  field = 'public_scope',
+  title = i18n.t('common.application_scope'),
+  vm,
+  resource,
+  width = 110,
+  hidden,
+  scope = 'project',
+} = {}) => {
+  return {
+    title,
+    field,
+    showOverflow: 'title',
+    width,
+    hidden: () => {
+      if (!store.getters.l3PermissionEnable && (store.getters.scopeResource && store.getters.scopeResource.domain.includes(resource))) {
+        return true
+      }
+      if (R.is(Function, hidden)) return hidden()
+      return hidden
+    },
+    slots: {
+      default: ({ row }, h) => {
+        const i18nPrefix = 'common_application_scope_desc'
+        if (row.is_public === false || row.is_public === 'false') {
+          return scope === 'domain' ? i18n.t('common.apply_to_current_domain') : i18n.t('common.apply_to_current_project')
+        }
+        const { public_scope: publicScope, shared_projects: sharedProjects, shared_domains: sharedDomains } = row
+        if (publicScope === 'project' && sharedProjects && sharedProjects.length > 0) {
+          return [
+            <a onClick={() => {
+              vm.createDialog('CommonDialog', {
+                hiddenCancel: true,
+                header: i18n.t('common.application_scope'),
+                body: () => {
+                  return [
+                    <a-alert class='mb-2' message={i18n.t('common.rule_scope_resource', [sharedProjects.length, i18n.t('dictionary.project')])} />,
+                    <dialog-table
+                      vxeGridProps={{ showOverflow: 'title' }}
+                      data={sharedProjects}
+                      columns={
+                        [
+                          getCopyWithContentTableColumn({
+                            field: 'id',
+                            title: 'ID',
+                            minWidth: 140,
+                          }),
+                          getCopyWithContentTableColumn({
+                            field: 'name',
+                            title: i18n.t('common_186'),
+                          }),
+                          getCopyWithContentTableColumn({
+                            field: 'domain',
+                            title: i18n.t('table.title.owner_domain'),
+                          }),
+                        ]
+                      } />,
+                  ]
+                },
+              })
+            }}>{i18n.t(`${i18nPrefix}.project`)}</a>,
+          ]
+        }
+        if (publicScope === 'domain') {
+          if (sharedDomains && sharedDomains.length > 0) {
+            return [
+              <a onClick={() => {
+                vm.createDialog('CommonDialog', {
+                  hiddenCancel: true,
+                  header: i18n.t('common.application_scope'),
+                  body: () => {
+                    return [
+                      <a-alert class='mb-2' message={i18n.t('common.rule_scope_resource', [sharedDomains.length, i18n.t('dictionary.domain')])} />,
+                      <dialog-table
+                        vxeGridProps={{ showOverflow: 'title' }}
+                        data={sharedDomains}
+                        columns={
+                          [
+                            getCopyWithContentTableColumn({
+                              field: 'id',
+                              title: 'ID',
+                              minWidth: 140,
+                            }),
+                            getCopyWithContentTableColumn({
+                              field: 'name',
+                              title: i18n.t('common_186'),
+                            }),
+                          ]
+                        } />,
+                    ]
+                  },
+                })
+              }}>{i18n.t(`${i18nPrefix}.domain`)}</a>,
+            ]
+          }
+          return i18n.t(`${i18nPrefix}.projectAll`)
+        }
+        if (publicScope === 'system') {
+          return i18n.t(`${i18nPrefix}.domainAll`)
+        }
+        return '-'
+      },
+    },
+    formatter: ({ row }) => {
+      const i18nPrefix = 'common_application_scope_desc'
+      if (row.is_public === false || row.is_public === 'false') {
+        return scope === 'domain' ? i18n.t('common.apply_to_current_domain') : i18n.t('common.apply_to_current_project')
+      }
+      const { public_scope: publicScope, shared_projects: sharedProjects, shared_domains: sharedDomains } = row
+      if (publicScope === 'project' && sharedProjects && sharedProjects.length > 0) {
+        return i18n.t(`${i18nPrefix}.project`)
+      }
+      if (publicScope === 'domain') {
+        if (sharedDomains && sharedDomains.length > 0) {
+          return i18n.t(`${i18nPrefix}.domain`)
+        }
+        return i18n.t(`${i18nPrefix}.projectAll`)
+      }
+      if (publicScope === 'system') {
+        return i18n.t(`${i18nPrefix}.domainAll`)
+      }
+      return '-'
+    },
+  }
+}
+
 export const getBillingTableColumn = ({
   vm,
   field = 'billing_type',
@@ -1050,6 +1176,7 @@ export const getBillingTableColumn = ({
   showOverflow = 'ellipsis',
   hiddenSetBtn,
   hidden,
+  showSetButton = true,
 } = {}) => {
   return {
     title,
@@ -1079,7 +1206,7 @@ export const getBillingTableColumn = ({
           let tooltipCon = <div slot="help"></div>
           const isHiddenSetButton = R.is(Function, hiddenSetBtn) ? hiddenSetBtn() : hiddenSetBtn
           if (hasPermission({ key: 'server_perform_cancel_expire' }) && !isHiddenSetButton) {
-            tooltipCon = <div slot="help">{i18n.t('common_301', [time])}<span class="link-color" style="cursor: pointer" onClick={openVmSetDurationDialog}>{i18n.t('common_453')}</span></div>
+            tooltipCon = <div slot="help">{i18n.t('common_301', [time])}{showSetButton ? <span class="link-color" style="cursor: pointer" onClick={openVmSetDurationDialog}>{i18n.t('common_453')}</span> : ''}</div>
           } else {
             tooltipCon = <div slot="help">{i18n.t('common_301', [time])}</div>
           }

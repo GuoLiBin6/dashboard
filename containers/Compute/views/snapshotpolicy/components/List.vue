@@ -1,12 +1,14 @@
 <template>
   <page-list
     :list="list"
-    :columns="columns"
+    :columns="templateListColumns || columns"
     :group-actions="groupActions"
     :single-actions="singleActions"
     :export-data-options="exportDataOptions"
     :showSearchbox="showSearchbox"
-    :showGroupActions="showGroupActions" />
+    :showGroupActions="showGroupActions"
+    :show-single-actions="!isTemplate"
+    :show-page="!isTemplate" />
 </template>
 
 <script>
@@ -14,27 +16,35 @@ import { getNameFilter, getTenantFilter, getStatusFilter, getDomainFilter, getDe
 import expectStatus from '@/constants/expectStatus'
 import WindowsMixin from '@/mixins/windows'
 import ListMixin from '@/mixins/list'
+import ResTemplateListMixin from '@/mixins/resTemplateList'
 import GlobalSearchMixin from '@/mixins/globalSearch'
 import SingleActionsMixin from '../mixins/singleActions'
 import ColumnsMixin from '../mixins/columns'
 
 export default {
   name: 'SnapshotPolicyList',
-  mixins: [WindowsMixin, ListMixin, GlobalSearchMixin, ColumnsMixin, SingleActionsMixin],
+  mixins: [WindowsMixin, ListMixin, GlobalSearchMixin, ColumnsMixin, SingleActionsMixin, ResTemplateListMixin],
   props: {
     id: String,
     getParams: {
       type: Object,
       default: () => ({}),
     },
+    cloudEnv: String,
+    cloudEnvOptions: {
+      type: Array,
+    },
   },
   data () {
     return {
       list: this.$list.createList(this, {
+        ctx: this,
         id: this.id,
         resource: 'snapshotpolicies',
         steadyStatus: Object.values(expectStatus.snapshotpolicy).flat(),
         getParams: this.getParam,
+        isTemplate: this.isTemplate,
+        templateLimit: this.templateLimit,
         filterOptions: {
           id: {
             label: this.$t('table.title.id'),
@@ -42,22 +52,20 @@ export default {
           name: getNameFilter(),
           description: getDescriptionFilter(),
           status: getStatusFilter('snapshotpolicy'),
+          type: {
+            label: this.$t('common.resource_type'),
+            dropdown: true,
+            items: [
+              { label: this.$t('dictionary.disk'), key: 'disk' },
+              { label: this.$t('dictionary.server'), key: 'server' },
+            ],
+          },
           projects: getTenantFilter(),
           project_domains: getDomainFilter(),
         },
         hiddenColumns: ['created_at'],
         responseData: this.responseData,
       }),
-      exportDataOptions: {
-        items: [
-          { label: 'ID', key: 'id' },
-          { label: this.$t('table.title.name'), key: 'name' },
-          { label: this.$t('table.title.bind_disk_count'), key: 'binding_disk_count' },
-          { label: this.$t('table.title.strategy'), key: 'repeat_weekdays' },
-          { label: this.$t('common.status'), key: 'status' },
-          { label: this.$t('res.project'), key: 'tenant' },
-        ],
-      },
       groupActions: [
         {
           label: this.$t('compute.perform_create'),
@@ -94,9 +102,31 @@ export default {
       ],
     }
   },
+  computed: {
+    exportDataOptions () {
+      return {
+        downloadType: 'local',
+        title: this.$t('compute.text_103'),
+        items: [
+          { label: 'ID', key: 'id' },
+          ...this.columns,
+        ],
+      }
+    },
+  },
+  watch: {
+    cloudEnv (val) {
+      this.$nextTick(() => {
+        this.list.fetchData(0)
+      })
+    },
+  },
   created () {
     this.initSidePageTab('snapshot-policy-detail')
     this.list.fetchData()
+    this.$bus.$on('refresh-snapshotpolicy-list', () => {
+      this.list.fetchData()
+    })
   },
   methods: {
     getParam () {
@@ -105,6 +135,9 @@ export default {
         ...this.getParams,
       }
       if (this.cloudEnv) ret.cloud_env = this.cloudEnv
+      if (this.isTemplate) {
+        ret.order_by_snapshot_count = 'desc'
+      }
       return ret
     },
     handleOpenSidepage (row, tab) {

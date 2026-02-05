@@ -1,7 +1,7 @@
 <template>
   <component :is="tableWrapper" ref="floating-scroll" :hiddenScrollbar="hiddenScrollbar">
     <div class="table-container d-flex">
-      <template v-if="showTagConfig">
+      <template v-if="showTagConfig && !isTemplate">
         <tree-project
           ref="projectTag"
           v-show="treeToggleOpen"
@@ -14,6 +14,7 @@
         <vxe-grid
           :class="enableVirtualScroll ? 'page-list-grid-virtual-scroll' : 'page-list-grid'"
           show-header-overflow
+          show-overflow
           highlight-hover-row
           highlight-current-row
           ref="grid"
@@ -56,7 +57,7 @@
           </template>
         </vxe-grid>
         <template v-if="loadMoreShow">
-          <div class="text-center mt-3 load-more-wrapper">
+          <div class="text-center load-more-wrapper">
             <div v-if="enableVirtualScroll" class="vxe-pager d-flex align-items-center justify-content-end" style="float:right">
               <a-select v-model="loadMoreSize" style="min-width:100px;font-size:12px" size="small" @change="handleLoadMoreSizeChange">
                 <a-select-option v-for="size in loadMorePagings" :value="size" :key="size" style="text-align:center;font-size:12px">{{$t('common.some_items_peer_time', [size])}}</a-select-option>
@@ -76,7 +77,7 @@
 <script>
 import Sortable from 'sortablejs'
 import XEUtils from 'xe-utils'
-import { mapGetters } from 'vuex'
+import { mapGetters, mapState } from 'vuex'
 import * as R from 'ramda'
 import _ from 'lodash'
 import { addResizeListener, removeResizeListener } from '@/utils/resizeEvent'
@@ -203,16 +204,24 @@ export default {
   },
   computed: {
     ...mapGetters(['permission']),
+    ...mapState('common', {
+      cloudShellHeight: state => state.openCloudShell ? state.cloudShellHeight : 0,
+    }),
+    isTemplate () {
+      return this.list && this.list.isTemplate
+    },
     tableWrapper () {
       return this.enableVirtualScroll ? 'div' : 'floating-scroll'
     },
     // 是否开启checkbox
     checkboxEnabled () {
+      if (this.list && this.list.isTemplate) return false
       if (this.hideRowselect) return false
       return this.selectionType === 'checkbox'
     },
     // 是否开启radio
     radioEnabled () {
+      if (this.list && this.list.isTemplate) return false
       return !this.hideRowselect && this.selectionType === 'radio'
     },
     gridStyle () {
@@ -282,9 +291,14 @@ export default {
         ret['keep-source'] = true
       }
       if (this.enableVirtualScroll) {
-        ret.height = this.vxeGridHeight
+        // 确保 max-height 至少有一个合理的最小值，避免为 0 导致表格高度很低
+        const minHeight = 400 // 最小高度 400px
+        ret['max-height'] = this.vxeGridHeight > minHeight ? this.vxeGridHeight : minHeight
         ret['scroll-x'] = { gt: 1 }
         ret['scroll-y'] = { gt: 1 }
+      } else {
+        // 非虚拟滚动模式也需要设置 height，避免 vxe-table 警告
+        ret.height = 'auto'
       }
       return ret
     },
@@ -295,7 +309,7 @@ export default {
       return this.$store.state.setting.l2MenuVisible
     },
     loadMoreShow () {
-      return this.tableData.length > 0 && (typeof this.nextMarker) !== 'undefined' && this.pagerType === 'loadMore'
+      return this.tableData.length > 0 && ((typeof this.nextMarker) !== 'undefined' || this.pagerType === 'loadMore')
     },
     showTableOverviewIndexs () {
       return this.tableOverviewIndexs?.length > 0
@@ -394,10 +408,43 @@ export default {
         }
       })
     },
+    loadMoreShow (val, oldVal) {
+      if (this.enableVirtualScroll) {
+        this.$nextTick(() => {
+          this.initHeight()
+        })
+      }
+    },
+    cloudShellHeight (val, oldVal) {
+      this.initHeight()
+    },
   },
   mounted () {
+    this.$bus.$on('GlobalTopAlertUpdate', () => {
+      if (this.enableVirtualScroll) {
+        this.initHeight()
+        setTimeout(() => {
+          this.initHeight()
+        }, 500)
+      }
+    })
     if (this.enableVirtualScroll) {
-      this.initHeight()
+      this.$nextTick(() => {
+        this.initHeight()
+        // 延迟计算，确保 TopAlert 等组件完全渲染
+        setTimeout(() => {
+          this.initHeight()
+        }, 100)
+        // 再次延迟，确保表格完全渲染后再计算
+        setTimeout(() => {
+          this.initHeight()
+        }, 500)
+      })
+      window.addEventListener('resize', this.initHeight)
+      this.$once('hook:beforeDestroy', () => {
+        window.removeEventListener('resize', this.initHeight)
+        this.$bus.$off('GlobalTopAlertUpdate')
+      })
     } else {
       this.initFloatingScrollListener()
     }
@@ -405,10 +452,13 @@ export default {
   },
   methods: {
     initHeight () {
-      const gridEl = this.$refs.grid.$el
+      const gridEl = this.$refs?.grid?.$el
+      if (!gridEl) return
       const wH = document.body.offsetHeight
-      const remBase = parseInt(window.getComputedStyle(document.documentElement).fontSize) / 4
-      this.vxeGridHeight = wH - gridEl.getBoundingClientRect().y - (48 + remBase * 4 + 20 + 15)
+      const gridTop = gridEl.getBoundingClientRect().y
+      const calculatedHeight = wH - gridTop - 15 - (this.pagerType === 'loadMore' || this.loadMoreShow ? 55 : 0) - this.cloudShellHeight
+      // 确保高度至少为 400px，避免表格高度太低
+      this.vxeGridHeight = calculatedHeight > 400 ? calculatedHeight : 400
     },
     // 初始化tbody监听器，发生变化更新虚拟滚动条，以保证宽度是正确的
     initFloatingScrollListener () {
@@ -419,6 +469,7 @@ export default {
       this.$once('hook:beforeDestroy', () => {
         removeResizeListener(tableBodyEl, this.updateFloatingScroll)
         window.removeEventListener('resize', this.updateFloatingScroll)
+        this.$bus.$off('GlobalTopAlertUpdate')
       })
     },
     // 更新虚拟滚动条
@@ -465,7 +516,7 @@ export default {
           field: '_action',
           title: this.$t('table.title._action'),
           minWidth: 120,
-          resizable: false,
+          resizable: true,
           slots: {
             default: ({ row }, h) => {
               return [
@@ -608,9 +659,9 @@ export default {
             return [<span>{ item.title }</span>, <MultipleSort column={item} listParams={this.list.params || {}} onDoSort={this.handleSortChange} />]
           }
         }
-        if (item.showOverflow !== 'ellipsis') {
-          item.className = item.className ? item.className + ' table--td-auto-height' : 'table--td-auto-height'
-        }
+        // if (item.showOverflow !== 'ellipsis') {
+        item.className = item.className ? item.className + ' table--td-auto-height' : 'table--td-auto-height'
+        // }
         return item
       })
       defaultColumns.forEach(item => {

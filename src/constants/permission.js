@@ -40,6 +40,8 @@ export const PERMISSION = {
   snapshotpolicy_list: ['compute', 'snapshotpolicies', 'list'],
   snapshotpolicy_create: ['compute', 'snapshotpolicies', 'create'],
   snapshotpolicy_delete: ['compute', 'snapshotpolicies', 'delete'],
+  snapshotpolicy_perform_bind_resources: ['compute', 'snapshotpolicies', 'perform', 'bind-resources'],
+  snapshotpolicy_perform_unbind_resources: ['compute', 'snapshotpolicies', 'perform', 'unbind-resources'],
 
   // 主机快照
   instance_snapshots_list: ['compute', 'instance_snapshots', 'list'],
@@ -435,6 +437,8 @@ export const PERMISSION = {
   server_perform_make_sshable: ['compute', 'servers', 'perform', 'make-sshable'],
   server_perform_start_rescue: ['compute', 'servers', 'perform', 'start-rescue'],
   server_perform_stop_rescue: ['compute', 'servers', 'perform', 'stop-rescue'],
+  server_perform_screen_dump: ['compute', 'servers', 'perform', 'screen-dump'],
+  server_perform_change_billing_type: ['compute', 'servers', 'perform', 'change-billing-type'],
   /**
    * images 相关操作
    */
@@ -469,6 +473,7 @@ export const PERMISSION = {
   disks_perform_public: ['compute', 'disks', 'perform', 'public'],
   disks_perform_set_user_metadata: ['compute', 'disks', 'perform', 'set-user-metadata'],
   disks_perform_bind_snapshotpolicy: ['compute', 'disks', 'perform', 'bind-snapshotpolicy'],
+  disks_perform_unbind_snapshotpolicy: ['compute', 'disks', 'perform', 'unbind-snapshotpolicy'],
 
   /**
    * diskbackups
@@ -1416,6 +1421,11 @@ export const PERMISSION = {
   report_elements_create: ['report', 'report_elements', 'create'],
   report_elements_delete: ['report', 'report_elements', 'delete'],
 
+  report_templates_list: ['report', 'report_templates', 'list'],
+  report_templates_create: ['report', 'report_templates', 'create'],
+  report_templates_update: ['report', 'report_templates', 'update'],
+  report_templates_delete: ['report', 'report_templates', 'delete'],
+
   // 透传设备类型
   isolated_device_models_list: ['compute', 'isolated_device_models', 'list'],
   isolated_device_models_get: ['compute', 'isolated_device_models', 'get'],
@@ -1503,6 +1513,53 @@ export const PERMISSION = {
   loadbalancer_health_checks_create: ['compute', 'loadbalancer_health_checks', 'create'],
   loadbalancer_health_checks_delete: ['compute', 'loadbalancer_health_checks', 'delete'],
   loadbalancer_health_checks_update: ['compute', 'loadbalancer_health_checks', 'update'],
+
+  // LLM
+  llms_list: ['llm', 'llms', 'list'],
+  llms_get: ['llm', 'llms', 'get'],
+  llms_create: ['llm', 'llms', 'create'],
+  llms_update: ['llm', 'llms', 'update'],
+  llms_delete: ['llm', 'llms', 'delete'],
+  llms_perform_syncstatus: ['llm', 'llms', 'perform', 'syncstatus'],
+  llms_perform_change_owner: ['llm', 'llms', 'perform', 'change-owner'],
+  llms_perform_public: ['llm', 'llms', 'perform', 'public'],
+  llms_perform_probed_models: ['llm', 'llms', 'perform', 'probed-models'],
+  llms_perform_quick_models: ['llm', 'llms', 'perform', 'quick-models'],
+
+  llm_skus_list: ['llm', 'llm_skus', 'list'],
+  llm_skus_get: ['llm', 'llm_skus', 'get'],
+  llm_skus_create: ['llm', 'llm_skus', 'create'],
+  llm_skus_update: ['llm', 'llm_skus', 'update'],
+  llm_skus_delete: ['llm', 'llm_skus', 'delete'],
+  llm_skus_perform_syncstatus: ['llm', 'llm_skus', 'perform', 'syncstatus'],
+  llm_skus_perform_change_owner: ['llm', 'llm_skus', 'perform', 'change-owner'],
+  llm_skus_perform_public: ['llm', 'llm_skus', 'perform', 'public'],
+
+  llm_images_list: ['llm', 'llm_images', 'list'],
+  llm_images_get: ['llm', 'llm_images', 'get'],
+  llm_images_create: ['llm', 'llm_images', 'create'],
+  llm_images_update: ['llm', 'llm_images', 'update'],
+  llm_images_delete: ['llm', 'llm_images', 'delete'],
+  llm_images_perform_syncstatus: ['llm', 'llm_images', 'perform', 'syncstatus'],
+  llm_images_perform_change_owner: ['llm', 'llm_images', 'perform', 'change-owner'],
+  llm_images_perform_public: ['llm', 'llm_images', 'perform', 'public'],
+
+  llm_instant_models_list: ['llm', 'llm_instant_models', 'list'],
+  llm_instant_models_get: ['llm', 'llm_instant_models', 'get'],
+  llm_instant_models_create: ['llm', 'llm_instant_models', 'create'],
+  llm_instant_models_update: ['llm', 'llm_instant_models', 'update'],
+  llm_instant_models_delete: ['llm', 'llm_instant_models', 'delete'],
+  llm_instant_models_perform_syncstatus: ['llm', 'llm_instant_models', 'perform', 'syncstatus'],
+  llm_instant_models_perform_change_owner: ['llm', 'llm_instant_models', 'perform', 'change-owner'],
+  llm_instant_models_perform_public: ['llm', 'llm_instant_models', 'perform', 'public'],
+
+  billing_resource_checks_list: ['compute', 'billing_resource_checks', 'list'],
+
+  mcp_agents_list: ['llm', 'mcp_agents', 'list'],
+  mcp_agents_get: ['llm', 'mcp_agents', 'get'],
+  mcp_agents_create: ['llm', 'mcp_agents', 'create'],
+  mcp_agents_update: ['llm', 'mcp_agents', 'update'],
+  mcp_agents_delete: ['llm', 'mcp_agents', 'delete'],
 
   ...extraPermissions,
 }

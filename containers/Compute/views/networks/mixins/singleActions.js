@@ -38,11 +38,11 @@ export default {
                   refresh: this.refresh,
                 })
               },
-              meta: () => {
+              meta: (obj) => {
                 const ret = { validate: true }
                 const isOneCloud = this.data.brand === 'OneCloud'
 
-                if (obj.driver === 'vfio-pci') {
+                if (obj && obj.driver === 'vfio-pci') {
                   ret.validate = false
                   return ret
                 }
@@ -93,7 +93,39 @@ export default {
                   server: this.data,
                 })
               },
-              hidden: this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_change_sub_ip'),
+              hidden: this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_change_sub_ip') || (this.hiddenActions || []).includes('change_sub_ip'),
+            },
+            {
+              label: i18n.t('compute.set_nic_num_queue'),
+              action: (obj) => {
+                this.createDialog('VmSetNicNumQueueDialog', {
+                  data: [obj],
+                  columns: this.columns,
+                  refresh: this.refresh,
+                  server: this.data,
+                  onManager: this.onManager,
+                })
+              },
+              meta: (obj) => {
+                const ret = {
+                  validate: true,
+                  tooltip: null,
+                }
+                const isOneCloud = this.data.brand === 'OneCloud'
+
+                if (!isOneCloud) {
+                  ret.validate = false
+                  ret.tooltip = i18n.t('compute.text_391')
+                  return ret
+                }
+                if (this.data.status !== 'ready') {
+                  ret.validate = false
+                  ret.tooltip = i18n.t('compute.text_1357')
+                  return ret
+                }
+                return ret
+              },
+              hidden: () => !hasSetupKey(['onecloud']),
             },
             {
               label: i18n.t('compute.detach_network'),
@@ -122,7 +154,7 @@ export default {
                 ret.validate = true
                 return ret
               },
-              hidden: this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_detach_nic'),
+              hidden: this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_detach_nic') || (this.hiddenActions || []).includes('detach_network'),
             },
           ]
         },

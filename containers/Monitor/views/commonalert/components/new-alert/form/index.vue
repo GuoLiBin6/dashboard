@@ -104,11 +104,11 @@
         :select-props="{ mode: 'multiple', placeholder: $t('common.tips.select', [$t('monitor.recipient')]) }"
         :params="contactParams" />
     </a-form-item>
-    <a-form-item v-if="notifyTypes.includes('recipient') && contactArrOpts && contactArrOpts.length > 0" :label="$t('monitor.channel')">
+    <a-form-item v-if="contactArrAllOpts && contactArrAllOpts.length > 0" :label="$t('monitor.channel')">
       <a-checkbox-group
         v-decorator="decorators.channel">
         <a-checkbox
-          v-for="v in contactArrOpts"
+          v-for="v in contactArrAllOpts"
           :key="v.label"
           :value="v.value"
           :disabled="v.disabled">
@@ -140,7 +140,8 @@
       v-if="notifyTypes.includes('robot')"
       :label="$t('monitor.text_11')"
       :placeholder="$t('common.tips.select', [$t('monitor.text_11')])"
-      :decorator="decorators.robot_ids" />
+      :decorator="decorators.robot_ids"
+      :getParams="robotParams" />
   </a-form>
 </template>
 
@@ -153,6 +154,8 @@ import ScopeRadio from '@/sections/ScopeRadio'
 import { levelMaps, preiodMaps } from '@Monitor/constants'
 import { resolveValueChangeField } from '@/utils/common/ant'
 import NotifyTypes from '@/sections/NotifyTypes'
+import workflowMixin from '@/mixins/workflow'
+import { WORKFLOW_TYPES } from '@/constants/workflow'
 import Condition from './Condition'
 
 export default {
@@ -168,6 +171,7 @@ export default {
       form: this.form,
     }
   },
+  mixins: [workflowMixin],
   props: {
     formItemLayout: {
       type: Object,
@@ -369,6 +373,62 @@ export default {
               ],
             },
           ],
+          threshold_start: i => [
+            `threshold_start[${i}]`,
+            {
+              initialValue: initialValue.threshold_start || 1,
+              validateFirst: true,
+              rules: [
+                { required: true, message: this.$t('monitor.commonalert.threshold.message') },
+                {
+                  validator: (rule, value, callback) => {
+                    if (!(/^\d+(\.\d+)?$/.test(value))) {
+                      callback(this.$t('monitor.validate_number'))
+                      return
+                    }
+                    const endValue = this.form.fc.getFieldValue(`threshold_end[${i}]`)
+                    if (endValue !== undefined && endValue !== null && endValue !== '') {
+                      const start = parseFloat(value)
+                      const end = parseFloat(endValue)
+                      if (!isNaN(start) && !isNaN(end) && start >= end) {
+                        callback(this.$t('monitor.commonalert.threshold_start_lt_end'))
+                        return
+                      }
+                    }
+                    callback()
+                  },
+                },
+              ],
+            },
+          ],
+          threshold_end: i => [
+            `threshold_end[${i}]`,
+            {
+              initialValue: initialValue.threshold_end || 2,
+              validateFirst: true,
+              rules: [
+                { required: true, message: this.$t('monitor.commonalert.threshold.message') },
+                {
+                  validator: (rule, value, callback) => {
+                    if (!(/^\d+(\.\d+)?$/.test(value))) {
+                      callback(this.$t('monitor.validate_number'))
+                      return
+                    }
+                    const startValue = this.form.fc.getFieldValue(`threshold_start[${i}]`)
+                    if (startValue !== undefined && startValue !== null && startValue !== '') {
+                      const start = parseFloat(startValue)
+                      const end = parseFloat(value)
+                      if (!isNaN(start) && !isNaN(end) && end <= start) {
+                        callback(this.$t('monitor.commonalert.threshold_end_gt_start'))
+                        return
+                      }
+                    }
+                    callback()
+                  },
+                },
+              ],
+            },
+          ],
         },
         filters: {
           tagCondition: i => [
@@ -391,7 +451,7 @@ export default {
           tagOperator: i => [
             `tagOperators[${i}]`,
             {
-              initialValue: '=',
+              initialValue: '=~',
               rules: [
                 { required: true, message: this.$t('common.select') },
               ],
@@ -440,7 +500,7 @@ export default {
         notify_type: [
           'notify_type',
           {
-            initialValue: initialValue.notifyTypes,
+            initialValue: initialValue.notifyTypes || [],
             rules: [
               { required: true, message: this.$t('common.tips.select', [this.$t('monitor.notification_type')]) },
             ],
@@ -449,7 +509,7 @@ export default {
         roles: [
           'roles',
           {
-            initialValue: initialValue.roles,
+            initialValue: initialValue.roles || [],
             rules: [
               { required: true, message: this.$t('common.tips.select', [this.$t('monitor.role')]) },
             ],
@@ -458,7 +518,7 @@ export default {
         recipients: [
           'recipients',
           {
-            initialValue: initialValue.recipients,
+            initialValue: initialValue.recipients || [],
             rules: [
               { required: true, message: this.$t('common.tips.select', [this.$t('monitor.recipient')]) },
             ],
@@ -467,7 +527,7 @@ export default {
         robot_ids: [
           'robot_ids',
           {
-            initialValue: initialValue.robot_ids,
+            initialValue: initialValue.robot_ids || [],
             rules: [
               { required: true, message: this.$t('common.tips.select', [this.$t('monitor.text_11')]) },
             ],
@@ -476,7 +536,7 @@ export default {
         channel: [
           'channel',
           {
-            initialValue: initialValue.channel,
+            initialValue: initialValue.channel || [],
           },
         ],
       },
@@ -548,6 +608,21 @@ export default {
         limit: 0,
       }
     },
+    robotParams () {
+      if (this.currentScope === 'project' && this.formScopeParams.project_id) {
+        return {
+          scope: this.currentScope,
+          project_id: this.formScopeParams.project_id,
+        }
+      }
+      if (this.currentScope === 'domain' && this.formScopeParams.domain_id) {
+        return {
+          scope: this.currentScope,
+          project_domain_id: this.formScopeParams.domain_id,
+        }
+      }
+      return { scope: this.currentScope }
+    },
     metricTypeOpts () {
       return this.res_types.map(val => {
         const label = this.$t(`dictionary.${val}`)
@@ -556,6 +631,24 @@ export default {
           label,
         }
       })
+    },
+    contactArrAllOpts () {
+      const ret = []
+      if (this.checkWorkflowEnabled(WORKFLOW_TYPES.ALERT_EVENT)) {
+        ret.push({
+          value: 'alert_event',
+          label: this.$t('common.workflow.alert_event'),
+          disabled: false,
+        })
+      }
+      if (this.checkWorkflowEnabled(WORKFLOW_TYPES.ALERT_TICKET)) {
+        ret.push({
+          value: 'alert_ticket',
+          label: this.$t('common.workflow.alert_ticket'),
+          disabled: false,
+        })
+      }
+      return [...this.contactArrOpts, ...ret]
     },
   },
   watch: {
@@ -587,7 +680,7 @@ export default {
     contactArrOpts () {
       const ect = this.form.fc.getFieldValue('channel')
       if (ect) {
-        let newContactTypes = this.contactArrOpts.filter((c) => { return ect.indexOf(c.value) >= 0 }).map((c) => c.value)
+        let newContactTypes = this.contactArrAllOpts.filter((c) => { return ect.indexOf(c.value) >= 0 }).map((c) => c.value)
         if (newContactTypes.length === 0) {
           newContactTypes = ['webconsole']
         }
@@ -637,9 +730,32 @@ export default {
           })
           conditionRef.metricValueChange(item.field, { key: conditionList[idx].key })
           setTimeout(() => {
-            this.form.fc.setFieldsValue({
-              [`threshold[${conditionList[idx].key}]`]: item.threshold,
-            })
+            const comparator = item.comparator
+            if (comparator === 'within_range' || comparator === 'outside_range') {
+              // 范围类型：从 threshold_range 读取数据
+              let thresholdArray = []
+              if (Array.isArray(item.threshold_range) && item.threshold_range.length >= 2) {
+                thresholdArray = item.threshold_range
+              } else if (item.threshold_start !== undefined && item.threshold_end !== undefined) {
+                thresholdArray = [item.threshold_start, item.threshold_end]
+              } else if (Array.isArray(item.threshold) && item.threshold.length >= 2) {
+                thresholdArray = item.threshold
+              } else if (item.threshold !== undefined) {
+                // 兼容处理：如果只有 threshold，则拆分成数组
+                thresholdArray = [item.threshold, item.threshold]
+              } else {
+                thresholdArray = [1, 2]
+              }
+              this.form.fc.setFieldsValue({
+                [`threshold[${conditionList[idx].key}]`]: thresholdArray,
+                [`threshold_start[${conditionList[idx].key}]`]: thresholdArray[0],
+                [`threshold_end[${conditionList[idx].key}]`]: thresholdArray[1],
+              })
+            } else {
+              this.form.fc.setFieldsValue({
+                [`threshold[${conditionList[idx].key}]`]: item.threshold,
+              })
+            }
           }, 100)
         })
       })
@@ -787,20 +903,34 @@ export default {
         const tags = []
         if (fd.metric_key[key]) model.measurement = fd.metric_key[key]
         if (fd.reduce[key]) params.reduce = fd.reduce[key]
-        if (fd.threshold[key]) params.threshold = fd.threshold[key]
         if (fd.comparator[key]) {
           params.comparator = fd.comparator[key]
           if (params.comparator === 'nodata') {
             params.condition_type = 'nodata_query'
+          } else if (params.comparator === 'within_range' || params.comparator === 'outside_range') {
+            params.threshold_range = [fd.threshold_start[key] || fd.threshold[key], fd.threshold_end[key] || fd.threshold[key]]
+          } else {
+            // 非范围类型：threshold 是单个值
+            if (fd.threshold && fd.threshold[key]) {
+              params.threshold = fd.threshold[key]
+            }
+          }
+        } else {
+          if (fd.threshold && fd.threshold[key]) {
+            params.threshold = fd.threshold[key]
           }
         }
         if (fd.metric_value[key]) model.select = [[{ type: 'field', params: [fd.metric_value[key]] }]]
         if (R.is(Object, fd.tagValues)) {
           R.forEachObjIndexed((value, key) => {
             if (value) {
+              let val = value
+              if ((fd.tagOperators[key] === '=~' || fd.tagOperators[key] === '!~') && val && val.length) {
+                val = `/${val.map(v => `^${v}$`).join('|')}/`
+              }
               const tag = {
                 key: fd.tagKeys[key],
-                value,
+                value: val,
                 operator: fd.tagOperators[key],
               }
               if (fd.tagConditions && fd.tagConditions[key]) {

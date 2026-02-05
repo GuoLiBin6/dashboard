@@ -7,7 +7,7 @@
       </a-alert>
       <a-form :form="form.fc" hideRequiredMark>
         <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-bind="formItemLayout">
-          <domain-project :fc="form.fc" :form-layout="formItemLayout" :decorators="{ project: decorators.project, domain: decorators.domain }" />
+          <domain-project :fc="form.fc" :form-layout="formItemLayout" isDefaultSelect :decorators="{ project: decorators.project, domain: decorators.domain }" />
         </a-form-item>
         <a-form-item :label="$t('compute.text_428')" v-bind="formItemLayout">
           <a-input
@@ -21,6 +21,12 @@
         <a-form-item :label="$t('common.description')" v-bind="formItemLayout">
           <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
         </a-form-item>
+        <a-form-item :label="$t('common.resource_type')" v-bind="formItemLayout">
+          <a-select v-decorator="decorators.type" :disabled="params.type === 'update'">
+            <a-select-option value="server" v-if="types.includes('server')">{{$t('dictionary.server')}}</a-select-option>
+            <a-select-option value="disk" v-if="types.includes('disk')">{{$t('dictionary.disk')}}</a-select-option>
+          </a-select>
+        </a-form-item>
         <a-form-item :label="$t('compute.text_431')" v-bind="formItemLayout">
           <a-checkbox-group v-decorator="decorators.repeat_weekdays">
             <a-checkbox
@@ -30,7 +36,7 @@
             </a-checkbox-group>
         </a-form-item>
         <a-form-item :label="$t('compute.text_432')" v-bind="formItemLayout">
-          <a-button-group v-decorator="decorators.time_points">
+          <!-- <a-button-group v-decorator="decorators.time_points">
             <a-button
                 class="select-btn"
                 v-for="(time, idx) of timeOptions"
@@ -38,12 +44,15 @@
                 :key="idx"
                 :type="form.fd.time_points.includes(idx) ? 'primary' : ''"
                 @click="timeSelectHandle(idx)">{{ time }}</a-button>
-          </a-button-group>
+          </a-button-group> -->
+          <a-select v-decorator="decorators.time_points" mode="multiple">
+            <a-select-option v-for="(time, idx) in timeOptions" :key="idx" :value="idx">{{time}}</a-select-option>
+          </a-select>
         </a-form-item>
         <a-form-item :label="$t('compute.text_433')" v-bind="formItemLayout">
           <a-radio-group v-decorator="decorators.alwaysReserved">
             <div class="mb-2">
-              <a-radio :value="false">
+              <a-radio value="day" :disabled="params.type === 'update' && form.fd.alwaysReserved !== 'day'">
                 <span class="mr-2">{{$t('compute.text_1092')}}</span>
                 <a-input-number
                   size="small"
@@ -51,12 +60,28 @@
                   :step="1"
                   :max="49"
                   :min="1"
+                  :disabled="params.type === 'update' && form.fd.alwaysReserved !== 'day'"
                   step-strictly />
                 <span style="color: #606266;" class="ml-2">{{$t('compute.text_1093')}}</span>
               </a-radio>
             </div>
+            <div class="mb-2">
+              <a-radio value="count" :disabled="params.type === 'update' && form.fd.alwaysReserved !== 'count'">
+                <span class="mr-2">{{$t('compute.retention_count_prefix')}}</span>
+                <a-input-number
+                  size="small"
+                  v-decorator="decorators.retention_count"
+                  :step="1"
+                  :min="1"
+                  :disabled="params.type === 'update' && form.fd.alwaysReserved !== 'count'"
+                  step-strictly />
+                <span style="color: #606266;" class="ml-2">{{$t('compute.retention_count_suffix')}}</span>
+              </a-radio>
+            </div>
             <div>
-              <a-radio :value="true">{{$t('compute.text_1094')}}</a-radio>
+              <a-radio value="always" :disabled="params.type === 'update' && form.fd.alwaysReserved !== 'always'">
+                {{$t('compute.text_1094')}}
+              </a-radio>
             </div>
           </a-radio-group>
         </a-form-item>
@@ -71,11 +96,11 @@
 
 <script>
 import debounce from 'lodash/debounce'
-import { weekOptions, timeOptions } from '../constants'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import DomainProject from '@/sections/DomainProject'
 import validateForm, { isRequired } from '@/utils/validate'
+import { weekOptions, timeOptions } from '../constants'
 
 export default {
   name: 'CreateSnapshotPolicyDialog',
@@ -86,34 +111,56 @@ export default {
   data () {
     const tenant = this.params.extParams && this.params.extParams.tenant
     const domain = this.params.extParams && this.params.extParams.domain
+    const types = (this.params.extParams && this.params.extParams.types) || ['server', 'disk']
+    const initData = this.params.type === 'update' ? this.params.data[0] : {}
+    let alwaysReserved = 'day'
+    if (initData.retention_count) {
+      alwaysReserved = 'count'
+    } else if (initData.retention_days > 0) {
+      alwaysReserved = 'day'
+    } else {
+      alwaysReserved = 'always'
+    }
     return {
       loading: false,
       action: this.$t('compute.text_1095'),
       form: {
         fc: this.$form.createForm(this, { onValuesChange: this.onValuesChange }),
         fd: {
-          generate_name: '',
-          repeat_weekdays: [],
-          time_points: [],
-          retention_days: 7,
-          alwaysReserved: false,
+          generate_name: initData.name || '',
+          description: initData.description || '',
+          repeat_weekdays: initData.repeat_weekdays || [],
+          time_points: initData.time_points || [],
+          retention_days: initData.retention_days || 7,
+          retention_count: initData.retention_count || 7,
+          type: initData.type || types[0],
+          alwaysReserved,
         },
       },
+      types,
       decorators: {
         generate_name: [
           'generate_name',
           {
             validateFirst: true,
+            initialValue: initData.name || '',
             rules: [
               { required: true, message: this.$t('compute.text_1090') },
               { validator: validateForm('serverName') },
             ],
           },
         ],
-        description: ['description'],
+        description: ['description', { initialValue: initData.description || '' }],
+        type: [
+          'type',
+          {
+            initialValue: initData.type || types[0],
+          },
+        ],
         repeat_weekdays: [
           'repeat_weekdays',
           {
+            initialValue: initData.repeat_weekdays || [],
             rules: [
               { required: true, message: this.$t('compute.text_1096') },
             ],
@@ -122,6 +169,7 @@ export default {
         time_points: [
           'time_points',
           {
+            initialValue: initData.time_points || [],
             rules: [
               { required: true, message: this.$t('compute.text_1097') },
             ],
@@ -130,19 +178,28 @@ export default {
         retention_days: [
           'retention_days',
           {
-            initialValue: 7,
+            initialValue: initData.retention_days || 7,
           },
         ],
         alwaysReserved: [
           'alwaysReserved',
           {
-            initialValue: false,
+            initialValue: alwaysReserved,
+          },
+        ],
+        retention_count: [
+          'retention_count',
+          {
+            initialValue: initData.retention_count || 7,
+            rules: [
+              { required: true, message: this.$t('common.tips.input', [this.$t('compute.retention_count')]) },
+            ],
           },
         ],
         domain: [
           'domain',
           {
-            initialValue: domain || this.$store.getters.userInfo.projectDomainId,
+            initialValue: initData.domain_id || domain || this.$store.getters.userInfo.projectDomainId,
             rules: [
               { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
             ],
@@ -151,7 +208,7 @@ export default {
         project: [
           'project',
           {
-            initialValue: tenant || this.$store.getters.userInfo.projectId,
+            initialValue: initData.tenant_id || tenant || this.$store.getters.userInfo.projectId,
             rules: [
               { validator: isRequired(), message: this.$t('rules.project'), trigger: 'change' },
             ],
@@ -192,13 +249,18 @@ export default {
         this.snapshotpolicies = data
       })
     },
-    async doCreateSnapshotPolicySubmit () {
-      const { alwaysReserved, domain, project, ...rest } = this.form.fd
+    genParams () {
+      const { alwaysReserved, retention_count, retention_days, domain, project, time_points, ...rest } = this.form.fd
       const params = {
         ...rest,
       }
-      if (alwaysReserved) {
+      if (alwaysReserved === 'count') {
+        params.retention_count = retention_count
         params.retention_days = -1
+      } else if (alwaysReserved === 'always') {
+        params.retention_days = -1
+      } else if (alwaysReserved === 'day') {
+        params.retention_days = retention_days
       }
       if (domain) {
         params.domain = domain.key
@@ -206,16 +268,34 @@ export default {
       if (project) {
         params.tenant = project.key
       }
+      params.time_points = time_points
+      return params
+    },
+    async doCreateSnapshotPolicySubmit () {
+      const params = this.genParams()
       return this.manager.create({ data: params })
+    },
+    async doUpdateSnapshotPolicySubmit () {
+      const params = this.genParams()
+      return this.params.onManager('update', {
+        id: this.params.data[0].id,
+        managerArgs: {
+          data: { ...params, name: this.form.fd.generate_name },
+        },
+      })
     },
     async handleConfirm () {
       this.loading = true
       try {
         await this.form.fc.validateFields()
-        await this.doCreateSnapshotPolicySubmit()
+        if (this.params.type === 'update') {
+          await this.doUpdateSnapshotPolicySubmit()
+        } else {
+          await this.doCreateSnapshotPolicySubmit()
+          this.params.refresh && this.params.refresh()
+          this.params.success && this.params.success()
+        }
         this.loading = false
-        this.params.refresh && this.params.refresh()
-        this.params.success && this.params.success()
         this.cancelDialog()
       } catch (error) {
         this.loading = false
@@ -226,12 +306,12 @@ export default {
       this.form.fd.generate_name = val
       this.debounceFetchSnapshotpolicies()
     },
-    timeSelectHandle (val) {
-      this.form.fd.time_points = [val]
-      this.$nextTick(() => {
-        this.form.fc.setFieldsValue({ time_points: [val] })
-      })
-    },
+    // timeSelectHandle (val) {
+    //   this.form.fd.time_points = [val]
+    //   this.$nextTick(() => {
+    //     this.form.fc.setFieldsValue({ time_points: [val] })
+    //   })
+    // },
     onValuesChange (props, values) {
       Object.keys(values).forEach((key) => {
         this.form.fd[key] = values[key]

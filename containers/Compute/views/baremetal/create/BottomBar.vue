@@ -22,27 +22,12 @@
       </template>
       <template v-slot:right>
         <div class="d-flex align-items-center">
-          <!-- <div v-if="hasMeterService" class="mr-4 d-flex align-items-center">
-            <div class="text-truncate">{{$t('compute.text_286')}}</div>
-            <div class="ml-2 prices">
-              <div class="hour text-truncate">
-                <template v-if="price">
-                  <m-animated-number :value="price" :formatValue="formatToPrice" />
-                </template>
-                <template v-else>---</template>
-              </div>
-              <div class="tips text-truncate" v-if="!isPackage">
-                <template v-if="priceTips">{{$t('compute.text_287', [ priceTips.day , priceTips.month ])}}</template>
-                <template v-else>---</template>
-              </div>
-            </div>
-          </div> -->
           <a-button
             type="primary"
             native-type="submit"
             html-type="submit"
             :loading="loading"
-            :disabled="!!errors.length">{{ isOpenWorkflow && !isInstallOperationSystem ? $t('compute.text_288') : $t('compute.text_289') }}</a-button>
+            :disabled="!!errors.length">{{ isOpenWorkflow && !isInstallOperationSystem ? (isInitForm ? $t('common.modify_workflow') : $t('compute.text_288')) : $t('compute.text_289') }}</a-button>
           <a-button class="ml-3" @click="handleCancel">{{$t('common.cancel')}}</a-button>
         </div>
         <side-errors :error-title="$t('compute.text_290')" :errors="errors" @update:errors="changeErrors" />
@@ -57,6 +42,7 @@ import { RESOURCE_TYPES_MAP, SERVER_TYPE, BILL_TYPES_MAP } from '@Compute/consta
 import { sizestrWithUnit } from '@/utils/utils'
 // import { HYPERVISORS_MAP, PROVIDER_MAP } from '@/constants'
 import SideErrors from '@/sections/SideErrors'
+import { currencyUnitMap } from '@/constants/currency'
 
 export default {
   name: 'BottomBar',
@@ -102,6 +88,10 @@ export default {
     hasMeterService: {
       type: Boolean,
       default: true,
+    },
+    isInitForm: {
+      type: Boolean,
+      default: false,
     },
   },
   data () {
@@ -196,7 +186,7 @@ export default {
       this.$emit('update:errors', [])
     },
     formatToPrice (val) {
-      let ret = `¥ ${val.toFixed(2)}`
+      let ret = `${currencyUnitMap.CNY.sign} ${val.toFixed(2)}`
       if (this.isPackage) {
         return ret
       }

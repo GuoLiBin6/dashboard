@@ -5,14 +5,15 @@
     show-tag-columns2
     show-tag-filter
     :list="list"
-    :columns="columns"
+    :columns="templateListColumns || columns"
     :group-actions="groupActions"
     :single-actions="singleActions"
     :export-data-options="exportDataOptions"
     :showSearchbox="showSearchbox"
-    :showSingleActions="showActions"
+    :showSingleActions="isTemplate ? false : showActions"
     :showGroupActions="showActions && showGroupActions"
-    :before-show-menu="beforeShowMenu" />
+    :before-show-menu="beforeShowMenu"
+    :show-page="!isTemplate" />
 </template>
 
 <script>
@@ -28,12 +29,15 @@ import {
   getRegionFilter,
   getDescriptionFilter,
   getGuestStatusFilter,
+  getDistinctFieldsFilter,
 } from '@/utils/common/tableFilter'
 import { getDisabledProvidersActionMeta } from '@/utils/common/hypervisor'
+import { diskResizeConfig } from '@Compute/views/disk/utils'
 import expectStatus from '@/constants/expectStatus'
 import WindowsMixin from '@/mixins/windows'
 import GlobalSearchMixin from '@/mixins/globalSearch'
 import ListMixin from '@/mixins/list'
+import ResTemplateListMixin from '@/mixins/resTemplateList'
 import { PROVIDER_MAP } from '@/constants'
 import SingleActionsMixin from '../mixins/singleActions'
 import ColumnsMixin from '../mixins/columns'
@@ -41,7 +45,7 @@ import { MEDIUM_MAP } from '../../../constants'
 
 export default {
   name: 'DiskList',
-  mixins: [WindowsMixin, ListMixin, GlobalSearchMixin, ColumnsMixin, SingleActionsMixin],
+  mixins: [WindowsMixin, ListMixin, GlobalSearchMixin, ColumnsMixin, SingleActionsMixin, ResTemplateListMixin],
   props: {
     id: String,
     getParams: {
@@ -187,6 +191,51 @@ export default {
               // hidden: () => this.$isScopedPolicyMenuHidden('disk_hidden_menus.disk_perform_set_tags'),
             },
             {
+              label: this.$t('compute.disk_perform_resize'),
+              permission: 'disks_perform_resize',
+              action: obj => {
+                this.createDialog('DiskCapacityUpdateDialog', {
+                  data: this.list.selectedItems,
+                  columns: this.columns,
+                  refresh: this.refresh,
+                })
+              },
+              meta: () => {
+                const ret = { validate: true, tooltip: '' }
+                this.list.selectedItems.forEach(obj => {
+                  const provider = obj.provider?.toLowerCase()
+                  if (diskResizeConfig[provider]) {
+                    if (!diskResizeConfig[provider](obj).validate) {
+                      ret.validate = false
+                      ret.tooltip = diskResizeConfig[provider](obj).tooltip
+                      return ret
+                    }
+                  }
+                  if (obj.status === 'migrating') {
+                    ret.validate = false
+                    ret.tooltip = this.$t('compute.disk_migrating_tip')
+                    return ret
+                  }
+                })
+                return ret
+              },
+              extraMeta: obj => {
+                const ret = { validate: true, tooltip: '' }
+                this.list.selectedItems.forEach(obj => {
+                  const v = getDisabledProvidersActionMeta({
+                    row: obj,
+                    disabledProviders: ['BingoCloud', 'SangFor'],
+                  })
+                  if (!v.validate) {
+                    ret.validate = false
+                    ret.tooltip = v.tooltip
+                  }
+                })
+                return ret
+              },
+              hidden: () => this.$isScopedPolicyMenuHidden('disk_hidden_menus.disk_perform_resize'),
+            },
+            {
               label: this.$t('compute.perform_delete'),
               permission: 'disks_delete',
               action: () => {
@@ -229,10 +278,25 @@ export default {
         label: this.$t('table.title.disk_storage'),
         jointFilter: true,
       },
-      guest_id: {
+      server_id: getDistinctFieldsFilter({
+        field: ['id', 'name'],
+        type: 'extra_field',
         label: this.$t('res.server'),
-        hiddenField: 'guest',
-      },
+        dropdown: true,
+        mapper: (list, data) => {
+          const { extra_fields = [] } = data
+          const ret = extra_fields.map(item => ({ label: item.name, key: item.id })).filter(item => item.label && item.key)
+          const ret2 = ret.map(item => {
+            const len = ret.filter(l => l.label === item.label).length
+            if (len > 1) {
+              item.label = `${item.label} (${(item.key || '').substring(0, 6)})`
+            }
+            return item
+          })
+          return ret2
+        },
+        getParams: { extra_resource: 'server' },
+      }),
       disk_type: {
         label: this.$t('table.title.disk_type'),
         dropdown: true,
@@ -280,6 +344,8 @@ export default {
         id: this.id,
         resource: 'disks',
         getParams: this.getParam,
+        isTemplate: this.isTemplate,
+        templateLimit: this.templateLimit,
         filterOptions,
         filter,
         steadyStatus: {

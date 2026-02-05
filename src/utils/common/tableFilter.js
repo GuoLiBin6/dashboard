@@ -42,11 +42,14 @@ export function getBrandItems (key = 'brands', outBrands = []) {
 }
 
 export function mapperStatusToItems (items, statusModule) {
+  const scopeStatus = i18n.t(`scopeStatus.${statusModule}`) || {}
   const status = i18n.t(`status.${statusModule}`) || {}
   return items.map(item => {
     let label = item.label
     let t = ''
-    if (status) {
+    if (scopeStatus && i18n.te(`scopeStatus.${statusModule}.${item.key}`)) {
+      label = i18n.t(`scopeStatus.${statusModule}.${item.key}`)
+    } else if (status) {
       if (!R.is(String, status)) {
         label = status[item.key] || item.label
         if (label.includes('@:dictionary')) {
@@ -186,7 +189,7 @@ export function getAccountFilter ({ label = i18n.t('res.cloudaccount'), distinct
     mapper: data => {
       return data.map(item => {
         if (item.label && item.label === 'OneStack') {
-          item.label = setting.brand.en || item.label
+          item.label = setting.brand[setting.language] || setting.brand.en || item.label
         }
         return item
       })
@@ -246,13 +249,13 @@ export function getOsTypeFilter () {
 }
 
 export function getEnabledFilter (params = {}) {
-  const { label = i18n.t('table.title.enable_status') } = params
+  const { label = i18n.t('table.title.enable_status'), enableLabel = i18n.t('status.enabled.true'), disableLabel = i18n.t('status.enabled.false') } = params
   return {
     label,
     dropdown: true,
     items: [
-      { label: i18n.t('status.enabled.true'), key: 'true' },
-      { label: i18n.t('status.enabled.false'), key: 'false' },
+      { label: enableLabel, key: 'true' },
+      { label: disableLabel, key: 'false' },
     ],
   }
 }
@@ -572,7 +575,7 @@ export function getResourceTypeFilter ({ label = i18n.t('common.resource_type'),
       return data.map(item => {
         return {
           key: item.key,
-          label: translateLabel && i18n.te(`bill_resource_type.${item.key}`) ? i18n.t(`bill_resource_type.${item.key}`) : item.key,
+          label: translateLabel && i18n.te(`bill_resource_type.${item.key}`) ? `${i18n.t(`bill_resource_type.${item.key}`)} (${item.key})` : item.key || '-',
         }
       })
     },

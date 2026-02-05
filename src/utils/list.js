@@ -197,6 +197,7 @@ class CreateList {
       ctx,
       getParams,
       limit = 20,
+      templateLimit = 10,
       idKey = 'id',
       exportUseIdKey = false,
       filterOptions = {},
@@ -243,6 +244,8 @@ class CreateList {
       noListDetails = false,
       // 批量获取item的params formatter
       batchItemGetParamsFormatter = null,
+      // 列表是否为报表模板列表
+      isTemplate = false,
     },
   ) {
     // 列表唯一标识
@@ -291,7 +294,8 @@ class CreateList {
     this.refreshIntervalConfig = refreshIntervalConfig
     // 用于存放自定义列表的配置
     this.config = {
-      hiddenColumns: hiddenColumns,
+      hiddenColumns: isTemplate ? [] : hiddenColumns,
+      isTemplate: isTemplate,
       showTagKeys: [],
       showProjectTagKeys: [],
     }
@@ -325,6 +329,8 @@ class CreateList {
     this.batchCheckStatusList = []
     this.batchItemGetParamsFormatter = batchItemGetParamsFormatter
     this.totals = {}
+    this.isTemplate = isTemplate
+    this.templateLimit = templateLimit
   }
 
   // 重写selectedItems getter和setter
@@ -551,13 +557,13 @@ class CreateList {
     // if (this.noPreLoad) {
     showDetails = !this.noListDetails
     // }
-    this.params = this.genParams(offset, limit, showDetails)
+    this.params = this.genParams(offset, this.isTemplate ? this.templateLimit : limit, showDetails)
     // if (!showDetails) this.isPreLoad = true
     this.isPreLoad = false
     try {
       const fetchList = []
       // 如果有id并且没有获取过列表配置则获取列表配置
-      if (this.id) {
+      if (this.id && !this.isTemplate) {
         if (!this.configLoaded) {
           fetchList.push(this.fetchConfig())
         }
@@ -603,7 +609,9 @@ class CreateList {
       this.nextMarker = response.data.next_marker
       this.pagerType = response.data.marker_field ? 'loadMore' : 'pager'
       this.syncSelected()
-      this.checkSteadyStatus()
+      if (!this.isTemplate) {
+        this.checkSteadyStatus()
+      }
       this.total = total
       if (responseLimit > 0) {
         this.offset = responseOffset
@@ -628,6 +636,9 @@ class CreateList {
         this.fetchDataCb(response)
       }
       this.totals = response.data?.totals || {}
+      if (this.isTemplate) {
+        this.ctx.$emit('resTemplateTotal', this.total)
+      }
       // if (!showDetails && this.total > 0 && !response.data.marker_field) {
       // setTimeout(() => {
       // this.fetchData(offset, limit, true)
@@ -709,7 +720,19 @@ class CreateList {
    * @description 刷新数据，不改变当前页数和条数
    * @memberof CreateList
    */
-  refresh () {
+  async refresh () {
+    // 如果是 loadmore 类型的表格，refresh 时应该去除 paging_marker，并将 limit 设置为当前已加载的条数
+    if (this.pagerType === 'loadMore') {
+      const currentDataLength = Object.keys(this.data).length
+      const savedNextMarker = this.nextMarker
+      this.nextMarker = null // 临时清除 nextMarker，使 genParams 不添加 paging_marker
+      try {
+        return await this.fetchData(0, currentDataLength || this.getLimit())
+      } finally {
+        // 恢复 nextMarker
+        this.nextMarker = savedNextMarker
+      }
+    }
     return this.fetchData(this.offset, this.getLimit())
   }
 
@@ -860,6 +883,9 @@ class CreateList {
    * @memberof CreateList
    */
   getLimit () {
+    if (this.isTemplate) {
+      return this.templateLimit || this.limit
+    }
     if (!this.disableStorageLimit) {
       const limit = storage.get(STORAGE_LIST_LIMIT_KEY)
       return limit || this.limit
@@ -1218,6 +1244,9 @@ class CreateList {
         ...(R.is(Function, item.distinctField.getParams)
           ? item.distinctField.getParams()
           : item.distinctField.getParams),
+        ...(R.is(Function, item.getParams)
+          ? item.getParams()
+          : item.getParams),
         ...this.getOptionParams(),
       }
       params = {

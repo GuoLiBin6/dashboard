@@ -35,7 +35,7 @@
             remote
             show-sync
             :item.sync="item.network"
-            :isDefaultSelect="i === 0"
+            :isDefaultSelect="canDefaultSelect && i === 0"
             :need-params="true"
             :params="{ ...networkParamsC, $t: item.key }"
             :mapper="networkResourceMapper"
@@ -51,6 +51,7 @@
       <div :class="{ 'd-flex ml-1' : isBigScreen && !isDialog }">
         <!-- 高级 -->
         <template v-if="showAdvanced">
+          <!-- ip -->
           <template v-if="isSupportIPv4(item) && !(isSupportIPv6(item) && item.ipv6Mode === 'only' && item.requireIpv6)">
             <template v-if="item.ipShow">
               <a-form-item class="mb-0" style="display:inline-block" :wrapperCol="{ span: 24 }">
@@ -62,6 +63,7 @@
               <a-button type="link" class="mr-1 mt-1" :disabled="ipsDisabled" @click="triggerShowIp(item)">{{$t('compute.text_198')}}</a-button>
             </a-tooltip>
           </template>
+          <!-- mac -->
           <template v-if="showMacConfig">
             <template v-if="item.macShow">
               <a-form-item class="mb-0" style="display:inline-block" :wrapperCol="{ span: 24 }">
@@ -77,6 +79,7 @@
               <a-button type="link" class="mr-1 mt-1" :disabled="ipsDisabled" @click="triggerShowMac(item)">{{$t('compute.mac_config')}}</a-button>
             </a-tooltip>
           </template>
+          <!-- 透传设备 -->
           <template v-if="showDeviceConfig">
             <template v-if="item.deviceShow">
               <a-form-item class="mb-0" style="display:inline-block" :wrapperCol="{ span: 24 }">
@@ -90,6 +93,20 @@
             </template>
             <a-button v-else type="link" class="mr-1 mt-1" @click="triggerShowDevice(item)">{{ $t('compute.config_transparent_net') }}</a-button>
           </template>
+          <!-- 安全组 -->
+        <template v-if="showSecgroupConfig">
+          <template v-if="item.secgroupShow">
+            <a-form-item class="mb-0" style="display:inline-block" :wrapperCol="{ span: 24 }">
+              <base-select
+                v-decorator="decorator.secgroups(item.key)"
+                resource="secgroups"
+                :params="secgroupParams"
+                :select-props="{ allowClear: true, placeholder: $t('compute.secgroup_tips'), mode: 'multiple' }" />
+            </a-form-item>
+          </template>
+          <a-button v-else type="link" class="mr-1 mt-1" @click="triggerShowSecgroup(item)">{{ $t('compute.config_secgroup') }}</a-button>
+        </template>
+          <!-- ipv6 -->
           <template>
             <a-form-item class="mb-0" style="display:inline-block" :wrapperCol="{ span: 24 }" v-if="isSupportIPv6(item) && isSupportIPv4(item)">
               <div class="d-flex align-items-center">
@@ -164,7 +181,7 @@ export default {
     decorator: {
       type: Object,
       required: true,
-      validator: val => R.is(Function, val.vpcs) && R.is(Function, val.networks) && R.is(Function, val.ips) && R.is(Function, val.macs) && R.is(Function, val.ips6),
+      validator: val => R.is(Function, val.vpcs) && R.is(Function, val.networks) && R.is(Function, val.ips) && R.is(Function, val.macs) && R.is(Function, val.ips6) && R.is(Function, val.secgroups),
     },
     isBonding: {
       type: Boolean,
@@ -209,6 +226,14 @@ export default {
       type: Boolean,
       default: false,
     },
+    showSecgroupConfig: {
+      type: Boolean,
+      default: false,
+    },
+    secgroupParams: {
+      type: Object,
+      default: () => ({}),
+    },
     hiddenAdd: {
       type: Boolean,
       default: false,
@@ -222,6 +247,7 @@ export default {
       networkOpts: [],
       screenWidth: document.body.clientWidth,
       showAdvanced: false,
+      canDefaultSelect: true,
     }
   },
   computed: {
@@ -285,6 +311,86 @@ export default {
     window.removeEventListener('resize', this.onResize)
   },
   methods: {
+    initData (data) {
+      this.canDefaultSelect = false
+      this.networkList = data.map(item => {
+        const obj = {
+          ...item,
+          key: uuid(),
+          network: { id: item.network },
+          vpc: { id: item.vpc },
+          ipShow: !!item.address,
+          ipv6Show: false,
+          requireIpv6: false,
+          ipv6Mode: 'all',
+          macShow: false,
+          deviceShow: false,
+          secgroupShow: false,
+          ip: item.address,
+        }
+        if (item.address) {
+          obj.ipShow = true
+          this.showAdvanced = true
+        }
+        if (item.mac) {
+          obj.macShow = true
+          this.showAdvanced = true
+        }
+        if (item.require_ipv6) {
+          obj.requireIpv6 = true
+          obj.ipv6Mode = 'all'
+          this.showAdvanced = true
+        }
+        if (item.strict_ipv6 && item.require_ipv6) {
+          obj.ipv6Mode = 'only'
+        }
+        if (item.address6) {
+          obj.ipv6Show = true
+          this.showAdvanced = true
+        }
+        if (item.sriov_device && item.sriov_device.model) {
+          obj.deviceShow = true
+          this.showAdvanced = true
+        }
+        if (item.secgroups && item.secgroups.length > 0) {
+          obj.secgroupShow = true
+          this.showAdvanced = true
+        }
+        return obj
+      })
+      this.$nextTick(() => {
+        this.form.fc.setFieldsValue({
+          [this.decorator.vpcs(this.networkList[0].key)[0]]: this.networkList[0].vpc.id,
+        })
+        for (const item of this.networkList) {
+          const value = {}
+          value[this.decorator.networks(item.key)[0]] = item.network.id
+          if (item.address) {
+            value[this.decorator.ips(item.key, item.network.id)[0]] = item.address
+          }
+          if (item.mac) {
+            value[this.decorator.macs(item.key, item.network.id)[0]] = item.mac
+          }
+          value[this.decorator.ipv6s(item.key, item.network.id)[0]] = item.requireIpv6
+          value[this.decorator.ipv6_mode(item.key, item.network.id)[0]] = item.ipv6Mode
+          if (item.address6) {
+            value[this.decorator.ips6(item.key, item.network.id)[0]] = item.address6.replace(this.getIpv6Prefix(item.address6), '')
+          }
+          if (item.sriov_device && item.sriov_device.model) {
+            value[this.decorator.devices(item.key)[0]] = item.sriov_device.model
+          }
+          if (item.secgroups && item.secgroups.length > 0) {
+            value[this.decorator.secgroups(item.key)[0]] = item.secgroups
+          }
+          setTimeout(() => {
+            this.form.fc.setFieldsValue(value)
+          }, 2000)
+          setTimeout(() => {
+            this.form.fc.setFieldsValue(value)
+          }, 4000)
+        }
+      })
+    },
     getVpcTag (data) {
       if (!data.cidr_block) return data.name
       return `${data.name}（${data.cidr_block}）`
@@ -337,6 +443,8 @@ export default {
         macShow: false,
         deviceShow: false,
         key: uid,
+        ip: '',
+        secgroupShow: false,
       }
       if (this.vpcObj) {
         data.vpc = this.vpcObj
@@ -373,6 +481,9 @@ export default {
     triggerShowDevice (item, i) {
       item.deviceShow = !item.deviceShow
     },
+    triggerShowSecgroup (item, i) {
+      item.secgroupShow = !item.secgroupShow
+    },
     decrease (uid, index) {
       this.networkList.splice(index, 1)
     },
@@ -387,6 +498,7 @@ export default {
       this.$set(this.networkList[0], 'ipv6Mode', 'all')
       this.$set(this.networkList[0], 'macShow', false)
       this.$set(this.networkList[0], 'deviceShow', false)
+      this.$set(this.networkList[0], 'secgroupShow', false)
       this.ipsDisabled = ipsDisabled
     },
     networkChange (val, item, i) {
@@ -448,12 +560,16 @@ export default {
       }
       return false
     },
-    fetchVpcSuccessHandle (data, item) {
-      item.vpc = data[0]
+    fetchVpcSuccessHandle (data = [], item) {
+      let target = data[0] || {}
+      if (item.vpc?.id && data.some(i => i.id === item.vpc?.id)) {
+        target = data.filter(i => i.id === item.vpc?.id)[0]
+      }
+      item.vpc = target
       this.$nextTick(() => {
-        this.form.fc.setFieldsValue({ [`vpcs[${item.key}]`]: data?.[0]?.key, vpcs: { [item.key]: data?.[0]?.key } })
+        this.form.fc.setFieldsValue({ [`vpcs[${item.key}]`]: target?.key, vpcs: { [item.key]: target?.key } })
       })
-      this.vpcSelectChange([data[0]], 0, item)
+      this.vpcSelectChange([target], 0, item)
       // this.fetchNetworkOpts(this.networkParamsC, item)
     },
     fetchNetworkSuccessHandle (data, item) {

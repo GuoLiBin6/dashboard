@@ -314,28 +314,28 @@ export const getSearchMaps = (searchRes = {}) => {
       },
       resData: {},
     },
-    networkinterfaces: {
-      res_name: 'networkinterfaces',
-      label: i18n.t('dictionary.networkinterface'),
-      id: 'networkinterfaces',
-      component: 'FlexNetworkList',
-      hasPermission: hasPermission({ key: 'networkcard_list' }),
-      params: {
-        common: {
-          ...commonSearchQuery,
-        },
-        name: {
-          filter: `name.contains(${getFilter('name')})`,
-        },
-        id: {
-          id: searchRes.id,
-        },
-        external_id: {
-          filter: `external_id.equals(${searchRes.external_id})`,
-        },
-      },
-      resData: {},
-    },
+    // networkinterfaces: {
+    //   res_name: 'networkinterfaces',
+    //   label: i18n.t('dictionary.networkinterface'),
+    //   id: 'networkinterfaces',
+    //   component: 'FlexNetworkList',
+    //   hasPermission: hasPermission({ key: 'networkcard_list' }),
+    //   params: {
+    //     common: {
+    //       ...commonSearchQuery,
+    //     },
+    //     name: {
+    //       filter: `name.contains(${getFilter('name')})`,
+    //     },
+    //     id: {
+    //       id: searchRes.id,
+    //     },
+    //     external_id: {
+    //       filter: `external_id.equals(${searchRes.external_id})`,
+    //     },
+    //   },
+    //   resData: {},
+    // },
     networks: {
       menu_key: 'network2',
       res_name: 'networks',
@@ -1042,7 +1042,7 @@ export const getSearchMaps = (searchRes = {}) => {
     },
     kafka: {
       menu_key: 'kafka',
-      res_name: 'mongodbs',
+      res_name: 'kafkas',
       label: i18n.t('dictionary.kafka'),
       id: 'kafka',
       component: 'KafkaList',
@@ -1193,6 +1193,43 @@ export const getSearchMaps = (searchRes = {}) => {
         },
         id: {
           id: searchRes.id,
+        },
+      },
+      resData: {},
+    },
+    deadlyResource: {
+      menu_key: 'deadly-resource',
+      res_name: 'billing_resource_checks',
+      label: i18n.t('compute.deadly_resource'),
+      id: 'deadlyResource',
+      component: 'DeadlyResourceList',
+      hasPermission: hasPermission({ key: 'billing_resource_checks_list' }),
+      params: {
+        common: {
+          ...commonSearchQuery,
+        },
+        name: {
+          filter: `name.contains(${getFilter('name')})`,
+        },
+        id: {
+          id: searchRes.id,
+        },
+      },
+      resData: {},
+    },
+    alertResource: {
+      menu_key: 'alertresource',
+      res_name: 'alert_resources',
+      label: i18n.t('dictionary.alertresource'),
+      id: 'alertResource',
+      component: 'AlertResourceList',
+      hasPermission: hasPermission({ key: 'monitorresourcealerts_list' }),
+      params: {
+        common: {
+          ...commonSearchQuery,
+        },
+        name: {
+          filter: `name.contains(${getFilter('name')})`,
         },
       },
       resData: {},

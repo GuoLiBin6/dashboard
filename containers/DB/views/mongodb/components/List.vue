@@ -1,33 +1,39 @@
 <template>
   <page-list
     show-tag-config
-    :columns="columns"
+    :columns="templateListColumns || columns"
     :group-actions="groupActions"
     :list="list"
     :single-actions="singleActions"
-    :showSingleActions="showActions"
+    :showSingleActions="isTemplate ? false : showActions"
     :showGroupActions="showActions && showGroupActions"
     :export-data-options="exportDataOptions"
     :show-tag-columns="true"
     :show-tag-columns2="true"
     :show-tag-filter="true"
-    :tag-config-params="tagConfigParams" />
+    :tag-config-params="tagConfigParams"
+    :show-page="!isTemplate" />
 </template>
 
 <script>
 import * as R from 'ramda'
 import ListMixin from '@/mixins/list'
+import ResTemplateListMixin from '@/mixins/resTemplateList'
 import { getNameFilter, getStatusFilter, getTenantFilter, getBrandFilter, getCloudProviderFilter, getAccountFilter, getDescriptionFilter } from '@/utils/common/tableFilter'
 import expectStatus from '@/constants/expectStatus'
 import WindowsMixin from '@/mixins/windows'
+import globalSearchMixins from '@/mixins/globalSearch'
 import SingleActionsMixin from '../mixins/singleActions'
 import ColumnsMixin from '../mixins/columns'
 
 export default {
   name: 'MongoDBList',
-  mixins: [WindowsMixin, ListMixin, ColumnsMixin, SingleActionsMixin],
+  mixins: [WindowsMixin, ListMixin, ColumnsMixin, SingleActionsMixin, ResTemplateListMixin, globalSearchMixins],
   props: {
     id: String,
+    getParams: {
+      type: Object,
+    },
   },
   data () {
     return {
@@ -36,12 +42,18 @@ export default {
         id: this.id,
         resource: 'mongodbs',
         apiVersion: 'v1',
-        getParams: {
-          details: true,
-        },
+        getParams: this.getParam,
+        isTemplate: this.isTemplate,
+        templateLimit: this.templateLimit,
         steadyStatus: Object.values(expectStatus.mongodb).flat(),
         filterOptions: {
           name: getNameFilter(),
+          external_id: {
+            label: this.$t('table.title.external_id'),
+          },
+          id: {
+            label: this.$t('table.title.id'),
+          },
           description: getDescriptionFilter(),
           status: getStatusFilter('mongodb'),
           ip_addr: {
@@ -52,7 +64,7 @@ export default {
               return `ip_addr.contains(${val})`
             },
           },
-          brand: getBrandFilter('mongodb_engine_brands'),
+          brand: getBrandFilter('readonly_mongodb_brands'),
           account: getAccountFilter(),
           manager: getCloudProviderFilter(),
           region: {
@@ -186,6 +198,13 @@ export default {
     this.initSidePageTab('mongodb-detail')
   },
   methods: {
+    getParam () {
+      const ret = {
+        ...this.getParams,
+        details: true,
+      }
+      return ret
+    },
     getSeachStatus () {
       const selectedStatus = ['running', 'unknown', 'sync_failed']
       const status = []

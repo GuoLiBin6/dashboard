@@ -1,12 +1,14 @@
 <template>
   <page-list
     :list="list"
-    :columns="columns"
+    :columns="templateListColumns || columns"
     :group-actions="groupActions"
     :single-actions="singleActions"
     :showSearchbox="showSearchbox"
     :showGroupActions="showGroupActions"
-    :export-data-options="exportDataOptions" />
+    :show-single-actions="!isTemplate"
+    :export-data-options="exportDataOptions"
+    :show-page="!isTemplate" />
 </template>
 
 <script>
@@ -16,6 +18,7 @@ import { getNameFilter, getEnabledFilter, getStatusFilter, getBrandFilter, getPu
 import { getEnabledSwitchActions } from '@/utils/common/tableActions'
 import WindowsMixin from '@/mixins/windows'
 import ListMixin from '@/mixins/list'
+import ResTemplateListMixin from '@/mixins/resTemplateList'
 import GlobalSearchMixin from '@/mixins/globalSearch'
 import { typeClouds } from '@/utils/common/hypervisor'
 import { isCE } from '@/utils/utils'
@@ -26,7 +29,7 @@ const providerMap = typeClouds.getProviderlowcase()
 
 export default {
   name: 'CloudaccountList',
-  mixins: [WindowsMixin, ListMixin, GlobalSearchMixin, ColumnsMixin, SingleActionsMixin],
+  mixins: [WindowsMixin, ListMixin, GlobalSearchMixin, ColumnsMixin, SingleActionsMixin, ResTemplateListMixin],
   props: {
     id: String,
     getParams: {
@@ -47,9 +50,12 @@ export default {
     return {
       batchDeleteBill: true,
       list: this.$list.createList(this, {
+        ctx: this,
         id: this.id,
         resource: 'cloudaccounts',
         getParams: this.getParam,
+        isTemplate: this.isTemplate,
+        templateLimit: this.templateLimit,
         steadyStatus: {
           status: Object.values(expectStatus.cloudaccount).flat(),
           sync_status: Object.values(expectStatus.cloudaccountSyncStatus).flat(),
@@ -188,7 +194,7 @@ export default {
               },
               {
                 label: this.$t('cloudenv.action.update_credential'),
-                permission: 'cloudaccounts_perform_update_credential',
+                permission: 'cloudaccounts_update',
                 action: () => {
                   this.createDialog('CloudaccountRerunBillDialog', {
                     data: this.list.selectedItems,
@@ -258,7 +264,7 @@ export default {
                 label: this.$t('cloudenv.text_108'),
                 permission: 'cloudaccounts_delete',
                 action: () => {
-                  const supportBillBrands = ['Aws', 'Aliyun', 'Google', 'Huawei', 'Azure', 'Qcloud']
+                  const supportBillBrands = ['Aws', 'Aliyun', 'Google', 'Huawei', 'Azure', 'Qcloud', 'Ksyun']
                   const supportBill = this.list.selectedItems.some(item => {
                     return supportBillBrands.includes(item.brand)
                   })

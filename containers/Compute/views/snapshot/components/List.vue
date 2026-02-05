@@ -4,19 +4,21 @@
     show-tag-columns2
     show-tag-filter
     :list="list"
-    :columns="columns"
+    :columns="templateListColumns || columns"
     :group-actions="groupActions"
     :single-actions="singleActions"
     :export-data-options="exportDataOptions"
     :showSearchbox="showSearchbox"
-    :showSingleActions="showActions"
-    :showGroupActions="showActions && showGroupActions" />
+    :showSingleActions="isTemplate ? false : showActions"
+    :showGroupActions="showActions && showGroupActions"
+    :show-page="!isTemplate" />
 </template>
 
 <script>
 import WindowsMixin from '@/mixins/windows'
 import GlobalSearchMixin from '@/mixins/globalSearch'
 import ListMixin from '@/mixins/list'
+import ResTemplateListMixin from '@/mixins/resTemplateList'
 import {
   getNameFilter,
   getTenantFilter,
@@ -27,6 +29,7 @@ import {
   getOsArchFilter,
   getRegionFilter,
   getDescriptionFilter,
+  getDistinctFieldsFilter,
 } from '@/utils/common/tableFilter'
 import SingleActionsMixin from '../mixins/singleActions'
 import ColumnsMixin from '../mixins/columns'
@@ -34,7 +37,7 @@ import { steadyStatus } from '../constants'
 
 export default {
   name: 'SnapshotList',
-  mixins: [WindowsMixin, ListMixin, GlobalSearchMixin, ColumnsMixin, SingleActionsMixin],
+  mixins: [WindowsMixin, ListMixin, GlobalSearchMixin, ColumnsMixin, SingleActionsMixin, ResTemplateListMixin],
   props: {
     id: String,
     getParams: {
@@ -49,6 +52,8 @@ export default {
         id: this.id,
         resource: 'snapshots',
         getParams: this.getParam,
+        isTemplate: this.isTemplate,
+        templateLimit: this.templateLimit,
         steadyStatus,
         filterOptions: {
           id: {
@@ -84,6 +89,23 @@ export default {
           },
           region: getRegionFilter(),
           os_arch: getOsArchFilter(),
+          storage: getDistinctFieldsFilter({
+            label: this.$t('compute.text_99'),
+            filter: true,
+            multiple: false,
+            type: 'extra_field',
+            field: ['id', 'name'],
+            mapper: (list, data) => {
+              const { extra_fields = [] } = data
+              const ret = extra_fields.map(item => ({ label: item.name, key: item.id })).filter(item => item.label && item.key)
+              return ret
+            },
+            formatter: (val) => {
+              const realVal = val.map(item => `'${item}'`)
+              return `storage_id.in(${realVal})`
+            },
+            getParams: { extra_resource: 'storage', module: 'snapshots' },
+          }),
         },
         responseData: this.responseData,
         hiddenColumns: ['storage_type', 'created_at', 'os_arch'],

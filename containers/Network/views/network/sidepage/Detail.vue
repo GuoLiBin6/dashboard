@@ -152,7 +152,7 @@ export default {
                   <i18n path='network.text_735' tag="div">
                     <template slot='ports'>{ row.ports }</template>
                     <template slot='ports_used'>
-                      { row.ports_used <= 0 ? 0 : <a onClick={ () => this.$emit('tab-change', 'i-p-list') }>{row.ports_used}</a> }
+                      { row.ports_used + row.ports6_used <= 0 ? 0 : <a onClick={ () => this.$emit('tab-change', 'i-p-list') }>{row.ports_used + row.ports6_used}</a> }
                     </template>
                     <template slot='reserve_vnics'>{ row.reserve_vnics }</template>
                   </i18n>,
@@ -227,7 +227,7 @@ export default {
         })
       }
     }
-    if (this.data.cloud_env === 'onpremise' && this.$store.getters.capability.brands.includes('VMware')) {
+    if (this.data.cloud_env === 'onpremise' && this.$store.getters.capability && this.$store.getters.capability.brands && this.$store.getters.capability.brands.includes('VMware')) {
       extraInfo.push({
         title: this.$t('network.vmware_extra_info'),
         items: [

@@ -40,6 +40,8 @@ const sangforLogo = require('@/assets/images/providers/sangfor.svg')
 const zettakitLogo = require('@/assets/images/providers/zettakit.svg')
 const uisLogo = require('@/assets/images/providers/uis.svg')
 const cloudflareLogo = require('@/assets/images/providers/cloudflare.svg')
+const cnwareLogo = require('@/assets/images/providers/cnware.svg')
+const oceanbaseLogo = require('@/assets/images/providers/oceanbase.svg')
 
 function getDocsCloudaccountPath (scope) {
   return genDocsUrl({
@@ -167,6 +169,17 @@ export const CLOUDACCOUNT_TYPES = {
         width: '100px',
       },
     },
+    oceanbase: {
+      name: providerMap.oceanbase.label,
+      logo: oceanbaseLogo,
+      component: 'OceanbaseCreate',
+      provider: providerMap.oceanbase.key,
+      hiddenName: true,
+      logoStyle: {
+        width: '100px',
+        height: '25px',
+      },
+    },
   },
   private: {
     vmware: {
@@ -292,6 +305,12 @@ export const CLOUDACCOUNT_TYPES = {
         height: '14px',
       },
     },
+    cnware: {
+      name: providerMap.cnware.label,
+      logo: cnwareLogo,
+      component: 'CNwareCreate',
+      provider: providerMap.cnware.key,
+    },
   },
   storage: {
     s3: {
@@ -368,6 +387,8 @@ export function getCloudaccountDocs (scope) {
     oraclecloud: i18n.t('cloudenv.create_oraclecloud', [docs_path]),
     sangfor: i18n.t('cloudenv.create_sangfor', [docs_path]),
     cloudflare: i18n.t('cloudenv.create_cloudflare', [docs_path]),
+    cnware: i18n.t('cloudenv.create_cnware', [docs_path]),
+    oceanbase: i18n.t('cloudenv.create_oceanbase', [docs_path]),
   }
   // if (isCE()) {
   //   Object.keys(docs).forEach(v => {
@@ -800,6 +821,19 @@ export const keySecretFields = {
       s: i18n.t('cloudenv.text_147'),
     },
   },
+  oceanbase: {
+    k: 'access_key_id',
+    s: 'access_key_secret',
+    text: 'OceanBase',
+    placeholder: {
+      k: i18n.t('cloudenv.text_144'),
+      s: i18n.t('cloudenv.text_145'),
+    },
+    label: {
+      k: i18n.t('cloudenv.text_146'),
+      s: i18n.t('cloudenv.text_147'),
+    },
+  },
   qingcloud: {
     k: 'access_key_id',
     s: 'access_key_secret',
@@ -889,6 +923,19 @@ export const keySecretFields = {
     label: {
       k: i18n.t('cloudenv.text_94'),
       s: 'API Key',
+    },
+  },
+  cnware: {
+    k: 'username',
+    s: 'password',
+    text: i18n.getOemDictionaryI18n('cnware', i18n.t('scopeCloudPrvidersMap.CNware')),
+    placeholder: {
+      k: i18n.t('cloudenv.text_151'),
+      s: i18n.t('cloudenv.text_150'),
+    },
+    label: {
+      k: i18n.t('cloudenv.text_375'),
+      s: i18n.t('cloudenv.text_147'),
     },
   },
 }

@@ -2,6 +2,7 @@
   <page-list
     :list="list"
     :columns="columns"
+    :group-actions="groupActions"
     :single-actions="singleActions" />
 </template>
 
@@ -21,6 +22,8 @@ import {
 import SystemIcon from '@/sections/SystemIcon'
 import WindowsMixin from '@/mixins/windows'
 import ListMixin from '@/mixins/list'
+import { cloudEnabled, cloudUnabledTip } from '@Compute/views/vminstance/utils'
+import expectStatus from '@/constants/expectStatus'
 
 const commonUnabled = (value, statusArr = ['sched_fail', 'net_fail', 'disk_fail']) => {
   return statusArr.includes(value.status)
@@ -40,9 +43,7 @@ export default {
       list: this.$list.createList(this, {
         id: 'ServersListForGpuSidePage',
         resource: 'servers',
-        getParams: {
-          'filter.0': `id.equals(${this.data.guest_id})`,
-        },
+        getParams: this.getParam,
         filterOptions: {
           name: {
             label: this.$t('compute.text_228'),
@@ -52,6 +53,7 @@ export default {
             },
           },
         },
+        steadyStatus: Object.values(expectStatus.server).flat(),
       }),
       columns: [
         getNameDescriptionTableColumn({
@@ -153,6 +155,33 @@ export default {
         getBrandTableColumn(),
         getRegionTableColumn(),
       ],
+      groupActions: [
+        {
+          label: this.$t('compute.text_483', [this.$t('dictionary.server')]),
+          permission: 'server_perform_attach_isolated_device',
+          action: obj => {
+            this.createDialog('GpuAttachServerDialog', {
+              data: [this.data],
+              title: this.$t('compute.text_483', [this.$t('dictionary.server')]),
+              columns: this.columns,
+              refresh: this.refresh,
+            })
+          },
+          meta: obj => {
+            const ret = { validate: true }
+            if (this.data.dev_type === 'NIC') {
+              ret.validate = false
+              ret.tooltip = this.$t('compute.sriov_device_nic_notsupport')
+              return ret
+            }
+            if (this.data.guest_id) {
+              ret.validate = false
+              return ret
+            }
+            return ret
+          },
+        },
+      ],
       singleActions: [
         {
           label: this.$t('compute.text_272'),
@@ -188,12 +217,62 @@ export default {
             }
           },
         },
+        {
+          label: this.$t('compute.text_260', [this.$t('compute.text_113')]),
+          permission: 'server_perform_detach_isolated_device',
+          action: obj => {
+            this.createDialog('DetachGpuDialog', {
+              data: [obj],
+              title: this.$t('compute.text_485', [this.$t('compute.text_113')]),
+              columns: this.columns,
+              refresh: this.refresh,
+              name: this.$t('dictionary.server'),
+              device: this.data,
+            })
+          },
+          meta: obj => {
+            const ret = { validate: true }
+
+            if (this.data.dev_type === 'NIC') {
+              ret.validate = false
+              ret.tooltip = this.$t('compute.sriov_device_nic_notsupport')
+              return ret
+            }
+
+            if (obj.status !== 'ready' && obj.status !== 'running') {
+              ret.validate = false
+              ret.tooltip = this.$t('compute.text_489', [this.$t('compute.text_113')])
+              return ret
+            }
+            ret.validate = cloudEnabled('acttachGpu', obj)
+            ret.tooltip = cloudUnabledTip('acttachGpu', obj)
+            return ret
+          },
+        },
       ],
     }
+  },
+  watch: {
+    'data.guest_id': {
+      handler (val) {
+        this.list.fetchData()
+      },
+    },
   },
   created () {
     this.initSidePageTab('detail')
     this.list.fetchData()
+  },
+  methods: {
+    refresh () {
+      this.$bus.$emit('gpu-sidepage-refresh')
+    },
+    getParam () {
+      return {
+        'filter.0': `id.equals(${this.data.guest_id})`,
+        'filter.1': 'hypervisor.notin(baremetal,container,pod)',
+      }
+    },
   },
 }
 </script>

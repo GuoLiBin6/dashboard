@@ -1,7 +1,11 @@
 <template>
   <page-list
     :list="list"
-    :columns="columns"
+    :columns="templateListColumns || columns"
+    :showSearchbox="showSearchbox"
+    :showGroupActions="showGroupActions"
+    :show-single-actions="!isTemplate"
+    :show-page="!isTemplate"
     :group-actions="getFinalGroupActions(groupActions)"
     :single-actions="getFinalSingleActions(singleActions)"
     :export-data-options="exportDataOptions" />
@@ -14,12 +18,14 @@ import { getNameFilter, getRegionFilter, getDescriptionFilter } from '@/utils/co
 import expectStatus from '@/constants/expectStatus'
 import WindowsMixin from '@/mixins/windows'
 import ListMixin from '@/mixins/list'
+import GlobalSearchMixin from '@/mixins/globalSearch'
+import ResTemplateListMixin from '@/mixins/resTemplateList'
 import SingleActionsMixin from '../mixins/singleActions'
 import ColumnsMixin from '../mixins/columns'
 
 export default {
   name: 'GpuList',
-  mixins: [WindowsMixin, ListMixin, ColumnsMixin, SingleActionsMixin],
+  mixins: [WindowsMixin, ListMixin, GlobalSearchMixin, ColumnsMixin, SingleActionsMixin, ResTemplateListMixin],
   props: {
     id: String,
     getParams: {
@@ -41,10 +47,13 @@ export default {
     }
     return {
       list: this.$list.createList(this, {
+        ctx: this,
         id: this.id,
         resource: 'isolated_devices',
         getParams: this.getParam,
         filter,
+        isTemplate: this.isTemplate,
+        templateLimit: this.templateLimit,
         filterOptions: {
           id: {
             label: this.$t('table.title.id'),
@@ -133,15 +142,6 @@ export default {
           guest_status: [...Object.values(expectStatus.server).flat(), '', undefined],
         },
       }),
-      exportDataOptions: {
-        items: [
-          { label: 'ID', key: 'id' },
-          { label: this.$t('compute.text_228'), key: 'name' },
-          { label: this.$t('compute.text_482'), key: 'model' },
-          { label: this.$t('compute.text_483', [this.$t('dictionary.server')]), key: 'guest' },
-          { label: this.$t('compute.text_484'), key: 'host' },
-        ],
-      },
       groupActions: [
         {
           label: this.$t('compute.text_485', [this.$t('dictionary.server')]),
@@ -270,7 +270,19 @@ export default {
       ],
     }
   },
+  computed: {
+    exportDataOptions () {
+      return {
+        downloadType: 'local',
+        items: this.columns,
+        title: this.$t('compute.text_113'),
+      }
+    },
+  },
   created () {
+    this.$bus.$on('gpu-sidepage-refresh', () => {
+      this.list.refresh()
+    })
     this.init()
     this.list.fetchData().then(() => {
       this.$nextTick(() => {

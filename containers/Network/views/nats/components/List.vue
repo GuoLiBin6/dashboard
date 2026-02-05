@@ -1,20 +1,23 @@
 <template>
   <page-list
     :list="list"
-    :columns="columns"
+    :columns="templateListColumns || columns"
     :show-tag-columns="true"
     :show-tag-filter="true"
     :export-data-options="exportDataOptions"
     :group-actions="groupActions"
     :showSearchbox="showSearchbox"
     :showGroupActions="showGroupActions"
-    :single-actions="singleActions" />
+    :single-actions="singleActions"
+    :show-single-actions="!isTemplate"
+    :show-page="!isTemplate" />
 </template>
 
 <script>
 import * as R from 'ramda'
 import { mapGetters } from 'vuex'
 import ListMixin from '@/mixins/list'
+import ResTemplateListMixin from '@/mixins/resTemplateList'
 import expectStatus from '@/constants/expectStatus'
 import { getFilter, getStatusFilter, getBrandFilter, getAccountFilter, getProjectDomainFilter, getDescriptionFilter, getCreatedAtFilter } from '@/utils/common/tableFilter'
 import { disableDeleteAction } from '@/utils/common/tableActions'
@@ -27,7 +30,7 @@ import { checkReadOnly } from '../utils'
 
 export default {
   name: 'NatList',
-  mixins: [WindowsMixin, ListMixin, GlobalSearchMixin, ColumnsMixin, SingleActionsMixin],
+  mixins: [WindowsMixin, ListMixin, GlobalSearchMixin, ColumnsMixin, SingleActionsMixin, ResTemplateListMixin],
   props: {
     id: String,
     getParams: {
@@ -41,9 +44,12 @@ export default {
   data () {
     return {
       list: this.$list.createList(this, {
+        ctx: this,
         id: this.id,
         resource: 'natgateways',
         getParams: this.getParam,
+        isTemplate: this.isTemplate,
+        templateLimit: this.templateLimit,
         steadyStatus: Object.values(expectStatus.nat).flat(),
         filterOptions: {
           id: {

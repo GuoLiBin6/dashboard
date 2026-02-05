@@ -7,6 +7,7 @@
       </div>
       <div class="status-text text-truncate">
         {{ statusText }}
+        <slot name="icon" />
         <span v-if="showProcess && !changedStatus">({{curProcess}}%)</span>
       </div>
       <div class="flex-fill">
@@ -14,7 +15,6 @@
       </div>
     </div>
     <div v-if="changedStatus && showProcess" style="width:100px;margin-left:5px">
-      <div style="font-size:12px;line-height:12px;color:#9c9c9c;transform:translateY(7px)">{{ originStatusText }}</div>
       <a-progress class="custom-progress-bar" :percent="curProcess" :showInfo="false" size="small" status="active" :title="originStatusText + ': ' + curProcess + '%'" />
     </div>
     <slot />
@@ -59,13 +59,18 @@ export default {
       default: false,
     },
   },
+  data () {
+    return {
+      scopeStatusMap: this.$te('scopeStatus') ? this.$t('scopeStatus') : {},
+    }
+  },
   computed: {
     isBooleanValue () {
       return R.is(Boolean, this.status)
     },
     changedStatus () {
       if (this.statusModule === 'server' && this.status === 'block_stream') {
-        return 'running'
+        return this.status
       }
       return ''
     },
@@ -91,10 +96,10 @@ export default {
     },
     statusText () {
       if (this.specifyStatus.text) return this.specifyStatus.text
-      const moduleStatusMap = statusMap[this.statusModule]
+      const moduleStatusMap = this.scopeStatusMap[this.statusModule] || statusMap[this.statusModule]
       if (moduleStatusMap) {
         if (moduleStatusMap[this.changedStatus || this.status]) {
-          return this.$t(`status.${this.statusModule}.${this.changedStatus || this.status}`)
+          return this.$te(`scopeStatus.${this.statusModule}.${this.changedStatus || this.status}`) ? this.$t(`scopeStatus.${this.statusModule}.${this.changedStatus || this.status}`) : this.$t(`status.${this.statusModule}.${this.changedStatus || this.status}`)
         }
       }
       if (statusMap.common[this.changedStatus || this.status]) {
@@ -108,7 +113,7 @@ export default {
       const moduleStatusMap = statusMap[this.statusModule]
       if (moduleStatusMap) {
         if (moduleStatusMap[this.status]) {
-          return this.$t(`status.${this.statusModule}.${this.status}`)
+          return this.$te(`scopeStatus.${this.statusModule}.${this.status}`) ? this.$t(`scopeStatus.${this.statusModule}.${this.status}`) : this.$t(`status.${this.statusModule}.${this.status}`)
         }
       }
       if (statusMap.common[this.status]) {

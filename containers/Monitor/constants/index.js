@@ -209,6 +209,8 @@ export const alertStrategyMaps = {
   avg: i18n.t('monitor.avg'),
   max: i18n.t('monitor.max'),
   min: i18n.t('monitor.min'),
+  last: i18n.t('monitor.last'),
+  delta: i18n.t('monitor.delta'),
 }
 
 export const preiodMaps = {

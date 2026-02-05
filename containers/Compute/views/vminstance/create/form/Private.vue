@@ -17,6 +17,7 @@
           :fc="form.fc"
           :fd="form.fd"
           :decorators="{ project: decorators.project, domain: decorators.domain }"
+          :ignoreStorage="isInitForm"
           @fetchDomainCallback="fetchDomainCallback"
           @fetchProjectCallback="fetchProjectCallback" />
       </a-form-item>
@@ -52,7 +53,7 @@
         <a-input v-decorator="decorators.reason" :placeholder="$t('compute.text_1042')" />
       </a-form-item>
       <a-form-item v-show="!isServertemplate" :label="$t('compute.text_1132')">
-        <duration :decorators="decorators.duration" />
+        <duration useServerDuration :decorators="decorators.duration" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_294')" v-show="!isServertemplate">
         <a-input-number v-decorator="decorators.count" @blur="countBlur" :min="1" :max="100" />
@@ -94,6 +95,7 @@
       </a-form-item>
       <a-form-item :label="$t('compute.text_49')" class="mb-0">
         <system-disk
+          ref="systemDiskRef"
           :decorator="decorators.systemDisk"
           :type="type"
           :form="form"
@@ -103,8 +105,9 @@
           :image="form.fi.imageMsg"
           :sizeDisabled="disabledSysDiskSize" />
       </a-form-item>
-      <a-form-item :label="$t('compute.text_50')" v-if="form.fd.hypervisor && form.fd.hypervisor !== 'zettakit'">
+      <a-form-item :label="$t('compute.text_50')" v-if="form.fd.hypervisor && form.fd.hypervisor !== 'zettakit' && !isCNware">
         <data-disk
+          :isInitForm="isInitForm"
           :decorator="decorators.dataDisk"
           :type="type"
           :form="form"
@@ -122,6 +125,7 @@
       </a-form-item>
       <a-form-item :label="$t('compute.text_104')" class="mb-0">
         <server-network
+          ref="networkRef"
           :form="form"
           :decorator="decorators.network"
           :network-list-params="networkParam"
@@ -136,7 +140,7 @@
       </a-form-item>
       <a-form-item :label="$t('compute.text_1154')" class="mb-0">
         <tag
-          v-decorator="decorators.tag" />
+          v-decorator="decorators.tag" :default-checked="tagDefaultChecked" />
       </a-form-item>
       <!-- <a-divider orientation="left">{{$t('compute.text_309')}}</a-divider> -->
       <a-collapse :bordered="false" v-model="collapseActive">
@@ -159,6 +163,7 @@
           </a-form-item>
           <a-form-item :label="$t('compute.text_311')" v-show="!isServertemplate" class="mb-0">
             <sched-policy
+              ref="schedPolicyRef"
               :provider="cloudprovider"
               :server-type="form.fi.createType"
               :disabled-host="policyHostDisabled"
@@ -276,7 +281,7 @@ export default {
         enabled: true,
         ...this.scopeParams,
       }
-      if (this.form.fd.hypervisor === 'nutanix' || this.form.fd.hypervisor === 'incloudsphere' || this.form.fd.hypervisor === 'proxmox' || this.form.fd.hypervisor === 'sangfor' || this.form.fd.hypervisor === 'uis') {
+      if (this.form.fd.hypervisor === 'nutanix' || this.form.fd.hypervisor === 'incloudsphere' || this.form.fd.hypervisor === 'proxmox' || this.form.fd.hypervisor === 'sangfor' || this.form.fd.hypervisor === 'uis' || this.form.fd.hypervisor === 'cnware') {
         params.is_on_premise = true
         params.usable = false
       } else {
@@ -299,6 +304,13 @@ export default {
       return {}
     },
     networkParam () {
+      if (this.form.fd.hypervisor === HYPERVISORS_MAP.cnware.hypervisor) {
+        return {
+          filter: 'server_type.notin(ipmi, pxe)',
+          usable: true,
+          ...this.scopeParams,
+        }
+      }
       const params = {
         filter: 'server_type.notin(ipmi, pxe)',
         usable: true,
@@ -329,7 +341,7 @@ export default {
           'provider.0': HYPERVISORS_MAP.kvm.provider,
           'provider.1': _.get(HYPERVISORS_MAP, `[${this.form.fd.hypervisor}].provider`),
         }
-        if (this.form.fd.hypervisor === HYPERVISORS_MAP.sangfor.hypervisor) {
+        if (this.form.fd.hypervisor === HYPERVISORS_MAP.sangfor.hypervisor || this.form.fd.hypervisor === HYPERVISORS_MAP.cnware.hypervisor) {
           delete ret.usable
         }
         return ret
@@ -372,14 +384,14 @@ export default {
       return params
     },
     showSecgroup () {
-      const hiddenSecCloudprovider = ['Nutanix', 'SangFor']
+      const hiddenSecCloudprovider = ['Nutanix', 'SangFor', 'CNware']
       return !hiddenSecCloudprovider.includes(this.cloudprovider)
     },
     systemDiskTypeDisabled () {
       return this.form.fd.hypervisor === HYPERVISORS_MAP.nutanix.key
     },
     ignoreImageOptions () {
-      if (this.isInCloudSphere) {
+      if (this.isInCloudSphere || this.isCNware) {
         return ['standard', 'customize']
       }
       if (this.form.fd.hypervisor === HYPERVISORS_MAP.proxmox.key) {

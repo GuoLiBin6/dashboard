@@ -22,6 +22,15 @@ export default {
   created () {
   },
   methods: {
+    getText (statusModule, key) {
+      if (this.$te(`scopeStatus.${statusModule}.${key}`)) {
+        return this.$t(`scopeStatus.${statusModule}.${key}`)
+      }
+      if (this.$te(`status.${statusModule}.${key}`)) {
+        return this.$t(`status.${statusModule}.${key}`)
+      }
+      return key
+    },
     resStatisticsChange (res) {
       const statusObj = arrayToObj(res.status_info || [], 'status')
       this.statusOpts = this.getStatusOpts(statusObj)
@@ -29,6 +38,8 @@ export default {
       this.generateTableOverviewIndexs(res)
     },
     getStatusOpts (data) {
+      this.errorFilterStatus = []
+      this.otherFilterStatus = []
       const obj = {}
       const errorObj = {}
       const otherObj = {}
@@ -60,15 +71,15 @@ export default {
         return {
           type: k,
           num: obj[k] || 0,
-          title: this.$te(`status.${this.statusModule}.${k}`) ? this.$t(`status.${this.statusModule}.${k}`) : k,
+          title: this.getText(this.statusModule, k),
         }
       })
 
       const statusOpts = [
         { title: this.$t('compute.text_576'), type: 'total', num: total },
         ...normalStatusTabs,
-        { title: this.$t('common_623', [this.$t('scope.text_61')]), type: 'error', num: error, list: Object.keys(errorObj).map(k => ({ type: k, title: this.$te(`status.${this.statusModule}.${k}`) ? this.$t(`status.${this.statusModule}.${k}`) : k, num: errorObj[k] })) },
-        { title: this.$t('compute.text_674'), type: 'other', num: other, list: Object.keys(otherObj).map(k => ({ type: k, title: this.$te(`status.${this.statusModule}.${k}`) ? this.$t(`status.${this.statusModule}.${k}`) : k, num: otherObj[k] })) },
+        { title: this.$t('common_623', [this.$t('scope.text_61')]), type: 'error', num: error, list: Object.keys(errorObj).map(k => ({ type: k, title: this.getText(this.statusModule, k), num: errorObj[k] })) },
+        { title: this.$t('compute.text_674'), type: 'other', num: other, list: Object.keys(otherObj).map(k => ({ type: k, title: this.getText(this.statusModule, k), num: otherObj[k] })) },
       ].filter(item => !this.statusHiddenList.includes(item.type))
       return statusOpts
     },
@@ -88,9 +99,10 @@ export default {
           default:
             statusCheckArr = [obj.type]
         }
+        const statusArr = [...new Set([...this.statusArr, ...statusCheckArr])]
         this.filterParams = {
           statusCheckArr,
-          statusArr: this.statusArr,
+          statusArr,
         }
       }
     },
@@ -107,6 +119,26 @@ export default {
             break
           case 'disk_mb':
             tableOverviewIndexs.push({ key: this.$t('compute.text_99'), value: sizestr(resData[v], 'M', 1024), order: 3 })
+            break
+          case 'size_mb':
+            tableOverviewIndexs.push({ key: this.$t('common_234'), value: sizestr(resData[v], 'M', 1024), order: 4 })
+            break
+          case 'backup_size_mb':
+            tableOverviewIndexs.push({ key: this.$t('common.backup') + this.$t('common_234'), value: sizestr(resData[v], 'M', 1024), order: 5 })
+            break
+          case 'volume_size_mb':
+            tableOverviewIndexs.push({ key: this.$t('common_237') + this.$t('common_234'), value: sizestr(resData[v], 'M', 1024), order: 6 })
+            break
+          // host
+          case 'cpu_used':
+            if (resData.hasOwnProperty('cpu_total')) {
+              tableOverviewIndexs.push({ key: this.$t('common.cpu_used_total'), value: `${resData[v]}/${resData.cpu_total}`, order: 7 })
+            }
+            break
+          case 'memory_used':
+            if (resData.hasOwnProperty('memory_total')) {
+              tableOverviewIndexs.push({ key: this.$t('common.memory_used_total'), value: `${sizestr(resData[v], 'M', 1024)}/${sizestr(resData.memory_total, 'M', 1024)}`, order: 8 })
+            }
             break
         }
       })

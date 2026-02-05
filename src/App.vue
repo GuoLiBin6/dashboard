@@ -2,12 +2,12 @@
   <a-config-provider :locale="locale">
     <div id="app" @click="handleAppAction">
       <component :is="layout">
-        <router-view />
+        <router-view style="height: 100%;" />
       </component>
+      <oc-term />
       <dialog-manager />
       <side-page-manager />
       <window-resize-listener />
-      <oc-term />
     </div>
   </a-config-provider>
 </template>
@@ -49,6 +49,7 @@ export default {
   data () {
     return {
       locale: antdLocales[this.$store.getters.setting.language],
+      monitorAlertTimer: null,
     }
   },
   computed: {
@@ -107,6 +108,13 @@ export default {
     this.initIO()
     this.initMonitorAlertNotify()
   },
+  beforeDestroy () {
+    // 组件销毁时清除定时器
+    if (this.monitorAlertTimer) {
+      clearInterval(this.monitorAlertTimer)
+      this.monitorAlertTimer = null
+    }
+  },
   methods: {
     initIO () {
       if (!this.$appConfig.isPrivate) return
@@ -124,7 +132,13 @@ export default {
       this.socket.connect()
     },
     initMonitorAlertNotify () {
-      setInterval(() => {
+      // 防止重复创建定时器
+      if (this.monitorAlertTimer) {
+        clearInterval(this.monitorAlertTimer)
+      }
+      this.monitorAlertTimer = setInterval(() => {
+        // 检测是否已登录，未登录则不执行 dispatch
+        if (!this.session) return
         this.$store.dispatch('monitor/loadMonitorResourceAlerts')
       }, setting.monitorAlertNotifyTriggerTime)
       this.createDialog('MonitorAlertNotifyDialog', {})
@@ -136,5 +150,8 @@ export default {
 <style lang="scss" scoped>
 #app {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 </style>

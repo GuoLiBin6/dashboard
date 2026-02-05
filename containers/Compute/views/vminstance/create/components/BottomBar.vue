@@ -78,7 +78,7 @@ import * as R from 'ramda'
 import _ from 'lodash'
 import { SERVER_TYPE, BILL_TYPES_MAP, EIP_TYPES_MAP } from '@Compute/constants'
 import { sizestrWithUnit } from '@/utils/utils'
-import { hasPermission } from '@/utils/auth'
+import { hasPermission, hasMeterService } from '@/utils/auth'
 import { PriceFetcher } from '@/utils/common/price'
 import SideErrors from '@/sections/SideErrors'
 import DiscountPrice from '@/sections/DiscountPrice'
@@ -242,7 +242,7 @@ export default {
     },
     confirmText () {
       if (this.isServertemplate) return this.$t('compute.text_1139')
-      return this.isOpenWorkflow ? this.$t('compute.text_288') : this.$t('compute.text_289')
+      return this.isOpenWorkflow ? (this.$route.query.workflow ? this.$t('common.modify_workflow') : this.$t('compute.text_288')) : this.$t('compute.text_289')
     },
     dataDiskObj () {
       if (R.is(Object, this.fd.dataDiskTypes)) {
@@ -275,7 +275,7 @@ export default {
       return this.origin_price
     },
     hasCartPermission () {
-      return hasPermission({ key: 'resource_order_sets_create' })
+      return hasMeterService() && hasPermission({ key: 'resource_order_sets_create' })
     },
   },
   watch: {

@@ -48,15 +48,22 @@ export default {
   mixins: [SidePageMixin, WindowsMixin, ColumnsMixin, SingleActionsMixin],
   data () {
     return {
-      detailTabs: [
+    }
+  },
+  computed: {
+    detailTabs () {
+      return [
         { label: this.$t('network.text_67'), key: 'cdn-detail' },
         { label: this.$t('network.cdn_custom_hostname'), key: 'cdn-hostname' },
         { label: this.$t('table.title.task'), key: 'task-drawer' },
         { label: this.$t('network.text_150'), key: 'event-drawer' },
-      ],
-    }
-  },
-  computed: {
+      ].filter(item => {
+        if (this.detailData?.provider !== 'Cloudflare' && item.key === 'cdn-hostname') {
+          return false
+        }
+        return true
+      })
+    },
     getParams () {
       return null
     },

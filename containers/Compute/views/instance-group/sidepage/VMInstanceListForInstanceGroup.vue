@@ -77,7 +77,7 @@ export default {
           width: 50,
           slots: {
             default: ({ row }) => {
-              let name = (row.metadata && row.metadata.os_distribution) ? row.metadata.os_distribution : row.os_type
+              let name = ((row.metadata && row.metadata.os_distribution) ? row.metadata.os_distribution : row.os_type) || ''
               if (name.includes('Windows') || name.includes('windows')) {
                 name = 'Windows'
               }
@@ -159,7 +159,7 @@ export default {
       return {
         details: true,
         with_meta: true,
-        filter: 'hypervisor.notin(baremetal,container)',
+        filter: 'hypervisor.notin(baremetal,container,pod)',
         group: this.resId,
       }
     },

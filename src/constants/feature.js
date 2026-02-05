@@ -249,6 +249,10 @@ const LicenseItems = [
     meta: meta('resource_managent', 'monitor', false),
   },
   {
+    key: 'bill_private',
+    meta: meta('resource_managent', 'bill', false),
+  },
+  {
     key: 'bill_aliyun',
     origin_key: 'aliyun',
     meta: meta('resource_managent', 'bill', true),
@@ -339,6 +343,19 @@ const LicenseItems = [
     key: 'sangfor',
     meta: meta('resource_managent', 'private', true),
   },
+  {
+    key: 'cnware',
+    meta: meta('resource_managent', 'private', true),
+  },
+  {
+    key: 'oceanbase',
+    meta: meta('resource_managent', 'public', true),
+    hiddenName: true,
+    logoStyle: {
+      width: '100px',
+      height: '25px',
+    },
+  },
   // {
   //   key: 'report',
   //   meta: meta('resource_managent', 'report', false),
@@ -349,10 +366,10 @@ function fullfillLicenseItems () {
   LicenseItems.map(item => {
     const key = item.origin_key || item.key
     if (item.meta.is_account) {
-      item.label = i18n.getI18n([`scopeCloudProvidersMap.${key}`, `scopeProviders.${key}`, `license.provider.${key}`], key)
+      item.label = i18n.getOemDictionaryI18n(key.toLowerCase(), i18n.getI18n([`scopeCloudProvidersMap.${key}`, `scopeProviders.${key}`, `license.provider.${key}`], key))
       item.icon = require(`@/assets/images/providers/${key}.svg`)
     } else {
-      item.label = i18n.getI18n(`license.feature.${key}`, key)
+      item.label = i18n.getOemDictionaryI18n(key.toLowerCase(), i18n.getI18n(`license.feature.${key}`, key))
       item.icon = require(`@/assets/images/features/${key}.svg`)
     }
     item.value = item.key

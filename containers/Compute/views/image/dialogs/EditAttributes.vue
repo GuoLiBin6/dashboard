@@ -18,7 +18,7 @@
         <a-form-item :label="$t('compute.text_267')" v-bind="formItemLayout">
           <a-radio-group @change="osTypeChangeHandle" v-decorator="decorators.osType">
             <a-radio-button value="Linux">Linux</a-radio-button>
-            <a-radio-button value="Windows">Windows Server</a-radio-button>
+            <a-radio-button value="Windows">Windows</a-radio-button>
             <a-radio-button value="Other">{{$t('compute.text_151')}}</a-radio-button>
           </a-radio-group>
         </a-form-item>
@@ -111,8 +111,14 @@ export default {
       os_arch = data.properties.os_arch.includes('x86') ? HOST_CPU_ARCHS.x86.key : HOST_CPU_ARCHS.arm.key
     }
     let bios = 'BIOS'
-    if (data.properties && data.properties.uefi_support === 'true') {
+    const { properties = {} } = data
+    const { uefi_support, bios_support } = properties
+    if (uefi_support === 'true' && bios_support === 'true') {
+      bios = 'BIOS & UEFI'
+    } else if (uefi_support === 'true' && bios_support !== 'true') {
       bios = 'UEFI'
+    } else if (uefi_support !== 'true') {
+      bios = 'BIOS'
     }
     const isArm = (os_arch === HOST_CPU_ARCHS.arm.key)
     return {
@@ -196,12 +202,16 @@ export default {
       },
       osDistributionOptions: {
         Windows: [
-          { text: 'Windows Server 2008', value: 'Windows Server 2008' },
-          { text: 'Windows Server 2008 R2', value: 'Windows Server 2008 R2' },
-          { text: 'Windows Server 2012', value: 'Windows Server 2012' },
-          { text: 'Windows Server 2012 R2', value: 'Windows Server 2012 R2' },
-          { text: 'Windows Server 2016', value: 'Windows Server 2016' },
+          { text: 'Windows Server 2025', value: 'Windows Server 2025' },
+          { text: 'Windows Server 2022', value: 'Windows Server 2022' },
           { text: 'Windows Server 2019', value: 'Windows Server 2019' },
+          { text: 'Windows Server 2016', value: 'Windows Server 2016' },
+          { text: 'Windows Server 2012 R2', value: 'Windows Server 2012 R2' },
+          { text: 'Windows Server 2012', value: 'Windows Server 2012' },
+          { text: 'Windows Server 2008 R2', value: 'Windows Server 2008 R2' },
+          { text: 'Windows Server 2008', value: 'Windows Server 2008' },
+          { text: 'Windows 11', value: 'Windows 11' },
+          { text: 'Windows 10', value: 'Windows 10' },
           { text: this.$t('compute.text_151'), value: 'Other' },
         ],
         Linux: [
@@ -214,6 +224,8 @@ export default {
           { text: 'RedHat', value: 'RedHat' },
           { text: 'SUSE Linux', value: 'SUSE Linux' },
           { text: 'Ubuntu', value: 'Ubuntu' },
+          { text: 'Anolis', value: 'Anolis' },
+          { text: 'Rocky Linux', value: 'Rocky' },
           { text: this.$t('compute.os.kylin'), value: 'Kylin' },
           { text: this.$t('compute.os.nfs'), value: 'nfs' },
           { text: this.$t('compute.text_151'), value: 'Other' },
@@ -237,6 +249,8 @@ export default {
         { text: 'AlmaLinux', value: 'AlmaLinux' },
         { text: 'UOSDesktop', value: 'UOSDesktop' },
         { text: 'OpenEuler', value: 'OpenEuler' },
+        { text: 'Anolis', value: 'Anolis' },
+        { text: 'Rocky Linux', value: 'Rocky' },
         { text: this.$t('compute.os.kylin'), value: 'Kylin' },
         { text: this.$t('compute.os.neokylin'), value: 'NeoKylin' },
         { text: this.$t('compute.os.nfs'), value: 'nfs' },
@@ -261,6 +275,7 @@ export default {
       biosOptions: [
         { text: 'BIOS', value: 'BIOS' },
         { text: 'UEFI', value: 'UEFI' },
+        { text: 'BIOS & UEFI', value: 'BIOS & UEFI' },
       ],
       vdiOptions: [
         { text: this.$t('compute.text_661'), value: '' },
@@ -284,7 +299,7 @@ export default {
       this.manager.get({ id: this.params.data[0].id })
         .then((res) => {
           const { name, min_disk: minDisk } = res.data
-          const { os_type: osType, os_distribution: osDistribution, disk_driver: diskDriver, net_driver: netDriver, uefi_support: uefiSupport, vdi_protocol: vdiProtocol } = res.data.properties
+          const { os_type: osType, os_distribution: osDistribution, disk_driver: diskDriver, net_driver: netDriver, uefi_support: uefiSupport, bios_support: biosSupport, vdi_protocol: vdiProtocol } = res.data.properties
           this.initName = name
           this.initMinDisk = minDisk
           this.$nextTick(() => {
@@ -296,18 +311,19 @@ export default {
               osDistribution,
               diskDriver: diskDriver || '',
               netDriver: netDriver || '',
-              bios: this.getBios(uefiSupport),
+              bios: this.getBios(uefiSupport, biosSupport),
               vdi: vdiProtocol || 'vnc',
             })
           })
         })
     },
-    getBios (uefiSupport) {
-      if (uefiSupport && uefiSupport === 'true') {
+    getBios (uefiSupport, biosSupport) {
+      if (uefiSupport === 'true' && biosSupport === 'true') {
+        return 'BIOS & UEFI'
+      } else if (uefiSupport === 'true' && biosSupport !== 'true') {
         return 'UEFI'
-      } else {
-        return 'BIOS'
       }
+      return 'BIOS'
     },
     checkTemplateName (rule, value, callback) {
       return new this.$Manager(this.isHostImage ? 'guestimages' : 'images', 'v1').list({
@@ -342,6 +358,7 @@ export default {
       } else {
         this.form.fc.setFieldsValue({ osDistribution: this.osNewDisOptions[0].value })
         this.isDisOther = false
+        this.osDistributionChange(this.osNewDisOptions[0].value)
       }
     },
     osDistributionChange (e) {
@@ -349,6 +366,15 @@ export default {
         this.isDisOther = true
       } else {
         this.isDisOther = false
+        if (e.startsWith('Windows')) {
+          let minDisk = 40
+          if (e === 'Windows 11') {
+            minDisk = 60
+          }
+          if (this.form.fc.getFieldValue('minDisk') < minDisk) {
+            this.form.fc.setFieldsValue({ minDisk: minDisk })
+          }
+        }
       }
     },
     doEdit (data) {
@@ -372,7 +398,6 @@ export default {
             disk_driver: diskDriver,
             net_driver: netDriver,
             os_arch,
-            uefi_support: bios === 'UEFI' ? 'true' : '',
             vdi_protocol: vdi,
           },
         }
@@ -381,6 +406,16 @@ export default {
           if (params['min-disk'] === 0) { // 说明上传了一个小于1G的镜像,被四舍五入成0了，要取源数据
             params['min-disk'] = this.initMinDisk
           }
+        }
+        if (bios === 'UEFI') {
+          params.properties.uefi_support = 'true'
+          params.properties.bios_support = 'false'
+        } else if (bios === 'BIOS') {
+          params.properties.uefi_support = 'false'
+          params.properties.bios_support = 'true'
+        } else if (bios === 'BIOS & UEFI') {
+          params.properties.uefi_support = 'true'
+          params.properties.bios_support = 'true'
         }
         await this.doEdit(params)
         this.loading = false

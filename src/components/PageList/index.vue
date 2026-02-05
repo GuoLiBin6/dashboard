@@ -341,7 +341,7 @@ export default {
     },
     enableVirtualScroll: {
       type: Boolean,
-      default: false,
+      default: true,
     },
     tagFilterResource: String,
     tagFilterResource2: String,
@@ -382,7 +382,7 @@ export default {
       return this.list.id
     },
     tableName () {
-      return this.fixed ? 'PageListTable' : 'PageListTable'
+      return 'PageListTable'
     },
     loading () {
       return this.list.loading

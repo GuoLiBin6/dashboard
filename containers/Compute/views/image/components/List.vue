@@ -4,13 +4,15 @@
     show-tag-columns2
     show-tag-filter
     :list="list"
-    :columns="columns"
+    :columns="templateListColumns || columns"
     :group-actions="groupActions"
     :single-actions="singleActions"
     :export-data-options="exportDataOptions"
     :showSearchbox="showSearchbox"
     :showGroupActions="showGroupActions"
-    :before-show-menu="beforeShowMenu" />
+    :show-single-actions="!isTemplate"
+    :before-show-menu="beforeShowMenu"
+    :show-page="!isTemplate" />
 </template>
 
 <script>
@@ -19,6 +21,7 @@ import * as R from 'ramda'
 import expectStatus from '@/constants/expectStatus'
 import WindowsMixin from '@/mixins/windows'
 import ListMixin from '@/mixins/list'
+import ResTemplateListMixin from '@/mixins/resTemplateList'
 import GlobalSearchMixin from '@/mixins/globalSearch'
 import {
   getNameFilter,
@@ -36,7 +39,7 @@ import SingleActionsMixin from '../mixins/singleActions'
 
 export default {
   name: 'ImageList',
-  mixins: [WindowsMixin, ListMixin, GlobalSearchMixin, ColumnsMixin, SingleActionsMixin],
+  mixins: [WindowsMixin, ListMixin, GlobalSearchMixin, ColumnsMixin, SingleActionsMixin, ResTemplateListMixin],
   props: {
     id: String,
     getParams: {
@@ -51,10 +54,13 @@ export default {
   data () {
     return {
       list: this.$list.createList(this, {
+        ctx: this,
         id: this.id,
         resource: 'images',
         apiVersion: 'v1',
         getParams: this.getParam,
+        isTemplate: this.isTemplate,
+        templateLimit: this.templateLimit,
         steadyStatus: Object.values(expectStatus.image).flat(),
         filterOptions: {
           id: {
@@ -385,9 +391,9 @@ export default {
           },
         },
       ]
-      if (this.isAdminMode) {
-        batchActions.unshift(ImageImportCe)
-      }
+      // if (this.isAdminMode) {
+      batchActions.unshift(ImageImportCe)
+      // }
       if (this.isAdminMode && !isCE() && !this.$store.getters.isSysCE) {
         batchActions.unshift(ImageImport)
       }
@@ -419,7 +425,7 @@ export default {
         is_guest_image: false,
         ...this.getParams,
       }
-      if (this.cloudEnv) ret.cloud_env = this.cloudEnv
+      // if (this.cloudEnv) ret.cloud_env = this.cloudEnv
       if (this.diskFormats) {
         if (!ret.disk_formats) {
           ret.disk_formats = []
@@ -427,6 +433,10 @@ export default {
         for (let i = 0; i < this.diskFormats.length; i++) {
           ret.disk_formats.push(this.diskFormats[i])
         }
+      }
+      if (ret.project_id) {
+        ret.project_ids = [ret.project_id]
+        delete ret.project_id
       }
       return ret
     },

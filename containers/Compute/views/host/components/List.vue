@@ -3,14 +3,17 @@
     show-tag-columns
     show-tag-filter
     :list="list"
-    :columns="columns"
+    :columns="templateListColumns || columns"
     :group-actions="groupActions"
     :single-actions="singleActions"
     :export-data-options="exportDataOptions"
     :extra-export-params="extraExportParams"
     :showSearchbox="showSearchbox"
     :defaultSearchKey="defaultSearchKey"
-    :showGroupActions="showGroupActions" />
+    :tableOverviewIndexs="tableOverviewIndexs"
+    :showGroupActions="showGroupActions"
+    :show-single-actions="!isTemplate"
+    :show-page="!isTemplate" />
 </template>
 
 <script>
@@ -19,6 +22,7 @@ import { getNameFilter, getDescriptionFilter, getStatusFilter, getEnabledFilter,
 import WindowsMixin from '@/mixins/windows'
 import GlobalSearchMixin from '@/mixins/globalSearch'
 import ListMixin from '@/mixins/list'
+import ResTemplateListMixin from '@/mixins/resTemplateList'
 import { typeClouds, getDisabledProvidersActionMeta } from '@/utils/common/hypervisor'
 import { getDomainChangeOwnerAction, getSetPublicAction, getEnabledSwitchActions } from '@/utils/common/tableActions'
 import { HYPERVISORS_MAP, EXTRA_HYPERVISORS } from '@/constants'
@@ -29,7 +33,7 @@ import ColumnsMixin from '../mixins/columns'
 
 export default {
   name: 'HostList',
-  mixins: [WindowsMixin, ListMixin, GlobalSearchMixin, ColumnsMixin, SingleActionsMixin],
+  mixins: [WindowsMixin, ListMixin, GlobalSearchMixin, ColumnsMixin, SingleActionsMixin, ResTemplateListMixin],
   props: {
     id: String,
     getParams: {
@@ -120,9 +124,12 @@ export default {
     })
     return {
       list: this.$list.createList(this, {
+        ctx: this,
         id: this.id,
         resource: 'hosts',
         getParams: this.getParam,
+        isTemplate: this.isTemplate,
+        templateLimit: this.templateLimit,
         filterOptions,
         filter,
         responseData: this.responseData,
@@ -326,40 +333,40 @@ export default {
                     })
                   },
                 },
-                {
-                  label: this.$t('compute.host.cpu.revert.resource'),
-                  action: obj => {
-                    this.createDialog('SetHostCpuReserveResourceDialog', {
-                      onManager: this.onManager,
-                      data: this.list.selectedItems,
-                      columns: this.columns,
-                      refresh: this.refresh,
-                    })
-                  },
-                  meta: () => {
-                    const ret = {
-                      validate: false,
-                      tooltip: null,
-                    }
-                    if (!ownerDomain) {
-                      ret.tooltip = this.$t('compute.host.cpu.revert.share')
-                      return ret
-                    }
-                    const isAllOneCloud = this.list.selectedItems.every((item) => { return item.provider === typeClouds.providerMap.OneCloud.key })
-                    if (!isAllOneCloud) {
-                      ret.tooltip = this.$t('compute.text_515')
-                      return ret
-                    }
-                    const isSomeRunning = this.list.selectedItems.some(item => item.running_guests > 0)
-                    if (isSomeRunning) {
-                      ret.tooltip = this.$t('compute.host.cpu.revert.running_guest_tooltip')
-                      return ret
-                    }
-                    return {
-                      validate: true,
-                    }
-                  },
-                },
+                // {
+                //   label: this.$t('compute.host.cpu.revert.resource'),
+                //   action: obj => {
+                //     this.createDialog('SetHostCpuReserveResourceDialog', {
+                //       onManager: this.onManager,
+                //       data: this.list.selectedItems,
+                //       columns: this.columns,
+                //       refresh: this.refresh,
+                //     })
+                //   },
+                //   meta: () => {
+                //     const ret = {
+                //       validate: false,
+                //       tooltip: null,
+                //     }
+                //     if (!ownerDomain) {
+                //       ret.tooltip = this.$t('compute.host.cpu.revert.share')
+                //       return ret
+                //     }
+                //     const isAllOneCloud = this.list.selectedItems.every((item) => { return item.provider === typeClouds.providerMap.OneCloud.key })
+                //     if (!isAllOneCloud) {
+                //       ret.tooltip = this.$t('compute.text_515')
+                //       return ret
+                //     }
+                //     const isSomeRunning = this.list.selectedItems.some(item => item.running_guests > 0)
+                //     if (isSomeRunning) {
+                //       ret.tooltip = this.$t('compute.host.cpu.revert.running_guest_tooltip')
+                //       return ret
+                //     }
+                //     return {
+                //       validate: true,
+                //     }
+                //   },
+                // },
                 {
                   label: this.$t('compute.setup_passthrough_reserve'),
                   permission: 'hosts_perform_set_reserved_resource_for_isolated_device',
@@ -547,7 +554,10 @@ export default {
       this.sidePageTriggerHandle(this, 'HostSidePage', {
         id: row.id,
         resource: 'hosts',
-        getParams: this.getParam,
+        getParams: {
+          ...this.getParam(),
+          hide_cpu_topo_info: false,
+        },
       }, {
         list: this.list,
         tab,

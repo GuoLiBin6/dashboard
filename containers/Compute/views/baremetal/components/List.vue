@@ -5,21 +5,24 @@
     show-tag-filter
     :id="id"
     :list="list"
-    :columns="columns"
+    :columns="templateListColumns || columns"
     :group-actions="groupActions"
     :single-actions="singleActions"
+    :show-single-actions="!isTemplate"
     :export-data-options="exportDataOptions"
     :defaultSearchKey="defaultSearchKey"
     :showSearchbox="showSearchbox"
-    :showGroupActions="showGroupActions" />
+    :showGroupActions="showGroupActions"
+    :show-page="!isTemplate" />
 </template>
 
 <script>
 import * as R from 'ramda'
 import { disableDeleteAction } from '@/utils/common/tableActions'
-import { getNameFilter, getTenantFilter, getStatusFilter, getOsTypeFilter, getDomainFilter, getRegionFilter, getDescriptionFilter, getCreatedAtFilter } from '@/utils/common/tableFilter'
+import { getNameFilter, getTenantFilter, getStatusFilter, getOsTypeFilter, getDomainFilter, getRegionFilter, getDescriptionFilter, getCreatedAtFilter, getBrandFilter, getAccountFilter } from '@/utils/common/tableFilter'
 import WindowsMixin from '@/mixins/windows'
 import ListMixin from '@/mixins/list'
+import ResTemplateListMixin from '@/mixins/resTemplateList'
 import expectStatus from '@/constants/expectStatus'
 import GlobalSearchMixin from '@/mixins/globalSearch'
 import regexp from '@/utils/regexp'
@@ -29,7 +32,7 @@ import { cloudEnabled, cloudUnabledTip } from '../../vminstance/utils'
 
 export default {
   name: 'BaremetalList',
-  mixins: [WindowsMixin, ListMixin, GlobalSearchMixin, ColumnsMixin, SingleActionsMixin],
+  mixins: [WindowsMixin, ListMixin, GlobalSearchMixin, ColumnsMixin, SingleActionsMixin, ResTemplateListMixin],
   props: {
     id: String,
     getParams: {
@@ -40,6 +43,7 @@ export default {
       type: Array,
       default: () => ([]),
     },
+    hostInfo: Object,
   },
   data () {
     const filterOptions = {
@@ -67,6 +71,8 @@ export default {
         label: this.$t('res.machine'),
         hidden: () => this.$store.getters.isProjectMode,
       },
+      brand: getBrandFilter(),
+      account: getAccountFilter(),
       region: getRegionFilter(),
       zone: {
         label: this.$t('res.zone'),
@@ -84,7 +90,10 @@ export default {
       list: this.$list.createList(this, {
         id: this.id,
         resource: 'servers',
+        ctx: this,
         getParams: this.getParam,
+        isTemplate: this.isTemplate,
+        templateLimit: this.templateLimit,
         filterOptions,
         steadyStatus: Object.values(expectStatus.server).flat(),
         responseData: this.responseData,
@@ -99,6 +108,7 @@ export default {
               path: '/baremetal/create',
               query: {
                 type: 'baremetal',
+                cloud_env: this.hostInfo?.brand === 'Cloudpods' ? 'private' : 'onpremise',
               },
             })
           },

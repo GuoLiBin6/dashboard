@@ -46,6 +46,8 @@ export const USAGE_CONFIG = {
     userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+    domain_usage_key: 'domain.storages.medium_type.ssd',
+    project_usage_key: 'null',
   },
   'storages.medium_type.rotate': {
     formatter: val => sizestrWithUnit(val, 'M', 1024),
@@ -53,6 +55,8 @@ export const USAGE_CONFIG = {
     userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+    domain_usage_key: 'domain.storages.medium_type.rotate',
+    project_usage_key: 'null',
   },
   'all.disks.medium_type.ssd': {
     formatter: val => sizestrWithUnit(val, 'M', 1024),
@@ -245,6 +249,114 @@ export const USAGE_CONFIG = {
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
   },
+  'all.pending_delete_servers.x86_64': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.pending_delete_servers.x86_64.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.pending_delete_servers.x86_64.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.pending_delete_servers.x86_64.ha': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.pending_delete_servers.x86_64.ha.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.pending_delete_servers.x86_64.ha.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.pending_delete_servers.x86_64.ha.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.pending_delete_servers.x86_64.isolated_devices': {
+    unit: i18n.t('dashboard.text_4'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+    brands: [HYPERVISORS_MAP.zettakit.brand],
+  },
+  'all.pending_delete_servers.x86_64.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.pending_delete_servers.aarch64': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.pending_delete_servers.aarch64.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.pending_delete_servers.aarch64.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.pending_delete_servers.aarch64.ha': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.pending_delete_servers.aarch64.ha.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.pending_delete_servers.aarch64.ha.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.pending_delete_servers.aarch64.ha.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.pending_delete_servers.aarch64.isolated_devices': {
+    unit: i18n.t('dashboard.text_4'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+    brands: [HYPERVISORS_MAP.zettakit.brand],
+  },
+  'all.pending_delete_servers.aarch64.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
   'all.ports': {
     unit: i18n.t('dashboard.text_1'),
     scope: SCOPES_MAP.system.key,
@@ -319,6 +431,114 @@ export const USAGE_CONFIG = {
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
   },
+  'all.ready_servers.x86_64': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.ready_servers.x86_64.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.ready_servers.x86_64.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.ready_servers.x86_64.ha': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.ready_servers.x86_64.ha.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.ready_servers.x86_64.ha.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.ready_servers.x86_64.ha.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.ready_servers.x86_64.isolated_devices': {
+    unit: i18n.t('dashboard.text_4'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+    brands: [HYPERVISORS_MAP.zettakit.brand],
+  },
+  'all.ready_servers.x86_64.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.ready_servers.aarch64': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.ready_servers.aarch64.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.ready_servers.aarch64.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.ready_servers.aarch64.ha': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.ready_servers.aarch64.ha.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.ready_servers.aarch64.ha.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.ready_servers.aarch64.ha.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.ready_servers.aarch64.isolated_devices': {
+    unit: i18n.t('dashboard.text_4'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+    brands: [HYPERVISORS_MAP.zettakit.brand],
+  },
+  'all.ready_servers.aarch64.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
   'all.running_servers': {
     unit: i18n.t('dashboard.text_2'),
     scope: SCOPES_MAP.system.key,
@@ -367,6 +587,114 @@ export const USAGE_CONFIG = {
     brands: [HYPERVISORS_MAP.zettakit.brand],
   },
   'all.running_servers.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.running_servers.x86_64': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.running_servers.x86_64.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.running_servers.x86_64.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.running_servers.x86_64.ha': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.running_servers.x86_64.ha.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.running_servers.x86_64.ha.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.running_servers.x86_64.ha.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.running_servers.x86_64.isolated_devices': {
+    unit: i18n.t('dashboard.text_4'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+    brands: [HYPERVISORS_MAP.zettakit.brand],
+  },
+  'all.running_servers.x86_64.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.running_servers.aarch64': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.running_servers.aarch64.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.running_servers.aarch64.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.running_servers.aarch64.ha': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.running_servers.aarch64.ha.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.running_servers.aarch64.ha.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.running_servers.aarch64.ha.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.running_servers.aarch64.isolated_devices': {
+    unit: i18n.t('dashboard.text_4'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+    brands: [HYPERVISORS_MAP.zettakit.brand],
+  },
+  'all.running_servers.aarch64.memory': {
     formatter: val => sizestrWithUnit(val, 'M', 1024),
     canUseUserUnit: true,
     userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
@@ -427,6 +755,114 @@ export const USAGE_CONFIG = {
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
   },
+  'all.servers.x86_64': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.servers.x86_64.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.servers.x86_64.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.servers.x86_64.ha': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.servers.x86_64.ha.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.servers.x86_64.ha.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.servers.x86_64.ha.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.servers.x86_64.isolated_devices': {
+    unit: i18n.t('dashboard.text_4'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+    brands: [HYPERVISORS_MAP.zettakit.brand],
+  },
+  'all.servers.x86_64.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.servers.aarch64': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.servers.aarch64.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.servers.aarch64.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.servers.aarch64.ha': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.servers.aarch64.ha.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.servers.aarch64.ha.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.servers.aarch64.ha.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.servers.aarch64.isolated_devices': {
+    unit: i18n.t('dashboard.text_4'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+    brands: [HYPERVISORS_MAP.zettakit.brand],
+  },
+  'all.servers.aarch64.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
   'all.snapshot': {
     unit: i18n.t('dashboard.text_1'),
     scope: SCOPES_MAP.system.key,
@@ -460,11 +896,15 @@ export const USAGE_CONFIG = {
     unit: i18n.t('dashboard.text_2'),
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise],
+    domain_usage_key: 'domain.baremetals',
+    project_usage_key: 'null',
   },
   'baremetals.cpu': {
     unit: i18n.t('dashboard.text_3'),
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise],
+    domain_usage_key: 'domain.baremetals.cpu',
+    project_usage_key: 'null',
   },
   'baremetals.memory': {
     formatter: val => sizestrWithUnit(val, 'M', 1024),
@@ -472,6 +912,8 @@ export const USAGE_CONFIG = {
     userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise],
+    domain_usage_key: 'domain.baremetals.memory',
+    project_usage_key: 'null',
   },
   bucket_bytes: {
     formatter: val => sizestrWithUnit(val, 'B', 1024),
@@ -547,16 +989,22 @@ export const USAGE_CONFIG = {
     unit: i18n.t('dashboard.text_2'),
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private],
+    domain_usage_key: 'domain.enabled_hosts',
+    project_usage_key: 'null',
   },
   'enabled_hosts.cpu': {
     unit: i18n.t('dashboard.text_3'),
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private],
+    domain_usage_key: 'domain.enabled_hosts.cpu',
+    project_usage_key: 'null',
   },
   'enabled_hosts.cpu.virtual': {
     unit: i18n.t('dashboard.text_3'),
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private],
+    domain_usage_key: 'domain.enabled_hosts.cpu.virtual',
+    project_usage_key: 'null',
   },
   'enabled_hosts.memory': {
     formatter: val => sizestrWithUnit(val, 'M', 1024),
@@ -564,6 +1012,8 @@ export const USAGE_CONFIG = {
     userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private],
+    domain_usage_key: 'domain.enabled_hosts.memory',
+    project_usage_key: 'null',
   },
   'enabled_hosts.memory.virtual': {
     formatter: val => sizestrWithUnit(val, 'M', 1024),
@@ -571,26 +1021,36 @@ export const USAGE_CONFIG = {
     userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private],
+    domain_usage_key: 'domain.enabled_hosts.memory.virtual',
+    project_usage_key: 'null',
   },
   hosts: {
     unit: i18n.t('dashboard.text_2'),
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private],
+    domain_usage_key: 'domain.hosts',
+    project_usage_key: 'null',
   },
   'hosts.cpu': {
     unit: i18n.t('dashboard.text_3'),
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private],
+    domain_usage_key: 'domain.hosts.cpu',
+    project_usage_key: 'null',
   },
   'hosts.cpu.total': {
     unit: i18n.t('dashboard.text_3'),
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private],
+    domain_usage_key: 'domain.hosts.cpu.total',
+    project_usage_key: 'null',
   },
   'hosts.cpu.virtual': {
     unit: i18n.t('dashboard.text_3'),
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private],
+    domain_usage_key: 'domain.hosts.cpu.virtual',
+    project_usage_key: 'null',
   },
   'hosts.memory': {
     formatter: val => sizestrWithUnit(val, 'M', 1024),
@@ -598,6 +1058,8 @@ export const USAGE_CONFIG = {
     userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private],
+    domain_usage_key: 'domain.hosts.memory',
+    project_usage_key: 'null',
   },
   'hosts.memory.total': {
     formatter: val => sizestrWithUnit(val, 'M', 1024),
@@ -605,6 +1067,8 @@ export const USAGE_CONFIG = {
     userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private],
+    domain_usage_key: 'null',
+    project_usage_key: 'null',
   },
   'hosts.memory.virtual': {
     formatter: val => sizestrWithUnit(val, 'M', 1024),
@@ -612,24 +1076,32 @@ export const USAGE_CONFIG = {
     userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private],
+    domain_usage_key: 'domain.hosts.memory.virtual',
+    project_usage_key: 'null',
   },
   isolated_devices: {
     unit: i18n.t('dashboard.text_4'),
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise],
     brands: [HYPERVISORS_MAP.zettakit.brand],
+    domain_usage_key: 'domain.isolated_devices',
+    project_usage_key: 'null',
   },
   'isolated_devices.gpu': {
     unit: i18n.t('dashboard.text_4'),
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise],
     brands: [HYPERVISORS_MAP.zettakit.brand],
+    domain_usage_key: 'domain.isolated_devices.gpu',
+    project_usage_key: 'null',
   },
   'isolated_devices.used': {
     unit: i18n.t('dashboard.text_4'),
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise],
     brands: [HYPERVISORS_MAP.zettakit.brand],
+    domain_usage_key: 'domain.isolated_devices.used',
+    project_usage_key: 'null',
   },
   networks: {
     unit: i18n.t('dashboard.text_1'),
@@ -968,10 +1440,14 @@ export const USAGE_CONFIG = {
     userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private],
+    domain_usage_key: 'domain.storages',
+    project_usage_key: 'null',
   },
   'storages.commit_rate': {
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private],
+    domain_usage_key: 'domain.storages.commit_rate',
+    project_usage_key: 'null',
   },
   'storages.virtual': {
     formatter: val => sizestrWithUnit(val, 'M', 1024),
@@ -979,6 +1455,8 @@ export const USAGE_CONFIG = {
     userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private],
+    domain_usage_key: 'domain.storages.virtual',
+    project_usage_key: 'null',
   },
   'all.vpcs': {
     unit: i18n.t('dashboard.text_1'),
@@ -1588,6 +2066,114 @@ export const USAGE_CONFIG = {
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
   },
+  'all.servers.last_week.x86_64': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.servers.last_week.x86_64.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.servers.last_week.x86_64.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.servers.last_week.x86_64.ha': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.servers.last_week.x86_64.ha.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.servers.last_week.x86_64.ha.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.servers.last_week.x86_64.ha.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.servers.last_week.x86_64.isolated_devices': {
+    unit: i18n.t('dashboard.text_4'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+    brands: [HYPERVISORS_MAP.zettakit.brand],
+  },
+  'all.servers.last_week.x86_64.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.servers.last_week.aarch64': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.servers.last_week.aarch64.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.servers.last_week.aarch64.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.servers.last_week.aarch64.ha': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.servers.last_week.aarch64.ha.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.servers.last_week.aarch64.ha.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.servers.last_week.aarch64.ha.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.servers.last_week.aarch64.isolated_devices': {
+    unit: i18n.t('dashboard.text_4'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+    brands: [HYPERVISORS_MAP.zettakit.brand],
+  },
+  'all.servers.last_week.aarch64.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
   'domain.servers.last_week': {
     unit: i18n.t('dashboard.text_2'),
     scope: SCOPES_MAP.domain.key,
@@ -1600,6 +2186,114 @@ export const USAGE_CONFIG = {
   },
   'all.pending_delete_servers.last_week': {
     unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.pending_delete_servers.last_week.x86_64': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.pending_delete_servers.last_week.x86_64.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.pending_delete_servers.last_week.x86_64.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.pending_delete_servers.last_week.x86_64.ha': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.pending_delete_servers.last_week.x86_64.ha.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.pending_delete_servers.last_week.x86_64.ha.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.pending_delete_servers.last_week.x86_64.ha.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.pending_delete_servers.last_week.x86_64.isolated_devices': {
+    unit: i18n.t('dashboard.text_4'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+    brands: [HYPERVISORS_MAP.zettakit.brand],
+  },
+  'all.pending_delete_servers.last_week.x86_64.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.pending_delete_servers.last_week.aarch64': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.pending_delete_servers.last_week.aarch64.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.pending_delete_servers.last_week.aarch64.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
+  },
+  'all.pending_delete_servers.last_week.aarch64.ha': {
+    unit: i18n.t('dashboard.text_2'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.pending_delete_servers.last_week.aarch64.ha.cpu': {
+    unit: i18n.t('dashboard.text_3'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.pending_delete_servers.last_week.aarch64.ha.disk': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.pending_delete_servers.last_week.aarch64.ha.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+  },
+  'all.pending_delete_servers.last_week.aarch64.isolated_devices': {
+    unit: i18n.t('dashboard.text_4'),
+    scope: SCOPES_MAP.system.key,
+    clouds: [CLOUD_ENVS.onpremise],
+    brands: [HYPERVISORS_MAP.zettakit.brand],
+  },
+  'all.pending_delete_servers.last_week.aarch64.memory': {
+    formatter: val => sizestrWithUnit(val, 'M', 1024),
+    canUseUserUnit: true,
+    userUnitFormatter: (val, unit) => sizeToDesignatedUnit(val, 'M', unit, 1024),
     scope: SCOPES_MAP.system.key,
     clouds: [CLOUD_ENVS.onpremise, CLOUD_ENVS.private, CLOUD_ENVS.public],
   },
@@ -1869,4 +2563,50 @@ export function getMetricDocs (scope) {
     cePath: 'guides/monitor_ops/metric',
     anchor: i18n.t('dashboard.text_184'),
   })
+}
+
+export function getTargetRangeUsageKey (usageKey, scope, dataRangeScope, config = USAGE_CONFIG) {
+  let newUsageKey = ''
+  if (usageKey && scope && dataRangeScope && dataRangeScope === scope) {
+    newUsageKey = usageKey
+  } else if (usageKey && scope && dataRangeScope && dataRangeScope !== scope) {
+    // 特殊指定转换
+    if (config[usageKey]) {
+      if (scope === SCOPES_MAP.system.key) {
+        if (dataRangeScope === SCOPES_MAP.domain.key) {
+          if (config[usageKey].domain_usage_key) {
+            newUsageKey = config[usageKey].domain_usage_key
+          }
+        } else if (dataRangeScope === SCOPES_MAP.project.key) {
+          if (config[usageKey].project_usage_key) {
+            newUsageKey = config[usageKey].project_usage_key
+          }
+        }
+      } else if (scope === SCOPES_MAP.domain.key) {
+        if (dataRangeScope === SCOPES_MAP.project.key) {
+          if (config[usageKey].project_usage_key) {
+            newUsageKey = config[usageKey].project_usage_key
+          }
+        }
+      }
+    }
+    // 通用指标转换 all.servers => domain.servers or servers
+    if (!newUsageKey) {
+      if (usageKey.startsWith('all.')) {
+        if (dataRangeScope === SCOPES_MAP.domain.key) {
+          newUsageKey = usageKey.replace('all.', 'domain.')
+        } else if (dataRangeScope === SCOPES_MAP.project.key) {
+          newUsageKey = usageKey.replace('all.', '')
+        }
+      } else if (usageKey.startsWith('domain.')) {
+        if (dataRangeScope === SCOPES_MAP.project.key) {
+          newUsageKey = usageKey.replace('domain.', '')
+        }
+      }
+    }
+  }
+  if (!newUsageKey || !config[newUsageKey]) {
+    return { usageKey: usageKey, error: true }
+  }
+  return { usageKey: newUsageKey }
 }

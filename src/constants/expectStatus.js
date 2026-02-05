@@ -1,3 +1,16 @@
+const requireComponent = require.context('@scope', true, /expectStatus\.(js)$/)
+const keys = requireComponent.keys().filter(item => {
+  const arr = item.split('/')
+  return arr[1] === 'constants' && /\.(js)$/.test(arr[2])
+})
+let extraStatus = {}
+keys.forEach(fileName => {
+  // 获取组件配置
+  const componentConfig = requireComponent(fileName)
+  console.log('status', componentConfig)
+  const { default: DEFAULT_STATUS = {} } = componentConfig
+  extraStatus = { ...extraStatus, ...DEFAULT_STATUS }
+})
 
 export default {
   // 通用状态
@@ -70,7 +83,7 @@ export default {
   cloudaccountHealthStatus: {
     success: ['normal'],
     danger: ['insufficient', 'suspended', 'arrears'],
-    info: ['unknown', 'no permission'],
+    info: ['unknown', 'no permission', 'pending'],
   },
   cloudaccountSyncStatus: {
     success: ['idle'],
@@ -577,7 +590,7 @@ export default {
   },
   container: {
     success: ['running', 'on'],
-    info: ['exited', 'ready', 'unknown', 'off'],
+    info: ['exited', 'ready', 'unknown', 'off', 'container_exited'],
     danger: ['start_failed', 'probe_failed'],
   },
   phoneModel: {
@@ -614,11 +627,22 @@ export default {
     danger: ['failed'],
   },
   sslCertificate: {
-    success: ['active'],
+    success: ['active', 'available'],
     danger: ['failed', 'expired', 'create_failed'],
   },
   healthCheck: {
     success: ['available'],
     danger: ['create_failed'],
   },
+  aiGateway: {
+    success: ['available'],
+    info: ['unknown'],
+    danger: ['delete_failed', 'create_failed'],
+  },
+  mcp: {
+    info: ['ready', 'unknown', 'no_server', 'no_container', 'start_save_model', 'saving_model', 'start_syncstatus', 'syncstatus', 'start_delete', 'deleting', 'deleted'],
+    success: ['running'],
+    danger: ['create_fail', 'start_fail', 'stop_fail', 'save_model_failed', 'delete_fail'],
+  },
+  ...extraStatus,
 }
