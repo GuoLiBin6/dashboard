@@ -1230,6 +1230,11 @@
       "available": "正常",
       "failed": "重跑失败",
       "running": "重跑账单中"
+    },
+    "analysisAlarm": {
+      "available": "正常",
+      "running": "运行中",
+      "unknown": "未知"
     }
   },
   "skuCategoryOptions": {

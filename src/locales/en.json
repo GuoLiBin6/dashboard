@@ -1215,6 +1215,11 @@
       "available": "Available",
       "failed": "Failed",
       "running": "Running"
+    },
+    "analysisAlarm": {
+      "available": "Available",
+      "running": "Running",
+      "unknown": "Unknown"
     }
   },
   "skuCategoryOptions": {

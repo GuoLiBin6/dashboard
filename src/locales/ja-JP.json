@@ -1230,6 +1230,11 @@
       "available": "正常",
       "failed": "逃げ直しに失敗する",
       "running": "請求書からかけ直す"
+    },
+    "analysisAlarm": {
+      "available": "正常",
+      "running": "稼働中",
+      "unknown": "不明"
     }
   },
   "skuCategoryOptions": {

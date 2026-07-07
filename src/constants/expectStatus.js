@@ -587,4 +587,8 @@ export default {
     success: ['available'],
     danger: ['failed'],
   },
+  analysisAlarm: {
+    success: ['available'],
+    info: ['unknown'],
+  },
 }
