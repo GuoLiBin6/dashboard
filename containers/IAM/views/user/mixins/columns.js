@@ -36,6 +36,7 @@ export default {
         onManager: this.onManager,
         resource: 'users',
         needExt: true,
+        params: { limit: 1024 },
         columns: () => this.columns,
       }),
       getEnabledTableColumn(),

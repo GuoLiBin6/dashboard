@@ -9,7 +9,7 @@
     :showSearchbox="showSearchbox"
     :showGroupActions="showGroupActions"
     :export-data-options="exportDataOptions"
-    :ext-tag-params="{ service: 'identity' }" />
+    :ext-tag-params="{ service: 'identity', limit: 1024 }" />
 </template>
 
 <script>
@@ -110,6 +110,7 @@ export default {
                     params: {
                       service: 'identity',
                       resources: 'domain',
+                      limit: 1024,
                     },
                     mode: 'add',
                   })

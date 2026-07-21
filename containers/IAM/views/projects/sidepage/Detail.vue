@@ -196,8 +196,8 @@ export default {
         },
       },
       baseInfo: [
-        getUserTagColumn({ onManager: this.onManager, resource: 'domain', params: { service: 'identity' }, columns: () => this.columns, tipName: this.$t('dictionary.project') }),
-        getExtTagColumn({ onManager: this.onManager, resource: 'domain', params: { service: 'identity' }, columns: () => this.columns, tipName: this.$t('dictionary.project') }),
+        getUserTagColumn({ onManager: this.onManager, resource: 'domain', params: { service: 'identity', limit: 1024 }, columns: () => this.columns, tipName: this.$t('dictionary.project') }),
+        getExtTagColumn({ onManager: this.onManager, resource: 'domain', params: { service: 'identity', limit: 1024 }, columns: () => this.columns, tipName: this.$t('dictionary.project') }),
         {
           field: 'organization',
           title: this.$t('dictionary.organization'),

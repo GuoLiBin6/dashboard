@@ -211,7 +211,7 @@ export default {
       tagData: [],
       pager: {
         total: 0,
-        limit: this.params?.limit || 2048,
+        limit: this.params?.limit || 100,
       },
     }
   },

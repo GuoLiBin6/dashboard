@@ -38,7 +38,7 @@
          :canCreate="false"
          extra=""
          :multiple="true"
-         :params="{service: 'identity', user_meta: true, resources: 'domain'}"
+         :params="{service: 'identity', limit: 1024, user_meta: true, resources: 'domain'}"
          @change="handleDomainTagsChange"
          @tagsChange="handleDomainTagsUpdate"
          :global="false" />

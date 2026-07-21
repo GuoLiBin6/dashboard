@@ -139,6 +139,7 @@ export default {
         params = {
           service: 'identity',
           user_meta: true,
+          limit: 1024,
         }
       }
       const ret = {

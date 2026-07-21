@@ -12,7 +12,7 @@
     :showSingleActions="showSingleActions"
     :export-data-options="exportDataOptions"
     :tag-config-params="tagConfigParams"
-    :ext-tag-params="{ service: 'identity' }" />
+    :ext-tag-params="{ service: 'identity', limit: 1024 }" />
 </template>
 
 <script>
@@ -114,6 +114,7 @@ export default {
                 resource: 'projects',
                 with_cloud_meta: false,
                 service: 'identity',
+                limit: 1024,
               },
               managerInstance: new this.$Manager('metadatas/tag-value-pairs', 'v2'),
               mode: 'add',
