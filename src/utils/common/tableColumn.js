@@ -196,7 +196,7 @@ function h (type, data, children) {
   return vueH(resolvedType, props || null, children)
 }
 
-export const getProjectTableColumn = ({ vm = {}, field = 'tenant', title = i18n.t('res.project'), projectsItem = 'tenant', sortable = true, hidden = false, minWidth = 100 } = {}) => {
+export const getProjectTableColumn = ({ vm = {}, field = 'tenant', title = i18n.t('res.project'), projectsItem = 'tenant', sortable = true, hidden = false, minWidth = 100, domainField } = {}) => {
   return {
     field,
     title,
@@ -234,7 +234,7 @@ export const getProjectTableColumn = ({ vm = {}, field = 'tenant', title = i18n.
             }),
           )
         }
-        const domain = row.project_domain || row.domain
+        const domain = (domainField && row[domainField]) || row.project_domain || row.domain
         if (domain) {
           ret.push(
             h(

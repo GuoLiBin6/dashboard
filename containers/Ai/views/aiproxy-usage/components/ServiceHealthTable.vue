@@ -69,7 +69,7 @@ export default {
     },
     vxeColumns () {
       return [
-        { title: this.$t('aice.aiproxy.usage.provider'), field: 'provider', minWidth: 140, formatter: ({ cellValue }) => cellValue ?? '-' },
+        { title: this.$t('aice.aiproxy.usage.provider'), field: 'provider', minWidth: 140, formatter: ({ row }) => row.provider_name || row.provider || '-' },
         { title: this.$t('aice.aiproxy.usage.model'), field: 'model', minWidth: 200, formatter: ({ cellValue }) => cellValue ?? '-' },
         { title: this.$t('aice.aiproxy.usage.request_count_short'), field: 'request_count', minWidth: 100, formatter: ({ cellValue }) => cellValue ?? 0 },
         { title: this.$t('aice.aiproxy.usage.success_rate_short'), field: 'successRate', minWidth: 100 },

@@ -1,6 +1,7 @@
 import {
   getNameDescriptionTableColumn,
   getEnabledTableColumn,
+  getProjectTableColumn,
   getTimeTableColumn,
 } from '@/utils/common/tableColumn'
 import { getAiProviderLinkColumn } from '@Ai/utils/aiproxyLlmLinkColumns'
@@ -22,6 +23,7 @@ export default {
       getEnabledTableColumn(),
       getAiProviderLinkColumn(this),
       { field: 'model_key', title: this.$t('aice.aiproxy.model_key'), minWidth: 140 },
+      getProjectTableColumn(),
       getTimeTableColumn(),
     ]
   },
