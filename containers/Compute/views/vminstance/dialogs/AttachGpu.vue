@@ -37,6 +37,7 @@
               :labelFormat="labelFormat"
               :disabled-items="disabledItems"
               filterable
+              show-sync
               v-model:resList="gpuOpt"
               :mapper="mapper"
               resource="isolated_devices"
@@ -102,6 +103,7 @@
                         :need-params="false"
                         :labelFormat="labelFormat"
                         filterable
+                        show-sync
                         v-model:resList="gpuOpt"
                         :disabled-items="getRowDisabledItems(k)"
                         resource="isolated_devices"
