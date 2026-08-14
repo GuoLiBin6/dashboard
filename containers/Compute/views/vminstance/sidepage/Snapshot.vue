@@ -14,6 +14,8 @@
 <script>
 import DiskSnapshotList from '@Compute/views/snapshot/components/List'
 import InstanceSnapshotList from '@Compute/views/snapshot-instance/components/List'
+import DiskBackupList from '@Compute/views/disk-backup/components/List'
+import InstanceBackupList from '@Compute/views/instance-backup/components/List'
 import { hasSetupKey } from '@/utils/auth'
 import { isScopedPolicyMenuHidden } from '@/utils/scopedPolicy'
 
@@ -22,6 +24,8 @@ export default {
   components: {
     DiskSnapshotList,
     InstanceSnapshotList,
+    DiskBackupList,
+    InstanceBackupList,
   },
   props: {
     getParams: {
@@ -36,6 +40,10 @@ export default {
   computed: {
     id () {
       switch (this.currentComponent) {
+        case 'DiskBackupList':
+          return 'DiskBackupListForVminstanceSidepage'
+        case 'InstanceBackupList':
+          return 'InstanceBackupListForVminstanceSidepage'
         case 'InstanceSnapshotList':
           return 'InstanceSnapshotListForVminstanceSidepage'
         default:
@@ -54,6 +62,18 @@ export default {
         ret.push({
           key: 'InstanceSnapshotList',
           label: this.$t('compute.text_102'),
+        })
+      }
+      if (!isScopedPolicyMenuHidden('sub_hidden_menus.disk_backup') && hasSetupKey(['onestack'])) {
+        ret.push({
+          key: 'DiskBackupList',
+          label: this.$t('compute.disk_backup'),
+        })
+      }
+      if (!isScopedPolicyMenuHidden('sub_hidden_menus.instance_backup') && hasSetupKey(['onestack'])) {
+        ret.push({
+          key: 'InstanceBackupList',
+          label: this.$t('compute.instance_backup'),
         })
       }
       return ret
