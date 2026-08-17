@@ -78,7 +78,7 @@ export default {
             getLlmIpColumn(),
             getLlmSkuColumn({ vm: this, isApplyType: this.isApplyType, isDesktopType: this.isDesktopType }),
             getLlmImageColumn({ vm: this }),
-            ...(this.isDesktopType ? [getAppNameTableColumn()] : []),
+            ...(this.isDesktopType ? [getAppNameTableColumn({ layout: 'horizontal' })] : []),
             getCpuTableColumn(),
             getMemoryTableColumn(),
             getBandwidthTableColumn(),
@@ -178,42 +178,44 @@ export default {
                 },
               },
             },
-            {
-              field: 'mounted_model_infos',
-              title: this.isApplyType ? this.$t('aice.app_llm_instantapp') : this.$t('aice.llm_instantapp'),
-              slots: {
-                default: ({ row }, h) => {
-                  const mounted_apps = row.mounted_model_infos
-                  if (mounted_apps?.length) {
-                    return mounted_apps.map((item) => {
-                      return h('list-body-cell-wrap', {
-                        props: {
-                          copy: true,
-                          hideField: true,
-                          field: 'mounted_model_infos',
-                          row: item,
-                          message: item.fullname,
-                        },
-                      }, [
-                        h('side-page-trigger', {
+            ...(this.isDesktopType
+              ? []
+              : [{
+                field: 'mounted_model_infos',
+                title: this.isApplyType ? this.$t('aice.app_llm_instantapp') : this.$t('aice.llm_instantapp'),
+                slots: {
+                  default: ({ row }, h) => {
+                    const mounted_apps = row.mounted_model_infos
+                    if (mounted_apps?.length) {
+                      return mounted_apps.map((item) => {
+                        return h('list-body-cell-wrap', {
                           props: {
-                            permission: 'llm_instant_models_get',
-                            name: 'LlmInstantModelSidePage',
-                            id: item.id,
-                            vm: this,
+                            copy: true,
+                            hideField: true,
+                            field: 'mounted_model_infos',
+                            row: item,
+                            message: item.fullname,
                           },
-                        }, item.fullname),
-                      ])
-                    })
-                  }
-                  return '-'
+                        }, [
+                          h('side-page-trigger', {
+                            props: {
+                              permission: 'llm_instant_models_get',
+                              name: 'LlmInstantModelSidePage',
+                              id: item.id,
+                              vm: this,
+                            },
+                          }, item.fullname),
+                        ])
+                      })
+                    }
+                    return '-'
+                  },
                 },
-              },
-            },
+              }]),
           ],
         },
         ...this.loginInfoSection,
-        ...getLlmSpecSections(this),
+        ...(this.isDesktopType ? [] : getLlmSpecSections(this)),
       ]
     },
   },
