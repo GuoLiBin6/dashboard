@@ -7,8 +7,7 @@
       <overview-summary-card
         v-for="card in cards"
         :key="card.title"
-        :card="card"
-        @resourceClick="handleResClick" />
+        :card="card" />
     </div>
     <div v-else class="summary-cards__empty">
       <data-empty :description="emptyContent" />
@@ -145,14 +144,14 @@ export default {
         throw e
       }
     },
-    handleResClick (res) {
-      if (['guest', 'host'].includes(res.resType)) {
-        this.$router.push({
-          path: `/monitorresources-${res.resType}`,
-          query: { defaultFilter: { alert_state: [res.alert_state] } },
-        })
-      }
-    },
+    // handleResClick (res) {
+    //   if (['guest', 'host'].includes(res.resType)) {
+    //     this.$router.push({
+    //       path: `/monitorresources-${res.resType}`,
+    //       query: { defaultFilter: { alert_state: [res.alert_state] } },
+    //     })
+    //   }
+    // },
   },
 }
 </script>
