@@ -12,17 +12,16 @@
             <div class="tip-text mt-4">{{ $t('common.mobile_end') }}<span style="font-size:12px">({{ $t('common.refer_nington') }})</span>:</div>
             <div class="qr-wrap d-flex">
               <div class="d-flex flex-column align-items-center">
+                <div class="qr-code-bg-wrap" :style="{ backgroundImage: `url(${miniprogramQr})` }" />
+              </div>
+              <div class="d-flex flex-column align-items-center">
                 <div class="qr-code-bg-wrap" :style="{ backgroundImage: `url(${ningtonQrIOS})` }" />
               </div>
               <div class="d-flex flex-column align-items-center">
                 <div class="qr-code-bg-wrap" :style="{ backgroundImage: `url(${ningtonQrAndroid})` }" />
               </div>
-              <div class="d-flex flex-column align-items-center">
-                <div class="qr-code-bg-wrap qr-code-chrome">
-                  {{ $t('common.nington_get_tip') }}
-                </div>
-              </div>
             </div>
+            <div class="tip-text-little mb-3">{{ $t('common.nington_get_tip') }}</div>
             <div class="tip-text">{{ $t('common.chrome_browser') }}:</div>
             <div class="tip-text-little">{{ $t('common.mfa.qr_code_chrome_1') }}<help-link href="https://chrome.google.com/webstore/detail/authenticator/bhghoamapcdpbohphigoooaddinpkbai?hl=zh-CN">{{ $t('common.mfa.qr_code_chrome_2') }}</help-link></div>
           </div>
@@ -31,12 +30,8 @@
               <i class="tip-icon fa fa-hand-o-right" />
               <span class="tip-text">{{$t('common_86')}}</span>
             </div>
-            <div class="qr-wrap mt-2" style="height:140px">
-              <template v-if="secret">
-                <div>
-                  <img :src="secretImg" />
-                </div>
-              </template>
+            <div class="secret-qr-wrap mt-2">
+              <img v-if="secretImg" :src="secretImg" alt="MFA QR Code" />
             </div>
             <div class="qr-tip">{{$t('common_87')}}</div>
           </div>
@@ -61,7 +56,8 @@
 
 <script>
 import { mapGetters, mapState } from 'vuex'
-import _ from 'lodash'
+import { getKeyIgnoreCase } from '@/utils/utils'
+import miniprogramQr from './assets/ycloud-miniprogram-qrcode.png'
 import ningtonQrIOS from './assets/nington-qrcode-ios.png'
 import ningtonQrAndroid from './assets/nington-qrcode-android.png'
 
@@ -69,8 +65,11 @@ export default {
   name: 'BindSecret',
   data () {
     return {
+      miniprogramQr,
       ningtonQrIOS,
       ningtonQrAndroid,
+      // 本地缓存二维码，避免 historyUsers key 变化或 unset 后页面立刻空白
+      secretQrcode: '',
       securityCode: '',
       error: false,
       loading: false,
@@ -81,11 +80,8 @@ export default {
     ...mapState('auth', {
       historyUsers: state => state.historyUsers,
     }),
-    secret () {
-      return _.get(this.historyUsers, [this.$store.getters['auth/currentHistoryUserKey'], 'secret'])
-    },
     secretImg () {
-      return `data:image/png;base64,${_.get(this.historyUsers, [this.$store.getters['auth/currentHistoryUserKey'], 'secret'])}`
+      return this.secretQrcode ? `data:image/png;base64,${this.secretQrcode}` : ''
     },
   },
   watch: {
@@ -93,6 +89,16 @@ export default {
       if (val.length < 6) {
         this.error = false
       }
+    },
+    historyUsers: {
+      deep: true,
+      handler () {
+        const secret = this.getHistorySecret()
+        // 只同步有值的 secret，避免 unset 后把本地展示清掉
+        if (secret) {
+          this.secretQrcode = secret
+        }
+      },
     },
   },
   created () {
@@ -104,19 +110,42 @@ export default {
         },
       })
     } else {
-      !this.auth.auth.totp_init && this.$store.dispatch('auth/initcredential')
+      this.initSecret()
     }
   },
   mounted () {
     this.$refs['security-code'].focusInput(1)
   },
   methods: {
+    getHistorySecret () {
+      const key = this.$store.getters['auth/currentHistoryUserKey']
+      if (!key) return ''
+      const user = getKeyIgnoreCase(this.historyUsers || {}, key)
+      return (user && user.secret) || ''
+    },
+    async initSecret () {
+      const existing = this.getHistorySecret()
+      if (existing) {
+        this.secretQrcode = existing
+        return
+      }
+      if (!this.auth.auth.totp_init) {
+        try {
+          const data = await this.$store.dispatch('auth/initcredential')
+          this.secretQrcode = data.qrcode || this.getHistorySecret()
+        } catch (error) {
+          throw error
+        }
+      }
+    },
     async onValid () {
       this.loading = true
       try {
         await this.$store.dispatch('auth/validPasscode', {
           passcode: this.securityCode,
         })
+        // 与 SecretVerify 一致：先刷新 token，再清理本地 secret
+        await this.$store.commit('auth/UPDATE_AUTH')
         this.$store.commit('auth/UPDATE_HISTORY_USERS', {
           action: 'unset',
           key: this.$store.getters['auth/currentHistoryUserKey'],
@@ -126,7 +155,7 @@ export default {
         if (this.$route.query.rf) {
           document.location.href = this.$route.query.rf
         } else {
-          this.$router.replace('/')
+          await this.$router.replace('/')
         }
       } catch (error) {
         this.error = true
@@ -182,10 +211,7 @@ export default {
   height: 100px;
   > div {
     height: 100%;
-    &:first-child {
-      margin-right: 10px;
-    }
-    &:nth-child(2) {
+    &:not(:last-child) {
       margin-right: 10px;
     }
     > img {
@@ -224,6 +250,16 @@ export default {
       margin: 0;
       padding: 0;
     }
+  }
+}
+
+.secret-qr-wrap {
+  height: 150px;
+  display: flex;
+  align-items: flex-start;
+  img {
+    width: 150px;
+    height: 150px;
   }
 }
 
