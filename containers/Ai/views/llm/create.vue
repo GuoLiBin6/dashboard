@@ -1,7 +1,7 @@
 <template>
   <div>
     <page-header :title="createPageTitle" />
-    <page-body>
+    <page-body needMarginBottom>
       <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
         <a-form-item :label="$t('common.name')">
           <a-input v-decorator="decorators.name" :placeholder="$t('validator.resourceName')" />
@@ -157,30 +157,16 @@
             :hiddenAdd="true"
             :isDialog="true" />
         </a-form-item>
-        <a-collapse :bordered="false" v-model:activeKey="collapseActive">
-          <a-collapse-panel :header="$t('compute.text_309')" key="1">
-            <a-form-item :label="$t('dictionary.host')">
-              <base-select
-                v-decorator="decorators.prefer_host"
-                resource="hosts"
-                :select-props="{
-                  placeholder: $t('common.tips.select', [$t('dictionary.host')]),
-                  allowClear: true,
-                }"
-                :params="hostParams" />
-            </a-form-item>
-          </a-collapse-panel>
-        </a-collapse>
         <template v-if="form.fd.llm_type === 'openclaw'">
           <a-form-item :label="$t('aice.openclaw.manual_config')">
             <a-switch v-decorator="decorators.openclaw_manual_config" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
             <div class="text-color-secondary mt-1" style="font-size: 13px;">{{ $t('aice.openclaw.manual_config_tip') }}</div>
           </a-form-item>
           <template v-if="!form.fd.openclaw_manual_config">
-          <a-divider orientation="left" class="openclaw-section-divider">{{ $t('aice.openclaw.section.ai_providers') }}</a-divider>
+          <advance-config-block :title="$t('aice.openclaw.section.ai_providers')">
           <a-form-item :label="$t('aice.openclaw.provider_filter')" :extra="$t('aice.openclaw.provider_select_tip')">
             <a-select
-              v-model:value="openclawSelectedProviders"
+              v-model="openclawSelectedProviders"
               mode="multiple"
               :placeholder="$t('aice.openclaw.provider_filter_placeholder')"
               allow-clear
@@ -203,12 +189,10 @@
               v-for="item in providerTabList"
               :key="item.key"
               :forceRender="true">
-              <template #tab>
-                <span class="openclaw-tab-with-close">
-                  {{ $t(item.labelKey) }}{{ item.required ? ' *' : '' }}
-                  <a-icon type="close" class="openclaw-tab-close" @click.prevent.stop="closeProviderTab(item.key)" />
-                </span>
-              </template>
+              <span slot="tab" class="openclaw-tab-with-close">
+                {{ $t(item.labelKey) }}{{ item.required ? ' *' : '' }}
+                <a-icon type="close" class="openclaw-tab-close" @click.prevent.stop="closeProviderTab(item.key)" />
+              </span>
 
               <a-form-item :label="$t('aice.openclaw.credential_mode.label')">
                 <a-radio-group
@@ -307,8 +291,9 @@
           <div v-else class="openclaw-filter-empty text-color-secondary">
             {{ openclawSelectedProviders.length === 0 ? $t('aice.openclaw.provider_select_first') : $t('aice.openclaw.provider_filter_empty') }}
           </div>
+          </advance-config-block>
 
-          <a-divider orientation="left" class="openclaw-section-divider">{{ $t('aice.openclaw.section.chat_channels') }}</a-divider>
+          <advance-config-block :title="$t('aice.openclaw.section.chat_channels')">
           <a-form-item :label="$t('aice.openclaw.channels')" :extra="$t('aice.openclaw.channels_extra')">
             <a-select
               v-decorator="decorators.openclaw_channels"
@@ -336,12 +321,10 @@
                 v-for="section in filteredChannelSections"
                 :key="section.sectionKey"
                 :forceRender="true">
-                <template #tab>
-                  <span class="openclaw-tab-with-close">
-                    {{ $t(section.sectionLabelKey) }}
-                    <a-icon type="close" class="openclaw-tab-close" @click.prevent.stop="closeChannelTab(section.sectionKey)" />
-                  </span>
-                </template>
+                <span slot="tab" class="openclaw-tab-with-close">
+                  {{ $t(section.sectionLabelKey) }}
+                  <a-icon type="close" class="openclaw-tab-close" @click.prevent.stop="closeChannelTab(section.sectionKey)" />
+                </span>
                 <a-form-item :label="$t('aice.openclaw.credential_mode.label')">
                   <a-radio-group
                     :value="openclawChannelCredentialMode[section.sectionKey] || 'new'"
@@ -548,11 +531,24 @@
               </a-tab-pane>
             </a-tabs>
           </template>
+          </advance-config-block>
           </template>
         </template>
-        <a-form-item :label="$t('compute.text_494')" :extra="$t('compute.text_495')">
-          <a-switch v-decorator="decorators.auto_start" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
-        </a-form-item>
+        <advance-config-block>
+          <a-form-item :label="$t('dictionary.host')">
+            <base-select
+              v-decorator="decorators.prefer_host"
+              resource="hosts"
+              :select-props="{
+                placeholder: $t('common.tips.select', [$t('dictionary.host')]),
+                allowClear: true,
+              }"
+              :params="hostParams" />
+          </a-form-item>
+          <a-form-item :label="$t('compute.text_494')" :extra="$t('compute.text_495')">
+            <a-switch v-decorator="decorators.auto_start" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
+          </a-form-item>
+        </advance-config-block>
       </a-form>
     </page-body>
     <page-footer>
@@ -1429,7 +1425,7 @@ export default {
           auto_start: values.auto_start,
           nets: networks,
         }
-        if (this.collapseActive.includes('1') && values.prefer_host) {
+        if (values.prefer_host) {
           data.prefer_host = values.prefer_host
         }
         if (this.supportDevices) {
@@ -1706,7 +1702,6 @@ export default {
 }
 .openclaw-channel-tabs { margin-top: 8px; }
 .openclaw-provider-tabs { margin-top: 8px; }
-.openclaw-section-divider { margin-top: 20px; }
 .openclaw-tab-with-close { display: inline-flex; align-items: center; gap: 6px; }
 .openclaw-tab-close { font-size: 12px; cursor: pointer; opacity: 0.6; }
 .openclaw-tab-close:hover { opacity: 1; }

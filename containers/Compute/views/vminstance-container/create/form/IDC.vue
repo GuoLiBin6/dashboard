@@ -52,12 +52,12 @@
           :form-draft-key="containerDraftFields.osArch" />
       </a-form-item>
       <a-form-item>
-        <template #label>
+        <span slot="label">
           {{ $t('compute.text_1152') }}&nbsp;
           <a-tooltip :title="$t('compute.vgpu_check.tooltip')">
-            <icon type="question-circle" />
+            <a-icon type="question-circle-o" />
           </a-tooltip>
-        </template>
+        </span>
         <pci :decorators="decorators.pci" :pciDevTypeOptions="pciDevTypeOptions" :form="form" :pci-options="pciOptions" :form-draft-key="containerDraftFields.pci" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_1058')" class="mb-0">
@@ -74,9 +74,9 @@
           :hypervisor="form.fd.hypervisor"
           :init-sku-data="initSkuData"
           :form-draft-key="containerDraftFields.sku" />
-        <template v-if="showSkuCreateTip" #extra>
+        <div slot="extra" v-if="showSkuCreateTip">
           {{ $t('compute.text_196') }}<help-link href="/sku">{{ $t('compute.perform_create') }}</help-link>
-        </template>
+        </div>
       </a-form-item>
       <a-form-item :label="$t('compute.text_50')">
         <data-disk
@@ -122,8 +122,7 @@
           :default-checked="tagDefaultChecked"
           :form-draft-key="containerDraftFields.tag" />
       </a-form-item>
-      <a-collapse :bordered="false" v-model:activeKey="collapseActive" :expand-icon="renderCollapseExpandIcon">
-        <a-collapse-panel :header="$t('compute.text_309')" key="1" :forceRender="true">
+      <advance-config-block>
           <eip-config
             v-if="showEip"
             ref="eipConfigRef"
@@ -139,12 +138,12 @@
           <a-form-item
             :validate-status="hostNameValidate.validateStatus"
             :help="hostNameValidate.errorMsg">
-            <template #label>
+            <span slot="label">
               {{ $t('common_388') }}&nbsp;
               <a-tooltip :title="hostNameTips">
-                <icon type="question-circle" />
+                <a-icon type="question-circle-o" />
               </a-tooltip>
-            </template>
+            </span>
             <host-name v-decorator="decorators.hostName" :isWindows="isWindows" @change="handleHostNameChange" />
           </a-form-item>
           <a-form-item :label="$t('compute.text_105')">
@@ -197,8 +196,7 @@
               :keyPlaceholder="$t('compute.repo.example', ['443'])"
               :valuePlaceholder="$t('compute.repo.example', ['443'])" />
           </a-form-item>
-        </a-collapse-panel>
-      </a-collapse>
+      </advance-config-block>
       <container-title :title="$t('compute.eci.container_config')" />
       <spec-container
         ref="specContainerRef"
@@ -658,7 +656,7 @@ export default {
       }
     },
   },
-  unmounted () {
+  destroyed () {
     this.timer = null
   },
   methods: {
