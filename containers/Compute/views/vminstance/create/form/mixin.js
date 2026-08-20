@@ -759,6 +759,7 @@ export default {
         VM_CREATE_FORM_DRAFT_FIELD.CUSTOM_DATA,
         VM_CREATE_FORM_DRAFT_FIELD.BASTION_HOST,
         VM_CREATE_FORM_DRAFT_FIELD.INSTANCE_GROUPS,
+        VM_CREATE_FORM_DRAFT_FIELD.ENCRYPT_KEYS,
         VM_CREATE_FORM_DRAFT_FIELD.BIOS,
         VM_CREATE_FORM_DRAFT_FIELD.VDI,
         VM_CREATE_FORM_DRAFT_FIELD.VGA,
@@ -782,7 +783,7 @@ export default {
       if (this.createFormDraftUserInteracted) return
       if (this._advanceDraftRestoreRunning) return
       this._advanceDraftRestoreRunning = true
-      if (this.form?.fi) this.$set(this.form.fi, 'advanceDraftRestoring', true)
+      if (this.form?.fi) this.form.fi.advanceDraftRestoring = true
       try {
         this.ensureAdvanceConfigOpenForDraft()
         if (!this.isDraftAdvanceConfigOpen) {
@@ -836,6 +837,7 @@ export default {
         this.$refs.customData,
         this.$refs.bastionHostRef,
         this.$refs.instanceGroupsRef,
+        this.$refs.encryptKeysRef,
       ].forEach((ref) => {
         if (ref && typeof ref.restoreFormFieldDraftFields === 'function') {
           try { ref.restoreFormFieldDraftFields() } catch (e) { /* ignore */ }
@@ -844,7 +846,7 @@ export default {
     },
     clearAdvanceDraftRestoring () {
       if (this.form?.fi && this.form.fi.advanceDraftRestoring) {
-        this.$set(this.form.fi, 'advanceDraftRestoring', false)
+        this.form.fi.advanceDraftRestoring = false
       }
     },
     markCreateFormDraftUserInteracted () {
@@ -873,7 +875,7 @@ export default {
 
       this._diskDraftRestoreRunning = true
       this._diskBackfillPending = true
-      if (this.form.fi) this.$set(this.form.fi, 'diskDraftRestoring', true)
+      if (this.form.fi) this.form.fi.diskDraftRestoring = true
 
       const waitRef = (getter, timeout = 12000) => new Promise(resolve => {
         const startAt = Date.now()
@@ -916,48 +918,44 @@ export default {
           await this.restoreDataDiskFromFieldDraft(dataDraft, { waitRef, waitTypesMap })
         }
         this._diskDraftRestoreDone = true
+        this.$nextTick(() => this.reconcileDiskFormStateBeforeSubmit())
+        setTimeout(() => this.reconcileDiskFormStateBeforeSubmit(), 4600)
       } finally {
         this._diskDraftRestoreRunning = false
         setTimeout(() => {
           this._diskBackfillPending = false
-          if (this.form?.fi) this.$set(this.form.fi, 'diskDraftRestoring', false)
+          if (this.form?.fi) this.form.fi.diskDraftRestoring = false
         }, 5000)
       }
     },
     async restoreSystemDiskFromFieldDraft (draft, { waitRef, waitTypesMap }) {
       if (!draft || !this.form?.fc) return
-      const typeVal = draft.systemDiskType
-      const sizeVal = draft.systemDiskSize
+      const sysRef = await waitRef(() => this.$refs.systemDiskRef)
+      if (sysRef) await waitTypesMap(() => sysRef.typesMap)
+      const typeVal = draft.systemDiskType || draft[sysRef?.decorator?.type?.[0]]
+      const sizeVal = draft.systemDiskSize ?? draft[sysRef?.decorator?.size?.[0]]
       if (!typeVal?.key && sizeVal == null) {
-        const sysRef = await waitRef(() => this.$refs.systemDiskRef)
         if (sysRef?.applyCreateFormFieldDraft) sysRef.applyCreateFormFieldDraft(draft)
         return
       }
       const hyper = (this.form.fd.hypervisor || '').toLowerCase()
-      const key = typeVal?.key || ''
-      const parts = String(key).split('/')
-      const backend = parts[0]
-      const medium = parts[1] || 'ssd'
-      const systemDiskType = typeVal?.key
-        ? { key: typeVal.key, label: typeVal.label || '' }
-        : null
-      const systemDiskSize = sizeVal != null ? Number(sizeVal) : undefined
-      if (systemDiskType) this.$set(this.form.fd, 'systemDiskType', systemDiskType)
-      if (systemDiskSize != null) this.$set(this.form.fd, 'systemDiskSize', systemDiskSize)
-      const fcValues = { ...draft }
-      if (systemDiskType) fcValues.systemDiskType = systemDiskType
-      if (systemDiskSize != null) fcValues.systemDiskSize = systemDiskSize
-      this.form.fc.setFieldsValue(fcValues)
-      if (medium) this.$set(this.form.fi, 'systemDiskMedium', medium)
-
-      const sysRef = await waitRef(() => this.$refs.systemDiskRef)
-      if (sysRef) await waitTypesMap(() => sysRef.typesMap)
-      const diskComp = await waitRef(() => this.$refs.systemDiskRef && this.$refs.systemDiskRef.$refs && this.$refs.systemDiskRef.$refs.disk)
-      if (diskComp && diskComp.initData && backend) {
+      if (typeVal?.key) {
+        const medium = String(typeVal.key).split('/')[1] || 'ssd'
+        if (medium) this.form.fi.systemDiskMedium = medium
+      }
+      if (sysRef?.applyCreateFormFieldDraft) {
+        sysRef.applyCreateFormFieldDraft(draft)
+      } else if (sysRef?.applySysDiskDraftToForm) {
+        sysRef.applySysDiskDraftToForm(draft)
+      }
+      const diskComp = sysRef?.$refs?.disk
+      if (diskComp?.initData && typeVal?.key) {
+        const parts = String(typeVal.key).split('/')
+        const clampedSize = sysRef.clampSysDiskDraftSize(sizeVal, typeVal.key)
         const initPayload = {
-          backend,
-          medium,
-          size: (systemDiskSize || 0) * 1024,
+          backend: parts[0],
+          medium: parts[1] || 'ssd',
+          size: (clampedSize || 0) * 1024,
         }
         if (draft.systemDiskStorage) initPayload.storage_id = draft.systemDiskStorage
         if (draft.systemDiskAutoReset) initPayload.auto_reset = draft.systemDiskAutoReset
@@ -971,29 +969,16 @@ export default {
           }]
         }
         diskComp.initData(initPayload, hyper)
-        const reapply = () => {
-          if (!this.form?.fc) return
-          if (systemDiskType) this.$set(this.form.fd, 'systemDiskType', systemDiskType)
-          if (systemDiskSize != null) this.$set(this.form.fd, 'systemDiskSize', systemDiskSize)
-          const adv = {}
-          ;['systemDiskStorage', 'systemDiskSchedtag', 'systemDiskPolicy', 'systemDiskIops', 'systemDiskThroughput', 'systemDiskAutoReset', 'systemDiskPreallocation'].forEach((k) => {
-            if (draft[k] !== undefined) adv[k] = draft[k]
-          })
-          this.form.fc.setFieldsValue({
-            systemDiskType,
-            systemDiskSize,
-            ...adv,
-          })
-        }
-        setTimeout(reapply, 500)
-        setTimeout(reapply, 1500)
-        setTimeout(reapply, 3000)
-      } else if (sysRef && sysRef.applyCreateFormFieldDraft) {
-        sysRef.applyCreateFormFieldDraft(draft)
       }
     },
     async restoreDataDiskFromFieldDraft (draft, { waitRef, waitTypesMap }) {
       if (!draft || !this.form?.fc) return
+      // 显式空 keys：用户已删光数据盘，不再回填（也不走其它字段 fallback）
+      if (Array.isArray(draft.__dataDiskKeys) && draft.__dataDiskKeys.length === 0) {
+        const dataRef = await waitRef(() => this.$refs.dataDiskRef)
+        if (dataRef) dataRef.dataDisks = []
+        return
+      }
       const keys = Array.isArray(draft.__dataDiskKeys) ? draft.__dataDiskKeys.filter(Boolean) : []
       const nestedSizes = draft.dataDiskSizes && typeof draft.dataDiskSizes === 'object' ? draft.dataDiskSizes : null
       const resolvedKeys = keys.length
@@ -1066,7 +1051,9 @@ export default {
         cur.dataDisks.forEach((disk, idx) => {
           const src = sources[idx]
           if (!src || !disk || !disk.key) return
-          if (src.size != null) values[`dataDiskSizes[${disk.key}]`] = src.size
+          if (src.size != null) {
+            values[`dataDiskSizes[${disk.key}]`] = cur.clampDataDiskDraftSize(src.size, cur.min(idx), cur.max(idx))
+          }
           if (src.backend) {
             let typeObj = typesMap[src.backend] || typesMap[`${src.backend}/${src.medium}`]
             if (!typeObj) {
@@ -1076,7 +1063,7 @@ export default {
             const diskType = typeObj
               ? { key: typeObj.key, label: typeObj.label, index: idx }
               : { key: src.medium ? `${src.backend}/${src.medium}` : src.backend, label: src.backend, index: idx }
-            this.$set(disk, 'diskType', diskType)
+            disk.diskType = diskType
             values[`dataDiskTypes[${disk.key}]`] = diskType
           }
           if (src.schedtag) values[`dataDiskSchedtags[${disk.key}]`] = src.schedtag
@@ -1090,7 +1077,7 @@ export default {
           if (src.autoReset != null) values[`dataDiskAutoReset[${disk.key}]`] = src.autoReset
           if (src.preallocation) values[`dataDiskPreallocation[${disk.key}]`] = src.preallocation
         })
-        if (Object.keys(values).length) this.form.fc.setFieldsValue(values)
+        if (Object.keys(values).length) this.setFormFieldsAndSyncFd(values)
       }
       setTimeout(reapplyDataDisks, 500)
       setTimeout(reapplyDataDisks, 1500)
@@ -1196,10 +1183,10 @@ export default {
           : systemDisk.backend
         const systemDiskType = { key: typeKey, label: '' }
         const systemDiskSize = systemDisk.size / 1024
-        this.$set(this.form.fd, 'systemDiskType', systemDiskType)
-        this.$set(this.form.fd, 'systemDiskSize', systemDiskSize)
+        this.form.fd.systemDiskType = systemDiskType
+        this.form.fd.systemDiskSize = systemDiskSize
         this.form.fc.setFieldsValue({ systemDiskType, systemDiskSize })
-        if (systemDisk.medium) this.$set(this.form.fi, 'systemDiskMedium', systemDisk.medium)
+        if (systemDisk.medium) this.form.fi.systemDiskMedium = systemDisk.medium
       }
 
       // 等子组件挂载（公有云 v-if 晚挂载）
@@ -1238,12 +1225,12 @@ export default {
       // —— 管理员密码方式回填（本方法仅工单；明文密码可回填）——
       const loginType = resolveDraftLoginType(initData)
       if (loginType) {
-        this.$set(this.form.fd, 'loginType', loginType)
+        this.form.fd.loginType = loginType
         this.form.fc.setFieldsValue({ loginType })
       }
       const loginPassword = (initData.extraData && initData.extraData.loginPassword) || initData.password || ''
       if (loginType === 'password' && loginPassword) {
-        this.$set(this.form.fd, 'loginPassword', loginPassword)
+        this.form.fd.loginPassword = loginPassword
         // 密码输入框随 loginType 才挂载，延迟再写一次
         this.$nextTick(() => {
           this.form.fc.setFieldsValue({ loginPassword })
@@ -1251,7 +1238,7 @@ export default {
         setTimeout(() => {
           if (this.form && this.form.fc) {
             this.form.fc.setFieldsValue({ loginPassword })
-            this.$set(this.form.fd, 'loginPassword', loginPassword)
+            this.form.fd.loginPassword = loginPassword
           }
         }, 500)
       }
@@ -1386,7 +1373,7 @@ export default {
           if (customRef.restoreFromDraft) {
             customRef.restoreFromDraft(customType, userDataText)
           } else if (userDataText && customRef.handleMirrorDataChange) {
-            this.$set(this.form.fd, 'custom_data_type', customType)
+            this.form.fd.custom_data_type = customType
             this.form.fc.setFieldsValue({ custom_data_type: customType })
             customRef.handleMirrorDataChange(userDataText)
           }
@@ -1433,7 +1420,7 @@ export default {
       if (!networkRef) return
       const initNetworkType = resolveDraftNetworkType(initData)
       this.form.fc.setFieldsValue({ networkType: initNetworkType })
-      if (this.form.fd) this.$set(this.form.fd, 'networkType', initNetworkType)
+      if (this.form.fd) this.form.fd.networkType = initNetworkType
       networkRef.change({ target: { value: initNetworkType }, name: 'default' })
       await this.$nextTick()
       if (initNetworkType === NETWORK_OPTIONS_MAP.manual.key) {
@@ -1511,10 +1498,10 @@ export default {
             : systemDisk.backend
           const systemDiskType = { key: typeKey, label: '' }
           const systemDiskSize = systemDisk.size / 1024
-          this.$set(this.form.fd, 'systemDiskType', systemDiskType)
-          this.$set(this.form.fd, 'systemDiskSize', systemDiskSize)
+          this.form.fd.systemDiskType = systemDiskType
+          this.form.fd.systemDiskSize = systemDiskSize
           this.form.fc.setFieldsValue({ systemDiskType, systemDiskSize })
-          if (systemDisk.medium) this.$set(this.form.fi, 'systemDiskMedium', systemDisk.medium)
+          if (systemDisk.medium) this.form.fi.systemDiskMedium = systemDisk.medium
 
           const sysRef = await doWaitRef(() => this.$refs.systemDiskRef)
           if (sysRef) {
@@ -1526,8 +1513,8 @@ export default {
           }
           const reapplySys = () => {
             if (!this.form || !this.form.fc) return
-            this.$set(this.form.fd, 'systemDiskType', systemDiskType)
-            this.$set(this.form.fd, 'systemDiskSize', systemDiskSize)
+            this.form.fd.systemDiskType = systemDiskType
+            this.form.fd.systemDiskSize = systemDiskSize
             this.form.fc.setFieldsValue({ systemDiskType, systemDiskSize })
           }
           setTimeout(reapplySys, 1500)
@@ -1539,7 +1526,7 @@ export default {
           if (dataDiskRef && dataDiskRef.add) {
             await waitTypesMap(() => dataDiskRef.typesMap)
             const { medium: dataDiskMedium } = dataDisks[0] || {}
-            if (dataDiskMedium) this.$set(this.form.fi, 'dataDiskMedium', dataDiskMedium)
+            if (dataDiskMedium) this.form.fi.dataDiskMedium = dataDiskMedium
             await new Promise(resolve => setTimeout(resolve, 300))
             const ref = this.$refs.dataDiskRef
             if (ref && ref.add) {
@@ -1591,7 +1578,7 @@ export default {
                   const diskType = typeObj
                     ? { key: typeObj.key, label: typeObj.label, index: idx }
                     : { key: backend, label: backend, index: idx }
-                  this.$set(disk, 'diskType', diskType)
+                  disk.diskType = diskType
                   values[`dataDiskTypes[${disk.key}]`] = diskType
                 })
                 if (Object.keys(values).length) {
@@ -1620,7 +1607,7 @@ export default {
     updateFi (fiItems) { // 子组件更新fi
       if (R.is(Object, fiItems)) {
         R.forEachObjIndexed((item, key) => {
-          this.$set(this.form.fi, key, item)
+          this.form.fi[key] = item
         }, fiItems)
       }
     },
@@ -1672,6 +1659,7 @@ export default {
     },
     submit (e) {
       e.preventDefault()
+      this.reconcileDiskFormStateBeforeSubmit()
       this.validateForm()
         .then(async formData => {
           this.submiting = true
@@ -1935,13 +1923,71 @@ export default {
     _setNewFieldToFd (newField, formValue) { // vue-ant-form change 后赋值 fd
       const changeKeys = Object.keys(newField)
       R.forEachObjIndexed((item, key) => {
-        this.$set(this.form.fd, key, item)
+        this.form.fd[key] = item
       }, newField)
       if (changeKeys.some(val => val.includes('dataDiskSizes'))) { // 动态赋值默认值的表单需要单独处理
-        this.$set(this.form.fd, 'dataDiskSizes', formValue.dataDiskSizes)
+        this.form.fd.dataDiskSizes = formValue.dataDiskSizes
       }
       this.syncVmCreateFormFcDrafts(newField)
       this.syncVmDiskFormFieldDrafts(newField)
+    },
+    /** setFieldsValue 后同步 fd（程序化赋值不走 onValuesChange） */
+    setFormFieldsAndSyncFd (values) {
+      if (!this.form?.fc || !values || typeof values !== 'object') return
+      this.form.fc.setFieldsValue(values)
+      const formValue = this.form.fc.getFieldsValue()
+      this._setNewFieldToFd(values, formValue)
+    },
+    /**
+     * 提交/草稿回填完成后：系统盘与数据盘 fc/fd 对齐，值经 clamp 保证合法
+     */
+    reconcileDiskFormStateBeforeSubmit () {
+      if (!this.form?.fc) return
+      const sysRef = this.$refs.systemDiskRef
+      if (sysRef) {
+        const typeKey = sysRef.decorator?.type?.[0] || 'systemDiskType'
+        const sizeKey = sysRef.decorator?.size?.[0] || 'systemDiskSize'
+        let typeVal = this.form.fc.getFieldValue(typeKey) || this.form.fd?.[typeKey] || this.form.fd?.systemDiskType
+        const fcSize = this.form.fc.getFieldValue(sizeKey)
+        const fdSize = this.form.fd?.[sizeKey] ?? this.form.fd?.systemDiskSize
+        typeVal = sysRef.resolveSysDiskTypeFromDraft(typeVal)
+        const typeKeyForClamp = typeVal?.key
+        let sizeVal = fcSize
+        if (sizeVal == null || sizeVal === '') sizeVal = fdSize
+        if (fdSize != null && fcSize != null && Number(fdSize) !== Number(fcSize)) {
+          const clampedFc = sysRef.clampSysDiskDraftSize(fcSize, typeKeyForClamp)
+          const clampedFd = sysRef.clampSysDiskDraftSize(fdSize, typeKeyForClamp)
+          const diskMsg = (typeKeyForClamp && sysRef.typesMap?.[typeKeyForClamp]) || {}
+          const minDefault = Math.max(sysRef.imageMinDisk || 0, diskMsg.sysMin || 10, 0)
+          if (Number(clampedFd) > Number(clampedFc) && Number(clampedFc) <= minDefault) {
+            sizeVal = clampedFd
+          } else {
+            sizeVal = clampedFc
+          }
+        } else {
+          sizeVal = sysRef.clampSysDiskDraftSize(sizeVal, typeKeyForClamp)
+        }
+        const values = {}
+        if (typeVal) values[typeKey] = typeVal
+        if (sizeVal != null && sizeVal !== '') values[sizeKey] = sizeVal
+        if (Object.keys(values).length) this.setFormFieldsAndSyncFd(values)
+      }
+      const dataRef = this.$refs.dataDiskRef
+      if (dataRef?.dataDisks?.length) {
+        const flat = {}
+        dataRef.dataDisks.forEach((disk, index) => {
+          if (!disk?.key) return
+          const typeField = dataRef._fp('Types', disk.key)
+          const sizeField = dataRef._fp('Sizes', disk.key)
+          const typeVal = this.form.fc.getFieldValue(typeField) || disk.diskType
+          const sizeVal = this.form.fc.getFieldValue(sizeField)
+          const resolvedType = dataRef.resolveDataDiskTypeFromDraft(typeVal, index)
+          const nextSize = dataRef.clampDataDiskDraftSize(sizeVal, dataRef.min(index), dataRef.max(index))
+          if (resolvedType) flat[typeField] = resolvedType
+          if (nextSize != null) flat[sizeField] = nextSize
+        })
+        if (Object.keys(flat).length) this.setFormFieldsAndSyncFd(flat)
+      }
     },
     /**
      * 系统盘/数据盘字段变更时落盘（setFieldsValue 不会走此路径）
@@ -2131,6 +2177,7 @@ export default {
       }
     },
     addShopCart () {
+      this.reconcileDiskFormStateBeforeSubmit()
       this.validateForm()
         .then(async formData => {
           this.submiting = true

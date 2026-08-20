@@ -181,7 +181,7 @@ export default {
         fc: this.$form.createForm(this, {
           onValuesChange: (props, values) => {
             Object.keys(values).forEach((key) => {
-              this.$set(this.form.fd, key, values[key])
+              this.form.fd[key] = values[key]
             })
             if (values.hasOwnProperty('cloudregion')) {
               const regionId = this.pickSingleAreaValue(values.cloudregion)
@@ -591,7 +591,7 @@ export default {
       key: EIP_CREATE_FORM_DRAFT_FIELD.TAG,
       get: () => {
         const meta = this.form.fc.getFieldValue('__meta__')
-        if (!meta || !Object.keys(meta).length) return undefined
+        if (!meta || !Object.keys(meta).length) return null
         return { checked: meta }
       },
       set: (draft) => {
@@ -683,7 +683,7 @@ export default {
         const meta = newField.__meta__
         this.writeCreateFormFieldDraft(
           EIP_CREATE_FORM_DRAFT_FIELD.TAG,
-          meta && Object.keys(meta).length ? { checked: meta } : undefined,
+          meta && Object.keys(meta).length ? { checked: meta } : null,
         )
       }
     },
@@ -746,7 +746,7 @@ export default {
         if (provider.length) {
           const providerVal = this.isPublic ? provider : provider[0]
           this.form.fc.setFieldsValue({ provider: providerVal })
-          this.$set(this.form.fd, 'provider', providerVal)
+          this.form.fd.provider = providerVal
           await this.$nextTick()
         }
 
@@ -778,7 +778,7 @@ export default {
           cloudregion: this.form.fc.getFieldValue('cloudregion'),
         }
         Object.keys(values).forEach((key) => {
-          if (values[key] !== undefined) this.$set(this.form.fd, key, values[key])
+          if (values[key] !== undefined) this.form.fd[key] = values[key]
         })
         this.cloudregionChange()
 

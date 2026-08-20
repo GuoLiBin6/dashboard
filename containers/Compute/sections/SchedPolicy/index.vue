@@ -9,6 +9,7 @@
       <template v-if="serverType === 'baremetal'">
         <base-select
           class="w-50"
+          ref="preferHostSelect"
           :options="hostData"
           :disabled-items="disabledHost"
           v-decorator="decorators.schedPolicyHost"
@@ -38,6 +39,7 @@
           :select-props="{ placeholder: lodash.get(schedPolicyOptionsMap, 'host.label') || '' }" /> -->
         <base-select
           v-if="!showCloudproviderSelect"
+          ref="preferHostSelect"
           class="w-50"
           resource="hosts"
           :disabled-items="disabledHost"
@@ -262,6 +264,10 @@ export default {
       // 对齐 PolicySchedtag：params 变化会 clearSelect，需反复补写
       handler () {
         if (!this.pendingPreferHost) return
+        // resource 模式会重拉列表，先标未就绪，避免空 sourceList 误丢草稿
+        if (!(Array.isArray(this.hostData) && this.hostData.length)) {
+          this._preferHostListLoaded = false
+        }
         this.$nextTick(() => {
           this.writePendingPreferHost()
           setTimeout(() => this.writePendingPreferHost(), 300)
@@ -280,6 +286,7 @@ export default {
     this._schedPolicyDraftApplying = false
     this._schedPolicyDraftHydrated = false
     this._schedPolicyUserTouched = false
+    this._preferHostListLoaded = false
     // 尽早从 localStorage 种 pending，避免首屏 radio 停在 default 并落盘冲掉草稿
     const draft = this.canReadWriteFormFieldDraft() ? this.readFormFieldDraft() : null
     if (draft) {
@@ -354,7 +361,7 @@ export default {
       if (preferType && this.schedPolicyOptionsMap[preferType]) {
         if (current !== preferType) {
           this.form.fc.setFieldsValue({ [field]: preferType })
-          if (this.form.fd) this.$set(this.form.fd, field, preferType)
+          if (this.form.fd) this.form.fd[field] = preferType
         }
         this.setSchedPolicyComponent(preferType)
         if (preferType === 'host') {
@@ -425,8 +432,10 @@ export default {
         let preferHost = this.normalizePreferHost(
           f.getFieldValue(hostField) || (this.form.fd && this.form.fd[hostField]) || this.pendingPreferHost,
         )
-        // clearSelect 空值落盘时保留已有 prefer_host，避免嵌套选中被冲掉
-        if (!preferHost) preferHost = this.normalizePreferHost(prev && prev.prefer_host)
+        // clearSelect 空值落盘时保留已有 prefer_host，避免嵌套选中被冲掉；用户已清空则写空
+        if (!preferHost && !this._schedPolicyUserTouched) {
+          preferHost = this.normalizePreferHost(prev && prev.prefer_host)
+        }
         if (preferHost) ret.prefer_host = preferHost
       }
       // 调度标签：存与工单同形，回填走 policySchedtagRef.initData
@@ -440,11 +449,18 @@ export default {
             return { id, strategy }
           }).filter(t => t.id)
         }
-        if (!schedtags.length && Array.isArray(prev && prev.schedtags)) schedtags = prev.schedtags
-        if (schedtags.length) ret.schedtags = schedtags
+        if (!schedtags.length && !this._schedPolicyUserTouched && Array.isArray(prev && prev.schedtags)) {
+          schedtags = prev.schedtags
+        }
+        ret.schedtags = schedtags
       }
       if (type === 'cloudprovider' && this.decorators.cloudprovider) {
-        ret.cloudprovider = f.getFieldValue(this.decorators.cloudprovider[0]) || (prev && prev.cloudprovider)
+        const cp = f.getFieldValue(this.decorators.cloudprovider[0])
+        if (cp) {
+          ret.cloudprovider = cp
+        } else if (!this._schedPolicyUserTouched && prev && prev.cloudprovider) {
+          ret.cloudprovider = prev.cloudprovider
+        }
       }
       return ret
     },
@@ -464,7 +480,7 @@ export default {
         if (!targetType || !this.form?.fc) return
         // host 不在 options 时仍写入 fc，等 options 就绪后 radio 能对上
         this.form.fc.setFieldsValue({ [typeField]: targetType })
-        if (this.form.fd) this.$set(this.form.fd, typeField, targetType)
+        if (this.form.fd) this.form.fd[typeField] = targetType
         this.setSchedPolicyComponent(targetType)
       }
       applyType()
@@ -551,7 +567,7 @@ export default {
       const typeField = this.decorators.schedPolicyType[0]
       if (this.form?.fc) {
         this.form.fc.setFieldsValue({ [typeField]: 'host' })
-        if (this.form.fd) this.$set(this.form.fd, typeField, 'host')
+        if (this.form.fd) this.form.fd[typeField] = 'host'
       }
       this.setSchedPolicyComponent('host')
       this.writePendingPreferHost()
@@ -563,20 +579,45 @@ export default {
       })
     },
     /**
+     * 解析可用于校验的宿主机列表
+     * - baremetal / 传入 hostData：用 hostData
+     * - 虚机 resource=hosts：用 BaseSelect.sourceList（需等 initLoaded）
+     * - 返回 undefined 表示列表尚未就绪（仍应写入表单，靠 extraOpts 展示）
+     */
+    resolvePreferHostList () {
+      if (Array.isArray(this.hostData) && this.hostData.length) {
+        return this.hostData
+      }
+      if (!this._preferHostListLoaded) return undefined
+      const selectRef = this.$refs.preferHostSelect
+      if (!selectRef) return undefined
+      return Array.isArray(selectRef.sourceList) ? selectRef.sourceList : []
+    },
+    /**
      * 写入指定宿主机。pendingPreferHost 本身即回填意图；用户改过后不再强写
-     * 宿主机列表已就绪时，不在列表中的草稿宿主机丢弃
+     * 列表已就绪且未命中时丢弃；列表未就绪时仍写入（虚机靠 extraOpts 展示）
      */
     writePendingPreferHost () {
       if (!this.pendingPreferHost || !this.form?.fc) return
       if (this._schedPolicyUserTouched && !this._schedPolicyDraftApplying && !this.preserveInitPreferHost) return
-      const hostList = Array.isArray(this.hostData) ? this.hostData : []
-      // 空列表不回填；非空未命中则丢弃
-      if (!hostList.length) return
-      const hit = hostList.some(h => (h.id || h.key) === this.pendingPreferHost)
-      if (!hit) {
-        this.setPendingPreferHost('')
-        return
+      const hostList = this.resolvePreferHostList()
+      if (Array.isArray(hostList)) {
+        // 已就绪：空列表或未命中则丢弃，保证填入值可用
+        if (!hostList.length) {
+          this.setPendingPreferHost('')
+          return
+        }
+        const hit = hostList.some(h => (h.id || h.key) === this.pendingPreferHost)
+        if (!hit) {
+          this.setPendingPreferHost('')
+          return
+        }
       }
+      // hostList === undefined：列表未就绪（虚机 resource 模式常见），先写入表单
+      this.applyPendingPreferHostToForm()
+    },
+    applyPendingPreferHostToForm () {
+      if (!this.pendingPreferHost || !this.form?.fc) return
       if (this.schedPolicyComponent !== 'host') {
         this.setSchedPolicyComponent('host')
       }
@@ -593,11 +634,12 @@ export default {
         [hostField]: this.pendingPreferHost,
       })
       if (this.form.fd) {
-        this.$set(this.form.fd, typeField, 'host')
-        this.$set(this.form.fd, hostField, this.pendingPreferHost)
+        this.form.fd[typeField] = 'host'
+        this.form.fd[hostField] = this.pendingPreferHost
       }
     },
     onHostInitLoaded () {
+      this._preferHostListLoaded = true
       this.writePendingPreferHost()
       // 列表刚到时 defaultSelect/clearSelect 可能再清一次，稍后再补
       setTimeout(() => this.writePendingPreferHost(), 300)

@@ -32,6 +32,8 @@
           :imageType="imageType"
           @snapshotChange="val => snapshotChange(item, val, i)"
           @diskTypeChange="val => diskTypeChange(item, val, i)"
+          @showStorageChange="val => dataDiskShowStorageChange(val)"
+          @optionalChange="onDataDiskOptionalChange"
           @storageHostChange="(val) => $emit('storageHostChange', val)" />
         <a-button v-if="!getDisabled(item, 'minus') && (dataDisks.length > 1 ? (i !== 0) : true) && isAddDiskShow" shape="circle" size="small" @click="decrease(item.key)" class="ml-1 data-disk-row__action">
           <template #icon><icon type="minus" /></template>
@@ -473,28 +475,48 @@ export default {
     restoreFormFieldDraftFields () {
       return false
     },
+    /** 工单/草稿回填中：禁止把临时空盘状态写回草稿 */
+    isDataDiskDraftWriteBlocked () {
+      return !!(this.diskDraftRestoring || this.isInitForm || this.form?.fi?.diskDraftRestoring)
+    },
     getCreateFormFieldDraftSnapshot () {
       const f = this.form?.fc
       if (!f) return undefined
       const pick = {}
       const keys = (this.dataDisks || []).map(d => d.key)
-      if (!keys.length) return undefined
+      // 显式空结构：删光数据盘后也要能落盘/清草稿，避免 undefined 跳过写入导致旧草稿残留
+      if (!keys.length) {
+        return { __dataDiskKeys: [] }
+      }
       pick.__dataDiskKeys = keys
+      const diskRefs = (() => {
+        const refs = this.$refs.disks
+        if (Array.isArray(refs)) return refs
+        return refs ? [refs] : []
+      })()
       keys.forEach((key) => {
+        const diskComp = diskRefs.find(d => d && d.diskKey === key)
+        const includeStorage = !diskComp || diskComp.showStorage
+        const includeSchedtag = !diskComp || diskComp.showSchedtag
+        const includeSnapshot = !diskComp || diskComp.showSnapshot
+        const includeMount = !diskComp || diskComp.showMountpoint
+        const includeIops = !diskComp || diskComp.showIops
+        const includeThroughput = !diskComp || diskComp.showThroughput
+        const includePreallocation = !diskComp || diskComp.showPreallocation
         const fieldKeys = [
           this._fp('Types', key),
           this._fp('Sizes', key),
-          this._fp('Schedtags', key),
-          this._fp('Policys', key),
-          this._fp('Snapshots', key),
-          this._fp('Storages', key),
-          this._fp('Iops', key),
-          this._fp('Throughputs', key),
-          this._fp('Filetypes', key),
-          this._fp('MountPaths', key),
+          includeSchedtag ? this._fp('Schedtags', key) : null,
+          includeSchedtag ? this._fp('Policys', key) : null,
+          includeSnapshot ? this._fp('Snapshots', key) : null,
+          includeStorage ? this._fp('Storages', key) : null,
+          includeIops ? this._fp('Iops', key) : null,
+          includeThroughput ? this._fp('Throughputs', key) : null,
+          includeMount ? this._fp('Filetypes', key) : null,
+          includeMount ? this._fp('MountPaths', key) : null,
           this._fp('AutoReset', key),
-          this._fp('Preallocation', key),
-        ]
+          includePreallocation ? this._fp('Preallocation', key) : null,
+        ].filter(Boolean)
         fieldKeys.forEach((fk) => {
           const v = f.getFieldValue(fk)
           if (v !== undefined) pick[fk] = v
@@ -507,10 +529,39 @@ export default {
       })
       return pick
     },
+    dataDiskShowStorageChange (show) {
+      if (show || this.isDataDiskDraftWriteBlocked()) return
+      // 取消指定块存储后立刻落盘，去掉草稿里的 storage
+      this.$nextTick(() => this.persistFormFieldDraftSnapshot())
+    },
+    onDataDiskOptionalChange ({ show }) {
+      if (show || this.isDataDiskDraftWriteBlocked()) return
+      this.$nextTick(() => this.persistFormFieldDraftSnapshot())
+    },
+    persistFormFieldDraftSnapshot (options = {}) {
+      if (this.isDataDiskDraftWriteBlocked()) return
+      const data = this.serializeFormFieldDraft()
+      if (data && Array.isArray(data.__dataDiskKeys) && data.__dataDiskKeys.length === 0) {
+        this.clearFormFieldDraft()
+        return
+      }
+      if (data !== undefined) this.writeFormFieldDraft(data, options)
+    },
+    flushFormFieldDraftOnSubmit () {
+      if (this.isDataDiskDraftWriteBlocked()) return
+      const data = this.serializeFormFieldDraft()
+      if (data && Array.isArray(data.__dataDiskKeys) && data.__dataDiskKeys.length === 0) {
+        this.clearFormFieldDraft()
+        return
+      }
+      if (data !== undefined) {
+        this.writeFormFieldDraft(data, { fromSubmit: true })
+      }
+    },
     applyCreateFormFieldDraft (draft) {
       if (!draft || !this.form?.fc) return
       this.diskDraftRestoring = true
-      if (this.form.fi) this.$set(this.form.fi, 'diskDraftRestoring', true)
+      if (this.form.fi) this.form.fi.diskDraftRestoring = true
       const run = () => this.applyDataDiskDraft(draft)
       this.$nextTick(run)
       setTimeout(run, 1200)
@@ -518,12 +569,17 @@ export default {
       setTimeout(() => {
         run()
         this.diskDraftRestoring = false
-        if (this.form?.fi) this.$set(this.form.fi, 'diskDraftRestoring', false)
+        if (this.form?.fi) this.form.fi.diskDraftRestoring = false
       }, 4500)
     },
     applyDataDiskDraft (draft) {
       if (!draft || !this.form?.fc) return
       const { __dataDiskKeys, ...rest } = draft
+      // 用户删光后的空草稿：清空当前数据盘，勿 fallback 到其它残留字段
+      if (Array.isArray(__dataDiskKeys) && __dataDiskKeys.length === 0) {
+        this.dataDisks = []
+        return
+      }
       const keys = Array.isArray(__dataDiskKeys) && __dataDiskKeys.length
         ? __dataDiskKeys
         : Object.keys(rest.dataDiskSizes || {}).concat(
@@ -565,6 +621,19 @@ export default {
       const firstKey = Object.keys(this.typesMap)[0]
       if (!firstKey) return cur
       return { key: firstKey, label: this.typesMap[firstKey].label, index: cur.index }
+    },
+    syncDataDiskFieldsToFd (flat) {
+      if (!this.form?.fd || !flat || typeof flat !== 'object') return
+      Object.keys(flat).forEach((key) => {
+        this.form.fd[key] = flat[key]
+      })
+      const formValue = this.form.fc?.getFieldsValue?.() || {}
+      if (formValue.dataDiskSizes) {
+        this.form.fd.dataDiskSizes = formValue.dataDiskSizes
+      }
+      if (formValue.dataDiskTypes) {
+        this.form.fd.dataDiskTypes = formValue.dataDiskTypes
+      }
     },
     clampDataDiskDraftSize (sizeVal, min, max) {
       if (sizeVal == null || sizeVal === '') return sizeVal
@@ -615,7 +684,10 @@ export default {
         const nextSize = this.clampDataDiskDraftSize(rawSize, this.min(index), this.max(index))
         if (nextSize != null) flat[sizeField] = nextSize
       })
-      if (Object.keys(flat).length) this.form.fc.setFieldsValue(flat)
+      if (Object.keys(flat).length) {
+        this.form.fc.setFieldsValue(flat)
+        this.syncDataDiskFieldsToFd(flat)
+      }
       this.$nextTick(() => {
         const refs = this.$refs.disks
         const diskRefs = Array.isArray(refs) ? refs : (refs ? [refs] : [])
@@ -711,7 +783,7 @@ export default {
         if (this.form.fd) { // 如果上层表单有fd时，需要在此同步数据(外层监听不到减少表单的情况)
           this.form.fd[this._fp('Sizes')] = formValue[this._fp('Sizes')] || {}
         }
-        if (!this.diskDraftRestoring && !this.isInitForm) {
+        if (!this.isDataDiskDraftWriteBlocked()) {
           this.persistFormFieldDraftSnapshot()
         }
       })
@@ -832,7 +904,7 @@ export default {
         } else {
           applySize()
         }
-        if (!this.diskDraftRestoring && !this.isInitForm) {
+        if (!this.isDataDiskDraftWriteBlocked()) {
           this.$nextTick(() => this.persistFormFieldDraftSnapshot())
         }
       })
@@ -900,7 +972,7 @@ export default {
             if (item.min) {
               dataDiskItem.min = Math.max(item.min, this.min(0))
             }
-            this.$set(this.dataDisks, 0, dataDiskItem)
+            this.dataDisks[0] = dataDiskItem
             this.form.fc.setFieldsValue({
               [this._fp('Sizes', item.key)]: Math.max((dataDiskItem.min || 0), this.min(0)),
             })
@@ -930,7 +1002,7 @@ export default {
             if (item.min) {
               dataDiskItem.min = Math.max(item.min, this.min(index))
             }
-            this.$set(this.dataDisks, index || 0, dataDiskItem)
+            this.dataDisks[index || 0] = dataDiskItem
             this.form.fc.setFieldsValue({
               [this._fp('Sizes', item.key)]: Math.max((dataDiskItem.min || 0), this.min(index)),
             })
@@ -959,7 +1031,7 @@ export default {
     },
     setDiskMedium (v) {
       if (this.form.fi) {
-        this.$set(this.form.fi, `${this.fieldPrefix}Medium`, _.get(this.typesMap, `[${v.key}].medium`))
+        this.form.fi[`${this.fieldPrefix}Medium`] = _.get(this.typesMap, `[${v.key}].medium`)
       }
     },
     getDiskTypeLabel (i, diskTypeLabel) {

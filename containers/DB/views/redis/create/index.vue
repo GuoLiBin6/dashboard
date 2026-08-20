@@ -221,7 +221,7 @@ export default {
       const domain = this.$route.query.domain_id
       if (domain) {
         this.form.fc.setFieldsValue({ domain })
-        this.$set(this.form.fd, 'domain', domain)
+        this.form.fd.domain = domain
         this.domain_change()
       }
     },
@@ -229,7 +229,7 @@ export default {
       const project = this.$route.query.tenant_id
       if (project) {
         this.form.fc.setFieldsValue({ project })
-        this.$set(this.form.fd, 'project', project)
+        this.form.fd.project = project
         this.project_id = project
       }
     },
@@ -249,10 +249,10 @@ export default {
         key: REDIS_CREATE_FORM_DRAFT_FIELD.NETWORK,
         get: () => {
           const fc = this.form?.fc
-          if (!fc) return undefined
+          if (!fc) return null
           const vpc = fc.getFieldValue('vpc')
           const network = fc.getFieldValue('network')
-          if (vpc == null && network == null) return undefined
+          if (vpc == null && network == null) return null
           return { vpc, network }
         },
         set: (val) => {
@@ -293,6 +293,8 @@ export default {
         const network = fc.getFieldValue('network')
         if (vpc != null || network != null) {
           this.writeCreateFormFieldDraft(REDIS_CREATE_FORM_DRAFT_FIELD.NETWORK, { vpc, network })
+        } else {
+          this.clearCreateFormFieldDraft(REDIS_CREATE_FORM_DRAFT_FIELD.NETWORK)
         }
       }
       if (Object.prototype.hasOwnProperty.call(newField, 'duration')) {
