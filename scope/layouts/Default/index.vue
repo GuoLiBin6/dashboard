@@ -154,10 +154,14 @@ export default {
       const oldParentPath = oldVal?.matched?.[0]?.path
       if (oldVal && newParentPath === oldParentPath) return
       const firstMatched = val.matched[0]
-      if (!firstMatched?.meta) return
+      if (!firstMatched?.meta) {
+        this.l2Menu = {}
+        this.l2MenuVisible = false
+        return
+      }
       for (let i = 0, len = this.menuitems.length; i < len; i++) {
         const item = this.menuitems[i]
-        if (item.meta?.group === firstMatched.meta.group) {
+        if (item?.meta?.group === firstMatched.meta.group) {
           this.l2Menu = item
           this.l2MenuVisible = !!item.menus
           return
