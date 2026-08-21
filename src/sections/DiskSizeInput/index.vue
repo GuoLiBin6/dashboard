@@ -113,10 +113,21 @@ export default {
     },
   },
   watch: {
+    // min/max 抬升后 InputNumber 可能只改展示，需主动回写 Form，避免展示与提交阴阳
+    min () {
+      this.syncValueToBounds()
+    },
+    max () {
+      this.syncValueToBounds()
+    },
     value (v) {
       const next = parseSizeValue(v)
       if (next !== undefined) this.localValue = next
+      this.syncValueToBounds()
     },
+  },
+  mounted () {
+    this.syncValueToBounds()
   },
   methods: {
     // 供 antdFormLegacyCompat setFieldsValue 同步展示（不走 emit，避免回写循环）
@@ -124,6 +135,17 @@ export default {
       const next = parseSizeValue(v)
       if (next === undefined) return
       this.localValue = next
+    },
+    /** value 落在 [min, max] 外时 emit 合法值，与 :min/:max 展示一致 */
+    syncValueToBounds () {
+      if (this.disabled || this.rawValue === undefined) return
+      let next = this.rawValue
+      const min = Number(this.min)
+      const max = this.max === Infinity ? Infinity : Number(this.max)
+      if (Number.isFinite(min) && next < min) next = min
+      if (Number.isFinite(max) && next > max) next = max
+      if (next === this.rawValue) return
+      this.emitValue(next)
     },
     emitValue (val) {
       let next = val
