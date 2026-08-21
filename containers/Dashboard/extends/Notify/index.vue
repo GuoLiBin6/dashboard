@@ -160,6 +160,7 @@ export default {
       return this.fetchNotices()
     },
     async fetchNotices () {
+      // immediate watch 早于 created，managers 尚未初始化
       if (this.isResDeny || !this.noticesManager) return
       this.loading = true
       try {
