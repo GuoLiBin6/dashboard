@@ -3,7 +3,12 @@
     :form="form"
     :style="{ width: `${width}px` }"
     @submit="handleSubmit">
-    <a-alert class="mb-2" type="warning" :message="$t('help.ipSupplement')" />
+    <a-alert class="mb-2" type="warning">
+      <template #message>
+        {{ $t('help.ipSupplement') }}
+        <div v-if="!localNics || localNics.length === 0">{{ $t('help.ipSupplementTip') }}</div>
+      </template>
+    </a-alert>
     <a-form-item :label="nicLabel(nic)" v-for="(nic, i) in localNics" :key="i" v-bind="formLayout">
       <div class="d-flex">
       <base-select
@@ -32,7 +37,7 @@
       <template v-if="i === 0" #extra>{{$t('compute.text_196')}}<help-link :href="`/network/create?vpc=default&wire=${nic.wire}&domain=${domain}&project=${project}&type=idc`">{{$t('compute.perform_create')}}</help-link></template>
     </a-form-item>
     <div class="text-right">
-      <a-button type="primary" html-type="submit" :loading="loading">{{$t('common.ok')}}</a-button>
+      <a-button type="primary" html-type="submit" :loading="loading" v-if="localNics && localNics.length > 0">{{$t('common.ok')}}</a-button>
       <a-button class="ml-3" html-type="button" @click.stop.prevent="cancel">{{$t('common.cancel')}}</a-button>
     </div>
   </a-form>
