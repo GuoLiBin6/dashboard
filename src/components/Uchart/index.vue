@@ -17,6 +17,7 @@
 import UPlot from 'uplot'
 import 'uplot/dist/uPlot.min.css'
 import DataEmpty from '@/components/DataEmpty'
+import { escapeHTML } from '@/utils/utils'
 
 export default {
   name: 'Uchart',
@@ -191,7 +192,7 @@ export default {
               const label = d.label.startsWith('unknown-0-') ? d.label.replace('unknown-0-', '') : d.label
               const shortLabel = d.label.length > 50 ? label.substring(0, 50) + '...' : label
               const valueUnit = that.options?.tooltip?.valueFormatter ? that.options.tooltip.valueFormatter(d.value, d.unit) : `${(d.value || 0).toFixed(2)}${d.unit || ''}`
-              html += `<div class="uplot-tooltip-item"><span class="uplot-tooltip-dot" style="background-color:${d.color}"></span>${shortLabel}: ${valueUnit}</div>`
+              html += `<div class="uplot-tooltip-item"><span class="uplot-tooltip-dot" style="background-color:${escapeHTML(d.color)}"></span>${escapeHTML(shortLabel)}: ${escapeHTML(valueUnit)}</div>`
               textList.push(`${shortLabel}: ${valueUnit}`)
             })
             html += '</div>'
@@ -299,24 +300,24 @@ export default {
   min-width: 0;
   min-height: 0;
 }
-.uplot-chart-tooltip ::v-deep .uplot-tooltip-inner {
+.uplot-chart-tooltip :deep(.uplot-tooltip-inner) {
   padding: 10px 14px;
 }
-.uplot-chart-tooltip ::v-deep .uplot-tooltip-time {
+.uplot-chart-tooltip :deep(.uplot-tooltip-time) {
   margin-bottom: 6px;
   font-size: 13px;
   opacity: 0.85;
 }
-.uplot-chart-tooltip ::v-deep .uplot-tooltip-item {
+.uplot-chart-tooltip :deep(.uplot-tooltip-item) {
   margin-bottom: 4px;
   font-size: 13px;
   line-height: 20px;
   white-space: nowrap;
 }
-.uplot-chart-tooltip ::v-deep .uplot-tooltip-item:last-child {
+.uplot-chart-tooltip :deep(.uplot-tooltip-item:last-child) {
   margin-bottom: 0;
 }
-.uplot-chart-tooltip ::v-deep .uplot-tooltip-dot {
+.uplot-chart-tooltip :deep(.uplot-tooltip-dot) {
   width: 22px;
   height: 12px;
   border-radius: 2px;
@@ -338,16 +339,16 @@ export default {
   justify-content: center;
   color: rgba(0, 0, 0, 0.25);
 }
-.empty-tip ::v-deep .wrap {
+.empty-tip :deep(.wrap) {
   margin: 0;
   color: rgba(0, 0, 0, 0.25);
 }
-.empty-tip ::v-deep .data-empty {
+.empty-tip :deep(.data-empty) {
   margin-top: 0;
   font-size: 60px;
   color: rgba(0, 0, 0, 0.25);
 }
-.empty-tip ::v-deep .ant-empty-description {
+.empty-tip :deep(.ant-empty-description) {
   color: rgba(0, 0, 0, 0.25);
 }
 </style>
