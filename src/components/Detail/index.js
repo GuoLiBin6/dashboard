@@ -1,6 +1,5 @@
 import * as R from 'ramda'
 import _ from 'lodash'
-import moment from 'moment'
 import classNames from 'classnames'
 import i18n from '@/locales'
 import WindowsMixin from '@/mixins/windows'
@@ -8,6 +7,7 @@ import { hasPermission } from '@/utils/auth'
 import { changeToArr } from '@/utils/utils'
 import store from '@/store'
 import expectStatus from '@/constants/expectStatus'
+import { getTimeTableColumn } from '@/utils/common/tableColumn'
 import './style.scss'
 import h from '@/utils/legacyCreateElement'
 
@@ -217,21 +217,15 @@ const getDefaultLastBaseInfo = (vm, h, { data, onManager, resource }) => {
     )
   }
   let ret = [
-    {
+    getTimeTableColumn({
       field: 'created_at',
       title: i18n.t('table.title.create_time'),
-      formatter: ({ row }) => {
-        return (row.created_at && moment(row.created_at).format()) || '-'
-      },
-    },
-    {
+    }),
+    getTimeTableColumn({
       field: 'updated_at',
       hiddenField: 'created_at',
       title: i18n.t('table.title.update_time'),
-      formatter: ({ row }) => {
-        return (row.updated_at && moment(row.updated_at).format()) || '-'
-      },
-    },
+    }),
   ]
   if (resource && appendOutherResources.includes(resource)) {
     ret = R.insertAll(0, outher, ret)

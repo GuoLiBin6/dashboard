@@ -34,6 +34,7 @@ import {
   getServerMonitorAgentInstallStatus,
   getStatusTableColumn,
   getNameDescriptionTableColumn,
+  getTimeTableColumn,
 } from '@/utils/common/tableColumn'
 import WindowsMixin from '@/mixins/windows'
 import { findPlatform } from '@/utils/common/hypervisor'
@@ -186,6 +187,10 @@ export default {
             },
           },
         },
+        getTimeTableColumn({
+          field: 'last_start_at',
+          title: this.$t('compute.last_start_at'),
+        }),
       ],
       imageExist: false,
       guestIsolatedDevices: [],
@@ -200,6 +205,7 @@ export default {
         readOnly: true,
       },
       cmdline: '',
+      qemu_version: '',
       showCmdline: false,
     }
   },
@@ -711,13 +717,6 @@ export default {
                 return row.bios || 'BIOS'
               },
             },
-            {
-              field: 'machine',
-              title: this.$t('compute.machine'),
-              formatter: ({ row }) => {
-                return row.machine?.toUpperCase() || '-'
-              },
-            },
           ],
           hidden: () => this.$isScopedPolicyMenuHidden('server_hidden_columns.os_arch'),
         },
@@ -785,6 +784,36 @@ export default {
         },
       ]
       if (this.isKvm && this.cmdline) {
+        infos[0].items.push(
+          {
+            field: 'machine',
+            title: this.$t('compute.machine'),
+            formatter: ({ row }) => {
+              return row.machine?.toUpperCase() || 'PC'
+            },
+          },
+          {
+            field: 'vdi',
+            title: this.$t('compute.vdi_protocol'),
+            formatter: ({ row }) => {
+              return row.vdi?.toUpperCase() || 'VNC'
+            },
+          },
+          {
+            field: 'vga',
+            title: this.$t('compute.vga'),
+            formatter: ({ row }) => {
+              return row.vga?.toUpperCase() || 'VGA'
+            },
+          },
+          {
+            field: 'qemu_version',
+            title: this.$t('compute.qemu_version'),
+            formatter: () => {
+              return this.qemu_version || '-'
+            },
+          },
+        )
         infos[infos.length - 1].items.unshift({
           field: 'metadata',
           title: this.$t('compute.qemu_cmdline'),
@@ -949,8 +978,9 @@ export default {
               spec: 'qemu-info',
             },
           })
-          const { cmdline = '' } = res.data
+          const { cmdline = '', version = '' } = res.data
           this.cmdline = cmdline
+          this.qemu_version = version
         }
       } catch (err) {
         console.error(err)
