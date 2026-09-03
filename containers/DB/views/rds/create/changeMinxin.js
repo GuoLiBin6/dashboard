@@ -28,7 +28,6 @@ export default {
     // 获取CPU核数、内存、可用区
     capability_change () {
       // 级联回填/切换引擎过程中由 Filters @change 统一拉，避免半成品参数把 CPU 清空
-      if (this._rdsSkuDraftRestoring) return
       if (this.skuRef && this.skuRef.ensureFetchSpecs) {
         this.skuRef.ensureFetchSpecs(0)
       }
@@ -57,7 +56,7 @@ export default {
       const fields = Object.keys(changedFields)
       if (changedFields && fields.length > 0) {
         fields.forEach(field => {
-          this.$set(this.form.fd, field, changedFields[field])
+          this.form.fd[field] = changedFields[field]
           if (field === 'vpc') {
             this.vpc = changedFields[field]
           }
@@ -82,9 +81,6 @@ export default {
           return handleChange()
         }
       })
-      if (typeof this.syncCreateFormFcDrafts === 'function') {
-        this.syncCreateFormFcDrafts(changedFields)
-      }
     },
   },
 }

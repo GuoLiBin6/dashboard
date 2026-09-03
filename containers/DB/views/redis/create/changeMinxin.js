@@ -111,7 +111,7 @@ export default {
       const fields = Object.keys(changedFields)
       if (changedFields && fields.length > 0) {
         fields.forEach(field => {
-          this.$set(this.form.fd, field, changedFields[field])
+          this.form.fd[field] = changedFields[field]
           if (field === 'vpc') {
             this.vpc = changedFields[field]
           }
@@ -135,9 +135,6 @@ export default {
           }
         }
       })
-      if (typeof this.syncCreateFormFcDrafts === 'function') {
-        this.syncCreateFormFcDrafts(changedFields)
-      }
     },
   },
 }

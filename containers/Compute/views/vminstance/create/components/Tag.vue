@@ -49,19 +49,13 @@ import PreDefinedTagSelect from '@/sections/TagSelectPreDefined'
 import { isCE } from '@/utils/utils'
 import { hasPermission } from '@/utils/auth'
 
-import createFormFieldDraftMixin from '@/mixins/createFormFieldDraft'
 export default {
   name: 'Tag',
   components: {
     TagSelect,
     PreDefinedTagSelect,
   },
-  mixins: [createFormFieldDraftMixin],
   props: {
-    formDraftKey: {
-      type: String,
-      default: '',
-    },
     defaultChecked: {
       type: Object,
     },
@@ -125,37 +119,13 @@ export default {
           ret[val[i].key] = val[i].value || ''
         }
       }
-      this.persistFormFieldDraftSnapshot(); this.$emit('change', ret)
+      this.$emit('change', ret)
     },
     defaultChecked (val) {
       this.checked = Object.assign({}, this.checked, this.defaultChecked || {})
     },
   },
   methods: {
-    getCreateFormFieldDraftSnapshot () {
-      return this.checked && Object.keys(this.checked).length ? { checked: this.checked } : null
-    },
-    persistFormFieldDraftSnapshot (options = {}) {
-      const data = this.serializeFormFieldDraft()
-      if (data === null || data === undefined) {
-        this.clearFormFieldDraft()
-        return
-      }
-      this.writeFormFieldDraft(data, options)
-    },
-    flushFormFieldDraftOnSubmit () {
-      const data = this.serializeFormFieldDraft()
-      if (data === null || data === undefined) {
-        this.clearFormFieldDraft()
-        return
-      }
-      this.writeFormFieldDraft(data, { fromSubmit: true })
-    },
-    applyCreateFormFieldDraft (draft) {
-      if (!draft?.checked || typeof draft.checked !== 'object') return
-      this.checked = { ...draft.checked }
-    },
-
     async addTag () {
       try {
         const values = await this.tagForm.fc.validateFields()

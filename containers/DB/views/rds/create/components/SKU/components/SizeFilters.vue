@@ -22,7 +22,7 @@
 import { sizestr } from '@/utils/utils'
 
 /**
- * 约定：仅用户点击写草稿；specs 拉取后 options 变化时按草稿回填
+ * 约定：specs 拉取后 options 变化时按草稿回填；落盘由页面 flush（selection）。
  */
 export default {
   name: 'rdsSizeFilter',
@@ -31,8 +31,6 @@ export default {
     formItemLayout: { default: null },
     scopeParams: { default: null },
     getCreateFormDraftPreferred: { default: undefined },
-    persistRdsSkuDraftField: { default: undefined },
-    setRdsSkuDraftRestoring: { default: undefined },
   },
   props: {
     rdsItem: {
@@ -81,55 +79,35 @@ export default {
       }
       return list[0]
     },
-    persistSkuField (formField, val) {
-      if (typeof this.persistRdsSkuDraftField === 'function') {
-        this.persistRdsSkuDraftField(formField, this.normalizeDraftScalar(val))
-      }
-    },
     setFieldQuiet (fields, callback) {
       this._ignoreChange = true
-      if (typeof this.setRdsSkuDraftRestoring === 'function') {
-        this.setRdsSkuDraftRestoring(true)
-      }
       const setter = (this.form && this.form.fc && this.form.fc.setFieldsValue) ||
         (this.form && this.form.setFieldsValue)
       if (!setter) {
         this._ignoreChange = false
-        if (typeof this.setRdsSkuDraftRestoring === 'function') {
-          this.setRdsSkuDraftRestoring(false)
-        }
         callback && callback()
         return
       }
       setter.call(this.form.fc || this.form, fields, () => {
         Object.keys(fields || {}).forEach((k) => {
-          if (this.form.fd) this.$set(this.form.fd, k, fields[k])
+          if (this.form.fd) this.form.fd[k] = fields[k]
         })
         this.$nextTick(() => {
           this._ignoreChange = false
-          if (typeof this.setRdsSkuDraftRestoring === 'function') {
-            this.setRdsSkuDraftRestoring(false)
-          }
           callback && callback()
         })
       })
     },
     onCpuChange (e) {
       if (this._ignoreChange) return
-      const val = e && e.target ? e.target.value : this.form.getFieldValue('vcpu_count')
-      this.persistSkuField('vcpu_count', val)
       this.getMemsMb(e)
     },
     onMemChange (e) {
       if (this._ignoreChange) return
-      const val = e && e.target ? e.target.value : this.form.getFieldValue('vmem_size_mb')
-      this.persistSkuField('vmem_size_mb', val)
       this.$emit('change')
     },
     onZoneChange (e) {
       if (this._ignoreChange) return
-      const val = e && e.target ? e.target.value : this.form.getFieldValue('zones')
-      this.persistSkuField('zones', val)
       this.$emit('change')
     },
     /** cpus options 变化后回填 */

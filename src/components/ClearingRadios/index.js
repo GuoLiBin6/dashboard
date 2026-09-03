@@ -72,9 +72,9 @@ export default {
       })(durationGroup)
       const autoRenewField = getFieldDecorator('auto_renew', {
         initialValue: this.auto_renew,
+        valuePropName: 'checked',
       })(h('a-checkbox', {
         class: 'ml-4',
-        attrs: { defaultChecked: this.auto_renew },
       }, [this.$t('common_728')]))
       return h('div', [durationField, autoRenewField])
     }

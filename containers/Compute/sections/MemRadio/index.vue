@@ -1,6 +1,6 @@
 <template>
   <a-form-item :extra="extra">
-    <a-radio-group :value="radioValue" v-decorator="decorator" :disabled="disabled" @change="onChange">
+    <a-radio-group v-decorator="decorator" :disabled="disabled" @change="onChange">
       <a-radio-button v-show="showUnlimited" :key="0" :value="0">{{ $t('compute.unlimited') }}</a-radio-button>
       <a-radio-button v-for="item in options" :value="item" :key="item" :disabled="disableOptionHandle(item)">{{ item | format }}</a-radio-button>
     </a-radio-group>
@@ -13,9 +13,6 @@ import createFormFieldDraftMixin from '@/mixins/createFormFieldDraft'
 
 export default {
   name: 'MemRadio',
-  inject: {
-    form: { default: null },
-  },
   filters: {
     format (val) {
       return sizestrWithUnit(val, 'M', 1024)
@@ -26,6 +23,11 @@ export default {
     decorator: {
       type: Array,
       required: true,
+    },
+    /** selection：radio/单选 select/switch 类，local + session 双写、可跨 tab 回填 */
+    formDraftKind: {
+      type: String,
+      default: 'selection',
     },
     options: {
       type: Array,
@@ -48,14 +50,9 @@ export default {
       default: false,
     },
   },
-  computed: {
-    radioValue () {
-      const name = this.decorator && this.decorator[0]
-      return (name && this.form?.fd?.[name]) ?? undefined
-    },
-  },
   watch: {
     options: {
+      immediate: true,
       handler (opts) {
         this.$nextTick(() => this.tryRestoreMemDraft(opts))
       },
@@ -67,18 +64,12 @@ export default {
     },
     onChange (e) {
       const val = e && e.target ? e.target.value : undefined
-      // 仅用户点选写草稿
-      this.writeFormFieldDraft(val)
-      const name = this.decorator && this.decorator[0]
-      if (name && this.form?.fc?.setFieldsValue) {
-        this.form.fc.setFieldsValue({ [name]: val })
-      }
       this.$emit('change', val)
     },
     tryRestoreMemDraft (opts) {
       if (!this.formDraftKey || !Array.isArray(opts)) return
       const fieldName = Array.isArray(this.decorator) ? this.decorator[0] : 'vmem'
-      const fc = this.form?.fc || this.form
+      const fc = this.resolveFormFc()
       if (!fc?.getFieldValue) return
       const draft = this.readFormFieldDraft()
       // 无草稿：不覆盖，走页面原有 initialValue(2048) + cpuChange 默认 2G
@@ -111,7 +102,7 @@ export default {
     },
     serializeFormFieldDraft () {
       const fieldName = Array.isArray(this.decorator) ? this.decorator[0] : 'vmem'
-      const fc = this.form?.fc || this.form
+      const fc = this.resolveFormFc()
       const value = fc?.getFieldValue?.(fieldName)
       // 0 表示不限，需可序列化
       return value != null && value !== '' ? value : undefined

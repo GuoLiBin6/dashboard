@@ -1,7 +1,7 @@
 <template>
   <div class="d-flex">
     <a-form-item :extra="extra">
-      <a-radio-group :value="radioValue" v-decorator="decorator" @change="change" :disabled="disabled">
+      <a-radio-group v-decorator="decorator" @change="change" :disabled="disabled">
         <a-radio-button v-show="showUnlimited" :key="0" :value="0">{{ $t('compute.unlimited') }}</a-radio-button>
         <a-radio-button v-for="item in realOptions" :value="item" :key="item" v-show="item < max || !showMore" :disabled="disableOptionHandle(item)">{{$t('compute.text_120', [ item ])}}</a-radio-button>
         <a-radio-button v-if="showMore" @click="showMore = !showMore">...</a-radio-button>
@@ -72,6 +72,11 @@ export default {
     showCpuSocketsInit: {
       type: Boolean,
     },
+    /** selection：radio/单选 select/switch 类，local + session 双写、可跨 tab 回填 */
+    formDraftKind: {
+      type: String,
+      default: 'selection',
+    },
   },
   data () {
     const max = Math.max.apply(null, this.options)
@@ -93,11 +98,6 @@ export default {
     isVMware () {
       return this.hypervisor === HYPERVISORS_MAP.esxi.key
     },
-    radioValue () {
-      const name = this.decorator && this.decorator[0]
-      const v = name && this.form?.fd?.[name]
-      return v !== undefined && v !== null ? v : this.cpu
-    },
     cpuSocketsExtra () {
       if (this.isServerRunning) {
         return `${this.$t('compute.core_per_sockets')}: ` + (this.cpuSocketsInit)
@@ -116,10 +116,11 @@ export default {
   },
   watch: {
     options: {
+      immediate: true,
       handler (opts) {
         const max = Math.max.apply(null, opts || [])
         this.showMore = max > this.max
-        // options 变化：尝试草稿回填（不写草稿）
+        // options 变化：尝试草稿回填
         this.$nextTick(() => this.tryRestoreCpuDraft(opts))
       },
     },
@@ -144,16 +145,25 @@ export default {
   },
   methods: {
     change (e) {
-      const cpu = e.target.value
+      const cpu = e && e.target ? e.target.value : e
       this.cpuSockets = this.isServerRunning ? cpu / this.cpuSocketsInit : 1
       this.cpu = cpu
-      // 仅用户点选写草稿
-      this.writeFormFieldDraft(cpu)
-      const name = this.decorator && this.decorator[0]
-      if (name && this.form?.fc?.setFieldsValue) {
-        this.form.fc.setFieldsValue({ [name]: cpu })
-      }
-      this.$emit('change', e.target.value)
+      this.$emit('change', cpu)
+    },
+    disableOptionHandle (item) {
+      return this.disableOptions.includes(item)
+    },
+    showCpuSocketsHandle () {
+      this.showCpuSockets = !this.showCpuSockets
+      this.form.fi.showCpuSockets = this.showCpuSockets
+    },
+    cpuSocketsChangeHandle (v) {
+      this.cpuSockets = v
+    },
+    getCpuSocketsOptions (cpuSocketsOptions, cpu) {
+      return cpuSocketsOptions.filter(item => {
+        return cpu % item.value === 0
+      })
     },
     tryRestoreCpuDraft (opts) {
       if (!this.formDraftKey || !Array.isArray(opts)) return
@@ -181,6 +191,10 @@ export default {
         }
       }
       if (next == null) return
+      // 草稿在「更多」折叠区（>= max）：展开以便选中态可见
+      if (next !== 0 && Number(next) >= this.max) {
+        this.showMore = false
+      }
       const current = this.form?.fc?.getFieldValue?.(fieldName)
       if (current === next || String(current) === String(next)) return
       if (this.form?.fc) {
@@ -189,26 +203,14 @@ export default {
       this.cpu = next
       this.$emit('change', next)
     },
+    /**
+     * 提交时获取表单草稿
+     */
     serializeFormFieldDraft () {
       const fieldName = Array.isArray(this.decorator) ? this.decorator[0] : 'vcpu'
       const value = this.form?.fc?.getFieldValue?.(fieldName)
       // 0 表示不限，需可序列化
       return value != null && value !== '' ? value : undefined
-    },
-    disableOptionHandle (item) {
-      return this.disableOptions.includes(item)
-    },
-    showCpuSocketsHandle () {
-      this.showCpuSockets = !this.showCpuSockets
-      this.form.fi.showCpuSockets = this.showCpuSockets
-    },
-    cpuSocketsChangeHandle (v) {
-      this.cpuSockets = v
-    },
-    getCpuSocketsOptions (cpuSocketsOptions, cpu) {
-      return cpuSocketsOptions.filter(item => {
-        return cpu % item.value === 0
-      })
     },
   },
 }

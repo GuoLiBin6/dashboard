@@ -1,9 +1,9 @@
 <template>
   <a-form-item class="mb-0">
     <span v-if="isEmpty">{{$t('compute.hypervisor_empty_tips')}}</span>
-    <a-radio-group v-else :value="radioValue" v-decorator="decorator" @change="changeHandle">
-      <template v-for="item in hypervisorOpts" :key="item.key">
-        <a-tooltip :title="disabledHypervisorMap[item.key]">
+    <a-radio-group v-else v-decorator="decorator" @change="changeHandle">
+      <template v-for="item in hypervisorOpts">
+        <a-tooltip :title="disabledHypervisorMap[item.key]" :key="item.key">
           <a-radio-button
             :value="item.key"
             :disabled="disabledHypervisorMap[item.key]">
@@ -50,6 +50,11 @@ export default {
       type: String,
       default: '',
     },
+    /** selection：radio/单选 select/switch 类，local + session 双写、可跨 tab 回填 */
+    formDraftKind: {
+      type: String,
+      default: 'selection',
+    },
   },
   inject: {
     form: { default: undefined },
@@ -65,23 +70,16 @@ export default {
       if (this.ignoreBaremetal) {
         hyperItems = hyperItems.filter(val => val.key !== 'baremetal')
       }
-      return hyperItems.filter(Boolean)
+      return hyperItems
     },
     isEmpty () {
       return !this.hypervisorOpts?.length
-    },
-    fieldName () {
-      return (this.decorator && this.decorator[0]) || 'hypervisor'
-    },
-    // v-decorator 在 Vue3 下回填不可靠，直接读 form.fd；受控 :value 驱动 Radio.Group 选中态
-    radioValue () {
-      return this.form?.fd?.[this.fieldName] || undefined
     },
   },
   watch: {
     hypervisorOpts: {
       immediate: true,
-      handler (opts) {
+      handler (opts, oldOpts) {
         this.$nextTick(() => this.tryRestoreHypervisorDraft(opts))
       },
     },
@@ -89,6 +87,10 @@ export default {
   methods: {
     changeHandle (e) {
       const val = e && e.target ? e.target.value : e
+      // 回填触发的 change 不记 touched
+      if (!this._hypervisorDraftRestoring) {
+        this.markFormFieldDraftTouched()
+      }
       this.writeFormFieldDraft(val)
       // 显式写回表单，确保受控 :value 能更新（不只依赖 decorator emit）
       if (this.form?.fc?.setFieldsValue) {
@@ -107,6 +109,8 @@ export default {
     },
     tryRestoreHypervisorDraft (opts) {
       if (!Array.isArray(opts) || !opts.length) return
+      // 用户已手改：不再用草稿/首项覆盖
+      if (this.isFormFieldDraftTouched()) return
       const hit = this.matchFormFieldDraftInOptions(opts)
       let next = hit?.key
       if (next && this.disabledHypervisorMap?.[next]) next = undefined
@@ -119,10 +123,17 @@ export default {
       const fieldName = Array.isArray(this.decorator) ? this.decorator[0] : 'hypervisor'
       const current = this.form?.fc?.getFieldValue?.(fieldName)
       if (current === next) return
-      if (this.form?.fc) {
-        this.form.fc.setFieldsValue({ [fieldName]: next })
+      this._hypervisorDraftRestoring = true
+      try {
+        if (this.form?.fc) {
+          this.form.fc.setFieldsValue({ [fieldName]: next })
+        }
+        this.$emit('change', next)
+      } finally {
+        this.$nextTick(() => {
+          this._hypervisorDraftRestoring = false
+        })
       }
-      this.$emit('change', next)
     },
     serializeFormFieldDraft () {
       const fieldName = Array.isArray(this.decorator) ? this.decorator[0] : 'hypervisor'
