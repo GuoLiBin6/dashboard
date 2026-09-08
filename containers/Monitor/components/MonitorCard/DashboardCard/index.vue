@@ -74,6 +74,8 @@
       :showTableLegend="showLegend"
       :monitorLineCardStyle="{border:'none'}"
       :otherCursorMovePoint="otherCursorMovePoint"
+      :chartTypes="chartTypes"
+      :enableHeatmap="!useLocalPanels"
       @pageChange="pageChange"
       @exportTable="exportTable"
       @reducedResultOrderChange="reducedResultOrderChange"
@@ -87,6 +89,7 @@ import * as R from 'ramda'
 import { metric_zh, tableColumnMaps } from '@Monitor/constants'
 import MonitorLine from '@Monitor/sections/MonitorLine'
 import { addMissingSeries } from '@Monitor/utils'
+import { CHART_TYPE_LINE, isPercentUnit, parseChartTypesFromPanel } from '@Monitor/utils/chartTypes'
 import WindowsMixin from '@/mixins/windows'
 import DialogMixin from '@/mixins/dialog'
 import { getSignature } from '@/utils/crypto'
@@ -212,6 +215,12 @@ export default {
       }
       const { common_alert_metric_details = [] } = this.panel
       return common_alert_metric_details.length ? common_alert_metric_details[0].field_description || {} : {}
+    },
+    chartTypes () {
+      // 资源详情本地监控面板不启用热力图
+      if (this.useLocalPanels) return [CHART_TYPE_LINE]
+      const unit = _.get(this.description, 'unit') || _.get(this.description, 'description.unit')
+      return parseChartTypesFromPanel(this.panel, { isPercent: isPercentUnit(unit) })
     },
     metric () {
       const detail = _.get(this.panel, 'common_alert_metric_details[0]')

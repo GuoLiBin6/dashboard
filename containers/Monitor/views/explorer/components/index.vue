@@ -36,8 +36,10 @@
       @resetChart="resetChart"
       :timeRangeParams="timeRangeParams"
       @mertricItemChange="mertricItemChange"
+      @chartTypesChange="chartTypesChange"
       :extraParams="extraParams"
       :multiQuery="!isTemplate"
+      :enableChartTypes="true"
       :panel="templateParams?.panel">
       <template #chart="{ index }">
         <monitor-line
@@ -47,6 +49,8 @@
           :description="seriesDescription[index]"
           :metricInfo="metricList[index] && metricList[index][0]"
           :isTemplate="isTemplate"
+          :chartTypes="chartTypesList[index] || ['line']"
+          :enableHeatmap="true"
           @chartInstance="setChartInstance"
           :series="seriesList[index] || []"
           :reducedResult="resultList[index]"
@@ -58,7 +62,7 @@
           @exportTable="(total) => exportTable(index, total)"
           @reducedResultOrderChange="(order) => reducedResultOrderChange(index, order)">
           <template #extra>
-            <a-button v-if="!isTemplate" class="mr-3" type="link" @click="handleSave(metricList[index], seriesDescription[index])">{{ $t('common.save') }}</a-button>
+            <a-button v-if="!isTemplate" class="mr-3" type="link" @click="handleSave(metricList[index], seriesDescription[index], index)">{{ $t('common.save') }}</a-button>
           </template>
         </monitor-line>
         <div v-else class="monitor-query-group__chart-empty">
@@ -76,6 +80,7 @@ import echarts from 'echarts'
 import MonitorForms from '@Monitor/sections/ExplorerForm'
 import MonitorLine from '@Monitor/sections/MonitorLine'
 import { addMissingSeries } from '@Monitor/utils'
+import { buildChartTypesMessage, DEFAULT_CHART_TYPES, parseChartTypesFromPanel } from '@Monitor/utils/chartTypes'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import MonitorHeader from '@/sections/Monitor/Header'
@@ -119,6 +124,7 @@ export default {
       chartInstanceList: [],
       loadingList: [],
       seriesDescription: [],
+      chartTypesList: [],
       get,
       tablePageSize: 10,
       addQueryDisabled: true,
@@ -178,6 +184,7 @@ export default {
       this.resultList.splice(i, 1)
       this.resultOrderList.splice(i, 1)
       this.loadingList.splice(i, 1)
+      this.chartTypesList.splice(i, 1)
       this.seriesDescription.splice(i, 1)
       this.seriesListPager.splice(i, 1)
       this.seriesListPager = this.seriesListPager.map((p, idx) => ({ ...p, seriesIndex: idx }))
@@ -189,6 +196,7 @@ export default {
       this.resultList.unshift([])
       this.resultOrderList.unshift('')
       this.loadingList.unshift(false)
+      this.chartTypesList.unshift([...DEFAULT_CHART_TYPES])
       this.seriesDescription.unshift({})
       this.seriesListPager.unshift({ seriesIndex: 0, total: 0, page: 1, limit: this.tablePageSize })
       this.seriesListPager = this.seriesListPager.map((p, idx) => ({ ...p, seriesIndex: idx }))
@@ -199,12 +207,16 @@ export default {
     },
     resetChart (i) {
       if (this.seriesList && this.seriesList.length && this.seriesList[i]) {
-        this.$set(this.seriesList, i, [])
-        this.$set(this.resultList, i, [])
-        this.$set(this.resultOrderList, i, '')
-        this.$set(this.metricList, i, [])
-        this.$set(this.seriesDescription[i], 'title', '')
+        this.seriesList[i] = []
+        this.resultList[i] = []
+        this.resultOrderList[i] = ''
+        this.metricList[i] = []
+        this.chartTypesList[i] = [...DEFAULT_CHART_TYPES]
+        this.seriesDescription[i].title = ''
       }
+    },
+    chartTypesChange (val, i) {
+      this.chartTypesList[i] = val || [...DEFAULT_CHART_TYPES]
     },
     mertricItemChange (item, i) {
       const t = +this.time.replace(/\D+/, '')
@@ -222,9 +234,9 @@ export default {
           metricKeyItem: item.metricKeyItem || (metricDetails.measurement ? { measurement: metricDetails.measurement } : item.metricKeyItem),
           key: item.key || metricDetails.field,
         }
-        this.$set(this.seriesDescription, i, updatedItem)
+        this.seriesDescription[i] = updatedItem
       } else {
-        this.$set(this.seriesDescription, i, item)
+        this.seriesDescription[i] = item
       }
     },
     async fetchAllData () {
@@ -251,22 +263,22 @@ export default {
     },
     async _refresh (i, limit, offset, ignoreOrder) {
       try {
-        this.$set(this.loadingList, i, true)
+        this.loadingList[i] = true
         const { series = [], reduced_result = [], series_total = 0 } = await this.fetchData(this.metricList[i], limit, offset)
-        this.$set(this.seriesList, i, series)
-        this.$set(this.resultList, i, reduced_result)
+        this.seriesList[i] = series
+        this.resultList[i] = reduced_result
         if (!ignoreOrder) {
-          this.$set(this.resultOrderList, i, '')
+          this.resultOrderList[i] = ''
         }
-        this.$set(this.seriesListPager, i, { seriesIndex: i, total: series_total, page: 1 + offset / limit, limit: limit })
+        this.seriesListPager[i] = { seriesIndex: i, total: series_total, page: 1 + offset / limit, limit: limit }
         this.loadingList[i] = false
       } catch (error) {
-        this.$set(this.seriesList, i, [])
-        this.$set(this.resultList, i, [])
+        this.seriesList[i] = []
+        this.resultList[i] = []
         if (!ignoreOrder) {
-          this.$set(this.resultOrderList, i, '')
+          this.resultOrderList[i] = ''
         }
-        this.$set(this.loadingList, i, false)
+        this.loadingList[i] = false
         throw error
       }
     },
@@ -276,7 +288,7 @@ export default {
         val.result_reducer = resParams
       }
       const metric_query = [val]
-      this.$set(this.metricList, i, metric_query)
+      this.metricList[i] = metric_query
       await this._refresh(i, this.tablePageSize, 0)
     },
     addQuery () {
@@ -288,6 +300,7 @@ export default {
       this._refresh(i, this.seriesListPager[i].limit, 0, true)
     },
     async pageChange (pager) {
+      this.tablePageSize = pager.limit
       await this._refresh(pager.seriesIndex, pager.limit, (pager.page - 1) * pager.limit)
       this.saveMonitorConfig({ tablePageSize: pager.limit })
     },
@@ -309,12 +322,15 @@ export default {
         throw error
       }
     },
-    handleSave (mq, desc) {
+    handleSave (mq, desc, i) {
+      const chartTypes = this.chartTypesList[i] || parseChartTypesFromPanel(null, { isPercent: false })
       this.createDialog('CreateMonitorDashboardChart', {
         name: desc.title,
         metric_query: mq,
         timeGroup: this.timeGroup,
         timeRangeParams: this.timeRangeParams,
+        chartTypes,
+        message: buildChartTypesMessage(chartTypes),
       })
     },
     async exportTable (index, total) {

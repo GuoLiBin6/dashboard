@@ -1,12 +1,14 @@
 <template>
-  <a-card :title="title" size="small" class="monitor-form">
-    <template #extra>
-      <icon type="delete" v-if="showDelete" @click.stop="remove" class="mr-2 remove-icon" style="cursor: pointer;" />
-    </template>
+  <a-card :title="title" size="small" class="monitor-form" :class="{ 'hideBody': !panelShow }">
+    <div slot="extra">
+      <a-icon type="delete" v-if="showDelete" @click="remove" class="mr-2 remove-icon" />
+      <a-icon :type="panelShow ? 'up' : 'down'" @click="toggle" />
+    </div>
     <a-form
+      v-show="panelShow"
       v-bind="formItemLayout"
       :form="form.fc">
-      <a-form-item align="top" :label="$t('monitor.monitor_metric')">
+      <a-form-item :label="$t('monitor.monitor_metric')" class="mb-0">
         <metric
           :form="form"
           :decorators="decorators"
@@ -16,7 +18,7 @@
           @metricChange="getMetricInfo"
           @metricClear="resetChart" />
       </a-form-item>
-      <a-form-item align="top" :label="$t('monitor.monitor_filters')" class="monitor-form__filters">
+      <a-form-item :label="$t('monitor.monitor_filters')">
         <filters
           :form="form"
           ref="filtersRef"
@@ -27,7 +29,7 @@
           :metricInfo="metricInfo"
           @tagValuesChange="tagValuesChange" />
       </a-form-item>
-      <a-form-item align="top" :label="$t('monitor.monitor_group')">
+      <a-form-item :label="$t('monitor.monitor_group')">
         <base-select
           v-decorator="decorators.group_by"
           :options="groupbyOpts"
@@ -35,24 +37,30 @@
           class="w-100"
           :select-props="{ mode: 'multiple', placeholder: $t('monitor.text_114'), allowClear: true }" />
       </a-form-item>
-      <a-form-item align="top" :label="$t('monitor.monitor_function')">
+      <a-form-item :label="$t('monitor.monitor_function')">
         <base-select
           v-decorator="decorators.function"
           :options="functionOpts"
           class="w-100"
           :select-props="{ placeholder: $t('monitor.text_115'), allowClear: allowClearGroupFunction }" />
       </a-form-item>
-      <a-form-item align="top" :label="$t('monitor.monitor_result_function')">
+      <a-form-item :label="$t('monitor.monitor_result_function')">
         <base-select
           v-decorator="decorators.result_function"
           :options="resultFunctionOpts"
           class="w-100"
           :select-props="{ placeholder: $t('monitor.text_115'), allowClear: true }" />
       </a-form-item>
-      <a-form-item align="top" v-if="form.fd.result_function === 'percentile'" :label="$t('monitor.monitor_percentile')">
+      <a-form-item v-if="form.fd.result_function === 'percentile'" :label="$t('monitor.monitor_percentile')">
         <a-input-number :min="1" :max="99" v-decorator="decorators.percentile" placeholder="1~99" />
       </a-form-item>
-      <a-form-item align="top" :label="$t('common.name')" v-if="!queryOnly">
+      <a-form-item v-if="showChartTypes" :label="$t('monitor.chart_form')">
+        <a-checkbox-group
+          :value="chartTypes"
+          :options="chartTypeOptions"
+          @change="chartTypesChange" />
+      </a-form-item>
+      <a-form-item :label="$t('common.name')" v-if="!queryOnly">
         <a-input v-decorator="decorators.name" :placeholder="$t('common.placeholder')" />
       </a-form-item>
     </a-form>
@@ -65,6 +73,15 @@ import * as R from 'ramda'
 import Metric from '@Monitor/sections/Metric'
 import Filters from '@Monitor/sections/Filters'
 import { metric_zh } from '@Monitor/constants'
+import {
+  CHART_TYPE_HEATMAP,
+  CHART_TYPE_LINE,
+  DEFAULT_CHART_TYPES,
+  DEFAULT_PERCENT_CHART_TYPES,
+  getMetricUnit,
+  isPercentUnit,
+  parseChartTypesFromPanel,
+} from '@Monitor/utils/chartTypes'
 import { resolveValueChangeField } from '@/utils/common/ant'
 import { uuid, getRequestT } from '@/utils/utils'
 
@@ -83,6 +100,11 @@ export default {
       type: Boolean,
       default: true,
     },
+    // 仅监控查询 / 监控面板开启图表形式配置
+    enableChartTypes: {
+      type: Boolean,
+      default: false,
+    },
     formItemLayout: {
       type: Object,
       default: () => ({
@@ -97,6 +119,9 @@ export default {
     showDelete: {
       type: Boolean,
       default: false,
+    },
+    defaultPanelShow: {
+      type: Boolean,
     },
     timeRangeParams: {
       type: Object,
@@ -225,7 +250,7 @@ export default {
         tagKey: i => [
           `tagKeys[${i}]`,
           {
-            initialValue: getkey(i, 'key', undefined),
+            initialValue: getkey(i, 'key', ''),
             rules: [
               // { required: true, message: this.$t('common.select') },
             ],
@@ -342,6 +367,7 @@ export default {
       metricInfo: {},
       metricKeyItem: {},
       mertricItem: {},
+      panelShow: this.defaultPanelShow,
       oldParams: {},
       oldResParams: {},
       metricLoading: false,
@@ -349,22 +375,69 @@ export default {
       res_type_measurements: {},
       res_types: [],
       allowClearGroupFunction: true,
+      chartTypes: parseChartTypesFromPanel(this.panel, {
+        isPercent: true,
+        queryOnly: this.queryOnly,
+      }),
+      chartTypeOptions: [
+        { label: this.$t('monitor.chart_line'), value: CHART_TYPE_LINE },
+        { label: this.$t('monitor.chart_heatmap'), value: CHART_TYPE_HEATMAP },
+      ],
     }
   },
   computed: {
     title () {
+      if (!this.panelShow && this.form.fd.metric_key) {
+        return this.getTitle()
+      }
       return this.$t('monitor.monitor_fill_filters')
+    },
+    metricUnit () {
+      // 优先用当前选中指标；编辑回填时 mertricItem 可能尚未就绪，回退 panel 中的单位
+      return getMetricUnit(this.mertricItem) ||
+        _.get(this.panel, 'common_alert_metric_details[0].field_description.unit') ||
+        _.get(this.panel, 'common_alert_metric_details[0].unit') ||
+        ''
+    },
+    showChartTypes () {
+      return this.enableChartTypes && isPercentUnit(this.metricUnit)
     },
   },
   watch: {
+    defaultPanelShow (val) {
+      this.panelShow = val
+    },
     timeRangeParams () {
       this.getMeasurement()
+    },
+    showChartTypes (val) {
+      if (val) {
+        if (!this.chartTypes || !this.chartTypes.length) {
+          // 监控查询 / 新建：百分比默认双图；已落库旧面板：仅折线
+          const isPersistedPanel = !!(this.panel && (this.panel.id || this.panel.panel_id))
+          this.chartTypes = this.queryOnly || !isPersistedPanel
+            ? [...DEFAULT_PERCENT_CHART_TYPES]
+            : [...DEFAULT_CHART_TYPES]
+        } else if (this.queryOnly) {
+          // 监控查询切到 % 指标时，恢复默认折线+热力图
+          this.chartTypes = [...DEFAULT_PERCENT_CHART_TYPES]
+        }
+        this.$emit('chartTypesChange', this.chartTypes)
+      } else {
+        this.$emit('chartTypesChange', [CHART_TYPE_LINE])
+      }
     },
   },
   created () {
     this.getMeasurement()
+    this.$emit('chartTypesChange', this.showChartTypes ? this.chartTypes : [CHART_TYPE_LINE])
   },
   methods: {
+    chartTypesChange (val) {
+      // 至少保留一种图表形式
+      this.chartTypes = (val && val.length) ? val : [CHART_TYPE_LINE]
+      this.$emit('chartTypesChange', this.chartTypes)
+    },
     getTitle () {
       let padding = ' '
       if (this.$store.getters.setting.language === 'zh-CN') {
@@ -407,9 +480,9 @@ export default {
       R.forEachObjIndexed((item, key) => {
         if (!['tagValues'].includes(key)) {
           if (R.is(Object, this.form.fd[key]) && R.is(Object, item)) {
-            this.$set(this.form.fd, key, { ...this.form.fd[key], ...item })
+            this.form.fd[key] = { ...this.form.fd[key], ...item }
           } else {
-            this.$set(this.form.fd, key, item)
+            this.form.fd[key] = item
           }
         }
       }, newField)
@@ -490,6 +563,9 @@ export default {
         this.metricInfoLoading = false
         throw error
       }
+    },
+    toggle () {
+      this.panelShow = !this.panelShow
     },
     toParams (ignoreEmit) {
       const fd = this.form.fc.getFieldsValue()
@@ -573,48 +649,40 @@ export default {
 @import '../../../../src/styles/less/theme';
 
 .monitor-form {
+  &.hideBody :deep(.ant-card-body) {
+    padding: 0 !important;
+  }
   .remove-icon {
     transition: color 0.1s ease-in;
-    cursor: pointer;
     &:hover {
       color: @error-color;
     }
   }
-  // antdv4：label 相对右侧第一行输入框（32px）上下居中
-  :deep(.ant-form > .ant-form-item > .ant-form-item-row) {
-    display: flex !important;
-    flex-wrap: nowrap !important;
-    align-items: flex-start !important;
+  // 让 label 和 wrapper 基于父元素宽度，而不是固定的 span
+  :deep(.ant-form-item) {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: flex-start;
   }
-  :deep(.ant-form > .ant-form-item > .ant-form-item-row > .ant-form-item-label) {
-    width: 108px !important;
-    flex: 0 0 108px !important;
-    max-width: 108px !important;
+  ::v-deep .ant-form-item-label,
+  :deep(.ant-form-item-label > label) {
+    width: 150px !important;
+    flex: 0 0 150px !important;
     padding-right: 8px;
-    padding-top: 0 !important;
-    align-self: flex-start !important;
-    display: flex !important;
-    align-items: center !important;
-    height: 32px !important;
-    max-height: 32px !important;
   }
-  :deep(.ant-form > .ant-form-item > .ant-form-item-row > .ant-form-item-label > label) {
-    height: 32px !important;
-    line-height: 32px !important;
-    margin: 0 !important;
-    white-space: normal;
-  }
-  :deep(.ant-form > .ant-form-item > .ant-form-item-row > .ant-form-item-control) {
-    flex: 1 1 auto !important;
+  // // 覆盖 Ant Design 的栅格类
+  :deep(.ant-col) {
     width: auto !important;
-    min-width: 0;
     max-width: none !important;
   }
-  :deep(.ant-form > .ant-form-item) {
-    margin-bottom: 16px !important;
+  :deep(.ant-form-item-control-wrapper) {
+    flex: 1 1 auto;
+    width: auto !important;
+    min-width: 0;
+    max-width: 100%;
   }
-  :deep(.ant-form > .ant-form-item:last-child) {
-    margin-bottom: 0 !important;
+  :deep(.ant-form-item-control) {
+    width: 100%;
   }
 }
 
