@@ -119,6 +119,18 @@ export default {
               }),
             },
           }, this.$t('common.cancel'))
+          const forceShutdown = this.$createElement('a', {
+            class: 'ml-1',
+            on: {
+              click: () => this.createDialog('VmShutDownDialog', {
+                data: [row],
+                columns: this.columns,
+                onManager: this.onManager,
+                formData: { is_force: true },
+                forceLocked: true,
+              }),
+            },
+          }, this.$t('compute.force_shutdown'))
           const shutdown = this.$createElement('span', { class: 'text-color-help' }, `(${this.$t('compute.server.shutdown_mode.stop_charging')})`)
           const rescue_mode = this.$createElement('span', { class: 'text-color-help' }, `(${this.$t('compute.rescue')})`)
           const health = this.$createElement('span', {
@@ -140,6 +152,7 @@ export default {
               row.metadata && getToolTip(row),
               row.status?.includes('fail') ? log : null,
               row.status === 'live_migrating' ? cancel : null,
+              [HYPERVISORS_MAP.kvm.hypervisor].includes(row.hypervisor) && ['stopping', 'stop_fail'].includes(row.status) ? forceShutdown : null,
               row.status === 'ready' && row.shutdown_mode === 'stop_charging' ? shutdown : null,
               row.rescue_mode === true ? rescue_mode : null,
             ]),
