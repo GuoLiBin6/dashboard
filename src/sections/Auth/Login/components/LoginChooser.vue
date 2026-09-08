@@ -36,7 +36,7 @@
         <button
           type="button"
           class="action-link"
-          @click="$router.replace({ path: '/auth/login', query: { rf: $route.query.rf, domain: $route.query.domain } })">
+          @click="$router.replace({ path: '/auth/login', query: $route.query })">
           <icon type="user" />
           {{ $t('auth.outher.history.user.btn') }}
         </button>
@@ -79,9 +79,7 @@ export default {
       if (data.length === 0) {
         this.$router.replace({
           path: '/auth/login',
-          query: {
-            rf: this.$route.query.rf,
-          },
+          query: this.$route.query,
         })
         return data
       }
@@ -96,9 +94,7 @@ export default {
       if (data.length === 0) {
         this.$router.replace({
           path: '/auth/login',
-          query: {
-            rf: this.$route.query.rf,
-          },
+          query: this.$route.query,
         })
       }
     },

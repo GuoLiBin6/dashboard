@@ -167,7 +167,7 @@ import { CheckCircleOutlined } from '@ant-design/icons-vue'
 import UserProjectSelect from '@/sections/UserProjectSelect'
 import WindowsMixin from '@/mixins/windows'
 import { getSetupInStorage, hasPermission, featureMenuHiddenCheck } from '@/utils/auth'
-import { uuid, isCE } from '@/utils/utils'
+import { uuid, isCE, genReferRouteQuery } from '@/utils/utils'
 import NotifyPopover from './components/NotifyPopover'
 // import SettingPopover from './components/SettingPopover'
 import WorkOrderPopover from './components/WorkOrderPopover'
@@ -617,11 +617,7 @@ export default {
           await this.$store.dispatch('auth/logout')
           this.$router.push({
             path: '/auth/login',
-            query: {
-              pathAuthPage: this.$route.meta.authPage,
-              pathAuth: this.$route.meta.auth || true,
-              path: this.$route.path,
-            },
+            query: genReferRouteQuery(this.$route),
           })
         } catch (error) {
           throw error
