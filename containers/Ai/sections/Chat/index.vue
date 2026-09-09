@@ -42,35 +42,38 @@
             </a-select-option>
           </a-select>
         </div>
-        <div class="chat-test-field chat-test-field-grow">
-          <div class="chat-test-field-label">{{ $t('aice.aiproxy.virtual_key') }}</div>
-          <base-select
-            v-model="selectedVirtualKeyId"
-            resource="ai_virtual_keys"
-            :params="virtualKeySelectParams"
-            :extra-opts="virtualKeyExtraOpts"
-            filterable
-            version="v2"
-            class="chat-test-vk-select"
-            :select-props="virtualKeySelectProps"
-            @change="onVirtualKeySelectChange"
-            @update:item="onVirtualKeyItemSelected" />
-        </div>
-        <div v-if="showChatModelSelect" class="chat-test-field">
-          <div class="chat-test-field-label">{{ $t('aice.aiproxy.client_model_select') }}</div>
-          <a-select
-            v-model:value="selectedChatModelId"
-            class="chat-test-model-select"
-            :loading="chatModelsLoading"
-            :placeholder="$t('aice.aiproxy.client_model_select')"
-            @change="onChatModelChange">
-            <a-select-option
-              v-for="opt in chatModelOptions"
-              :key="opt.id"
-              :value="opt.id">
-              {{ opt.id }}
-            </a-select-option>
-          </a-select>
+        <div class="chat-test-vk-model">
+          <div class="chat-test-field chat-test-field-vk">
+            <div class="chat-test-field-label">{{ $t('aice.aiproxy.virtual_key') }}</div>
+            <base-select
+              v-model:value="selectedVirtualKeyId"
+              resource="ai_virtual_keys"
+              :params="virtualKeySelectParams"
+              :extra-opts="virtualKeyExtraOpts"
+              filterable
+              version="v2"
+              class="chat-test-vk-select"
+              :select-props="virtualKeySelectProps"
+              @change="onVirtualKeySelectChange"
+              @update:item="onVirtualKeyItemSelected" />
+          </div>
+          <div v-if="showChatModelSelect" class="chat-test-field chat-test-field-model">
+            <div class="chat-test-field-label">{{ $t('aice.aiproxy.client_model_select') }}</div>
+            <a-select
+              v-model:value="selectedChatModelId"
+              class="chat-test-model-select"
+              :loading="chatModelsLoading"
+              :placeholder="$t('aice.aiproxy.client_model_select')"
+              :dropdownMatchSelectWidth="false"
+              @change="onChatModelChange">
+              <a-select-option
+                v-for="opt in chatModelOptions"
+                :key="opt.id"
+                :value="opt.id">
+                {{ opt.id }}
+              </a-select-option>
+            </a-select>
+          </div>
         </div>
       </div>
     </div>
@@ -127,7 +130,7 @@
 
     <div class="chat-input-area">
       <a-textarea
-        v-model:value="inputMessage"
+        v-model="inputMessage"
         :placeholder="chatTestInputPlaceholder"
         :auto-size="{ minRows: 2, maxRows: 6 }"
         @keydown.ctrl.enter="handleSend"
@@ -168,7 +171,7 @@ import {
   appendAnthropicStreamLine,
   extractAnthropicResponseText,
 } from '@Ai/utils/anthropicStream'
-import { splitThinkingContent, normalizeMarkdownTables } from '@Ai/utils/chatContent'
+import { extractUpstreamErrorMessage, splitThinkingContent, normalizeMarkdownTables } from '@Ai/utils/chatContent'
 import {
   buildDeploymentClientModelOptions,
   defaultClientModelOption,
@@ -434,12 +437,14 @@ export default {
         const greetingText = this.$t('ai.mcp.greeting')
         history = this.messages
           .slice(0, userMessageIndex)
+          .filter(m => !m.isError)
           .filter(m => !(m.role === 'assistant' && m.content === greetingText))
           .slice(-6)
       } else {
         const greetingText = this.$t('ai.mcp.greeting')
         history = this.messages
           .slice(0, userMessageIndex)
+          .filter(item => !item.isError)
           .map(item => ({
             role: item.role,
             content: item.role === 'assistant' ? (item.content || '') : item.content,
@@ -458,8 +463,11 @@ export default {
       } catch (error) {
         console.error('Chat error:', error)
         if (error.name !== 'AbortError') {
-          this.$set(this.messages[assistantMessageIndex], 'content', this.$t('ai.mcp.error_occurred'))
-          this.$message.error(this.$t('ai.mcp.send_failed'))
+          const detail = String(error.message || '').trim() || this.$t('ai.mcp.error_occurred')
+          this.messages[assistantMessageIndex].isError = true
+          this.messages[assistantMessageIndex].content = detail
+          const toast = detail.length > 300 ? `${detail.slice(0, 300)}…` : detail
+          this.$message.error(toast)
         }
       } finally {
         this.loading = false
@@ -487,6 +495,15 @@ export default {
         this.abortController = null
       }
     },
+    async throwFailedChatResponse (response) {
+      let body = ''
+      try {
+        body = await response.text()
+      } catch (e) {
+        body = ''
+      }
+      throw new Error(extractUpstreamErrorMessage(body, response.status))
+    },
     async streamMcpChatResponse (message, assistantMessageIndex, history = []) {
       const baseURL = this.$http.defaults.baseURL || process.env.VUE_APP_BASE_API || ''
       const apiVersion = 'v1'
@@ -513,7 +530,7 @@ export default {
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        await this.throwFailedChatResponse(response)
       }
 
       // 与 chatTest 共用按行解析，支持后端 token 级增量 SSE（data: xxx\n\n）
@@ -547,7 +564,7 @@ export default {
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        await this.throwFailedChatResponse(response)
       }
 
       const streamFormat = protocol === 'anthropic' ? 'anthropic' : 'openai'
@@ -605,13 +622,13 @@ export default {
           if (format === 'openai' || format === 'anthropic') {
             this.applyChatTestContent(assistantMessageIndex, raw)
           } else {
-            this.$set(this.messages[assistantMessageIndex], 'content', raw)
+            this.messages[assistantMessageIndex].content = raw
           }
         } catch (e) {
           if (format === 'openai' || format === 'anthropic') {
             this.applyChatTestContent(assistantMessageIndex, text)
           } else {
-            this.$set(this.messages[assistantMessageIndex], 'content', text)
+            this.messages[assistantMessageIndex].content = text
           }
         }
       }
@@ -626,7 +643,7 @@ export default {
         return p
       }).join('\n')
       const newContent = (this.messages[assistantMessageIndex].content || '') + payload
-      this.$set(this.messages[assistantMessageIndex], 'content', newContent)
+      this.messages[assistantMessageIndex].content = newContent
       this.$nextTick(() => {
         this.scrollToBottom()
       })
@@ -645,7 +662,7 @@ export default {
       let payload = line.slice(5)
       if (payload.startsWith(' ')) payload = payload.slice(1)
       const newContent = (this.messages[assistantMessageIndex].content || '') + payload
-      this.$set(this.messages[assistantMessageIndex], 'content', newContent)
+      this.messages[assistantMessageIndex].content = newContent
     },
     appendOpenAiStreamLine (line, assistantMessageIndex) {
       const trimmed = line.trim()
@@ -683,9 +700,9 @@ export default {
     },
     applyChatTestContent (assistantMessageIndex, rawContent, rawContentToStore = rawContent) {
       const { reasoning, content } = splitThinkingContent(rawContent)
-      this.$set(this.messages[assistantMessageIndex], 'rawContent', rawContentToStore)
-      this.$set(this.messages[assistantMessageIndex], 'reasoning', reasoning)
-      this.$set(this.messages[assistantMessageIndex], 'content', content)
+      this.messages[assistantMessageIndex].rawContent = rawContentToStore
+      this.messages[assistantMessageIndex].reasoning = reasoning
+      this.messages[assistantMessageIndex].content = content
     },
     getChatTestReadyBindings () {
       const bindings = Array.isArray(this.data?.aiproxy_bindings) ? this.data.aiproxy_bindings : []
@@ -865,10 +882,12 @@ export default {
       const builder = this.chatProtocol === 'anthropic'
         ? buildAnthropicChatTestRequestConfig
         : buildChatTestRequestConfig
+      const selectedOpt = (this.chatModelOptions || []).find(opt => opt && opt.id === model)
       const config = builder({
         endpoint: this.endpointUrl,
         model,
         virtualKey: this.selectedVirtualKey,
+        contextWindow: selectedOpt?.contextWindow,
       })
       this.chatTestConfig = config || null
     },
@@ -919,7 +938,7 @@ export default {
       return !!this.expandedReasoningMap[index]
     },
     toggleReasoning (index) {
-      this.$set(this.expandedReasoningMap, index, !this.expandedReasoningMap[index])
+      this.expandedReasoningMap[index] = !this.expandedReasoningMap[index]
     },
     insertToolExample (tool) {
       const example = `${this.$t('ai.mcp.use_tool')} ${tool.name}: ${tool.description}`
@@ -957,7 +976,7 @@ export default {
     max-width: 760px;
     margin-left: 16px;
     display: flex;
-    gap: 8px;
+    gap: 16px;
     align-items: flex-end;
     flex-wrap: wrap;
 
@@ -965,16 +984,6 @@ export default {
       display: flex;
       flex-direction: column;
       gap: 4px;
-    }
-
-    .chat-test-field-grow {
-      flex: 1;
-      min-width: 180px;
-
-      .chat-test-vk-select {
-        width: 100%;
-        min-width: 0;
-      }
     }
 
     .chat-test-field-label {
@@ -989,13 +998,36 @@ export default {
       flex-shrink: 0;
     }
 
-    .chat-test-vk-select {
-      width: 180px;
+    .chat-test-vk-model {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      gap: 16px;
+      align-items: flex-end;
     }
 
-    .chat-test-model-select {
-      width: 220px;
-      flex-shrink: 0;
+    .chat-test-field-vk {
+      flex: 4 1 0;
+      min-width: 0;
+
+      .chat-test-vk-select {
+        width: 100%;
+        min-width: 0;
+      }
+    }
+
+    .chat-test-vk-model:not(:has(.chat-test-field-model)) .chat-test-field-vk {
+      flex: 0 0 40%;
+    }
+
+    .chat-test-field-model {
+      flex: 6 1 0;
+      min-width: 0;
+
+      .chat-test-model-select {
+        width: 100%;
+        min-width: 0;
+      }
     }
   }
 }
