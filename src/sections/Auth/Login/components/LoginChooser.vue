@@ -36,7 +36,7 @@
         <button
           type="button"
           class="action-link"
-          @click="$router.replace({ path: '/auth/login', query: $route.query })">
+          @click="handleOtherUser">
           <icon type="user" />
           {{ $t('auth.outher.history.user.btn') }}
         </button>
@@ -59,6 +59,7 @@ import * as R from 'ramda'
 import { mapState } from 'vuex'
 import { setSsoIdpIdInCookie } from '@/utils/auth'
 import { sanitizeSsoRedirectSearch } from '@/utils/safeRedirect'
+import { omitLoginUserQuery } from '@/utils/utils'
 export default {
   name: 'LoginChooser',
   props: {
@@ -74,12 +75,15 @@ export default {
     ...mapState('auth', {
       loggedUsers: state => state.loggedUsers,
     }),
+    loginNavQuery () {
+      return omitLoginUserQuery(this.$route.query)
+    },
     dataSource () {
       const data = Object.entries(this.loggedUsers)
       if (data.length === 0) {
         this.$router.replace({
           path: '/auth/login',
-          query: this.$route.query,
+          query: this.loginNavQuery,
         })
         return data
       }
@@ -94,7 +98,7 @@ export default {
       if (data.length === 0) {
         this.$router.replace({
           path: '/auth/login',
-          query: this.$route.query,
+          query: this.loginNavQuery,
         })
       }
     },
@@ -118,11 +122,17 @@ export default {
       this.$router.replace({
         path: '/auth/login',
         query: {
-          ...this.$route.query,
+          ...this.loginNavQuery,
           username,
           fd_domain: item[1].domain.name,
           displayname: item[1].displayname,
         },
+      })
+    },
+    handleOtherUser () {
+      this.$router.replace({
+        path: '/auth/login',
+        query: this.loginNavQuery,
       })
     },
   },
