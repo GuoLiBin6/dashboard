@@ -40,7 +40,7 @@ export default {
         fc: this.$form.createForm(this, {
           onValuesChange: (props, values) => {
             Object.keys(values).forEach((key) => {
-              this.$set(this.form.fd, key, values[key])
+              this.form.fd[key] = values[key]
             })
           },
         }),
