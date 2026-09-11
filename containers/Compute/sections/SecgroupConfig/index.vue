@@ -9,8 +9,7 @@
       </a-radio-group>
     </a-form-item>
     <a-form-item class="mb-0" v-if="isBind">
-      <div slot="extra">{{$t('compute.text_188', [_max])}}<help-link :href="href">{{$t('compute.text_189')}}</help-link>
-      </div>
+      <template #extra>{{$t('compute.text_188', [_max])}}<help-link :href="href">{{$t('compute.text_189')}}</help-link></template>
       <base-select
         remote
         class="w-50 pr-1"
@@ -28,7 +27,7 @@
       v-if="isNetworkTag"
       :validate-status="networkTagError ? 'error' : ''"
       :help="networkTagError || undefined">
-      <div slot="extra">{{ $t('validator.secgroupNetworkTag') }}</div>
+      <template #extra>{{ $t('validator.secgroupNetworkTag') }}</template>
       <a-select
         ref="networkTagsSelect"
         v-decorator="networkTagsDecorator"

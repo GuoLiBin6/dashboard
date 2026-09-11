@@ -37,9 +37,9 @@
             :mapper="networkResourceMapper"
             :select-props="{ allowClear: true, placeholder: $t('compute.text_195') }"
             @update:initLoaded="onNetworkInitLoaded" />
-            <div slot="extra" v-if="helplink">
+            <template v-if="helplink" #extra>
               {{helplink.ipSubnetHelp}}<help-link :href="helplink.ipSubnetHref">{{$t('network.text_26')}}</help-link>
-            </div>
+            </template>
         </a-form-item>
       </a-col>
       <a-col :span="8" v-if="showIpConfig">

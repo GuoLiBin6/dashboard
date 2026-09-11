@@ -1,7 +1,7 @@
 <template>
   <a-form-item :label="$t('db.text_116')" v-bind="formItemLayout">
     <a-tooltip placement="top">
-      <template slot="title">
+      <template #title>
           <span v-if="selectedSku">{{$t('db.text_117', [numberProps.min,numberProps.max])}}</span>
           <span v-else>{{$t('db.text_118')}}</span>
         </template>
