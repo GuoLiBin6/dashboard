@@ -8,7 +8,7 @@
     :extra-info="extraInfo" />
 </template>
 
-<script>
+<script lang="jsx">
 import * as R from 'ramda'
 import { LOGIN_TYPES_MAP } from '@Compute/constants'
 import { getNetworkTags, renderNetworkTagNodes } from '@Compute/utils/secgroupDisplay'
@@ -76,9 +76,6 @@ export default {
               slotCallback: row => {
                 if (!row.config_info || !row.config_info.image) return '-'
                 return row.config_info.image
-                // return [
-                //   <side-page-trigger permission='images_get' name='SystemImageSidePage' id={this.diskInfos.imageId} vm={this}>{ row.config_info.image }</side-page-trigger>,
-                // ]
               },
             }),
             getCopyWithContentTableColumn({
@@ -88,7 +85,14 @@ export default {
               slotCallback: row => {
                 if (!row.vpc) return '-'
                 return [
-                  <side-page-trigger permission='vpcs_get' name='VpcSidePage' id={row.vpc_id} vm={this}>{ row.vpc }</side-page-trigger>,
+                  this.$createElement('side-page-trigger', {
+                    props: {
+                      permission: 'vpcs_get',
+                      name: 'VpcSidePage',
+                      id: row.vpc_id,
+                      vm: this,
+                    },
+                  }, row.vpc),
                 ]
               },
             }),
@@ -96,11 +100,13 @@ export default {
               field: 'config_info.network',
               title: this.$t('compute.text_106'),
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   if (row.config_info.nets && row.config_info.nets.length) {
                     const _ = row.config_info.nets.map(net => {
                       if (net.guest_ip_start) {
-                        return <div><a-tag>{ `${net.name}（${net.guest_ip_start} - ${net.guest_ip_end}, vlan=${net.vlan_id}）` }</a-tag></div>
+                        return h('div', [
+                          h('a-tag', `${net.name}（${net.guest_ip_start} - ${net.guest_ip_end}, vlan=${net.vlan_id}）`),
+                        ])
                       }
                       return net.network || net.id
                     }).filter(v => !!v)

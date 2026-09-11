@@ -25,10 +25,12 @@ export default {
           { required: true, message: i18n.t('compute.text_210') },
           { validator: this.$validate('resourceCreateName') },
         ],
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getStatusTableColumn({ statusModule: 'servertemplate', vm: this }),
@@ -41,17 +43,23 @@ export default {
         sortable: true,
         slots: {
           default: ({ row }) => {
-            if (!row.config_info) return [<data-loading />]
+            if (!row.config_info) return [this.$createElement('data-loading')]
             const { sku, disks } = row.config_info
             const diskSize = disks.map(item => item.size_mb).reduce((a, b) => {
               return a + b
             })
             const ret = []
             if (row.name) {
-              ret.push(<div class='text-truncate' style={{ color: '#0A1F44' }}>{ sku.name }</div>)
+              ret.push(this.$createElement('div', {
+                class: 'text-truncate',
+                style: { color: 'var(--oc-color-text-heading)' },
+              }, sku.name))
             }
             const config = sku.cpu_core_count + 'C' + sizestr(sku.memory_size_mb, 'M', 1024) + (diskSize ? sizestr(diskSize, 'M', 1024) : '')
-            return ret.concat(<div class='text-truncate' style={{ color: '#53627C' }}>{ config }</div>)
+            return ret.concat(this.$createElement('div', {
+              class: 'text-truncate',
+              style: { color: 'var(--oc-color-text-secondary)' },
+            }, config))
           },
         },
         formatter: ({ row }) => {
@@ -80,7 +88,7 @@ export default {
             const version = (row.metadata && row.metadata.os_version) ? `${row.metadata.os_version}` : ''
             const tooltip = (version.includes(name) ? version : `${name} ${version}`) || i18n.t('compute.text_339') // 去重
             return [
-              <SystemIcon tooltip={ tooltip } name={ name } />,
+              this.$createElement(SystemIcon, { props: { tooltip, name } }),
             ]
           },
         },
@@ -99,7 +107,7 @@ export default {
         minWidth: 190,
         slots: {
           default: ({ row }) => {
-            if (!row.config_info) return [<data-loading />]
+            if (!row.config_info) return [this.$createElement('data-loading')]
             return row.config_info.image
           },
         },

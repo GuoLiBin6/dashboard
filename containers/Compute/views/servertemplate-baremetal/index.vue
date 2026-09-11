@@ -1,6 +1,6 @@
 <template>
   <div>
-    <page-header :title="$t('compute.servertemplate_baremetal')" :tabs="cloudEnvOptions" :current-tab.sync="cloudEnv" />
+    <page-header :title="$t('compute.servertemplate_baremetal')" :tabs="cloudEnvOptions" v-model:currentTab="cloudEnv" />
     <page-body>
       <servertemplate-baremetal-list :cloud-env="cloudEnv" :cloudEnvOptions="cloudEnvOptions" />
     </page-body>

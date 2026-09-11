@@ -32,7 +32,7 @@
               style="width: 120px;"
               :loading="loading">{{ isOpenWorkflow ? $t('compute.text_288') : $t('dialog.ok') }}</a-button>
             <a-button style="width: 120px;" @click="goBack">{{$t('compute.text_135')}}</a-button>
-            <side-errors :error-title="$t('compute.text_290')" :errors.sync="errors" />
+            <side-errors :error-title="$t('compute.text_290')" v-model:errors="errors" />
           </template>
         </page-footer>
       </a-form>
@@ -258,7 +258,7 @@ export default {
 
 <style lang="less" scoped>
 .severtemplate-create-server {
-  ::v-deep .ant-form.ant-form-horizontal .ant-form-item .ant-form-item-label{
+  :deep(.ant-form.ant-form-horizontal .ant-form-item .ant-form-item-label) {
     padding-left: 20px;
   }
 }
