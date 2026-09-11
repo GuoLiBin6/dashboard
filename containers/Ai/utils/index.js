@@ -2,10 +2,27 @@
  * 模型品牌图标：来自 lobe-icons (MIT) 与 simple-icons (CC0)，见 src/assets/images/llm-images/
  * @see https://github.com/lobehub/lobe-icons
  */
+import qianwenIcon from '@/assets/images/llm-images/qianwen.svg'
+import deepseekIcon from '@/assets/images/llm-images/deepseek.svg'
+import glmIcon from '@/assets/images/llm-images/glm.svg'
+import falconIcon from '@/assets/images/llm-images/falcon.svg'
+import gptIcon from '@/assets/images/llm-images/gpt.svg'
+import whisperIcon from '@/assets/images/llm-images/whisper.svg'
+import voxtralIcon from '@/assets/images/llm-images/voxtral.svg'
+import mistralIcon from '@/assets/images/llm-images/mistral.svg'
+import graniteIcon from '@/assets/images/llm-images/granite.svg'
+import bgeIcon from '@/assets/images/llm-images/bge.svg'
+import jinaIcon from '@/assets/images/llm-images/jina.svg'
+import kimiIcon from '@/assets/images/llm-images/kimi.svg'
+import hyIcon from '@/assets/images/llm-images/hy.svg'
+import minimaxIcon from '@/assets/images/llm-images/minimax.svg'
+import stepIcon from '@/assets/images/llm-images/step.svg'
+import paddleIcon from '@/assets/images/llm-images/paddle.svg'
+import openclawIcon from '@/assets/images/llm-images/openclaw.svg'
+import difyIcon from '@/assets/images/llm-images/dify.svg'
+import comfyuiIcon from '@/assets/images/llm-images/comfyui.svg'
+import hermesIcon from '@/assets/images/llm-images/hermes-agent.svg'
 
-/**
- * 解析 webpack 静态资源 require 结果（file-loader 可能为 string 或 { default: string }）
- */
 function resolveAssetUrl (asset) {
   if (!asset) return ''
   if (typeof asset === 'string') return asset
@@ -14,26 +31,26 @@ function resolveAssetUrl (asset) {
 
 // 须放在 assets/images 等目录：Icon 目录下 SVG 走 svg-sprite-loader，不能用于 <img src>
 const MODEL_ICON_RULES = [
-  { test: /qwen|qianwen/i, icon: resolveAssetUrl(require('@/assets/images/llm-images/qianwen.svg')) },
-  { test: /deepseek/i, icon: resolveAssetUrl(require('@/assets/images/llm-images/deepseek.svg')) },
-  { test: /glm|chatglm/i, icon: resolveAssetUrl(require('@/assets/images/llm-images/glm.svg')) },
-  { test: /falcon/i, icon: resolveAssetUrl(require('@/assets/images/llm-images/falcon.svg')) },
-  { test: /gpt-oss|gpt/i, icon: resolveAssetUrl(require('@/assets/images/llm-images/gpt.svg')) },
-  { test: /whisper/i, icon: resolveAssetUrl(require('@/assets/images/llm-images/whisper.svg')) },
-  { test: /voxtral/i, icon: resolveAssetUrl(require('@/assets/images/llm-images/voxtral.svg')) },
-  { test: /mistral/i, icon: resolveAssetUrl(require('@/assets/images/llm-images/mistral.svg')) },
-  { test: /granite/i, icon: resolveAssetUrl(require('@/assets/images/llm-images/granite.svg')) },
-  { test: /\bbge\b|bge-/i, icon: resolveAssetUrl(require('@/assets/images/llm-images/bge.svg')) },
-  { test: /jina/i, icon: resolveAssetUrl(require('@/assets/images/llm-images/jina.svg')) },
-  { test: /kimi|moonshot/i, icon: resolveAssetUrl(require('@/assets/images/llm-images/kimi.svg')) },
-  { test: /tencent\/hy|tencent\/hunyuan|hunyuan|混元/i, icon: resolveAssetUrl(require('@/assets/images/llm-images/hy.svg')) },
-  { test: /minimax/i, icon: resolveAssetUrl(require('@/assets/images/llm-images/minimax.svg')) },
-  { test: /\bstep/i, icon: resolveAssetUrl(require('@/assets/images/llm-images/step.svg')) },
-  { test: /paddle|ocr-vl/i, icon: resolveAssetUrl(require('@/assets/images/llm-images/paddle.svg')) },
-  { test: /openclaw|open-claw/i, icon: resolveAssetUrl(require('@/assets/images/llm-images/openclaw.svg')) },
-  { test: /dify/i, icon: resolveAssetUrl(require('@/assets/images/llm-images/dify.svg')) },
-  { test: /comfyui|comfy-ui/i, icon: resolveAssetUrl(require('@/assets/images/llm-images/comfyui.svg')) },
-  { test: /hermes/i, icon: resolveAssetUrl(require('@/assets/images/llm-images/hermes-agent.svg')) },
+  { test: /qwen|qianwen/i, icon: resolveAssetUrl(qianwenIcon) },
+  { test: /deepseek/i, icon: resolveAssetUrl(deepseekIcon) },
+  { test: /glm|chatglm/i, icon: resolveAssetUrl(glmIcon) },
+  { test: /falcon/i, icon: resolveAssetUrl(falconIcon) },
+  { test: /gpt-oss|gpt/i, icon: resolveAssetUrl(gptIcon) },
+  { test: /whisper/i, icon: resolveAssetUrl(whisperIcon) },
+  { test: /voxtral/i, icon: resolveAssetUrl(voxtralIcon) },
+  { test: /mistral/i, icon: resolveAssetUrl(mistralIcon) },
+  { test: /granite/i, icon: resolveAssetUrl(graniteIcon) },
+  { test: /\bbge\b|bge-/i, icon: resolveAssetUrl(bgeIcon) },
+  { test: /jina/i, icon: resolveAssetUrl(jinaIcon) },
+  { test: /kimi|moonshot/i, icon: resolveAssetUrl(kimiIcon) },
+  { test: /tencent\/hy|tencent\/hunyuan|hunyuan|混元/i, icon: resolveAssetUrl(hyIcon) },
+  { test: /minimax/i, icon: resolveAssetUrl(minimaxIcon) },
+  { test: /\bstep/i, icon: resolveAssetUrl(stepIcon) },
+  { test: /paddle|ocr-vl/i, icon: resolveAssetUrl(paddleIcon) },
+  { test: /openclaw|open-claw/i, icon: resolveAssetUrl(openclawIcon) },
+  { test: /dify/i, icon: resolveAssetUrl(difyIcon) },
+  { test: /comfyui|comfy-ui/i, icon: resolveAssetUrl(comfyuiIcon) },
+  { test: /hermes/i, icon: resolveAssetUrl(hermesIcon) },
 ]
 
 /**

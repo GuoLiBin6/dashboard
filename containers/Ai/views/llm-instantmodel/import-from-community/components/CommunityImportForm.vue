@@ -5,16 +5,16 @@
       <a-input :value="fullName" disabled />
     </a-form-model-item>
     <a-form-model-item :label="$t('common.name')" prop="generate_name">
-      <a-input v-model="form.generate_name" :placeholder="$t('common.tips.input', [$t('common.name')])" />
+      <a-input v-model:value="form.generate_name" :placeholder="$t('common.tips.input', [$t('common.name')])" />
     </a-form-model-item>
     <a-form-model-item :label="$t('aice.llm_type')" prop="llm_type">
       <a-input :value="form.llm_type" disabled />
     </a-form-model-item>
     <a-form-model-item :label="$t('aice.model_name')" prop="model_name">
-      <a-input v-model="form.model_name" :placeholder="$t('common.tips.input', [$t('aice.model_name')])" />
+      <a-input v-model:value="form.model_name" :placeholder="$t('common.tips.input', [$t('aice.model_name')])" />
     </a-form-model-item>
     <a-form-model-item :label="$t('aice.model_tag')" prop="model_tag">
-      <a-input v-model="form.model_tag" :placeholder="$t('common.tips.input', [$t('aice.model_tag')])" />
+      <a-input v-model:value="form.model_tag" :placeholder="$t('common.tips.input', [$t('aice.model_tag')])" />
     </a-form-model-item>
   </a-form-model>
 </template>

@@ -4,7 +4,7 @@
     <div slot="body">
       <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 5 }" :wrapper-col="{ span: 17 }">
         <a-form-model-item v-if="params.type !== 'edit'" :label="$t('common.name')" prop="generate_name">
-          <a-input v-model="form.generate_name" />
+          <a-input v-model:value="form.generate_name" />
         </a-form-model-item>
         <a-form-model-item v-if="!fixedProviderId" :label="$t('aice.aiproxy.ai_provider_id')" prop="ai_provider_id">
           <base-select
@@ -16,11 +16,11 @@
             :select-props="{ placeholder: $t('common.tips.select', [$t('aice.aiproxy.provider')]) }" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.aiproxy.model_key')" prop="model_key">
-          <a-input v-model="form.model_key" />
+          <a-input v-model:value="form.model_key" />
         </a-form-model-item>
         <a-divider orientation="left">{{ $t('aice.aiproxy.visual') }}</a-divider>
         <a-form-model-item :label="$t('aice.aiproxy.visual_enabled')">
-          <a-switch v-model="form.visual_enabled" />
+          <a-switch v-model:value="form.visual_enabled" />
         </a-form-model-item>
         <template v-if="form.visual_enabled">
           <a-form-model-item :label="$t('aice.aiproxy.visual_provider_id')" prop="visual_provider_id">
@@ -34,7 +34,7 @@
           </a-form-model-item>
           <a-form-model-item :label="$t('aice.aiproxy.visual_model_key')" prop="visual_model_key">
             <a-select
-              v-model="form.visual_model_key"
+              v-model:value="form.visual_model_key"
               show-search
               allow-clear
               :options="visualModelKeyOptions"
@@ -43,10 +43,10 @@
               :filter-option="filterOption" />
           </a-form-model-item>
           <a-form-model-item :label="$t('aice.aiproxy.visual_max_rounds')">
-            <a-input-number v-model="form.max_rounds" :min="1" placeholder="4" />
+            <a-input-number v-model:value="form.max_rounds" :min="1" placeholder="4" />
           </a-form-model-item>
           <a-form-model-item :label="$t('aice.aiproxy.visual_max_tokens')">
-            <a-input-number v-model="form.max_tokens" :min="1" placeholder="2048" />
+            <a-input-number v-model:value="form.max_tokens" :min="1" placeholder="2048" />
           </a-form-model-item>
         </template>
       </a-form-model>

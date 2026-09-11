@@ -18,10 +18,12 @@ export default {
         onManager: this.onManager,
         hideField: true,
         title: i18n.t('network.text_317'),
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            props: {
+              onTrigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getTagTableColumn({ onManager: this.onManager, resource: 'lb_loadbalancercertificates', columns: () => this.columns }),
@@ -31,9 +33,9 @@ export default {
         title: i18n.t('network.text_318'),
         width: 150,
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             if (row.common_name) return row.common_name
-            return [<div slot="label"><span class="mr-1"> - </span></div>]
+            return [h('div', { slot: 'label' }, [h('span', { class: 'mr-1' }, ' - ')])]
           },
         },
       },
@@ -43,16 +45,12 @@ export default {
         sortable: true,
         width: 150,
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             if (row.not_after) {
               if (this.$moment().isAfter(this.$moment(row.not_after))) {
-                return [
-                  <span style="color: red">{this.$moment(row.not_after).format(i18n.t('network.text_36'))}</span>,
-                ]
+                return [h('span', { style: 'color: red' }, this.$moment(row.not_after).format(i18n.t('network.text_36')))]
               }
-              return [
-                <span>{this.$moment(row.not_after).format(i18n.t('network.text_36'))}</span>,
-              ]
+              return [h('span', this.$moment(row.not_after).format(i18n.t('network.text_36')))]
             }
             return '-'
           },

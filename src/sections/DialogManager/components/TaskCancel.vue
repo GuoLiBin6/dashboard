@@ -1,14 +1,14 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{ $t('dialog.cancel') }}</div>
-    <div slot="body">
+    <template #header>{{ $t('dialog.cancel') }}</template>
+    <template #body>
       <dialog-selected-tips :name="$t('table.title.task')" :count="params.data.length" :action="$t('dialog.cancel')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

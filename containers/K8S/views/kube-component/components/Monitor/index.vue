@@ -2,13 +2,13 @@
   <a-form-model :model="formData" size="small" ref="formRef" class="w-75" :label-col="labelCol" :wrapper-col="wrapperCol" :rules="rules">
     <a-divider content-position="left">Grafana</a-divider>
     <a-form-model-item :label="$t('k8s.text_272')" prop="grafana.adminUser">
-      <a-input v-model="formData.grafana.adminUser" :placeholder="$t('k8s.text_273')" />
+      <a-input v-model:value="formData.grafana.adminUser" :placeholder="$t('k8s.text_273')" />
     </a-form-model-item>
     <a-form-model-item :label="$t('k8s.text_274')" prop="grafana.adminPassword">
-      <a-input-password v-model="formData.grafana.adminPassword" :placeholder="$t('k8s.text_275')" />
+      <a-input-password v-model:value="formData.grafana.adminPassword" :placeholder="$t('k8s.text_275')" />
     </a-form-model-item>
     <a-form-model-item :label="$t('k8s.text_405')" prop="grafana.publicAddress">
-      <a-input v-model="formData.grafana.publicAddress" addon-before="https://" addon-after="/grafana" :placeholder="$t('k8s.text_404')" />
+      <a-input v-model:value="formData.grafana.publicAddress" addon-before="https://" addon-after="/grafana" :placeholder="$t('k8s.text_404')" />
     </a-form-model-item>
     <storage v-model="formData.grafana.storage" prop="grafana.storage" />
     <a-divider content-position="left">Loki</a-divider>

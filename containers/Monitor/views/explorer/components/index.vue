@@ -1,56 +1,73 @@
 <template>
-  <a-row>
-    <a-col :span="isTemplate ? 24 : undefined" :md="isTemplate ? 24 : 24" :lg="isTemplate ? 24 : 22" :xl="isTemplate ? 24 : 16" :xxl="isTemplate ? 24 : 10" class="mb-5">
-      <monitor-forms
-       @refresh="refresh"
-        @remove="remove"
-        @resetChart="resetChart"
-        :timeRangeParams="timeRangeParams"
-        @mertricItemChange="mertricItemChange"
-        :extraParams="extraParams"
-        :multiQuery="!isTemplate"
-        :panel="templateParams?.panel" />
-    </a-col>
-    <a-col :span="isTemplate ? 24 : undefined" class="line mb-5" :md="isTemplate ? 24 : 24" :lg="isTemplate ? 24 : 22" :xl="isTemplate ? 24 : 16" :xxl="isTemplate ? { span: 24 } : { span: 13, offset: 1 }">
+  <div class="monitor-explorer" :class="{ 'monitor-explorer--template': isTemplate }">
+    <div class="monitor-explorer__toolbar">
       <monitor-header
-        class="mb-3"
-        :time.sync="time"
-        :timeGroup.sync="timeGroup"
+        class="monitor-explorer__header"
+        v-model:time="time"
+        v-model:timeGroup="timeGroup"
         :showTimegroup="true"
         :showGroupFunc="true"
-        :customTime.sync="customTime"
+        v-model:customTime="customTime"
         :showCustomTimeText="time==='custom'"
         :showCustomTime="!isTemplate"
         customTimeUseTimeStamp
-        @refresh="fetchAllData" />
-      <div v-for="(item, i) in seriesList" :key="i">
+        @refresh="fetchAllData">
+        <template #between-refresh-time>
+          <a-button
+            v-if="!isTemplate"
+            type="primary"
+            class="mr-3"
+            :disabled="addQueryDisabled"
+            @click="addQuery">
+            {{ $t('monitor.monitor_add') }}
+          </a-button>
+        </template>
+      </monitor-header>
+    </div>
+
+    <monitor-forms
+      ref="monitorForms"
+      class="monitor-explorer__groups"
+      :show-add-button="false"
+      v-model:addDisabled="addQueryDisabled"
+      @add="onAddForm"
+      @refresh="refresh"
+      @remove="remove"
+      @resetChart="resetChart"
+      :timeRangeParams="timeRangeParams"
+      @mertricItemChange="mertricItemChange"
+      :extraParams="extraParams"
+      :multiQuery="!isTemplate"
+      :panel="templateParams?.panel">
+      <template #chart="{ index }">
         <monitor-line
-          :ref="`monitorLine${i}`"
-          :loading="loadingList[i]"
-          :description="seriesDescription[i]"
-          :metricInfo="metricList[i][0]"
-          class="mb-3"
+          v-if="hasChartData(index)"
+          :ref="`monitorLine${index}`"
+          :loading="loadingList[index]"
+          :description="seriesDescription[index]"
+          :metricInfo="metricList[index] && metricList[index][0]"
           :isTemplate="isTemplate"
           @chartInstance="setChartInstance"
-          :series="item"
-          :reducedResult="resultList[i]"
+          :series="seriesList[index] || []"
+          :reducedResult="resultList[index]"
           :timeFormatStr="timeFormatStr"
-          :pager="seriesListPager[i]"
-          :reducedResultOrder="resultOrderList[i]"
+          :pager="seriesListPager[index]"
+          :reducedResultOrder="resultOrderList[index]"
           showTableExport
           @pageChange="pageChange"
-          @exportTable="(total) => exportTable(i, total)"
-          @reducedResultOrderChange="(order) => reducedResultOrderChange(i, order)">
+          @exportTable="(total) => exportTable(index, total)"
+          @reducedResultOrderChange="(order) => reducedResultOrderChange(index, order)">
           <template #extra>
-            <a-button class="mr-3" type="link" @click="handleSave(metricList[i], seriesDescription[i])">{{ $t('common.save') }}</a-button>
+            <a-button v-if="!isTemplate" class="mr-3" type="link" @click="handleSave(metricList[index], seriesDescription[index])">{{ $t('common.save') }}</a-button>
           </template>
         </monitor-line>
-      </div>
-      <a-card v-if="!seriesList.length && loadingList[0]" class="explorer-monitor-line d-flex align-items-center justify-content-center">
-        <loader :loading="true" />
-      </a-card>
-    </a-col>
-  </a-row>
+        <div v-else class="monitor-query-group__chart-empty">
+          <loader v-if="loadingList[index]" :loading="true" />
+          <span v-else>{{ $t('monitor.monitor_chart_placeholder') }}</span>
+        </div>
+      </template>
+    </monitor-forms>
+  </div>
 </template>
 
 <script>
@@ -92,7 +109,6 @@ export default {
     return {
       time: this.templateParams?.queryParams?.time || '1h',
       timeGroup: this.templateParams?.queryParams?.timeGroup || '1m',
-      // groupFunc: 'mean',
       customTime: null,
       timeOpts,
       metricList: [],
@@ -100,11 +116,12 @@ export default {
       resultList: [],
       resultOrderList: [],
       seriesListPager: [],
-      chartInstanceList: [], // e-chart 实例
+      chartInstanceList: [],
       loadingList: [],
       seriesDescription: [],
       get,
       tablePageSize: 10,
+      addQueryDisabled: true,
     }
   },
   computed: {
@@ -113,22 +130,17 @@ export default {
     },
     timeRangeParams () {
       const params = {}
-      if (this.time === 'custom') { // 自定义时间
+      if (this.time === 'custom') {
         if (this.customTime && this.customTime.from && this.customTime.to) {
           params.from = this.customTime.from
           params.to = this.customTime.to
         }
       } else if (this.time === 'last_month') {
-        // 计算当前时间到上个月第一天0点的小时数
         const now = this.$moment()
-        const lastMonthStart = this.$moment().subtract(1, 'month').startOf('month') // 上个月第一天0点
-        const lastMonthEnd = this.$moment().subtract(1, 'month').endOf('month') // 上个月最后一天23:59:59
-
-        // from: 当前时间距离上个月1号0点多少个小时（取整）
+        const lastMonthStart = this.$moment().subtract(1, 'month').startOf('month')
+        const lastMonthEnd = this.$moment().subtract(1, 'month').endOf('month')
         const fromHours = Math.floor(now.diff(lastMonthStart, 'hours', true))
-        // to: 当前时间距离上个月最后一天23:59:59多少个小时（取整）
         const toHours = Math.floor(now.diff(lastMonthEnd, 'hours', true))
-
         params.from = `${fromHours}h`
         params.to = `${toHours}h`
       } else {
@@ -147,15 +159,16 @@ export default {
     customTime () {
       this.smartFetchAllData()
     },
-    // groupFunc () {
-    //   this.fetchAllData()
-    // },
   },
   methods: {
+    hasChartData (index) {
+      // 已发起过该组查询，或正在 loading 时展示图表区；否则显示占位提示
+      return !!(this.metricList[index] && this.metricList[index].length) || !!this.loadingList[index]
+    },
     initTablePageSize (size) {
       this.tablePageSize = size
     },
-    smartFetchAllData () { // 根据选择的时间范围智能的赋值时间间隔进行查询
+    smartFetchAllData () {
       this.$nextTick(this.fetchAllData)
     },
     remove (i) {
@@ -165,6 +178,20 @@ export default {
       this.resultList.splice(i, 1)
       this.resultOrderList.splice(i, 1)
       this.loadingList.splice(i, 1)
+      this.seriesDescription.splice(i, 1)
+      this.seriesListPager.splice(i, 1)
+      this.seriesListPager = this.seriesListPager.map((p, idx) => ({ ...p, seriesIndex: idx }))
+    },
+    onAddForm () {
+      this.metricList.unshift([])
+      this.chartInstanceList.unshift(null)
+      this.seriesList.unshift([])
+      this.resultList.unshift([])
+      this.resultOrderList.unshift('')
+      this.loadingList.unshift(false)
+      this.seriesDescription.unshift({})
+      this.seriesListPager.unshift({ seriesIndex: 0, total: 0, page: 1, limit: this.tablePageSize })
+      this.seriesListPager = this.seriesListPager.map((p, idx) => ({ ...p, seriesIndex: idx }))
     },
     setChartInstance (val, i) {
       this.chartInstanceList.push(val)
@@ -182,17 +209,15 @@ export default {
     mertricItemChange (item, i) {
       const t = +this.time.replace(/\D+/, '')
       const existBalance = this.seriesDescription.find(val => val.id === 'balance')
-      if (!this.isTemplate && !existBalance && item.id === 'balance' && ~this.time.indexOf('h') && t < 3) { // 时间都是转换成h了，这里仅需要对比h即可
+      if (!this.isTemplate && !existBalance && item.id === 'balance' && ~this.time.indexOf('h') && t < 3) {
         this.time = '72h'
         this.$message.warning(this.$t('common_562', [item.label]))
       }
       if (this.isTemplate && (!item.title || item.title === '-') && i === 0 && this.templateParams?.panel?.panel_name) {
-        // 从 templateParams 中获取 common_alert_metric_details 信息，确保保存时能正确获取参数
         const metricDetails = this.templateParams?.panel?.common_alert_metric_details?.[0] || {}
         const updatedItem = {
           ...item,
           title: this.templateParams?.panel?.panel_name,
-          // 如果 item 中缺少这些信息，从 templateParams 中补充
           metric_res_type: item.metric_res_type || metricDetails.res_type,
           metricKeyItem: item.metricKeyItem || (metricDetails.measurement ? { measurement: metricDetails.measurement } : item.metricKeyItem),
           key: item.key || metricDetails.field,
@@ -245,7 +270,7 @@ export default {
         throw error
       }
     },
-    async refresh (params, resParams, i) { // 将多个查询 分开调用
+    async refresh (params, resParams, i) {
       const val = { model: params }
       if (resParams.type) {
         val.result_reducer = resParams
@@ -253,6 +278,9 @@ export default {
       const metric_query = [val]
       this.$set(this.metricList, i, metric_query)
       await this._refresh(i, this.tablePageSize, 0)
+    },
+    addQuery () {
+      this.$refs.monitorForms && this.$refs.monitorForms.add()
     },
     reducedResultOrderChange (i, order) {
       this.resultOrderList[i] = order
@@ -292,8 +320,10 @@ export default {
     async exportTable (index, total) {
       try {
         const { series = [], reduced_result = [], series_total = 0 } = await this.fetchData(this.metricList[index], total, 0)
-        if (this.$refs[`monitorLine${index}`] && this.$refs[`monitorLine${index}`][0] && this.$refs[`monitorLine${index}`][0].exportFullData) {
-          this.$refs[`monitorLine${index}`][0].exportFullData(series, reduced_result, series_total)
+        const lineRef = this.$refs[`monitorLine${index}`]
+        const line = Array.isArray(lineRef) ? lineRef[0] : lineRef
+        if (line && line.exportFullData) {
+          line.exportFullData(series, reduced_result, series_total)
         }
       } catch (error) {
         throw error
@@ -320,3 +350,34 @@ export default {
   },
 }
 </script>
+
+<style lang="less" scoped>
+.monitor-explorer {
+  width: 100%;
+
+  &__toolbar {
+    margin-bottom: 16px;
+  }
+
+  &__header {
+    width: 100%;
+  }
+
+  &__groups {
+    width: 100%;
+  }
+}
+
+.monitor-query-group__chart-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 240px;
+  height: 100%;
+  padding: 24px;
+  color: rgba(0, 0, 0, 0.45);
+  background: #fff;
+  border: 1px dashed #d9d9d9;
+  border-radius: 6px;
+}
+</style>

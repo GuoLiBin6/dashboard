@@ -2,7 +2,7 @@
   <div class="h-100 position-relative">
     <div class="dashboard-card-wrap">
       <div class="dashboard-card-header">
-        <div class="dashboard-card-header-left">{{ form.fd.name }}<a-icon class="ml-2" type="loading" v-if="loading" /></div>
+        <div class="dashboard-card-header-left">{{ form.fd.name }}<icon class="ml-2" type="loading" v-if="loading" /></div>
         <div class="dashboard-card-header-right">
           <slot name="actions" :handle-edit="handleEdit" />
           <router-link v-if="!edit" to="/monitoroverview" class="ml-2">
@@ -23,7 +23,7 @@
         </template>
       </div>
     </div>
-    <base-drawer :visible.sync="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit">
+    <base-drawer v-model:visible="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit">
       <a-form
         hideRequiredMark
         :form="form.fc"

@@ -12,7 +12,7 @@
           <a-divider orientation="left" class="openclaw-section-divider">{{ $t('aice.openclaw.section.ai_providers') }}</a-divider>
           <a-form-item :label="$t('aice.openclaw.provider_filter')" :extra="$t('aice.openclaw.provider_select_tip')">
             <a-select
-              v-model="openclawSelectedProviders"
+              v-model:value="openclawSelectedProviders"
               mode="multiple"
               :placeholder="$t('aice.openclaw.provider_filter_placeholder')"
               allow-clear

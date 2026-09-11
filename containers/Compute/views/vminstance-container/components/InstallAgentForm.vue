@@ -19,7 +19,7 @@
     </div>
     <div v-show="installing">
       {{ $t('compute.vminstance.monitor.install_agent.installing') }}
-      <a-icon type="loading" />
+      <icon type="loading" />
     </div>
   </div>
 </template>

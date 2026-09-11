@@ -1,34 +1,54 @@
 <template>
-  <div class="history-wrap d-flex flex-column" :class="{ default: !showDelete }">
-    <div class="list flex-fill overflow-auto">
-      <template v-for="item of dataSource">
-        <div class="item d-flex align-items-center pb-2 pt-2" :key="item[0]" @click="handleSelect(item)">
-          <div class="left flex-fill">
-            <div class="l1info">{{ item[1]['name'] }} - {{ item[1]['domain']['name'] }}{{ item[1]['isSSO'] ? ' (SSO)' : '' }}</div>
-            <div class="l2info text-color-help mt-1">{{ $t('common.text00118') }}：{{ $te(`authChooser.${item[1]['scope']}`) ? $t(`authChooser.${item[1]['scope']}`) : '-' }}</div>
-            <div class="l2info text-color-help mt-1">{{ $t('dictionary.project') }}：{{ item[1].projectName }}</div>
-          </div>
-          <template v-if="showDelete">
-            <div class="right flex-grow-0 flex-shrink-0">
-              <a-button type="danger" ghost shape="circle" icon="delete" size="small" @click.stop="handleDelete(item[0])" />
+  <div class="history-wrap" :class="{ default: !showDelete, 'is-editing': showDelete }">
+    <div class="list">
+      <template v-for="item of dataSource" :key="item[0]">
+        <button
+          type="button"
+          class="item"
+          :disabled="showDelete"
+          @click="handleSelect(item)">
+          <div class="item-main">
+            <div class="l1info">
+              {{ item[1]['name'] }}
+              <span class="scope">{{ $te(`authChooser.${item[1]['scope']}`) ? $t(`authChooser.${item[1]['scope']}`) : '-' }}</span>
+              <span v-if="item[1]['isSSO']" class="sso">SSO</span>
             </div>
-          </template>
-        </div>
+            <div class="l2info">
+              {{ $t('dictionary.domain') }} {{ item[1]['domain']['name'] }}
+              <span class="split">/</span>
+              {{ $t('dictionary.project') }} {{ item[1].projectName }}
+            </div>
+          </div>
+          <a-button
+            v-if="showDelete"
+            type="text"
+            danger
+            size="small"
+            class="delete-btn"
+            @click.stop="handleDelete(item[0])">
+            <template #icon><icon type="delete" /></template>
+          </a-button>
+        </button>
       </template>
     </div>
-    <div class="actions flex-grow-0 flex-shrink-0 d-flex">
+    <div class="actions">
       <template v-if="!showDelete">
-        <div class="flex-shrink-1 flex-grow-1 text-left pr-2">
-          <a-button type="link" icon="user" class="pr-0 week-link-button" size="small" @click="$router.replace({ path: '/auth/login', query: { rf: $route.query.rf, domain: $route.query.domain } })">{{ $t('auth.outher.history.user.btn') }}</a-button>
-        </div>
-        <div class="flex-shrink-1 flex-grow-1 text-right pl-2">
-          <a-button type="link" icon="user-delete" class="pl-0 week-link-button" @click="showDelete = true" size="small">{{ $t('auth.remove.history.user.btn') }}</a-button>
-        </div>
+        <button
+          type="button"
+          class="action-link"
+          @click="$router.replace({ path: '/auth/login', query: { rf: $route.query.rf, domain: $route.query.domain } })">
+          <icon type="user" />
+          {{ $t('auth.outher.history.user.btn') }}
+        </button>
+        <button type="button" class="action-link" @click="showDelete = true">
+          <icon type="user-del" />
+          {{ $t('auth.remove.history.user.btn') }}
+        </button>
       </template>
       <template v-else>
-        <div class="text-right flex-fill">
-          <a-button type="link" @click="showDelete = false" size="small">{{ $t('common.ok') }}</a-button>
-        </div>
+        <button type="button" class="action-link primary" @click="showDelete = false">
+          {{ $t('common.ok') }}
+        </button>
       </template>
     </div>
   </div>
@@ -101,10 +121,10 @@ export default {
       this.$router.replace({
         path: '/auth/login',
         query: {
+          ...this.$route.query,
           username,
           fd_domain: item[1].domain.name,
           displayname: item[1].displayname,
-          ...this.$route.query,
         },
       })
     },
@@ -113,37 +133,156 @@ export default {
 </script>
 
 <style lang="less" scoped>
-@import "../../../../styles/less/theme";
 .history-wrap {
-  height: 290px !important;
-  margin: 0 -60px 0;
-  .item {
-    border-bottom: 1px solid #ccc;
-    padding-left: 60px;
-    padding-right: 60px;
+  display: flex;
+  flex-direction: column;
+  height: 290px;
+  min-height: 290px;
+  // 与 login-content-wrap 内标题/表单左缘对齐，勿用负边距外扩
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+.list {
+  flex: 1;
+  overflow: auto;
+  margin: 0;
+  padding: 0;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  padding: 12px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  &:disabled {
     cursor: default;
-    &:last-child {
-      border-bottom: none;
+  }
+
+  & + .item {
+    border-top: 1px solid rgba(0, 0, 0, 0.04);
+  }
+}
+
+.item-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.l1info {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  color: #111827;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+
+.scope {
+  color: #6b7280;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.sso {
+  flex-shrink: 0;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.l2info {
+  margin-top: 6px;
+  color: #9ca3af;
+  font-size: 13px;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.split {
+  margin: 0 6px;
+  opacity: 0.5;
+}
+
+.delete-btn {
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 12px;
+  margin: 8px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.action-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: color 0.15s ease, background-color 0.15s ease;
+
+  :deep(.oc-icon),
+  :deep(svg) {
+    font-size: 14px;
+    width: 1em;
+    height: 1em;
+  }
+
+  &:hover {
+    color: #111827;
+    background: #f3f4f6;
+  }
+
+  &.primary {
+    margin-left: auto;
+    color: #2563eb;
+    font-weight: 500;
+
+    &:hover {
+      color: #1d4ed8;
+      background: #f3f4f6;
     }
   }
-  .actions {
-    padding-left: 60px;
-    padding-right: 60px;
-    margin-top: 10px;
-  }
-  .l1info {
-    font-size: 15px;
-  }
-  .l2info {
-    font-size: 13px;
-  }
-  &.default {
-    .item {
-      cursor: pointer;
-      &:hover {
-        background-color: @primary-1;
-      }
-    }
-  }
+}
+
+.history-wrap.default .item:hover {
+  background: #f3f4f6;
+}
+
+.history-wrap.default .item:active {
+  transform: scale(0.99);
+}
+
+.history-wrap.is-editing .item {
+  background: #fff;
 }
 </style>

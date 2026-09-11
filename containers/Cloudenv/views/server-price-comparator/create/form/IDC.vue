@@ -48,9 +48,9 @@
           :type="type"
           :sku-params="skuParam"
           :hypervisor="form.fd.hypervisor" />
-        <div slot="extra" v-if="showSkuCreateTip">
+        <template v-if="showSkuCreateTip" #extra>
           {{ $t('compute.text_196') }}<help-link href="/sku">{{ $t('compute.perform_create') }}</help-link>
-        </div>
+        </template>
       </a-form-item>
       <a-form-item :label="$t('compute.text_49')" class="mb-0">
         <system-disk
@@ -104,7 +104,7 @@
         :type="type"
         :dataDiskSizes="dataDiskSizes"
         :isOpenWorkflow="isOpenWorkflow"
-        :errors.sync="errors"
+        v-model:errors="errors"
         :isServertemplate="isServertemplate"
         :hasMeterService="hasMeterService"
         @getOriginPrice="getOriginPrice" />

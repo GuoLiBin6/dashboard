@@ -1,10 +1,10 @@
 <template>
-  <div class="mb-2 group-wrap" :class="{ active: showContent }">
-    <div class="d-flex">
-      <div class="d-flex group-title" @click.stop.prevent="toggleContent">
+  <div class="mb-3 group-wrap" :class="{ active: showContent }">
+    <div class="d-flex align-items-center">
+      <div class="d-flex align-items-center group-title" @click.stop.prevent="toggleContent">
         <div>{{ group.label }}</div>
         <div class="arrow-icon">
-          <a-icon type="down" class="ml-2" />
+          <icon type="pull-down" class="ml-2" />
         </div>
       </div>
       <div>
@@ -18,8 +18,8 @@
       </div>
     </div>
     <a-card v-show="showContent">
-      <template v-for="(item, idx) of group.resources">
-        <div v-if="showResource(item)" v-show="hasSearchString(item)" :key="idx">
+      <template v-for="(item, idx) of group.resources" :key="idx">
+        <div v-if="showResource(item)" v-show="hasSearchString(item)">
           <item
             :resource="item"
             @resourceCheckChange="resourceCheckChange"
@@ -184,14 +184,17 @@ export default {
 }
 .active {
   .arrow-icon {
-    > i {
+    > .oc-icon {
       transform: rotate(180deg);
     }
   }
 }
 .group-wrap {
+  padding: 6px 0;
   .arrow-icon {
-    > i {
+    display: inline-flex;
+    align-items: center;
+    > .oc-icon {
       transition: transform 0.3s ease;
     }
   }

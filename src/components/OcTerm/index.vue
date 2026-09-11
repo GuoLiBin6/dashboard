@@ -6,18 +6,19 @@
           <icon type="cloudshell" class="icon" />
           <span class="ml-1">CloudShell</span>
         </div>
-        <!-- <div class="header-resize-btn">一</div> -->
-        <div class="cloudshell-minimize">
-          <icon type="minimize" class="minimize" @click="() => handleResizeChange('minimize')" />
-        </div>
-        <div class="cloudshell-bigger">
-          <icon type="bigger" class="bigger" @click="() => handleResizeChange('bigger')" />
-        </div>
-        <div class="cloudshell-smaller">
-          <icon type="smaller" class="smaller" @click="() => handleResizeChange('smaller')" />
-        </div>
-        <div class="cloudshell-close" @click="closeCloudShell">
-          <a-icon class="close" type="close" />
+        <div class="cloudshell-actions">
+          <div class="cloudshell-action" @click="handleResizeChange('minimize')">
+            <icon type="minimize" class="action-icon" />
+          </div>
+          <div class="cloudshell-action" @click="handleResizeChange('bigger')">
+            <icon type="bigger" class="action-icon" />
+          </div>
+          <div class="cloudshell-action" @click="handleResizeChange('smaller')">
+            <icon type="smaller" class="action-icon" />
+          </div>
+          <div class="cloudshell-action cloudshell-action-close" @click="closeCloudShell">
+            <icon type="close-outlined" class="action-icon" />
+          </div>
         </div>
       </div>
       <div class="cloudshell-content">
@@ -29,12 +30,15 @@
 
 <script>
 import { mapState } from 'vuex'
+import { getMaxCloudShellHeight } from '@/utils/cloudshell'
 
 export default {
   name: 'OcTerm',
   data () {
     return {
       connectParams: '',
+      viewportRev: 0,
+      isMaximized: false,
     }
   },
   computed: {
@@ -43,29 +47,91 @@ export default {
       cloudShellHeight: state => state.cloudShellHeight,
     }),
     cloudShellStyle () {
+      void this.viewportRev
+      const maxHeight = getMaxCloudShellHeight()
+      const height = this.openCloudShell ? Math.min(this.cloudShellHeight, maxHeight) : 0
       return {
-        height: `${this.openCloudShell ? this.cloudShellHeight : 0}px`,
-        flex: `0 0 ${this.openCloudShell ? this.cloudShellHeight : 0}px`,
+        height: `${height}px`,
+        maxHeight: `${maxHeight}px`,
+        flex: `0 0 ${height}px`,
       }
     },
   },
   watch: {
-    openCloudShell (val, old) {
+    openCloudShell (val) {
       this.$nextTick(() => {
         if (val) {
+          this.isMaximized = false
+          this.bindViewportListener()
+          this.syncCloudShellHeight()
           this.fetchData()
         } else {
+          this.isMaximized = false
+          this.unbindViewportListener()
           this.connectParams = ''
         }
       })
     },
-    $route (to, from) {
+    $route (to) {
       if (to.path && to.path.startsWith('/auth/login')) {
         this.$store.commit('common/SET_OPEN_CLOUDSHELL', false)
       }
     },
   },
+  mounted () {
+    if (this.openCloudShell) {
+      this.bindViewportListener()
+      this.syncCloudShellHeight()
+    }
+  },
+  beforeUnmount () {
+    this.unbindViewportListener()
+  },
   methods: {
+    bindViewportListener () {
+      if (this._onViewportChange) return
+      this._onViewportChange = () => {
+        if (this._viewportRaf) cancelAnimationFrame(this._viewportRaf)
+        this._viewportRaf = requestAnimationFrame(() => {
+          this._viewportRaf = 0
+          this.viewportRev += 1
+          this.syncCloudShellHeight()
+          if (this.$refs.xterm?.term) this.$refs.xterm.term.fit()
+        })
+      }
+      window.addEventListener('resize', this._onViewportChange, { passive: true })
+    },
+    unbindViewportListener () {
+      if (this._onViewportChange) {
+        window.removeEventListener('resize', this._onViewportChange)
+        this._onViewportChange = null
+      }
+      if (this._viewportRaf) {
+        cancelAnimationFrame(this._viewportRaf)
+        this._viewportRaf = 0
+      }
+    },
+    applyDomHeight (height, maxHeight) {
+      const containerDom = document.querySelector('.cloudshell-box')
+      if (!containerDom) return
+      containerDom.style.height = `${height}px`
+      containerDom.style.maxHeight = `${maxHeight}px`
+      containerDom.style.flex = `0 0 ${height}px`
+      const dragDom = containerDom.querySelector('.cloudshell-wrapper')
+      if (dragDom) {
+        dragDom.style.height = `${height}px`
+        dragDom.style.flex = `0 0 ${height}px`
+      }
+    },
+    syncCloudShellHeight () {
+      const maxHeight = getMaxCloudShellHeight()
+      // 最大化随窗口贴合安全上边界；非最大化仅防止越界
+      const next = this.isMaximized ? maxHeight : Math.min(this.cloudShellHeight, maxHeight)
+      if (next !== this.cloudShellHeight) {
+        this.$store.commit('common/SET_CLOUDSHELL_HEIGHT', next)
+      }
+      this.applyDomHeight(next, maxHeight)
+    },
     async fetchData () {
       const { data } = await new this.$Manager('webconsole', 'v1').objectRpc({
         methodname: 'DoCloudShell',
@@ -77,15 +143,16 @@ export default {
     closeCloudShell () {
       this.$store.commit('common/SET_OPEN_CLOUDSHELL', false)
     },
-    handleResize (e) {
+    handleResize () {
       const containerDom = document.querySelector('.cloudshell-box')
       if (containerDom) {
-        const height = containerDom.getBoundingClientRect().height
+        const maxHeight = getMaxCloudShellHeight()
+        const height = Math.min(containerDom.getBoundingClientRect().height, maxHeight)
+        this.isMaximized = height >= maxHeight - 1
         this.$store.commit('common/SET_CLOUDSHELL_HEIGHT', height)
+        this.applyDomHeight(height, maxHeight)
       }
-      if (this.$refs.xterm) {
-        this.$refs.xterm.term.fit()
-      }
+      if (this.$refs.xterm) this.$refs.xterm.term.fit()
     },
     onCloudShellClose () {
       console.log('cloudshell close!!!')
@@ -95,29 +162,26 @@ export default {
     },
     handleResizeChange (type) {
       const containerDom = document.querySelector('.cloudshell-box')
-      const dragDom = containerDom.querySelector('.cloudshell-wrapper')
-      let height = document.body.offsetHeight - 60
-      if (type === 'smaller') {
-        height = 350
+      const headerHeight = 28
+      const maxHeight = getMaxCloudShellHeight()
+      let height = maxHeight
+      if (type === 'bigger') {
+        this.isMaximized = true
+        height = maxHeight
+      } else if (type === 'smaller') {
+        this.isMaximized = false
+        height = Math.min(350, maxHeight)
       } else if (type === 'minimize') {
-        if (containerDom.clientHeight === 25) {
-          height = 350
+        this.isMaximized = false
+        if (containerDom.clientHeight <= headerHeight + 2) {
+          height = Math.min(350, maxHeight)
         } else {
-          height = 25
+          height = headerHeight
         }
       }
-      if (containerDom) {
-        containerDom.style.flex = `0 0 ${height}px`
-        containerDom.style.height = height + 'px'
-      }
-      if (dragDom) {
-        dragDom.style.height = height + 'px'
-        dragDom.style.flex = `0 0 ${height}px`
-      }
+      this.applyDomHeight(height, maxHeight)
       this.$store.commit('common/SET_CLOUDSHELL_HEIGHT', height)
-      if (this.$refs.xterm) {
-        this.$refs.xterm.term.fit()
-      }
+      if (this.$refs.xterm) this.$refs.xterm.term.fit()
     },
   },
 }
@@ -155,138 +219,79 @@ export default {
   top: 0;
   left: 0;
   right: 0;
-  height: 25px;
+  height: 28px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6px 0 10px;
   background-color: #eaeaea;
-  color: #fff;
-  // border-radius: 2.5px 2.5px 0 0;
-  &:hover {
-    color: #eaeaea;
-  }
+  color: rgba(0, 0, 0, 0.45);
+  box-sizing: border-box;
   .cloudshell-header-title {
-    position: absolute;
-    left: 0;
-    top: 0;
-    height: 100%;
     display: flex;
     align-items: center;
-    color: rgba(0,0,0,0.45);
+    gap: 6px;
+    height: 100%;
     font-size: 12px;
-    margin-left: 10px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    line-height: 1;
+    user-select: none;
     .icon {
-      font-size: 16px;
+      font-size: 15px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
   }
-  .header-resize-btn {
-    position: absolute;
-    width: 20px;
-    left: 50%;
-    top: 0;
-    transform: translateX(-50%);
-    z-index: 999;
-    color: red;
-    text-align: center;
-    &:hover{
-      color: blue;
-      cursor: row-resize;
-    }
+  .cloudshell-actions {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 100%;
   }
-  .cloudshell-close {
-    position: absolute;
-    right: 5px;
-    top: 0px;
-    width: 25px;
-    height: 25px;
-    z-index: 99;
-    text-align: center;
+  .cloudshell-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 18px;
-    .close {
-      color: rgba(0,0,0,0.45);
+    color: rgba(0, 0, 0, 0.45);
+    transition: background-color 0.15s ease, color 0.15s ease;
+    .action-icon {
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none; // 点击落在父级，避免 icon 吞事件
     }
-    &:hover{
-      .close{
-        color: blue;
-      }
-    }
-  }
-  .cloudshell-bigger {
-    position: absolute;
-    right: 30px;
-    top: 1px;
-    width: 25px;
-    height: 25px;
-    z-index: 99;
-    text-align: center;
-    cursor: pointer;
-    font-size: 16px;
-    .bigger {
-      color: rgba(0,0,0,0.45);
-    }
-    &:hover{
-      .bigger{
-        color: blue;
-      }
-    }
-  }
-  .cloudshell-smaller {
-    position: absolute;
-    right: 55px;
-    top: 1px;
-    width: 25px;
-    height: 25px;
-    z-index: 99;
-    text-align: center;
-    cursor: pointer;
-    font-size: 16px;
-    .smaller {
-      color: rgba(0,0,0,0.45);
-    }
-    &:hover{
-      .smaller{
-        color: blue;
-      }
-    }
-  }
-  .cloudshell-minimize {
-    position: absolute;
-    right: 80px;
-    top: 1px;
-    width: 25px;
-    height: 25px;
-    z-index: 99;
-    text-align: center;
-    cursor: pointer;
-    font-size: 16px;
-    .minimize {
-      color: rgba(0,0,0,0.45);
-    }
-    &:hover{
-      .minimize{
-        color: blue;
-      }
+    &:hover {
+      color: #1677ff;
+      background: rgba(0, 0, 0, 0.06);
     }
   }
 }
 .cloudshell-content {
   position: absolute;
-  top: 25px;
+  top: 28px;
   bottom: 10px;
   left: 10px;
   right: 10px;
   background: #000;
   padding-bottom: 10px;
-  ::v-deep {
-    #xterm {
-      height: 100% !important;
-      min-height: auto !important;
-    }
-    .xterm-viewport {
-      height: 100%!important;
-      overflow-y: auto;
-    }
-    .xterm-viewport::-webkit-scrollbar {
-      width: 15px;
-    }
+  :deep(#xterm) {
+    height: 100% !important;
+    min-height: auto !important;
+  }
+  :deep(.xterm-viewport) {
+    height: 100%!important;
+    overflow-y: auto;
+  }
+  :deep(.xterm-viewport::-webkit-scrollbar) {
+    width: 15px;
   }
 }
 </style>

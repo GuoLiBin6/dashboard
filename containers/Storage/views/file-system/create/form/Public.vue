@@ -56,10 +56,10 @@
       <a-form-item :label="$t('storage.capacity')" v-bind="formItemLayout" v-if="isShowCapacity">
         <a-col :span="12">
           <a-tooltip>
-            <template slot="title" v-if="capacityTooltip">
+            <template #title v-if="capacityTooltip">
               {{ capacityTooltip }}
             </template>
-            <a-input-number v-model="capacity" v-bind="skuOptions" /> GB
+            <a-input-number v-model:value="capacity" v-bind="skuOptions" /> GB
           </a-tooltip>
         </a-col>
       </a-form-item>
@@ -103,7 +103,7 @@
   </div>
 </template>
 
-<script>
+<script lang="jsx">
 import * as R from 'ramda'
 import Duration from '@Compute/sections/Duration'
 import RegionMap from '@Compute/sections/RegionMap'

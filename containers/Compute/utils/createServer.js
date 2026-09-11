@@ -259,7 +259,7 @@ export const createVmDecorators = (type, initData = {}) => {
         validateFirst: true,
         rules: [
           { required: true, message: i18n.t('compute.text_210') },
-          // { validator: validateForm('resourceCreateName') },
+          { validator: validateForm('resourceCreateName') },
         ],
       },
     ],
@@ -504,7 +504,8 @@ export const createVmDecorators = (type, initData = {}) => {
     sku: [
       'sku',
       {
-        initialValue: initData.sku || '',
+        // sku 选中后为对象；勿用 ''，否则 SystemDisk/DataDisk 的 Object 类型 prop 会告警
+        initialValue: initData.sku || undefined,
         rules: [
           { validator: isRequired(true, 'id'), message: i18n.t('compute.text_216') },
         ],

@@ -1,9 +1,9 @@
 <template>
   <base-dialog @cancel="cancelDialog" :width="500" :modalProps="{ ...params.modalProps }">
     <div slot="header">{{$t('common.login_tip')}}</div>
-    <div slot="body">
+    <div slot="body" class="login-body">
       <a-alert type="warning" :message="alertText" />
-      <div class="login-wrapper mt-2">
+      <div class="login-wrapper">
         <login-challenge v-if="type === 'challenge'" :params="challangeParams" @chooser="handleChooser" @loginSucceed="cancelDialog" />
         <login-chooser v-else @challenge="handleChallenge" />
       </div>
@@ -88,3 +88,20 @@ export default {
   },
 }
 </script>
+
+<style lang="less" scoped>
+/* 提示文案与表单之间、表单项之间保持正常间距 */
+.login-body {
+  :deep(.ant-alert) {
+    margin-bottom: 16px;
+  }
+}
+.login-wrapper {
+  :deep(.ant-form-item) {
+    margin-bottom: 16px;
+  }
+  :deep(.ant-form-item.mb-0) {
+    margin-bottom: 0;
+  }
+}
+</style>

@@ -1,19 +1,21 @@
 <template>
   <div class="mb-3" v-if="isShow">
     <a-alert type="info" class="mt-2">
-      <div slot="message" class="d-flex">
-        <div>{{ $t('common_567') }}：</div>
-        <div>
-          <a-tag
-            v-for="(item, index) in statusErrorOpts"
-            :key="index"
-            :color="item.color"
-            class="oc-pointer"
-            @click="chooseStatusHandle(item)">
-            {{ item.text}}({{ item.num }})
-          </a-tag>
+      <template #message>
+        <div class="d-flex">
+          <div>{{ $t('common_567') }}：</div>
+          <div>
+            <a-tag
+              v-for="(item, index) in statusErrorOpts"
+              :key="index"
+              :color="item.color"
+              class="oc-pointer"
+              @click="chooseStatusHandle(item)">
+              {{ item.text}}({{ item.num }})
+            </a-tag>
+          </div>
         </div>
-      </div>
+      </template>
     </a-alert>
   </div>
 </template>

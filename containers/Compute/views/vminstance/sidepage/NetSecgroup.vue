@@ -118,25 +118,28 @@ export default {
           minWidth: 100,
           slots: {
             default: ({ row }, h) => {
+              const create = h || this.$createElement
               if (row.ip_addr) {
                 const addrs = [
-                  <div>{this.$t('compute.text_386')}: {row.ip_addr}/{row.guest_ip_mask}</div>,
-                  <div>{this.$t('network.ipv4.gateway')}: {row.guest_gateway}</div>,
+                  create('div', `${this.$t('compute.text_386')}: ${row.ip_addr}/${row.guest_ip_mask}`),
+                  create('div', `${this.$t('network.ipv4.gateway')}: ${row.guest_gateway}`),
                 ]
                 if (row.mapped_ip_addr) {
-                  addrs.push(<div>{this.$t('compute.vpc.mapped_addr')}: {row.mapped_ip_addr}</div>)
+                  addrs.push(create('div', `${this.$t('compute.vpc.mapped_addr')}: ${row.mapped_ip_addr}`))
                 }
-                const ret = [
-                  <a-popover>
-                    <template slot="content">
-                      {addrs}
-                    </template>
-                    <list-body-cell-wrap copy row={row} field="ip_addr" hideField={true}>
-                      {row.ip_addr}/{row.guest_ip_mask}
-                    </list-body-cell-wrap>
-                  </a-popover>,
+                return [
+                  create('a-popover', null, {
+                    content: () => addrs,
+                    default: () => create('list-body-cell-wrap', {
+                      props: {
+                        copy: true,
+                        row,
+                        field: 'ip_addr',
+                        hideField: true,
+                      },
+                    }, `${row.ip_addr}/${row.guest_ip_mask}`),
+                  }),
                 ]
-                return ret
               }
               return '-'
             },
@@ -150,25 +153,28 @@ export default {
           minWidth: 200,
           slots: {
             default: ({ row }, h) => {
+              const create = h || this.$createElement
               if (row.ip6_addr) {
                 const addrs = [
-                  <div>{this.$t('compute.ipv6.address')}: {row.ip6_addr}/{row.guest_ip6_mask}</div>,
-                  <div>{this.$t('network.ipv6.gateway')}: {row.guest_gateway6}</div>,
+                  create('div', `${this.$t('compute.ipv6.address')}: ${row.ip6_addr}/${row.guest_ip6_mask}`),
+                  create('div', `${this.$t('network.ipv6.gateway')}: ${row.guest_gateway6}`),
                 ]
                 if (row.mapped_ip6_addr) {
-                  addrs.push(<div>{this.$t('compute.vpc.mapped_addr')}: {row.mapped_ip6_addr}</div>)
+                  addrs.push(create('div', `${this.$t('compute.vpc.mapped_addr')}: ${row.mapped_ip6_addr}`))
                 }
-                const ret = [
-                  <a-popover>
-                    <template slot="content">
-                      {addrs}
-                    </template>
-                    <list-body-cell-wrap copy row={row} field="ip6_addr" hideField={true}>
-                      {row.ip6_addr}/{row.guest_ip6_mask}
-                    </list-body-cell-wrap>
-                  </a-popover>,
+                return [
+                  create('a-popover', null, {
+                    content: () => addrs,
+                    default: () => create('list-body-cell-wrap', {
+                      props: {
+                        copy: true,
+                        row,
+                        field: 'ip6_addr',
+                        hideField: true,
+                      },
+                    }, `${row.ip6_addr}/${row.guest_ip6_mask}`),
+                  }),
                 ]
-                return ret
               }
               return '-'
             },
@@ -178,8 +184,18 @@ export default {
           field: 'network_id',
           title: this.$t('compute.text_106'),
           slots: {
-            default: ({ row }) => {
-              return [<side-page-trigger permission='networks_get' name='NetworkSidePage' id={row.network_id} vm={this}>{row.network_name}</side-page-trigger>]
+            default: ({ row }, h) => {
+              const create = h || this.$createElement
+              return [
+                create('side-page-trigger', {
+                  props: {
+                    permission: 'networks_get',
+                    name: 'NetworkSidePage',
+                    id: row.network_id,
+                    vm: this,
+                  },
+                }, row.network_name),
+              ]
             },
           },
         },

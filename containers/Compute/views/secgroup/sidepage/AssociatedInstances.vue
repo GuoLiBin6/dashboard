@@ -1,9 +1,7 @@
 <template>
   <div>
-    <a-tabs :defaultActiveKey="currentComponent" @change="callback" :animated="false">
-      <template v-for="obj of tabs">
-        <a-tab-pane :tab="obj.label" :key="obj.key" />
-      </template>
+    <a-tabs :activeKey="currentComponent" @change="callback" :animated="false">
+      <a-tab-pane v-for="obj of tabs" :key="obj.key" :tab="obj.label" />
     </a-tabs>
     <div class="mt-2">
       <keep-alive>

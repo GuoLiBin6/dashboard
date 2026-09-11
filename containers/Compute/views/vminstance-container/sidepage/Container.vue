@@ -6,7 +6,7 @@
     :group-actions="groupActions" />
 </template>
 
-<script>
+<script lang="jsx">
 import {
   getCapabilitiesTableColumn,
   getLxcfsTableColumn,

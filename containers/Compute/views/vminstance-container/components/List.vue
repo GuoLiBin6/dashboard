@@ -391,7 +391,7 @@ export default {
                 hidden: () => this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_add_secgroup'),
               },
               // 设置删除保护
-              disableDeleteAction(Object.assign(this, {}), {
+              disableDeleteAction(this, {
                 name: this.$t('compute.vminstance-container'),
               }),
               // 删除

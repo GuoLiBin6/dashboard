@@ -1,16 +1,16 @@
 <template>
   <div class="wrap">
-    <a-popover v-model="visible" trigger="click" @visibleChange="handlePopoverVisibleChange">
+    <a-popover v-model:open="visible" trigger="click" @openChange="handlePopoverVisibleChange">
       <template v-slot:content>
-        <a-icon type="sync" spin v-if="loading" />
+        <icon type="sync" spin v-if="loading" />
         <template v-else>
           <template v-if="error">
             <template v-if="error.response && error.response.status === 404">
-              <a-icon type="exclamation-circle" theme="twoTone" twoToneColor="#faad14" />
+              <icon type="exclamation-circle" theme="twoTone" twoToneColor="#faad14" />
               <span class="ml-2" style="color: #faad14;">{{$t('compute.text_154')}}</span>
             </template>
             <template v-else>
-              <a-icon type="close-circle" theme="twoTone" twoToneColor="#f5222d" />
+              <icon type="close-circle" theme="twoTone" twoToneColor="#f5222d" />
               <span class="ml-2" style="color: #f5222d;">{{$t('compute.text_155')}}</span>
             </template>
           </template>
@@ -52,7 +52,7 @@
       </span>
     </a-popover>
     <a-tooltip placement="top" v-if="promptText && disabled">
-      <template slot="title">
+      <template #title>
         <span>{{promptText}}</span>
       </template>
       <span>
@@ -63,7 +63,7 @@
       <icon class="keypair-icon-disabled" type="keypairs" />
     </span>
     <a-modal
-      :visible="dialog.visible"
+      :open="dialog.visible"
       :closable="false"
       :title="$t('compute.text_157')"
       @cancel="handleDialogCacel">
@@ -78,7 +78,7 @@
         <a-row :gutter="20" class="mb-2">
           <a-col :span="5" class="text-right">{{$t('compute.text_160')}}</a-col>
           <a-col :span="19">
-            <a-textarea v-model="dialog.value" :rows="7" />
+            <a-textarea v-model:value="dialog.value" :rows="7" />
           </a-col>
         </a-row>
         <template v-if="dialog.password">

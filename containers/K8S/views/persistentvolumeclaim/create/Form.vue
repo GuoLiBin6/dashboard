@@ -22,7 +22,7 @@
           resource="storageclasses"
           version="v1"
           id-key="name"
-          :resList.sync="storageclassOpts"
+          v-model:resList="storageclassOpts"
           :need-params="true"
           :params="storageclassParams"
           :select-props="{ placeholder: $t('k8s.text_308') }" />

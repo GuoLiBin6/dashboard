@@ -1,7 +1,7 @@
 <template>
   <page-toolbar>
-    <div class="mb-2 d-flex" v-if="showGroupActions && beforeShowMenuLoaded">
-      <div class="d-flex flex-fill align-items-center">
+    <div class="mb-2 d-flex page-list-header-actions" v-if="showGroupActions && beforeShowMenuLoaded">
+      <div class="page-list-header-actions__main d-flex align-items-center">
         <!-- 刷新 -->
         <a-button
           v-if="showSync"
@@ -77,39 +77,39 @@
             :filter-without-user-meta="true"
             @tag-filter-change="(tagFilter) => $emit('tag-filter-change2', tagFilter)" />
         </template>
-        <template>
-          <span class="ml-3" v-if="pagerType === 'pager'">{{ $t('common.page_list_header_item_count_stats', [dataList.length, selected.length, total]) }}</span>
-          <span class="ml-3" v-else>{{ $t('common.page_list_header_item_count_stats1', [dataList.length, selected.length]) }}</span>
-        </template>
+        <span class="page-list-header-actions__stats" v-if="pagerType === 'pager'">{{ $t('common.page_list_header_item_count_stats', [dataList.length, selected.length, total]) }}</span>
+        <span class="page-list-header-actions__stats" v-else>{{ $t('common.page_list_header_item_count_stats1', [dataList.length, selected.length]) }}</span>
       </div>
-      <div class="ml-4 d-flex flex-shrink-0 justify-content-end">
-        <slot name="right-tools-prepend" />
-        <template v-if="exportDataOptions || (id && !hiddenListConfig) || !hiddenPin">
-          <a-tooltip :title="pinTip" v-if="!hiddenPin">
-            <a-button @click="handlePin" :disabled="!selected.length && !isPinActive" :type="isPinActive ? 'primary' : ''">
-              <icon type="pin" />
-            </a-button>
-          </a-tooltip>
-          <a-tooltip :title="$t('common.text00010')" v-if="exportDataOptions">
-            <a-button class="ml-2" @click="handleExportData">
-              <icon type="download" />
-            </a-button>
-          </a-tooltip>
-          <a-tooltip :title="$t('common.text00011')" v-if="id && !hiddenListConfig">
-            <a-button class="ml-2" @click="handleCustomList">
-              <icon type="setting" />
-            </a-button>
-          </a-tooltip>
-        </template>
+      <div class="page-list-header-actions__right d-flex flex-shrink-0 align-items-center">
+        <div class="page-list-header-actions__tools d-flex align-items-center">
+          <slot name="right-tools-prepend" />
+          <template v-if="exportDataOptions || (id && !hiddenListConfig) || !hiddenPin">
+            <a-tooltip :title="pinTip" v-if="!hiddenPin">
+              <a-button @click="handlePin" :disabled="!selected.length && !isPinActive" :type="isPinActive ? 'primary' : 'default'">
+                <icon type="pin" />
+              </a-button>
+            </a-tooltip>
+            <a-tooltip :title="$t('common.text00010')" v-if="exportDataOptions">
+              <a-button @click="handleExportData">
+                <icon type="download" />
+              </a-button>
+            </a-tooltip>
+            <a-tooltip :title="$t('common.text00011')" v-if="id && !hiddenListConfig">
+              <a-button @click="handleCustomList">
+                <icon type="setting" />
+              </a-button>
+            </a-tooltip>
+          </template>
+        </div>
       </div>
     </div>
     <!-- 搜索框 -->
     <template v-if="showSearchbox && _filterOptions">
-      <div class="d-flex">
-        <!-- 层级选择开关 -->
-        <a-tooltip :title="treeToggleOpen ? $t('common.toggle_project_close') : $t('common.toggle_project_open')">
-          <a-button class="mr-2" style="height: 30px" v-if="showTagConfig" @click="toggleTreeSelect">
-            <a-icon type="apartment" />
+      <div class="d-flex align-items-center search-row">
+        <!-- 层级选择开关：仅展示时占位，避免 search-box 左侧多余间距 -->
+        <a-tooltip v-if="showTagConfig" :title="treeToggleOpen ? $t('common.toggle_project_close') : $t('common.toggle_project_open')">
+          <a-button class="flex-shrink-0" @click="toggleTreeSelect">
+            <icon type="apartment" />
           </a-button>
         </a-tooltip>
         <div class="flex-fill">
@@ -276,7 +276,9 @@ export default {
     hiddenListConfig: Boolean,
     idKey: String,
     exportUseIdKey: Boolean,
-    data: Array,
+    // PageList 传入的 data 是 CreateList.wrapData 生成的对象（key->row），不是数组
+    // 这里兼容两种形态，避免 Vue warn 在频繁渲染时刷屏导致内存/CPU 暴涨。
+    data: [Array, Object],
     pagerType: String,
   },
   data () {
@@ -327,7 +329,9 @@ export default {
       return this.total
     },
     dataList () {
-      return Object.values(this.data)
+      if (Array.isArray(this.data)) return this.data
+      if (this.data && typeof this.data === 'object') return Object.values(this.data)
+      return []
     },
   },
   methods: {
@@ -418,3 +422,46 @@ export default {
   },
 }
 </script>
+
+<style lang="less" scoped>
+/* 与上方操作行 mb-2 间距一致；按钮尺寸跟刷新按钮同为默认 ant-btn */
+.search-row {
+  gap: 5px;
+}
+.page-list-header-actions {
+  // 外层不换行：左侧自适应换行，右侧始终吸右
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  gap: 12px;
+}
+.page-list-header-actions__main {
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 8px 5px;
+  min-width: 0;
+  > * {
+    flex-shrink: 0;
+    // 按内容宽度占位，避免 checkbox 文案被挤成逐字换行
+    min-width: max-content;
+    max-width: 100%;
+  }
+  :deep(.ant-checkbox-wrapper) {
+    white-space: nowrap;
+  }
+}
+.page-list-header-actions__right {
+  flex: 0 0 auto;
+  gap: 8px;
+  margin-left: auto;
+  align-self: flex-start;
+  white-space: nowrap;
+}
+.page-list-header-actions__tools {
+  gap: 5px;
+}
+.page-list-header-actions__stats {
+  white-space: nowrap;
+  line-height: 32px;
+  color: rgba(0, 0, 0, 0.65);
+}
+</style>

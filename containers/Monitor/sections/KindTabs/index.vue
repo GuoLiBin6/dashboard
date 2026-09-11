@@ -1,14 +1,14 @@
 <template>
-    <div slot="header" class="clearfix kind-tab-header">
+    <div class="clearfix kind-tab-header">
       <div class="float-left">
-        <a-radio-group v-model="activeTab" @change="radioChange">
+        <a-radio-group v-model:value="activeTab" @change="radioChange">
           <a-radio-button :value="item.key" v-for="item in tabsC" :key="item.key">{{ item.label }}</a-radio-button>
-          <project-radio :domain.sync="domain" :activeTab.sync="activeTab" />
-          <tag-radio :label.sync="label" :activeTab.sync="activeTab" :tabs="tabs" />
+          <project-radio v-model:domain="domain" v-model:activeTab="activeTab" />
+          <tag-radio v-model:label="label" v-model:activeTab="activeTab" :tabs="tabs" />
         </a-radio-group>
       </div>
       <div class="float-right d-flex">
-        <date-time :getParams.sync="dateParams" :canSelectTodayAfter="false" />
+        <date-time v-model:getParams="dateParams" :canSelectTodayAfter="false" />
       </div>
     </div>
 </template>
@@ -100,7 +100,7 @@ export default {
 
 <style lang="less" scoped>
 .kind-tab-header {
-  &::v-deep .ant-calendar-range-picker-input {
+  &:deep(.ant-calendar-range-picker-input) {
     width: 86px !important;
   }
 }

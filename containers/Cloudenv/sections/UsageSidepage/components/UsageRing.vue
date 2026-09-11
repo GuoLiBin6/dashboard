@@ -2,7 +2,7 @@
   <div class="usage-ring" :class="{ 'is-template': isTemplate }">
     <div class="dashboard-card-wrap">
       <div class="dashboard-card-header">
-        <div class="dashboard-card-header-left">{{title}}<a-icon class="ml-2" type="loading" v-if="loading" /></div>
+        <div class="dashboard-card-header-left">{{title}}<icon class="ml-2" type="loading" v-if="loading" /></div>
       </div>
       <div class="dashboard-card-body align-items-center">
         <a-progress type="circle" :percent="percent" :strokeWidth="12" :status="status" :strokeColor="percentColor">

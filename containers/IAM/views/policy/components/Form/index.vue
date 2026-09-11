@@ -18,10 +18,10 @@
           @update:item="handleDomainChange" />
       </a-form-model-item>
       <a-form-model-item :label="$t('system.text_101')" prop="name">
-        <a-input v-model="model.name" :placeholder="$t('system.text_323', [$t('dictionary.policy')])" />
+        <a-input v-model:value="model.name" :placeholder="$t('system.text_323', [$t('dictionary.policy')])" />
       </a-form-model-item>
       <a-form-model-item :label="$t('common.description')" prop="description">
-        <a-input v-model="model.description" :placeholder="$t('common.tips.input', [$t('common.description')])" />
+        <a-input v-model:value="model.description" :placeholder="$t('common.tips.input', [$t('common.description')])" />
       </a-form-model-item>
       <a-form-model-item :label="$t('system.text_326', [$t('dictionary.policy')])" porp="scope">
         <template v-if="!isUpdate">
@@ -31,8 +31,8 @@
       </a-form-model-item>
       <a-form-model-item :label="$t('iam.policy.editor.title')">
         <a-radio-group :default-value="editType" :value="editType" @change="e => $emit('edit-type-change', e.target.value)">
-          <template v-for="item of editTypeOptions">
-            <a-radio-button :value="item.key" :key="item.key">{{ item.label }}</a-radio-button>
+          <template v-for="item of editTypeOptions" :key="item.key">
+            <a-radio-button :value="item.key">{{ item.label }}</a-radio-button>
           </template>
         </a-radio-group>
       </a-form-model-item>

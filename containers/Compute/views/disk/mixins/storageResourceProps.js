@@ -43,7 +43,12 @@ export default {
             minWidth: 120,
             slotCallback: row => {
               return [
-                <list-body-cell-wrap field='name' row={row} />,
+                this.$createElement('list-body-cell-wrap', {
+                  props: {
+                    field: 'name',
+                    row,
+                  },
+                }),
               ]
             },
           }),
@@ -57,14 +62,14 @@ export default {
             title: this.$t('storage.text_177'),
             width: 180,
             slots: {
-              default: ({ row }, h) => {
+              default: ({ row }) => {
                 const capacity = sizestr(row.capacity, 'M', 1024)
                 const allowedBrands = ['VMware', 'OneCloud']
                 const actual_capacity_used = allowedBrands.includes(row.brand) ? sizestr(row.actual_capacity_used, 'M', 1024) : '-'
-                return [<div>
-                  <div>{this.$t('storage.text_178', [actual_capacity_used])}</div>
-                  <div>{this.$t('storage.text_180', [capacity])}</div>
-                </div>]
+                return [this.$createElement('div', {}, [
+                  this.$createElement('div', {}, this.$t('storage.text_178', [actual_capacity_used])),
+                  this.$createElement('div', {}, this.$t('storage.text_180', [capacity])),
+                ])]
               },
             },
           },
@@ -73,13 +78,13 @@ export default {
             title: this.$t('storage.text_43'),
             width: 180,
             slots: {
-              default: ({ row }, h) => {
+              default: ({ row }) => {
                 const virtual_capacity = sizestr(row.virtual_capacity, 'M', 1024)
                 const used_capacity = sizestr(row.used_capacity, 'M', 1024)
-                return [<div>
-                  <div>{this.$t('storage.text_181', [used_capacity])}</div>
-                  <div>{this.$t('storage.text_180', [virtual_capacity])}</div>
-                </div>]
+                return [this.$createElement('div', {}, [
+                  this.$createElement('div', {}, this.$t('storage.text_181', [used_capacity])),
+                  this.$createElement('div', {}, this.$t('storage.text_180', [virtual_capacity])),
+                ])]
               },
             },
           },
@@ -109,15 +114,23 @@ export default {
                 const tags = _.sortBy(row.schedtags, ['default', 'name'])
                 if (!tags.length) {
                   return [
-                    <div class='text-color-help'>{ this.$t('storage.text_171') }</div>,
+                    this.$createElement('div', { class: 'text-color-help' }, this.$t('storage.text_171')),
                   ]
                 }
-                const list = tags.map(tag => <a-tag class='mb-2 mr-1' color='blue'>{tag.name}</a-tag>)
-                return [<list-body-cell-popover text={this.$t('compute.text_619', [tags.length])} max-width="400px">
-                  <div style="display: inline-flex; flex-wrap: wrap; max-width: 40vw;">
-                    {...list}
-                  </div>
-                </list-body-cell-popover>]
+                const list = tags.map(tag => this.$createElement('a-tag', {
+                  class: 'mb-2 mr-1',
+                  props: { color: 'blue' },
+                }, tag.name))
+                return [this.$createElement('list-body-cell-popover', {
+                  props: {
+                    text: this.$t('compute.text_619', [tags.length]),
+                    'max-width': '400px',
+                  },
+                }, [
+                  this.$createElement('div', {
+                    style: 'display: inline-flex; flex-wrap: wrap; max-width: 40vw;',
+                  }, list),
+                ])]
               },
             },
           },

@@ -4,15 +4,17 @@
       <overview-nav :items="navs" @change="changeNav" />
     </a-row>
     <a-row v-if="!isTemplate">
-      <div class="monitor-overview-chart mb-2">
-        <div class="title-wrapper">
-          <div class="title">
-            {{ $t('monitor.dashboard.overview.title') }}
-            <help-tooltip name="monitorDashboardOverviewTips" />
+      <a-col :span="24">
+        <div class="monitor-overview-chart mb-2">
+          <div class="title-wrapper">
+            <div class="title">
+              {{ $t('monitor.dashboard.overview.title') }}
+              <help-tooltip name="monitorDashboardOverviewTips" />
+            </div>
           </div>
+          <summary-cards :scope="curNav.scope" :scopeId="curNav.id" />
         </div>
-        <summary-cards :scope="curNav.scope" :scopeId="curNav.id" style="padding-top: 1em;" />
-      </div>
+      </a-col>
     </a-row>
     <a-row>
       <a-col :span="8">
@@ -48,7 +50,9 @@
       </a-col>
     </a-row>
     <a-row v-if="!isTemplate">
-      <overview-card :scope="curNav.scope" :extraParams="extraParams" @changeNav="updateNavs" />
+      <a-col :span="24">
+        <overview-card :scope="curNav.scope" :extraParams="extraParams" @changeNav="updateNavs" />
+      </a-col>
     </a-row>
   </div>
 </template>
@@ -103,7 +107,10 @@ export default {
       scope: scope,
       navs: navs,
       curNav: navs[0],
-      ringChart: { loading: true },
+      ringChart: {
+        loading: true,
+        chartData: { rows: [], columns: [] },
+      },
       lineChart: {
         loading: true,
         chartSetting: {},
@@ -372,8 +379,10 @@ export default {
 @import '../../../../../src/styles/less/theme';
 
 .monitor-overview-chart {
+  box-sizing: border-box;
   border: 1px solid #F1F1F1;
-  padding: 6px 24px 12px 6px;
+  border-radius: 6px;
+  padding: 12px 16px;
   margin-left: 6px;
   margin-right: 6px;
 

@@ -23,11 +23,15 @@
 </template>
 
 <script>
-const commonIcons = require.context('./assets', true, /\.svg$/).keys().map(key => {
-  return key.replace('./auth/', '').replace('./', '').replace('.svg', '')
+const commonIconModules = import.meta.glob('./assets/*.svg', { eager: true })
+const scopeIconModules = import.meta.glob('/src/scope/assets/*.svg', { eager: true })
+
+const commonIcons = Object.keys(commonIconModules).map(key => {
+  return key.replace('./assets/', '').replace('.svg', '')
 })
-const scopeIcons = require.context('@scope/assets', true, /\.svg$/).keys().map(key => {
-  return key.replace('./', '').replace('.svg', '')
+const scopeIcons = Object.keys(scopeIconModules).map(key => {
+  const parts = key.split('/assets/')
+  return (parts[1] || '').replace('.svg', '')
 })
 export default {
   data () {

@@ -24,7 +24,7 @@ export default {
       loading: false,
     }
   },
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {

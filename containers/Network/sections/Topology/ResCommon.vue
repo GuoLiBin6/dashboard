@@ -4,7 +4,7 @@
     <div :class="{'common-left-line': showLeftLine}" />
     <div class="res d-flex" :class="{'res-host': showSchedTag, 'res-running': type === 'vminstance' && ((resSource.status || resSource.status) === 'running')}">
       <a-tooltip placement="top" :get-popup-container="getPopupContainer">
-        <template slot="title">
+        <template #title>
           <p class="title">{{ $t('network.topology.res_type.' + getType(resSource)) }}</p>
           <p>{{ $t('common.name') }}：{{ getName(resSource) }}</p>
           <p v-if="type !== 'gpu'">{{ $t('common.status') }}：{{ getStatus(resSource) }}</p>
@@ -28,8 +28,8 @@
           <template v-if="showSchedTag && resSchedTags.length">
             <p>{{ $t('dictionary.schedtag') }}：</p>
             <div class="tag-list d-flex align-items-center flex-wrap">
-              <template v-for="(item,index) in resSchedTags">
-                <div class="tag" :key="index" :style="{background: item.background}">{{item.name}}</div>
+              <template v-for="(item,index) in resSchedTags" :key="index">
+                <div class="tag" :style="{background: item.background}">{{item.name}}</div>
               </template>
             </div>
           </template>
@@ -43,8 +43,8 @@
               <template v-if="showStorageTag">
                 <div v-for="(item,index) in resStorages" class="tag storage-tag" :key="index" :style="{background: item.background}">{{item.name}}</div>
               </template>
-              <template v-for="(item,index) in resSchedTags">
-                <div class="tag" :key="index" :style="{background: item.background}" v-if="index<2">{{item.name}}</div>
+              <template v-for="(item,index) in resSchedTags" :key="index">
+                <div class="tag" :style="{background: item.background}" v-if="index<2">{{item.name}}</div>
               </template>
             </div>
           </div>

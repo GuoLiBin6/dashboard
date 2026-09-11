@@ -20,7 +20,7 @@ export const getAttirubuteTableColumn = ({ vm = {} } = {}) => {
     slots: {
       default: ({ row }, h) => {
         const attribution = row.attribution
-        if (vm.isPreLoad && !row.project_domain) return [<data-loading />]
+        if (vm.isPreLoad && !row.project_domain) return [h('data-loading')]
         if (attribution === 'domain') return `${row.project_domain}${i18n.t(`shareScope.${attribution}`)}`
         return i18n.t(`shareScope.${attribution}`) || attribution
       },

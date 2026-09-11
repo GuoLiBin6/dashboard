@@ -4,21 +4,20 @@
       <div class="d-flex group-title" @click.stop.prevent="toggleContent">
         <div>{{ data.label }}</div>
         <div class="arrow-icon">
-          <a-icon type="down" class="ml-2" />
+          <icon type="pull-down" class="ml-2" />
         </div>
       </div>
     </div>
     <a-card v-if="showContent" class="mt-2">
-      <template v-for="item of data.children">
-        <div :key="item.key" class="d-flex mt-2 mb-2">
+      <template v-for="item of data.children" :key="item.key">
+        <div class="d-flex mt-2 mb-2">
           <div class="title flex-grow-0 flex-shrink-0 text-truncate">{{ item.label }}</div>
           <div class="actions flex-fill">
-            <template v-for="action of sortActions(item.actions)">
+            <template v-for="action of sortActions(item.actions)" :key="action.key">
               <span
                 v-if="!action.children"
-                :key="action.key"
                 class="mb-2 tag">{{ action.label }}</span>
-              <a-button :key="action.key" v-else type="link" @click="showExtraAction(action.children)">{{ action.label }}</a-button>
+              <a-button v-else type="link" @click="showExtraAction(action.children)">{{ action.label }}</a-button>
             </template>
           </div>
         </div>

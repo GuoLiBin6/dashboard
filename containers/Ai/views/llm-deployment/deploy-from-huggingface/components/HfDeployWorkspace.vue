@@ -3,7 +3,7 @@
 -->
 <template>
   <div>
-    <page-body :needMarginBottom="!inDialog">
+    <page-body>
       <hf-browse-pane
         ref="browse"
         :in-dialog="inDialog"
@@ -13,7 +13,7 @@
 
     <a-drawer
       wrap-class-name="catalog-drawer-wrap"
-      :visible="drawerVisible"
+      :open="drawerVisible"
       :width="'50%'"
       destroy-on-close
       placement="right"
@@ -26,7 +26,7 @@
         <div class="catalog-drawer-scroll">
           <catalog-drawer-meta-panel :set="hfCatalogSet" />
           <a-divider orientation="left">{{ $t('aice.llm_type') }}</a-divider>
-          <a-radio-group v-model="selectedBackend" class="mb-3" button-style="solid">
+          <a-radio-group v-model:value="selectedBackend" class="mb-3" button-style="solid">
             <a-radio-button value="vLLM">vLLM</a-radio-button>
             <a-radio-button value="SGLang">SGLang</a-radio-button>
           </a-radio-group>
@@ -178,4 +178,6 @@ export default {
 }
 </script>
 
-<style lang="less" src="@Ai/sections/catalog-model-sets/catalog-drawer.less"></style>
+<style lang="less">
+@import "@Ai/sections/catalog-model-sets/catalog-drawer.less";
+</style>

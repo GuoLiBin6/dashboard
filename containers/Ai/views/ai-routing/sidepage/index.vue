@@ -75,7 +75,7 @@ export default {
   mounted () {
     this.$bus.$on('aiRoutingOpenChatTest', this.handleOpenChatTest)
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.$bus.$off('aiRoutingOpenChatTest', this.handleOpenChatTest)
   },
   methods: {

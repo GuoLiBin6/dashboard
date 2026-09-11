@@ -19,9 +19,11 @@ export default {
           if (row.network_type === 'classic') {
             name = i18n.t('common.network.type.classic')
           }
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ name }</side-page-trigger>
-          )
+          return this.$createElement('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, [name])
         },
       }),
       getCopyWithContentTableColumn({ field: 'vpc', title: i18n.t('dictionary.vpc') }),

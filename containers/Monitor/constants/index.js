@@ -197,7 +197,11 @@ export const tableColumnMaps = {
     slots: {
       default: ({ row }, h) => {
         if (row.brand) {
-          return [<BrandIcon name={ row.brand } />]
+          return [h(BrandIcon, {
+            props: {
+              name: row.brand,
+            },
+          })]
         }
         return '-'
       },

@@ -77,7 +77,7 @@ export default {
       this._bindCreateFormDraftUserInteraction()
     })
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this._unbindCreateFormDraftUserInteraction()
     this._createFormFieldDraftFlushers = []
     this._boundCreateFormFieldDrafts = Object.create(null)

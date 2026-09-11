@@ -1,25 +1,25 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{ params.title }}</div>
-    <div slot="body">
+    <template #header>{{ params.title }}</template>
+    <template #body>
       <a-alert v-if="alertProps" v-bind="alertProps" class="mb-2" />
       <dialog-selected-tips :count="params.data.length" :action="this.params.title" :name="this.params.name" :unit="params.unit" />
       <dialog-table v-if="params.columns && params.columns.length" :data="params.data" :columns="params.columns.slice(0, 3)" />
       <dialog-content :content="params.content" />
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-popconfirm
         :title="$t('compute.server_recovery_delete_confirm')"
-        :visible="visible"
+        :open="visible"
         :ok-text="$t('dialog.ok')"
         :cancel-text="$t('dialog.cancel')"
-        @visibleChange="handleVisibleChange"
+        @openChange="handleVisibleChange"
         @confirm="handleConfirm"
         @cancel="cancelDialog">
         <a-button v-bind="okButtonProps">{{ $t("dialog.ok") }}</a-button>
       </a-popconfirm>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

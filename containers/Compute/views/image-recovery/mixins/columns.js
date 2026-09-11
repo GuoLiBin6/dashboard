@@ -12,10 +12,12 @@ export default {
         edit: false,
         editDesc: false,
         hideField: true,
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{row.name}</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getCopyWithContentTableColumn({ field: 'name', title: i18n.t('compute.text_228') }),
@@ -39,7 +41,7 @@ export default {
             }
             const tooltip = row.properties.os_version ? `${name} ${row.properties.os_version}` : name
             return [
-              <SystemIcon tooltip={ tooltip } name={ name } />,
+              this.$createElement(SystemIcon, { props: { tooltip, name } }),
             ]
           },
         },

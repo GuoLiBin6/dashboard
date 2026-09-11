@@ -29,9 +29,12 @@ export default {
           ]
         },
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+          const h = this.$createElement
+          return h('side-page-trigger', {
+            props: {
+              onTrigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getTagTableColumn({ onManager: this.onManager, resource: 'dns_zones', columns: () => this.columns }),
@@ -46,46 +49,73 @@ export default {
         showOverflow: 'ellipsis',
         minWidth: 80,
         slots: {
-          default: ({ row }, h) => {
+          default: ({ row }) => {
+            const h = this.$createElement
+            const popoverContentChildren = []
+            if (row.registrar) {
+              popoverContentChildren.push(
+                h('div', { class: 'd-flex' }, [
+                  h('span', { style: { flex: '0 0 150px' } }, this.$t('network.dnszone.registrar') + ':'),
+                  h('span', [
+                    row.registrar,
+                    h('copy', { class: 'ml-1', props: { message: row.registrar } }),
+                  ]),
+                ]),
+              )
+            }
+            if (row.name_servers && row.name_servers.length > 0) {
+              popoverContentChildren.push(
+                h('div', { class: 'd-flex' }, [
+                  h('span', { style: { flex: '0 0 150px' } }, this.$t('network.dnszone.add_name_servers') + ':'),
+                  h('span', { style: { flex: 1 } }, row.name_servers.map((server, index) =>
+                    h('div', { key: index }, [
+                      server,
+                      h('copy', { class: 'ml-1', props: { message: server } }),
+                    ]),
+                  )),
+                ]),
+              )
+            }
+            if (row.original_name_servers && row.original_name_servers.length > 0) {
+              popoverContentChildren.push(
+                h('div', { class: 'd-flex' }, [
+                  h('span', { style: { flex: '0 0 150px' } }, this.$t('network.dnszone.del_name_servers') + ':'),
+                  h('span', { style: { flex: 1 } }, row.original_name_servers.map((server, index) =>
+                    h('div', { key: index }, [
+                      server,
+                      h('copy', { class: 'ml-1', props: { message: server } }),
+                    ]),
+                  )),
+                ]),
+              )
+            }
+            const statusChildren = []
+            if (row.status === 'pending') {
+              statusChildren.push(
+                h('a-popover', {
+                  scopedSlots: {
+                    content: () => h('div', popoverContentChildren),
+                  },
+                }, [
+                  h('icon', {
+                    class: 'ml-1',
+                    style: { color: 'red' },
+                    props: { type: 'dashboard-alert-sum' },
+                  }),
+                ]),
+              )
+            }
             return [
-              <div class='text-truncate'>
-                <div class="d-flex align-items-center">
-                  <status status={row.status} statusModule={'dnszone'}>
-                    {
-                      row.status === 'pending' ? <a-popover slot="icon">
-                        <template slot="content">
-                          {row.registrar ? <div class="d-flex"><span style="flex: 0 0 150px">{this.$t('network.dnszone.registrar')}:</span><span>{row.registrar}<copy class="ml-1" message={row.registrar} /></span></div> : null}
-                          {row.name_servers && row.name_servers.length > 0
-                            ? <div class="d-flex">
-                              <span style="flex: 0 0 150px">{this.$t('network.dnszone.add_name_servers')}:</span>
-                              <span style="flex: 1">
-                                {row.name_servers.map((server, index) => (
-                                  <div key={index}>
-                                    {server}<copy class="ml-1" message={server} />
-                                  </div>
-                                ))}
-                              </span>
-                            </div>
-                            : null}
-                          {row.original_name_servers && row.original_name_servers.length > 0
-                            ? <div class="d-flex">
-                              <span style="flex: 0 0 150px">{this.$t('network.dnszone.del_name_servers')}:</span>
-                              <span style="flex: 1">
-                                {row.original_name_servers.map((server, index) => (
-                                  <div key={index}>
-                                    {server}<copy class="ml-1" message={server} />
-                                  </div>
-                                ))}
-                              </span>
-                            </div>
-                            : null}
-                        </template>
-                        <icon type="dashboard-alert-sum" class="ml-1" style={{ color: 'red' }} />
-                      </a-popover> : null
-                    }
-                  </status>
-                </div>
-              </div>,
+              h('div', { class: 'text-truncate' }, [
+                h('div', { class: 'd-flex align-items-center' }, [
+                  h('status', {
+                    props: {
+                      status: row.status,
+                      statusModule: 'dnszone',
+                    },
+                  }, statusChildren),
+                ]),
+              ]),
             ]
           },
         },

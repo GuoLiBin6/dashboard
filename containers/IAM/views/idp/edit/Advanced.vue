@@ -41,7 +41,7 @@
                     version="v1"
                     :params="projectParams"
                     remote
-                    :item.sync="project"
+                    v-model:item="project"
                     :remote-fn="q => ({ filter: `name.contains(${q})` })"
                     :select-props="{ placeholder: $t('rules.project') }" />
                 </a-form-item>

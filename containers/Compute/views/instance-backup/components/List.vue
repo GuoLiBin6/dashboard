@@ -12,6 +12,7 @@
 </template>
 
 <script>
+import { h } from 'vue'
 import WindowsMixin from '@/mixins/windows'
 import ListMixin from '@/mixins/list'
 import {
@@ -147,7 +148,7 @@ export default {
                       const change = (bool) => {
                         this.deleteResProps.force = bool
                       }
-                      return <a-checkbox onInput={ change }>{ this.$t('compute.text_655') }</a-checkbox>
+                      return h('a-checkbox', { onInput: change }, { default: () => this.$t('compute.text_655') })
                     },
                     requestParams: this.deleteResProps,
                   })

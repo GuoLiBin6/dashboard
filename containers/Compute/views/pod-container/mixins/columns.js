@@ -24,10 +24,12 @@ export default {
           { required: true, message: this.$t('compute.text_210') },
         ],
         statusModule: 'container',
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{row.name}</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getStatusTableColumn({ statusModule: 'container' }),

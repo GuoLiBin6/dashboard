@@ -22,10 +22,11 @@ import {
   getTimeTableColumn,
 } from '@/utils/common/tableColumn'
 import WindowsMixin from '@/mixins/windows'
+import ListMixin from '@/mixins/list'
 
 export default {
   name: 'EventList',
-  mixins: [WindowsMixin],
+  mixins: [WindowsMixin, ListMixin],
   props: {
     objId: {
       type: String,
@@ -37,6 +38,10 @@ export default {
       type: String,
     },
     getParams: [Object, Function],
+    enableVirtualScroll: {
+      type: Boolean,
+      default: false,
+    },
   },
   data () {
     const filterOptions = {
@@ -246,27 +251,37 @@ export default {
           minWidth: 80,
           showOverflow: 'ellipsis',
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               const action = get(row, '_i18n.action', row.action)
-              return [
-                <list-body-cell-wrap copy field='_i18n.action' row={row} hideField={true} message={action}>
-                  {action}
-                  <a-button
-                    type="link"
-                    icon="filter"
-                    size="small"
-                    slot="appendActions"
-                    onClick={ () => {
-                      this.list.updateFilter({
-                        key: 'action',
-                        value: [row.action],
-                        items: [
-                          { key: row.action, label: action },
-                        ],
-                      })
-                    } } />
-                </list-body-cell-wrap>,
-              ]
+              const button = h('a-button', {
+                attrs: {
+                  type: 'link',
+                  icon: 'filter',
+                  size: 'small',
+                },
+                slot: 'appendActions',
+                on: {
+                  click: () => {
+                    this.list.updateFilter({
+                      key: 'action',
+                      value: [row.action],
+                      items: [
+                        { key: row.action, label: action },
+                      ],
+                    })
+                  },
+                },
+              })
+              const cell = h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  field: '_i18n.action',
+                  row,
+                  hideField: true,
+                  message: action,
+                },
+              }, [action, button])
+              return [cell]
             },
           },
         },
@@ -291,10 +306,10 @@ export default {
           field: 'success',
           width: 80,
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               const txt = row.success ? this.$t('common_159') : this.$t('common_160')
               const color = row.success ? '#67C23A' : '#F56C6C'
-              return [<span style={{ color }}>{ txt }</span>]
+              return [h('span', { style: { color } }, [txt])]
             },
           },
         },
@@ -306,15 +321,19 @@ export default {
             default: ({ row }, h) => {
               const domain = row.project_domain
               const tenant = row.tenant
-              const ret = [
-                <list-body-cell-wrap style="margin: 3px 0 2px 0" copy field='user' row={row} />,
-                <div>
-                  <span class='text-weak' title={ this.$t('shareScope.domain') }> { domain } </span>
-                  <span class='text-weak' title={ this.$t('shareScope.project') }> { tenant } </span>
-                </div>,
-                <list-body-cell-wrap style="margin: 3px 0 2px 0" copy field='ip' row={row} />,
-              ]
-              return ret
+              const cell1 = h('list-body-cell-wrap', {
+                style: 'margin: 3px 0 2px 0',
+                props: { copy: true, field: 'user', row },
+              })
+              const div = h('div', [
+                h('span', { class: 'text-weak', attrs: { title: this.$t('shareScope.domain') } }, [domain]),
+                h('span', { class: 'text-weak', attrs: { title: this.$t('shareScope.project') } }, [tenant]),
+              ])
+              const cell2 = h('list-body-cell-wrap', {
+                style: 'margin: 3px 0 2px 0',
+                props: { copy: true, field: 'ip', row },
+              })
+              return [cell1, div, cell2]
             },
           },
         },
@@ -326,13 +345,13 @@ export default {
           slots: {
             default: ({ row }, h) => {
               const domain = row.owner_domain
-              const ret = [
-                <list-body-cell-wrap copy field='owner_tenant' row={row} />,
-                <list-body-cell-wrap hide-field copy field="domain" row={{ domain }}>
-                  <span class='text-weak'>{ domain }</span>
-                </list-body-cell-wrap>,
-              ]
-              return ret
+              const cell1 = h('list-body-cell-wrap', {
+                props: { copy: true, field: 'owner_tenant', row },
+              })
+              const cell2 = h('list-body-cell-wrap', {
+                props: { hideField: true, copy: true, field: 'domain', row: { domain } },
+              }, [h('span', { class: 'text-weak' }, [domain])])
+              return [cell1, cell2]
             },
           },
         },

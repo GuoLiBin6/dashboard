@@ -1,7 +1,13 @@
 import * as R from 'ramda'
 
 export default {
-  inject: ['inBaseSidePage'],
+  // 非 SidePage 场景下未 provide 时避免注入告警；侧栏内为 true
+  inject: {
+    inBaseSidePage: {
+      from: 'inBaseSidePage',
+      default: false,
+    },
+  },
   props: {
     filterParams: {
       type: Object,

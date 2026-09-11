@@ -8,7 +8,7 @@ import { canIpmiProbe } from '../utils/status'
 import { solWebConsole, jnlpConsole } from '../../../utils/webconsole'
 // import { Base64 } from 'js-base64'
 export default {
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   computed: {
@@ -126,18 +126,40 @@ export default {
                     decorators: SMART_SSH_FORM_DECORATORS,
                   })
                 }
-                return <a-tooltip placement="left" title={!isRunning ? i18n.t('compute.text_1282') : ''}>
-                  <span style={styleObj} class='d-flex justify-content-between align-items-center'>
-                    <span onClick={isRunning ? sshConnectHandle : () => { }}>{`SSH ${ip}`}</span>
-                    {
-                      isRunning ? <span>
-                        <a-tooltip title={i18n.t('compute.custom_ssh_connect', ['SSH'])}>
-                          <a-icon class="ml-2" type="edit" onClick={isRunning ? sshSettingInfoHandle : () => { }} />
-                        </a-tooltip>
-                      </span> : null
-                    }
-                  </span>
-                </a-tooltip>
+                return h('a-tooltip', {
+                  props: {
+                    placement: 'left',
+                    title: !isRunning ? i18n.t('compute.text_1282') : '',
+                  },
+                }, [
+                  h('span', {
+                    style: styleObj,
+                    class: 'd-flex justify-content-between align-items-center',
+                  }, [
+                    h('span', {
+                      on: {
+                        click: isRunning ? sshConnectHandle : () => {},
+                      },
+                    }, `SSH ${ip}`),
+                    isRunning ? h('span', [
+                      h('a-tooltip', {
+                        props: {
+                          title: i18n.t('compute.custom_ssh_connect', ['SSH']),
+                        },
+                      }, [
+                        h('icon', {
+                          class: 'ml-2',
+                          props: {
+                            type: 'edit',
+                          },
+                          on: {
+                            click: isRunning ? sshSettingInfoHandle : () => {},
+                          },
+                        }),
+                      ]),
+                    ]) : null,
+                  ]),
+                ])
               },
             })
           })

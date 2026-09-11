@@ -5,7 +5,7 @@
       class="mb-0 mr-1">
       <base-select
         :options="filetypeOpts"
-        :item.sync="filetype"
+        v-model:item="filetype"
         v-decorator="decorators.filetype"
         :select-props="{ allowClear: true, placeholder: $t('common_149') }" />
     </a-form-item>

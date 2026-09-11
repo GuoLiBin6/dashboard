@@ -27,13 +27,14 @@ export default {
         const titleCon = sysWarn || sysError
         if (titleCon) {
           // const aLink = <side-page-trigger vm={this} name='HostSidePage' id={row.id} list={this.list} tab='event-drawer'>查看日志</side-page-trigger>
-          const aIcon = <a-icon type="exclamation-circle" class={ { 'ml-1 oc-pointer': true, 'warning-color': sysWarn, 'error-color': sysError } } />
-          return <a-tooltip placement="right">
-            <template slot="title">
-              { titleCon }
-            </template>
-            { aIcon }
-          </a-tooltip>
+          const h = this.$createElement
+          const aIcon = h('icon', {
+            props: { type: 'exclamation-circle' },
+            class: { 'ml-1 oc-pointer': true, 'warning-color': sysWarn, 'error-color': sysError },
+          })
+          return h('a-tooltip', {
+            props: { placement: 'right', title: titleCon },
+          }, [aIcon])
         }
       }
       return null
@@ -47,23 +48,31 @@ export default {
           { required: true, message: i18n.t('compute.text_210') },
           // { validator: this.$validate('serverCreateName') },
         ],
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          const hFn = h || this.$createElement
+          return hFn('side-page-trigger', {
+            on: { trigger: () => this.handleOpenSidepage(row) },
+          }, row.name)
         },
         cellWrapSlots: row => {
+          const h = this.$createElement
           return {
             append: () => {
               var ret = []
               if (row.is_baremetal) {
-                ret.push(<a-tooltip title={i18n.t('compute.text_562')}><icon class='ml-2' type='res-host' style={{ color: '#1890ff' }} /></a-tooltip>)
+                ret.push(h('a-tooltip', { props: { title: i18n.t('compute.text_562') } }, [
+                  h('icon', { class: 'ml-2', props: { type: 'res-host' }, style: { color: '#1890ff' } }),
+                ]))
               }
               if (row.isolated_device_count) {
-                ret.push(<a-tooltip title={i18n.t('compute.text_113')}><icon class='ml-2' type='passthrough' /></a-tooltip>)
+                ret.push(h('a-tooltip', { props: { title: i18n.t('compute.text_113') } }, [
+                  h('icon', { class: 'ml-2', props: { type: 'passthrough' } }),
+                ]))
               }
               if (row.page_size_kb > 4) {
-                ret.push(<a-tooltip title={i18n.t('compute.large_page_memory_tips')}><icon class='ml-2' type='large-page-memory' /></a-tooltip>)
+                ret.push(h('a-tooltip', { props: { title: i18n.t('compute.large_page_memory_tips') } }, [
+                  h('icon', { class: 'ml-2', props: { type: 'large-page-memory' } }),
+                ]))
               }
               return ret
             },
@@ -80,12 +89,13 @@ export default {
         field: 'host_status',
         title: i18n.t('compute.text_502'),
         statusModule: 'host_status',
-        slotCallback: row => {
+        slotCallback: (row, h) => {
+          const hFn = h || this.$createElement
           return [
-            <div class='d-flex align-items-center text-truncate'>
-              <status status={ row.host_status } statusModule='host_status' />
-              { getStatusToolTip(row) }
-            </div>,
+            hFn('div', { class: 'd-flex align-items-center text-truncate' }, [
+              hFn('status', { props: { status: row.host_status, statusModule: 'host_status' } }),
+              getStatusToolTip(row),
+            ].filter(Boolean)),
           ]
         },
       }),
@@ -101,27 +111,34 @@ export default {
         width: 200,
         showOverflow: 'ellipsis',
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
+            const hFn = h || this.$createElement
             const cellWrap = []
             if (row.access_ip) {
               cellWrap.push(
-                <div class="d-flex">
-                  <list-body-cell-wrap row={row} field="access_ip" copy><span class="text-color-help">{this.$t('compute.text_1319')}</span></list-body-cell-wrap>
-                </div>,
+                hFn('div', { class: 'd-flex' }, [
+                  hFn('list-body-cell-wrap', { props: { row, field: 'access_ip', copy: true } }, [
+                    hFn('span', { class: 'text-color-help' }, this.$t('compute.text_1319')),
+                  ]),
+                ]),
               )
             }
             if (row.ipmi_ip) {
               cellWrap.push(
-                <div class="d-flex">
-                  <list-body-cell-wrap row={row} field="ipmi_ip" copy><span class="text-color-help">{this.$t('compute.text_1320')}</span></list-body-cell-wrap>
-                </div>,
+                hFn('div', { class: 'd-flex' }, [
+                  hFn('list-body-cell-wrap', { props: { row, field: 'ipmi_ip', copy: true } }, [
+                    hFn('span', { class: 'text-color-help' }, this.$t('compute.text_1320')),
+                  ]),
+                ]),
               )
             }
             if (row.public_ip) {
               cellWrap.push(
-                <div class="d-flex">
-                  <list-body-cell-wrap row={row} field="public_ip" copy><span class="text-color-help"> (EIP) </span></list-body-cell-wrap>
-                </div>,
+                hFn('div', { class: 'd-flex' }, [
+                  hFn('list-body-cell-wrap', { props: { row, field: 'public_ip', copy: true } }, [
+                    hFn('span', { class: 'text-color-help' }, ' (EIP) '),
+                  ]),
+                ]),
               )
             }
             return cellWrap
@@ -150,7 +167,7 @@ export default {
             if (!row.is_baremetal) {
               return '-'
             } else {
-              return [<PasswordFetcher serverId={ row.id } resourceType='baremetals' />]
+              return [this.$createElement(PasswordFetcher, { props: { serverId: row.id, resourceType: 'baremetals' } })]
             }
           },
         },
@@ -164,7 +181,7 @@ export default {
             if (!row.is_baremetal) {
               return '-'
             } else {
-              return [<PasswordFetcher serverId={ row.server_id } resourceType='servers' />]
+              return [this.$createElement(PasswordFetcher, { props: { serverId: row.server_id, resourceType: 'servers' } })]
             }
           },
         },
@@ -177,7 +194,7 @@ export default {
         sortable: true,
         slots: {
           default: ({ row }, h) => {
-            if (this.isPreLoad && row.nonsystem_guests === undefined) return [<data-loading />]
+            if (this.isPreLoad && row.nonsystem_guests === undefined) return [this.$createElement('data-loading')]
             return `${row.nonsystem_guests}`
           },
         },
@@ -189,21 +206,34 @@ export default {
       {
         field: 'cpu_usage',
         title: this.$t('compute.text_563'),
-        minWidth: 100,
+        minWidth: 120,
+        showOverflow: false,
         sortable: true,
         // sortBy: 'order_by_cpu_commit',
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
+            const hFn = h || this.$createElement
             const { cpu_count = 0, cpu_used = 0 } = getHostSpecInfo(row)
             const title = `${this.$t('common_407')}: ${Math.round(cpu_used)}\n${this.$t('common_234')}: ${Math.round(cpu_count)}`
-            return [<UsedPercent used={cpu_used} total={cpu_count} title={title} usedFormatter={(val) => val > 0 ? (Math.max(Math.round(val), 1)) : Math.round(val)} totalFormatter={(val) => val > 0 ? (Math.max(Math.round(val), 1)) : Math.round(val)} />]
+            return [hFn('UsedPercent', {
+              props: {
+                used: cpu_used,
+                total: cpu_count,
+                title,
+                usedFormatter: (val) => val > 0 ? (Math.max(Math.round(val), 1)) : Math.round(val),
+                totalFormatter: (val) => val > 0 ? (Math.max(Math.round(val), 1)) : Math.round(val),
+              },
+            })]
           },
-          header: ({ column }) => {
+          header: ({ column }, h) => {
+            const hFn = h || this.$createElement
             return [
-              <span>
-                <span>{column.title}</span>
-                <a-tooltip class="ml-1" title={this.$t('compute.order_by_used_percent')}><a-icon type="question-circle" style="color: #aaa;" /></a-tooltip>
-              </span>,
+              hFn('span', {}, [
+                hFn('span', {}, column.title),
+                hFn('a-tooltip', { class: 'ml-1', props: { title: this.$t('compute.order_by_used_percent') } }, [
+                  hFn('icon', { props: { type: 'question-circle' }, style: { color: '#aaa' } }),
+                ]),
+              ]),
             ]
           },
         },
@@ -216,24 +246,37 @@ export default {
       {
         field: 'virtual_cpu_usage',
         title: this.$t('compute.text_563_1'),
-        minWidth: 100,
+        minWidth: 120,
+        showOverflow: false,
         sortable: true,
         // sortBy: 'order_by_cpu_commit',
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
+            const hFn = h || this.$createElement
             const { cpu_commit = 0, cpu_count = 0, cpu_count_virtual = 0, cpu_commit_bound } = getHostSpecInfo(row)
             const title = `${this.$t('common_233')}: ${Math.round(cpu_commit)}\n` +
               `${this.$t('common_234')}: ${Math.round(cpu_count_virtual)}\n` +
               `${this.$t('compute.text_594')}: ${(cpu_commit / cpu_count).toFixed(2)}\n` +
               `${this.$t('compute.cpu_commit_bound')}: ${cpu_commit_bound}`
-            return [<UsedPercent used={cpu_commit} total={cpu_count_virtual} usedLabel={this.$t('common_233')} title={title} text={`${Math.round(cpu_commit)}/${Math.round(cpu_count_virtual)}`} />]
+            return [hFn('UsedPercent', {
+              props: {
+                used: cpu_commit,
+                total: cpu_count_virtual,
+                usedLabel: this.$t('common_233'),
+                title,
+                text: `${Math.round(cpu_commit)}/${Math.round(cpu_count_virtual)}`,
+              },
+            })]
           },
-          header: ({ column }) => {
+          header: ({ column }, h) => {
+            const hFn = h || this.$createElement
             return [
-              <span>
-                <span>{column.title}</span>
-                <a-tooltip class="ml-1" title={this.$t('compute.order_by_commit_percent')}><a-icon type="question-circle" style="color: #aaa;" /></a-tooltip>
-              </span>,
+              hFn('span', {}, [
+                hFn('span', {}, column.title),
+                hFn('a-tooltip', { class: 'ml-1', props: { title: this.$t('compute.order_by_commit_percent') } }, [
+                  hFn('icon', { props: { type: 'question-circle' }, style: { color: '#aaa' } }),
+                ]),
+              ]),
             ]
           },
         },
@@ -246,22 +289,20 @@ export default {
       {
         field: 'mem_usage',
         title: this.$t('compute.text_564'),
-        minWidth: 100,
+        minWidth: 120,
+        showOverflow: false,
         sortable: true,
         // sortBy: 'order_by_mem_commit',
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
+            const hFn = h || this.$createElement
             const { mem_size, mem_used } = getHostSpecInfo(row)
             const title = `${this.$t('common_407')}: ${sizestr(mem_used, 'M', 1024)}\n${this.$t('common_234')}: ${sizestr(mem_size, 'M', 1024)}`
-            return [<UsedPercent title={title} used={mem_used} total={mem_size} usedFormatter={(val) => sizestr(val, 'M', 1024)} totalFormatter={(val) => sizestr(val, 'M', 1024)} />]
+            return [hFn('UsedPercent', { props: { title, used: mem_used, total: mem_size, usedFormatter: (val) => sizestr(val, 'M', 1024), totalFormatter: (val) => sizestr(val, 'M', 1024) } })]
           },
-          header: ({ column }) => {
-            return [
-              <span>
-                <span>{column.title}</span>
-                <a-tooltip class="ml-1" title={this.$t('compute.order_by_used_percent')}><a-icon type="question-circle" style="color: #aaa;" /></a-tooltip>
-              </span>,
-            ]
+          header: ({ column }, h) => {
+            const hFn = h || this.$createElement
+            return [hFn('span', {}, [hFn('span', {}, column.title), hFn('a-tooltip', { class: 'ml-1', props: { title: this.$t('compute.order_by_used_percent') } }, [hFn('icon', { props: { type: 'question-circle' }, style: { color: '#aaa' } })])])]
           },
         },
         formatter: ({ row }) => {
@@ -273,25 +314,23 @@ export default {
       {
         field: 'virtual_mem_usage',
         title: this.$t('compute.text_564_1'),
-        minWidth: 100,
+        minWidth: 120,
+        showOverflow: false,
         sortable: true,
         // sortBy: 'order_by_mem_commit',
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
+            const hFn = h || this.$createElement
             const { mem_size_virtual, mem_commit, mem_size, mem_commit_bound } = getHostSpecInfo(row)
             const title = `${this.$t('common_233')}: ${sizestr(mem_commit, 'M', 1024)}\n` +
               `${this.$t('common_234')}: ${sizestr(mem_size_virtual, 'M', 1024)}\n` +
               `${this.$t('compute.text_594')}: ${(mem_commit / mem_size).toFixed(2)}\n` +
               `${this.$t('compute.memory_commit_bound')}: ${mem_commit_bound}`
-            return [<UsedPercent title={title} used={mem_commit} total={mem_size_virtual} usedLabel={this.$t('common_233')} usedFormatter={(val) => sizestr(val, 'M', 1024)} totalFormatter={(val) => sizestr(val, 'M', 1024)} />]
+            return [hFn('UsedPercent', { props: { title, used: mem_commit, total: mem_size_virtual, usedLabel: this.$t('common_233'), usedFormatter: (val) => sizestr(val, 'M', 1024), totalFormatter: (val) => sizestr(val, 'M', 1024) } })]
           },
-          header: ({ column }) => {
-            return [
-              <span>
-                <span>{column.title}</span>
-                <a-tooltip class="ml-1" title={this.$t('compute.order_by_commit_percent')}><a-icon type="question-circle" style="color: #aaa;" /></a-tooltip>
-              </span>,
-            ]
+          header: ({ column }, h) => {
+            const hFn = h || this.$createElement
+            return [hFn('span', {}, [hFn('span', {}, column.title), hFn('a-tooltip', { class: 'ml-1', props: { title: this.$t('compute.order_by_commit_percent') } }, [hFn('icon', { props: { type: 'question-circle' }, style: { color: '#aaa' } })])])]
           },
         },
         formatter: ({ row }) => {
@@ -303,22 +342,20 @@ export default {
       {
         field: 'storage_usage',
         title: this.$t('compute.text_565'),
-        minWidth: 100,
+        minWidth: 120,
+        showOverflow: false,
         sortable: true,
         // sortBy: 'order_by_mem_commit',
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
+            const hFn = h || this.$createElement
             const { storage_size, actual_storage_used } = getHostSpecInfo(row)
             const title = `${this.$t('common_407')}: ${sizestr(actual_storage_used, 'M', 1024)}\n${this.$t('common_234')}: ${sizestr(storage_size, 'M', 1024)}`
-            return [<UsedPercent title={title} used={actual_storage_used} total={storage_size} usedFormatter={(val) => sizestr(val, 'M', 1024)} totalFormatter={(val) => sizestr(val, 'M', 1024)} />]
+            return [hFn('UsedPercent', { props: { title, used: actual_storage_used, total: storage_size, usedFormatter: (val) => sizestr(val, 'M', 1024), totalFormatter: (val) => sizestr(val, 'M', 1024) } })]
           },
-          header: ({ column }) => {
-            return [
-              <span>
-                <span>{column.title}</span>
-                <a-tooltip class="ml-1" title={this.$t('compute.order_by_used_percent')}><a-icon type="question-circle" style="color: #aaa;" /></a-tooltip>
-              </span>,
-            ]
+          header: ({ column }, h) => {
+            const hFn = h || this.$createElement
+            return [hFn('span', {}, [hFn('span', {}, column.title), hFn('a-tooltip', { class: 'ml-1', props: { title: this.$t('compute.order_by_used_percent') } }, [hFn('icon', { props: { type: 'question-circle' }, style: { color: '#aaa' } })])])]
           },
         },
         formatter: ({ row }) => {
@@ -330,25 +367,23 @@ export default {
       {
         field: 'virtual_storage_usage',
         title: this.$t('compute.text_565_1'),
-        minWidth: 100,
+        minWidth: 120,
+        showOverflow: false,
         sortable: true,
         // sortBy: 'order_by_storage_virtual',
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
+            const hFn = h || this.$createElement
             const { storage_size_virtual, storage_commit, storage_size } = getHostSpecInfo(row)
             const title = `${this.$t('common_233')}: ${sizestr(storage_commit, 'M', 1024)}\n` +
               `${this.$t('common_234')}: ${sizestr(storage_size_virtual, 'M', 1024)}\n` +
               `${this.$t('compute.text_594')}: ${(storage_commit / storage_size).toFixed(2)}\n` +
               `${this.$t('compute.storage_commit_bound')}: ${(storage_size_virtual / storage_size).toFixed(2)}`
-            return [<UsedPercent title={title} used={storage_commit} total={storage_size_virtual} usedLabel={this.$t('common_233')} usedFormatter={(val) => sizestr(val, 'M', 1024)} totalFormatter={(val) => sizestr(val, 'M', 1024)} />]
+            return [hFn('UsedPercent', { props: { title, used: storage_commit, total: storage_size_virtual, usedLabel: this.$t('common_233'), usedFormatter: (val) => sizestr(val, 'M', 1024), totalFormatter: (val) => sizestr(val, 'M', 1024) } })]
           },
-          header: ({ column }) => {
-            return [
-              <span>
-                <span>{column.title}</span>
-                <a-tooltip class="ml-1" title={this.$t('compute.order_by_commit_percent')}><a-icon type="question-circle" style="color: #aaa;" /></a-tooltip>
-              </span>,
-            ]
+          header: ({ column }, h) => {
+            const hFn = h || this.$createElement
+            return [hFn('span', {}, [hFn('span', {}, column.title), hFn('a-tooltip', { class: 'ml-1', props: { title: this.$t('compute.order_by_commit_percent') } }, [hFn('icon', { props: { type: 'question-circle' }, style: { color: '#aaa' } })])])]
           },
         },
         formatter: ({ row }) => {
@@ -424,11 +459,11 @@ export default {
               if (!arr.includes(oem_name)) {
                 return row.sys_info.oem_name
               }
-              const imgSrc = require(`../../physicalmachine/assets/${oem_name}.svg`)
+              const imgSrc = new URL(`../../physicalmachine/assets/${oem_name}.svg`, import.meta.url).href
               return [
-                <a-tooltip title={ row.sys_info.oem_name }>
-                  <img src={ imgSrc } style={ icons[oem_name] } />
-                </a-tooltip>,
+                this.$createElement('a-tooltip', { props: { title: row.sys_info.oem_name } }, [
+                  this.$createElement('img', { attrs: { src: imgSrc }, style: icons[oem_name] }),
+                ]),
               ]
             }
           },
@@ -475,20 +510,17 @@ export default {
         width: 120,
         // type: 'expand',
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
+            const hFn = h || this.$createElement
             const tags = _.sortBy(row.schedtags, ['default', 'name'])
             if (!tags.length) {
-              return [
-                <div class='text-color-help'>{this.$t('compute.text_1322')}</div>,
-              ]
+              return [hFn('div', { class: 'text-color-help' }, this.$t('compute.text_1322'))]
             }
-            const list = tags.map(tag => <a-tag class='mb-2 mr-1' color='blue'>{tag.name}</a-tag>)
+            const list = tags.map(tag => hFn('a-tag', { class: 'mb-2 mr-1', props: { color: 'blue' } }, tag.name))
             return [
-              <list-body-cell-popover text={this.$t('compute.text_619', [tags.length])} max-width="400px" >
-                <div style="display: inline-flex; flex-wrap: wrap">
-                  {...list}
-                </div>
-              </list-body-cell-popover>,
+              hFn('list-body-cell-popover', {
+                props: { text: this.$t('compute.text_619', [tags.length]), maxWidth: '400px' },
+              }, [hFn('div', { style: { display: 'inline-flex', flexWrap: 'wrap' } }, list)]),
             ]
           },
         },
@@ -513,11 +545,21 @@ export default {
         },
         slots: {
           header: () => {
-            return [<span style="margin-right:5px">{this.$t('compute.alert_status')}</span>, <help-tooltip name="alertDataTimeRange" />]
+            return [
+              this.$createElement('span', { style: 'margin-right:5px' }, this.$t('compute.alert_status')),
+              this.$createElement('help-tooltip', { props: { name: 'alertDataTimeRange' } }),
+            ]
           },
           default: ({ row }) => {
             const state = row.alert_data?.alert_state || 'init'
-            return [<status status={state} statusModule='monitorresources' />]
+            return [
+              this.$createElement('status', {
+                props: {
+                  status: state,
+                  statusModule: 'monitorresources',
+                },
+              }),
+            ]
           },
         },
       },

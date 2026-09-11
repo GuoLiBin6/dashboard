@@ -3,23 +3,24 @@
     <a-select
       class="base-select"
       :disabled="disabled"
-      v-bind="{ ...selectProps, ...filterOpts, ...otherOpts }"
+      v-bind="aSelectBindProps"
+      :labelInValue="false"
       :style="{ width: (showSync ? 'calc(100% - 24px)' : '100%'), 'min-width': minWidth, ...selectStyle }"
-      :value="value"
+      :value="selectDisplayValue"
       :option-label-prop="optionLabelProp"
       @blur="onBlur"
       @change="val => change(val, true)"
       @search="loadOptsDebounce"
       @dropdownVisibleChange="dropdownChange"
       :loading="loadingC">
-      <div slot="dropdownRender" slot-scope="menu">
+      <template #dropdownRender="{ menuNode: menu }">
         <v-nodes :vnodes="menu" />
         <div class="d-flex justify-content-center mb-2" v-if="resList.length > 0">
           <a-button class="mx-auto" :loading="loading" :disabled="loading" v-if="showLoadMore" @mousedown="e => e.preventDefault()" type="link" @click="loadMore">{{$t('common.LoadMore')}}</a-button>
           <span v-else-if="loadMoreClicked && noMoreData" class="text-color-secondary pt-2 pb-1">{{$t('common_640')}}</span>
         </div>
-      </div>
-      <slot v-if="!$scopedSlots.optionLabelTemplate" name="optionTemplate" v-bind:options="resOpts">
+      </template>
+      <slot v-if="!$slots.optionLabelTemplate" name="optionTemplate" v-bind:options="resOpts">
         <a-select-option v-for="item of resOpts" :key="item.id" :value="item.id" :label="getLabel(item)" :disabled="item.__disabled">
           <option-label :nameKey="nameKey" :labelFormat="labelFormat" :data="item" :resource="resource" :applyOptionLabel="applyOptionLabel" />
         </a-select-option>
@@ -31,7 +32,7 @@
         </a-select-option>
       </template>
     </a-select>
-    <a-icon v-if="showSync" type="sync" class="ml-2 primary-color" :spin="loading" @click="refresh" />
+    <icon v-if="showSync" type="sync" class="ml-2 primary-color base-select-sync" :spin="loading" @click="refresh" />
   </div>
 </template>
 <script>
@@ -58,14 +59,19 @@ export default {
     OptionLabel,
     OptionLabelPrefix,
     VNodes: {
-      functional: true,
-      render: (h, ctx) => ctx.props.vnodes,
+      render () {
+        return this.vnodes
+      },
+      props: {
+        vnodes: {},
+      },
     },
   },
   inheritAttrs: false,
   props: {
     value: {
-      required: true,
+      // v-decorator 在挂载后才注入，初始可为空
+      default: undefined,
     },
     disabled: {
       type: Boolean,
@@ -227,7 +233,7 @@ export default {
       }
       if (this.filterable) {
         return {
-          optionFilterProp: 'children',
+          optionFilterProp: 'label',
           showSearch: true,
           filterOption: this.filterOption,
         }
@@ -239,13 +245,35 @@ export default {
     otherOpts () {
       const ret = {}
       if (this.dropdownItemWordWrap) {
-        ret.dropdownClassName = 'dropdown-item-word-wrap'
-        const { dropdownClassName = '' } = this.selectProps
-        if (dropdownClassName) {
-          ret.dropdownClassName = ret.dropdownClassName + ' ' + dropdownClassName
+        let popupClassName = 'dropdown-item-word-wrap'
+        const fromProps = this.selectProps?.popupClassName || this.selectProps?.dropdownClassName || ''
+        if (fromProps) {
+          popupClassName = popupClassName + ' ' + fromProps
         }
+        ret.popupClassName = popupClassName
       }
       return ret
+    },
+    /** 交给 a-select 的 props：剥离自管的 labelInValue，并兼容旧 dropdownClassName */
+    aSelectBindProps () {
+      const sp = { ...(this.selectProps || {}) }
+      delete sp.labelInValue
+      delete sp.labelInValueKeyName
+      const legacyDropdown = sp.dropdownClassName
+      delete sp.dropdownClassName
+      const merged = { ...sp, ...this.filterOpts, ...this.otherOpts }
+      if (!merged.popupClassName && legacyDropdown) {
+        merged.popupClassName = legacyDropdown
+      }
+      return merged
+    },
+    /** labelInValue 由 BaseSelect 自管，a-select 只吃标量 id */
+    selectDisplayValue () {
+      if (R.isNil(this.value) || this.value === '') return undefined
+      if (this.selectProps && this.selectProps.labelInValue && R.is(Object, this.value)) {
+        return this.value[this.labelInValueKeyName]
+      }
+      return this.value
     },
     loadingC () {
       if (this.selectProps && R.is(Boolean, this.selectProps.loading)) return this.selectProps.loading
@@ -313,7 +341,7 @@ export default {
   mounted () {
     if (this._valid()) this.loadOpts()
   },
-  destroyed () {
+  unmounted () {
     this.destroyedCallBack()
   },
   methods: {
@@ -342,17 +370,28 @@ export default {
       }
     },
     filterOption (input, option) {
-      let text = _.get(option, 'componentOptions.children[0].componentInstance.text')
-      if (!text) {
+      if (!option) return false
+      const keyword = String(input || '').toLowerCase()
+      // antdv4：option 为 { label, value, ... }，不再是 Vue2 VNode
+      let text = option.label
+      if (text == null || text === '') {
+        text = option.value
+      }
+      // Vue2 遗留结构兜底
+      if (text == null || text === '') {
+        text = _.get(option, 'componentOptions.children[0].componentInstance.text')
+      }
+      if (text == null || text === '') {
         const propsData = _.get(option, 'componentOptions.children[0].componentOptions.propsData')
-        const nameKey = propsData.nameKey
-        if (nameKey) {
-          text = propsData.data[nameKey]
+        if (propsData) {
+          const nameKey = propsData.nameKey || this.nameKey
+          if (nameKey && propsData.data) {
+            text = propsData.data[nameKey]
+          }
         }
       }
-      if (text) {
-        return text.toLowerCase().includes(input.toLowerCase())
-      }
+      if (text == null || text === '') return false
+      return String(text).toLowerCase().includes(keyword)
     },
     paramsChange (val, oldV, needChange = false) {
       val = del$t(val)
@@ -393,8 +432,32 @@ export default {
       this.query = undefined
     },
     change (val, isNative) {
-      const changeValue = val
-      if (R.is(Object, changeValue) && R.is(Array, changeValue.label)) { // 兼容 label-in-value 的形式
+      let changeValue = val
+      // a-select 原生 change 为标量；业务侧 labelInValue 需包装成 { key/value, label }
+      if (isNative && this.selectProps && this.selectProps.labelInValue && !R.isNil(val)) {
+        if (R.is(Object, val) && Object.prototype.hasOwnProperty.call(val, 'value')) {
+          changeValue = {
+            [this.labelInValueKeyName]: val.value,
+            label: val.label,
+          }
+        } else if (!R.is(Object, val) || Array.isArray(val)) {
+          if (Array.isArray(val)) {
+            changeValue = val.map(v => {
+              const item = this.resOpts[v]
+              return {
+                [this.labelInValueKeyName]: v,
+                label: item ? item[this.nameKey] : v,
+              }
+            })
+          } else {
+            const item = this.resOpts[val]
+            changeValue = {
+              [this.labelInValueKeyName]: val,
+              label: item ? item[this.nameKey] : val,
+            }
+          }
+        }
+      } else if (R.is(Object, changeValue) && R.is(Array, changeValue.label)) { // 兼容 label-in-value 的形式
         const data = _.get(changeValue, 'label[0].componentOptions.propsData.data')
         const nameKey = _.get(changeValue, 'label[0].componentOptions.propsData.nameKey')
         if (data && nameKey) {
@@ -412,7 +475,8 @@ export default {
         if (_.get(this.selectProps, 'mode') === 'multiple') {
           const items = []
           value.map(item => {
-            const syncValue = R.is(Object, item) ? this.resOpts[item.key] : this.resOpts[item]
+            const id = R.is(Object, item) ? item[this.labelInValueKeyName] : item
+            const syncValue = this.resOpts[id]
             if (R.is(Object, syncValue)) {
               items.push(syncValue)
             }
@@ -420,7 +484,8 @@ export default {
           this.$emit('update:items', items)
         }
         // 单选模式
-        const syncValue = R.is(Object, value) ? this.resOpts[value.key] : this.resOpts[value]
+        const id = R.is(Object, value) ? value[this.labelInValueKeyName] : value
+        const syncValue = this.resOpts[id]
         if (R.is(Object, syncValue)) {
           this.currentItem = syncValue
           this.$emit('update:item', syncValue)
@@ -431,12 +496,12 @@ export default {
       if (!R.is(Array, this.disabledItems)) return
       this.$nextTick(() => {
         R.forEachObjIndexed((value, key) => {
-          this.$set(this.resOpts[key], '__disabled', false)
+          this.resOpts[key].__disabled = false
         }, this.resOpts)
         const disabledItems = this.disabledItems || []
         disabledItems.forEach(disabledId => {
           if (R.is(Object, this.resOpts[disabledId])) {
-            this.$set(this.resOpts[disabledId], '__disabled', true)
+            this.resOpts[disabledId].__disabled = true
           }
         })
       })
@@ -707,5 +772,8 @@ export default {
   .ant-select-dropdown-menu-item {
     white-space: inherit;
   }
+}
+.base-select-sync {
+  cursor: pointer;
 }
 </style>

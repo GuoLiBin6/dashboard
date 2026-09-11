@@ -5,7 +5,7 @@
         <a-input :placeholder="$t('k8s.text_60')" v-decorator="decorators.name" />
       </a-form-item>
       <a-form-item :label="$t('k8s.text_19')">
-        <cluster-select v-decorator="decorators.cluster" @input="setCluster" :clusterObj.sync="clusterObj" />
+        <cluster-select v-decorator="decorators.cluster" @input="setCluster" v-model:clusterObj="clusterObj" />
       </a-form-item>
       <a-form-item :label="$t('k8s.text_373')">
         <base-select
@@ -23,7 +23,7 @@
         </a-radio-group>
       </a-form-item>
       <a-form-item :label="$t('k8s.text_23')" v-if="subjectType === 'ServiceAccount'">
-        <namespace-select v-decorator="decorators.namespace" :cluster="cluster" :namespaceObj.sync="namespaceObj" />
+        <namespace-select v-decorator="decorators.namespace" :cluster="cluster" v-model:namespaceObj="namespaceObj" />
       </a-form-item>
       <a-form-item label="Subject Name">
         <base-select

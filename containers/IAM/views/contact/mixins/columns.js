@@ -21,11 +21,25 @@ export default {
         showOverflow: 'ellipsis',
         minWidth: 100,
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             return [
-              <list-body-cell-wrap copy row={row} field='name' list={this.list} hideField addLock={ false } addBackup={ false }>
-                <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-              </list-body-cell-wrap>,
+              h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  row: row,
+                  field: 'name',
+                  list: this.list,
+                  hideField: true,
+                  addLock: false,
+                  addBackup: false,
+                },
+              }, [
+                h('side-page-trigger', {
+                  on: {
+                    trigger: () => this.handleOpenSidepage(row),
+                  },
+                }, row.name),
+              ]),
             ]
           },
         },

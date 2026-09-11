@@ -5,10 +5,10 @@
         <a-input :placeholder="$t('k8s.text_60')" v-decorator="decorators.name" />
       </a-form-item>
       <a-form-item :label="$t('k8s.text_19')">
-        <cluster-select v-decorator="decorators.cluster" @input="setCluster" :clusterObj.sync="clusterObj" />
+        <cluster-select v-decorator="decorators.cluster" @input="setCluster" v-model:clusterObj="clusterObj" />
       </a-form-item>
       <a-form-item :label="$t('k8s.text_23')">
-        <namespace-select v-decorator="decorators.namespace" @input="setNamespace" :cluster="cluster" :namespaceObj.sync="namespaceObj" />
+        <namespace-select v-decorator="decorators.namespace" @input="setNamespace" :cluster="cluster" v-model:namespaceObj="namespaceObj" />
       </a-form-item>
       <a-form-item :label="$t('k8s.text_389')">
         <a-radio-group v-decorator="decorators.roleRefType" @change="e => roleRefType = e.target.value">

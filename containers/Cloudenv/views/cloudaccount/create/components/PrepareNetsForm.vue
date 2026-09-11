@@ -4,10 +4,10 @@
       {{ type === 'host' ? $t('cloudenv.text_175') : $t('cloudenv.text_176') }}
     </a-divider>
     <a-alert v-if="list.length > 0" class="mb-3 mt-3" :type="allSuccess? 'success' : 'warning'" show-icon>
-      <template slot="message" v-if="type === 'host'">
+      <template #message v-if="type === 'host'">
         {{allSuccess ? $t('cloudenv.text_177') :  $t('cloudenv.text_178', [noSuitableIps.join(' 、 '), noSuitableIps.length])}}
       </template>
-      <template  slot="message" v-if="type === 'guest'">
+      <template #message v-if="type === 'guest'">
         {{allSuccess ? $t('cloudenv.text_179') : $t('cloudenv.text_180', [noSuitableIps.join(' 、 '), noSuitableIps.length]) }}
       </template>
     </a-alert>

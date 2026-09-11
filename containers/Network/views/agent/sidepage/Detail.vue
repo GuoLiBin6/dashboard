@@ -79,10 +79,19 @@ export default {
           field: 'deployment',
           title: this.$t('network.text_135'),
           slots: {
-            default: ({ row }, h) => {
+            default: () => {
+              const h = this.$createElement
               if (this.deploymentServer.id) {
                 const name = this.deploymentServer.type === 'server' ? 'VmInstanceSidePage' : 'HostSidePage'
-                return [<side-page-trigger name={name} id={this.deploymentServer.id} vm={this}>{ this.deploymentServer.name }</side-page-trigger>]
+                return [
+                  h('side-page-trigger', {
+                    props: {
+                      name,
+                      id: this.deploymentServer.id,
+                      vm: this,
+                    },
+                  }, this.deploymentServer.name),
+                ]
               }
               return '-'
             },
@@ -222,7 +231,12 @@ export default {
               slots: {
                 default: ({ row }, h) => {
                   return [
-                    <code-mirror value={ window.atob(row.params.haproxy_conf_tmpl) } options={ this.cmOptions } />,
+                    h('code-mirror', {
+                      props: {
+                        value: window.atob(row.params.haproxy_conf_tmpl),
+                        options: this.cmOptions,
+                      },
+                    }),
                   ]
                 },
               },
@@ -260,7 +274,12 @@ export default {
               slots: {
                 default: ({ row }, h) => {
                   return [
-                    <code-mirror value={ window.atob(row.params.telegraf_conf_tmpl) } options={ this.cmOptions } />,
+                    h('code-mirror', {
+                      props: {
+                        value: window.atob(row.params.telegraf_conf_tmpl),
+                        options: this.cmOptions,
+                      },
+                    }),
                   ]
                 },
               },
@@ -276,7 +295,12 @@ export default {
               slots: {
                 default: ({ row }, h) => {
                   return [
-                    <code-mirror value={ window.atob(row.params.keepalived_conf_tmpl) } options={ this.cmOptions } />,
+                    h('code-mirror', {
+                      props: {
+                        value: window.atob(row.params.keepalived_conf_tmpl),
+                        options: this.cmOptions,
+                      },
+                    }),
                   ]
                 },
               },

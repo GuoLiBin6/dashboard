@@ -1,8 +1,8 @@
 <template>
   <div>
-    <template v-for="(item, idx) of policies">
+    <template v-for="(item, idx) of policies" :key="item">
       <side-page-trigger
-        :key="item"
+
         permission="policies_get"
         name="PolicySidePage"
         :id="item"
@@ -33,7 +33,7 @@ export default {
       policies: [],
     }
   },
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {

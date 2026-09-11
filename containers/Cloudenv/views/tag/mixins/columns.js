@@ -8,14 +8,17 @@ export default {
         showOverflow: 'ellipsis',
         minWidth: 100,
         slots: {
-          default: ({ row }) => {
-            let trigger = <a onClick={() => this.handleOpenSidepage(row)}>{ row.name }</a>
-            // let trigger = <a onClick={ () => this.replaceSidePage('TagSidePage', { resId: row.id, data: row, windowData: this.windowData }) }>{ row.name }</a>
+          default: ({ row }, h) => {
+            let trigger
             if (this.$options.name !== 'TagList') {
-              trigger = <span>{ row.name }</span>
+              trigger = h('span', {}, row.name)
+            } else {
+              trigger = h('a', { on: { click: () => this.handleOpenSidepage(row) } }, row.name)
             }
             return [
-              <list-body-cell-wrap copy field='name' row={row} hideField>{ trigger }</list-body-cell-wrap>,
+              h('list-body-cell-wrap', {
+                props: { copy: true, field: 'name', row, hideField: true },
+              }, [trigger]),
             ]
           },
         },
@@ -33,8 +36,16 @@ export default {
         title: i18n.t('cloudenv.text_475'),
         width: 60,
         slots: {
-          default: ({ row }) => {
-            return [<span style={{ display: 'inline-block', backgroundColor: row.color, width: '10px', height: '10px' }} />]
+          default: ({ row }, h) => {
+            const hFn = h || this.$createElement
+            return [hFn('span', {
+              style: {
+                display: 'inline-block',
+                backgroundColor: row.color,
+                width: '10px',
+                height: '10px',
+              },
+            })]
           },
         },
       },

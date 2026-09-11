@@ -58,7 +58,7 @@ export default {
 </script>
 
 <style lang="less" scoped>
-@import "~@/styles/less/theme";
+@import "@/styles/less/theme";
 
 .open-dialog-link {
   color: @link-color;

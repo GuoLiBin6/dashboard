@@ -3,16 +3,16 @@
     destroyTooltipOnHide
     placement="bottomLeft"
     trigger="click"
-    v-model="visible"
+    v-model:open="visible"
     overlayClassName="tag-overlay"
-    @visibleChange="handleVisibleChange">
-    <template v-if="$scopedSlots.trigger">
+    @openChange="handleVisibleChange">
+    <template v-if="$slots.trigger">
       <slot name="trigger" :loading="loading" />
     </template>
     <template v-else>
       <a-button :loading="loading" @click="handleClick">{{ buttonText }}</a-button>
     </template>
-    <template slot="content">
+    <template #content>
       <div class="tag-wrap" ref="tag-wrap">
         <ul class="tag-list tag-filter-fixed">
           <!-- 过滤标签键 -->
@@ -36,7 +36,7 @@
             @click="handleKeyClick(withoutUserMetaKey, true)">
             <div class="title d-flex align-items-center">
               <div class="flex-fill mr-4 text-truncate">{{$t('common_260')}}</div>
-              <a-icon class="check-icon" type="check" />
+              <icon class="check-icon" type="check" />
             </div>
           </li>
         </ul>
@@ -48,7 +48,7 @@
             @click="handleKeyClick(withUserMetaKey, true)">
             <div class="title d-flex align-items-center">
               <div class="flex-fill mr-4 text-truncate">{{$t('common.with_user_meta')}}</div>
-              <a-icon class="check-icon" type="check" />
+              <icon class="check-icon" type="check" />
             </div>
           </li>
         </ul>
@@ -67,7 +67,7 @@
               @click="handleKeyClick(item.key)">
               <div class="title d-flex align-items-center">
                 <div class="flex-fill mr-4 text-truncate">{{ getTagTitle(item.key) }}</div>
-                <a-icon class="check-icon" type="check" />
+                <icon class="check-icon" type="check" />
               </div>
             </li>
           </template>
@@ -83,7 +83,7 @@
             @click="handleKeyClick(item.key)">
             <div class="title d-flex align-items-center">
               <div class="flex-fill mr-4 text-truncate">{{ getTagTitle(item.key) }}</div>
-              <a-icon class="check-icon" type="check" />
+              <icon class="check-icon" type="check" />
             </div>
           </li>
         </ul>
@@ -107,7 +107,7 @@
               @click="handleKeyClick(mouseenterKey, item)">
               <div class="title d-flex align-items-center">
                 <div class="flex-fill mr-4">{{ getTagValue(item) }}</div>
-                <a-icon class="check-icon" type="check" />
+                <icon class="check-icon" type="check" />
               </div>
             </li>
           </template>
@@ -322,7 +322,7 @@ export default {
       return this.pager.total === this.tagData.length && this.pager.total > this.pager.limit
     },
   },
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {

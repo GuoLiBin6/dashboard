@@ -1,6 +1,6 @@
 <template>
   <div>
-    <page-header :title="$t('compute.text_113')" :tabs="tabOptions" :current-tab.sync="curTab" />
+    <page-header :title="$t('compute.text_113')" :tabs="tabOptions" v-model:currentTab="curTab" />
     <page-body>
       <component :is="curTab" :id="listId" />
     </page-body>

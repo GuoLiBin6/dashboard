@@ -18,9 +18,12 @@ export default {
           { required: true, message: i18n.t('common.tips.input', [i18n.t('table.title.name')]) },
         ],
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{row.name}</side-page-trigger>
-          )
+          const h = this.$createElement
+          return h('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       {

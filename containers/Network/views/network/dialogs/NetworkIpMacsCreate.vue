@@ -42,6 +42,7 @@
 </template>
 
 <script>
+import { h } from 'vue'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import { Manager } from '@/utils/manager'
@@ -97,8 +98,8 @@ export default {
           slots: {
             default: ({ row }) => {
               return [
-                <div>{ this.$t('network.ip.start', [row.guest_ip_start, row.guest_ip_mask])}</div>,
-                <div>{ this.$t('network.ip.end', [row.guest_ip_end, row.guest_ip_mask])}</div>,
+                h('div', {}, this.$t('network.ip.start', [row.guest_ip_start, row.guest_ip_mask])),
+                h('div', {}, this.$t('network.ip.end', [row.guest_ip_end, row.guest_ip_mask])),
               ]
             },
           },
@@ -113,8 +114,8 @@ export default {
                 return '-'
               }
               return [
-                <div>{ this.$t('network.ip.start', [row.guest_ip6_start, row.guest_ip6_mask])}</div>,
-                <div>{ this.$t('network.ip.end', [row.guest_ip6_end, row.guest_ip6_mask])}</div>,
+                h('div', {}, this.$t('network.ip.start', [row.guest_ip6_start, row.guest_ip6_mask])),
+                h('div', {}, this.$t('network.ip.end', [row.guest_ip6_end, row.guest_ip6_mask])),
               ]
             },
           },

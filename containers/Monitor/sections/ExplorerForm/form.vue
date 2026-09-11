@@ -1,14 +1,12 @@
 <template>
-  <a-card :title="title" size="small" class="monitor-form" :class="{ 'hideBody': !panelShow }">
-    <div slot="extra">
-      <a-icon type="delete" v-if="showDelete" @click="remove" class="mr-2 remove-icon" />
-      <a-icon :type="panelShow ? 'up' : 'down'" @click="toggle" />
-    </div>
+  <a-card :title="title" size="small" class="monitor-form">
+    <template #extra>
+      <icon type="delete" v-if="showDelete" @click.stop="remove" class="mr-2 remove-icon" style="cursor: pointer;" />
+    </template>
     <a-form
-      v-show="panelShow"
       v-bind="formItemLayout"
       :form="form.fc">
-      <a-form-item :label="$t('monitor.monitor_metric')" class="mb-0">
+      <a-form-item align="top" :label="$t('monitor.monitor_metric')">
         <metric
           :form="form"
           :decorators="decorators"
@@ -18,7 +16,7 @@
           @metricChange="getMetricInfo"
           @metricClear="resetChart" />
       </a-form-item>
-      <a-form-item :label="$t('monitor.monitor_filters')">
+      <a-form-item align="top" :label="$t('monitor.monitor_filters')" class="monitor-form__filters">
         <filters
           :form="form"
           ref="filtersRef"
@@ -29,7 +27,7 @@
           :metricInfo="metricInfo"
           @tagValuesChange="tagValuesChange" />
       </a-form-item>
-      <a-form-item :label="$t('monitor.monitor_group')">
+      <a-form-item align="top" :label="$t('monitor.monitor_group')">
         <base-select
           v-decorator="decorators.group_by"
           :options="groupbyOpts"
@@ -37,24 +35,24 @@
           class="w-100"
           :select-props="{ mode: 'multiple', placeholder: $t('monitor.text_114'), allowClear: true }" />
       </a-form-item>
-      <a-form-item :label="$t('monitor.monitor_function')">
+      <a-form-item align="top" :label="$t('monitor.monitor_function')">
         <base-select
           v-decorator="decorators.function"
           :options="functionOpts"
           class="w-100"
           :select-props="{ placeholder: $t('monitor.text_115'), allowClear: allowClearGroupFunction }" />
       </a-form-item>
-      <a-form-item :label="$t('monitor.monitor_result_function')">
+      <a-form-item align="top" :label="$t('monitor.monitor_result_function')">
         <base-select
           v-decorator="decorators.result_function"
           :options="resultFunctionOpts"
           class="w-100"
           :select-props="{ placeholder: $t('monitor.text_115'), allowClear: true }" />
       </a-form-item>
-      <a-form-item v-if="form.fd.result_function === 'percentile'" :label="$t('monitor.monitor_percentile')">
+      <a-form-item align="top" v-if="form.fd.result_function === 'percentile'" :label="$t('monitor.monitor_percentile')">
         <a-input-number :min="1" :max="99" v-decorator="decorators.percentile" placeholder="1~99" />
       </a-form-item>
-      <a-form-item :label="$t('common.name')" v-if="!queryOnly">
+      <a-form-item align="top" :label="$t('common.name')" v-if="!queryOnly">
         <a-input v-decorator="decorators.name" :placeholder="$t('common.placeholder')" />
       </a-form-item>
     </a-form>
@@ -99,9 +97,6 @@ export default {
     showDelete: {
       type: Boolean,
       default: false,
-    },
-    defaultPanelShow: {
-      type: Boolean,
     },
     timeRangeParams: {
       type: Object,
@@ -230,7 +225,7 @@ export default {
         tagKey: i => [
           `tagKeys[${i}]`,
           {
-            initialValue: getkey(i, 'key', ''),
+            initialValue: getkey(i, 'key', undefined),
             rules: [
               // { required: true, message: this.$t('common.select') },
             ],
@@ -347,7 +342,6 @@ export default {
       metricInfo: {},
       metricKeyItem: {},
       mertricItem: {},
-      panelShow: this.defaultPanelShow,
       oldParams: {},
       oldResParams: {},
       metricLoading: false,
@@ -359,16 +353,10 @@ export default {
   },
   computed: {
     title () {
-      if (!this.panelShow && this.form.fd.metric_key) {
-        return this.getTitle()
-      }
       return this.$t('monitor.monitor_fill_filters')
     },
   },
   watch: {
-    defaultPanelShow (val) {
-      this.panelShow = val
-    },
     timeRangeParams () {
       this.getMeasurement()
     },
@@ -503,9 +491,6 @@ export default {
         throw error
       }
     },
-    toggle () {
-      this.panelShow = !this.panelShow
-    },
     toParams (ignoreEmit) {
       const fd = this.form.fc.getFieldsValue()
       const params = {
@@ -588,40 +573,48 @@ export default {
 @import '../../../../src/styles/less/theme';
 
 .monitor-form {
-  &.hideBody ::v-deep .ant-card-body {
-    padding: 0 !important;
-  }
   .remove-icon {
     transition: color 0.1s ease-in;
+    cursor: pointer;
     &:hover {
       color: @error-color;
     }
   }
-  // 让 label 和 wrapper 基于父元素宽度，而不是固定的 span
-  ::v-deep .ant-form-item {
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: flex-start;
+  // antdv4：label 相对右侧第一行输入框（32px）上下居中
+  :deep(.ant-form > .ant-form-item > .ant-form-item-row) {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: flex-start !important;
   }
-  ::v-deep .ant-form-item-label,
-  ::v-deep .ant-form-item-label > label {
-    width: 150px !important;
-    flex: 0 0 150px !important;
+  :deep(.ant-form > .ant-form-item > .ant-form-item-row > .ant-form-item-label) {
+    width: 108px !important;
+    flex: 0 0 108px !important;
+    max-width: 108px !important;
     padding-right: 8px;
+    padding-top: 0 !important;
+    align-self: flex-start !important;
+    display: flex !important;
+    align-items: center !important;
+    height: 32px !important;
+    max-height: 32px !important;
   }
-  // // 覆盖 Ant Design 的栅格类
-  ::v-deep .ant-col {
-    width: auto !important;
-    max-width: none !important;
+  :deep(.ant-form > .ant-form-item > .ant-form-item-row > .ant-form-item-label > label) {
+    height: 32px !important;
+    line-height: 32px !important;
+    margin: 0 !important;
+    white-space: normal;
   }
-  ::v-deep .ant-form-item-control-wrapper {
-    flex: 1 1 auto;
+  :deep(.ant-form > .ant-form-item > .ant-form-item-row > .ant-form-item-control) {
+    flex: 1 1 auto !important;
     width: auto !important;
     min-width: 0;
-    max-width: 100%;
+    max-width: none !important;
   }
-  ::v-deep .ant-form-item-control {
-    width: 100%;
+  :deep(.ant-form > .ant-form-item) {
+    margin-bottom: 16px !important;
+  }
+  :deep(.ant-form > .ant-form-item:last-child) {
+    margin-bottom: 0 !important;
   }
 }
 

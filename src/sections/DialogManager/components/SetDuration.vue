@@ -1,12 +1,12 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{action}}</div>
-    <div slot="body">
+    <template #header>{{action}}</template>
+    <template #body>
       <a-alert class="mb-2" type="warning">
-        <div slot="message">
+        <template #message>
           <!-- {{$t('common.text00059')}} <br /> -->
           {{tip}}
-        </div>
+        </template>
       </a-alert>
       <dialog-selected-tips :name="name" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
@@ -31,7 +31,7 @@
                 format="YYYY-MM-DD HH:mm"
                 :showTime="{ format: 'HH:mm' }"
                 @ok="closeDatePicker">
-                <template slot="renderExtraFooter">
+                <template #renderExtraFooter>
                   {{$t('common.text00065')}}<a-tag color="blue" style="border-radius: 10px;" :class="{ active: currentDuration === v.value }" v-for="v in durationArrs" :key="v.value" @click="chooseDurationHandle(v)">{{v.text}}</a-tag>
                   <!-- <p class="ant-calendar-ok-btn" style="position: absolute; right: 13px; top: 83px; padding: 0 8px; z-index: 999;" @click="closeDatePicker">{{$t('common.ok')}}</p> -->
                 </template>
@@ -40,11 +40,11 @@
           </div>
         </a-form-item>
       </a-form>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

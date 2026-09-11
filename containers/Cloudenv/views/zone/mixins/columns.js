@@ -12,10 +12,11 @@ export default {
         formRules: [
           { required: true, message: '请输入名称' },
         ],
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{ row.name_cn ? `${row.name}(${row.name_cn})` : row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          const hFn = h || this.$createElement
+          return hFn('side-page-trigger', {
+            on: { trigger: () => this.handleOpenSidepage(row) },
+          }, row.name_cn ? `${row.name}(${row.name_cn})` : row.name)
         },
       }),
       {

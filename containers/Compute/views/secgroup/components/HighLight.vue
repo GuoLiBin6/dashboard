@@ -2,7 +2,7 @@
   <a-tag class="oc-tag mb-2" v-html="wrapperKeyword(k, v)" />
 </template>
 
-<script>
+<script lang="jsx">
 export default {
   name: 'HighLight',
   props: {

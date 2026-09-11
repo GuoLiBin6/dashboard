@@ -1,7 +1,9 @@
 <template>
     <div>
       <a-alert class="mb-2" :type="alertType">
-        <install-agent-form slot="message" :data="data" :serverColumns="serverColumns" :isPageDestroyed="isPageDestroyed" @onInstall="handleInstallResult" />
+        <template #message>
+          <install-agent-form :data="data" :serverColumns="serverColumns" :isPageDestroyed="isPageDestroyed" @onInstall="handleInstallResult" />
+        </template>
       </a-alert>
     </div>
 </template>

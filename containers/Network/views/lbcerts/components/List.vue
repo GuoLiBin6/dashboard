@@ -189,7 +189,7 @@ export default {
 </script>
 
 <style scoped lang="less">
-@import '~@/styles/less/theme';
+@import '@/styles/less/theme';
 
 .status-dot {
   width: 8px;

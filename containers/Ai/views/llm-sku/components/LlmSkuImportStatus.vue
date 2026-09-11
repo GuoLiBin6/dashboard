@@ -72,7 +72,7 @@ export default {
       },
     },
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.stopPoll()
   },
   methods: {

@@ -3,11 +3,13 @@
     <div class="dashboard-card-wrap">
       <div class="dashboard-card-header">
         <div class="dashboard-card-header-left">
-          {{ form.fd.name || $t('dashboard.text_6') }}<a-icon class="ml-2" type="loading" v-if="loading" />
-          <span v-if="isResDeny" class="ml-2"><a-icon class="warning-color mr-1" type="warning" />{{ $t('common.permission.403') }}</span>
+          {{ form.fd.name || $t('dashboard.text_6') }}<icon class="ml-2" type="loading" v-if="loading" />
+          <span v-if="isResDeny" class="ml-2"><icon class="warning-color mr-1" type="warning" />{{ $t('common.permission.403') }}</span>
           <span v-if="isUsageKeyDeny" class="ml-2">
-            <a-tooltip class="mr-2"><template slot="title">{{ $t('dashboard.usage_key_deny_tips') }}</template><icon type="help" /></a-tooltip>
-            <a-icon class="warning-color mr-1" type="warning" />
+            <a-tooltip class="mr-2" :title="$t('dashboard.usage_key_deny_tips')">
+              <span class="dashboard-card-help"><icon type="help" /></span>
+            </a-tooltip>
+            <icon class="warning-color mr-1" type="warning" />
             {{ $t('dashboard.usage_key_deny_tips_2') }}
           </span>
         </div>
@@ -531,7 +533,7 @@ export default {
   font-weight: bold;
 }
 .ring-drawer-wrapper {
-  &::v-deep.ant-drawer.ant-drawer-open .ant-drawer-mask {
+  &:deep(.ant-drawer.ant-drawer-open .ant-drawer-mask) {
     animation: none;
   }
 }

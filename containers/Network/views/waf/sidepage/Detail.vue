@@ -43,14 +43,19 @@ export default {
           field: 'type',
           title: i18n.t('network.waf.type'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               const ret = []
               const type = this.$getI18n(`network.waf.type.${row.type}`, row.type)
-              ret.push(<div>{type}</div>)
+              ret.push(h('div', type))
               if (row.brand === 'Qcloud') {
-                ret.push(<list-body-cell-wrap hide-field copy field="cname" row={row}>
-                  <span class='text-weak'>{row.cname}</span>
-                </list-body-cell-wrap>)
+                ret.push(h('list-body-cell-wrap', {
+                  props: {
+                    hideField: true,
+                    copy: true,
+                    field: 'cname',
+                    row: row,
+                  },
+                }, [h('span', { class: 'text-weak' }, row.cname)]))
               }
               return ret
             },
@@ -71,10 +76,22 @@ export default {
           title: i18n.t('network.text_196'),
           field: 'account',
           slots: {
-            default: ({ row }) => {
-              return <list-body-cell-wrap hide-field copy field={'account'} row={row}>
-                <side-page-trigger permission='cloudaccounts_get' name='CloudaccountSidePage' id={row.account_id} vm={this}>{ row.account }</side-page-trigger>
-              </list-body-cell-wrap>
+            default: ({ row }, h) => {
+              return h('list-body-cell-wrap', {
+                props: {
+                  hideField: true,
+                  copy: true,
+                  field: 'account',
+                  row: row,
+                },
+              }, [h('side-page-trigger', {
+                props: {
+                  permission: 'cloudaccounts_get',
+                  name: 'CloudaccountSidePage',
+                  id: row.account_id,
+                  vm: this,
+                },
+              }, row.account)])
             },
           },
         },
@@ -82,10 +99,22 @@ export default {
           title: i18n.t('network.waf.manager'),
           field: 'manager',
           slots: {
-            default: ({ row }) => {
-              return <list-body-cell-wrap hide-field copy field={'manager'} row={row}>
-                <side-page-trigger permission='cloudproviders_get' name='CloudproviderSidePage' id={row.manager_id} vm={this}>{ row.account }</side-page-trigger>
-              </list-body-cell-wrap>
+            default: ({ row }, h) => {
+              return h('list-body-cell-wrap', {
+                props: {
+                  hideField: true,
+                  copy: true,
+                  field: 'manager',
+                  row: row,
+                },
+              }, [h('side-page-trigger', {
+                props: {
+                  permission: 'cloudproviders_get',
+                  name: 'CloudproviderSidePage',
+                  id: row.manager_id,
+                  vm: this,
+                },
+              }, row.account)])
             },
           },
         },
@@ -98,13 +127,13 @@ export default {
               field: 'port',
               title: this.$t('network.protocol_port'),
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   const ret = []
                   if (row.http_ports && row.http_ports.length) {
-                    ret.push(<div class="mb-2"><a-tag color='blue'>HTTP: { row.http_ports.join('、') }</a-tag></div>)
+                    ret.push(h('div', { class: 'mb-2' }, [h('a-tag', { attrs: { color: 'blue' } }, `HTTP: ${row.http_ports.join('、')}`)]))
                   }
                   if (row.https_ports && row.https_ports.length) {
-                    ret.push(<div><a-tag color='blue'>HTTPS: { row.https_ports.join('、') }</a-tag></div>)
+                    ret.push(h('div', [h('a-tag', { attrs: { color: 'blue' } }, `HTTPS: ${row.https_ports.join('、')}`)]))
                   }
                   return ret.length ? ret : '-'
                 },
@@ -114,13 +143,18 @@ export default {
               field: 'source_ips',
               title: this.$t('network.source_ips'),
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   if (row.source_ips && row.source_ips.length) {
                     const ret = []
                     row.source_ips.map(item => {
-                      ret.push(<list-body-cell-wrap hide-field copy field="ip" row={{ ip: item }}>
-                        <span>{item}</span>
-                      </list-body-cell-wrap>)
+                      ret.push(h('list-body-cell-wrap', {
+                        props: {
+                          hideField: true,
+                          copy: true,
+                          field: 'ip',
+                          row: { ip: item },
+                        },
+                      }, [h('span', item)]))
                     })
                     return ret
                   }
@@ -146,13 +180,18 @@ export default {
               field: 'cc_list',
               title: this.$t('network.waf.source_site_address'),
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   if (row.cc_list && row.cc_list.length) {
                     const ret = []
                     row.cc_list.map(item => {
-                      ret.push(<list-body-cell-wrap hide-field copy field="ip" row={{ ip: item }}>
-                        <span>{item}</span>
-                      </list-body-cell-wrap>)
+                      ret.push(h('list-body-cell-wrap', {
+                        props: {
+                          hideField: true,
+                          copy: true,
+                          field: 'ip',
+                          row: { ip: item },
+                        },
+                      }, [h('span', item)]))
                     })
                     return ret
                   }

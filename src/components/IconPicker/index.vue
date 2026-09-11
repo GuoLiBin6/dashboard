@@ -1,10 +1,10 @@
 <template>
   <div>
-    <a-popover :trigger="trigger" placement="bottomLeft" v-model="visible">
+    <a-popover :trigger="trigger" placement="bottomLeft" v-model:open="visible">
       <div class="icon-content">
-        <icon :type="value ? value : options[0].type" class="dashboard-icon" />
+        <icon preserveColor :type="value ? value : options[0].type" class="dashboard-icon" />
       </div>
-      <template slot="content">
+      <template #content>
         <div class="icon-box">
           <div
             v-for="(item, index) in iconArr"
@@ -12,7 +12,7 @@
             @click="handleClick(item)"
             class="icon-content"
             :style="{ borderColor: activeIcon === item.type ? '#268961' : ''}">
-            <icon :type="item.type" class="dashboard-icon" />
+            <icon preserveColor :type="item.type" class="dashboard-icon" />
           </div>
         </div>
       </template>
@@ -85,7 +85,7 @@ export default {
 </script>
 
 <style lang="less" scoped>
-  @import '~@/styles/less/theme';
+  @import '@/styles/less/theme';
   .icon-box{
     overflow: auto;
     font-size: 20px;

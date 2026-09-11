@@ -7,7 +7,7 @@ export default {
         this.$refs.list.destroySidePages()
       }
     })
-    this.$store.commit('keepAlive/clearDelayEvent')
+    this.$store.commit('keepAlive/CLEAR_DELAY_EVENTS')
   },
   activated () {
     this.emitKeepAliveDelayEvents(['ResourceListSingleRefresh'])
@@ -36,7 +36,7 @@ export default {
           } else {
             this.$bus.$emit(eventName, stateEventNames[eventName].params)
           }
-          this.$store.commit('keepAlive/removeDelayEvent', eventName)
+          this.$store.commit('keepAlive/DELETE_DELAY_EVENT', eventName)
         }
       })
     },

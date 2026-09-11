@@ -9,7 +9,7 @@
     resource="llm_skus" />
 </template>
 
-<script>
+<script lang="jsx">
 import { parseLlmRoute } from '@Ai/utils/llmRouteContext'
 import { fetchHostNameMap } from '@Ai/utils/hostNames'
 import WindowsMixin from '@/mixins/windows'

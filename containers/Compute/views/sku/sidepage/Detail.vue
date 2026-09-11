@@ -58,9 +58,15 @@ export default {
           field: 'total_guest_count',
           title: this.$t('compute.text_699', [this.$t('dictionary.server')]),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (row.total_guest_count <= 0) return row.total_guest_count
-              return [<a onClick={ () => this.$emit('tab-change', 'vminstance-list') }>{ row.total_guest_count }</a>]
+              return [
+                h('a', {
+                  on: {
+                    click: () => this.$emit('tab-change', 'vminstance-list'),
+                  },
+                }, row.total_guest_count),
+              ]
             },
           },
         },

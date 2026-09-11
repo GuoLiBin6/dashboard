@@ -55,7 +55,7 @@ export default {
     },
   },
   mounted () {},
-  beforeDestroy () {
+  beforeUnmount () {
     const editor = this.editor
     if (editor === null) return
     editor.destroy()

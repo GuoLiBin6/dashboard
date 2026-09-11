@@ -1,12 +1,14 @@
 <template>
   <div style="display: inline;">
     <a-tooltip placement="top">
-      <template slot="title" v-show="tooltips && lastSync !== ''">
+      <template #title v-if="tooltips && lastSync !== ''">
         <span>{{ $t('refresh.last_sync_at', [lastSync]) }}</span>
       </template>
-      <a-button style="width: 45px;padding-left: 15px;padding-right: 15px;" :icon="loading ? 'loading':'sync'" @click="emitRefresh" />
+      <a-button style="width: 45px;padding-left: 15px;padding-right: 15px;" @click="emitRefresh">
+        <icon type="sync" :spin="loading" />
+      </a-button>
     </a-tooltip>
-    <a-select v-if="showSelect" v-model="syncConfig.duration" @change="handleChange" style="width: 90px">
+    <a-select v-if="showSelect" v-model:value="syncConfig.duration" @change="handleChange" style="width: 90px">
       <a-select-option :dropdownMatchSelectWidth="false" v-for="d of durations" :key="d.label" :value="d.value">
         {{ d.label }}
       </a-select-option>
@@ -69,7 +71,7 @@ export default {
       },
     }
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.cancelAutoRefresh()
   },
   methods: {

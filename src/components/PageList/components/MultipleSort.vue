@@ -1,7 +1,7 @@
 <template>
   <span class="sort-wrapper">
-    <template v-for="(item, index) in sortOpts">
-      <div :key="index" class="sort-box">
+    <template v-for="(item, index) in sortOpts" :key="index">
+      <div class="sort-box">
         <div class="sort-up-wrapper" :title="$t('common.sort_asc', [index + 1])" @click="handleSortClick(item, 'asc', item.checked && item.order === 'asc')">
           <div class="sort-up-box">
             <div :class="{'sort-up': true, 'active-sort': item.checked && item.order === 'asc'}" />
@@ -13,7 +13,7 @@
           </div>
         </div>
       </div>
-      <div v-if="sortOpts[index + 1]" class="split" :key="'split' + index" />
+      <div v-if="sortOpts[index + 1]" class="split" />
     </template>
   </span>
 </template>

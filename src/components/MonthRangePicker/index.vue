@@ -1,104 +1,97 @@
 <template>
-  <div style="position: relative" @click="handleClick">
+  <div class="oc-month-range" @click="handleClick">
     <a-range-picker
-      v-model="value"
+      class="oc-month-range__input"
+      :value="dayjsValue"
+      picker="month"
       format="YYYY-MM"
+      :allowClear="false"
       :open="false"
-      :mode="['month', 'month']"
+      :inputReadOnly="true"
       @openChange="showPanel" />
-    <!-- <transion name="fade"> -->
-    <div v-if="visible" ref="panel" style="position:absolute;left:0px;top:0px;z-index:100;height:500px">
-      <div class="ant-calendar-picker-container ant-calendar-picker-container-placement-bottomLeft">
-        <div class="ant-calendar ant-calendar-range ant-calendar-picker-container-content">
-          <div class="ant-calendar-panel">
-            <div class="ant-calendar-date-panel">
-              <div class="ant-calender-input-wrap">
-                <div class="ant-calender-date-input-wrap d-flex align-items-center">
-                  <input v-model="textLeft" type="text" class="ant-calender-input" style="width:150px" />
-                  <span class="ml-2 mr-2">~</span>
-                  <input v-model="textRight" type="text" class="ant-calender-input" />
-                </div>
-              </div>
-              <div class="ant-calendar-range-part ant-calendar-range-left">
-                <div style="outline:none">
-                  <div class="ant-calendar-month-panel-header">
-                    <div style="position: relative;">
-                      <a role="button" :title="$t('common_custom_date.prev_year')" class="ant-calendar-month-panel-prev-year-btn" @click="handleYearChange('currentLeftYear', -1)" />
-                      <span class="ant-calendar-month-panel-year-select-current">{{ currentLeftYear }}</span>
-                      <a v-if="currentRightYear - currentLeftYear > 1" role="button" :title="$t('common_custom_date.next_year')" class="ant-calendar-month-panel-next-year-btn" @click="handleYearChange('currentLeftYear', 1)" />
-                    </div>
-                  </div>
-                  <div class="ant-calendar-month-panel-body">
-                    <table cellspacing="0" role="grid" class="ant-calendar-month-panel-table">
-                      <tbody class="ant-calendar-month-panel-tbody">
-                        <tr role="row" v-for="(row, index) in panelOpts.left" :key="index">
-                          <td
-                            v-for="(item, index2) in row" role="gridcell"
-                            :key="`${index}-${index2}`"
-                            :title="item.label"
-                            :class="{
-                              'ant-calendar-month-panel-cell': true,
-                              'ant-calendar-month-panel-selected-cell': selected.includes(item.value) || item.showSelectedShadow,
-                              'ant-calendar-month-in-range-cell': item.showShadow,
-                            }">
-                            <a
-                              class="ant-calendar-month-panel-month"
-                              @click="(e) => handleMonthClick(e, item.value)"
-                              @mouseover="handleMonthOver(item.value)">
-                              {{ item.label }}
-                            </a>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
-              <div class="ant-calendar-range-part ant-calendar-range-right">
-                <div style="outline:none">
-                  <div class="ant-calendar-header">
-                    <div style="position: relative;">
-                      <a v-if="currentRightYear - currentLeftYear > 1" role="button" :title="$t('common_custom_date.prev_year')" class="ant-calendar-month-panel-prev-year-btn" @click="handleYearChange('currentRightYear', -1)" />
-                      <span class="ant-calendar-month-panel-year-select-current">{{ currentRightYear }}</span>
-                      <a role="button" :title="$t('common_custom_date.next_year')" class="ant-calendar-month-panel-next-year-btn" @click="handleYearChange('currentRightYear', 1)" />
-                    </div>
-                  </div>
-                  <div class="ant-calendar-body">
-                    <table cellspacing="0" role="grid" class="ant-calendar-month-panel-table">
-                      <tbody class="ant-calendar-month-panel-tbody">
-                        <tr role="row" v-for="(row, index) in panelOpts.right" :key="index">
-                          <td
-                            v-for="(item, index2) in row" role="gridcell"
-                            :key="`${index}-${index2}`"
-                            :title="item.label"
-                            :class="{
-                              'ant-calendar-month-panel-cell': true,
-                              'ant-calendar-month-panel-selected-cell': selected.includes(item.value) || item.showSelectedShadow,
-                              'ant-calendar-month-in-range-cell': item.showShadow,
-                            }">
-                            <a
-                              class="ant-calendar-month-panel-month"
-                              @click="(e) => handleMonthClick(e, item.value)"
-                              @mouseover="handleMonthOver(item.value)">
-                              {{ item.label }}
-                            </a>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
-              </div>
+    <div
+      v-if="visible"
+      ref="panel"
+      class="oc-month-range__dropdown"
+      @click.stop>
+      <div class="oc-month-range__inputs">
+        <input v-model="textLeft" type="text" class="oc-month-range__text" />
+        <span class="oc-month-range__sep">~</span>
+        <input v-model="textRight" type="text" class="oc-month-range__text" />
+      </div>
+      <div class="oc-month-range__panels">
+        <div class="oc-month-range__part">
+          <div class="oc-month-range__header">
+            <a class="oc-month-range__nav oc-month-range__nav--prev" :title="$t('common_custom_date.prev_year')" @click="handleYearChange('currentLeftYear', -1)" />
+            <span class="oc-month-range__year">{{ currentLeftYear }}</span>
+            <a
+              v-if="currentRightYear - currentLeftYear > 1"
+              class="oc-month-range__nav oc-month-range__nav--next"
+              :title="$t('common_custom_date.next_year')"
+              @click="handleYearChange('currentLeftYear', 1)" />
+          </div>
+          <div class="oc-month-range__body">
+            <div
+              v-for="item in flatMonths.left"
+              :key="`l-${item.value}`"
+              class="oc-month-range__cell"
+              :class="{
+                'is-selected': selected.includes(item.value) || item.showSelectedShadow,
+                'is-in-range': item.showShadow,
+              }">
+              <a
+                class="oc-month-range__month"
+                @click="(e) => handleMonthClick(e, item.value)"
+                @mouseover="handleMonthOver(item.value)">
+                {{ item.label }}
+              </a>
+            </div>
+          </div>
+        </div>
+        <div class="oc-month-range__part">
+          <div class="oc-month-range__header">
+            <a
+              v-if="currentRightYear - currentLeftYear > 1"
+              class="oc-month-range__nav oc-month-range__nav--prev"
+              :title="$t('common_custom_date.prev_year')"
+              @click="handleYearChange('currentRightYear', -1)" />
+            <span class="oc-month-range__year">{{ currentRightYear }}</span>
+            <a class="oc-month-range__nav oc-month-range__nav--next" :title="$t('common_custom_date.next_year')" @click="handleYearChange('currentRightYear', 1)" />
+          </div>
+          <div class="oc-month-range__body">
+            <div
+              v-for="item in flatMonths.right"
+              :key="`r-${item.value}`"
+              class="oc-month-range__cell"
+              :class="{
+                'is-selected': selected.includes(item.value) || item.showSelectedShadow,
+                'is-in-range': item.showShadow,
+              }">
+              <a
+                class="oc-month-range__month"
+                @click="(e) => handleMonthClick(e, item.value)"
+                @mouseover="handleMonthOver(item.value)">
+                {{ item.label }}
+              </a>
             </div>
           </div>
         </div>
       </div>
     </div>
-    <!-- </transion> -->
   </div>
 </template>
 
 <script>
+import dayjs from '@/utils/dayjs'
+
+function toDayjs (val) {
+  if (val == null || val === '') return null
+  if (dayjs.isDayjs(val)) return val
+  if (val && typeof val.toDate === 'function') return dayjs(val.toDate())
+  const d = dayjs(val)
+  return d.isValid() ? d : null
+}
+
 export default {
   name: 'MonthRangePicker',
   model: {
@@ -129,7 +122,6 @@ export default {
       visible: false,
       currentLeftYear,
       currentRightYear,
-      showValue: [value1, value2],
       selected: [value1, value2],
       changeIndex: 0,
       hoverValue: null,
@@ -138,37 +130,32 @@ export default {
     }
   },
   computed: {
-    panelOpts () {
-      const ret = { left: [], right: [] }
-      let start = 1
-      for (let i = 1; i <= 4; i++) {
-        const leftRow = []
-        const rightRow = []
-        for (let j = 1; j <= 3; j++) {
-          const left = {
+    dayjsValue () {
+      if (!this.value || this.value.length !== 2) return [null, null]
+      return [toDayjs(this.value[0]), toDayjs(this.value[1])]
+    },
+    flatMonths () {
+      const build = (year) => {
+        const list = []
+        for (let start = 1; start <= 12; start++) {
+          const value = parseInt(this.$moment(`${year}-${start < 10 ? '0' : ''}${start}`).format('YYYYMM'))
+          list.push({
             label: this.$t(`common_custom_date.month.${start}`),
-            value: parseInt(this.$moment(`${this.currentLeftYear}-${start < 10 ? '0' : ''}${start}`).format('YYYYMM')),
-          }
-          const right = {
-            label: this.$t(`common_custom_date.month.${start}`),
-            value: parseInt(this.$moment(`${this.currentRightYear}-${start < 10 ? '0' : ''}${start}`).format('YYYYMM')),
-          }
-          left.showShadow = this.getShadowShow(left.value)
-          right.showShadow = this.getShadowShow(right.value)
-          left.showSelectedShadow = this.getSelectedShadowShow(left.value)
-          right.showSelectedShadow = this.getSelectedShadowShow(right.value)
-          leftRow.push(left)
-          rightRow.push(right)
-          start++
+            value,
+            showShadow: this.getShadowShow(value),
+            showSelectedShadow: this.getSelectedShadowShow(value),
+          })
         }
-        ret.left.push(leftRow)
-        ret.right.push(rightRow)
+        return list
       }
-      return ret
+      return {
+        left: build(this.currentLeftYear),
+        right: build(this.currentRightYear),
+      }
     },
     selectedMoment () {
-      const left = String(this.selected[0] || this.value1)
-      const right = String(this.selected[1] || this.value2)
+      const left = String(this.selected[0] || '')
+      const right = String(this.selected[1] || '')
       if (left.length && right.length) {
         return [this.$moment(`${left.slice(0, 4)}-${left.slice(4)}`), this.$moment(`${right.slice(0, 4)}-${right.slice(4)}`)]
       }
@@ -196,8 +183,8 @@ export default {
     },
   },
   created () {
-    this.$bus.$on('app-action', function (e) {
-      if (this.visible && this.$refs.panel && !this.$refs.panel.contains) {
+    this.$bus.$on('app-action', (e) => {
+      if (this.visible && this.$refs.panel && e && e.target && !this.$refs.panel.contains(e.target)) {
         this.visible = false
       }
     })
@@ -216,12 +203,9 @@ export default {
       return false
     },
     getSelectedShadowShow (value) {
-      if (this.hoverValue && value === this.hoverValue) {
-        return true
-      }
-      return false
+      return !!(this.hoverValue && value === this.hoverValue)
     },
-    showPanel (e) {
+    showPanel () {
       this.visible = true
     },
     hiddenPanel () {
@@ -239,27 +223,22 @@ export default {
       if (this.changeIndex === 0) {
         this.selected = [value, null]
         this.changeIndex = 1
-        if (!this.textLeft) {
-          const left = String(this.selected[0])
-          this.textLeft = `${left.slice(0, 4)}-${left.slice(4)}`
-        }
+        const left = String(this.selected[0])
+        this.textLeft = `${left.slice(0, 4)}-${left.slice(4)}`
       } else {
         if (this.selected[0] > value) {
           this.selected = [value, this.selected[0]]
         } else {
           this.selected = [this.selected[0], value]
         }
-        if (!this.textRight || !this.textLeft) {
-          const left = String(this.selected[0])
-          const right = String(this.selected[1])
-          this.textLeft = `${left.slice(0, 4)}-${left.slice(4)}`
-          this.textRight = `${right.slice(0, 4)}-${right.slice(4)}`
-        }
+        const left = String(this.selected[0])
+        const right = String(this.selected[1])
+        this.textLeft = `${left.slice(0, 4)}-${left.slice(4)}`
+        this.textRight = `${right.slice(0, 4)}-${right.slice(4)}`
         this.changeIndex = 0
-        const that = this
         this.$nextTick(() => {
           this.$emit('change', this.selectedMoment)
-          that.visible = false
+          this.visible = false
         })
       }
       this.hoverValue = null
@@ -272,161 +251,202 @@ export default {
       if (this.selected[0] && this.selected[1]) return
       this.hoverValue = value
     },
-    handleMonthOut (value) {
-      this.hoverValue = null
-    },
   },
 }
 </script>
 
 <style lang="less" scoped>
-
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 5s;
-}
-.fade-enter, .fade-leave-to {
-  opacity: 0;
-}
-.ant-calendar-picker-container {
-  border-radius: 4px;
-}
-.ant-calendar-month-panel-prev-year-btn {
-  position: absolute;
-  left: 10px;
-  padding: 0 5px;
-  color: rgba(0,0,0,.45);
-  font-size: 16px;
-  font-family: Arial,Hiragino Sans GB,Microsoft Yahei,"Microsoft Sans Serif",sans-serif;
-  line-height: 40px;
-}
-.ant-calendar-month-panel-next-year-btn {
-  position: absolute;
-  right: 10px;
-  padding: 0 5px;
-  color: rgba(0,0,0,.45);
-  font-size: 16px;
-  font-family: Arial,Hiragino Sans GB,Microsoft Yahei,"Microsoft Sans Serif",sans-serif;
-  line-height: 40px;
-}
-.ant-calendar-month-panel-prev-year-btn:before {
-    position: relative;
-    top: -1px;
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    vertical-align: middle;
-    border: 0 solid #aaa;
-    border-width: 1.5px 0 0 1.5px;
-    border-radius: 1px;
-    transform: rotate(-45deg) scale(.8);
-    transition: all .3s;
-    content: "";
-}
-
-.ant-calendar-month-panel-prev-year-btn:after {
-    // display: none;
-    position: relative;
-    left: -3px;
-    display: inline-block;
-    position: relative;
-    top: -1px;
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    vertical-align: middle;
-    border: 0 solid #aaa;
-    border-width: 1.5px 0 0 1.5px;
-    border-radius: 1px;
-    transform: rotate(-45deg) scale(.8);
-    transition: all .3s;
-    content: "";
-}
-
-.ant-calendar-month-panel-next-year-btn:before {
-    position: relative;
-    left: 3px;
-    position: relative;
-    top: -1px;
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    vertical-align: middle;
-    border: 0 solid #aaa;
-    border-width: 1.5px 0 0 1.5px;
-    border-radius: 1px;
-    transform: rotate(135deg) scale(.8);
-    transition: all .3s;
-    content: "";
-}
-
-.ant-calendar-month-panel-next-year-btn:after {
-    display: inline-block;
-    position: relative;
-    // left: -3px;
-    display: inline-block;
-    position: relative;
-    top: -1px;
-    display: inline-block;
-    width: 8px;
-    height: 8px;
-    vertical-align: middle;
-    border: 0 solid #aaa;
-    border-width: 1.5px 0 0 1.5px;
-    border-radius: 1px;
-    transform: rotate(135deg) scale(.8);
-    transition: all .3s;
-    content: "";
-}
-// .ant-calendar-month-panel-year-select-current {
-//     display: inline-block;
-//     padding: 0 2px;
-//     color: rgba(0,0,0,.85);
-//     font-weight: 500;
-//     line-height: 40px;
-// }
-
-.ant-calendar-month-panel-cell {
+.oc-month-range {
   position: relative;
+  width: 100%;
 }
-.ant-calendar-month-in-range-cell::before {
+
+.oc-month-range__input {
+  width: 100%;
+  min-width: 240px;
+}
+
+.oc-month-range__dropdown {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 4px);
+  z-index: 1050;
+  width: 552px;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+}
+
+.oc-month-range__inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.oc-month-range__text {
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  outline: none;
+  color: rgba(0, 0, 0, 0.65);
+  font-size: 14px;
+  line-height: 24px;
+  background: transparent;
+}
+
+.oc-month-range__sep {
+  flex: none;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.oc-month-range__panels {
+  display: flex;
+  width: 100%;
+}
+
+.oc-month-range__part {
+  flex: 1 1 50%;
+  width: 50%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.oc-month-range__part + .oc-month-range__part {
+  border-left: 1px solid #f0f0f0;
+}
+
+.oc-month-range__header {
+  position: relative;
+  height: 40px;
+  line-height: 40px;
+  text-align: center;
+  user-select: none;
+}
+
+.oc-month-range__year {
+  display: inline-block;
+  color: rgba(0, 0, 0, 0.85);
+  font-weight: 500;
+}
+
+.oc-month-range__nav {
+  position: absolute;
+  top: 0;
+  width: 28px;
+  height: 40px;
+  color: rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+
+  &::before,
+  &::after {
     position: absolute;
-    top: 12px;
-    right: 0;
-    bottom: 12px;
-    left: 0;
-    display: block;
-    background: #e6f7ff;
-    border: 0;
-    border-radius: 0;
-    content: "";
+    top: 50%;
+    width: 8px;
+    height: 8px;
+    margin-top: -5px;
+    border: 0 solid #aaa;
+    border-width: 1.5px 0 0 1.5px;
+    border-radius: 1px;
+    content: '';
+  }
+
+  &:hover::before,
+  &:hover::after {
+    border-color: rgba(0, 0, 0, 0.65);
+  }
 }
-.ant-calendar-month-panel-month {
+
+.oc-month-range__nav--prev {
+  left: 4px;
+
+  &::before,
+  &::after {
+    transform: rotate(-45deg) scale(0.8);
+  }
+
+  &::before {
+    left: 10px;
+  }
+
+  &::after {
+    left: 15px;
+  }
+}
+
+.oc-month-range__nav--next {
+  right: 4px;
+
+  &::before,
+  &::after {
+    transform: rotate(135deg) scale(0.8);
+  }
+
+  &::before {
+    right: 15px;
+  }
+
+  &::after {
+    right: 10px;
+  }
+}
+
+.oc-month-range__body {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  height: 208px;
+  padding: 8px;
+  border-top: 1px solid #f0f0f0;
+  box-sizing: border-box;
+}
+
+.oc-month-range__cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.oc-month-range__cell.is-in-range::before {
+  position: absolute;
+  top: 8px;
+  right: 0;
+  bottom: 8px;
+  left: 0;
+  background: color-mix(in srgb, var(--ant-color-primary, #1890ff) 10%, transparent);
+  content: '';
+}
+
+.oc-month-range__month {
   position: relative;
   z-index: 1;
+  display: inline-block;
+  min-width: 48px;
+  height: 24px;
+  padding: 0 8px;
+  color: rgba(0, 0, 0, 0.65);
+  line-height: 24px;
+  text-align: center;
+  border-radius: 2px;
+  transition: background 0.2s ease;
 }
-.ant-calender-input-wrap {
-  border-bottom: 1px solid #e8e8e8;
-  padding: 6px 10px;
+
+.oc-month-range__month:hover {
+  background: color-mix(in srgb, var(--ant-color-primary, #1890ff) 10%, transparent);
+  cursor: pointer;
 }
-.ant-calender-input {
-    position: relative;
-    display: inline-block;
-    width: 100%;
-    height: 32px;
-    color: rgba(0,0,0,.65);
-    font-size: 14px;
-    line-height: 1.5;
-    background-color: #fff;
-    background-image: none;
-    border-radius: 4px;
-    transition: all .3s;
-    height: 24px;
-    padding: 4px 0;
-    line-height: 24px;
-    border: 0;
-    box-shadow: none;
+
+.oc-month-range__cell.is-selected .oc-month-range__month {
+  color: #fff;
+  background: var(--ant-color-primary, #1890ff);
 }
-.ant-calender-input:focus {
-  outline: none;
+
+.oc-month-range__cell.is-selected .oc-month-range__month:hover {
+  color: #fff;
+  background: var(--ant-color-primary, #1890ff);
 }
 </style>

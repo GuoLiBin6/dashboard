@@ -17,7 +17,7 @@
       <a-pagination
         class="my-3 text-center"
         showSizeChanger
-        :pageSize.sync="list.limit"
+        v-model:pageSize="list.limit"
         :total="list.total"
         @change="pageChange"
         @showSizeChange="sizeChange"

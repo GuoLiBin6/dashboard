@@ -10,6 +10,10 @@ module.exports = {
   parserOptions: {
     parser: 'babel-eslint',
   },
+  // Vue3 render / JSX 兼容：部分文件仍直接使用 h，未从 'vue' 显式导入
+  globals: {
+    h: 'readonly',
+  },
   rules: {
     'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
     'no-debugger': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
@@ -67,6 +71,21 @@ module.exports = {
     }],
     'no-useless-catch': 0,
     'no-prototype-builtins': 0,
+    // Vue3：允许 v-model:value / v-model:open 等带参数写法（plugin-vue@6 仍按 Vue2 校验）
+    'vue/valid-v-model': 'off',
+    // Vue3：key 应写在 <template v-for> 上；plugin-vue@6 仍按 Vue2 禁止并要求子节点带 key
+    'vue/no-template-key': 'off',
+    'vue/require-v-for-key': 'off',
+    'vue/valid-v-for': 'off',
+    // Vue3：多根节点 / <template> 作为根；plugin-vue@6 仍按 Vue2 单根校验
+    'vue/valid-template-root': 'off',
+    // Vue3 可选链调用 this.foo?.() 会被误判为 unused expression
+    'no-unused-expressions': 'off',
+    // 迁移期内部状态字段（_debounced* / _resizeState 等）
+    'vue/no-reserved-keys': 'off',
+    'no-void': 'off',
+    // 同源 svg 多别名导入（如 huawei / hcs）
+    'import/no-duplicates': 'off',
   },
   overrides: [
     {

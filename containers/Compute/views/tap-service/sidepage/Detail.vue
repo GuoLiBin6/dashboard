@@ -46,10 +46,25 @@ export default {
           title: this.$t('compute.target_name'),
           field: 'target',
           slots: {
-            default: ({ row }) => {
-              return <list-body-cell-wrap copy row={ row } field='target' title={ row.target } hideField={ true }>
-                <side-page-trigger permission={row.type === 'host' ? 'hosts_get' : 'server_get'} name={row.type === 'host' ? 'HostSidePage' : 'VmInstanceSidePage'} id={row.target_id} vm={this}>{ row.target }</side-page-trigger>
-              </list-body-cell-wrap>
+            default: ({ row }, h) => {
+              return h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  row: row,
+                  field: 'target',
+                  title: row.target,
+                  hideField: true,
+                },
+              }, [
+                h('side-page-trigger', {
+                  props: {
+                    permission: row.type === 'host' ? 'hosts_get' : 'server_get',
+                    name: row.type === 'host' ? 'HostSidePage' : 'VmInstanceSidePage',
+                    id: row.target_id,
+                    vm: this,
+                  },
+                }, row.target),
+              ])
             },
           },
         },
@@ -57,11 +72,18 @@ export default {
           title: this.$t('compute.target_ip'),
           field: 'target_ips',
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               const { target_ips = '' } = row
               const ips = target_ips.split(',')
               return ips.map(ip => {
-                return <list-body-cell-wrap copy field='ip' row={{ ip }} title={ip} />
+                return h('list-body-cell-wrap', {
+                  props: {
+                    copy: true,
+                    field: 'ip',
+                    row: { ip },
+                    title: ip,
+                  },
+                })
               })
             },
           },

@@ -3,7 +3,7 @@
     <div slot="header">{{action}}</div>
     <div slot="body">
       <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])" class="mb-0">
+        <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])">
           <domain-project
             :fc="form.fc"
             :form-layout="formLayout"

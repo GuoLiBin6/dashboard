@@ -1,7 +1,7 @@
 <template>
   <a-button :disabled="disabled || loading" @click="refresh">
-    <a-icon v-if="loading" type="sync" spin />
-    <a-icon v-else type="sync" />
+    <icon v-if="loading" type="sync" spin />
+    <icon v-else type="sync" />
   </a-button>
 </template>
 

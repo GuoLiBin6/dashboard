@@ -17,7 +17,13 @@ export default {
               text = row.ip6_addr
             }
             return [
-              <list-body-cell-wrap row={{ text: text }} field="text" copy />,
+              h('list-body-cell-wrap', {
+                props: {
+                  row: { text },
+                  field: 'text',
+                  copy: true,
+                },
+              }),
             ]
           },
         },

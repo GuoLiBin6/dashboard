@@ -3,7 +3,7 @@
     <page-header
       :title="$t('aice.aiproxy.usage.title')"
       :tabs="tabs"
-      :currentTab.sync="currentTab" />
+      v-model:currentTab="currentTab" />
     <page-body>
       <filter-bar
         v-if="currentTab !== 'events'"

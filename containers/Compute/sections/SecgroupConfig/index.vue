@@ -280,7 +280,7 @@ export default {
   mounted () {
     this.bindNetworkTagInputKeydown()
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.unbindNetworkTagInputKeydown()
   },
   methods: {

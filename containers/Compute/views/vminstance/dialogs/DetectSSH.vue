@@ -11,7 +11,7 @@
   </base-dialog>
 </template>
 
-<script>
+<script lang="jsx">
 import {
   getStatusTableColumn,
 } from '@/utils/common/tableColumn'

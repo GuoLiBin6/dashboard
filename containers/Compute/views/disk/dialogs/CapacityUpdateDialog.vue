@@ -16,7 +16,7 @@
       <dialog-selected-tips :count="params.data.length" :action="$t('compute.disk_perform_resize')" :name="$t('dictionary.disk')" />
       <div class="d-flex mt-1 mb-2" v-if="listData.length > 1">
         <span style="width: 100px;">{{$t('compute.resize_same_capacity')}}:</span>
-        <a-switch v-model="showSingleForm" />
+        <a-switch v-model:value="showSingleForm" />
       </div>
       <dialog-table :data="listData" :columns="columns" :vxe-grid-props="vxeGridProps" />
       <a-form
@@ -37,6 +37,7 @@
 
 <script>
 import * as R from 'ramda'
+import { h } from 'vue'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 
@@ -97,7 +98,14 @@ export default {
             slots: {
               default: ({ row }) => {
                 const size = parseInt(row.size + '')
-                return [<span><span>{size && size >= this.params.data[0].disk_size / 1024 ? size : (this.params.data[0].disk_size / 1024 || 1)}G</span> <i class="vxe-icon--edit-outline"></i></span>]
+                const showSize = size && size >= this.params.data[0].disk_size / 1024 ? size : (this.params.data[0].disk_size / 1024 || 1)
+                return [
+                  h('span', {}, [
+                    h('span', {}, `${showSize}G`),
+                    ' ',
+                    h('i', { class: 'vxe-icon--edit-outline' }),
+                  ]),
+                ]
               },
             },
           }]

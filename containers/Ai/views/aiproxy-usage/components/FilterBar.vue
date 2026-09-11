@@ -60,7 +60,7 @@ export default {
     this.manager = new this.$Manager('ai_proxy_usage', 'v2')
     this.initFilterOptions()
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.manager = null
   },
   methods: {

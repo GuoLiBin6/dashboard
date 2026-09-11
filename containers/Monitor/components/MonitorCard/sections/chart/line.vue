@@ -28,7 +28,7 @@ export default {
       default: 'overview-line',
     },
     isHistogram: {
-      type: String,
+      type: Boolean,
       default: false,
     },
     loading: {
@@ -79,7 +79,7 @@ export default {
       }
     },
     predictExcelData () {
-      if (this.seriesArr.length) {
+      if (this.seriesArr && this.seriesArr.length) {
         const dataList = []
         const dataMap = {}
         this.seriesArr.map(item => {

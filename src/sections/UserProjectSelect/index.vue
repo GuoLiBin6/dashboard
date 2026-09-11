@@ -2,11 +2,10 @@
   <div>
     <a-alert banner :message="$t('common_274', [this.$t('dictionary.project')])" />
     <div class="mt-2 d-flex flex-wrap list">
-      <template v-for="item of projects">
+      <template v-for="item of projects" :key="item.id">
         <div
           class="item text-truncate p-2"
           :class="{ active: pid === item.id }"
-          :key="item.id"
           @click="() => handleItemClick(item.id)">{{ item.name }}</div>
       </template>
     </div>

@@ -1,7 +1,7 @@
 <template>
   <div>
-    <page-header :title="$t('network.text_724')" :tabs="cloudEnvOptions" :current-tab.sync="cloudEnv" />
-    <page-body needMarginBottom>
+    <page-header :title="$t('network.text_724')" :tabs="cloudEnvOptions" v-model:currentTab="cloudEnv" />
+    <page-body>
       <a-form
         :form="form.fc"
         hideRequiredMark>
@@ -48,7 +48,7 @@
           :cloudregion-multiple="isPublic"
           :cloudregion-mapper="filterCloudregionListByProvider"
           :defaultActiveFirstOption="isPublic ? [] : true"
-          :region.sync="regionList"
+          v-model:region="regionList"
           filterBrandResource="network_manage"
           :form-draft-key="eipDraftFields.areaSelects"
           @change="cloudregionChange"
@@ -104,7 +104,7 @@
             :params="providerParams"
             :mapper="providerMapper"
             :remote-fn="q => ({ filter: `name.contains(${q})` })"
-            :resList.sync="cloudproviderData"
+            v-model:resList="cloudproviderData"
             @update:item="providerChange"
             :isDefaultSelect="true"
             :select-props="{ placeholder: $t('compute.text_1387') }"

@@ -83,7 +83,7 @@ export default {
     }
   },
   computed: mapGetters(['isAdminMode']),
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {

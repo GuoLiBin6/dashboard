@@ -7,7 +7,7 @@
       </template>
       <dialog-table :data="dataList" :columns="columns" />
     </a-card>
-    <page-body needMarginBottom>
+    <page-body>
       <div class="form-wrapper">
         <a-form
           v-bind="formItemLayout"
@@ -94,7 +94,7 @@
       </div>
     </page-body>
     <page-footer>
-      <div slot="right">
+      <template #right>
         <div ref="adjustFooterActions" class="d-flex align-items-center flex-wrap justify-content-end">
           <div v-if="hasMeterService" class="mr-4 d-flex align-items-center">
             <div class="text-truncate">{{$t('compute.text_286')}}</div>
@@ -115,13 +115,13 @@
             v-if="needForceStopConfirm"
             placement="topRight"
             overlay-class-name="running-adjust-popconfirm-overlay"
-            :visible="runningAdjustPopVisible"
+            :open="runningAdjustPopVisible"
             :get-popup-container="getRunningAdjustPopContainer"
             :ok-text="$t('compute.adjust_config_running_confirm_submit')"
             :cancel-text="$t('dialog.cancel')"
             @confirm="onRunningAdjustPopConfirm"
             @cancel="onRunningAdjustPopCancel"
-            @visibleChange="onRunningAdjustPopVisibleChange">
+            @openChange="onRunningAdjustPopVisibleChange">
             <template slot="title">
               <div>{{ $t('compute.adjust_config_running_confirm_title') }}</div>
               <div class="running-adjust-popconfirm-desc">{{ runningAdjustConfirmContent }}</div>
@@ -135,12 +135,16 @@
                 placement="topLeft"
                 @click="(e) => e && e.preventDefault && e.preventDefault()">
                 {{ confirmText }}
-                <a-menu slot="overlay" @click="handleMenuClick">
-                  <a-menu-item key="add">
-                    {{ $t('scope.shopcart.add') }}
-                  </a-menu-item>
-                </a-menu>
-                <a-icon slot="icon" type="down" />
+                <template #overlay>
+                  <a-menu @click="handleMenuClick">
+                    <a-menu-item key="add">
+                      {{ $t('scope.shopcart.add') }}
+                    </a-menu-item>
+                  </a-menu>
+                </template>
+                <template #icon>
+                  <icon type="pull-down" />
+                </template>
               </a-dropdown-button>
               <a-button v-else type="primary" class="mr-3" :loading="loading">{{ confirmText }}</a-button>
             </span>
@@ -153,12 +157,16 @@
             placement="topLeft"
             @click="handleConfirmClick">
             {{ confirmText }}
-            <a-menu slot="overlay" @click="handleMenuClick">
-              <a-menu-item key="add">
-                {{ $t('scope.shopcart.add') }}
-              </a-menu-item>
-            </a-menu>
-            <a-icon slot="icon" type="down" />
+            <template #overlay>
+              <a-menu @click="handleMenuClick">
+                <a-menu-item key="add">
+                  {{ $t('scope.shopcart.add') }}
+                </a-menu-item>
+              </a-menu>
+            </template>
+            <template #icon>
+              <icon type="pull-down" />
+            </template>
           </a-dropdown-button>
           <a-button
             v-else
@@ -168,7 +176,7 @@
             @click="handleConfirmClick">{{ confirmText }}</a-button>
           <a-button @click="cancel">{{$t('compute.text_908')}}</a-button>
         </div>
-      </div>
+      </template>
     </page-footer>
   </div>
 </template>
@@ -177,6 +185,7 @@
 import { mapGetters } from 'vuex'
 import * as R from 'ramda'
 import _ from 'lodash'
+import { h } from 'vue'
 import CpuRadio from '@Compute/sections/CpuRadio'
 import MemRadio from '@Compute/sections/MemRadio'
 import DataDisk from '@Compute/sections/DataDisk'
@@ -640,9 +649,7 @@ export default {
           edit: false,
           editDesc: false,
           slotCallback: row => {
-            return (
-              <side-page-trigger>{ row.name }</side-page-trigger>
-            )
+            return this.$createElement('side-page-trigger', {}, row.name)
           },
         }),
         getIpsTableColumn({ field: 'ip', title: 'IP' }),
@@ -654,12 +661,13 @@ export default {
           sortable: true,
           slots: {
             default: ({ row }) => {
+              const h = this.$createElement
               const ret = []
               if (row.instance_type) {
-                ret.push(<div class='text-truncate' style={{ color: '#0A1F44' }}>{ row.instance_type }</div>)
+                ret.push(h('div', { class: 'text-truncate', style: { color: 'var(--oc-color-text-heading)' } }, row.instance_type))
               }
               const config = row.vcpu_count + 'C' + sizestr(row.vmem_size, 'M', 1024) + (row.disk ? sizestr(row.disk, 'M', 1024) : '')
-              return ret.concat(<div class='text-truncate' style={{ color: '#53627C' }}>{ config }</div>)
+              return ret.concat(h('div', { class: 'text-truncate', style: { color: 'var(--oc-color-text-secondary)' } }, config))
             },
           },
         },
@@ -676,7 +684,7 @@ export default {
               const version = (row.metadata && row.metadata.os_version) ? `${row.metadata.os_version}` : ''
               const tooltip = (version.includes(name) ? version : `${name} ${version}`) || this.$t('compute.text_339') // 去重
               return [
-                <SystemIcon tooltip={ tooltip } name={ name } />,
+                h(SystemIcon, { tooltip, name }),
               ]
             },
           },
@@ -835,7 +843,7 @@ export default {
       }
     })
   },
-  beforeDestroy () {
+  beforeUnmount () {
     clearInterval(this.dataDiskInterval)
   },
   methods: {

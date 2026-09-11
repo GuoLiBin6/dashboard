@@ -3,7 +3,7 @@
     <div slot="header">{{$t('cloudenv.text_335')}}</div>
     <div slot="body">
       <a-alert class="mb-4" type="warning">
-        <div slot="message">{{$t('cloudenv.text_453')}}</div>
+        <template #message>{{$t('cloudenv.text_453')}}</template>
       </a-alert>
       <dialog-selected-tips :name="$t('cloudenv.text_431')" class="mt-3" :count="params.data.length" :action="$t('cloudenv.text_335')" />
       <dialog-table v-if="params.columns && params.columns.length" :data="params.data" :columns="params.columns.slice(0, 3)" />

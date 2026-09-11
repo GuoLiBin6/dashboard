@@ -116,12 +116,22 @@ export default {
             field: 'disable_user_on_import',
             title: this.$t('system.text_223'),
             slots: {
-              default: ({ row }) => {
+              default: ({ row }, h) => {
                 return [
-                  <div class='text-truncate d-flex align-items-center'>
-                    <status status={ !row.disable_user_on_import } statusModule='enabled' />
-                    <help-tooltip class='ml-1' name='disable_user_on_import' />
-                  </div>,
+                  h('div', { class: 'text-truncate d-flex align-items-center' }, [
+                    h('status', {
+                      props: {
+                        status: !row.disable_user_on_import,
+                        statusModule: 'enabled',
+                      },
+                    }),
+                    h('help-tooltip', {
+                      class: 'ml-1',
+                      props: {
+                        name: 'disable_user_on_import',
+                      },
+                    }),
+                  ]),
                 ]
               },
             },
@@ -264,9 +274,16 @@ export default {
           field: 'project_domain',
           title: (isDomainMode || this.data.domain_id) ? this.$t('common_566', [this.$t('dictionary.domain')]) : this.$t('common_548'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (!row.domain_id) return this.$t('system.text_15')
-              return <side-page-trigger permission='domains_get' name='DomainSidePage' id={row.domain_id} vm={this}>{ row.project_domain }</side-page-trigger>
+              return h('side-page-trigger', {
+                props: {
+                  permission: 'domains_get',
+                  name: 'DomainSidePage',
+                  id: row.domain_id,
+                  vm: this,
+                },
+              }, row.project_domain)
             },
           },
         },
@@ -309,9 +326,13 @@ export default {
         {
           title: this.$t('common_553'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               return [
-                <IdpSamlXml data={ row } />,
+                h(IdpSamlXml, {
+                  props: {
+                    data: row,
+                  },
+                }),
               ]
             },
           },

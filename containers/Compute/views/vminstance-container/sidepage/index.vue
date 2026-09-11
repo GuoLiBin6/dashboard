@@ -225,7 +225,7 @@ export default {
       })
     })
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.isPageDestroyed = true
   },
   methods: {

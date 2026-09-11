@@ -1,9 +1,9 @@
 <template>
   <a-form-item class="mb-0">
     <span v-if="isEmpty">{{$t('compute.hypervisor_empty_tips')}}</span>
-    <a-radio-group v-else v-decorator="decorator" @change="changeHandle">
-      <template v-for="item in hypervisorOpts">
-        <a-tooltip :title="disabledHypervisorMap[item.key]" :key="item.key">
+    <a-radio-group v-else :value="radioValue" v-decorator="decorator" @change="changeHandle">
+      <template v-for="item in hypervisorOpts" :key="item.key">
+        <a-tooltip :title="disabledHypervisorMap[item.key]">
           <a-radio-button
             :value="item.key"
             :disabled="disabledHypervisorMap[item.key]">
@@ -70,6 +70,13 @@ export default {
     isEmpty () {
       return !this.hypervisorOpts?.length
     },
+    fieldName () {
+      return (this.decorator && this.decorator[0]) || 'hypervisor'
+    },
+    // v-decorator 在 Vue3 下回填不可靠，直接读 form.fd；受控 :value 驱动 Radio.Group 选中态
+    radioValue () {
+      return this.form?.fd?.[this.fieldName] || undefined
+    },
   },
   watch: {
     hypervisorOpts: {
@@ -81,9 +88,15 @@ export default {
   },
   methods: {
     changeHandle (e) {
-      const value = e.target.value
-      this.writeFormFieldDraft(value)
-      this.$emit('change', value)
+      const val = e && e.target ? e.target.value : e
+      this.writeFormFieldDraft(val)
+      // 显式写回表单，确保受控 :value 能更新（不只依赖 decorator emit）
+      if (this.form?.fc?.setFieldsValue) {
+        this.form.fc.setFieldsValue({ [this.fieldName]: val })
+      } else if (this.form?.fd) {
+        this.form.fd[this.fieldName] = val
+      }
+      this.$emit('change', val)
     },
     getLabel (item) {
       if (!item) return ''

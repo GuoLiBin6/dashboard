@@ -15,20 +15,44 @@ export default {
           { required: true, message: i18n.t('compute.text_210') },
           { validator: this.$validate('serverCreateName') },
         ],
-        slotCallback: row => {
-          return (
-            <side-page-trigger name='PhysicalmachineSidePage' id={row.id} list={this.list} vm={this}>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            props: {
+              name: 'PhysicalmachineSidePage',
+              id: row.id,
+              list: this.list,
+              vm: this,
+            },
+          }, row.name)
         },
         cellWrapSlots: row => {
           return {
-            append: () => {
-              var ret = []
+            append: (h) => {
+              const ret = []
               if (row.is_import) {
-                ret.push(<a-tooltip title={i18n.t('compute.text_846')}><icon class='ml-2' type='res-physicalmachine' style={{ color: '#1890ff' }} /></a-tooltip>)
+                ret.push(h('a-tooltip', {
+                  props: {
+                    title: i18n.t('compute.text_846'),
+                  },
+                }, [
+                  h('icon', {
+                    class: 'ml-2',
+                    props: { type: 'res-physicalmachine' },
+                    style: { color: '#1890ff' },
+                  }),
+                ]))
               }
               if (row.isolated_device_count) {
-                ret.push(<a-tooltip title={i18n.t('compute.text_113')}><icon class='ml-2' type='passthrough' /></a-tooltip>)
+                ret.push(h('a-tooltip', {
+                  props: {
+                    title: i18n.t('compute.text_113'),
+                  },
+                }, [
+                  h('icon', {
+                    class: 'ml-2',
+                    props: { type: 'passthrough' },
+                  }),
+                ]))
               }
               return ret
             },
@@ -44,20 +68,36 @@ export default {
         width: 200,
         showOverflow: 'ellipsis',
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             const cellWrap = []
             if (row.access_ip) {
               cellWrap.push(
-                <div class="d-flex">
-                  <list-body-cell-wrap row={row} field="access_ip" copy><span class="text-color-help">{ this.$t('compute.text_1319') }</span></list-body-cell-wrap>
-                </div>,
+                h('div', { class: 'd-flex' }, [
+                  h('list-body-cell-wrap', {
+                    props: {
+                      row,
+                      field: 'access_ip',
+                      copy: true,
+                    },
+                  }, [
+                    h('span', { class: 'text-color-help' }, this.$t('compute.text_1319')),
+                  ]),
+                ]),
               )
             }
             if (row.ipmi_ip) {
               cellWrap.push(
-                <div class="d-flex">
-                  <list-body-cell-wrap row={row} field="ipmi_ip" copy><span class="text-color-help">{ this.$t('compute.text_1320') }</span></list-body-cell-wrap>
-                </div>,
+                h('div', { class: 'd-flex' }, [
+                  h('list-body-cell-wrap', {
+                    props: {
+                      row,
+                      field: 'ipmi_ip',
+                      copy: true,
+                    },
+                  }, [
+                    h('span', { class: 'text-color-help' }, this.$t('compute.text_1320')),
+                  ]),
+                ]),
               )
             }
             return cellWrap
@@ -69,8 +109,15 @@ export default {
         title: 'IPMI',
         width: 70,
         slots: {
-          default: ({ row }) => {
-            return [<PasswordFetcher serverId={ row.id } resourceType='baremetals' />]
+          default: ({ row }, h) => {
+            return [
+              h(PasswordFetcher, {
+                props: {
+                  serverId: row.id,
+                  resourceType: 'baremetals',
+                },
+              }),
+            ]
           },
         },
       },
@@ -79,8 +126,17 @@ export default {
         title: i18n.t('compute.text_566'),
         width: 70,
         slots: {
-          default: ({ row }) => {
-            return [<PasswordFetcher serverId={ row.server_id ? row.server_id : row.id } resourceType={row.server_id ? 'servers' : 'baremetal_ssh' } disabled={ row.is_import } promptText={row.is_import ? i18n.t('compute.text_848') : '' } />]
+          default: ({ row }, h) => {
+            return [
+              h(PasswordFetcher, {
+                props: {
+                  serverId: row.server_id ? row.server_id : row.id,
+                  resourceType: row.server_id ? 'servers' : 'baremetal_ssh',
+                  disabled: row.is_import,
+                  promptText: row.is_import ? i18n.t('compute.text_848') : '',
+                },
+              }),
+            ]
           },
         },
       },
@@ -91,7 +147,7 @@ export default {
         showOverflow: 'ellipsis',
         slots: {
           default: ({ row }) => {
-            if (this.isPreLoad && !row.spec) return [<data-loading />]
+            if (this.isPreLoad && !row.spec) return [this.$createElement('data-loading')]
             if (!row.spec) return '-'
             const g = function (sz, prefix) {
               if (!prefix || prefix.length === 0) {
@@ -154,11 +210,20 @@ export default {
               if (!arr.includes(row.sys_info.oem_name)) {
                 return row.sys_info.oem_name
               }
-              const imgSrc = require(`../assets/${row.sys_info.oem_name}.svg`)
+              const imgSrc = new URL(`../assets/${row.sys_info.oem_name}.svg`, import.meta.url).href
               return [
-                <a-tooltip title={ row.sys_info.oem_name }>
-                  <img src={ imgSrc } style={ icons[row.sys_info.oem_name] } />
-                </a-tooltip>,
+                this.$createElement('a-tooltip', {
+                  props: {
+                    title: row.sys_info.oem_name,
+                  },
+                }, [
+                  this.$createElement('img', {
+                    attrs: {
+                      src: imgSrc,
+                    },
+                    style: icons[row.sys_info.oem_name],
+                  }),
+                ]),
               ]
             }
           },
@@ -175,11 +240,15 @@ export default {
         field: 'server',
         title: i18n.t('compute.text_602'),
         hideField: true,
-        slotCallback: row => {
+        slotCallback: (row, h) => {
           if (!row.server) return '-'
-          return <side-page-trigger permission="server_get" onTrigger={() => this.handleOpenBaremetalDetail(row.server_id)}>
-            {row.server}
-          </side-page-trigger>
+          const hFn = h || this.$createElement
+          return hFn('side-page-trigger', {
+            props: { permission: 'server_get' },
+            on: {
+              trigger: () => this.handleOpenBaremetalDetail(row.server_id),
+            },
+          }, row.server)
         },
       }),
       {

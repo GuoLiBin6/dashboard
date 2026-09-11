@@ -6,7 +6,7 @@
     :single-actions="singleActions" />
 </template>
 
-<script>
+<script lang="jsx">
 import {
   getCopyWithContentTableColumn,
 } from '@/utils/common/tableColumn'

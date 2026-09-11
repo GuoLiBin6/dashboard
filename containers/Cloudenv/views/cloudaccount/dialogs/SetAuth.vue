@@ -10,7 +10,7 @@
         :rules="rules"
         v-bind="formItemLayout">
         <a-form-model-item :label="$t('cloudenv.ssh_authentication')" prop="saml_auth">
-          <a-radio-group v-model="fd.saml_auth">
+          <a-radio-group v-model:value="fd.saml_auth">
             <a-radio :value="true">{{$t('cloudenv.turn_on')}}</a-radio>
             <a-radio :value="false">{{$t('cloudenv.turn_off')}}</a-radio>
           </a-radio-group>

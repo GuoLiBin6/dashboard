@@ -11,7 +11,7 @@
     resource="servers" />
 </template>
 
-<script>
+<script lang="jsx">
 import 'codemirror/theme/material.css'
 import {
   ALL_STORAGE,
@@ -64,17 +64,31 @@ export default {
           field: 'project_domain',
           hiddenField: 'tenant',
           title: this.$t('dictionary.domain'),
-          formatter: ({ row }) => {
+          formatter: ({ row }, h) => {
             if (!row.domain_id) return '-'
-            return <side-page-trigger permission="domains_get" name="DomainSidePage" id={row.domain_id} vm={this}>{row.project_domain}</side-page-trigger>
+            return h('side-page-trigger', {
+              props: {
+                permission: 'domains_get',
+                name: 'DomainSidePage',
+                id: row.domain_id,
+                vm: this,
+              },
+            }, row.project_domain)
           },
         },
         {
           field: 'tenant',
           title: this.$t('dictionary.project'),
-          formatter: ({ row }) => {
+          formatter: ({ row }, h) => {
             if (!row.tenant_id) return '-'
-            return <side-page-trigger permission="projects_get" name="ProjectSidePage" id={row.tenant_id} vm={this}>{row.tenant}</side-page-trigger>
+            return h('side-page-trigger', {
+              props: {
+                permission: 'projects_get',
+                name: 'ProjectSidePage',
+                id: row.tenant_id,
+                vm: this,
+              },
+            }, row.tenant)
           },
         },
         getNameDescriptionTableColumn({
@@ -99,9 +113,15 @@ export default {
           field: 'containers',
           title: this.$t('compute.container', []),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (!row.containerTotal) return 0
-              return [<a onClick={() => this.$emit('tab-change', 'container-list')}>{row.containerTotal}</a>]
+              return [
+                h('a', {
+                  on: {
+                    click: () => this.$emit('tab-change', 'container-list'),
+                  },
+                }, row.containerTotal),
+              ]
             },
           },
         },
@@ -112,8 +132,15 @@ export default {
           title: this.$t('table.title.init_keypair'),
           minWidth: 50,
           slots: {
-            default: ({ row }) => {
-              return [<PasswordFetcher serverId={row.id} resourceType='servers' />]
+            default: ({ row }, h) => {
+              return [
+                h(PasswordFetcher, {
+                  props: {
+                    serverId: row.id,
+                    resourceType: 'servers',
+                  },
+                }),
+              ]
             },
           },
         },
@@ -171,15 +198,30 @@ export default {
               showOverflow: 'ellipsis',
               minWidth: 100,
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   if (findPlatform(row.hypervisor, 'hypervisor') === SERVER_TYPE.public || row.hypervisor === HYPERVISORS_MAP.hcso.hypervisor || row.hypervisor === HYPERVISORS_MAP.hcs.hypervisor) {
                     return '-'
                   }
                   const text = row.host || '-'
                   return [
-                    <list-body-cell-wrap copy hideField={true} field='host' row={row} message={text}>
-                      <side-page-trigger permission='hosts_get' name='HostSidePage' id={row.host_id} vm={this}>{row.host}</side-page-trigger>
-                    </list-body-cell-wrap>,
+                    h('list-body-cell-wrap', {
+                      props: {
+                        copy: true,
+                        hideField: true,
+                        field: 'host',
+                        row,
+                        message: text,
+                      },
+                    }, [
+                      h('side-page-trigger', {
+                        props: {
+                          permission: 'hosts_get',
+                          name: 'HostSidePage',
+                          id: row.host_id,
+                          vm: this,
+                        },
+                      }, row.host),
+                    ]),
                   ]
                 },
               },
@@ -189,16 +231,31 @@ export default {
               field: 'secgroups',
               title: this.$t('compute.text_105'),
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   const networkTags = getNetworkTags(row)
                   if (networkTags.length) {
                     return renderNetworkTagNodes(networkTags)
                   }
                   if (!row.secgroups?.length) return '-'
                   return row.secgroups.map((item) => {
-                    return <list-body-cell-wrap copy hideField={true} field='name' row={item} message={item.name}>
-                      <side-page-trigger permission='secgroups_get' name='SecGroupSidePage' id={item.id} vm={this}>{item.name}</side-page-trigger>
-                    </list-body-cell-wrap>
+                    return h('list-body-cell-wrap', {
+                      props: {
+                        copy: true,
+                        hideField: true,
+                        field: 'name',
+                        row: item,
+                        message: item.name,
+                      },
+                    }, [
+                      h('side-page-trigger', {
+                        props: {
+                          permission: 'secgroups_get',
+                          name: 'SecGroupSidePage',
+                          id: item.id,
+                          vm: this,
+                        },
+                      }, item.name),
+                    ])
                   })
                 },
               },
@@ -212,7 +269,14 @@ export default {
               slotCallback: row => {
                 if (!row.vpc) return '-'
                 return [
-                  <side-page-trigger permission='vpcs_get' name='VpcSidePage' id={row.vpc_id} vm={this}>{row.vpc}</side-page-trigger>,
+                  this.$createElement('side-page-trigger', {
+                    props: {
+                      permission: 'vpcs_get',
+                      name: 'VpcSidePage',
+                      id: row.vpc_id,
+                      vm: this,
+                    },
+                  }, row.vpc),
                 ]
               },
               hidden: () => this.$store.getters.isProjectMode || this.$isScopedPolicyMenuHidden('server_hidden_columns.vpc'),
@@ -248,7 +312,11 @@ export default {
               title: this.$t('compute.text_50'),
               formatter: ({ row }) => {
                 if (!this.diskInfos.dataDisk) return '-'
-                return <a onClick={() => this.$emit('tab-change', 'disk-list')}>{this.diskInfos.dataDisk}</a>
+                return this.$createElement('a', {
+                  on: {
+                    click: () => this.$emit('tab-change', 'disk-list'),
+                  },
+                }, this.diskInfos.dataDisk)
               },
               hidden: () => this.$isScopedPolicyMenuHidden('server_hidden_columns.disk'),
             },
@@ -346,7 +414,7 @@ export default {
       const deviceList = Array.isArray(devices) ? devices.slice() : []
       return [
         this.$createElement('div', [
-          this.$createElement('vxe-grid', {
+          this.$createElement('table-lite-grid', {
             class: 'mb-2',
             props: {
               data: deviceList,

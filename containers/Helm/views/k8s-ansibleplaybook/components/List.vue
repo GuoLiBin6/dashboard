@@ -1,5 +1,5 @@
 <template>
-  <vxe-grid :data="responseData.data || []" :columns="columns" resizable />
+  <table-lite-grid :data="responseData.data || []" :columns="columns" resizable />
 </template>
 
 <script>
@@ -23,12 +23,27 @@ export default {
           title: this.$t('helm.text_16'),
           minWidth: 100,
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               const text = row.name || '-'
               return [
-                <list-body-cell-wrap copy hideField={true} field='name' row={row} message={text}>
-                  <side-page-trigger name='K8sAnsibleplaybookSidePage' id='test' vm={this} options={{ output: row.externalInfo.output }}>{text}</side-page-trigger>
-                </list-body-cell-wrap>,
+                h('list-body-cell-wrap', {
+                  props: {
+                    copy: true,
+                    hideField: true,
+                    field: 'name',
+                    row: row,
+                    message: text,
+                  },
+                }, [
+                  h('side-page-trigger', {
+                    props: {
+                      name: 'K8sAnsibleplaybookSidePage',
+                      id: 'test',
+                      vm: this,
+                      options: { output: row.externalInfo.output },
+                    },
+                  }, text),
+                ]),
               ]
             },
           },

@@ -3,7 +3,7 @@
     <div slot="header">{{$t('network.wire.merge')}}</div>
     <div slot="body">
       <a-alert class="mb-2" type="warning">
-        <div slot="message">{{$t('network.text_755')}}</div>
+        <template #message>{{$t('network.text_755')}}</template>
       </a-alert>
       <dialog-selected-tips :name="$t('dictionary.wire')" :count="params.data.length" :action="$t('network.wire.merge')" />
       <dialog-table :data="params.data" :columns="columns" :expandConfig="expandConfig" />
@@ -13,7 +13,7 @@
           <template slot="title">
             <span>{{ $t('network.wire.merge.tooltip')}}</span>
           </template>
-          <a-icon type="question-circle" />
+          <icon type="question-circle" />
         </a-tooltip>
       </a-checkbox>
     </div>

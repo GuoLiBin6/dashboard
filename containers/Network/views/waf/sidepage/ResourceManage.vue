@@ -49,8 +49,14 @@ export default {
           title: this.$t('network.waf.resource_name'),
           resizable: true,
           slots: {
-            default: ({ row }) => {
-              return [<list-body-cell-wrap copy row={row} field={'name'} />]
+            default: ({ row }, h) => {
+              return [h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  row: row,
+                  field: 'name',
+                },
+              })]
             },
           },
         },

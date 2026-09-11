@@ -22,7 +22,7 @@
               :accept="accept"
               :remove="handleRemove">
               <div class="pt-3 pb-3">
-                <p class="ant-upload-drag-icon"><a-icon type="inbox" /></p>
+                <p class="ant-upload-drag-icon"><icon type="inbox" /></p>
                 <p class="ant-upload-text">{{$t('system.text_505')}}</p>
                 <p class="ant-upload-hint">{{$t('system.text_506')}}</p>
               </div>

@@ -1,35 +1,37 @@
 <template>
-  <license-features ref="licenseFeatures" v-model="items" :pre-item-check="PreItemCheck" :pre-item-filter="PreItemFilter">
-    <template #default="{moduleGroups, itemEvents, groupEvents}">
-      <div>
-        <div v-for="mod in moduleGroups" :key="mod.key">
-          <div class="module">
-            <span class="title">{{ mod.label }}</span>
-            <templage v-for="g in mod.groups" :key="g.key">
-              <div :key="g.key" v-if="!g.licenseDisabled" class="group">
-                <div class="title">{{ g.label }}</div>
-                <div class=" d-flex flex-wrap">
-                  <div v-if="g.items && g.items.length > 1"
-                      v-on="groupEvents(g)"
-                      :class="{ checked: g.checked }"
-                      class="item d-flex p-2 mr-3 align-items-center">
-                    <span class="flex-fill">{{ $t('scope.text_114') }}</span>
-                  </div>
-                  <a-tooltip v-for="item in g.items" :key="item.key" :title="item.disabled || item.licenseDisabled ? item.reason : ''">
-                    <div v-if="!item.licenseDisabled" class="item d-flex p-2 mr-3 align-items-center" v-on="item.disabled ? undefined: itemEvents(item)"
-                        :class="{ checked: item.checked, disabled: item.disabled }">
-                      <img v-if="item.icon" :src="item.icon" :style="item.logoStyle ? item.logoStyle : 'width: 24px'" />
-                      <span class="flex-fill" v-if="!item.hiddenName">{{ item.label }}</span>
-                    </div>
-                  </a-tooltip>
-                </div>
+  <div>
+    <div v-for="mod in moduleGroups" :key="mod.key">
+      <div class="module">
+        <span class="title">{{ mod.label }}</span>
+        <template v-for="g in mod.groups" :key="g.key">
+          <div v-if="!g.licenseDisabled" class="group">
+            <div class="title">{{ g.label }}</div>
+            <div class="d-flex flex-wrap">
+              <div
+                v-if="g.items && g.items.length > 1"
+                class="item d-flex p-2 mr-3 align-items-center"
+                :class="{ checked: g.checked }"
+                @click="onClickGroup(g)">
+                <span class="flex-fill">{{ $t('scope.text_114') }}</span>
               </div>
-            </templage>
+              <a-tooltip
+                v-for="item in g.visibleItems"
+                :key="item.key"
+                :title="item.disabled ? item.reason : ''">
+                <div
+                  class="item d-flex p-2 mr-3 align-items-center"
+                  :class="{ checked: item.checked, disabled: item.disabled }"
+                  @click="handleItemClick(item)">
+                  <img v-if="item.icon" :src="item.icon" :style="item.logoStyle ? item.logoStyle : 'width: 24px'" />
+                  <span v-if="!item.hiddenName" class="flex-fill">{{ item.label }}</span>
+                </div>
+              </a-tooltip>
+            </div>
           </div>
-        </div>
+        </template>
       </div>
-    </template>
-  </license-features>
+    </div>
+  </div>
 </template>
 
 <script>
@@ -89,28 +91,28 @@ const c = R.clone(originC)
 if (isSAAS()) {
   c.groups.push('language')
   c.items.push(...languageItems)
-  c.moduleGroups[0].groups.push({
-    label: i18n.t('common.language_management'),
-    value: 'language',
-    key: 'group-language',
-    checked: true,
-    selected: ['zh-CN', 'en', 'ja-JP'],
-    items: [...languageItems],
-  })
+  if (c.moduleGroups[0]) {
+    c.moduleGroups[0].groups.push({
+      label: i18n.t('common.language_management'),
+      value: 'language',
+      key: 'group-language',
+      checked: true,
+      selected: ['zh-CN', 'en', 'ja-JP'],
+      items: [...languageItems],
+    })
+  }
 }
 
-export const LicenseFeatures = {
-  name: 'LicenseFeatures',
-  model: {
-    prop: 'items',
-    event: 'update',
-  },
+function normalizeFeatureKeys (list = []) {
+  return list.map(f => (typeof f === 'string' ? f : (f && (f.key || f.value)))).filter(Boolean)
+}
+
+export default {
+  name: 'FeatureSelector',
   props: {
-    items: {
+    defaultItems: {
       type: Array,
-      default: () => {
-        return []
-      },
+      default: () => [],
     },
     /* (item) => { return { disabled: true, reason: 'xxx' } } */
     PreItemCheck: {
@@ -123,9 +125,12 @@ export const LicenseFeatures = {
       required: false,
     },
   },
+  emits: ['change'],
   data () {
     return {
-      selectedItems: this._selectedItems(this.items),
+      selectedItems: [],
+      // 标记用户是否已手动改过，避免 defaultItems 反复回写冲掉选择
+      touched: false,
     }
   },
   computed: {
@@ -134,108 +139,132 @@ export const LicenseFeatures = {
     }),
     supportedFeatures () {
       const ret = this.licenseCompute?.features || []
-      let list = [...ret]
-      list = fillBillSupportFeatures(list, true)
-      // 无费用模块 不处理
-      return list
+      return fillBillSupportFeatures(normalizeFeatureKeys(ret), true)
+    },
+    hasLicenseFeatures () {
+      return this.supportedFeatures.length > 0
     },
     options () {
-      return c.items.map(item => {
-        if (item.key === 'cloudpods') {
+      return c.items.map((item) => {
+        const next = { ...item }
+        if (next.key === 'cloudpods') {
           const { companyInfo = {} } = this.$store.state.app
           const { inner_logo, inner_logo_format, inner_copyright, inner_copyright_en } = companyInfo
           if (inner_logo && inner_logo_format) {
-            item.icon = `data:${inner_logo_format};base64,${inner_logo}`
+            next.icon = `data:${inner_logo_format};base64,${inner_logo}`
           }
           if (setting.language === 'en' && inner_copyright_en) {
-            item.label = inner_copyright_en
+            next.label = inner_copyright_en
           } else if (setting.language === 'zh-CN' && inner_copyright) {
-            item.label = inner_copyright
+            next.label = inner_copyright
           }
         }
         if (!isSAAS()) {
-          item.disabled = !this.supportedFeatures.includes(item.key)
-          item.licenseDisabled = !this.supportedFeatures.includes(item.key)
+          const unsupported = this.hasLicenseFeatures && !this.supportedFeatures.includes(next.key)
+          next.disabled = unsupported
+          next.licenseDisabled = unsupported
         }
-        return item
+        return next
       })
     },
     moduleGroups () {
-      const options = this.options.filter(option => {
-        return this.selectedItems.indexOf(option.value) >= 0
-      })
-      const mg = Array.from(c.moduleGroups)
-      mg.map(m => {
-        m.groups.map(g => {
-          g.checked = this._groupChecked(g.items)
-          g.selected = []
-          g.items.map(item => {
+      const selectedOptions = this.options.filter(option => this.selectedItems.indexOf(option.value) >= 0)
+      return c.moduleGroups.map((m) => {
+        const groups = (m.groups || []).map((g) => {
+          const items = (g.items || []).map((raw) => {
+            const base = this.options.find(o => o.key === raw.key) || { ...raw }
+            const item = { ...base }
             item.checked = this._itemChecked(item)
-            if (item.checked) g.selected.push(item.value)
-            Object.assign(item, this._itemDisabled(options, item))
+            Object.assign(item, this._itemDisabled(selectedOptions, item))
+            return item
           })
-          g.licenseDisabled = this._groupLicenseDisabled(g.items)
+          return {
+            ...g,
+            items,
+            visibleItems: items.filter(i => !i.licenseDisabled),
+            selected: items.filter(i => i.checked).map(i => i.value),
+            checked: this._groupChecked(items),
+            licenseDisabled: this._groupLicenseDisabled(items),
+          }
         })
+        return { ...m, groups }
       })
-      this.$emit('update', [...this.selectedItems])
-      return mg
+    },
+  },
+  watch: {
+    defaultItems: {
+      immediate: true,
+      handler (val) {
+        // 用户已操作后，不再被父级每次新数组引用重置
+        if (this.touched) return
+        const next = this._selectedItems(val || [])
+        if (!R.equals(next, this.selectedItems)) {
+          this.selectedItems = next
+        }
+      },
+    },
+    selectedItems (val) {
+      this.$emit('change', [...val])
+    },
+    supportedFeatures (val, oldVal) {
+      if (R.equals(val, oldVal)) return
+      // license 首次就绪时，按授权收敛一次；用户已点选则保留当前选择再过滤
+      const base = this.touched ? this.selectedItems : (this.defaultItems || [])
+      const next = this._selectedItems(base)
+      if (!R.equals(next, this.selectedItems)) {
+        this.selectedItems = next
+      }
     },
   },
   methods: {
-    changeSelectedItems (items) {
-      this.selectedItems = this._selectedItems([...items])
+    changeItems (val) {
+      this.touched = false
+      this.selectedItems = this._selectedItems(val || [])
+    },
+    handleItemClick (item) {
+      if (item.disabled) return
+      this.onClickItem(item)
     },
     _groupLicenseDisabled (currentItems) {
-      return currentItems.every(item => item.licenseDisabled)
+      return currentItems.length > 0 && currentItems.every(item => item.licenseDisabled)
     },
     _selectedItems (currentItems) {
-      let items = c.items.filter(option => {
-        return currentItems.indexOf(option.value) >= 0
-      })
+      let items = c.items.filter(option => currentItems.indexOf(option.value) >= 0)
 
-      // items select pre hook. 过滤掉不支持的选项
       if (R.is(Function, this.PreItemFilter)) {
         items = items.filter(this.PreItemFilter)
       }
 
-      // 补充语言选择
-      if (!items.some(item => languageList.includes(item.key))) {
-        items.push(...languageItems)
+      if (isSAAS() && !items.some(item => languageList.includes(item.key))) {
+        items = items.concat(languageItems)
       }
 
-      // 过滤出可选的选项
-      const options = items.filter(item => {
-        return !this._itemDisabled(items, item).disabled
-      })
-      return options.map(item => {
-        return item.value
-      })
+      const options = items.filter(item => !this._itemDisabled(items, item).disabled)
+      return options.map(item => item.value)
     },
     _updateSelectedItems (currentItems) {
+      this.touched = true
       this.selectedItems = this._selectedItems(currentItems)
     },
     _itemDisabled (currentOptions, item) {
-      // pre item check hook
       if (R.is(Function, this.PreItemCheck)) {
         const ret = this.PreItemCheck(item)
         if (R.propEq('disabled', true)(ret)) return ret
       }
 
       if (R.has('validators', item) && R.is(Array, item.validators)) {
-        const vrs = item.validators.map(v => {
-          return v(currentOptions)
-        })
+        const vrs = item.validators.map(v => v(currentOptions))
         const ret = R.find(R.propEq('disabled', true), vrs)
         return ret || { disabled: false, reason: '' }
       }
-      return { disabled: item.disabled || false, reason: item.reason || '' }
+      return { disabled: !!item.disabled, reason: item.reason || '' }
     },
     _itemChecked (item) {
       return this.selectedItems.indexOf(item.value) >= 0
     },
     _groupChecked (groupItems) {
       const items = groupItems.filter(item => !item.licenseDisabled)
-      return R.all(this._itemChecked, items)
+      return items.length > 0 && R.all(this._itemChecked, items)
     },
     addItem (item) {
       this._updateSelectedItems([...this.selectedItems, item])
@@ -244,7 +273,7 @@ export const LicenseFeatures = {
       this._updateSelectedItems(this.selectedItems.filter(v => v !== item))
     },
     onClickItem (item) {
-      if (this.items.indexOf(item.value) < 0) {
+      if (this.selectedItems.indexOf(item.value) < 0) {
         this.addItem(item.value)
       } else {
         this.removeItem(item.value)
@@ -257,73 +286,16 @@ export const LicenseFeatures = {
       this._updateSelectedItems(this.selectedItems.filter(v => items.indexOf(v) < 0))
     },
     onClickGroup (group) {
-      const items = group.items.map(item => { return item.value })
+      const items = group.items.filter(i => !i.licenseDisabled && !i.disabled).map(item => item.value)
+      if (!items.length) return
       group.checked ? this.removeItems(items) : this.addItems(items)
-    },
-  },
-  render () {
-    return this.$scopedSlots.default({
-      moduleGroups: this.moduleGroups,
-      itemEvents: (item) => {
-        return {
-          click: () => {
-            this.onClickItem(item)
-          },
-        }
-      },
-      groupEvents: (group) => {
-        return {
-          click: () => {
-            this.onClickGroup(group)
-          },
-        }
-      },
-    })
-  },
-}
-
-export default {
-  name: 'FeatureSelector',
-  components: { LicenseFeatures },
-  props: {
-    defaultItems: {
-      type: Array,
-      default: () => {
-        return []
-      },
-    },
-    /* (item) => { return { disabled: true, reason: 'xxx' } } */
-    PreItemCheck: {
-      type: Function,
-      required: false,
-    },
-    /* (item) => { return true/false } */
-    PreItemFilter: {
-      type: Function,
-      required: false,
-    },
-  },
-  data () {
-    return {
-      items: [...this.defaultItems],
-    }
-  },
-  watch: {
-    items () {
-      this.$emit('change', [...this.items])
-    },
-  },
-  methods: {
-    changeItems (val) {
-      this.items = val
-      this.$refs.licenseFeatures.changeSelectedItems(val)
     },
   },
 }
 </script>
 
 <style scoped lang="less">
-@import '~@/styles/less/theme';
+@import '@/styles/less/theme';
 
 .module {
   border-color: #e8e8e8;
@@ -331,6 +303,7 @@ export default {
   margin-top: 10px;
   border-style: double;
   border-width: 1px;
+  border-radius: 6px;
   padding: 10px;
 
   .title {
@@ -357,14 +330,16 @@ export default {
       margin-bottom: 10px;
       border: 1px solid #eee;
       text-align: center;
-      border-radius: 3px;
+      border-radius: 6px;
       box-sizing: border-box;
+      color: rgba(0, 0, 0, 0.85);
 
       &.checked {
-        border-color: @primary-color;
+        border-color: var(--antd-wave-shadow-color, @primary-color);
+        color: var(--antd-wave-shadow-color, @primary-color);
 
         span {
-          color: @primary-color;
+          color: var(--antd-wave-shadow-color, @primary-color);
         }
       }
 
@@ -378,6 +353,11 @@ export default {
 
         &:hover {
           border-color: #d9d9d9;
+          color: rgba(0, 0, 0, .25);
+        }
+
+        span {
+          color: rgba(0, 0, 0, .25);
         }
       }
     }

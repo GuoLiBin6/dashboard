@@ -472,7 +472,7 @@ const getSingleActions = function () {
             label: i18n.t('compute.perform_delete'),
             submenus: [
               // 设置删除保护
-              disableDeleteAction(Object.assign(this, {}), {
+              disableDeleteAction(this, {
                 name: i18n.t('compute.vminstance-container'),
                 meta: () => {
                   const ret = { validate: true }

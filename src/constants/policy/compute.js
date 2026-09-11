@@ -18,7 +18,7 @@ export default {
           service: POLICY_RES_NAME_KEY_MAP.vminstance.service,
           resource: POLICY_RES_NAME_KEY_MAP.vminstance.resource,
           options: [
-            ...policyOptionsMap[POLICY_RES_NAME_KEY_MAP.vminstance.key],
+            ...(policyOptionsMap[POLICY_RES_NAME_KEY_MAP.vminstance.key] || []),
           ],
         },
       ],

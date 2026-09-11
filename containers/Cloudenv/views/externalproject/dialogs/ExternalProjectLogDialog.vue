@@ -12,6 +12,7 @@
 
 <script>
 import * as R from 'ramda'
+import { h } from 'vue'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 
@@ -50,12 +51,12 @@ export default {
               }
               const ret = []
               if (notes.old_domain && notes.old_project) {
-                ret.push(<div>{this.$t('cloudenv.old_sth', [this.$t('dictionary.domain')])}: {notes.old_domain}</div>)
-                ret.push(<div>{this.$t('cloudenv.old_sth', [this.$t('dictionary.project')])}: {notes.old_project}</div>)
+                ret.push(h('div', {}, `${this.$t('cloudenv.old_sth', [this.$t('dictionary.domain')])}: ${notes.old_domain}`))
+                ret.push(h('div', {}, `${this.$t('cloudenv.old_sth', [this.$t('dictionary.project')])}: ${notes.old_project}`))
               }
               if (notes.new_domain && notes.new_project) {
-                ret.push(<div>{this.$t('cloudenv.new_sth', [this.$t('dictionary.domain')])}: {notes.new_domain}</div>)
-                ret.push(<div>{this.$t('cloudenv.new_sth', [this.$t('dictionary.project')])}: {notes.new_project}</div>)
+                ret.push(h('div', {}, `${this.$t('cloudenv.new_sth', [this.$t('dictionary.domain')])}: ${notes.new_domain}`))
+                ret.push(h('div', {}, `${this.$t('cloudenv.new_sth', [this.$t('dictionary.project')])}: ${notes.new_project}`))
               }
               return ret
             },

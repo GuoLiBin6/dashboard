@@ -18,9 +18,12 @@ export default {
         hideField: true,
         title: i18n.t('network.text_291'),
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+          const h = this.$createElement
+          return h('side-page-trigger', {
+            props: {
+              onTrigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       {
@@ -42,16 +45,17 @@ export default {
               })
             }
             if (arr.length <= 0) {
-              return [
-                <div class='text-color-help'>{ this.$t('network.text_729') }</div>,
-              ]
+              return [h('div', { class: 'text-color-help' }, this.$t('network.text_729'))]
             }
-            const list = arr.map(item => <a-tag class='mb-2 mr-1'>{ item.value }</a-tag>)
-            return [<list-body-cell-popover text={i18n.t('common_323', [arr.length])} max-width="400px">
-              <div style="display: inline-flex; flex-wrap: wrap; max-width: 40vw;">
-                {...list}
-              </div>
-            </list-body-cell-popover>]
+            const list = arr.map(item => h('a-tag', { class: 'mb-2 mr-1' }, item.value))
+            return [h('list-body-cell-popover', {
+              props: {
+                text: i18n.t('common_323', [arr.length]),
+                maxWidth: '400px',
+              },
+            }, [
+              h('div', { style: 'display: inline-flex; flex-wrap: wrap; max-width: 40vw;' }, list),
+            ])]
           },
         },
       },

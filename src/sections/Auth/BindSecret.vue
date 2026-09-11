@@ -62,13 +62,15 @@
 <script>
 import { mapGetters, mapState } from 'vuex'
 import _ from 'lodash'
+import ningtonQrIOS from './assets/nington-qrcode-ios.png'
+import ningtonQrAndroid from './assets/nington-qrcode-android.png'
 
 export default {
   name: 'BindSecret',
   data () {
     return {
-      ningtonQrIOS: require('./assets/nington-qrcode-ios.png'),
-      ningtonQrAndroid: require('./assets/nington-qrcode-android.png'),
+      ningtonQrIOS,
+      ningtonQrAndroid,
       securityCode: '',
       error: false,
       loading: false,

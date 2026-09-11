@@ -106,9 +106,8 @@ export default {
                   })
                 },
               },
-              disableDeleteAction(Object.assign(this, {
+              disableDeleteAction(this, {
                 permission: 'kafkas_update',
-              }), {
                 name: this.$t('dictionary.kafka'),
               }),
               {

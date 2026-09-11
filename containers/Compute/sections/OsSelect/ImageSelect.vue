@@ -9,7 +9,7 @@
             @change="cloudproviderChange"
             :params="cloudproviderParams"
             :isDefaultSelect="true"
-            :resList.sync="cloudproviderList"
+            v-model:resList="cloudproviderList"
             :select-props="{ placeholder: $t('compute.text_149'), disabled: imageCloudproviderDisabled }" />
         </a-form-item>
       </a-col>
@@ -18,7 +18,7 @@
           <a-select v-decorator="decorator.os" :loading="loading" @change="osChange" :placeholder="$t('compute.text_153')">
             <a-select-option v-for="item in imagesInfo.osOpts" :key="item.key">
               <div :key="item.key" class="d-flex align-items-center">
-                <image-icon v-show="item.key !== 'all'" :image="item.key" />
+                <image-icon v-if="item.key !== 'all'" :image="item.key" />
                 <span :class="{ 'ml-2': item.key !== 'all' }">{{ item.label }}</span>
               </div>
             </a-select-option>

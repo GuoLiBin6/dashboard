@@ -24,9 +24,8 @@ export default {
         label: i18n.t('middleware.more'),
         actions: (obj) => {
           return [
-            disableDeleteAction(Object.assign(this, {
+            disableDeleteAction(this, {
               permission: 'elastic_searchs_update',
-            }), {
               name: this.$t('dictionary.elasticsearch'),
             }),
             {

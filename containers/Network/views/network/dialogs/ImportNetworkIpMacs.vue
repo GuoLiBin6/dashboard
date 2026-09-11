@@ -20,7 +20,7 @@
               :accept="accept"
               :remove="handleRemove">
               <div class="pt-3 pb-3">
-                <p class="ant-upload-drag-icon"><a-icon type="inbox" /></p>
+                <p class="ant-upload-drag-icon"><icon type="inbox" /></p>
                 <p class="ant-upload-text">{{$t('network.drag_file_area')}}</p>
                 <p class="ant-upload-hint">{{$t('network.file_type_validate')}}</p>
               </div>

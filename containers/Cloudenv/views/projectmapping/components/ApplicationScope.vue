@@ -1,7 +1,7 @@
 <template>
   <div>
     <a-form-model-item :label="$t('cloudenv.text_503')">
-      <a-radio-group v-model="formData.application_scope">
+      <a-radio-group v-model:value="formData.application_scope">
         <a-radio-button v-for="v in applicationScopeOptions" :key="v.key" :value="v.key">{{ v.label }}</a-radio-button>
       </a-radio-group>
     </a-form-model-item>

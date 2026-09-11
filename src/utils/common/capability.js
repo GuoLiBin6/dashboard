@@ -82,6 +82,8 @@
 export const cloudregionFilterByCapability = ({ capability = {}, resource = '', dataList = [], filterKey = 'read_only', regionKey = 'provider' }) => {
   // 未指明资源类型
   if (!resource) return dataList
+  // capability 尚未拉取完成时不过滤，避免把平台/区域选项全部滤空
+  if (!capability || !Object.keys(capability).length) return dataList
   const listKey = `${resource}_brands`
   const filterOriginList = (capability[listKey] || []).map(item => item.toLowerCase())
   const key = `${filterKey}_${resource}_brands`

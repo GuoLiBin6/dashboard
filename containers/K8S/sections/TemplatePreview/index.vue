@@ -3,7 +3,7 @@
     <a-divider orientation="left">{{$t('k8s.text_116')}}</a-divider>
     <div class="mb-3">
       <span style="font-size: 14px;" class="mr-2">{{$t('k8s.text_117')}}</span>
-      <a-select class="w-50" v-model="previewFile" value-key="name" @change="changePreviwFile">
+      <a-select class="w-50" v-model:value="previewFile" value-key="name" @change="changePreviwFile">
         <a-select-option v-for="item in previewFiles" :value="item.data" :key="item.name">{{ item.name }}</a-select-option>
       </a-select>
     </div>

@@ -11,11 +11,11 @@
           :disabled="params.resource.disabled || params.isViewer">{{$t('system.text_320')}}</a-checkbox>
       </div>
       <a-row class="mt-4">
-          <template v-for="item of params.actions">
+          <template v-for="item of params.actions" :key="item.action">
             <a-col
               v-if="item.label"
               :span="6"
-              :key="item.action"
+
               class="mb-2 checkbox-item d-flex align-items-center">
               <a-checkbox :checked="checked.includes(item.action)" :value="item.action" :disabled="item.disabled || params.isViewer" class="text-truncate checkbox-property" @change="handleCheckChange">
                 <span :title="item.label">{{ item.label }}</span>

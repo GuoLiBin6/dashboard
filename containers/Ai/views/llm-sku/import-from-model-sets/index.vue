@@ -11,7 +11,7 @@
 
     <a-drawer
       wrap-class-name="catalog-drawer-wrap"
-      :visible="drawerVisible"
+      :open="drawerVisible"
       :width="'50%'"
       destroy-on-close
       placement="right"
@@ -24,7 +24,7 @@
         <div class="catalog-drawer-scroll">
           <catalog-drawer-meta-panel :set="set" />
           <a-divider orientation="left">{{ $t('aice.llm_catalog.specs') }}</a-divider>
-          <a-radio-group v-model="selectedSpecId" class="spec-list mb-3">
+          <a-radio-group v-model:value="selectedSpecId" class="spec-list mb-3">
             <a-radio
               v-for="spec in catalogSpecs"
               :key="getCatalogSpecId(spec)"
@@ -170,4 +170,6 @@ export default {
 .spec-row-meta { margin-top: 4px; }
 </style>
 
-<style lang="less" src="@Ai/sections/catalog-model-sets/catalog-drawer.less"></style>
+<style lang="less">
+@import "@Ai/sections/catalog-model-sets/catalog-drawer.less";
+</style>

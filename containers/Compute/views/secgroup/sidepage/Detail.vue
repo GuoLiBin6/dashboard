@@ -49,12 +49,29 @@ export default {
           formatter: ({ row }) => {
             const guestList = []
             if (row.admin_guest_cnt && this.$store.getters.isAdminMode) {
-              guestList.push(<span> + {row.admin_guest_cnt} <help-tooltip name="secgroupAdminGuestCnt" /></span>)
+              guestList.push(this.$createElement('span', [
+                ` + ${row.admin_guest_cnt} `,
+                this.$createElement('help-tooltip', {
+                  props: { name: 'secgroupAdminGuestCnt' },
+                }),
+              ]))
             }
             if (row.system_guest_cnt && this.$store.getters.isAdminMode) {
-              guestList.push(<span> + {row.system_guest_cnt} <help-tooltip name="secgroupSystemGuestCnt" /></span>)
+              guestList.push(this.$createElement('span', [
+                ` + ${row.system_guest_cnt} `,
+                this.$createElement('help-tooltip', {
+                  props: { name: 'secgroupSystemGuestCnt' },
+                }),
+              ]))
             }
-            return <span><a onClick={ () => this.$emit('tab-change', 'associated-instances') }>{row.guest_cnt}</a>{...guestList}</span>
+            return this.$createElement('span', [
+              this.$createElement('a', {
+                on: {
+                  click: () => this.$emit('tab-change', 'associated-instances'),
+                },
+              }, row.guest_cnt),
+              ...guestList,
+            ])
           },
           hidden: () => this.hiddenColumns.includes('guest_cnt'),
         },
@@ -62,8 +79,16 @@ export default {
           field: 'total_cnt',
           title: this.$t('compute.associated_instances'),
           slots: {
-            default: ({ row }) => {
-              return <span><a onClick={ () => this.$emit('tab-change', 'associated-instances') }>{row.total_cnt}</a></span>
+            default: ({ row }, h) => {
+              return [
+                h('span', [
+                  h('a', {
+                    on: {
+                      click: () => this.$emit('tab-change', 'associated-instances'),
+                    },
+                  }, row.total_cnt),
+                ]),
+              ]
             },
           },
           hidden: () => this.hiddenColumns.includes('total_cnt'),

@@ -34,9 +34,13 @@ export default {
           field: 'scaling_policy_number',
           title: this.$t('compute.text_949'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               return [
-                <a onClick={ () => this.$emit('tab-change', 'rule-list') }>{row.scaling_policy_number}</a>,
+                h('a', {
+                  on: {
+                    click: () => this.$emit('tab-change', 'rule-list'),
+                  },
+                }, row.scaling_policy_number),
               ]
             },
           },
@@ -50,9 +54,13 @@ export default {
               field: 'guest_template',
               title: this.$t('compute.text_94'),
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   return [
-                    <a onClick={ () => this.$emit('tab-change', 'server-template-list') }>{row.guest_template}</a>,
+                    h('a', {
+                      on: {
+                        click: () => this.$emit('tab-change', 'server-template-list'),
+                      },
+                    }, row.guest_template),
                   ]
                 },
               },
@@ -61,9 +69,13 @@ export default {
               field: 'instance_number',
               title: this.$t('compute.text_874'),
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   return [
-                    <a onClick={ () => this.$emit('tab-change', 'server-list') }>{row.instance_number}</a>,
+                    h('a', {
+                      on: {
+                        click: () => this.$emit('tab-change', 'server-list'),
+                      },
+                    }, row.instance_number),
                   ]
                 },
               },
@@ -94,10 +106,17 @@ export default {
               field: 'vpc',
               title: 'VPC',
               hideField: true,
-              slotCallback: row => {
+              slotCallback: (row, h) => {
                 if (!row.vpc) return '-'
                 return [
-                  <side-page-trigger permission='vpcs_get' name='VpcSidePage' id={row.vpc_id} vm={this}>{ row.vpc }</side-page-trigger>,
+                  h('side-page-trigger', {
+                    props: {
+                      permission: 'vpcs_get',
+                      name: 'VpcSidePage',
+                      id: row.vpc_id,
+                      vm: this,
+                    },
+                  }, row.vpc),
                 ]
               },
               hidden: () => this.$store.getters.isProjectMode,
@@ -106,11 +125,18 @@ export default {
               field: 'network',
               title: this.$t('compute.text_106'),
               hideField: true,
-              slotCallback: row => {
+              slotCallback: (row, h) => {
                 if (!row.networks || !row.networks.length) return '-'
                 const [{ id, name }] = row.networks
                 return [
-                  <side-page-trigger permission='networks_get' name='NetworkSidePage' id={id} vm={this}>{ name }</side-page-trigger>,
+                  h('side-page-trigger', {
+                    props: {
+                      permission: 'networks_get',
+                      name: 'NetworkSidePage',
+                      id,
+                      vm: this,
+                    },
+                  }, name),
                 ]
               },
             }),

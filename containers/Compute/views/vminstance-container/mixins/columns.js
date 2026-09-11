@@ -44,39 +44,34 @@ export default {
     const getToolTip = (row) => {
       const num = row.metadata.create_backup_count || row.metadata.switch_backup_count
       let time = row.metadata.create_backup || row.metadata.switch_backup
-      if (time) {
-        const aLink = <a-button type="link" class="oc-pointer" disabled={this.execLoading} style="padding: 0;" onClick={() => doCreateOrSwitchBackup(row)}>{this.$t('compute.text_1341')}</a-button>
-        const aIcon = <a-icon type="exclamation-circle" class="ml-1 error-color oc-pointer" />
-        try {
-          time = this.$moment(JSON.parse(time)).format()
-        } catch (error) {
-          throw new Error('Failed to parse date', error)
-        }
-        if (row.metadata.create_backup) {
-          return <a-tooltip placement="right">
-            <template slot="title">
-              <i18n path="compute.text_1342">
-                <template slot="num">{num}</template>
-                <template slot="time">{time}</template>
-                <template slot="link">{aLink}</template>
-              </i18n>
-            </template>
-            {aIcon}
-          </a-tooltip>
-        } else if (row.metadata.switch_backup) {
-          return <a-tooltip placement="right">
-            <template slot="title">
-              <i18n path="compute.text_1343">
-                <template slot="num">{num}</template>
-                <template slot="time">{time}</template>
-                <template slot="link">{aLink}</template>
-              </i18n>
-            </template>
-            {aIcon}
-          </a-tooltip>
-        }
+      if (!time) return null
+      const msgKey = row.metadata.create_backup
+        ? 'compute.text_1342'
+        : (row.metadata.switch_backup ? 'compute.text_1343' : null)
+      if (!msgKey) return null
+      try {
+        time = this.$moment(JSON.parse(time)).format()
+      } catch (error) {
+        return null
       }
-      return null
+      // 列表内避免 a-tooltip（antdv4 setup 在单元格高频挂载易崩）；图标点击仍可重试，文案用原生 title
+      const tip = this.$t(msgKey, {
+        num: String(num),
+        time: String(time),
+        link: this.$t('compute.text_1341'),
+      })
+      return this.$createElement('icon', {
+        props: {
+          type: 'exclamation-circle',
+        },
+        class: 'ml-1 error-color oc-pointer',
+        attrs: {
+          title: String(tip),
+        },
+        on: {
+          click: () => doCreateOrSwitchBackup(row),
+        },
+      })
     }
     const columns = [
       getNameDescriptionTableColumn({
@@ -90,10 +85,12 @@ export default {
           // { validator: this.$validate('resourceCreateName') },
         ],
         statusModule: 'container',
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{row.name}</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
         hidden: () => {
           return this.$isScopedPolicyMenuHidden('server_hidden_columns.name')
@@ -102,15 +99,26 @@ export default {
       getStatusTableColumn({
         minWidth: 180,
         statusModule: 'container',
-        slotCallback: row => {
-          const log = <side-page-trigger class="ml-1" onTrigger={() => this.handleOpenSidepage(row, 'event-drawer')}>{this.$t('common.view_logs')}</side-page-trigger>
+        slotCallback: (row, h) => {
+          const log = h('side-page-trigger', {
+            class: 'ml-1',
+            on: {
+              trigger: () => this.handleOpenSidepage(row, 'event-drawer'),
+            },
+          }, this.$t('common.view_logs'))
 
           return [
-            <div class='d-flex align-items-center text-truncate'>
-              <status status={row.status} statusModule='container' process={row.progress} />
-              {row.metadata && getToolTip(row)}
-              {row.status?.includes('fail') ? log : null}
-            </div>,
+            h('div', { class: 'd-flex align-items-center text-truncate' }, [
+              h('status', {
+                props: {
+                  status: row.status,
+                  statusModule: 'container',
+                  process: row.progress,
+                },
+              }),
+              row.metadata && getToolTip(row),
+              row.status?.includes('fail') ? log : null,
+            ]),
           ]
         },
         hidden: () => {
@@ -141,7 +149,11 @@ export default {
               tooltip = this.$t('compute.backup')
               icontype = 'gaokeyong'
             }
-            return [<icon type={icontype} style={{ fontSize: '16px' }} title={tooltip} />]
+            return [this.$createElement('icon', {
+              props: { type: icontype },
+              style: { fontSize: '16px' },
+              attrs: { title: tooltip },
+            })]
           },
         },
         formatter: ({ row }) => {
@@ -182,10 +194,17 @@ export default {
         title: 'MAC',
         slots: {
           default: ({ row }) => {
-            if (this.isPreLoad && !row.macs) return [<data-loading />]
+            if (this.isPreLoad && !row.macs) return [this.$createElement('data-loading')]
             if (row.macs) {
               return row.macs.split(',').map(mac => {
-                return <list-body-cell-wrap copy row={{ mac }} hide-field field="mac">{mac}</list-body-cell-wrap>
+                return this.$createElement('list-body-cell-wrap', {
+                  props: {
+                    copy: true,
+                    row: { mac },
+                    hideField: true,
+                    field: 'mac',
+                  },
+                }, mac)
               })
             }
             return []
@@ -207,13 +226,13 @@ export default {
         minWidth: 120,
         sortable: true,
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             const ret = []
             if (row.instance_type) {
-              ret.push(<div class='text-truncate' style={{ color: '#0A1F44' }}>{row.instance_type}</div>)
+              ret.push(h('div', { class: 'text-truncate', style: { color: 'var(--oc-color-text-heading)' } }, row.instance_type))
             }
             const config = row.vcpu_count + 'C' + (row.vmem_size / 1024) + 'G' + (row.disk ? sizestr(row.disk, 'M', 1024) : '')
-            return ret.concat(<div class='text-truncate' style={{ color: '#53627C' }}>{config}</div>)
+            return ret.concat(h('div', { class: 'text-truncate', style: { color: 'var(--oc-color-text-secondary)' } }, config))
           },
         },
         formatter: ({ row }) => {
@@ -234,9 +253,17 @@ export default {
         sortable: true,
         minWidth: 80,
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             if (row.vcpu_count) {
-              return [<list-body-cell-wrap row={{ row }} hide-field field="vcpu_count">{row.vcpu_count}</list-body-cell-wrap>]
+              return [
+                h('list-body-cell-wrap', {
+                  props: {
+                    row: { row },
+                    hideField: true,
+                    field: 'vcpu_count',
+                  },
+                }, row.vcpu_count),
+              ]
             }
             return []
           },
@@ -251,10 +278,18 @@ export default {
         sortable: true,
         minWidth: 80,
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             if (row.vmem_size) {
               const config = (row.vmem_size / 1024) + 'G'
-              return [<list-body-cell-wrap row={{ row }} hide-field field="vmem_size">{config}</list-body-cell-wrap>]
+              return [
+                h('list-body-cell-wrap', {
+                  props: {
+                    row: { row },
+                    hideField: true,
+                    field: 'vmem_size',
+                  },
+                }, config),
+              ]
             }
             return []
           },
@@ -276,10 +311,18 @@ export default {
         sortable: true,
         minWidth: 80,
         slots: {
-          default: ({ row }) => {
-            if (this.isPreLoad && !row.disk) return [<data-loading />]
+          default: ({ row }, h) => {
+            if (this.isPreLoad && !row.disk) return [h('data-loading')]
             const config = row.disk ? sizestr(row.disk, 'M', 1024) : ''
-            return [<list-body-cell-wrap row={{ row }} hide-field field="disk">{config}</list-body-cell-wrap>]
+            return [
+              h('list-body-cell-wrap', {
+                props: {
+                  row: { row },
+                  hideField: true,
+                  field: 'disk',
+                },
+              }, config),
+            ]
           },
         },
         formatter: ({ row }) => {
@@ -298,11 +341,16 @@ export default {
         minWidth: 150,
         hidden: () => true,
         slots: {
-          default: ({ row }) => {
-            if (row.cpu_usage) {
-              return [<a-progress percent={row.cpu_usage.toFixed(4) * 100} size="small" />]
-            }
-            return [<a-progress percent={0} size="small" />]
+          default: ({ row }, h) => {
+            const percent = row.cpu_usage ? row.cpu_usage.toFixed(4) * 100 : 0
+            return [
+              h('a-progress', {
+                props: {
+                  percent,
+                  size: 'small',
+                },
+              }),
+            ]
           },
         },
       },
@@ -313,11 +361,16 @@ export default {
         minWidth: 150,
         hidden: () => true,
         slots: {
-          default: ({ row }) => {
-            if (row.mem_usage) {
-              return [<a-progress percent={row.mem_usage.toFixed(4) * 100} size="small" />]
-            }
-            return [<a-progress percent={0} size="small" />]
+          default: ({ row }, h) => {
+            const percent = row.mem_usage ? row.mem_usage.toFixed(4) * 100 : 0
+            return [
+              h('a-progress', {
+                props: {
+                  percent,
+                  size: 'small',
+                },
+              }),
+            ]
           },
         },
       },
@@ -328,11 +381,16 @@ export default {
         minWidth: 150,
         hidden: () => true,
         slots: {
-          default: ({ row }) => {
-            if (row.disk_usage) {
-              return [<a-progress percent={row.disk_usage.toFixed(4) * 100} size="small" />]
-            }
-            return [<a-progress percent={0} size="small" />]
+          default: ({ row }, h) => {
+            const percent = row.disk_usage ? row.disk_usage.toFixed(4) * 100 : 0
+            return [
+              h('a-progress', {
+                props: {
+                  percent,
+                  size: 'small',
+                },
+              }),
+            ]
           },
         },
       },
@@ -342,8 +400,8 @@ export default {
         minWidth: 80,
         showOverflow: 'ellipsis',
         slots: {
-          default: ({ row }) => {
-            if (this.isPreLoad && !row.secgroups && !row.network_tags?.length) return [<data-loading />]
+          default: ({ row }, h) => {
+            if (this.isPreLoad && !row.secgroups && !row.network_tags?.length) return [h('data-loading')]
             const networkTags = getNetworkTags(row)
             if (networkTags.length) return renderNetworkTagNodes(networkTags)
             const text = formatServerSecgroupText(row)
@@ -362,7 +420,7 @@ export default {
         title: 'VPC',
         hideField: true,
         slotCallback: (row) => {
-          if (this.isPreLoad && !row.vpc) return [<data-loading />]
+          if (this.isPreLoad && !row.vpc) return [this.$createElement('data-loading')]
           return row.vpc
         },
         hidden: () => {
@@ -390,13 +448,20 @@ export default {
         minWidth: 100,
         slots: {
           default: ({ row }) => {
-            if (!row.host) return [<data-loading />]
+            if (!row.host) return [this.$createElement('data-loading')]
             if (findPlatform(row.hypervisor, 'hypervisor') === SERVER_TYPE.public || row.hypervisor === HYPERVISORS_MAP.hcso.hypervisor || row.hypervisor === HYPERVISORS_MAP.hcs.hypervisor) {
               return '-'
             }
             const text = row.host || '-'
             return [
-              <list-body-cell-wrap copy field='host' row={row} message={text}></list-body-cell-wrap>,
+              this.$createElement('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  field: 'host',
+                  row,
+                  message: text,
+                },
+              }),
             ]
           },
         },

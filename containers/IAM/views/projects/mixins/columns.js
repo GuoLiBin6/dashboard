@@ -17,9 +17,11 @@ export default {
           { required: true, message: i18n.t('system.text_168') },
         ],
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+          return this.$createElement('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getTagTableColumn({ onManager: this.onManager, resource: 'projects', params: { service: 'identity', resource: 'projects' }, columns: () => this.columns, tipName: this.$t('dictionary.project') }),

@@ -1,7 +1,7 @@
 <template>
   <div>
     <page-header :title="createPageTitle" />
-    <page-body needMarginBottom>
+    <page-body>
       <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
         <a-form-item :label="$t('common.name')">
           <a-input v-decorator="decorators.name" :placeholder="$t('validator.resourceName')" />
@@ -157,7 +157,7 @@
             :hiddenAdd="true"
             :isDialog="true" />
         </a-form-item>
-        <a-collapse :bordered="false" v-model="collapseActive">
+        <a-collapse :bordered="false" v-model:activeKey="collapseActive">
           <a-collapse-panel :header="$t('compute.text_309')" key="1">
             <a-form-item :label="$t('dictionary.host')">
               <base-select
@@ -180,7 +180,7 @@
           <a-divider orientation="left" class="openclaw-section-divider">{{ $t('aice.openclaw.section.ai_providers') }}</a-divider>
           <a-form-item :label="$t('aice.openclaw.provider_filter')" :extra="$t('aice.openclaw.provider_select_tip')">
             <a-select
-              v-model="openclawSelectedProviders"
+              v-model:value="openclawSelectedProviders"
               mode="multiple"
               :placeholder="$t('aice.openclaw.provider_filter_placeholder')"
               allow-clear

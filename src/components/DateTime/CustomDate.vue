@@ -1,45 +1,83 @@
 <template>
-  <a-popconfirm ref="customDate" placement="bottomRight" overlayClassName="custom-date-time" @confirm="submit" @cancel="cancel" v-model="visible">
-      <template v-slot:icon><i /></template>
-      <template v-slot:title class="pl-0">
-        <div @click="hiddenMonthSelectVisble">
-          <a-form-model hideRequiredMark v-if="isAdvancedView" ref="ruleForm" :model="formData" :rules="rules" v-bind="layout">
-            <a-form-model-item :label="$t('common.date_range')" prop="date_range">
-              <div class="mr-2" style="width:356px">
-                <a-range-picker
-                  v-model="formData.date_range"
-                  :format="showFormat"
-                  :disabled-time="disabledDate" />
-              </div>
-            </a-form-model-item>
-          </a-form-model>
-          <a-form-model hideRequiredMark v-else ref="ruleForm" :model="formData" :rules="rules" v-bind="layout">
-            <a-form-model-item :label="$t('common.date_range')" prop="month_range">
-              <month-range-picker ref="monthSelect" v-model="formData.month_range" :panelVisible="visible" />
-            </a-form-model-item>
-          </a-form-model>
-          <a-button v-if="!isHideCustomAdvanced" type="link" class="position-absolute" style="bottom: -28px;" @click="toggleView">{{ isAdvancedView ? $t('common.date_time.quick') : $t('common.date_time.advanced') }}</a-button>
-        </div>
-      </template>
-    <!-- </div> -->
-    <a-radio-button value="custom">{{$t('common.date_time.custom')}}{{customTimeLabel}}</a-radio-button>
+  <a-popconfirm
+    ref="customDate"
+    class="custom-date-popconfirm"
+    placement="bottomRight"
+    overlayClassName="custom-date-time"
+    :open="visible"
+    @confirm="submit"
+    @cancel="cancel"
+    @openChange="onPopOpenChange">
+    <template v-slot:icon><i /></template>
+    <template v-slot:title class="pl-0">
+      <div @click="hiddenMonthSelectVisble">
+        <a-form-model hideRequiredMark v-if="isAdvancedView" ref="ruleForm" :model="formData" :rules="rules" v-bind="layout">
+          <a-form-model-item :label="$t('common.date_range')" prop="date_range">
+            <div class="custom-date-time__picker">
+              <date-range-picker
+                ref="dateSelect"
+                v-model="formData.date_range"
+                :panelVisible="visible"
+                :disabledDate="disabledDate"
+                @calendarChange="onCalendarChange"
+                @openChange="onPickerOpenChange" />
+            </div>
+          </a-form-model-item>
+        </a-form-model>
+        <a-form-model hideRequiredMark v-else ref="ruleForm" :model="formData" :rules="rules" v-bind="layout">
+          <a-form-model-item :label="$t('common.date_range')" prop="month_range">
+            <month-range-picker ref="monthSelect" v-model="formData.month_range" :panelVisible="visible" />
+          </a-form-model-item>
+        </a-form-model>
+        <a-button
+          v-if="!isHideCustomAdvanced"
+          type="link"
+          class="custom-date-time__switch position-absolute"
+          style="bottom: -28px;"
+          @click="toggleView">
+          {{ isAdvancedView ? $t('common.date_time.quick') : $t('common.date_time.advanced') }}
+        </a-button>
+      </div>
+    </template>
+    <a-radio-button value="custom">{{ $t('common.date_time.custom') }}{{ customTimeLabel }}</a-radio-button>
   </a-popconfirm>
 </template>
 
 <script>
 import moment from 'moment'
+import dayjs from '@/utils/dayjs'
+import DateRangePicker from '@/components/DateRangePicker'
+import MonthRangePicker from '@/components/MonthRangePicker'
+
+function toDayjs (val) {
+  if (val == null || val === '') return null
+  if (dayjs.isDayjs(val)) return val
+  if (val && typeof val.toDate === 'function') return dayjs(val.toDate())
+  const d = dayjs(val)
+  return d.isValid() ? d : null
+}
+
+function toMoment (val) {
+  if (val == null || val === '') return null
+  if (moment.isMoment(val)) return val
+  if (dayjs.isDayjs(val)) return moment(val.toDate())
+  if (val && typeof val.toDate === 'function') return moment(val.toDate())
+  return moment(val)
+}
 
 export default {
   name: 'CustomDate',
+  components: {
+    DateRangePicker,
+    MonthRangePicker,
+  },
   props: {
     customDate: {
       type: Object,
-      default: () => {
-        return {
-          start: moment(),
-          end: moment(),
-        }
-      },
+      default: () => ({
+        start: moment(),
+        end: moment(),
+      }),
     },
     customTimeLabel: String,
     canSelectTodayAfter: {
@@ -50,16 +88,19 @@ export default {
     isHideCustomAdvanced: Boolean,
   },
   data () {
+    const start = this.customDate && this.customDate.start
+    const end = this.customDate && this.customDate.end
     return {
       formData: {
-        month_range: this.customDate.start ? [moment(this.customDate.start), moment(this.customDate.end)] : [null, null],
-        date_range: [this.customDate.start, this.customDate.end],
+        month_range: start ? [moment(start), moment(end)] : [null, null],
+        date_range: [toDayjs(start) || dayjs(), toDayjs(end) || dayjs()],
       },
       monthChangeIndex: 0,
-      isAdvancedView: false, // 是否展示高级窗口
-      confirmView: true, // 确认状态下的是否展示高级窗口
+      isAdvancedView: false,
+      confirmView: true,
       visible: false,
       monthSelectVisble: false,
+      pickerOpen: false,
       layout: {
         labelCol: { span: 5 },
         wrapperCol: { span: 19 },
@@ -82,6 +123,9 @@ export default {
       if (!val && !this.visible) {
         this.monthChangeIndex = 0
       }
+      if (val) {
+        this.syncDateRangeFromSource()
+      }
     },
     visible (val) {
       if (!val && !this.isAdvancedView) {
@@ -89,6 +133,7 @@ export default {
       }
       if (!val) {
         this.monthSelectVisble = false
+        this.pickerOpen = false
       }
       if (val) {
         this.$nextTick(() => {
@@ -96,7 +141,8 @@ export default {
           const tags = document.getElementsByClassName('ant-popover-inner-content')
           for (let i = 0; i < tags.length; i++) {
             tags[i].addEventListener('click', function () {
-              that.$refs.monthSelect && that.$refs.monthSelect.hiddenPanel()
+              const month = that.$refs.monthSelect
+              if (month && typeof month.hiddenPanel === 'function') month.hiddenPanel()
             })
           }
         })
@@ -104,65 +150,69 @@ export default {
     },
   },
   methods: {
+    syncDateRangeFromSource () {
+      const monthStart = this.formData.month_range && this.formData.month_range[0]
+      const monthEnd = this.formData.month_range && this.formData.month_range[1]
+      if (monthStart && monthEnd) {
+        this.formData.date_range = [toDayjs(monthStart), toDayjs(monthEnd)]
+        return
+      }
+      const start = this.customDate && this.customDate.start
+      const end = this.customDate && this.customDate.end
+      this.formData.date_range = [toDayjs(start) || dayjs(), toDayjs(end) || dayjs()]
+    },
+    onCalendarChange (dates) {
+      if (!dates) {
+        this.formData.date_range = [null, null]
+        return
+      }
+      const next = [dates[0] ? toDayjs(dates[0]) : null, dates[1] ? toDayjs(dates[1]) : null]
+      this.formData.date_range = next
+    },
+    onPickerOpenChange (open) {
+      this.pickerOpen = !!open
+    },
+    isPickerDropdownOpen () {
+      return !!(this.$refs.dateSelect && this.$refs.dateSelect.visible)
+    },
+    onPopOpenChange (open) {
+      if (!open && (this.pickerOpen || this.isPickerDropdownOpen())) {
+        return
+      }
+      this.visible = open
+    },
     hiddenMonthSelectVisble () {
-      this.$refs.monthSelect && this.$refs.monthSelect.hiddenPanel()
+      const month = this.$refs.monthSelect
+      if (month && typeof month.hiddenPanel === 'function') month.hiddenPanel()
+      const date = this.$refs.dateSelect
+      if (date && typeof date.hiddenPanel === 'function') date.hiddenPanel()
     },
-    startChange (value) {
-      const dateEnd = this.formData.month_range[1]
-      if (dateEnd && value > dateEnd) {
-        this.formData.month_range[1] = value
-      }
-    },
-    dateDisabledEnd (value) {
-      const dateStart = this.formData.month_range[0]
-      if (dateStart && value < dateStart) return true
-      return false
-    },
-    handleOpenChange (val) {
-      this.monthSelectVisble = val
-    },
-    handleMonthChange (val, str) {
-      const val0 = val[0].format('YYYYMM')
-      const val1 = val[1].format('YYYYMM')
-      const ori0 = this.formData.month_range[0].format('YYYYMM')
-      const ori1 = this.formData.month_range[0].format('YYYYMM')
-      let changeIndex = 0
-      if (val0 === ori0 && val1 !== ori1) {
-        changeIndex = 1
-      }
-      const changeVal = val[changeIndex]
-      if (this.monthChangeIndex === 0) {
-        const otherVal = this.formData.month_range[1] > changeVal ? this.formData.month_range[1] : changeVal
-        this.formData.month_range = [changeVal, otherVal]
-        this.monthChangeIndex = 1
-      } else {
-        if (changeVal < this.formData.month_range[0]) {
-          this.formData.month_range = [changeVal, this.formData.month_range[0]]
-        } else {
-          this.formData.month_range = [this.formData.month_range[0], changeVal]
-        }
-        this.monthChangeIndex = 0
-        this.monthSelectVisble = false
-      }
+    disabledDate (current) {
+      if (!current || this.canSelectTodayAfter) return false
+      return current > dayjs().endOf('day')
     },
     dateRangeValidate (rule, value, callback) {
       if (value && value[0] && value[1]) {
-        if (!this.canSelectTodayAfter && value[1] > this.$moment().endOf('day')) {
+        if (!this.canSelectTodayAfter && toDayjs(value[1]) > dayjs().endOf('day')) {
           callback(new Error(this.$t('common.select_time_little_current')))
+          return
         }
         callback()
+        return
       }
       callback(new Error(this.$t('common.tips.select', [this.$t('common.date_range')])))
     },
     monthStartValidate (rule, value, callback) {
       if (this.formData.month_range[0]) {
         callback()
+        return
       }
       callback(new Error(this.$t('common.tips.select', [this.$t('common.date_range')])))
     },
     monthEndValidate (rule, value, callback) {
       if (this.formData.month_range[1]) {
         callback()
+        return
       }
       callback(new Error(this.$t('common.tips.select', [this.$t('common.date_range')])))
     },
@@ -170,6 +220,7 @@ export default {
       this.isAdvancedView = !this.isAdvancedView
     },
     cancel () {
+      this.pickerOpen = false
       this.visible = false
       setTimeout(() => {
         this.isAdvancedView = this.confirmView
@@ -177,12 +228,14 @@ export default {
     },
     getCustomTime () {
       if (this.isAdvancedView) {
-        return { start: this.formData.date_range[0], end: this.formData.date_range[1] }
-      } else {
         return {
-          start: this.$moment(this.formData.month_range[0].startOf('month')),
-          end: this.$moment(this.formData.month_range[1].endOf('month')),
+          start: toMoment(this.formData.date_range[0]),
+          end: toMoment(this.formData.date_range[1]),
         }
+      }
+      return {
+        start: this.$moment(this.formData.month_range[0].startOf('month')),
+        end: this.$moment(this.formData.month_range[1].endOf('month')),
       }
     },
     async submit () {
@@ -193,6 +246,7 @@ export default {
           this.$emit('update:time', 'custom')
           this.$emit('update:customDate', customDate)
           this.$emit('change', customDate)
+          this.pickerOpen = false
           this.visible = false
         } else {
           this.visible = true
@@ -207,8 +261,57 @@ export default {
 }
 </script>
 
-<style lang="less" scoped>
-.custom-date-time ::v-deep .ant-popover-inner-content {
-  min-width: 277px;
+<style lang="less">
+.custom-date-time .ant-popover-inner-content {
+  min-width: 420px;
+  overflow: visible;
+}
+.custom-date-time .ant-picker-dropdown {
+  z-index: 1100;
+}
+.custom-date-time .ant-form-item {
+  margin-bottom: 12px;
+}
+.custom-date-time .ant-form-item-control,
+.custom-date-time .ant-form-item-control-input,
+.custom-date-time .ant-form-item-control-input-content {
+  min-width: 0;
+}
+.custom-date-time__picker {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+.custom-date-time .oc-date-range,
+.custom-date-time .oc-month-range,
+.custom-date-time .oc-date-range__input,
+.custom-date-time .oc-month-range__input,
+.custom-date-time .ant-picker {
+  width: 100% !important;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.custom-date-time .custom-date-time__switch,
+.custom-date-time .custom-date-time__switch.ant-btn-link {
+  color: var(--ant-color-primary, #1890ff);
+}
+.custom-date-time .custom-date-time__switch.ant-btn-link:hover,
+.custom-date-time .custom-date-time__switch.ant-btn-link:focus {
+  color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 80%, #fff);
+}
+.custom-date-time .ant-btn-primary {
+  background-color: var(--ant-color-primary, #1890ff);
+  border-color: var(--ant-color-primary, #1890ff);
+}
+.custom-date-time .ant-btn-primary:hover,
+.custom-date-time .ant-btn-primary:focus {
+  background-color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 80%, #fff) !important;
+  border-color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 80%, #fff) !important;
+}
+/* 保持与 radio-group 同行，避免单独换行 */
+.custom-date-popconfirm {
+  display: inline-flex !important;
+  vertical-align: top;
 }
 </style>

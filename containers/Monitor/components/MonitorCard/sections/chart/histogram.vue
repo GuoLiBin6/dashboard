@@ -127,10 +127,8 @@ export default {
 </script>
 
 <style lang="less" scoped>
-::v-deep {
-  .ve-bar {
-    max-height: 1400px; // 30条数据的高度，超过30条数据滚动
-    overflow: auto;
-  }
+:deep(.ve-bar) {
+  max-height: 1400px; // 30条数据的高度，超过30条数据滚动
+  overflow: auto;
 }
 </style>

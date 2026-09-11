@@ -315,7 +315,8 @@ export default {
                 }
               },
             },
-            disableDeleteAction(Object.assign(this, { permission: 'redis_elasticcaches_update' }), {
+            disableDeleteAction(this, {
+              permission: 'redis_elasticcaches_update',
               name: this.$t('dictionary.elasticcaches'),
             }),
             {

@@ -51,12 +51,12 @@ export default {
           hiddenField: 'region',
           title: this.$t('db.text_133'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (!R.isNil(row.slave_zone_infos)) {
                 const sl = row.slave_zone_infos.map(v => {
-                  return <div>{v.name}({this.$t('db.text_164')})</div>
+                  return h('div', `${v.name}(${this.$t('db.text_164')})`)
                 })
-                return [<div>{row.zone ? row.zone + '(' + this.$t('db.text_165') + ')' : '-'}</div>, ...sl]
+                return [h('div', row.zone ? row.zone + '(' + this.$t('db.text_165') + ')' : '-'), ...sl]
               }
               return row.zone || '-'
             },
@@ -145,10 +145,17 @@ export default {
               field: 'ip_addr',
               title: this.$t('db.text_152'),
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   if (!row.ip_addr) return '-'
                   const ret = row.ip_addr.split(';').map(ip => {
-                    return <list-body-cell-wrap hide-field copy row={{ ip: `${ip}:${row.port}` }} field="ip">{`${ip}:${row.port}`}</list-body-cell-wrap>
+                    return h('list-body-cell-wrap', {
+                      props: {
+                        hideField: true,
+                        copy: true,
+                        row: { ip: `${ip}:${row.port}` },
+                        field: 'ip',
+                      },
+                    }, `${ip}:${row.port}`)
                   })
                   return ret
                 },

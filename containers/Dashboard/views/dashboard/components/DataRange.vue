@@ -1,9 +1,9 @@
 <template>
-  <a-popover v-model="visible" trigger="click" placement="bottomRight">
-    <template slot="content">
+  <a-popover v-model:open="visible" trigger="click" placement="bottomRight">
+    <template #content>
       <div class="d-flex align-items-center">
         <span class="label mr-3">{{ $t('scope.kpi.data_range') }}:</span>
-        <a-radio-group v-model="form.scope">
+        <a-radio-group v-model:value="form.scope">
           <a-radio-button v-for="(item, index) in scopeOpts" :key="`${item.value}$$${index}`" :value="item.value">{{ item.label }}</a-radio-button>
         </a-radio-group>
       </div>

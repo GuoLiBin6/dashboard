@@ -68,7 +68,7 @@
         :type="type"
         :dataDiskSizes="dataDiskSizes"
         :isOpenWorkflow="isOpenWorkflow"
-        :errors.sync="errors"
+        v-model:errors="errors"
         :isServertemplate="isServertemplate"
         :hasMeterService="hasMeterService"
         @getOriginPrice="getOriginPrice" />

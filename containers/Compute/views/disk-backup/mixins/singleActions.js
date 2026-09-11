@@ -50,7 +50,9 @@ export default {
               const change = (bool) => {
                 this.deleteResProps.force = bool
               }
-              return <a-checkbox onInput={ change }>{ this.$t('compute.text_655') }</a-checkbox>
+              return this.$createElement('a-checkbox', {
+                on: { input: change },
+              }, this.$t('compute.text_655'))
             },
             requestParams: this.deleteResProps,
           })

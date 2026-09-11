@@ -1,6 +1,6 @@
 <template>
   <div>
-    <page-header :title="$t('dictionary.commonalert')" :current-tab.sync="alertType" :tabs="cloudEnvOptions" />
+    <page-header :title="$t('dictionary.commonalert')" v-model:currentTab="alertType" :tabs="cloudEnvOptions" />
     <page-body>
       <commonalert-list ref="list" :alertType="alertType" listId="CommonalertList" />
     </page-body>

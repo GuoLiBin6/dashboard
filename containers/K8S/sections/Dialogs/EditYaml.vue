@@ -1,13 +1,15 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{$t('k8s.text_47')}}</div>
-    <div class="k8s-edit-yaml-dialog w-100" v-if="configText" slot="body">
+    <template #header>{{$t('k8s.text_47')}}</template>
+    <template #body>
+      <div class="k8s-edit-yaml-dialog w-100" v-if="configText">
       <code-mirror v-model="configText" :options="cmOptions" />
-    </div>
-    <div slot="footer">
+      </div>
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 
@@ -64,7 +66,7 @@ export default {
 
 <style lang="less" scoped>
 .k8s-edit-yaml-dialog {
-  ::v-deep .CodeMirror {
+  :deep(.CodeMirror) {
     height: 600px;
   }
 }

@@ -49,7 +49,7 @@ export default {
           width: 80,
           showOverflow: 'title',
           formatter: ({ row }) => {
-            return this.$t('cloudenvScheduledtaskRuleAction')[row.operation] || '-'
+            return this.$tm('cloudenvScheduledtaskRuleAction')[row.operation] || '-'
           },
         },
         {

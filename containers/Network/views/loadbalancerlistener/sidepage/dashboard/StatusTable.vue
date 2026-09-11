@@ -1,9 +1,9 @@
 <template>
   <div>
     <div class="detail-title">{{$t('network.text_501')}}</div>
-    <vxe-grid :data="listData" :columns="columns">
+    <table-lite-grid :data="listData" :columns="columns">
       <span slot="empty">{{isRedirect ? $t('network.text_502') : $t('network.text_503')}}</span>
-    </vxe-grid>
+    </table-lite-grid>
   </div>
 </template>
 

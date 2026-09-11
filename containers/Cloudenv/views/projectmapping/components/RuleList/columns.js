@@ -22,21 +22,32 @@ const getResourceRuleTableColumn = ({
     title,
     slots: {
       default: ({ row }, h) => {
-        const tags = row.tags.map(item => {
+        const hFn = h || this.$createElement
+        const tags = (row.tags || []).map(item => {
           const rgb = getTagColor(item.key, item.value, 'rgb')
           const strRgb = rgb.join(',')
-          return (<span
-            class="tag mb-1 text-truncate d-inline-block"
-            title={getTagTitle(item.key, item.value)}
-            key={`${item.key}${item.value}`}
-            style={{ backgroundColor: `rgba(${strRgb},.1)`, boxSizing: 'border-box', color: `rgb(${strRgb})`, border: `solid 1px rgb(${strRgb})`, padding: '0 5px', marginRight: '10px' }}>
-            { getTagTitle('user:' + item.key, item.value) }
-          </span>)
+          return hFn('span', {
+            class: 'tag mb-1 text-truncate d-inline-block',
+            attrs: { title: getTagTitle(item.key, item.value) },
+            key: `${item.key}${item.value}`,
+            style: {
+              backgroundColor: `rgba(${strRgb},.1)`,
+              boxSizing: 'border-box',
+              color: `rgb(${strRgb})`,
+              border: `solid 1px rgb(${strRgb})`,
+              padding: '0 5px',
+              marginRight: '10px',
+            },
+          }, getTagTitle('user:' + item.key, item.value))
         })
-        return [<div>{ getRuleCondition(row) }</div>, <div>{ ...tags }</div>]
+        return [
+          hFn('div', {}, getRuleCondition(row)),
+          hFn('div', {}, tags),
+        ]
       },
       header: ({ column }, h) => {
-        return [<span>{title}</span>]
+        const hFn = h || this.$createElement
+        return [hFn('span', {}, title)]
       },
     },
   }
@@ -69,7 +80,8 @@ export default {
                 }
               }
               return [
-                <span class="text-color-secondary">{ project || '-'}</span>]
+                h('span', { class: 'text-color-secondary' }, project || '-'),
+              ]
             },
           },
         },
@@ -109,18 +121,29 @@ export default {
       dragColumn: {
         width: 1,
         slots: {
-          default: () => {
+          default: (params, h) => {
+            const hFn = h || this.$createElement
+            if (!this.canSort) return []
             return [
-              <span v-show={this.canSort} class="drag-btn">
-                <i class="vxe-icon--menu"></i>
-              </span>,
+              hFn('span', { class: 'drag-btn' }, [
+                hFn('a-icon', { props: { type: 'menu' } }),
+              ]),
             ]
           },
-          header: () => {
+          header: (params, h) => {
+            const hFn = h || this.$createElement
+            if (!this.canSort) return []
             return [
-              <vxe-tooltip v-show={this.canSort} v-model={this.showHelpTip2} content={i18n.t('cloudenv.text_591')} enterable>
-                <i class="vxe-icon--question" onClick={ () => { this.showHelpTip2 = !this.showHelpTip2 } }></i>
-              </vxe-tooltip>,
+              hFn('a-tooltip', {
+                props: {
+                  title: i18n.t('cloudenv.text_591'),
+                },
+              }, [
+                hFn('a-icon', {
+                  props: { type: 'question-circle' },
+                  on: { click: () => { this.showHelpTip2 = !this.showHelpTip2 } },
+                }),
+              ]),
             ]
           },
         },

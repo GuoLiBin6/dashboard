@@ -1,5 +1,6 @@
 import * as R from 'ramda'
 import _ from 'lodash'
+import { h } from 'vue'
 import { SCHED_POLICY_OPTIONS_MAP, SERVER_TYPE, LOGIN_TYPES_MAP, NETWORK_OPTIONS_MAP } from '@Compute/constants'
 import OsSelect from '@Compute/sections/OsSelect'
 import ServerPassword from '@Compute/sections/ServerPassword'
@@ -561,8 +562,14 @@ export default {
     isPve () {
       return this.form.fd.hypervisor === HYPERVISORS_MAP.proxmox.key
     },
+    /** Public 有 computed hypervisor；IDC 等仅 form.fd，避免直接读 this.hypervisor 触发 Vue3 告警 */
+    formHypervisor () {
+      if (this.form.fd.hypervisor) return this.form.fd.hypervisor
+      const comp = this.$options.computed && this.$options.computed.hypervisor
+      return typeof comp === 'function' ? (comp.call(this) || '') : ''
+    },
     isGoogle () {
-      return this.form.fd.hypervisor === HYPERVISORS_MAP.google.key || this.hypervisor === HYPERVISORS_MAP.google.key
+      return this.formHypervisor === HYPERVISORS_MAP.google.key
     },
     isCNware () {
       return this.form.fd.hypervisor === HYPERVISORS_MAP.cnware.key
@@ -589,7 +596,7 @@ export default {
         HYPERVISORS_MAP.qcloud.key,
         HYPERVISORS_MAP.ksyun.key,
       ]
-      return showCustomDataHypervisors.includes(this.form.fd.hypervisor || this.hypervisor)
+      return showCustomDataHypervisors.includes(this.formHypervisor)
     },
     isOpenSourceVersion () {
       return !this.$appConfig.isPrivate
@@ -1088,6 +1095,24 @@ export default {
       setTimeout(reapplyDataDisks, 500)
       setTimeout(reapplyDataDisks, 1500)
       setTimeout(reapplyDataDisks, 3000)
+    },
+    // 不传 rotate，旋转由全局 CSS（.ant-collapse-item-active）控制，避免内联 rotate 失效/叠加
+    // 不用 @ant-design/icons-vue：compat 下 expand-icon 渲染会触发 inject/prefixCls 报错
+    renderCollapseExpandIcon () {
+      return h('span', { class: 'anticon anticon-right', role: 'img' }, [
+        h('svg', {
+          viewBox: '64 64 896 896',
+          width: '1em',
+          height: '1em',
+          fill: 'currentColor',
+          'aria-hidden': 'true',
+          focusable: 'false',
+        }, [
+          h('path', {
+            d: 'M765.7 486.8L314.9 134.7c-5.3-4.1-12.9-.9-12.9 5.2v752.2c0 6.1 7.6 9.3 12.9 5.2l450.8-352.1c6.3-4.9 6.3-14.2 0-19.2z',
+          }),
+        ]),
+      ])
     },
     async capability (v, data) { // 可用区查询
       const params = {

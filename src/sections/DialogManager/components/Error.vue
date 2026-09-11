@@ -1,7 +1,8 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{$t('common.text00089')}}</div>
-    <div class="error-body" slot="body">
+    <template #header>{{$t('common.text00089')}}</template>
+    <template #body>
+      <div class="error-body">
       <div v-for="(item, i) in details" :key="i" class="mb-2">
          <div class="d-flex pb-2 " v-if="item.id">
           <div class="label">ID: </div>
@@ -28,10 +29,11 @@
           <pre>{{ request }} <copy :message="request" /></pre>
         </div>
       </div>
-    </div>
-    <div slot="footer">
+      </div>
+    </template>
+    <template #footer>
       <a-button type="primary" @click="cancelDialog">{{ $t('dialog.ok') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

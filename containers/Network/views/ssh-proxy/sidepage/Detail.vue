@@ -28,12 +28,19 @@ export default {
           title: this.$t('network.ssh-proxy.intranet_ip_addr'),
           minWidth: 120,
           slots: {
-            default: ({ row }) => {
-              return [<div>
-                <list-body-cell-wrap hide-field copy field='intranet_ip_addr' row={row}>
-                  <span style={{ color: '#53627C' }}>{ row.intranet_ip_addr || '-' }</span>
-                </list-body-cell-wrap>
-              </div>]
+            default: ({ row }, h) => {
+              return [h('div', [
+                h('list-body-cell-wrap', {
+                  props: {
+                    hideField: true,
+                    copy: true,
+                    field: 'intranet_ip_addr',
+                    row: row,
+                  },
+                }, [
+                  h('span', { style: { color: 'var(--oc-color-text-secondary)' } }, row.intranet_ip_addr || '-'),
+                ]),
+              ])]
             },
           },
         },
@@ -42,12 +49,19 @@ export default {
           title: this.$t('network.ssh-proxy.host'),
           minWidth: 120,
           slots: {
-            default: ({ row }) => {
-              return [<div>
-                <list-body-cell-wrap hide-field copy field='host' row={row}>
-                  <span style={{ color: '#53627C' }}>{ row.host || '-' }</span>
-                </list-body-cell-wrap>
-              </div>]
+            default: ({ row }, h) => {
+              return [h('div', [
+                h('list-body-cell-wrap', {
+                  props: {
+                    hideField: true,
+                    copy: true,
+                    field: 'host',
+                    row: row,
+                  },
+                }, [
+                  h('span', { style: { color: 'var(--oc-color-text-secondary)' } }, row.host || '-'),
+                ]),
+              ])]
             },
           },
         },

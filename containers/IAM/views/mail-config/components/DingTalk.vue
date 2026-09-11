@@ -91,7 +91,7 @@ export default {
       href: DOCS_MAP.mailConfig('dingtalk'),
     }
   },
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {

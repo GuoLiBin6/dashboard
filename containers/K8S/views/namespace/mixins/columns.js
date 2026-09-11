@@ -10,7 +10,11 @@ export default {
         width: 300,
         slots: {
           default: ({ row }, h) => {
-            const ret = [<side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>]
+            const ret = [h('side-page-trigger', {
+              on: {
+                trigger: () => this.handleOpenSidepage(row),
+              },
+            }, row.name)]
             return ret
           },
         },

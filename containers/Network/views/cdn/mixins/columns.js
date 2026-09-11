@@ -81,9 +81,12 @@ export default {
         hideField: true,
         addLock: true,
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+          const h = this.$createElement
+          return h('side-page-trigger', {
+            props: {
+              onTrigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getStatusTableColumn({ statusModule: 'cdnDomain', vm: this }),

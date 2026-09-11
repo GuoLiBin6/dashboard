@@ -35,7 +35,12 @@ export default {
           width: '120px',
           slots: {
             default: ({ row, cellValue }, h) => {
-              const ret = [<list-body-cell-wrap row={ row } field="fingerprint" />]
+              const ret = [h('list-body-cell-wrap', {
+                props: {
+                  row: row,
+                  field: 'fingerprint',
+                },
+              })]
               return ret
             },
           },
@@ -59,7 +64,7 @@ export default {
 }
 </script>
 <style scoped lang="less">
-@import '~@/styles/less/theme';
+@import '@/styles/less/theme';
 
 .status-dot {
   width: 8px;

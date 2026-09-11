@@ -6,13 +6,13 @@
       <dialog-table :data="params.data" :columns="columns" />
       <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 4 }" :wrapper-col="{ span: 15 }">
         <a-form-model-item :label="$t('table.title.name')" prop="name">
-          <a-input v-model="form.name" :placeholder="$t('common.tips.input', [$t('table.title.name')])" />
+          <a-input v-model:value="form.name" :placeholder="$t('common.tips.input', [$t('table.title.name')])" />
         </a-form-model-item>
         <a-form-model-item v-if="params.isComfyui" label="Model ID" prop="model_id">
-          <a-input v-model="form.model_id" :placeholder="$t('common.tips.input', [$t('table.title.name')])" />
+          <a-input v-model:value="form.model_id" :placeholder="$t('common.tips.input', [$t('table.title.name')])" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.model_name')" prop="model_full_name">
-          <a-input v-model="form.model_full_name" :placeholder="$t('common.tips.input', [$t('aice.model_name')])" />
+          <a-input v-model:value="form.model_full_name" :placeholder="$t('common.tips.input', [$t('aice.model_name')])" />
         </a-form-model-item>
       </a-form-model>
     </div>

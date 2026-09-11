@@ -4,7 +4,7 @@
     <div slot="body">
       <steps v-show="!isLbRedirected" v-model="step" />
       <a-spin :spinning="spinning">
-        <a-icon slot="indicator" type="loading" style="font-size: 24px" spin />
+        <icon slot="indicator" type="loading" style="font-size: 24px" spin />
         <a-skeleton :loading="spinning" active :paragraph="{ rows: 6 }">
           <components
             :is="component"

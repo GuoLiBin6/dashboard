@@ -1,8 +1,15 @@
+import { h } from 'vue'
 import { mapState } from 'vuex'
+import Icon from '@/components/Icon'
 import { typeClouds } from '@/utils/common/hypervisor'
 import setting from '@/config/setting'
 
-const brandMap = typeClouds.getBrand()
+// 延迟取 brandMap，避免循环依赖下模块初始化阶段访问 typeClouds 触发 TDZ
+let brandMap
+function getBrandMap () {
+  if (!brandMap) brandMap = typeClouds.getBrand()
+  return brandMap
+}
 
 export default {
   name: 'BrandIcon',
@@ -32,7 +39,7 @@ export default {
   },
   methods: {
     getBrand () {
-      const ret = brandMap[this.name]
+      const ret = getBrandMap()[this.name]
       if (this.name === 'Cloudpods') {
         const { inner_copyright, inner_copyright_en } = this.companyInfo
         if (setting.language === 'en' && inner_copyright_en) {
@@ -45,7 +52,7 @@ export default {
       return ret
     },
   },
-  render (h) {
+  render () {
     const option = this.getBrand()
     if (!option) return null
     const name = option.key.toLowerCase()
@@ -61,12 +68,32 @@ export default {
       fontSize = '28px'
     }
     const cloudPodsIcon = this.cloudPodsIcon
-    return (
-      <span title={option.label}>
-        {
-          cloudPodsIcon ? <img src={cloudPodsIcon} style={{ width: fontSize, ...this.customStyle }} /> : <icon type={name} style={{ fontSize, ...this.customStyle }} />
-        }
-      </span>
+
+    const content = cloudPodsIcon
+      ? h('img', {
+        src: cloudPodsIcon,
+        style: {
+          width: fontSize,
+          ...this.customStyle,
+        },
+      })
+      : h(Icon, {
+        type: name,
+        // 平台品牌图标需保留 SVG 原色，不能走 currentColor 单色化
+        preserveColor: true,
+        style: {
+          fontSize,
+          ...this.customStyle,
+        },
+      })
+
+    return h(
+      'span',
+      {
+        title: option.label,
+        class: 'brand-icon',
+      },
+      [content],
     )
   },
 }

@@ -69,7 +69,7 @@ export default {
   created () {
     this.resourceM = new this.$Manager('namespaces', 'v1')
   },
-  destroyed () {
+  unmounted () {
     this.resourceM = null
   },
   methods: {

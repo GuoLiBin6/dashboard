@@ -17,7 +17,7 @@
               allowClear,
               labelInValue,
               placeholder: $t('rules.domain'),
-              dropdownClassName: 'oc-select-dropdown',
+              popupClassName: 'oc-select-dropdown',
               labelInValueKeyName: 'key',
             }"
             @change="domainChange"
@@ -41,7 +41,7 @@
               allowClear,
               labelInValue,
               placeholder: $t('rules.project'),
-              dropdownClassName: 'oc-select-dropdown',
+              popupClassName: 'oc-select-dropdown',
               labelInValueKeyName: 'key',
             }"
             :beforeDefaultSelectCallBack="beforeProjectDefaultSelectCallBack"
@@ -146,7 +146,7 @@ export default {
         } else if (R.is(String, initialValue) && initialValue) {
           defaultDomain = { key: initialValue }
         }
-        if (!this.ignoreStorage) {
+        if (!this.ignoreStorage && this.domain?.key) {
           const domainData = await this.$store.dispatch('storage/getDomainById', this.domain)
           if (domainData) {
             defaultDomain = this.domain

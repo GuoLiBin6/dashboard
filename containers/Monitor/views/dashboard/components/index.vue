@@ -1,5 +1,5 @@
 <template>
-  <div v-if="!loading">
+  <div v-if="!loading" class="monitor-dashboard-index">
     <div v-if="isEmpty">
       <data-empty style="padding-top: 200px;">
         <a-button type="primary" @click="handleCreateDashboard">
@@ -7,7 +7,7 @@
         </a-button>
       </data-empty>
     </div>
-    <div v-else>
+    <div v-else class="monitor-dashboard-index__content">
       <a-row :gutter="8">
         <a-col :span="10">
           <a-row type="flex" :gutter="8" justify="start">
@@ -29,15 +29,30 @@
         </a-col>
         <a-col :span="9" />
         <a-col :span="1">
-          <a-dropdown style="float: right" :trigger="['click']" placement="bottomRight">
+          <a-dropdown
+            style="float: right"
+            :trigger="['click']"
+            placement="bottomRight"
+            overlayClassName="monitor-action-dropdown">
             <a class="ant-dropdown-link font-weight-bold pl-2 pr-2 h-100 d-block action-btn" @click="e => e.preventDefault()">
               <icon type="more" style="font-size: 18px;" />
             </a>
-            <a-menu slot="overlay" @click="handleActionClick">
-              <a-menu-item key="handleEditName"><a-icon type="edit" />{{$t('monitor.edit_name')}}</a-menu-item>
-              <a-menu-item key="handleClone"><a-icon type="copy" />{{$t('dashboard.text_107')}}</a-menu-item>
-              <a-menu-item key="handleDelete"><a-icon type="delete" />{{$t('scope.text_18')}}</a-menu-item>
-            </a-menu>
+            <template #overlay>
+              <a-menu @click="handleActionClick">
+                <a-menu-item key="handleEditName">
+                  <template #icon><icon type="edit" /></template>
+                  {{ $t('monitor.edit_name') }}
+                </a-menu-item>
+                <a-menu-item key="handleClone">
+                  <template #icon><icon type="copy" /></template>
+                  {{ $t('dashboard.text_107') }}
+                </a-menu-item>
+                <a-menu-item key="handleDelete">
+                  <template #icon><icon type="delete" /></template>
+                  {{ $t('scope.text_18') }}
+                </a-menu-item>
+              </a-menu>
+            </template>
           </a-dropdown>
         </a-col>
       </a-row>
@@ -45,7 +60,9 @@
         <a-divider />
       </a-row>
       <a-row v-if="dashboardId">
-        <dashboard-cards ref="dashboardCards" :id="dashboardId" :extraParams="extraParams" :create-chart="createChart" @adjustChartOrder="adjustChartOrder" :edit-chart="editChart" />
+        <a-col :span="24">
+          <dashboard-cards ref="dashboardCards" :id="dashboardId" :extraParams="extraParams" :create-chart="createChart" @adjustChartOrder="adjustChartOrder" :edit-chart="editChart" />
+        </a-col>
       </a-row>
     </div>
   </div>
@@ -251,3 +268,10 @@ export default {
   },
 }
 </script>
+
+<style scoped>
+.monitor-dashboard-index,
+.monitor-dashboard-index__content {
+  width: 100%;
+}
+</style>

@@ -1,7 +1,7 @@
 <template>
   <div>
     <page-header :title="$t('common_628', [$t('dictionary.vpc_peer_connect')])" />
-    <page-body needMarginBottom>
+    <page-body>
       <a-form :form="form.fc" v-bind="formItemLayout" hideRequiredMark>
         <a-form-item :label="$t('common.attribution_scope')">
           <domain-select v-decorator="decorators.project_domain" />

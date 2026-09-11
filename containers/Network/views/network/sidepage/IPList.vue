@@ -1,37 +1,25 @@
 <template>
  <div>
-  <vxe-toolbar>
-    <template v-slot:buttons>
-      <div class="ip-list-search d-flex">
-        <a-button style="margin-bottom:1rem" :disable="loading" @click="refresh">
-          <a-icon v-if="loading" type="sync" spin />
-          <a-icon v-else type="sync" />
-        </a-button>
-        <a-input-search class="ml-2 w-100" v-model="filterName" :placeholder="$t('network.text_659')" />
-      </div>
-    </template>
-  </vxe-toolbar>
-  <vxe-grid
+  <div class="ip-list-search d-flex mb-3">
+    <a-button :disabled="loading" @click="refresh">
+      <icon v-if="loading" type="sync" spin />
+      <icon v-else type="sync" />
+    </a-button>
+    <a-input-search class="ml-2 w-100" v-model:value="filterName" :placeholder="$t('network.text_659')" />
+  </div>
+  <table-lite-grid
     :data="list"
-    :stripe="true"
-    :max-height="600"
+    max-height="600"
     resizable
     :columns="columns">
     <template v-slot:empty>
       <loader :loading="loading" />
     </template>
-  </vxe-grid>
-    <!-- <vxe-table
-      border
-      highlight-hover-row
-      height="400"
-      :data="tableData">
-      <vxe-table-column v-for="item in columns" :key="item.field" :title="item.title" :field="item.field" sortable>s</vxe-table-column>
-    </vxe-table> -->
+  </table-lite-grid>
  </div>
 </template>
 
-<script>
+<script lang="jsx">
 import WindowsMixin from '@/mixins/windows.js'
 import i18n from '@/locales'
 import { getCopyWithContentTableColumn, getTimeTableColumn } from '@/utils/common/tableColumn'
@@ -79,9 +67,13 @@ export default {
               if (row.ip6_addr) {
                 text = row.ip6_addr
               }
-              return [
-                <list-body-cell-wrap row={{ text: text }} field="text" copy />,
-              ]
+              return [h('list-body-cell-wrap', {
+                props: {
+                  row: { text: text },
+                  field: 'text',
+                  copy: true,
+                },
+              })]
             },
           },
         },
@@ -140,7 +132,7 @@ export default {
       return this.tableData
     },
   },
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {
@@ -194,10 +186,8 @@ export default {
 </script>
 <style lang="less" scoped>
 .ip-list-search {
-  ::v-deep {
-    .ant-input-affix-wrapper .ant-input-suffix {
-      top: 35%!important;
-    }
+  :deep(.ant-input-affix-wrapper .ant-input-suffix) {
+    top: 35%!important;
   }
 }
 </style>

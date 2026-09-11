@@ -43,7 +43,12 @@ export default {
               minWidth: 120,
               slotCallback: row => {
                 return [
-                  <list-body-cell-wrap field='name' row={row} />,
+                  this.$createElement('list-body-cell-wrap', {
+                    props: {
+                      field: 'name',
+                      row,
+                    },
+                  }),
                 ]
               },
             }),
@@ -75,7 +80,12 @@ export default {
               minWidth: 120,
               slotCallback: row => {
                 return [
-                  <list-body-cell-wrap field='name' row={row} />,
+                  this.$createElement('list-body-cell-wrap', {
+                    props: {
+                      field: 'name',
+                      row,
+                    },
+                  }),
                 ]
               },
             }),
@@ -91,7 +101,12 @@ export default {
                 default: ({ row }) => {
                   if (row.sync_status !== 'idle') { // 表示正在同步中
                     return [
-                      <status status={ row.sync_status } statusModule='cloudaccountSyncStatus' />,
+                      this.$createElement('status', {
+                        props: {
+                          status: row.sync_status,
+                          statusModule: 'cloudaccountSyncStatus',
+                        },
+                      }),
                     ]
                   } else {
                     const time = this.$moment(row.last_sync)

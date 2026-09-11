@@ -1,16 +1,16 @@
 <template>
   <div>
     <page-header :title="$t('common.create') + $t('aice.aiproxy.routing')" />
-    <page-body needMarginBottom>
+    <page-body>
       <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 4 }" :wrapper-col="{ span: 16 }" class="mt-4">
         <a-form-model-item :label="$t('common.name')" prop="generate_name">
-          <a-input v-model="form.generate_name" />
+          <a-input v-model:value="form.generate_name" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.aiproxy.model_key')" prop="model_key">
-          <a-input v-model="form.model_key" :placeholder="$t('aice.aiproxy.routing_model_key_tip')" />
+          <a-input v-model:value="form.model_key" :placeholder="$t('aice.aiproxy.routing_model_key_tip')" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.aiproxy.priority')">
-          <a-input-number v-model="form.priority" :min="0" />
+          <a-input-number v-model:value="form.priority" :min="0" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.aiproxy.ai_proxy_node_id')">
           <base-select v-model="form.ai_proxy_node_id" resource="ai_proxy_nodes" :params="{ scope: $store.getters.scope }" filterable version="v2" />

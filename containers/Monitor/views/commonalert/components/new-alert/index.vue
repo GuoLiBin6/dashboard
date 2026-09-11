@@ -5,7 +5,7 @@
         v-if="!commonalertId || (loaded && !loading)"
         ref="alertFormRef"
         :alertData="alertData"
-        :threshold.sync="threshold"
+        v-model:threshold="threshold"
         :timeRangeParams="timeRangeParams"
         :isUpdate="isUpdate"
         :commonalertId="commonalertId"

@@ -16,15 +16,17 @@ export default {
         hideField: true,
         title: this.$t('cloudenv.clouduser_list_t1'),
         edit: false,
-        slotCallback: row => {
-          return (
-            <side-page-trigger
-              permission='clouduser_get'
-              name='ClouduserSidePage'
-              id={row.id}
-              list={this.list}
-              vm={this}>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          const hFn = h || this.$createElement
+          return hFn('side-page-trigger', {
+            props: {
+              permission: 'clouduser_get',
+              name: 'ClouduserSidePage',
+              id: row.id,
+              list: this.list,
+              vm: this,
+            },
+          }, row.name)
         },
       }),
       getEnabledTableColumn({
@@ -39,7 +41,9 @@ export default {
         width: 50,
         slots: {
           default: ({ row }) => {
-            return [<PasswordFetcher serverId={ row.id } resourceType='cloudusers' />]
+            return [this.$createElement(PasswordFetcher, {
+              props: { serverId: row.id, resourceType: 'cloudusers' },
+            })]
           },
         },
       },
@@ -51,7 +55,7 @@ export default {
         slots: {
           default: ({ row }) => {
             if (!row.iam_login_url) return '-'
-            return [<help-link href={ row.iam_login_url } />]
+            return [this.$createElement('help-link', { props: { href: row.iam_login_url } })]
           },
         },
       },

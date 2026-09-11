@@ -2,7 +2,7 @@
   <div>
     <monitor-header
       v-if="isTemplate && isTemplateEdit"
-      :time.sync="time"
+      v-model:time="time"
       :allow-empty-time="allowEmptyTime"
       :showCustomTime="false"
       :showGroupFunc="false"
@@ -21,8 +21,8 @@
       <template v-slot:group-actions-append>
         <monitor-header
           class-name="ml-2"
-          :time.sync="time"
-          :customTime.sync="customTime"
+          v-model:time="time"
+          v-model:customTime="customTime"
           :allow-empty-time="allowEmptyTime"
           :showGroupFunc="false"
           :showTimegroup="false"
@@ -33,7 +33,7 @@
   </div>
 </template>
 
-<script>
+<script lang="jsx">
 import * as R from 'ramda'
 import { levelMaps } from '@Monitor/constants'
 import { strategyColumn, levelColumn, getStrategyInfo } from '@Monitor/views/commonalert/utils'
@@ -46,18 +46,17 @@ import GlobalSearchMixin from '@/mixins/globalSearch'
 import ResTemplateListMixin from '@/mixins/resTemplateList'
 import MonitorHeader from '@/sections/Monitor/Header'
 import { isCE } from '@/utils/utils'
-import ColumnsMixin from '../mixins/columns'
 import SingleAction from '../mixins/singleActions'
 export default {
   name: 'AlertResourceList',
   components: {
     MonitorHeader,
   },
-  mixins: [WindowsMixin, ListMixin, GlobalSearchMixin, ColumnsMixin, SingleAction, ResTemplateListMixin],
+  mixins: [WindowsMixin, ListMixin, GlobalSearchMixin, SingleAction, ResTemplateListMixin],
   props: {
     id: String,
     getParams: {
-      type: Object,
+      type: [Object, Function],
       default: () => ({}),
     },
     data: {
@@ -89,6 +88,7 @@ export default {
       resTypeItems: [],
       time: this.templateParams.time ?? (this.defaultTime === '' ? 'all' : this.defaultTime),
       customTime: null,
+      groupActions: [],
     }
   },
   computed: {

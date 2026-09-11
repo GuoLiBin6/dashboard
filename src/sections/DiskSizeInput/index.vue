@@ -8,6 +8,7 @@
       :step="displayStep"
       :precision="displayPrecision"
       :disabled="disabled"
+      @update:value="onNumberChange"
       @change="onNumberChange" />
     <a-select
       class="disk-size-input__unit ml-1"
@@ -24,6 +25,12 @@ const UNIT_TO_MB = {
   MB: 1,
   GB: 1024,
   TB: 1024 * 1024,
+}
+
+function parseSizeValue (v) {
+  if (v === '' || v === null || v === undefined) return undefined
+  const n = typeof v === 'string' ? Number(v) : v
+  return Number.isFinite(n) ? n : undefined
 }
 
 export default {
@@ -71,13 +78,13 @@ export default {
   data () {
     return {
       unit: this.defaultUnit || this.units[0],
+      // 本地值：避免 defineProperty / 受控不同步导致 setFieldsValue 后不展示
+      localValue: parseSizeValue(this.value),
     }
   },
   computed: {
     rawValue () {
-      if (this.value === '' || this.value === null || this.value === undefined) return undefined
-      const n = typeof this.value === 'string' ? Number(this.value) : this.value
-      return Number.isFinite(n) ? n : undefined
+      return this.localValue
     },
     displayFactor () {
       return UNIT_TO_MB[this.unit] / UNIT_TO_MB[this.valueUnit]
@@ -105,7 +112,19 @@ export default {
       return 0
     },
   },
+  watch: {
+    value (v) {
+      const next = parseSizeValue(v)
+      if (next !== undefined) this.localValue = next
+    },
+  },
   methods: {
+    // 供 antdFormLegacyCompat setFieldsValue 同步展示（不走 emit，避免回写循环）
+    __decoratorSyncValue (v) {
+      const next = parseSizeValue(v)
+      if (next === undefined) return
+      this.localValue = next
+    },
     emitValue (val) {
       let next = val
       if (this.normalizeGb) {
@@ -113,11 +132,17 @@ export default {
       }
       // 按存储单位取整
       next = Math.round(next)
+      this.localValue = next
       this.$emit('change', next)
+      this.$emit('input', next)
+      this.$emit('update:value', next)
     },
     onNumberChange (v) {
       if (v === '' || v === null || v === undefined) {
+        this.localValue = undefined
         this.$emit('change', undefined)
+        this.$emit('input', undefined)
+        this.$emit('update:value', undefined)
         return
       }
       const n = Number(v)

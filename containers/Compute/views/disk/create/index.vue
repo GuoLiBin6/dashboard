@@ -1,6 +1,6 @@
 <template>
   <div>
-    <page-header :title="$t('compute.text_709', [$t('compute.text_100')])" :tabs="cloudEnvOptions" :current-tab.sync="cloudEnv" />
+    <page-header :title="$t('compute.text_709', [$t('compute.text_100')])" :tabs="cloudEnvOptions" v-model:currentTab="cloudEnv" />
     <a-form
       class="mt-3"
       :form="form.fc"
@@ -46,9 +46,9 @@
         :cloudregion-multiple="isPublic"
         :cloudregion-mapper="filterCloudregionListByProvider"
         :defaultActiveFirstOption="isPublic ? [] : true"
-        :region.sync="regionList"
+        v-model:region="regionList"
         filterBrandResource="compute_engine"
-        :zone.sync="zoneList"
+        v-model:zone="zoneList"
         :form-draft-key="diskDraftFields.areaSelects"
         @change="handleAreaChange" />
       <!-- 无私有云订阅时仍用平台单选；公有云/HCSO/HCS 由云订阅决定平台 -->
@@ -74,7 +74,7 @@
           :isDefaultSelect="true"
           :showSync="true"
           :select-props="{ placeholder: $t('compute.text_149') }"
-          :resList.sync="cloudproviderData"
+          v-model:resList="cloudproviderData"
           @update:item="cloudproviderSelected" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_100')" v-bind="formItemLayout">
@@ -731,7 +731,7 @@ export default {
     async cloudEnv (val) {
       this.bindDiskCreateFormFcDrafts()
       this.$nextTick(() => {
-        const { query, path } = this.$router.history.current
+        const { query, path } = this.$route
         const newQuery = JSON.parse(JSON.stringify(query))
         newQuery.type = val === 'onpremise' ? 'idc' : val
         this.form.fi.createType = newQuery.type

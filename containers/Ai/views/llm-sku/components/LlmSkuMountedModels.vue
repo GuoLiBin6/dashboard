@@ -6,9 +6,9 @@
     @click.stop>
     <span v-if="showLabel" class="meta-label">{{ $t('aice.llm_instantmodel.menu') }}：</span>
     <template v-if="mountedItems.length">
-      <template v-for="(item, idx) in mountedItems">
+      <template v-for="(item, idx) in mountedItems" :key="item.id">
         <list-body-cell-wrap
-          :key="item.id"
+
           copy
           hide-field
           field="id"

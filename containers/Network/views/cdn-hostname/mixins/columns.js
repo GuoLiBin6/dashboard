@@ -12,7 +12,11 @@ export default {
         edit: false,
         field: 'hostname',
         slotCallback: row => {
-          return <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{row.hostname}</side-page-trigger>
+          return this.$createElement('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.hostname)
         },
       }),
       {

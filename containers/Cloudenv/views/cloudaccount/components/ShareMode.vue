@@ -3,8 +3,8 @@
     <!-- 共享范围选择 -->
     <a-form-item :label="$t('cloudenv.text_282')" :extra="extra">
       <a-radio-group v-decorator="decorators.share_mode">
-        <template v-for="item of shareModeOptions">
-          <a-radio-button :key="item.key" :value="item.key">{{ item.label }}</a-radio-button>
+        <template v-for="item of shareModeOptions" :key="item.key">
+          <a-radio-button :value="item.key">{{ item.label }}</a-radio-button>
         </template>
       </a-radio-group>
     </a-form-item>

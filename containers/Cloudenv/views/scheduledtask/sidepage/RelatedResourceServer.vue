@@ -60,10 +60,18 @@ export default {
             { required: true, message: this.$t('cloudenv.text_190') },
             { validator: this.$validate('serverCreateName') },
           ],
-          slotCallback: row => {
-            return (
-              <side-page-trigger permission={`${this.data.resource_type}_get`} name={RES_SIDEPAGE_MAP[this.data.resource_type]} id={row.id} vm={this}>{ row.name }</side-page-trigger>
-            )
+          slotCallback: (row, h) => {
+            const hFn = h || this.$createElement
+            return [
+              hFn('side-page-trigger', {
+                props: {
+                  permission: `${this.data.resource_type}_get`,
+                  name: RES_SIDEPAGE_MAP[this.data.resource_type],
+                  id: row.id,
+                  vm: this,
+                },
+              }, row.name),
+            ]
           },
         }),
         getStatusTableColumn({ title: this.$t('cloudenv.text_98'), statusModule: this.data.resource_type, width: 130 }),

@@ -13,7 +13,7 @@
             :beforeUpload="handleBeforeUpload"
             @change="handleChange">
             <p class="ant-upload-drag-icon">
-              <a-icon type="inbox" />
+              <icon type="inbox" />
             </p>
             <p class="ant-upload-text">{{$t('dashboard.text_112')}}</p>
           </a-upload-dragger>
@@ -64,7 +64,7 @@ export default {
   computed: {
     ...mapGetters(['scope']),
   },
-  destroyed () {
+  unmounted () {
     this.pm = null
   },
   created () {

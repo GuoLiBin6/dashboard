@@ -63,6 +63,7 @@
 import _ from 'lodash'
 import * as R from 'ramda'
 import { mapGetters } from 'vuex'
+import { h } from 'vue'
 import NameRepeated from '@/sections/NameRepeated'
 import AreaSelects from '@/sections/AreaSelects'
 import DialogMixin from '@/mixins/dialog'
@@ -189,11 +190,20 @@ export default {
     vpcLabelFormat (item) {
       if (item.manager) {
         if (item.cidr_block) {
-          return <div><span class="text-color-secondary">VPC:</span> { item.name }<span>（{ item.cidr_block }）</span><span class="ml-2 text-color-secondary">{this.$t('common_711')}: { item.manager }</span></div>
+          return h('div', {}, [
+            h('span', { class: 'text-color-secondary' }, 'VPC:'),
+            ` ${item.name} `,
+            h('span', {}, `（${item.cidr_block}）`),
+            h('span', { class: 'ml-2 text-color-secondary' }, `${this.$t('common_711')}: ${item.manager}`),
+          ])
         }
-        return <div><span class="text-color-secondary">VPC:</span> { item.name }<span class="ml-2 text-color-secondary">{this.$t('common_711')}: { item.manager }</span></div>
+        return h('div', {}, [
+          h('span', { class: 'text-color-secondary' }, 'VPC:'),
+          ` ${item.name} `,
+          h('span', { class: 'ml-2 text-color-secondary' }, `${this.$t('common_711')}: ${item.manager}`),
+        ])
       }
-      return <div>{ item.name }</div>
+      return h('div', {}, String(item.name || ''))
     },
     doCreate (data) {
       return this.manager.create({

@@ -1,13 +1,14 @@
 <template>
   <div class="d-flex flex-wrap">
-    <a-tooltip class="color-item" v-for="(item, index) in colorList" :key="index">
-      <template slot="title">
-        {{ item.key }}
-      </template>
-      <a-tag :color="item.color" @click="changeColor(item.color)">
-        <a-icon type="check" v-if="item.color === themeColor" />
-      </a-tag>
-    </a-tooltip>
+    <div
+      v-for="(item, index) in colorList"
+      :key="index"
+      class="color-item"
+      :title="item.key"
+      :style="{ backgroundColor: item.color }"
+      @click.stop.prevent="changeColor(item.color)">
+      <icon type="check" v-if="isActive(item.color)" />
+    </div>
   </div>
 </template>
 
@@ -23,19 +24,20 @@ export default {
     }
   },
   computed: {
-    ...mapGetters(['profile', 'themeColor']),
+    ...mapGetters(['themeColor']),
   },
   methods: {
+    isActive (color) {
+      return String(this.themeColor || '').toLowerCase() === String(color || '').toLowerCase()
+    },
     async changeColor (color) {
-      if (this.themeColor !== color) {
-        try {
-          await this.$store.dispatch('profile/update', {
-            themeColor: color,
-          })
-          await this.$store.commit('setting/SET_THEME_COLOR', color)
-        } catch (error) {
-          throw error
-        }
+      if (this.isActive(color)) return
+      this.$store.commit('setting/SET_THEME_COLOR', color)
+      try {
+        await this.$store.dispatch('profile/update', { themeColor: color })
+      } catch (error) {
+        // 本地已生效，接口失败不打断 UI
+        console.error(error)
       }
     },
   },
@@ -49,9 +51,10 @@ export default {
   border-radius: 2px;
   cursor: pointer;
   margin-right: 8px;
-  padding-left: 0px;
-  padding-right: 0px;
-  text-align: center;
+  margin-bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   color: #fff;
   font-weight: 700;
   i {

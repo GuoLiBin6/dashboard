@@ -9,7 +9,7 @@
     :showSearchbox="showSearchbox"
     :showGroupActions="showGroupActions">
     <template v-slot:group-actions-append>
-      <cluster-namespace :getParams.sync="list.getParams" :namespaceMap="namespaceMap" @refresh="fetchData" class="ml-3" />
+      <cluster-namespace v-model:getParams="list.getParams" :namespaceMap="namespaceMap" @refresh="fetchData" class="ml-3" />
     </template>
   </page-list>
 </template>

@@ -4,7 +4,7 @@
       <div class="dashboard-card-header">
         <div class="dashboard-card-header-left">
           {{ fd.name }}
-          <a-icon class="ml-2" type="loading" v-if="loading" />
+          <icon class="ml-2" type="loading" v-if="loading" />
         </div>
         <div class="dashboard-card-header-right">
           <slot name="actions" :handle-edit="() => visible = true" />
@@ -17,17 +17,17 @@
         <e-chart :options="chartOptions" style="height: 100%; width: 100%;" autoresize />
       </div>
     </div>
-    <base-drawer :visible.sync="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit">
+    <base-drawer v-model:visible="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit">
       <a-form-model
         ref="form"
         hideRequiredMark
         :model="fd"
         :rules="rules">
         <a-form-model-item :label="$t('dashboard.text_6')" prop="name">
-          <a-input v-model="fd.name" />
+          <a-input v-model:value="fd.name" />
         </a-form-model-item>
         <a-form-model-item :label="$t('dashboard.group_by')" prop="type">
-          <a-radio-group v-model="fd.type" @change="handleType">
+          <a-radio-group v-model:value="fd.type" @change="handleType">
             <a-radio-button value="domain" v-if="isAdminMode">
               {{ $t('dictionary.domain') }}
             </a-radio-button>

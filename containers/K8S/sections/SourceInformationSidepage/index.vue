@@ -5,7 +5,7 @@
       class="mt-2 mr-2"
       v-clipboard:copy="text"
       v-clipboard:success="_ => $message.success($t('k8s.text_31'))"
-      v-clipboard:error="_ => $message.error($t('k8s.text_32'))"><a-icon type="copy" />{{$t('k8s.text_33')}}</a-button>
+      v-clipboard:error="_ => $message.error($t('k8s.text_32'))"><icon type="copy" />{{$t('k8s.text_33')}}</a-button>
     <a-button type="primary" @click="update">{{$t('k8s.text_95')}}</a-button>
   </div>
 </template>
@@ -71,7 +71,7 @@ export default {
 
 <style lang="less" scoped>
 .K8S-source-information-sidepage {
-  ::v-deep .CodeMirror {
+  :deep(.CodeMirror) {
     height: 500px;
   }
 }

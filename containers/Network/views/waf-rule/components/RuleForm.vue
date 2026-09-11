@@ -1,14 +1,14 @@
 <template>
   <div>
-    <template v-for="(group, idx) in form[ruleFormKey]">
-      <div :key="idx">
+    <template v-for="(group, idx) in form[ruleFormKey]" :key="idx">
+      <div>
         <div>
           <div v-for="(rule, idx2) in group" :key="`${idx}-${idx2}`">
             <div class="d-flex">
               <div style="flex: 0 0 20%;">
                 <!-- 字段 -->
                 <a-form-model-item class="mb-0">
-                  <a-select v-model="rule.type" :placeholder="$t('network.field')" @change="handleTypeChange(idx, idx2)">
+                  <a-select v-model:value="rule.type" :placeholder="$t('network.field')" @change="handleTypeChange(idx, idx2)">
                     <a-select-option v-for="item in ruleTypes" :key="item.key" :value="item.key">
                       {{ item.label }}
                     </a-select-option>
@@ -18,13 +18,13 @@
               <div v-if="getRuleConfig(rule).isShowName" style="width:40%" class="ml-2">
                 <!-- 名称 -->
                 <a-form-model-item class="mb-0">
-                  <a-input v-model="rule.name" :placeholder="$t('network.text_21')" />
+                  <a-input v-model:value="rule.name" :placeholder="$t('network.text_21')" />
                 </a-form-model-item>
               </div>
               <div style="width:25%" class="ml-2">
                 <!-- 运算符 -->
                 <a-form-model-item class="mb-0">
-                  <a-select v-model="rule.opt" :placeholder="$t('compute.text_745')" :disabled="getRuleConfig(rule).optDisabled" @change="handleOptChange(idx, idx2)">
+                  <a-select v-model:value="rule.opt" :placeholder="$t('compute.text_745')" :disabled="getRuleConfig(rule).optDisabled" @change="handleOptChange(idx, idx2)">
                     <a-select-option v-for="item in getRuleOpts(idx, idx2)" :key="item.key" :value="item.key">
                       {{ item.label }}
                     </a-select-option>
@@ -34,19 +34,19 @@
               <div style="width:50%;position:relative" class="ml-2">
                 <!-- 值 -->
                 <a-form-model-item class="mb-0">
-                  <a-input v-if="getRuleConfig(rule).valueType === 'input'" v-model="rule.value" :placeholder="$t('network.value')" />
-                  <a-input-number v-if="getRuleConfig(rule).valueType === 'input-number'" class="w-100" v-model="rule.value" :placeholder="$t('network.value')" v-bind="getRuleConfig(rule).props" />
-                  <a-select v-if="getRuleConfig(rule).valueType === 'multi-select'" v-model="rule.value" :placeholder="$t('network.value')" mode="multiple" showSearch>
+                  <a-input v-if="getRuleConfig(rule).valueType === 'input'" v-model:value="rule.value" :placeholder="$t('network.value')" />
+                  <a-input-number v-if="getRuleConfig(rule).valueType === 'input-number'" class="w-100" v-model:value="rule.value" :placeholder="$t('network.value')" v-bind="getRuleConfig(rule).props" />
+                  <a-select v-if="getRuleConfig(rule).valueType === 'multi-select'" v-model:value="rule.value" :placeholder="$t('network.value')" mode="multiple" showSearch>
                     <a-select-option v-for="item in getRuleConfig(rule).valueOpts" :key="item.key" :value="item.key">
                       {{ item.label }}
                     </a-select-option>
                   </a-select>
-                  <a-select v-if="getRuleConfig(rule).valueType === 'single-select'" v-model="rule.value" :placeholder="$t('network.value')" showSearch>
+                  <a-select v-if="getRuleConfig(rule).valueType === 'single-select'" v-model:value="rule.value" :placeholder="$t('network.value')" showSearch>
                     <a-select-option v-for="item in getRuleConfig(rule).valueOpts" :key="item.key" :value="item.key">
                       {{ item.label }}
                     </a-select-option>
                   </a-select>
-                  <a-switch v-if="getRuleConfig(rule).valueType === 'switch'" v-model="rule.value" />
+                  <a-switch v-if="getRuleConfig(rule).valueType === 'switch'" v-model:value="rule.value" />
                 </a-form-model-item>
                 <div class="extra-text" v-if="getRuleConfig(rule).valueExtra">
                   {{ getRuleConfig(rule).valueExtra }}
@@ -54,7 +54,7 @@
               </div>
               <div><a-button @click="addRule('and', idx, idx2)" class="ml-2">And</a-button></div>
               <div v-if="idx === form[ruleFormKey].length - 1 && idx2 === group.length - 1"><a-button @click="addRule('or', idx, idx2)" class="ml-2">Or</a-button></div>
-              <div v-if="allRuleLen > 1"><a-icon type="close" class="ml-2 mr-1 close-icon" @click="delRule(idx, idx2)" /></div>
+              <div v-if="allRuleLen > 1"><icon type="close-outlined" class="ml-2 mr-1 close-icon" @click="delRule(idx, idx2)" /></div>
             </div>
             <div class="split-and-container" v-if="idx2 !== group.length - 1">
               <div class="split-and">And</div>

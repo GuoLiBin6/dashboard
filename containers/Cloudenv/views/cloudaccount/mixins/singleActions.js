@@ -456,7 +456,14 @@ export default {
                       onManager: this.onManager,
                       content: () => {
                         if (this.$appConfig.isPrivate && !this.$store.getters.isSysCE) {
-                          return <a-checkbox v-model={this.deleteBill}>{this.$t('cloudenv.text_497')}</a-checkbox>
+                          return this.$createElement('a-checkbox', {
+                            props: {
+                              value: this.deleteBill,
+                            },
+                            on: {
+                              input: val => { this.deleteBill = val },
+                            },
+                          }, this.$t('cloudenv.text_497'))
                         }
                         return null
                       },

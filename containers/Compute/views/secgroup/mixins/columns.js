@@ -32,10 +32,12 @@ export default {
         ],
         edit: this.secgroupType !== 'network',
         editDesc: this.secgroupType !== 'network',
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name || row.secgroup }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name || row.secgroup)
         },
       }),
       getStatusTableColumn({ statusModule: 'secgroup', vm: this, field: this.secgroupType === 'network' ? 'secgroup_status' : 'status' }),
@@ -122,7 +124,7 @@ export default {
         width: 80,
         slots: {
           default: ({ row }, h) => {
-            if (row.guest_cnt === undefined && row.guest_nic_cnt === undefined) return [<data-loading />]
+            if (row.guest_cnt === undefined && row.guest_nic_cnt === undefined) return [h('data-loading')]
             return row.total_cnt || 0
           },
         },

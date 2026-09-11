@@ -61,20 +61,18 @@ export const strategyColumn = (field = 'common_alert_metric_details', title = i1
       if (!(data || row)[field]) return '-'
       let filterNode = null
       if (filters.length > 0) {
-        filterNode = (
-          <a-tag class="w-100">
-            <div>{i18n.t('monitor.text_101')}: </div>
-            {filters.map(v => <div class="w-100 text-truncate" title={v}>{v}</div>)}
-          </a-tag>
-        )
+        filterNode = h('a-tag', { class: 'w-100' }, [
+          h('div', {}, i18n.t('monitor.text_101') + ': '),
+          ...filters.map(v => h('div', { class: 'w-100 text-truncate', attrs: { title: v } }, v)),
+        ])
       }
-      const strategys = strategyArr.map(item => <div>{item}</div>)
+      const strategys = strategyArr.map(item => h('div', {}, item))
       return [
-        <div>
-          <div>{i18n.t('monitor.commonalert.alert_condition.content')}{periodTxt}:</div>
-          <div>{strategys}</div>
-          {filterNode}
-        </div>,
+        h('div', {}, [
+          h('div', {}, i18n.t('monitor.commonalert.alert_condition.content') + periodTxt + ':'),
+          h('div', {}, strategys),
+          filterNode,
+        ]),
       ]
     },
   },
@@ -118,10 +116,10 @@ export const projectTableColumn = () => ({
       }
       if (row.tenant && domain) {
         return [
-          <list-body-cell-wrap copy field='tenant' row={row} />,
-          <list-body-cell-wrap hide-field copy field="domain" row={{ domain }}>
-            <span class='text-weak'>{domain}</span>
-          </list-body-cell-wrap>,
+          h('list-body-cell-wrap', { props: { copy: true, field: 'tenant', row } }),
+          h('list-body-cell-wrap', { props: { hideField: true, copy: true, field: 'domain', row: { domain } } }, [
+            h('span', { class: 'text-weak' }, domain),
+          ]),
         ]
       }
     },
@@ -336,30 +334,93 @@ export const getVerifiedContactTypesTableColumn = ({ field = 'channel', title = 
         const channel = row.channel || []
         const renderComponents = []
         channel.forEach((ctype) => {
+          const iconProps = {
+            style: { color },
+            attrs: {
+              title: '',
+            },
+            class: 'mr-2',
+          }
           switch (ctype) {
             case 'webconsole':
-              renderComponents.push(<icon class="mr-2" type='webconsole' style={{ color: color }} title={i18n.t('dictionary.webconsole')} />)
+              renderComponents.push(h('icon', {
+                ...iconProps,
+                attrs: {
+                  ...iconProps.attrs,
+                  type: 'webconsole',
+                  title: i18n.t('dictionary.webconsole'),
+                },
+              }))
               break
             case 'email':
-              renderComponents.push(<icon class='mr-2' type='email' style={{ color: color }} title={i18n.t('common.email')} />)
+              renderComponents.push(h('icon', {
+                ...iconProps,
+                attrs: {
+                  ...iconProps.attrs,
+                  type: 'email',
+                  title: i18n.t('common.email'),
+                },
+              }))
               break
             case 'mobile':
-              renderComponents.push(<icon class='mr-2' type='mobile' style={{ color: color }} title={i18n.t('common.mobile')} />)
+              renderComponents.push(h('icon', {
+                ...iconProps,
+                attrs: {
+                  ...iconProps.attrs,
+                  type: 'mobile',
+                  title: i18n.t('common.mobile'),
+                },
+              }))
               break
             case 'dingtalk':
-              renderComponents.push(<icon class='mr-2' type='dingtalk' style={{ color: color }} title={i18n.t('common.dingtalk')} />)
+              renderComponents.push(h('icon', {
+                ...iconProps,
+                attrs: {
+                  ...iconProps.attrs,
+                  type: 'dingtalk',
+                  title: i18n.t('common.dingtalk'),
+                },
+              }))
               break
             case 'feishu':
-              renderComponents.push(<icon class='mr-2' type='feishu' style={{ color: color }} title={i18n.t('common.feishu')} />)
+              renderComponents.push(h('icon', {
+                ...iconProps,
+                attrs: {
+                  ...iconProps.attrs,
+                  type: 'feishu',
+                  title: i18n.t('common.feishu'),
+                },
+              }))
               break
             case 'workwx':
-              renderComponents.push(<icon class='mr-2' type='workwx' style={{ color: color }} title={i18n.t('common.workwx')} />)
+              renderComponents.push(h('icon', {
+                ...iconProps,
+                attrs: {
+                  ...iconProps.attrs,
+                  type: 'workwx',
+                  title: i18n.t('common.workwx'),
+                },
+              }))
               break
             case 'alert_event':
-              renderComponents.push(<icon class="mr-2" type="alert-event" style={{ color: color }} title={i18n.t('common.workflow.alert_event')} />)
+              renderComponents.push(h('icon', {
+                ...iconProps,
+                attrs: {
+                  ...iconProps.attrs,
+                  type: 'alert-event',
+                  title: i18n.t('common.workflow.alert_event'),
+                },
+              }))
               break
             case 'alert_ticket':
-              renderComponents.push(<icon class="mr-2" type="navbar-process" style={{ color: color }} title={i18n.t('common.workflow.alert_ticket')} />)
+              renderComponents.push(h('icon', {
+                ...iconProps,
+                attrs: {
+                  ...iconProps.attrs,
+                  type: 'navbar-process',
+                  title: i18n.t('common.workflow.alert_ticket'),
+                },
+              }))
               break
             default:
               break

@@ -3,13 +3,13 @@
     <a-form-item
       :wrapperCol="{ span: 24 }"
       class="mb-0 mr-1 w-50">
-      <div slot="extra" v-if="showDocsLink()">{{ $t('common.schedtag.extra') }}，<help-link  :href="docUrl">{{ $t('common.view.doc') }}</help-link></div>
+      <template v-if="showDocsLink()" #extra>{{ $t('common.schedtag.extra') }}，<help-link  :href="docUrl">{{ $t('common.view.doc') }}</help-link></template>
       <base-select
         class="w-100"
         v-decorator="decorators.schedtag"
         resource="schedtags"
         :need-params="true"
-        :item.sync="schedtagItem"
+        v-model:item="schedtagItem"
         :params="schedtagParams"
         @change="schedtagChange"
         :select-props="{ allowClear: true, placeholder: $t('common_255') }" />

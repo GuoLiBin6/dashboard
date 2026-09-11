@@ -18,12 +18,20 @@ export default {
       }
     },
   },
-  destroyed () {
-    window.removeEventListener('resize', this.autoResizeContainer)
+  beforeUnmount () {
+    window.removeEventListener('resize', this._onResize)
+    if (this._resizeRaf) cancelAnimationFrame(this._resizeRaf)
   },
   mounted () {
+    this._onResize = () => {
+      if (this._resizeRaf) return
+      this._resizeRaf = requestAnimationFrame(() => {
+        this._resizeRaf = 0
+        this.autoResizeContainer()
+      })
+    }
     this.autoResizeContainer()
-    window.addEventListener('resize', this.autoResizeContainer)
+    window.addEventListener('resize', this._onResize, { passive: true })
   },
   methods: {
     autoResizeContainer () {

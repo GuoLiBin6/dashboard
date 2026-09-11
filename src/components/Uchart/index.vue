@@ -10,7 +10,7 @@
   </div>
 </template>
 
-<script>
+<script lang="jsx">
 import UPlot from 'uplot'
 import 'uplot/dist/uPlot.min.css'
 
@@ -79,30 +79,37 @@ export default {
     },
   },
   mounted () {
-    this.createChart()
+    this.$nextTick(() => {
+      this.createChart()
+      this.autoResizeContainer()
+    })
     window.addEventListener('resize', this.autoResizeContainer)
   },
-  beforeDestroy () {
+  beforeUnmount () {
     if (this.chart) {
       this.chart.destroy()
     }
   },
-  destroyed () {
+  unmounted () {
     window.removeEventListener('resize', this.autoResizeContainer)
   },
   methods: {
     autoResizeContainer () {
-      const container = this.chart.root?.parentNode
-      const width = container.clientWidth
-      const height = container.clientHeight
-      this.chart.setSize({ width, height })
+      if (!this.chart || !this.$refs.chart) return
+      const width = this.$refs.chart.clientWidth
+      const height = this.options.height || this.$refs.chart.clientHeight || 300
+      if (width > 0) {
+        this.chart.setSize({ width, height })
+      }
     },
     createChart () {
+      if (!this.$refs.chart) return
       const { data, options } = this.$props
       const that = this
+      const width = this.$refs.chart.clientWidth || undefined
       this.chart = new UPlot({
         ...options,
-        width: this.$refs.chart.clientWidth,
+        width,
         cursor: {
           move: function (self, x, y) {
             if (options.cursorMove) {
@@ -210,7 +217,10 @@ export default {
 <style scoped>
 /* 添加一些样式以确保图表正确显示 */
 .uplot-chart-wrapper {
+  flex: 1 1 auto;
+  min-width: 0;
   width: 100%;
+  min-height: 300px;
   position: relative;
 }
 .uplot-chart-tooltip {

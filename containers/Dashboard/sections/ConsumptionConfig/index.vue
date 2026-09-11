@@ -124,7 +124,7 @@ export default {
       })
     },
   },
-  destroyed () {
+  unmounted () {
     this.am = null
     this.rm = null
   },

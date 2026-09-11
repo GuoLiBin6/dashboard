@@ -9,7 +9,7 @@
         v-bind="formItemLayout">
         <cluster-select
           @input="setCluster"
-          :clusterObj.sync="clusterObj"
+          v-model:clusterObj="clusterObj"
           v-decorator="decorators.cluster"
           style="width: 140px;" />
       </a-form-item>
@@ -81,7 +81,7 @@ export default {
   created () {
     this.inputM = new this.$Manager('appfromfiles', 'v1')
   },
-  destroyed () {
+  unmounted () {
     this.inputM = null
   },
   methods: {

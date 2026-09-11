@@ -39,7 +39,12 @@ export default {
           minWidth: 120,
           slotCallback: row => {
             return [
-              <list-body-cell-wrap field='name' row={row} />,
+              this.$createElement('list-body-cell-wrap', {
+                props: {
+                  field: 'name',
+                  row,
+                },
+              }),
             ]
           },
         }),

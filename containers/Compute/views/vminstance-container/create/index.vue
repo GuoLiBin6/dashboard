@@ -1,6 +1,6 @@
 <template>
   <div class="server-create-index">
-    <page-header :title="headerTitle" :tabs="cloudEnvOptions" :current-tab.sync="cloudEnv" />
+    <page-header :title="headerTitle" :tabs="cloudEnvOptions" v-model:currentTab="cloudEnv" />
     <component
       :is="component"
       type="idc"
@@ -69,8 +69,8 @@ export default {
   watch: {
     cloudEnv (val) {
       this.$nextTick(() => {
-        const query = this.getQuery(this.$router.history.current.query)
-        const path = this.$router.history.current.path
+        const query = this.getQuery(this.$route.query)
+        const path = this.$route.path
         const newQuery = JSON.parse(JSON.stringify(query))
         newQuery.type = val === 'onpremise' ? 'idc' : val
         this.$router.push({ path, query: newQuery })
@@ -80,7 +80,7 @@ export default {
   created () {
     if (this.routerQuery !== this.$route.query.type) {
       this.$router.push({
-        path: this.$router.history.current.path,
+        path: this.$route.path,
         query: {
           ...this.$route.query,
           type: this.routerQuery,
@@ -92,7 +92,7 @@ export default {
   mounted () {
     this.detectBack() // 在用户点击 back 的时候，表单的处理方案
   },
-  beforeDestroy () {
+  beforeUnmount () {
     window.removeEventListener('popstate', this.popstate)
   },
   methods: {

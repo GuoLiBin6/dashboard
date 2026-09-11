@@ -1,7 +1,7 @@
 <template>
   <div>
     <page-header :title="$t('network.text_769')" />
-    <page-body needMarginBottom>
+    <page-body>
       <a-form
         class="mt-3"
         :form="form.fc">
@@ -29,7 +29,7 @@
             :needParams="true"
             :showSync="true"
             :select-props="{ placeholder: $t('compute.text_149') }"
-            :resList.sync="cloudproviderData" />
+            v-model:resList="cloudproviderData" />
         </a-form-item>
       </a-form>
     </page-body>

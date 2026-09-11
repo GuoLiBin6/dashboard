@@ -8,7 +8,7 @@ export const getStorageTypeTableColumn = ({ vm = {}, hidden } = {}) => {
     width: 80,
     slots: {
       default: ({ row }, h) => {
-        if (vm.isPreLoad && !row.storage_type) return [<data-loading />]
+        if (vm.isPreLoad && !row.storage_type) return [h('data-loading')]
         return STORAGE_TYPES[row.storage_type] || row.storage_type || '-'
       },
     },

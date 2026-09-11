@@ -1,48 +1,49 @@
 import { typeClouds } from '@/utils/common/hypervisor'
 import { arrayToObj } from '@/utils/utils'
 import i18n from '@/locales'
+import aliyunLogo from '@/assets/images/providers/aliyun.svg'
+import awsLogo from '@/assets/images/providers/aws.svg'
+import azureLogo from '@/assets/images/providers/azure.svg'
+import huaweiLogo from '@/assets/images/providers/huawei.svg'
+import qcloudLogo from '@/assets/images/providers/qcloud.svg'
+import ucloudLogo from '@/assets/images/providers/ucloud.svg'
+import rockbaseLogo from '@/assets/images/providers/rockbase.svg'
+import vmwareLogo from '@/assets/images/providers/vmware.svg'
+import openstackLogo from '@/assets/images/providers/openstack.svg'
+// import dstackLogo from '@/assets/images/providers/dstack.svg'
+import zstackLogo from '@/assets/images/providers/zstack.svg'
+import s3Logo from '@/assets/images/providers/s3.svg'
+import cephLogo from '@/assets/images/providers/ceph.svg'
+import xskyLogo from '@/assets/images/providers/xsky.svg'
+import googleLogo from '@/assets/images/providers/gcp.svg'
+import ctyunLogo from '@/assets/images/providers/tianyi.svg'
+import apsaraLogo from '@/assets/images/providers/apsara.svg'
+import ecloudLogo from '@/assets/images/providers/ecloud.svg'
+import jdcloudLogo from '@/assets/images/providers/jdcloud.svg'
+import cloudpodsLogo from '@/assets/images/providers/cloudpods.svg'
+import hcsoLogo from '@/assets/images/providers/hcso.svg'
+import hcsLogo from '@/assets/images/providers/huawei.svg'
+import nutanixLogo from '@/assets/images/providers/nutanix.svg'
+import bingocloudLogo from '@/assets/images/providers/bingocloud.svg'
+import incloudsphereLogo from '@/assets/images/providers/incloudsphere.svg'
+import remotefileLogo from '@/assets/images/providers/remotefile.svg'
+import proxmoxLogo from '@/assets/images/providers/proxmox.svg'
+import h3cLogo from '@/assets/images/providers/h3c.svg'
+import ksyunLogo from '@/assets/images/providers/ksyun.svg'
+import baiduLogo from '@/assets/images/providers/baidu.svg'
+import qingcloudLogo from '@/assets/images/providers/qingcloud.svg'
+import chinaUnionLogo from '@/assets/images/providers/chinaunion.svg'
+import volcEngineLogo from '@/assets/images/providers/volcengine.svg'
+import oraclecloudLogo from '@/assets/images/providers/oraclecloud.svg'
+import sangforLogo from '@/assets/images/providers/sangfor.svg'
+import zettakitLogo from '@/assets/images/providers/zettakit.svg'
+import uisLogo from '@/assets/images/providers/uis.svg'
+import casLogo from '@/assets/images/providers/cas.svg'
+import cloudflareLogo from '@/assets/images/providers/cloudflare.svg'
+import cnwareLogo from '@/assets/images/providers/cnware.svg'
+import oceanbaseLogo from '@/assets/images/providers/oceanbase.svg'
+
 const providerMap = typeClouds.getProviderlowcase()
-const aliyunLogo = require('@/assets/images/providers/aliyun.svg')
-const awsLogo = require('@/assets/images/providers/aws.svg')
-const azureLogo = require('@/assets/images/providers/azure.svg')
-const huaweiLogo = require('@/assets/images/providers/huawei.svg')
-const qcloudLogo = require('@/assets/images/providers/qcloud.svg')
-const ucloudLogo = require('@/assets/images/providers/ucloud.svg')
-const rockbaseLogo = require('@/assets/images/providers/rockbase.svg')
-const vmwareLogo = require('@/assets/images/providers/vmware.svg')
-const openstackLogo = require('@/assets/images/providers/openstack.svg')
-// const dstackLogo = require('@/assets/images/providers/dstack.svg')
-const zstackLogo = require('@/assets/images/providers/zstack.svg')
-const s3Logo = require('@/assets/images/providers/s3.svg')
-const cephLogo = require('@/assets/images/providers/ceph.svg')
-const xskyLogo = require('@/assets/images/providers/xsky.svg')
-const googleLogo = require('@/assets/images/providers/gcp.svg')
-const ctyunLogo = require('@/assets/images/providers/tianyi.svg')
-const apsaraLogo = require('@/assets/images/providers/apsara.svg')
-const ecloudLogo = require('@/assets/images/providers/ecloud.svg')
-const jdcloudLogo = require('@/assets/images/providers/jdcloud.svg')
-const cloudpodsLogo = require('@/assets/images/providers/cloudpods.svg')
-const hcsoLogo = require('@/assets/images/providers/hcso.svg')
-const hcsLogo = require('@/assets/images/providers/huawei.svg')
-const nutanixLogo = require('@/assets/images/providers/nutanix.svg')
-const bingocloudLogo = require('@/assets/images/providers/bingocloud.svg')
-const incloudsphereLogo = require('@/assets/images/providers/incloudsphere.svg')
-const remotefileLogo = require('@/assets/images/providers/remotefile.svg')
-const proxmoxLogo = require('@/assets/images/providers/proxmox.svg')
-const h3cLogo = require('@/assets/images/providers/h3c.svg')
-const ksyunLogo = require('@/assets/images/providers/ksyun.svg')
-const baiduLogo = require('@/assets/images/providers/baidu.svg')
-const qingcloudLogo = require('@/assets/images/providers/qingcloud.svg')
-const chinaUnionLogo = require('@/assets/images/providers/chinaunion.svg')
-const volcEngineLogo = require('@/assets/images/providers/volcengine.svg')
-const oraclecloudLogo = require('@/assets/images/providers/oraclecloud.svg')
-const sangforLogo = require('@/assets/images/providers/sangfor.svg')
-const zettakitLogo = require('@/assets/images/providers/zettakit.svg')
-const uisLogo = require('@/assets/images/providers/uis.svg')
-const casLogo = require('@/assets/images/providers/cas.svg')
-const cloudflareLogo = require('@/assets/images/providers/cloudflare.svg')
-const cnwareLogo = require('@/assets/images/providers/cnware.svg')
-const oceanbaseLogo = require('@/assets/images/providers/oceanbase.svg')
 
 export const CLOUDACCOUNT_TYPES = {
   public: {
@@ -165,6 +166,7 @@ export const CLOUDACCOUNT_TYPES = {
       hiddenName: true,
       logoStyle: {
         width: '100px',
+        height: '24px',
       },
     },
     oceanbase: {
@@ -246,6 +248,7 @@ export const CLOUDACCOUNT_TYPES = {
       hiddenName: true,
       logoStyle: {
         width: '100px',
+        height: '24px',
       },
     },
     incloudsphere: {
@@ -256,6 +259,7 @@ export const CLOUDACCOUNT_TYPES = {
       hiddenName: true,
       logoStyle: {
         width: '100px',
+        height: '24px',
       },
     },
     remotefile: {
@@ -290,6 +294,7 @@ export const CLOUDACCOUNT_TYPES = {
       hiddenName: true,
       logoStyle: {
         width: '100px',
+        height: '24px',
       },
     },
     uis: {
@@ -341,6 +346,10 @@ export const CLOUDACCOUNT_TYPES = {
       component: 'XskyCreate',
       provider: providerMap.xsky.key,
       hiddenName: true,
+      logoStyle: {
+        width: '100px',
+        height: '16px',
+      },
     },
   },
 }

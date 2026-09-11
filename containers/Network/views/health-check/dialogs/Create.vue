@@ -38,50 +38,50 @@
             :disabled="formType === 'update'" />
         </a-form-model-item>
         <a-form-model-item :label="$t('table.title.name')" prop="name">
-          <a-input v-model="form.name" :placeholder="$t('common.tips.input', [$t('table.title.name')])" />
+          <a-input v-model:value="form.name" :placeholder="$t('common.tips.input', [$t('table.title.name')])" />
         </a-form-model-item>
         <a-form-model-item :label="$t('network.text_420')" prop="health_check_type">
-          <a-select v-model="form.health_check_type" :disabled="formType === 'update'" :placeholder="$t('common.tips.select', [$t('network.text_420')])">
+          <a-select v-model:value="form.health_check_type" :disabled="formType === 'update'" :placeholder="$t('common.tips.select', [$t('network.text_420')])">
             <a-select-option value="HTTP">HTTP</a-select-option>
             <a-select-option value="TCP">TCP</a-select-option>
           </a-select>
         </a-form-model-item>
         <a-form-model-item :label="$t('network.waf.rate_limit_rule_type.http.request.uri.path')" prop="health_check_uri">
-          <a-input v-model="form.health_check_uri" :placeholder="$t('common.tips.input', [$t('network.waf.rate_limit_rule_type.http.request.uri.path')])" />
+          <a-input v-model:value="form.health_check_uri" :placeholder="$t('common.tips.input', [$t('network.waf.rate_limit_rule_type.http.request.uri.path')])" />
         </a-form-model-item>
         <a-form-model-item :label="$t('network.text_165')" prop="health_check_port">
-          <a-input-number class="w-50" v-model="form.health_check_port" :placeholder="$t('common.tips.input', [$t('network.text_165')])" />
+          <a-input-number class="w-50" v-model:value="form.health_check_port" :placeholder="$t('common.tips.input', [$t('network.text_165')])" />
         </a-form-model-item>
         <!-- <a-form-model-item :label="$t('network.text_156')" prop="health_check_domain">
-          <a-input v-model="form.health_check_domain" :placeholder="$t('common.tips.input', [$t('network.text_156')])" />
+          <a-input v-model:value="form.health_check_domain" :placeholder="$t('common.tips.input', [$t('network.text_156')])" />
         </a-form-model-item> -->
         <a-form-model-item :label="$t('network.health_check.method')" prop="health_check_method">
-          <a-select v-model="form.health_check_method" :placeholder="$t('common.tips.select', [$t('network.health_check.method')])">
+          <a-select v-model:value="form.health_check_method" :placeholder="$t('common.tips.select', [$t('network.health_check.method')])">
             <a-select-option value="GET">GET</a-select-option>
             <a-select-option value="HEAD">HEAD</a-select-option>
             <a-select-option value="POST">POST</a-select-option>
           </a-select>
         </a-form-model-item>
         <a-form-model-item :label="$t('network.health_check.http_code')" prop="health_check_http_code" :extra="$t('network.health_check.http_code_extra')">
-          <a-input v-model="form.health_check_http_code" :placeholder="$t('common.tips.input', [$t('network.health_check.http_code')])" />
+          <a-input v-model:value="form.health_check_http_code" :placeholder="$t('common.tips.input', [$t('network.health_check.http_code')])" />
         </a-form-model-item>
         <a-form-model-item :label="$t('network.health_check.interval')" prop="health_check_interval">
-          <a-input-number class="w-50" v-model="form.health_check_interval" :placeholder="$t('common.tips.input', [$t('network.health_check.interval')])" />
+          <a-input-number class="w-50" v-model:value="form.health_check_interval" :placeholder="$t('common.tips.input', [$t('network.health_check.interval')])" />
         </a-form-model-item>
         <a-form-model-item :label="$t('network.health_check.timeout')" prop="health_check_timeout">
-          <a-input-number class="w-50" v-model="form.health_check_timeout" :placeholder="$t('common.tips.input', [$t('network.health_check.timeout')])" />
+          <a-input-number class="w-50" v-model:value="form.health_check_timeout" :placeholder="$t('common.tips.input', [$t('network.health_check.timeout')])" />
         </a-form-model-item>
         <a-form-model-item :label="$t('network.health_check.healthy_threshold')" prop="health_check_rise">
-          <a-input-number class="w-50" v-model="form.health_check_rise" :placeholder="$t('common.tips.input', [$t('network.health_check.healthy_threshold')])" />
+          <a-input-number class="w-50" v-model:value="form.health_check_rise" :placeholder="$t('common.tips.input', [$t('network.health_check.healthy_threshold')])" />
         </a-form-model-item>
         <a-form-model-item :label="$t('network.health_check.unhealthy_threshold')" prop="health_check_fall">
-          <a-input-number class="w-50" v-model="form.health_check_fall" :placeholder="$t('common.tips.input', [$t('network.health_check.unhealthy_threshold')])" />
+          <a-input-number class="w-50" v-model:value="form.health_check_fall" :placeholder="$t('common.tips.input', [$t('network.health_check.unhealthy_threshold')])" />
         </a-form-model-item>
         <!-- <a-form-model-item :label="$t('network.health_check.req')" prop="health_check_req">
-          <a-input v-model="form.health_check_req" :placeholder="$t('common.tips.input', [$t('network.health_check.req')])" />
+          <a-input v-model:value="form.health_check_req" :placeholder="$t('common.tips.input', [$t('network.health_check.req')])" />
         </a-form-model-item>
         <a-form-model-item :label="$t('network.health_check.res')" prop="health_check_res">
-          <a-input v-model="form.health_check_res" :placeholder="$t('common.tips.input', [$t('network.health_check.res')])" />
+          <a-input v-model:value="form.health_check_res" :placeholder="$t('common.tips.input', [$t('network.health_check.res')])" />
         </a-form-model-item> -->
       </a-form-model>
     </div>

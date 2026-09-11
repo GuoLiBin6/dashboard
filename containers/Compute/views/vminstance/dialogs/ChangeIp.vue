@@ -12,7 +12,7 @@
               v-decorator="decorators.network"
               resource="networks"
               :params="networkParams"
-              :item.sync="form.fi.network"
+              v-model:item="form.fi.network"
               remote
               :label-format="networkLabelFormat"
               :remote-fn="q => ({ filter: `name.contains(${q})` })"
@@ -39,7 +39,7 @@
                       <a-menu-item key="all">{{ $t('compute.server_create.require_ipv6_all') }}</a-menu-item>
                       <a-menu-item key="only">{{ $t('compute.server_create.require_ipv6_only') }}</a-menu-item>
                     </a-menu>
-                    <a-button type="link" class="pl-1" v-if="isSupportIPv4">{{ ipv6Mode === 'only' ? $t('compute.server_create.require_ipv6_only') : $t('compute.server_create.require_ipv6_all') }}<a-icon type="down" /> </a-button>
+                    <a-button type="link" class="pl-1" v-if="isSupportIPv4">{{ ipv6Mode === 'only' ? $t('compute.server_create.require_ipv6_only') : $t('compute.server_create.require_ipv6_all') }}<icon type="pull-down" /> </a-button>
                   </a-dropdown>
                 </div>
                 <template v-if="isSupportIPv6 && ipv6ConfigShow">

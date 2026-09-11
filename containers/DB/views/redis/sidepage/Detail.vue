@@ -50,12 +50,12 @@ export default {
           hiddenField: 'region',
           title: this.$t('db.text_133'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (!R.isNil(row.slave_zone_infos)) {
                 const sl = row.slave_zone_infos.map(v => {
-                  return <div>{v.name}({this.$t('db.text_164')})</div>
+                  return h('div', `${v.name}(${this.$t('db.text_164')})`)
                 })
-                return [<div>{row.zone ? row.zone + '(' + this.$t('db.text_165') + ')' : '-'}</div>, ...sl]
+                return [h('div', row.zone ? `${row.zone}(${this.$t('db.text_165')})` : '-'), ...sl]
               }
               return row.zone || '-'
             },
@@ -168,7 +168,7 @@ export default {
               field: 'public_ip_addr',
               title: this.$t('db.text_173'),
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   const pub = row.public_dns || row.public_ip_addr
                   const port = row.public_connect_port
                   const btnTxt = pub ? this.$t('db.text_174') : this.$t('db.text_175')
@@ -176,23 +176,31 @@ export default {
                   const notRunninTip = !isRunning ? this.$t('db.text_156') : null
                   let RenderSwitchBtn = null
                   if (isRunning) {
-                    RenderSwitchBtn = (<a-button type="link" onClick={() => this.handleSwitchPublicAddress(!pub)}>{btnTxt}</a-button>)
+                    RenderSwitchBtn = h('a-button', {
+                      props: { type: 'link' },
+                      on: {
+                        click: () => this.handleSwitchPublicAddress(!pub),
+                      },
+                    }, btnTxt)
                   } else {
-                    RenderSwitchBtn = (
-                      <a-tooltip placement='top' title={notRunninTip}>
-                        <a-button type="link" disabled>{btnTxt}</a-button>
-                      </a-tooltip>
-                    )
+                    RenderSwitchBtn = h('a-tooltip', {
+                      props: {
+                        placement: 'top',
+                        title: notRunninTip,
+                      },
+                    }, [
+                      h('a-button', {
+                        props: { type: 'link', disabled: true },
+                      }, btnTxt),
+                    ])
                   }
                   if (row.provider === 'Huawei' || row.provider === 'Qcloud') {
                     RenderSwitchBtn = null
                   }
-                  return (
-                    <div>
-                      {pub ? `${pub}:${port}` : '-' }
-                      {RenderSwitchBtn}
-                    </div>
-                  )
+                  return h('div', [
+                    pub ? `${pub}:${port}` : '-',
+                    RenderSwitchBtn,
+                  ])
                 },
               },
             },
@@ -227,12 +235,27 @@ export default {
               field: 'secgroups',
               title: this.$t('compute.text_105'),
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   if (!row.secgroups) return '-'
                   return row.secgroups.map((item) => {
-                    return <list-body-cell-wrap copy hideField={true} field='name' row={item} message={item.name}>
-                      <side-page-trigger permission='secgroups_get' name='SecGroupSidePage' id={item.id} vm={this}>{ item.name }</side-page-trigger>
-                    </list-body-cell-wrap>
+                    return h('list-body-cell-wrap', {
+                      props: {
+                        copy: true,
+                        hideField: true,
+                        field: 'name',
+                        row: item,
+                        message: item.name,
+                      },
+                    }, [
+                      h('side-page-trigger', {
+                        props: {
+                          permission: 'secgroups_get',
+                          name: 'SecGroupSidePage',
+                          id: item.id,
+                          vm: this,
+                        },
+                      }, item.name),
+                    ])
                   })
                 },
               },

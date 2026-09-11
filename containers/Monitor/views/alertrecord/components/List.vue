@@ -5,7 +5,7 @@
     :single-actions="singleActions"
     :export-data-options="exportDataOptions">
     <template v-slot:group-actions-append>
-      <a-radio-group class="ml-3" v-model="time">
+      <a-radio-group class="ml-3" v-model:value="time">
         <a-radio-button value="1">{{ $t('common_167') }}</a-radio-button>
         <a-radio-button value="6">{{ $t('common_nearly_num_hours', [6]) }}</a-radio-button>
         <a-radio-button value="12">{{ $t('common_nearly_num_hours', [12]) }}</a-radio-button>
@@ -18,7 +18,7 @@
   </page-list>
 </template>
 
-<script>
+<script lang="jsx">
 import * as R from 'ramda'
 import { levelMaps } from '@Monitor/constants'
 import { strategyColumn, levelColumn, getStrategyInfo } from '@Monitor/views/commonalert/utils'
@@ -187,9 +187,12 @@ export default {
           field: 'alert_name',
           onManager: this.onManager,
           slotCallback: row => {
-            return (
-              <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{row.alert_name}</side-page-trigger>
-            )
+            const h = this.$createElement
+            return h('side-page-trigger', {
+              props: {
+                onTrigger: () => this.handleOpenSidepage(row),
+              },
+            }, row.alert_name)
           },
         }),
         getTimeTableColumn({ field: 'trigger_time', title: this.$t('monitor.text_14') }),
@@ -237,10 +240,14 @@ export default {
                     slots: {
                       default: ({ row }, h) => {
                         let brand = R.path(['tags', 'brand'], row)
-                        if (!brand) return [<data-loading />]
+                        if (!brand) return [h('data-loading')]
                         if (brand === 'kvm') brand = 'OneCloud'
                         return [
-                          <BrandIcon name={brand} />,
+                          h(BrandIcon, {
+                            props: {
+                              name: brand,
+                            },
+                          }),
                         ]
                       },
                     },
@@ -254,12 +261,11 @@ export default {
                         const { strategy } = getStrategyInfo(row.alert_details)
 
                         return [
-                          <a-tooltip>
-                            <template slot="title">
-                              {row.metric}
-                            </template>
-                            {strategy}
-                          </a-tooltip>,
+                          h('a-tooltip', {
+                            props: {
+                              title: row.metric,
+                            },
+                          }, strategy),
                         ]
                       },
                     },
@@ -273,19 +279,29 @@ export default {
                 ]
                 // 检查数据是否还在加载中
                 if (row.eval_data === undefined) {
-                  return [<list-body-cell-popover text={this.$t('common_701', [row.res_num || 0])}>
-                    <data-loading />
-                  </list-body-cell-popover>]
+                  return [h('list-body-cell-popover', {
+                    props: {
+                      text: this.$t('common_701', [row.res_num || 0]),
+                    },
+                  }, [h('data-loading')])]
                 }
                 const evalData = Array.isArray(row.eval_data) ? row.eval_data : []
                 const dataKey = `${row.id || row.alert_id || ''}-${evalData.length}`
                 if (!evalData.length) {
-                  return [<list-body-cell-popover key={dataKey} text={this.$t('common_701', [row.res_num || 0])}>
-                    <div class="text-muted text-center" style="padding: 12px 0;">{ this.$t('common.notData') }</div>
-                  </list-body-cell-popover>]
+                  return [h('list-body-cell-popover', {
+                    key: dataKey,
+                    props: {
+                      text: this.$t('common_701', [row.res_num || 0]),
+                    },
+                  }, [
+                    h('div', {
+                      class: 'text-muted text-center',
+                      style: 'padding: 12px 0;',
+                    }, this.$t('common.notData')),
+                  ])]
                 }
                 return [<list-body-cell-popover key={dataKey} text={this.$t('common_701', [row.res_num || 0])} min-width="700px">
-                  <vxe-grid
+                  <table-lite-grid
                     size="mini"
                     border
                     showOverflow={false}

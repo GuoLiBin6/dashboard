@@ -1,7 +1,7 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{$t('common.text00078')}}{{ $t('dictionary.project') }}</div>
-    <div slot="body">
+    <template #header>{{$t('common.text00078')}}{{ $t('dictionary.project') }}</template>
+    <template #body>
       <template v-if="params.alertMessage">
         <a-alert :message="params.alertMessage" banner class="mb-2" />
       </template>
@@ -19,11 +19,11 @@
             :getDomainList="getDomainList" />
         </a-form-item>
       </a-form>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

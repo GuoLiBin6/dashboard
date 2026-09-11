@@ -1,5 +1,5 @@
 <template>
-  <vxe-grid :data="rules" :columns="columns" resizable />
+  <table-lite-grid :data="rules" :columns="columns" resizable />
 </template>
 
 <script>
@@ -36,7 +36,7 @@ export default {
           slots: {
             default: ({ row }, h) => {
               if (!row.verbs) return '-'
-              return row.verbs.map(val => (<div>{ val }</div>))
+              return row.verbs.map(val => h('div', val))
             },
           },
         },
@@ -46,7 +46,7 @@ export default {
           slots: {
             default: ({ row }, h) => {
               if (!row.apiGroups) return '-'
-              return row.apiGroups.map(val => (<div>{ val || '""' }</div>))
+              return row.apiGroups.map(val => h('div', val || '""'))
             },
           },
         },
@@ -56,7 +56,7 @@ export default {
           slots: {
             default: ({ row }, h) => {
               if (!row.resources) return '-'
-              return row.resources.map(val => (<div>{ val }</div>))
+              return row.resources.map(val => h('div', val))
             },
           },
         },

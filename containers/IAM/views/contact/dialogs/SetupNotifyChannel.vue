@@ -9,7 +9,7 @@
           <span slot="label">
             {{ $t('common_599') }}
             <a-tooltip effect="dark" placement="top">
-              <a-icon type="info-circle" />
+              <icon type="info-circle" />
               <div slot="title">{{$t('system.contact')}}</div>
             </a-tooltip>
           </span>

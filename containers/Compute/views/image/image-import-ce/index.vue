@@ -1,25 +1,29 @@
 <template>
   <div>
     <a-alert type="warning" v-if="isCE || $store.getters.isSysCE">
-      <span slot="message">{{ $t('common.image_url_tip') }} <a href="https://www.cloudpods.org/docs/guides/onpremise/glance/common-image-url" target="_blank">{{ $t('common.normal_open_image') }}</a></span>
+      <template #message>
+        <span>{{ $t('common.image_url_tip') }} <a href="https://www.cloudpods.org/docs/guides/onpremise/glance/common-image-url" target="_blank">{{ $t('common.normal_open_image') }}</a></span>
+      </template>
     </a-alert>
     <a-alert type="warning" v-else>
-      <span slot="message">{{ $t('common.image_url_tip2') }}</span>
+      <template #message>
+        <span>{{ $t('common.image_url_tip2') }}</span>
+      </template>
     </a-alert>
     <page-header :title="$t('compute.open_image_market')" />
     <a-form-model class="mt-3 mb-2" v-bind="layout">
       <a-form-model-item>
-        <a-radio-group v-model="form.os_arch">
+        <a-radio-group v-model:value="form.os_arch">
           <a-radio-button v-for="(item, index) in archList" :key="index" :value="item.value">{{ item.label }}</a-radio-button>
         </a-radio-group>
       </a-form-model-item>
       <a-form-model-item>
-        <a-radio-group v-model="form.source">
+        <a-radio-group v-model:value="form.source">
           <a-radio-button v-for="(item, index) in sourceList" :key="index" :value="item.value">{{ item.label }}</a-radio-button>
         </a-radio-group>
       </a-form-model-item>
       <a-form-model-item>
-        <a-radio-group v-model="form.distribution" size="large">
+        <a-radio-group v-model:value="form.distribution" size="large">
           <a-radio-button v-for="(item, index) in distributionList" :key="index" :value="item.value" style="width:60px;height:60px;text-align:center;line-height:60px;vertical-align:middle;padding:0;"><img v-if="item.os" :src="item.os" style="height:40px;" /></a-radio-button>
         </a-radio-group>
       </a-form-model-item>
@@ -38,13 +42,14 @@ import { mapGetters } from 'vuex'
 import axios from 'axios'
 import WindowsMixin from '@/mixins/windows'
 import { isCE } from '@/utils/utils'
-const path = require('path')
-const imagesLogoFiles = require.context('@/assets/images/os-images', false, /.svg$/)
-const imagesLogos = []
-imagesLogoFiles.keys().forEach(key => {
-  const name = path.basename(key, '.svg') // 返回文件名 不含后缀名
-  imagesLogos.push(name)
-})
+
+const osImageModules = import.meta.glob('/src/assets/images/os-images/*.svg', { eager: true, import: 'default' })
+const imagesLogos = Object.keys(osImageModules).map((p) => p.split('/').pop().replace('.svg', ''))
+
+function getOsImage (name) {
+  const key = `/src/assets/images/os-images/${name}.svg`
+  return osImageModules[key] || ''
+}
 
 const fileUrl = 'https://www.cloudpods.org/openimages.yaml'
 const attributes = ['distribution', 'os_name', 'os_arch', 'os_version', 'build', 'source', 'url']
@@ -233,7 +238,8 @@ export default {
             ret.data.name += `-${item.build}`
           }
           const os_name = this.getOsName(item)
-          ret.data.os = require(`@/assets/images/os-images/${this.imagesLogos.includes(os_name) ? os_name : 'unknow'}.svg`) || ''
+          const imgName = this.imagesLogos.includes(os_name) ? os_name : 'unknow'
+          ret.data.os = getOsImage(imgName)
           ret.data.source_type = this.isChinaDomain(item.url) ? ['all', 'cn'] : ['all', 'ov']
           return ret
         })

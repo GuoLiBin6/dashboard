@@ -1,15 +1,15 @@
 <template>
   <base-dialog @cancel="cancelDialog" :modal-props="modalProps" :width="params.dialogParams.width || 900">
-    <div slot="header">{{ params.dialogParams.title || $t('common.select') }}</div>
-    <div class="clearfix pr-2" slot="body">
+    <template #header>{{ params.dialogParams.title || $t('common.select') }}</template>
+    <template #body>
+    <div class="clearfix pr-2">
       <div class="d-flex mb-2">
         <div class="text-left flex-shrink-0 flex-grow-0">{{ params.dialogParams.selectLabel || $t('common.text00040') }}：</div>
         <div class="selected-warp p-2 flex-fill ml-2">
-          <template v-for="item of details">
+          <template v-for="item of details" :key="item[idKey]">
             <a-tag
               class="mb-2 text-wrap"
               closable
-              :key="item[idKey]"
               :color="item[idKey] === currentId ? '#108ee9' : ''"
               @close="handleRemove(item)">{{ params.formatterLabel(item) }}</a-tag>
           </template>
@@ -22,8 +22,8 @@
       <div class="page-list-wrapper">
         <!-- Tab -->
         <a-tabs v-if="curTab" v-model="curTab" :animated="false">
-          <template v-for="obj of tabProps.tabs">
-            <a-tab-pane :tab="obj.label" :key="obj.value">
+          <template v-for="obj of tabProps.tabs" :key="obj.value">
+            <a-tab-pane :tab="obj.label">
               <!-- 可选资源 -->
               <div v-if="curTab === 'available'">
                 <page-list
@@ -55,10 +55,11 @@
         </div>
       </div>
     </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button @click="handleOk" type="primary">{{$t('common_99')}}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

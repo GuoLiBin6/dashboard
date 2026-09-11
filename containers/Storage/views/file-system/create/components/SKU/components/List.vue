@@ -1,7 +1,7 @@
 <template>
   <div>
     <a-form-item class="nas-sku-valid" :label="$t('compute.text_109')" v-bind="formItemLayout">
-      <vxe-grid
+      <table-lite-grid
         ref="tableRef"
         row-id="id"
         max-height="500"
@@ -15,7 +15,7 @@
         <template v-slot:empty>
           <page-list-empty :loading="loading" />
         </template>
-      </vxe-grid>
+      </table-lite-grid>
     </a-form-item>
     <a-form-item class="nas-sku-valid" v-bind="tailFormItemLayout">
       <template v-show="false">
@@ -107,8 +107,9 @@ export default {
           sortable: true,
           slots: {
             default: ({ row: { provider, rate } }) => {
+              const h = this.$createElement
               if (this.rateLoading) {
-                return [<a-icon type="loading" />]
+                return [h('icon', { props: { type: 'loading' } })]
               }
               const isPackage = this.form.fc.getFieldValue('billing_type') === 'prepaid'
               if (rate) {
@@ -118,8 +119,8 @@ export default {
                   price = rate.month_price
                 }
                 return [
-                  <span style="color: rgb(230, 139, 80);">{price.toFixed(2)}</span>,
-                  <span> {this.$t('currencys.CNY')} / GB / {unit}</span>,
+                  h('span', { style: { color: 'rgb(230, 139, 80)' } }, price.toFixed(2)),
+                  h('span', ` ${this.$t('currencys.CNY')} / GB / ${unit}`),
                 ]
               }
               return '-'
@@ -222,7 +223,7 @@ export default {
 }
 </script>
 <style lang="less" scoped>
-::v-deep .nas-sku-valid .ant-form-item-control {
+:deep(.nas-sku-valid .ant-form-item-control) {
   line-height: 0;
 }
 </style>

@@ -1,7 +1,7 @@
 <template>
   <a-form class="mb-4  d-flex" v-if="ruleOpts.length > 0">
     <div class="pr-2">
-      <a-radio-group v-model="type" @change="handleTypeChange">
+      <a-radio-group v-model:value="type" @change="handleTypeChange">
         <a-radio-button :value="1">{{$t('network.text_138')}}</a-radio-button>
         <a-radio-button :value="2">{{$t('network.text_141')}}</a-radio-button>
       </a-radio-group>

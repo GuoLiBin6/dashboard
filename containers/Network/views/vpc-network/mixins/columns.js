@@ -12,10 +12,12 @@ export default {
       getNameDescriptionTableColumn({
         onManager: this.onManager,
         hideField: true,
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            props: {
+              onTrigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getStatusTableColumn({ statusModule: 'vpcNetwork', vm: this }),
@@ -26,10 +28,16 @@ export default {
         minWidth: 100,
         sortable: true,
         slots: {
-          default: ({ row }) => {
-            return [
-              <side-page-trigger name='VpcNetworkSidePage' id={row.id} tab='vpc' vm={this} init>{row.vpc_count}</side-page-trigger>,
-            ]
+          default: ({ row }, h) => {
+            return [h('side-page-trigger', {
+              props: {
+                name: 'VpcNetworkSidePage',
+                id: row.id,
+                tab: 'vpc',
+                vm: this,
+                init: true,
+              },
+            }, row.vpc_count)]
           },
         },
       },
@@ -42,9 +50,14 @@ export default {
             const domain = row.project_domain || row.domain
             if (domain) {
               ret.push(
-                <list-body-cell-wrap hide-field copy field="domain" row={{ domain }}>
-                  <span>{ domain }</span>
-                </list-body-cell-wrap>,
+                h('list-body-cell-wrap', {
+                  props: {
+                    hideField: true,
+                    copy: true,
+                    field: 'domain',
+                    row: { domain },
+                  },
+                }, [h('span', domain)]),
               )
             }
             return ret

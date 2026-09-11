@@ -25,7 +25,7 @@
           <span slot="label">
             {{decLabel}}&nbsp;
             <a-tooltip :title="$t('compute.secgroup.secrule.source.prompt')">
-              <a-icon type="question-circle-o" />
+              <icon type="question-circle" />
             </a-tooltip>
           </span>
           <a-input :disabled="IPCheckboxDisabled" v-decorator="decorators.cidr" :placeholder="$t('compute.text_996')" />
@@ -40,7 +40,7 @@
         </a-form-item>
         <a-form-item v-bind="formItemLayout">
           <span slot="label">{{$t('compute.text_998')}}<a-tooltip :title="$t('compute.text_999')">
-              <a-icon type="question-circle-o" />
+              <icon type="question-circle" />
             </a-tooltip>
           </span>
           <a-input :disabled="portsDisabled" v-decorator="decorators.ports" :placeholder="$t('compute.text_350')" />
@@ -55,7 +55,7 @@
         </a-form-item>
         <a-form-item v-bind="formItemLayout">
           <span slot="label">{{$t('compute.text_1001')}}<a-tooltip :title="$t('compute.text_1002')">
-              <a-icon type="question-circle-o" />
+              <icon type="question-circle" />
             </a-tooltip>
           </span>
           <a-input-number :min="1" :max="100" v-decorator="decorators.priority" />

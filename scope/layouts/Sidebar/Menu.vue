@@ -1,5 +1,8 @@
 <template>
-  <div class="level-2-wrap" :class="{ 'light-theme': light, 'w-0': !l2MenuVisibleForStore }" :style="wrapStyle">
+  <div
+    class="level-2-wrap"
+    :class="{ 'w-0': !l2MenuVisibleForStore, 'menu-refined': globalRounded, 'light-theme': light }"
+    :style="wrapStyle">
     <scrollbar
       class="level-2-menu">
       <div class="title text-truncate pr-2" :title="getLabel(l2Menu.meta)">{{ getLabel(l2Menu.meta) }}</div>
@@ -34,13 +37,6 @@
         </router-link>
       </div>
     </scrollbar>
-    <div class="level-2-menu-collapse" @click="$store.commit('setting/SET_L2_MENU_VISIBLE', !l2MenuVisibleForStore)">
-      <div class="level-2-menu-collapse-bg" />
-      <div class="level-2-menu-collapse-icon d-flex align-items-center">
-        <a-icon type="left" style="font-size: 12px;" v-show="l2MenuVisibleForStore" />
-        <a-icon type="right" style="font-size: 12px;" v-show="!l2MenuVisibleForStore" />
-      </div>
-    </div>
   </div>
 </template>
 
@@ -48,6 +44,7 @@
 import { mapGetters, mapState } from 'vuex'
 import * as R from 'ramda'
 import { hasPermission } from '@/utils/auth'
+import { resolveLabel } from '@/utils/i18nLabel'
 
 export default {
   name: 'Level2Menu',
@@ -58,14 +55,17 @@ export default {
     },
   },
   computed: {
-    ...mapGetters(['theme']),
+    ...mapGetters(['userInfo', 'globalRounded', 'theme']),
     ...mapState('common', {
       openCloudShell: state => state.openCloudShell,
       cloudShellHeight: state => state.cloudShellHeight,
     }),
     wrapStyle () {
+      const inset = this.globalRounded ? 5 : 0
+      // 开启全局圆角且展示 cloudshell 时，预留 cloudshell-box 的 margin-top（--oc-page-inset）
+      const shellGap = (this.globalRounded && this.openCloudShell) ? 5 : 0
       return {
-        bottom: this.openCloudShell ? `${this.cloudShellHeight}px` : '0',
+        bottom: this.openCloudShell ? `${this.cloudShellHeight + inset + shellGap}px` : `${inset}px`,
       }
     },
     light () {
@@ -103,10 +103,11 @@ export default {
   },
   methods: {
     getLabel (meta) {
-      if (meta.t) {
-        return this.$t(meta.t)
+      const m = meta || {}
+      if (m.t) {
+        return this.$t(m.t)
       }
-      return R.is(Function, meta.label) ? meta.label() : meta.label
+      return resolveLabel(m.label)
     },
     getMenuHidden (menu) {
       if (!R.isNil(menu.meta.hidden)) {
@@ -151,47 +152,151 @@ export default {
       overflow-x: hidden;
     }
   }
+  &.w-0 {
+    width: 0;
+  }
+
   &.light-theme {
     background-color: @sidebar-light-bg-color;
-    .level-2-menu {
-      .title {
-        color: #000;
-      }
+    .level-2-menu .title {
+      color: #000;
     }
     .level-3-item {
       .level-3-group-title {
-        color: #000000;
+        color: #000;
         font-weight: 500;
       }
       .menu-item {
-        position: relative;
         color: @sidebar-light-text-color;
-        // &::after {
-        //   background-color: @primary-color;
-        // }
-        &:hover, &.active {
-          &::after {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            position: absolute;
-            top: 50%;
-            transform: translate(4px, -50%);
-            background-color: @primary-color;
-            overflow: hidden;
-          }
-        }
         &:hover {
           color: @sidebar-light-hover-text-color;
         }
         &.active {
-          color: @primary-color;
+          color: var(--ant-color-primary, @primary-color);
+        }
+      }
+    }
+    &.menu-refined {
+      .level-2-menu .title {
+        color: rgba(0, 0, 0, 0.88);
+      }
+      .level-3-item {
+        .group-menu {
+          border-bottom-color: rgba(0, 0, 0, 0.08);
+        }
+        .level-3-group-title {
+          color: rgba(0, 0, 0, 0.45);
+        }
+        .menu-item {
+          color: rgba(0, 0, 0, 0.75);
+          &:hover,
+          &.active {
+            color: var(--ant-color-primary, @primary-color);
+          }
         }
       }
     }
   }
-  &.w-0 {
-    width: 0;
+
+  // 全局圆角开启：样式对齐弹出二级菜单
+  &.menu-refined {
+    // 不在 wrap 上 overflow:hidden，否则会裁掉外侧折叠按钮
+    box-shadow: none;
+
+    ::v-deep .scrollbar {
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    ::v-deep .scrollbar-wrap {
+      overflow-x: hidden;
+      // 不展示滚动条，仍可滚动
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      &::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+        display: none;
+      }
+    }
+
+    ::v-deep .scrollbar-bar {
+      display: none !important;
+    }
+
+    .level-2-menu {
+      padding: 16px 8px 20px 12px;
+      font-size: 14px;
+
+      .title {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 10px;
+        padding-left: 3px;
+        color: #fff;
+      }
+    }
+
+    .level-3-item {
+      .group-menu {
+        margin-bottom: 2px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      &:last-child .group-menu {
+        border-bottom: none;
+        margin-bottom: 0;
+      }
+
+      .level-3-group-title {
+        font-size: 14px;
+        line-height: 22px;
+        color: rgba(255, 255, 255, 0.45);
+        margin: 4px 0 2px;
+        margin-left: 3px;
+        padding: 0;
+      }
+
+      .menu-item {
+        margin: 1px 0;
+        padding: 5px 8px 5px 20px;
+        font-size: 14px;
+        line-height: 22px;
+        color: rgba(255, 255, 255, 0.75);
+        background: transparent !important;
+        transition: color 0.15s ease;
+
+        &:hover,
+        &.active {
+          background: transparent !important;
+          color: #fff;
+
+          &::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            transform: translate(4px, -50%);
+            background-color: var(--oc-sidebar-accent-color, @primary-5);
+          }
+        }
+      }
+
+      > .menu-item {
+        margin-bottom: 1px;
+      }
+
+      & + & {
+        > .menu-item {
+          margin-top: 1px;
+        }
+      }
+    }
+
   }
 }
 
@@ -231,9 +336,9 @@ export default {
     color: @sidebar-dark-text-color;
     position: relative;
     cursor: pointer;
+    text-decoration: none;
 
     &:hover, &.active {
-      text-decoration: none;
       &::after {
         position: absolute;
         content: '';
@@ -244,7 +349,7 @@ export default {
         left: 0;
         top: 50%;
         transform: translate(4px, -50%);
-        background-color: @primary-color;
+        background-color: var(--oc-sidebar-accent-color, @primary-5);
         overflow: hidden;
       }
     }
@@ -261,44 +366,6 @@ export default {
   & + & {
     > .menu-item {
       margin-top: 25px;
-    }
-  }
-}
-.level-2-menu-collapse {
-  position: absolute;
-  height: 66px;
-  width: 12px;
-  top: 50%;
-  right: -12px;
-  cursor: pointer;
-  .level-2-menu-collapse-bg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border-bottom: 8px solid transparent;
-    border-right: none;
-    border-left: 12px solid #EBEBEB;
-    border-top: 8px solid transparent;
-    z-index: 1;
-  }
-  .level-2-menu-collapse-icon {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 2;
-    background-color: transparent;
-    color: #C1C1C1;
-  }
-  &:hover {
-    .level-2-menu-collapse-bg {
-      border-left-color: #DEDEDE;
-    }
-    .level-2-menu-collapse-icon {
-      color: #888;
     }
   }
 }

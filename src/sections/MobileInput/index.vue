@@ -1,67 +1,81 @@
 <template>
-  <div>
-    <a-row>
-      <a-col :span="10">
-        <a-select
-          :value="area_code"
-          :filter-option="filterOption"
-          showSearch
-          style="width: 100%"
-          @change="handleCountryChange">
-          <a-select-option v-for="c in countries" :key="c.value" :value="c.value" :label="c.label">
-            {{`${c.label}(+${c.value})`}}
-          </a-select-option>
-        </a-select>
-      </a-col>
-      <a-col :span="14">
-          <a-input :value="mobile" @change="handleMobileChange" />
-      </a-col>
-    </a-row>
-  </div>
+  <a-input-group compact>
+    <a-select
+      :value="area_code"
+      :filter-option="filterOption"
+      show-search
+      style="width: 40%"
+      @change="handleCountryChange">
+      <a-select-option
+        v-for="c in countries"
+        :key="c.value"
+        :value="c.value"
+        :label="c.label">
+        {{ `${c.label}(+${c.value})` }}
+      </a-select-option>
+    </a-select>
+    <a-input
+      :value="mobile"
+      style="width: 60%"
+      @update:value="handleMobileInput" />
+  </a-input-group>
 </template>
 
 <script>
-import _ from 'lodash'
-
 export default {
   name: 'MobileInput',
   props: {
     value: {
+      type: Object,
+      default: () => ({}),
     },
   },
   data () {
     const value = this.value || {}
-    const countries = Object.entries(this.$t('countries')).map((c) => { return { value: c[0], label: c[1] } }).sort((a, b) => { return a.value > b.value })
-    this.handleMobileChange = _.debounce(this.handleMobileChange, 500)
+    // vue-i18n v9+：$t 对对象文案返回 key 字符串，需用 $tm
+    const countriesMap = this.$tm('countries') || {}
+    const countries = Object.entries(countriesMap)
+      .map(([code, label]) => ({ value: code, label }))
+      .sort((a, b) => Number(a.value) - Number(b.value))
     return {
       area_code: value.area_code || '86',
       mobile: value.mobile || '',
-      countries: countries,
+      countries,
     }
   },
   watch: {
-    value (val = {}) {
-      this.area_code = val.area_code || '86'
-      this.mobile = val.mobile || ''
+    value (val) {
+      // 忽略被 DOM 捕获误写成的字符串，避免把已输入手机号清空
+      if (!val || typeof val !== 'object' || Array.isArray(val)) return
+      if (val.area_code !== undefined && val.area_code !== this.area_code) {
+        this.area_code = val.area_code || '86'
+      }
+      if (val.mobile !== undefined && val.mobile !== this.mobile) {
+        this.mobile = val.mobile || ''
+      }
     },
   },
   methods: {
     filterOption (input, option) {
-      return option.componentOptions.children[0].text.toLowerCase().indexOf(input.toLowerCase()) >= 0
+      const text = `${option.label || ''}(+${option.value || ''})`
+      return text.toLowerCase().includes((input || '').toLowerCase())
     },
-    handleMobileChange (e) {
-      this.handleChange({ mobile: e.target.value })
+    handleMobileInput (val) {
+      this.mobile = val
+      this.emitValue()
     },
-    handleCountryChange (e) {
-      this.handleChange({ area_code: e })
+    handleCountryChange (val) {
+      this.area_code = val
+      this.emitValue()
     },
-    handleChange (val = {}) {
-      this.$emit('change', Object.assign({}, { area_code: this.area_code, mobile: this.mobile }, val))
+    emitValue () {
+      const payload = {
+        area_code: this.area_code,
+        mobile: this.mobile,
+      }
+      // 只发 change：v-decorator 会同时监听 change/update:value，避免重复写 fd
+      this.$emit('change', payload)
     },
   },
 }
 </script>
-
-<style scoped>
-
-</style>

@@ -56,11 +56,11 @@ export default {
               field: 'resource_types',
               title: this.$t('scope.text_653'),
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   if (!row.resource_types) return []
                   const ret = []
                   for (const r of row.resource_types) {
-                    ret.push(<div>{this.$t(`dictionary.${r}`)}</div>)
+                    ret.push(h('div', this.$t(`dictionary.${r}`)))
                   }
                   return ret
                 },
@@ -75,20 +75,28 @@ export default {
               field: 'advance_days',
               title: this.$t('iam.notify_time'),
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   const { advance_days = [] } = row
                   if (!advance_days.length) return '-'
                   const ret = []
                   if (advance_days.length === 1) {
-                    ret.push(<span>{this.$t('iam.notify_one_day', [this.$t('iam.notify_time.some_day', [advance_days[0]])])}</span>)
+                    ret.push(h('span', this.$t('iam.notify_one_day', [this.$t('iam.notify_time.some_day', [advance_days[0]])])))
                   } else {
                     const dayList = []
                     advance_days.map(day => {
                       dayList.push(this.$t('iam.notify_time.some_day', [day]))
                     })
-                    ret.push(<span>{this.$t('iam.notify_some_day', [dayList.join('、')])}</span>)
+                    ret.push(h('span', this.$t('iam.notify_some_day', [dayList.join('、')])))
                   }
-                  ret.push(<a-icon type='edit' class='edit-icon primary-color ml-2' onclick={this.updateNotifyTime} />)
+                  ret.push(h('icon', {
+                    props: {
+                      type: 'edit',
+                    },
+                    class: 'edit-icon primary-color ml-2',
+                    on: {
+                      click: this.updateNotifyTime,
+                    },
+                  }))
                   return ret
                 },
               },

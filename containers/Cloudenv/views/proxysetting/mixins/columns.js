@@ -29,10 +29,17 @@ export default {
           }
           return true
         },
-        slotCallback: row => {
-          return (
-            <side-page-trigger name="ProxysettingSidePage" id={row.id} list={this.list} vm={this}>{ row.name } {row.id === 'DIRECT' && i18n.t('cloudenv.text_110')}</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          const hFn = h || this.$createElement
+          const text = row.name + (row.id === 'DIRECT' ? ' ' + i18n.t('cloudenv.text_110') : '')
+          return hFn('side-page-trigger', {
+            props: {
+              name: 'ProxysettingSidePage',
+              id: row.id,
+              list: this.list,
+              vm: this,
+            },
+          }, text)
         },
       }),
       getCopyWithContentTableColumn({

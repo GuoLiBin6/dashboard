@@ -8,7 +8,7 @@
         <a-row :gutter="8" class="mb-2">
           <a-col :span="14">
             <a-input
-              v-model="search.q"
+              v-model:value="search.q"
               :placeholder="$t('aice.hf.search_q_placeholder')"
               allow-clear
               @pressEnter="runSearch" />
@@ -22,7 +22,7 @@
         <a-row :gutter="8" class="mb-3">
           <a-col :span="12">
             <a-select
-              v-model="search.sort"
+              v-model:value="search.sort"
               size="small"
               style="width: 100%;"
               @change="runSearch">
@@ -33,7 +33,7 @@
           </a-col>
           <a-col :span="12">
             <a-select
-              v-model="search.quantizations"
+              v-model:value="search.quantizations"
               size="small"
               style="width: 100%;"
               mode="multiple"

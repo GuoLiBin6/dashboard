@@ -1,5 +1,5 @@
 <template>
-  <a @click="open"><a-icon style="font-size: 18px" type="tool" /></a>
+  <a @click="open"><icon style="font-size: 18px" type="tool" /></a>
 </template>
 
 <script>

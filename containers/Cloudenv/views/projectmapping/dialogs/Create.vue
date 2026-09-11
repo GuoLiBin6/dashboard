@@ -11,37 +11,41 @@
         </a-form-model-item>
         <!-- 名称 -->
         <a-form-model-item :label="$t('cloudenv.text_95')" prop="name">
-          <a-input v-model="formData.name" :placeholder="$t('validator.resourceName')" />
+          <a-input v-model:value="formData.name" :placeholder="$t('validator.resourceName')" />
         </a-form-model-item>
         <a-form-model-item :label="$t('common.description')">
-          <a-textarea v-model="formData.description" :rows="1" :auto-size="{ minRows: 1, maxRows: 3 }" :placeholder="$t('common_367')" />
+          <a-textarea v-model:value="formData.description" :rows="1" :auto-size="{ minRows: 1, maxRows: 3 }" :placeholder="$t('common_367')" />
         </a-form-model-item>
         <!-- 规则 -->
         <a-form-model-item :label="$t('cloudenv.text_582')" :rules="rules.rules" prop="rules">
           <div v-for="(item,index) in formData.rules" :key="index" class="d-flex align-items-center">
             <a-card class="mb-3" style="flex: 1 1 auto">
               <!-- 条件 -->
-              <a-form-model-item :label="$t('cloudenv.text_22')" v-bind="layout" :rules="rules.condition" :prop="`rules.${index}.condition`">
-                <a-select v-model="item.condition">
-                  <a-select-option v-for="item in resourceAndTagOptions" :value="item.value" :key="item.value" :disabled="item.value === 'and_copy' && isSecAndcopy(index)">
-                    {{item.name}}
+              <a-form-model-item :label="$t('cloudenv.text_22')" v-bind="layout" :rules="rules.condition" :prop="['rules', index, 'condition']">
+                <a-select v-model:value="item.condition" @change="() => onConditionChange(index)">
+                  <a-select-option
+                    v-for="opt in resourceAndTagOptions"
+                    :value="opt.value"
+                    :key="opt.value"
+                    :disabled="opt.value === 'and_copy' && isSecAndcopy(index)">
+                    {{opt.name}}
                   </a-select-option>
                 </a-select>
               </a-form-model-item>
               <!-- 标签key -->
               <template v-if="item.condition === 'and_copy'">
-                <a-form-model-item :label="$t('cloudenv.tag_key')" v-bind="layout" :rules="rules.tag_key" :prop="`rules.${index}.tag_key`">
-                  <a-input v-model="item.tag_key" />
+                <a-form-model-item :label="$t('cloudenv.tag_key')" v-bind="layout" :rules="rules.tag_key" :prop="['rules', index, 'tag_key']">
+                  <a-input v-model:value="item.tag_key" />
                 </a-form-model-item>
               </template>
               <template v-else>
                 <!-- 标签 -->
-                <a-form-model-item :label="$t('cloudenv.text_16')" v-bind="layout" :rules="rules.tags" :prop="`rules.${index}.tags`">
+                <a-form-model-item :label="$t('cloudenv.text_16')" v-bind="layout" :rules="rules.tags" :prop="['rules', index, 'tags']">
                   <tag v-if="tagShow" :defaultChecked="item.tags" @change="(val) => handleTagChange(val, index)" />
                 </a-form-model-item>
-                <a-form-model-item :label="$t('cloudenv.belong_type')" v-bind="layout" :rules="rules.belong_type" :prop="`rules.${index}.belong_type`">
+                <a-form-model-item :label="$t('cloudenv.belong_type')" v-bind="layout" :rules="rules.belong_type" :prop="['rules', index, 'belong_type']">
                   <a-form-model-item class="mb-0" :extra="item.belong_type === 'project_id' ? $t('cloudenv.text_592') : $t('cloudenv.belong_project_name_tip')">
-                    <a-radio-group v-model="item.belong_type" @change="validateBt(index)">
+                    <a-radio-group v-model:value="item.belong_type" class="mb-2" @change="validateBt(index)">
                       <a-radio-button value="project_id">{{ $t('cloudenv.target_project') }}</a-radio-button>
                       <a-radio-button value="project">{{ $t('cloudenv.target_name') }}</a-radio-button>
                     </a-radio-group>
@@ -53,7 +57,7 @@
                       v-model="item.project_id"
                       :select-props="{placeholder: $t('common.tips.select', [$t('dictionary.project')])}"
                       @change="validateBt(index)" />
-                    <a-input v-else type="text" v-model="item.project" :placeholder="$t('common.tips.input', [$t('dictionary.project')])" @change="validateBt(index)" />
+                    <a-input v-else type="text" v-model:value="item.project" :placeholder="$t('common.tips.input', [$t('dictionary.project')])" @change="validateBt(index)" />
                   </a-form-model-item>
                 </a-form-model-item>
               </template>
@@ -70,7 +74,7 @@
           </div>
         </a-form-model-item>
         <a-form-model-item :label="$t('cloudenv.text_282')" prop="public_scope">
-          <a-radio-group v-model="formData.public_scope">
+          <a-radio-group v-model:value="formData.public_scope">
             <a-radio-button value="none">{{$t('cloudenv.text_285')}}</a-radio-button>
             <a-radio-button v-if="isAdminMode" value="system">{{$t('cloudenv.global_share')}}</a-radio-button>
           </a-radio-group>
@@ -191,16 +195,30 @@ export default {
   },
   methods: {
     validateBt (index) {
-      this.$refs.ruleForm.validateField('rules.' + index + '.belong_type')
+      this.$refs.ruleForm.validateField([['rules', index, 'belong_type']])
+    },
+    onConditionChange (index) {
+      this.$nextTick(() => {
+        const name = ['rules', index, 'condition']
+        this.$refs.ruleForm?.clearValidate?.([name])
+        this.$refs.ruleForm?.validateField?.([name])
+      })
+    },
+    getRuleIndexFromField (field) {
+      if (Array.isArray(field)) return field[1]
+      const matched = String(field || '').match(/^rules[.[](\d+)/)
+      return matched ? parseInt(matched[1]) : NaN
     },
     validateBelongType (rule, value, callback) {
-      const index = parseInt(rule.field.replace('rules.', '').replace('.belong_type', ''))
-      const target = this.formData.rules[index]
+      const index = this.getRuleIndexFromField(rule.field)
+      const target = this.formData.rules[index] || {}
       if (value === 'project_id' && !target[value]) {
         callback(new Error(this.$t('common.tips.select', [this.$t('dictionary.project')])))
+        return
       }
-      if (value === 'project' && !(target[value].trim())) {
+      if (value === 'project' && !(target[value] || '').trim()) {
         callback(new Error(this.$t('common.tips.input', [this.$t('dictionary.project')])))
+        return
       }
       callback()
     },

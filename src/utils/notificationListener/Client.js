@@ -44,10 +44,10 @@ class Client {
               message: '提示',
               description: '当前用户已在其它设备登录，登录后从其它设备退出登录',
             })
-            if (!router.currentRoute.meta.authPage) {
+            if (!router.currentRoute.value.meta.authPage) {
               router.push({
                 path: '/auth/login',
-                query: genReferRouteQuery(router.currentRoute),
+                query: genReferRouteQuery(router.currentRoute.value),
               })
             }
           }).catch((error) => {

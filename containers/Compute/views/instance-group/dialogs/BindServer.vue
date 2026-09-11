@@ -20,7 +20,7 @@
           :params="serversParams"
           :value="selectedServers"
           :mapper="serversMapper"
-          :init-loaded.sync="serversInitLoaded"
+          v-model:initLoaded="serversInitLoaded"
           :remoteFn="remoteFn"
           @change="handleSelectChange"
           :select-props="{ allowClear: true, placeholder: $t('compute.text_702', [this.$t('dictionary.server')]), mode: 'multiple' }" />
@@ -80,7 +80,7 @@ export default {
       }
     },
   },
-  destroyed () {
+  unmounted () {
     this.serversManager = null
   },
   created () {

@@ -52,12 +52,12 @@
           :form-draft-key="containerDraftFields.osArch" />
       </a-form-item>
       <a-form-item>
-        <span slot="label">
+        <template #label>
           {{ $t('compute.text_1152') }}&nbsp;
           <a-tooltip :title="$t('compute.vgpu_check.tooltip')">
-            <a-icon type="question-circle-o" />
+            <icon type="question-circle" />
           </a-tooltip>
-        </span>
+        </template>
         <pci :decorators="decorators.pci" :pciDevTypeOptions="pciDevTypeOptions" :form="form" :pci-options="pciOptions" :form-draft-key="containerDraftFields.pci" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_1058')" class="mb-0">
@@ -74,9 +74,9 @@
           :hypervisor="form.fd.hypervisor"
           :init-sku-data="initSkuData"
           :form-draft-key="containerDraftFields.sku" />
-        <div slot="extra" v-if="showSkuCreateTip">
+        <template v-if="showSkuCreateTip" #extra>
           {{ $t('compute.text_196') }}<help-link href="/sku">{{ $t('compute.perform_create') }}</help-link>
-        </div>
+        </template>
       </a-form-item>
       <a-form-item :label="$t('compute.text_50')">
         <data-disk
@@ -122,7 +122,7 @@
           :default-checked="tagDefaultChecked"
           :form-draft-key="containerDraftFields.tag" />
       </a-form-item>
-      <a-collapse :bordered="false" v-model="collapseActive">
+      <a-collapse :bordered="false" v-model:activeKey="collapseActive" :expand-icon="renderCollapseExpandIcon">
         <a-collapse-panel :header="$t('compute.text_309')" key="1" :forceRender="true">
           <eip-config
             v-if="showEip"
@@ -139,12 +139,12 @@
           <a-form-item
             :validate-status="hostNameValidate.validateStatus"
             :help="hostNameValidate.errorMsg">
-            <span slot="label">
+            <template #label>
               {{ $t('common_388') }}&nbsp;
               <a-tooltip :title="hostNameTips">
-                <a-icon type="question-circle-o" />
+                <icon type="question-circle" />
               </a-tooltip>
-            </span>
+            </template>
             <host-name v-decorator="decorators.hostName" :isWindows="isWindows" @change="handleHostNameChange" />
           </a-form-item>
           <a-form-item :label="$t('compute.text_105')">
@@ -203,7 +203,7 @@
       <spec-container
         ref="specContainerRef"
         :form="form"
-        :panes.sync="form.fi.containerPanes"
+        v-model:panes="form.fi.containerPanes"
         :errPanes="form.fi.errPanes"
         :decorators="decorators.containers"
         :initContainers="containerInitList"
@@ -216,7 +216,7 @@
         :isOpenWorkflow="isOpenWorkflow"
         :isOpenOrderSetWorkflow="isOpenOrderSetWorkflow"
         :isModifyWorkflow="isModifyWorkflow"
-        :errors.sync="errors"
+        v-model:errors="errors"
         :hasMeterService="hasMeterService"
         @add-cart="addShopCart"
         @cancel="handleCancel" />
@@ -658,7 +658,7 @@ export default {
       }
     },
   },
-  destroyed () {
+  unmounted () {
     this.timer = null
   },
   methods: {

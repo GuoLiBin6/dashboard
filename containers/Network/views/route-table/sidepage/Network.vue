@@ -67,7 +67,13 @@ export default {
           slots: {
             default: ({ row }, h) => {
               return [
-                <side-page-trigger name='NetworkSidePage' id={row.id} vm={this}>{row.name}</side-page-trigger>,
+                h('side-page-trigger', {
+                  props: {
+                    name: 'NetworkSidePage',
+                    id: row.id,
+                    vm: this,
+                  },
+                }, [row.name]),
               ]
             },
           },
@@ -78,10 +84,10 @@ export default {
           title: this.$t('network.text_213'),
           width: 180,
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               return [
-                <div>{ this.$t('network.ip.start', [row.guest_ip_start, row.guest_ip_mask])}</div>,
-                <div>{ this.$t('network.ip.end', [row.guest_ip_end, row.guest_ip_mask])}</div>,
+                h('div', this.$t('network.ip.start', [row.guest_ip_start, row.guest_ip_mask])),
+                h('div', this.$t('network.ip.end', [row.guest_ip_end, row.guest_ip_mask])),
               ]
             },
           },
@@ -91,13 +97,13 @@ export default {
           title: this.$t('network.ipv6.address'),
           width: 180,
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (!row.guest_ip6_start || !row.guest_ip6_end) {
                 return '-'
               }
               return [
-                <div>{ this.$t('network.ip.start', [row.guest_ip6_start, row.guest_ip6_mask])}</div>,
-                <div>{ this.$t('network.ip.end', [row.guest_ip6_end, row.guest_ip6_mask])}</div>,
+                h('div', this.$t('network.ip.start', [row.guest_ip6_start, row.guest_ip6_mask])),
+                h('div', this.$t('network.ip.end', [row.guest_ip6_end, row.guest_ip6_mask])),
               ]
             },
           },
@@ -108,10 +114,11 @@ export default {
           minWidth: 100,
           slots: {
             default: ({ row }) => {
-              if (this.isPreLoad && !row.ports) return [<data-loading />]
+              const h = this.$createElement
+              if (this.isPreLoad && !row.ports) return [h('data-loading')]
               return [
-                <div class='text-truncate'>{ this.$t('network.text_727', [row.ports])}</div>,
-                <div class='text-truncate'>{ this.$t('network.text_728', [row.ports_used])}</div>,
+                h('div', { class: 'text-truncate' }, this.$t('network.text_727', [row.ports])),
+                h('div', { class: 'text-truncate' }, this.$t('network.text_728', [row.ports_used])),
               ]
             },
           },

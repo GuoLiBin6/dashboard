@@ -13,9 +13,15 @@ const Checkbox = {
   render (h) {
     const { definition, value } = this
 
-    return (
-      <a-checkbox { ...this.$props } onChange={ this.onChange } checked={ value }>{ definition.formItem.label }</a-checkbox>
-    )
+    return h('a-checkbox', {
+      props: {
+        ...this.$props,
+        checked: value,
+      },
+      on: {
+        change: this.onChange,
+      },
+    }, [definition.formItem.label])
   },
   methods: {
     onChange (e) {

@@ -4,7 +4,7 @@
       <div class="dashboard-card-header" style="margin-bottom:0">
         <div class="dashboard-card-header-left">
           <span :style="headerStyle">{{ form.fd.name || $t('dashboard.title_bar') }}</span>
-          <a-icon class="ml-2" type="loading" v-if="loading" /></div>
+          <icon class="ml-2" type="loading" v-if="loading" /></div>
         <div class="dashboard-card-header-right">
           <slot name="actions" :handle-edit="handleEdit" />
         </div>
@@ -13,7 +13,7 @@
         {{ desc }}
       </div>
     </div>
-    <base-drawer :visible.sync="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit" @cancel="handleCancel">
+    <base-drawer v-model:visible="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit" @cancel="handleCancel">
       <a-form
         :form="form.fc"
         v-bind="formItemLayout">
@@ -30,7 +30,7 @@
                 {{ item.key }}
               </template>
               <a-tag :color="item.color" @click="changeColor(item.color)" :style="item.color === '#FFFFFF' ? {border:'solid #ccc 1px'} : {}">
-                <a-icon type="check" v-if="item.color === form.fd.color" :style="item.color === '#FFFFFF' ? {color:'#333'} : {}" />
+                <icon type="check" v-if="item.color === form.fd.color" :style="item.color === '#FFFFFF' ? {color:'#333'} : {}" />
               </a-tag>
             </a-tooltip>
           </div>
@@ -164,7 +164,7 @@ export default {
       }
     },
   },
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {

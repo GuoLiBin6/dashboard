@@ -28,10 +28,12 @@ export default {
         formRules: [
           { required: true, message: this.$t('common.text00042') },
         ],
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getAccessUrlTableColumn(),
@@ -60,7 +62,9 @@ export default {
           default: ({ row }) => {
             if (row.sync_status !== 'idle') { // 表示正在同步中
               return [
-                <status status={ row.sync_status } statusModule='cloudaccountSyncStatus' />,
+                this.$createElement('status', {
+                  props: { status: row.sync_status, statusModule: 'cloudaccountSyncStatus' },
+                }),
               ]
             } else {
               const time = this.$moment(row.last_sync)

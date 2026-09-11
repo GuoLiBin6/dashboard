@@ -1,10 +1,10 @@
 <template>
   <base-dialog :width="1000" @cancel="cancelDialog">
-    <div slot="header">{{$t('network.ssl_certificate.create')}}</div>
-    <div slot="body">
+    <template #header>{{$t('network.ssl_certificate.create')}}</template>
+    <template #body>
       <a-form-model :model="form" :rules="rules" ref="form" :label-col="{ span: 4 }" :wrapper-col="{ span: 20 }">
         <a-form-model-item :label="$t('network.ssl_certificate.name')" prop="name">
-          <a-input v-model="form.name" :placeholder="$t('common.tips.input', [$t('network.ssl_certificate.name')])" />
+          <a-input v-model:value="form.name" :placeholder="$t('common.tips.input', [$t('network.ssl_certificate.name')])" />
         </a-form-model-item>
         <a-form-model-item :label="$t('network.ssl_certificate.dns_zone')" prop="dns_zone_id">
           <base-select v-model="form.dns_zone_id" isDefaultSelect resource="dns_zones" />
@@ -13,14 +13,14 @@
           <base-select v-model="form.issuer" isDefaultSelect :options="issuerOptions" />
         </a-form-model-item>
         <a-form-model-item :label="$t('network.ssl_certificate.sans')" prop="sans">
-          <a-textarea v-model="form.sans" :rows="4" :placeholder="$t('network.ssl_certificate.sans.placeholder')" />
+          <a-textarea v-model:value="form.sans" :rows="4" :placeholder="$t('network.ssl_certificate.sans.placeholder')" />
         </a-form-model-item>
       </a-form-model>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('network.text_33') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

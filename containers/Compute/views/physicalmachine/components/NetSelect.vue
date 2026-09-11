@@ -4,7 +4,7 @@
       class="w-100"
       resource="networks"
       v-model="networkId"
-      :item.sync="network"
+      v-model:item="network"
       :params="networkParams"
       :select-props="{ placeholder: $t('compute.text_195') }"
       @change="handleChange" />
@@ -12,7 +12,7 @@
       class="ml-2"
       v-if="ipShow"
       :placeholder="$t('compute.text_197')"
-      v-model="ip"
+      v-model:value="ip"
       @change="handleChange" />
     <a-button v-if="ipShow" type="link" @click="handleHiddenIp" class="pl-0 pr-0 ml-2">{{$t('common_115')}}</a-button>
     <a-button v-else type="link" @click="handleShowIp" class="pl-0 pr-0 ml-2">{{$t('compute.text_198')}}</a-button>

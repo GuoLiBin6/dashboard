@@ -1,19 +1,19 @@
 <template>
   <div>
     <page-header :title="$t('common.create') + $t('aice.aiproxy.proxy_node')" />
-    <page-body needMarginBottom>
+    <page-body>
       <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 4 }" :wrapper-col="{ span: 16 }" class="mt-4">
         <a-form-model-item :label="$t('common.name')" prop="generate_name">
-          <a-input v-model="form.generate_name" :placeholder="$t('common.placeholder')" />
+          <a-input v-model:value="form.generate_name" :placeholder="$t('common.placeholder')" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.aiproxy.address')" prop="address">
-          <a-input v-model="form.address" />
+          <a-input v-model:value="form.address" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.aiproxy.access_address')" prop="access_address">
-          <a-input v-model="form.access_address" placeholder="https://gateway.example.com:443" />
+          <a-input v-model:value="form.access_address" placeholder="https://gateway.example.com:443" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.aiproxy.hb_timeout')" prop="hb_timeout">
-          <a-input-number v-model="form.hb_timeout" :min="1" />
+          <a-input-number v-model:value="form.hb_timeout" :min="1" />
         </a-form-model-item>
       </a-form-model>
     </page-body>

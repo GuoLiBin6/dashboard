@@ -3,11 +3,11 @@
     <div slot="header">{{action}}</div>
     <div slot="body">
       <a-alert class="mb-2" type="warning">
-        <div slot="message" v-if="params.data.length === 1">{{$t('compute.text_1400')}}</div>
-        <div slot="message" v-else>
+        <template #message v-if="params.data.length === 1">{{$t('compute.text_1400')}}</template>
+        <template #message v-else>
           <p>{{$t('compute.text_1168')}}</p>
           <p>{{$t('compute.text_1169')}}</p>
-        </div>
+        </template>
       </a-alert>
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
@@ -15,11 +15,11 @@
         :form="form.fc"
         v-bind="formItemLayout">
         <a-form-item :label="$t('compute.text_1170')">
-          <a-radio-group name="radioGroup" :defaultValue="true" v-if="isGroupAction" v-model="isOpenUsb">
+          <a-radio-group name="radioGroup" :defaultValue="true" v-if="isGroupAction" v-model:value="isOpenUsb">
             <a-radio :value="true">{{$t('compute.text_902')}}</a-radio>
             <a-radio :value="false">{{$t('compute.text_723')}}</a-radio>
           </a-radio-group>
-          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-model="isOpenUsb" v-else />
+          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-model:value="isOpenUsb" v-else />
         </a-form-item>
         <a-form-item :label="$t('compute.text_1401')" v-show="isOpenUsb" :extra="$t('compute.text_1402')">
           <!-- 批量设置 -->
@@ -31,7 +31,7 @@
             :labelFormat="labelFormat"
             :disabled-items="disabledItems"
             filterable
-            :resList.sync="usbOpt"
+            v-model:resList="usbOpt"
             :mapper="mapper"
             resource="isolated_devices"
             :select-props="{ allowClear: true, placeholder: $t('compute.text_1172'), mode: 'default' }">
@@ -72,6 +72,7 @@
 
 <script>
 // import * as R from 'ramda'
+import { h } from 'vue'
 import {
   getIpsTableColumn,
 } from '@/utils/common/tableColumn'
@@ -142,7 +143,7 @@ export default {
               if (row.isolated_devices) {
                 row.isolated_devices.map(item => {
                   if (item.dev_type === 'USB') {
-                    ret.push(<list-body-cell-wrap row={{ showName: `${item.addr || ''} ${item.model || ''}` }} field="showName" />)
+                    ret.push(h('list-body-cell-wrap', { row: { showName: `${item.addr || ''} ${item.model || ''}` }, field: 'showName' }))
                   }
                 })
               }

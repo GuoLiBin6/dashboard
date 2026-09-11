@@ -9,9 +9,15 @@ export const getPackageNameTableColumn = () => {
     slots: {
       default: ({ row }, h) => {
         return [
-          <list-body-cell-wrap copy hideField={true} field='package' row={row} message={row.package}>
-            {row.package}
-          </list-body-cell-wrap>,
+          h('list-body-cell-wrap', {
+            props: {
+              copy: true,
+              hideField: true,
+              field: 'package',
+              row,
+              message: row.package,
+            },
+          }, row.package),
         ]
       },
     },
@@ -26,9 +32,15 @@ export const getAppIdTableColumn = () => {
     slots: {
       default: ({ row }, h) => {
         return [
-          <list-body-cell-wrap copy hideField={true} field='app_id' row={row} message={row.app_id}>
-            {row.app_id}
-          </list-body-cell-wrap>,
+          h('list-body-cell-wrap', {
+            props: {
+              copy: true,
+              hideField: true,
+              field: 'app_id',
+              row,
+              message: row.app_id,
+            },
+          }, row.app_id),
         ]
       },
     },
@@ -43,9 +55,15 @@ export const getPackageVersionTableColumn = () => {
     slots: {
       default: ({ row }, h) => {
         return [
-          <list-body-cell-wrap copy hideField={true} field='version' row={row} message={row.version}>
-            {row.version}
-          </list-body-cell-wrap>,
+          h('list-body-cell-wrap', {
+            props: {
+              copy: true,
+              hideField: true,
+              field: 'version',
+              row,
+              message: row.version,
+            },
+          }, row.version),
         ]
       },
     },
@@ -64,9 +82,25 @@ export const getAppImageTableColumn = ({ vm = {} } = {}) => {
         }
         const label = row.image || row.image_id
         return [
-          <list-body-cell-wrap copy hideField={true} field='image_id' row={row} message={label}>
-            <side-page-trigger permission='images_get' name='SystemImageSidePage' id={row.image_id} vm={vm} tab="system-image-detail">{label}</side-page-trigger>
-          </list-body-cell-wrap>,
+          h('list-body-cell-wrap', {
+            props: {
+              copy: true,
+              hideField: true,
+              field: 'image_id',
+              row,
+              message: label,
+            },
+          }, [
+            h('side-page-trigger', {
+              props: {
+                permission: 'images_get',
+                name: 'SystemImageSidePage',
+                id: row.image_id,
+                vm,
+                tab: 'system-image-detail',
+              },
+            }, label),
+          ]),
         ]
       },
     },
@@ -98,7 +132,17 @@ export const getAppCacheStatusColumn = () => {
         const colorHigh = '#52C41A'
         const colorLow = '#FFC145'
         const colorMedium = '#FFC145'
-        return [<UsedPercent colorHigh={colorHigh} colorLow={colorLow} colorMedium={colorMedium} title={title} used={row.cached_count} total={row.cache_count} usedLabel={i18n.t('aice.mounted_apps.auto_cache.on')} />]
+        return [h('UsedPercent', {
+          props: {
+            colorHigh,
+            colorLow,
+            colorMedium,
+            title,
+            used: row.cached_count,
+            total: row.cache_count,
+            usedLabel: i18n.t('aice.mounted_apps.auto_cache.on'),
+          },
+        })]
       },
     },
     formatter: ({ row }) => {
@@ -120,7 +164,7 @@ export const getIconTableColumn = () => {
         }
         const imgData = `data:image/webp;base64,${row.icon_base64}`
         return [
-          <img src={imgData} width="64" />,
+          h('img', { attrs: { src: imgData, width: '64' } }),
         ]
       },
     },

@@ -99,10 +99,23 @@ export const projectTableColumn = {
       }
       if (row.tenant && domain) {
         return [
-          <list-body-cell-wrap copy field='tenant' row={row} />,
-          <list-body-cell-wrap hide-field copy field="domain" row={{ domain }}>
-            <span class='text-weak'>{domain}</span>
-          </list-body-cell-wrap>,
+          h('list-body-cell-wrap', {
+            props: {
+              copy: true,
+              field: 'tenant',
+              row,
+            },
+          }),
+          h('list-body-cell-wrap', {
+            props: {
+              'hide-field': true,
+              copy: true,
+              field: 'domain',
+              row: { domain },
+            },
+          }, [
+            h('span', { class: 'text-weak' }, domain),
+          ]),
         ]
       }
     },

@@ -1,42 +1,51 @@
 <template>
-  <div id="dashboard-header" class="wrap d-flex align-items-center">
-    <draggable v-model="options" tag="ul" class="d-flex flex-fill flex-wrap list-unstyled m-0" handle=".handle">
+  <div id="dashboard-header" class="d-flex align-items-center">
+    <!-- 不用 vuedraggable：@vue/compat 下 #item 插槽偶发无参数导致整段不渲染；排序改用 Sortable 绑定本容器 -->
+    <ul ref="tabsSortableRoot" class="d-flex flex-fill flex-wrap list-unstyled m-0">
       <li
-        class="item"
         v-for="item in options"
         :key="item.id"
-        :class="{ active: current.id === item.id }"
+        class="item"
+        :class="{ active: current.id === item.id, single: isSingle }"
         @click.stop.prevent="$emit('select', item)">
-        <icon type="move" class="handle" />
-        <span>{{ item.name }}</span>
+        <span class="item-inner">
+          <icon
+            v-if="!isSingle"
+            type="move"
+            class="drag-icon" />
+          <span>{{ item.name }}</span>
+        </span>
       </li>
-    </draggable>
+    </ul>
     <data-range v-if="(isAdminMode || isDomainMode) && $appConfig.isPrivate && !$store.getters.isSysCE" :dataRangeParams="dataRangeParams" @updateDataRange="updateDataRange" />
     <a-button @click="handleRefresh" type="link" class="action-btn">
       <icon type="refresh" />
     </a-button>
-    <a-dropdown v-if="showActions.length" :trigger="['click']" slot="tabBarExtraContent" placement="bottomRight">
+    <a-dropdown v-if="showActions.length" :trigger="['click']" placement="bottomRight">
       <a class="ant-dropdown-link font-weight-bold pl-2 pr-2 h-100 d-block action-btn" @click="e => e.preventDefault()">
         <icon type="more" style="font-size: 18px;" />
       </a>
-      <a-menu slot="overlay" @click="handleActionClick">
-        <a-menu-item key="handleCreate" v-if="showActions.includes('create')"><a-icon type="plus" />{{$t('dashboard.text_103')}}</a-menu-item>
-        <a-menu-item key="handleEdit" v-if="showActions.includes('edit')"><a-icon type="edit" />{{$t('dashboard.text_104')}}</a-menu-item>
-        <a-menu-item key="handleDownload" v-if="showActions.includes('export')"><a-icon type="download" />{{$t('dashboard.text_105')}}</a-menu-item>
-        <a-menu-item key="handleImport" v-if="showActions.includes('import')"><a-icon type="file" />{{$t('dashboard.text_106')}}</a-menu-item>
-        <a-menu-item key="handleCopy" v-if="showActions.includes('clone')"><a-icon type="copy" />{{$t('dashboard.text_107')}}</a-menu-item>
-        <a-menu-item key="handleShare" v-if="isAdminRole && isDefaultOption && showActions.includes('share')"><a-icon type="share-alt" />{{$t('common_104', [''])}}</a-menu-item>
-        <a-menu-item key="handleDelete" v-if="showActions.includes('reset')"><a-icon type="delete" />{{deleteText}}</a-menu-item>
-      </a-menu>
+      <template #overlay>
+        <a-menu @click="handleActionClick">
+          <a-menu-item key="handleCreate" v-if="showActions.includes('create')"><icon type="icon_add" class="mr-2" />{{$t('dashboard.text_103')}}</a-menu-item>
+          <a-menu-item key="handleEdit" v-if="showActions.includes('edit')"><icon type="edit" class="mr-2" />{{$t('dashboard.text_104')}}</a-menu-item>
+          <a-menu-item key="handleDownload" v-if="showActions.includes('export')"><icon type="download" class="mr-2" />{{$t('dashboard.text_105')}}</a-menu-item>
+          <a-menu-item key="handleImport" v-if="showActions.includes('import')"><icon type="file" class="mr-2" />{{$t('dashboard.text_106')}}</a-menu-item>
+          <a-menu-item key="handleCopy" v-if="showActions.includes('clone')"><icon type="copy" class="mr-2" />{{$t('dashboard.text_107')}}</a-menu-item>
+          <a-menu-item key="handleShare" v-if="isAdminRole && isDefaultOption && showActions.includes('share')"><icon type="share-alt" class="mr-2" />{{$t('common_104', [''])}}</a-menu-item>
+          <a-menu-item key="handleDelete" v-if="showActions.includes('reset')"><icon type="delete" class="mr-2" />{{deleteText}}</a-menu-item>
+        </a-menu>
+      </template>
     </a-dropdown>
   </div>
 </template>
 
 <script>
+import { h } from 'vue'
 import * as R from 'ramda'
 import { mapGetters } from 'vuex'
 import { Base64 } from 'js-base64'
-import draggable from 'vuedraggable'
+import Sortable from 'sortablejs'
 import { download, uuid } from '@/utils/utils'
 import WindowsMixin from '@/mixins/windows'
 import DataRange from './DataRange.vue'
@@ -44,7 +53,6 @@ import DataRange from './DataRange.vue'
 export default {
   name: 'DashboardHeader',
   components: {
-    draggable,
     DataRange,
   },
   mixins: [WindowsMixin],
@@ -115,13 +123,48 @@ export default {
       return !!systemProj
     },
   },
-  beforeDestroy () {
+  watch: {
+    'tabs.length' () {
+      this.initTabsSortable()
+    },
+  },
+  mounted () {
+    this.initTabsSortable()
+  },
+  beforeUnmount () {
+    this.destroyTabsSortable()
     this.pm = null
   },
   created () {
     this.pm = new this.$Manager('parameters', 'v1')
   },
   methods: {
+    initTabsSortable () {
+      this.destroyTabsSortable()
+      this.$nextTick(() => {
+        const el = this.$refs.tabsSortableRoot
+        if (!el || !Array.isArray(this.options) || !this.options.length) return
+        this._tabsSortable = Sortable.create(el, {
+          animation: 150,
+          // 整项可拖；点击仍选中（Sortable 仅在发生位移后才进入拖拽）
+          onEnd: (evt) => {
+            const { oldIndex, newIndex } = evt
+            if (oldIndex == null || newIndex == null || oldIndex === newIndex) return
+            const list = [...this.options]
+            if (oldIndex < 0 || newIndex < 0 || oldIndex >= list.length || newIndex >= list.length) return
+            const [moved] = list.splice(oldIndex, 1)
+            list.splice(newIndex, 0, moved)
+            this.$emit('update-options', list)
+          },
+        })
+      })
+    },
+    destroyTabsSortable () {
+      if (this._tabsSortable) {
+        this._tabsSortable.destroy()
+        this._tabsSortable = null
+      }
+    },
     updateDataRange (params) {
       this.$emit('updateDataRange', params)
     },
@@ -167,12 +210,18 @@ export default {
             number,
           }]
           return [
-            <dialog-selected-tips count={1} action={this.deleteText} name={this.$t('dashboard.text_109')} />,
-            <dialog-table
-              vxeGridProps={{ showOverflow: 'title' }}
-              data={ data }
-              columns={
-                [
+            h('dialog-selected-tips', {
+              props: {
+                count: 1,
+                action: this.deleteText,
+                name: this.$t('dashboard.text_109'),
+              },
+            }),
+            h('dialog-table', {
+              props: {
+                vxeGridProps: { showOverflow: 'title' },
+                data: data,
+                columns: [
                   {
                     field: 'name',
                     title: this.$t('dashboard.text_110'),
@@ -181,8 +230,9 @@ export default {
                     field: 'number',
                     title: this.$t('dashboard.text_111'),
                   },
-                ]
-              } />,
+                ],
+              },
+            }),
           ]
         },
         ok: async () => {
@@ -276,10 +326,23 @@ export default {
         header: this.$t('common_104', ['']),
         body: () => {
           return [
-            <a-alert class="mb-2" type="warning">
-              <div slot="message">{ this.$t('dashbaord.panel_shared_tip') }</div>
-            </a-alert>,
-            <dialog-selected-tips count={1} action={this.$t('common_104', [''])} name={this.$t('dashboard.text_109')} />,
+            h('a-alert', {
+              class: 'mb-2',
+              props: {
+                type: 'warning',
+              },
+            }, [
+              h('div', {
+                slot: 'message',
+              }, this.$t('dashbaord.panel_shared_tip')),
+            ]),
+            h('dialog-selected-tips', {
+              props: {
+                count: 1,
+                action: this.$t('common_104', ['']),
+                name: this.$t('dashboard.text_109'),
+              },
+            }),
           ]
         },
         ok: async () => {
@@ -295,44 +358,63 @@ export default {
 </script>
 
 <style lang="less" scoped>
-@import '~@/styles/less/theme';
+@import '@/styles/less/theme';
 
-.wrap {
-  border-bottom: 1px solid #EDEDED;
-}
 .item {
-  padding: 12px 16px;
+  padding: 12px;
   margin: 0 32px 0 0;
-  cursor: pointer;
+  cursor: grab;
   position: relative;
+  text-align: center;
   color: rgba(0, 0, 0, 0.45);
   &:last-child {
     margin-right: 0;
   }
   &.active {
-    border-bottom: 1px solid @primary-color;
-    color: @primary-color;
+    border-bottom: 1px solid var(--ant-color-primary, #1890ff);
+    color: var(--ant-color-primary, #1890ff);
     font-weight: bold;
   }
   &:hover {
-    color: @primary-color;
-    .handle {
-      visibility: visible;
+    color: var(--ant-color-primary, #1890ff);
+    .drag-icon {
+      opacity: 1;
     }
   }
-  .handle {
-    cursor: move;
-    visibility: hidden;
+  &:active {
+    cursor: grabbing;
+  }
+  &.single {
+    cursor: pointer;
+    &:active {
+      cursor: pointer;
+    }
+  }
+  .item-inner {
+    position: relative;
+    display: inline-block;
+  }
+  .drag-icon {
     position: absolute;
-    left: 0;
-    top: 4px;
-    color: rgba(0, 0, 0, 0.65);
+    right: 100%;
+    top: 50%;
+    z-index: 1;
+    width: 1em;
+    height: 1em;
+    margin-right: 5px;
+    margin-top: -0.5em;
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.55);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s cubic-bezier(0.2, 0, 0, 1);
   }
 }
 .action-btn {
   color: rgba(0, 0, 0, 0.65);
+  cursor: pointer;
   &:hover {
-    color: #40a9ff;
+    color: var(--ant-color-primary, #1890ff);
   }
 }
 </style>

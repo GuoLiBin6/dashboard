@@ -17,7 +17,7 @@
             :params="projectMappingParams" />
         </a-form-model-item>
         <a-form-model-item :label="$t('cloudenv.effective_scope')" prop="effective_scope" :extra="effectiveScopeExtra">
-          <a-radio-group v-model="fd.effective_scope">
+          <a-radio-group v-model:value="fd.effective_scope">
             <a-radio-button value="resource">{{$t('cloudenv.resource_tag')}}</a-radio-button>
             <a-radio-button value="project">{{$t('cloudenv.project_tag')}}</a-radio-button>
           </a-radio-group>

@@ -1,7 +1,7 @@
 <template>
  <div>
    <a-form-item :label="$t('cloudenv.private_key')">
-    <a-radio-group @change="handleTypeChange" v-model="type">
+    <a-radio-group @change="handleTypeChange" v-model:value="type">
         <a-radio-button :value="1">{{ $t('cloudenv.private_key.upload_certificate') }}</a-radio-button>
         <a-radio-button :value="2">{{ $t('cloudenv.private_key.text_input') }}</a-radio-button>
       </a-radio-group>
@@ -14,7 +14,7 @@
       :fileList="fileList">
       <div style="padding: 10px;">
         <p class="ant-upload-drag-icon">
-        <a-icon type="inbox" />
+        <icon type="inbox" />
       </p>
         <p class="ant-upload-text">{{ $t('common.drag_file_area') }}</p>
         <p class="ant-upload-hint">{{ $t('cloudenv.private_key.upload_pem_file') }}</p>

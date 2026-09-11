@@ -6,7 +6,7 @@
       :style="{ backgroundColor: background || '' }"
       :class="[customClass, { 'oc-mask-fullscreen': fullscreen }]">
       <div class="oc-loading-spinner">
-        <a-icon type="loading" class="mb-2" />
+        <icon type="loading" class="mb-2" spin />
         <p v-if="text" class="el-loading-text">{{ text }}</p>
       </div>
     </div>
@@ -14,7 +14,13 @@
 </template>
 
 <script>
+import Icon from '@/components/Icon'
+
 export default {
+  name: 'Mask',
+  components: {
+    Icon,
+  },
   data () {
     return {
       text: null,

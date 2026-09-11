@@ -1,7 +1,7 @@
 <template>
   <div>
     <a-form-item class="redis-sku-valid" :label="$t('compute.text_109')" v-bind="formItemLayout">
-      <vxe-grid
+      <table-lite-grid
         ref="tableRef"
         row-id="id"
         max-height="500"
@@ -14,7 +14,7 @@
         <template v-slot:empty>
           <page-list-empty :loading="loading" />
         </template>
-      </vxe-grid>
+      </table-lite-grid>
     </a-form-item>
     <a-form-item class="redis-sku-valid" v-bind="tailFormItemLayout">
       <template v-show="false">
@@ -24,7 +24,7 @@
   </div>
 </template>
 
-<script>
+<script lang="jsx">
 import * as R from 'ramda'
 import { NODE_TYPE, BILL_TYPES_MAP } from '@DB/views/redis/constants'
 import PageListEmpty from '@/components/PageList/Loader'
@@ -152,7 +152,7 @@ export default {
           slots: {
             default: ({ row: { rate } }) => {
               if (this.rateLoading) {
-                return [<a-icon type="loading" />]
+                return [<icon type="loading" />]
               }
               const isPackage = this.form.getFieldValue('billing_type') === BILL_TYPES_MAP.prepaid.key
               if (rate) {
@@ -283,7 +283,7 @@ export default {
 }
 </script>
 <style lang="less" scoped>
-::v-deep .redis-sku-valid .ant-form-item-control{
+:deep(.redis-sku-valid .ant-form-item-control){
   line-height: 0;
 }
 </style>

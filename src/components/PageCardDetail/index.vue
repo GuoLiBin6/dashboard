@@ -12,6 +12,7 @@
 </template>
 
 <script>
+import defaultImg from '../../assets/images/invalidImg.svg'
 export default {
   name: 'PageCardDetail',
   props: {
@@ -28,7 +29,7 @@ export default {
   },
   data () {
     return {
-      defaultImg: require('../../assets/images/invalidImg.svg'),
+      defaultImg,
     }
   },
   methods: {

@@ -162,7 +162,7 @@ export default {
 </script>
 
 <style lang="less" scoped>
-::v-deep .detail-item {
+:deep(.detail-item) {
   .detail-item-title {
     width: 220px !important;
   }

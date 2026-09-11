@@ -29,10 +29,14 @@ export default {
           field: 'dbinstanceprivileges',
           title: this.$t('db.text_235'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (row.dbinstanceprivileges && row.dbinstanceprivileges.length > 0) {
                 return row.dbinstanceprivileges.map(({ account, privileges }) => {
-                  return <div>{account} <span style="color:#666;margin:0 0 0 3px">({RDS_ACCOUNT_PRIVILEGES[privileges]})</span></div>
+                  return h('div', [
+                    account,
+                    ' ',
+                    h('span', { style: 'color:#666;margin:0 0 0 3px' }, `(${RDS_ACCOUNT_PRIVILEGES[privileges]})`),
+                  ])
                 })
               }
               return '-'

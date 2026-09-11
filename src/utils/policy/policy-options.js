@@ -19,10 +19,13 @@ const getRealPermis = (data) => {
   }]
 }
 
+// 预加载所有模块 actions 定义（替代 webpack 的 require.context('@containers', true, /actions\.js$/)）
+const actionsModules = import.meta.glob('../../../containers/**/actions.js', {
+  eager: true,
+})
+
 // 加载模块操作数据
 export const getPolicyOptions = () => {
-  const req = require.context('@containers', true, /actions\.js$/)
-  const requireAll = ctx => ctx.keys().map(ctx)
   const policyOptionsMap = {}
   const commonOptions = [
     { key: 'list', label: i18n.t('policyDefaultActions.list') },
@@ -34,7 +37,8 @@ export const getPolicyOptions = () => {
   ]
   if (Object.keys(policyOptionsMap).length > 0) return policyOptionsMap
 
-  requireAll(req).forEach(({ default: item }) => {
+  Object.values(actionsModules).forEach((mod) => {
+    const item = mod && mod.default ? mod.default : mod
     if (item && item.name) {
       policyOptionsMap[item.name] = [...commonOptions]
       item.getSingleActions({ $store: store }).forEach((obj, i) => {

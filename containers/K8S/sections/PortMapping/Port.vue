@@ -5,7 +5,7 @@
         <template slot="addonBefore">
           <span>{{$t('k8s.service_port')}}</span>
           <a-tooltip :title="$t('k8s.service_port.desc')">
-            <a-icon type="info-circle" />
+            <icon type="info-circle" />
           </a-tooltip>
         </template>
       </a-input>
@@ -15,7 +15,7 @@
         <template slot="addonBefore">
           <span>{{$t('k8s.target_port')}}</span>
           <a-tooltip :title="$t('k8s.target_port.desc')">
-            <a-icon type="info-circle" />
+            <icon type="info-circle" />
           </a-tooltip>
         </template>
       </a-input>
@@ -25,7 +25,7 @@
         <template slot="addonBefore">
           <span>{{$t('k8s.node_port')}}</span>
           <a-tooltip :title="$t('k8s.node_port.desc')">
-            <a-icon type="info-circle" />
+            <icon type="info-circle" />
           </a-tooltip>
         </template>
       </a-input>

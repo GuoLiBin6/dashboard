@@ -18,16 +18,17 @@ export default {
           default: ({ row }, h) => {
             if (!row.blob) return '-'
             const blob = JSON.parse(row.blob)
+            const create = h || this.$createElement
             return [
-              <a-popover>
-                <template slot="content">
-                  <div style="text-align: center;">
-                    <div style="margin: 5px 0">{blob.secret}</div>
-                    <copy class="ml-1" message={blob.secret} />
-                  </div>
-                </template>
-                <a style="font-size:14px"><icon type="keypairs" /></a>
-              </a-popover>,
+              create('a-popover', null, {
+                content: () => create('div', { style: 'text-align: center;' }, [
+                  create('div', { style: 'margin: 5px 0' }, blob.secret),
+                  create('copy', { class: 'ml-1', message: blob.secret }),
+                ]),
+                default: () => create('a', { style: 'font-size:14px' }, [
+                  create('icon', { type: 'keypairs' }),
+                ]),
+              }),
             ]
           },
         },

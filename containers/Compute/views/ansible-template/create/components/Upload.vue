@@ -6,7 +6,7 @@
       :multiple="true"
       :remove="handleRemove"
       :beforeUpload="beforeUpload">
-      <a-button> <a-icon type="upload" />{{$t('compute.text_245')}}</a-button>
+      <a-button> <icon type="upload" />{{$t('compute.text_245')}}</a-button>
     </a-upload>
     <span slot="extra" :class="err ? 'error-color' : 'text-color-help'">{{$t('compute.text_246')}}</span>
   </a-form-item>

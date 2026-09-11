@@ -1,7 +1,7 @@
 <template>
   <a-select
     :allowClear="allowClear"
-    dropdownClassName="oc-select-dropdown"
+    popupClassName="oc-select-dropdown"
     :value="valueC"
     :loading="loading"
     :placeholder="$t('rules.project')"

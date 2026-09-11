@@ -1,7 +1,7 @@
 <template>
   <div>
     <a-form-item :label="$t('network_waf_statement.label.match_field')" v-bind="formLayout">
-      <a-select v-if="isEdit" v-model="value">
+      <a-select v-if="isEdit" :value="value" @change="handleChange">
         <a-select-option v-for="item in matchFieldOptions" :value="item.value" :key="item.value">
           {{item.label}}
         </a-select-option>
@@ -68,7 +68,10 @@ export default {
 
   },
   methods: {
-
+    handleChange (val) {
+      this.$emit('update:value', val)
+      this.$emit('change', val)
+    },
   },
 }
 </script>

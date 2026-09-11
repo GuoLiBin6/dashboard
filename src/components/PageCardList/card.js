@@ -1,5 +1,6 @@
 import * as R from 'ramda'
 import _ from 'lodash'
+import { h } from 'vue'
 
 export default {
   methods: {
@@ -51,8 +52,10 @@ export default {
       }
       return _.get(data, field) || ''
     },
-    imgError (item, ref) {
-      if (this.$refs[ref] && this.$refs[ref][0]) this.$refs[ref][0].src = this.imageDefault
+    imgError (item, refName) {
+      const el = this.$refs[refName]
+      const img = Array.isArray(el) ? el[0] : el
+      if (img) img.src = this.imageDefault
     },
     showSingleActions (item) {
       const show = this.getOptions(item, 'singleActions')
@@ -66,9 +69,7 @@ export default {
         return value.slots(data)
       }
       const text = value.value
-      return (<span>
-        {{ text }}
-      </span>)
+      return h('span', {}, text)
     },
   },
 }

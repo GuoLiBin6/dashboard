@@ -74,16 +74,14 @@ export default {
 </script>
 <style scoped lang="less">
  .idp-saml-xml-dialog  {
-   ::v-deep {
-     .ant-modal-body{
-        padding: 0;
-      }
-      .CodeMirror{
-        height: 500px;
-      }
+   :deep(.ant-modal-body){
+     padding: 0;
+   }
+   :deep(.CodeMirror){
+     height: 500px;
+   }
       // .CodeMirror-gutter{
       //   width: 0 !important;
       // }
-   }
  }
 </style>

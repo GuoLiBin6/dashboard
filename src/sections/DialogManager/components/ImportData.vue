@@ -1,7 +1,7 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{params.title || $t('common.import_data')}}</div>
-    <div slot="body">
+    <template #header>{{params.title || $t('common.import_data')}}</template>
+    <template #body>
       <a-form
         :form="form.fc">
         <a-alert type="warning" class="mb-2" v-if="isAlertShow">
@@ -20,7 +20,7 @@
               :accept="accept"
               :remove="handleRemove">
               <div class="pt-3 pb-3">
-                <p class="ant-upload-drag-icon"><a-icon type="inbox" /></p>
+                <p class="ant-upload-drag-icon"><icon type="inbox" /></p>
                 <p class="ant-upload-text">{{$t('common.drag_file_area')}}</p>
                 <p class="ant-upload-hint">{{$t('common.file_type_validate')}}</p>
               </div>
@@ -28,11 +28,11 @@
           </a-form-item>
         </div>
      </a-form>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

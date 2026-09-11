@@ -5,27 +5,26 @@
 <script>
 import i18n from '@/locales'
 import { IMAGE_MSG, CUSTOME_IMG } from './constants'
-
-const sprites = require('./assets/sprites.png')
-const unknow = require('./assets/unkonw.png')
-const opensuse = require('./assets/suse.png')
-const fedora = require('./assets/fedora.png')
-const openeuler = require('./assets/openeuler.png')
-const euleros = require('./assets/euleros.png')
-const amazon = require('./assets/amazon.png')
-const aliyun = require('./assets/aliyun.png')
-const tencent = require('./assets/tencent.png')
-const kylin = require('./assets/kylin.png')
-const nfs = require('./assets/nfs.png')
-const uos = require('./assets/uos.svg')
-const android = require('./assets/android.png')
-const vmware = require('./assets/vmware.png')
-const cirros = require('./assets/cirros.png')
-const neokylin = require('./assets/neokylin.png')
-const rocky = require('./assets/rocky.png')
-const anolis = require('./assets/anolis.png')
-const opencloudos = require('./assets/opencloudos.png')
-const almalinux = require('./assets/almalinux.png')
+import sprites from './assets/sprites.png'
+import unknow from './assets/unkonw.png'
+import opensuse from './assets/suse.png'
+import fedora from './assets/fedora.png'
+import openeuler from './assets/openeuler.png'
+import euleros from './assets/euleros.png'
+import amazon from './assets/amazon.png'
+import aliyun from './assets/aliyun.png'
+import tencent from './assets/tencent.png'
+import kylin from './assets/kylin.png'
+import nfs from './assets/nfs.png'
+import uos from './assets/uos.svg'
+import android from './assets/android.png'
+import vmware from './assets/vmware.png'
+import cirros from './assets/cirros.png'
+import neokylin from './assets/neokylin.png'
+import rocky from './assets/rocky.png'
+import anolis from './assets/anolis.png'
+import opencloudos from './assets/opencloudos.png'
+import almalinux from './assets/almalinux.png'
 
 export default {
   name: 'ImageIcon',
@@ -34,14 +33,19 @@ export default {
       type: String,
       required: true,
       validator: val => {
-        if (Object.keys(IMAGE_MSG).includes(val.toLowerCase())) {
-          return true
-        } else {
-          if (val !== 'other') {
-            console.warn(i18n.t('common_16', [val]))
-          }
+        if (!val) return true
+        const key = String(val).split(' ')[0].toLowerCase()
+        if (Object.keys(IMAGE_MSG).includes(key) || Object.keys(CUSTOME_IMG).includes(key)) {
           return true
         }
+        // 与 imageInfo 一致：esxi / vcenter 走 vmware 图标，不告警
+        if (key.indexOf('esxi') > -1 || key.indexOf('vcenter') > -1) {
+          return true
+        }
+        if (key !== 'other' && key !== 'all') {
+          console.warn(i18n.t('common_16', [val]))
+        }
+        return true
       },
     },
   },

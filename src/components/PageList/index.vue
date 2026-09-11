@@ -84,16 +84,15 @@
       @restorePinFilter="restorePinFilter"
       @filter-change="filterChange"
       @treeToggleClick="treeToggleClick">
-      <slot name="group-actions-prepend" slot="group-actions-prepend" />
-      <slot name="group-actions-append" slot="group-actions-append" />
-      <slot name="right-tools-prepend" slot="right-tools-prepend" />
+      <template #group-actions-prepend><slot name="group-actions-prepend" /></template>
+      <template #group-actions-append><slot name="group-actions-append" /></template>
+      <template #right-tools-prepend><slot name="right-tools-prepend" /></template>
     </page-list-header>
     <!-- header和table中间内容插槽 -->
     <slot name="table-prepend" />
     <!-- 列表待config加载完成后呈现 -->
     <template v-if="configLoaded">
-      <component
-        :is="tableName"
+      <page-list-table
         :fixed="fixed"
         ref="table"
         :id="id"
@@ -147,8 +146,8 @@
         @radio-change="radioChange"
         @project-tag-filter-change="projectTagFilterChange"
         @edit-closed="editClosed">
-        <slot name="pager-prepend" slot="pager-prepend" />
-      </component>
+        <template #pager-prepend><slot name="pager-prepend" /></template>
+      </page-list-table>
     </template>
     <template v-if="!loading && !configLoaded">
       <loader :loading="loading" :noDataText="noDataText" />
@@ -159,16 +158,15 @@
 <script>
 import * as R from 'ramda'
 import { mapGetters } from 'vuex'
+import PageListTable from '@/components/PageListLite/components/Table.vue'
 import PageListHeader from './components/Header'
-import PageListTable from './components/Table'
-import PageListTable_fixed from './components/Table_fixed'
+// 表格层统一走 PageListLite（原生 table），业务侧仍用 <page-list>
 
 export default {
   name: 'PageList',
   components: {
     PageListHeader,
     PageListTable,
-    PageListTable_fixed,
   },
   props: {
     // 生成的list实例store
@@ -248,7 +246,8 @@ export default {
     pagerLayout: {
       type: Array,
       default: () => {
-        return ['PrevJump', 'PrevPage', 'Jump', 'PageCount', 'NextPage', 'NextJump', 'Sizes']
+        // 包含 Total：用于显示总数/分页数量信息
+        return ['PrevJump', 'PrevPage', 'Jump', 'PageCount', 'NextPage', 'NextJump', 'Sizes', 'Total']
       },
     },
     // 展开行配置项
@@ -472,7 +471,7 @@ export default {
     },
     ...mapGetters(['isSidepageOpen', 'projectTags']),
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.list.clearWaitJob()
     this.list.clearBatchCheckStatusTimer()
   },
@@ -533,11 +532,9 @@ export default {
       return this.list.getLimit()
     },
     changeCurrentPage (currentPage) {
-      if (this.loading) return
       this.list.changeCurrentPage(currentPage)
     },
     changePageSize (pageSize) {
-      if (this.loading) return
       this.list.changePageSize(pageSize)
     },
     doSort (property, order, column) {
@@ -561,7 +558,8 @@ export default {
       return this.list.updateConfig(value)
     },
     getGrid () {
-      return this.$refs.table.$refs.grid
+      // Lite Table 无 vxe grid，自身实现 getTableColumn 等
+      return this.$refs.table || null
     },
     changeLoadMoreSize (val) {
       this.list.changeLoadMoreSize(val)
@@ -576,7 +574,7 @@ export default {
       return this.list.fetchDistinctField(item)
     },
     treeToggleClick () {
-      if (this.treeToggleOpen) {
+      if (this.treeToggleOpen && this.$refs.table?.$refs?.projectTag?.handleSelectNone) {
         this.$refs.table.$refs.projectTag.handleSelectNone()
       }
       this.treeToggleOpen = !this.treeToggleOpen

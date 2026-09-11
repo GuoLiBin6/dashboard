@@ -30,11 +30,19 @@ export default {
           field: 'name',
           title: this.$t('k8s.text_41'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               return [
-                <div class='text-truncate'>
-                  <list-body-cell-wrap copy row={ this.data } onManager={ this.onManager } field='name' title={ row.name } />
-                </div>,
+                h('div', { class: 'text-truncate' }, [
+                  h('list-body-cell-wrap', {
+                    props: {
+                      copy: true,
+                      row: this.data,
+                      onManager: this.onManager,
+                      field: 'name',
+                      title: row.name,
+                    },
+                  }),
+                ]),
               ]
             },
           },
@@ -69,7 +77,7 @@ export default {
             default: ({ row }) => {
               if (row.internalEndpoint && row.internalEndpoint.ports && row.internalEndpoint.ports.length) {
                 return row.internalEndpoint.ports.map(v => {
-                  return <div>{ `${row.internalEndpoint.host}:${v.port} ${v.protocol}` }</div>
+                  return h('div', `${row.internalEndpoint.host}:${v.port} ${v.protocol}`)
                 })
               }
               return '-'
@@ -83,7 +91,7 @@ export default {
             default: ({ row }) => {
               if (row.externalEndpoints && row.externalEndpoints.length) {
                 return row.externalEndpoints.map(v => {
-                  return <div>{ v.host }</div>
+                  return h('div', v.host)
                 })
               }
               return '-'

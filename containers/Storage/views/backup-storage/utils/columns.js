@@ -38,9 +38,11 @@ export const getProjectDomainTableColumns = () => {
         const domain = row.project_domain
         if (domain) {
           ret.push(
-            <list-body-cell-wrap hide-field copy field="domain" row={{ domain }}>
-              <span>{ domain }</span>
-            </list-body-cell-wrap>,
+            h('list-body-cell-wrap', {
+              props: { hideField: true, copy: true, field: 'domain', row: { domain } },
+            }, [
+              h('span', {}, domain),
+            ]),
           )
         }
         return ret
@@ -56,7 +58,13 @@ export const getNFSHostColumn = () => {
     slots: {
       default: ({ row }, h) => {
         return [
-          <list-body-cell-wrap copy field="nfs_host" row={row} />,
+          h('list-body-cell-wrap', {
+            props: {
+              copy: true,
+              field: 'nfs_host',
+              row,
+            },
+          }),
         ]
       },
     },
@@ -70,7 +78,13 @@ export const getNFSSharedDirColumn = () => {
     slots: {
       default: ({ row }, h) => {
         return [
-          <list-body-cell-wrap copy field="nfs_shared_dir" row={row} />,
+          h('list-body-cell-wrap', {
+            props: {
+              copy: true,
+              field: 'nfs_shared_dir',
+              row,
+            },
+          }),
         ]
       },
     },
@@ -84,7 +98,13 @@ export const getObjectBucketURLColumn = () => {
     slots: {
       default: ({ row }, h) => {
         return [
-          <list-body-cell-wrap copy field="object_bucket_url" row={row} />,
+          h('list-body-cell-wrap', {
+            props: {
+              copy: true,
+              field: 'object_bucket_url',
+              row,
+            },
+          }),
         ]
       },
     },
@@ -98,7 +118,13 @@ export const getObjectBucketURLExtColumn = () => {
     slots: {
       default: ({ row }, h) => {
         return [
-          <list-body-cell-wrap copy field="object_bucket_url_ext" row={row} />,
+          h('list-body-cell-wrap', {
+            props: {
+              copy: true,
+              field: 'object_bucket_url_ext',
+              row,
+            },
+          }),
         ]
       },
     },
@@ -112,7 +138,13 @@ export const getObjectAccessKeyColumn = () => {
     slots: {
       default: ({ row }, h) => {
         return [
-          <list-body-cell-wrap copy field="object_access_key" row={row} />,
+          h('list-body-cell-wrap', {
+            props: {
+              copy: true,
+              field: 'object_access_key',
+              row,
+            },
+          }),
         ]
       },
     },

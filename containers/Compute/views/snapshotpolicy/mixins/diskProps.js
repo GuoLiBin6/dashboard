@@ -1,3 +1,4 @@
+import { h } from 'vue'
 import {
   getNameDescriptionTableColumn,
   getStatusTableColumn,
@@ -42,9 +43,11 @@ export default {
               { validator: this.$validate('resourceCreateName') },
             ],
             slotCallback: row => {
-              return (
-                <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-              )
+              return h('side-page-trigger', {
+                onTrigger: () => this.handleOpenSidepage(row),
+              }, {
+                default: () => row.name,
+              })
             },
           }),
           getStatusTableColumn({ statusModule: 'disk' }),
@@ -70,18 +73,24 @@ export default {
             minWidth: 100,
             showOverflow: 'ellipsis',
             slots: {
-              default: ({ row }, h) => {
+              default: ({ row }) => {
                 if (!row.guest || row.guests.length <= 0) return '-'
                 const guests = row.guests.map((guest, index) => {
-                  return <side-page-trigger permission="server_get" name="VmInstanceSidePage" id={guest.id} vm={this} tab="vm-instance-detail">
-                    {guest.name}
-                    <status status={ guest.status } statusModule='server'/>
-                  </side-page-trigger>
+                  return h('side-page-trigger', {
+                    permission: 'server_get',
+                    name: 'VmInstanceSidePage',
+                    id: guest.id,
+                    vm: this,
+                    tab: 'vm-instance-detail',
+                  }, {
+                    default: () => [
+                      guest.name,
+                      h('status', { status: guest.status, statusModule: 'server' }),
+                    ],
+                  })
                 })
                 return [
-                  <div>
-                    { guests }
-                  </div>,
+                  h('div', {}, guests),
                 ]
               },
             },

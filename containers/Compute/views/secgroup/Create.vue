@@ -1,7 +1,7 @@
 <template>
   <div>
-    <page-header :title="$t('compute.text_189')" :tabs="cloudEnvOptions" :current-tab.sync="cloudEnv" />
-    <page-body need-margin-bottom>
+    <page-header :title="$t('compute.text_189')" :tabs="cloudEnvOptions" v-model:currentTab="cloudEnv" />
+    <page-body>
       <a-form class="mt-3" :form="form.fc" @submit.prevent="handleSubmit" v-bind="formItemLayout" hideRequiredMark>
         <a-form-item :label="$t('network.text_205', [$t('dictionary.project')])" class="mt-3" v-bind="formItemLayout">
           <domain-project :fc="form.fc" :decorators="{ project: decorators.project, domain: decorators.domain }" @update:domain="handleDomainChange" />
@@ -32,7 +32,7 @@
               :isDefaultSelect="true"
               :needParams="true"
               @change="vpcChange"
-              :item.sync="curVpc"
+              v-model:item="curVpc"
               :labelFormat="vpcLabelFormat"
               :select-props="{ placeholder: $t('common_226') }" />
           </a-form-item>
@@ -263,20 +263,32 @@ export default {
       this.vpcId = vpcId
     },
     vpcLabelFormat (item) {
+      const h = this.$createElement
       if (this.cloudEnv === 'public' || this.regionProvider === HYPERVISORS_MAP.hcso.provider || this.regionProvider === HYPERVISORS_MAP.hcs.provider) {
         if (item.manager) {
           if (item.cidr_block) {
-            return (<div>{ item.name }<span v-if="item.cidr_block">（{ item.cidr_block }）</span><span class="ml-2 text-color-secondary">{ this.$t('common.cloudprovider_1var', [item.manager]) }</span></div>)
+            return h('div', [
+              item.name,
+              h('span', '（' + item.cidr_block + '）'),
+              h('span', { class: 'ml-2 text-color-secondary' }, this.$t('common.cloudprovider_1var', [item.manager])),
+            ])
           }
-          return (<div>{ item.name }<span class="ml-2 text-color-secondary">{ this.$t('common.cloudprovider_1var', [item.manager]) }</span></div>)
+          return h('div', [
+            item.name,
+            h('span', { class: 'ml-2 text-color-secondary' }, this.$t('common.cloudprovider_1var', [item.manager])),
+          ])
         }
       } else if (this.cloudEnv === 'onpremise') {
         if (item.cidr_block) {
-          return (<div>{ item.name }<span v-if="item.cidr_block">（{ item.cidr_block }）</span></div>)
+          return h('div', [item.name, h('span', '（' + item.cidr_block + '）')])
         }
-        if (item.id === 'default') return (<div>{ item.name }<span v-if="item.cidr_block">（{this.$t('common.text00047')}）</span></div>)
+        if (item.id === 'default') {
+          const children = [item.name]
+          if (item.cidr_block) children.push(h('span', '（' + this.$t('common.text00047') + '）'))
+          return h('div', children)
+        }
       }
-      return (<div>{ item.name }</div>)
+      return h('div', item.name)
     },
     genData (values) {
       const ret = {

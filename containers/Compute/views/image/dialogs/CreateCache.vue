@@ -72,8 +72,8 @@
           class="flex-shrink-0"
           :disabled="loading"
           @click="handleRefresh">
-          <a-icon v-if="loading" type="sync" spin />
-          <a-icon v-else type="sync" />
+          <icon v-if="loading" type="sync" spin />
+          <icon v-else type="sync" />
         </a-button>
       </div>
       <page-list
@@ -194,10 +194,10 @@ export default {
                 const capacity = sizestr(row.capacity, 'M', 1024)
                 const allowedBrands = ['VMware', 'OneCloud']
                 const actual_capacity_used = allowedBrands.includes(row.brand) ? sizestr(row.actual_capacity_used, 'M', 1024) : '-'
-                return [<div>
-                  <div>{this.$t('storage.text_178', [actual_capacity_used])}</div>
-                  <div>{this.$t('storage.text_180', [capacity])}</div>
-                </div>]
+                return [h('div', {}, [
+                  h('div', {}, this.$t('storage.text_178', [actual_capacity_used])),
+                  h('div', {}, this.$t('storage.text_180', [capacity])),
+                ])]
               },
             },
           },
@@ -209,10 +209,10 @@ export default {
               default: ({ row }, h) => {
                 const virtual_capacity = sizestr(row.virtual_capacity, 'M', 1024)
                 const used_capacity = sizestr(row.used_capacity, 'M', 1024)
-                return [<div>
-                  <div>{this.$t('storage.text_181', [used_capacity])}</div>
-                  <div>{this.$t('storage.text_180', [virtual_capacity])}</div>
-                </div>]
+                return [h('div', {}, [
+                  h('div', {}, this.$t('storage.text_181', [used_capacity])),
+                  h('div', {}, this.$t('storage.text_180', [virtual_capacity])),
+                ])]
               },
             },
           },

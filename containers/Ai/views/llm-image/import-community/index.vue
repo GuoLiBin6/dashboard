@@ -3,7 +3,7 @@
     <page-header :title="$t('aice.llm_image.import_community_image')" />
     <a-form-model class="mt-3 mb-2" v-bind="layout">
       <a-form-model-item>
-        <a-radio-group v-model="form.llm_type" size="large">
+        <a-radio-group v-model:value="form.llm_type" size="large">
           <a-radio-button v-for="item in typeList" :key="item.value" :value="item.value" style="width:80px;height:80px;text-align:center;line-height:80px;vertical-align:middle;padding:0;">
             <img v-if="item.icon" :src="item.icon" style="height:56px;" />
           </a-radio-button>

@@ -1,7 +1,7 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{$t('common_100')}}</div>
-    <div slot="body">
+    <template #header>{{$t('common_100')}}</template>
+    <template #body>
       <dialog-selected-tips :count="params.data.length" :name="params.name || $t('common_92')" :action="$t('common_100')" />
       <dialog-table :data="params.data" :columns="columns" :errors="errors" />
       <a-form-model
@@ -10,9 +10,9 @@
         :rules="rules"
         v-bind="formItemLayout">
         <a-form-model-item :label="$t('common_101')" prop="type">
-          <a-radio-group v-model="fd.type" @change="handleTypeChange">
-            <template v-for="item of typeOptions">
-              <a-radio-button :key="item.key" :value="item.key">{{ item.label }}</a-radio-button>
+          <a-radio-group v-model:value="fd.type" @change="handleTypeChange">
+            <template v-for="item of typeOptions" :key="item.key">
+              <a-radio-button :value="item.key">{{ item.label }}</a-radio-button>
             </template>
           </a-radio-group>
         </a-form-model-item>
@@ -21,15 +21,15 @@
           <a-form-model-item :label="$t('dictionary.project')" prop="shared_projects">
             <template v-if="projectLoaded">
               <a-select
-                v-model="fd.shared_projects"
+                v-model:value="fd.shared_projects"
                 mode="multiple"
                 :filterOption="false"
                 @search="fetchProjects"
                 @select="val => handleHasAllSelect(val, 'shared_projects')"
                 @deselect="val => handleDeselect(val, 'shared_projects')"
                 :placeholder="$t('rules.project')">
-                <template v-for="item of projects">
-                  <a-select-option :key="item.id" :value="item.id">{{ item.name }}</a-select-option>
+                <template v-for="item of projects" :key="item.id">
+                  <a-select-option :value="item.id">{{ item.name }}</a-select-option>
                 </template>
               </a-select>
             </template>
@@ -43,15 +43,15 @@
           <a-form-model-item :label="$t('dictionary.domain')" prop="shared_domains">
             <template v-if="domainLoaded">
               <a-select
-                v-model="fd.shared_domains"
+                v-model:value="fd.shared_domains"
                 mode="multiple"
                 :filterOption="false"
                 @search="fetchDomains"
                 @select="val => handleHasAllSelect(val, 'shared_domains')"
                 @deselect="val => handleDeselect(val, 'shared_domains')"
                 :placeholder="$t('rules.domain')">
-                <template v-for="item of domains">
-                  <a-select-option :key="item.id" :value="item.id">{{ item.name }}</a-select-option>
+                <template v-for="item of domains" :key="item.id">
+                  <a-select-option :value="item.id">{{ item.name }}</a-select-option>
                 </template>
               </a-select>
             </template>
@@ -61,11 +61,11 @@
           </a-form-model-item>
         </template>
       </a-form-model>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 
@@ -230,7 +230,7 @@ export default {
       immediate: true,
     },
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.dm = null
     this.pm = null
     this.rm = null

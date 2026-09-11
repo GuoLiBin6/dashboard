@@ -5,17 +5,21 @@
  */
 const modules = {}
 
-getModules(require.context('.', false, /\.js$/))
-getModules(require.context('../../../scope/store/modules', false, /\.js$/))
+const storeModules = import.meta.glob('./*.js', { eager: true })
+const scopeStoreModules = import.meta.glob('/scope/store/modules/*.js', { eager: true })
 
-function getModules (r) {
-  r.keys().forEach(fileName => {
-    if (fileName === './index.js') return
-    const moduleName = fileName.replace(/(\.\/|\.js)/g, '')
-    const data = r(fileName).default
+function registerModules (mods) {
+  Object.keys(mods).forEach((path) => {
+    if (path.endsWith('/index.js')) return
+    const moduleName = path.replace(/^.*\//, '').replace(/\.js$/, '')
+    const data = mods[path].default || mods[path]
+    if (!data) return
     data.namespaced = true
     modules[moduleName] = data
   })
 }
+
+registerModules(storeModules)
+registerModules(scopeStoreModules)
 
 export default modules

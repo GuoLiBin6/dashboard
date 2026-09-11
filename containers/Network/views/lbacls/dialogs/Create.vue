@@ -4,7 +4,7 @@
     <div slot="body">
       <a-form
         :form="form.fc">
-        <a-form-item class="mb-0" :label="$t('network.text_205', [$t('dictionary.project')])" v-bind="formItemLayout" v-if="params.type === 'create'">
+        <a-form-item :label="$t('network.text_205', [$t('dictionary.project')])" v-bind="formItemLayout" v-if="params.type === 'create'">
           <domain-project :fc="form.fc" :decorators="decorators" :labelInValue="false" />
         </a-form-item>
         <a-form-item :label="$t('network.text_291')" v-bind="formItemLayout" v-if="params.type === 'create'">
@@ -16,7 +16,7 @@
         <a-form-item v-bind="formItemLayout">
           <span slot="label">{{$t('network.text_292')}}<a-tooltip>
               <div slot="title">{{$t('network.text_293')}}<br />{{$t('network.text_294')}}<br />{{$t('network.text_295')}}<br />{{$t('network.text_296')}}<br />{{$t('network.text_297')}}</div>
-              <a-icon type="info-circle" />
+              <icon type="info-circle" />
             </a-tooltip>
           </span>
           <a-textarea v-decorator="decorators.acl_entries"

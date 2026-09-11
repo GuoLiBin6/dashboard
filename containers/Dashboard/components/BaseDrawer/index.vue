@@ -5,7 +5,7 @@
     wrapClassName="base-drawer-wrap"
     :width="700"
     :closable="false"
-    :visible="visible"
+    :open="visible"
     @close="handleCancel">
     <template v-slot:title><div class="base-drawer-title">{{ title }}</div></template>
     <div class="d-flex flex-column h-100">

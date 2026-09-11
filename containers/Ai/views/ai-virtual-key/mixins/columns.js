@@ -13,7 +13,11 @@ export default {
         onManager: this.onManager,
         hideField: true,
         slotCallback: row => (
-          <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{row.name}</side-page-trigger>
+          this.$createElement('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         ),
       }),
       getEnabledTableColumn(),
@@ -25,11 +29,16 @@ export default {
           default: ({ row }, h) => {
             if (!row.virtual_key) return '-'
             const text = maskSecret(row.virtual_key)
+            const hFn = h || this.$createElement
             return [
-              <div class="d-flex align-items-center">
-                <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{text}</side-page-trigger>
-                <copy class="ml-1" message={row.virtual_key} />
-              </div>,
+              hFn('div', { class: 'd-flex align-items-center' }, [
+                hFn('side-page-trigger', {
+                  on: {
+                    trigger: () => this.handleOpenSidepage(row),
+                  },
+                }, text),
+                hFn('copy', { class: 'ml-1', props: { message: row.virtual_key } }),
+              ]),
             ]
           },
         },

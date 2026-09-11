@@ -2,7 +2,7 @@
   <div>
     <a-form :form="form.fc" v-bind="formLayout">
       <a-alert class="my-2" banner>
-        <template slot="message">{{ $t('cloudenv.vmware.message') }}<help-link :href="vmDocLink">{{ $t('cloudenv.vmware.message.doc') }}</help-link></template>
+        <template #message>{{ $t('cloudenv.vmware.message') }}<help-link :href="vmDocLink">{{ $t('cloudenv.vmware.message.doc') }}</help-link></template>
       </a-alert>
       <a-form-item :label="$t('cloudenv.text_95')">
         <a-input v-decorator="decorators.name" :placeholder="$t('cloudenv.text_190')" />

@@ -5,7 +5,7 @@
         <a-input :placeholder="$t('k8s.text_60')" v-decorator="decorators.name"  class="w-75" />
       </a-form-item>
       <a-form-item :label="$t('k8s.text_19')">
-        <cluster-select v-decorator="decorators.cluster" @input="setCluster" :clusterObj.sync="clusterObj"  class="w-75" />
+        <cluster-select v-decorator="decorators.cluster" @input="setCluster" v-model:clusterObj="clusterObj"  class="w-75" />
       </a-form-item>
       <a-form-item :label="$t('k8s.text_386')">
         <role-rule-form-item ref="roleRuleRef" :clusterId="clusterObj.id" />

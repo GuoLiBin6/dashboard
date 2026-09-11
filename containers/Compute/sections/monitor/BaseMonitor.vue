@@ -1,6 +1,13 @@
 <template>
   <div>
-    <dashboard-cards ref="dashboardCards" useLocalPanels :extraParams="extraParams" :localPanels="localPanels" />
+    <dashboard-cards
+      ref="dashboardCards"
+      useLocalPanels
+      :extraParams="extraParams"
+      :localPanels="localPanels"
+      :createChart="noop"
+      :adjustChartOrder="noop"
+      :editChart="noop" />
   </div>
 </template>
 
@@ -33,6 +40,10 @@ export default {
     },
     extraTags: {
       type: Array,
+    },
+    extraParams: {
+      type: Object,
+      default: () => ({}),
     },
   },
   data () {
@@ -100,11 +111,19 @@ export default {
     },
   },
   created () {
-    this.$bus.$on('VmMonitorTypeChange', (tab) => {
-      this.$refs.dashboardCards.initMonitorConfig()
-    })
+    this.$bus.$on('VmMonitorTypeChange', this.onVmMonitorTypeChange)
+  },
+  beforeUnmount () {
+    this.$bus.$off('VmMonitorTypeChange', this.onVmMonitorTypeChange)
   },
   methods: {
+    noop () {},
+    onVmMonitorTypeChange () {
+      // 非激活 tab 可能已销毁或尚未挂载，避免读空 ref
+      this.$nextTick(() => {
+        this.$refs.dashboardCards?.initMonitorConfig?.()
+      })
+    },
   },
 }
 </script>

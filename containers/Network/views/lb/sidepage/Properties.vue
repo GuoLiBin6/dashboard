@@ -40,12 +40,12 @@ export default {
 
 <style lang="less"  scoped>
 .lb-properties {
-  ::v-deep .CodeMirror {
+  :deep(.CodeMirror) {
     border: 1px solid #eee;
     height: 100%;
   }
 
-  ::v-deep .CodeMirror-scroll {
+  :deep(.CodeMirror-scroll) {
     max-height: 1000px;
     overflow-y: scroll;
     overflow-x: auto;

@@ -17,7 +17,7 @@
         :params="{ enabled: true }"
         :remote-fn="q => ({ filter: `name.contains(${q})` })"
         :select-props="{ mode: 'default' }"
-        :initLoaded.sync="domainOpsLoaded" />
+        v-model:initLoaded="domainOpsLoaded" />
     </a-form-item>
   </a-form>
 </template>
@@ -80,7 +80,7 @@ export default {
       }
     },
   },
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {

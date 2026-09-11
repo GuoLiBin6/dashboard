@@ -44,7 +44,7 @@
     <a-modal
       :title="$t('scope.text_243')"
       width="700px"
-      :visible="updateDialog.visible"
+      :open="updateDialog.visible"
       @cancel="() => updateDialog.visible = false"
       destroyOnClose>
       <template v-slot:footer>
@@ -107,7 +107,7 @@ export default {
       return []
     },
   },
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {

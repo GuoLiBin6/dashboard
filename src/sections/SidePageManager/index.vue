@@ -11,25 +11,14 @@
 </template>
 
 <script>
-const components = {}
-const requireSidePages = require.context('../../../containers', true, /^((?![\\/]node_modules).)*.\/views\/.*\/sidepage\/index\.(jsx?|vue)$/)
-const scopeSidePages = require.context('../../../scope', true, /^((?![\\/]node_modules).)*.\/views\/.*\/sidepage\/index\.(jsx?|vue)$/)
-const commonSidePages = require.context('./components', true, /.\/index\.(jsx?|vue)$/)
-const srcViewsSidePages = require.context('../../views', true, /^((?![\\/]node_modules).).*\/sidepage\/index\.(jsx?|vue)$/)
-const sidePageNames = []
-const registerSidePages = (sidePages) => {
-  const keys = sidePages.keys()
-  for (let i = 0, len = keys.length; i < len; i++) {
-    const componentConfig = sidePages(keys[i])
-    components[componentConfig.default.name] = componentConfig.default
-    sidePageNames.push(componentConfig.default.name)
-  }
-}
+import { defineAsyncComponent } from 'vue'
+import sidepageLoaders from 'virtual:sidepage-registry'
 
-registerSidePages(commonSidePages)
-registerSidePages(requireSidePages)
-registerSidePages(scopeSidePages)
-registerSidePages(srcViewsSidePages)
+const components = {}
+const sidePageNames = Object.keys(sidepageLoaders)
+sidePageNames.forEach((name) => {
+  components[name] = defineAsyncComponent(sidepageLoaders[name])
+})
 
 export default {
   name: 'SidePageManager',

@@ -41,9 +41,7 @@ export default {
           edit: false,
           editDesc: false,
           slotCallback: row => {
-            return (
-              <side-page-trigger>{ row.name }</side-page-trigger>
-            )
+            return this.$createElement('side-page-trigger', {}, row.name)
           },
         }),
         getAccessUrlTableColumn(),

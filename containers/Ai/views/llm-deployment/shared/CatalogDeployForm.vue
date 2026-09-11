@@ -10,7 +10,7 @@
     :wrapper-col="{ span: 18 }">
     <a-form-model-item :label="$t('common.name')" prop="name">
       <a-input
-        v-model="deployForm.name"
+        v-model:value="deployForm.name"
         :placeholder="$t('validator.resourceName')" />
       <template v-slot:extra>
         <name-repeated res="llm_deployments" :name="deployForm.name" />
@@ -37,13 +37,13 @@
       </div>
     </a-form-model-item>
     <a-form-model-item label="CPU">
-      <a-input-number v-model="deployForm.cpu" :min="1" :max="128" />
+      <a-input-number v-model:value="deployForm.cpu" :min="1" :max="128" />
     </a-form-model-item>
     <a-form-model-item :label="$t('compute.text_300')">
-      <a-input-number v-model="deployForm.memory" :min="512" :step="512" /> MB
+      <a-input-number v-model:value="deployForm.memory" :min="512" :step="512" /> MB
     </a-form-model-item>
     <a-form-model-item :label="$t('aice.llm_deployment.create.disk_size')">
-      <a-input-number v-model="deployForm.disk_size" :min="1024" :step="1024" /> MB
+      <a-input-number v-model:value="deployForm.disk_size" :min="1024" :step="1024" /> MB
     </a-form-model-item>
   </a-form-model>
 </template>

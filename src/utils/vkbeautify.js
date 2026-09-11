@@ -332,4 +332,10 @@ vkbeautify.prototype.sqlmin = function (text) {
   return text.replace(/\s{1,}/g, ' ').replace(/\s{1,}\(/, '(').replace(/\s{1,}\)/, ')')
 }
 
-module.exports = new vkbeautify()
+const vkbeautifyInstance = new vkbeautify()
+
+// 兼容 CommonJS 和 ESM（浏览器下没有 module，需要判断）
+if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
+  module.exports = vkbeautifyInstance
+}
+export default vkbeautifyInstance

@@ -18,10 +18,12 @@ export default {
           onManager: this.onManager,
           hideField: true,
           edit: false,
-          slotCallback: row => {
-            return (
-              <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-            )
+          slotCallback: (row, h) => {
+            return h('side-page-trigger', {
+              on: {
+                trigger: () => this.handleOpenSidepage(row),
+              },
+            }, row.name)
           },
         }),
         getStatusTableColumn({ title: i18n.t('compute.sku.prepaid_status'), field: 'prepaid_status', statusModule: 'sku' }),
@@ -47,11 +49,21 @@ export default {
           title: this.$t('compute.text_699', [this.$t('dictionary.server')]),
           width: 120,
           slots: {
-            default: ({ row }) => {
-              if (row.total_guest_count === undefined) return [<data-loading />]
+            default: ({ row }, h) => {
+              if (row.total_guest_count === undefined) return [h('data-loading')]
               if (row.total_guest_count <= 0) return row.total_guest_count
               const options = { cloudEnv: this.cloudEnv }
-              return [<side-page-trigger name='SkuSidePage' id={row.id} tab='vminstance-list' vm={this} options={ options }>{ row.total_guest_count }</side-page-trigger>]
+              return [
+                h('side-page-trigger', {
+                  props: {
+                    name: 'SkuSidePage',
+                    id: row.id,
+                    tab: 'vminstance-list',
+                    vm: this,
+                    options,
+                  },
+                }, row.total_guest_count),
+              ]
             },
           },
         },

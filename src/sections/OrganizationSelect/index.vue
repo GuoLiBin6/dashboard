@@ -1,6 +1,6 @@
 <template>
   <a-select
-    v-model="selected"
+    v-model:value="selected"
     :placeholder="$t('common.tips.select', [$t('bill.organization_level')])"
     v-bind="otherProps"
     @change="selecteChange">

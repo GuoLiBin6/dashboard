@@ -1,18 +1,20 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{ title }}</div>
-    <div slot="body" class="project-dialog-table">
+    <template #header>{{ title }}</template>
+    <template #body>
+      <div class="project-dialog-table">
       <components
           :is="component"
           :id="id"
           :show-group-actions="false"
           :getParams="getParams"
           :show-searchbox="false" />
-    </div>
-    <div slot="footer">
+      </div>
+    </template>
+    <template #footer>
       <a-button type="primary" @click="cancelDialog" :loading="loading">{{ $t("dialog.ok") }}</a-button>
       <!-- <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button> -->
-    </div>
+    </template>
   </base-dialog>
 </template>
 
@@ -47,10 +49,8 @@ export default {
 
 <style lang="less" scoped>
 .project-dialog-table {
-  ::v-deep {
-    .page-list-grid > .vxe-table > .vxe-table--main-wrapper > .vxe-table--body-wrapper {
-      overflow: auto !important;
-    }
+  :deep(.page-list-grid > .vxe-table > .vxe-table--main-wrapper > .vxe-table--body-wrapper) {
+    overflow: auto !important;
   }
 }
 </style>

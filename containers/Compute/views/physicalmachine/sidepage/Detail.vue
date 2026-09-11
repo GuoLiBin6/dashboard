@@ -138,10 +138,14 @@ export default {
           field: 'server',
           title: this.$t('compute.text_602'),
           hideField: true,
-          slotCallback: row => {
+          slotCallback: (row, h) => {
             if (!row.server) return '-'
             return [
-              <a onClick={ () => this.$emit('tab-change', 'baremetal-list') }>{row.server}</a>,
+              h('a', {
+                on: {
+                  click: () => this.$emit('tab-change', 'baremetal-list'),
+                },
+              }, row.server),
             ]
           },
         }),
@@ -200,7 +204,11 @@ export default {
           slots: {
             default: ({ row }, h) => {
               return [
-                <a onClick={ () => this.$emit('tab-change', 'gpu-list') }>{row.isolated_device_count || 0}</a>,
+                h('a', {
+                  on: {
+                    click: () => this.$emit('tab-change', 'gpu-list'),
+                  },
+                }, row.isolated_device_count || 0),
               ]
             },
           },
@@ -300,7 +308,7 @@ export default {
               slots: {
                 default: ({ row }, h) => {
                   return [
-                    <p>{ this.$t('compute.text_1321', { num: sizestr(row.storage_size, 'M', 1024) }) }</p>,
+                    h('p', this.$t('compute.text_1321', { num: sizestr(row.storage_size, 'M', 1024) })),
                   ]
                 },
               },
@@ -329,7 +337,13 @@ export default {
               slots: {
                 default: ({ row }, h) => {
                   return [
-                    <vxe-grid class="mb-2" data={ row.storage_info } columns={ this.storageColumns } />,
+                    h('table-lite-grid', {
+                      class: 'mb-2',
+                      props: {
+                        data: row.storage_info,
+                        columns: this.storageColumns,
+                      },
+                    }),
                   ]
                 },
               },
@@ -350,7 +364,13 @@ export default {
                 },
               )
               return [
-                <vxe-grid class="mb-2" data={ nics } columns={ this.hostColumns } />,
+                h('table-lite-grid', {
+                  class: 'mb-2',
+                  props: {
+                    data: nics,
+                    columns: this.hostColumns,
+                  },
+                }),
               ]
             },
           },
@@ -369,7 +389,13 @@ export default {
                 },
               )
               return [
-                <vxe-grid class="mb-2" data={ nics } columns={ this.hostColumns } />,
+                h('table-lite-grid', {
+                  class: 'mb-2',
+                  props: {
+                    data: nics,
+                    columns: this.hostColumns,
+                  },
+                }),
               ]
             },
           },

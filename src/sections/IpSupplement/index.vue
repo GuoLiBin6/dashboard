@@ -1,15 +1,15 @@
 <template>
   <a-popover
-    v-model="visible"
+    v-model:open="visible"
     destroy-tooltip-on-hide
     overlay-class-name="ip-supplement-wrap"
     trigger="click">
-    <template slot="title">
+    <template #title>
       <div class="d-flex align-items-center">
         <div class="flex-fill">{{$t('common_164')}}</div>
       </div>
     </template>
-    <template slot="content">
+    <template #content>
       <ip-supplement-edit-form
         label="IP"
         :host="row.host_id"
@@ -18,9 +18,9 @@
         :nics="nics"
         :loading="loading"
         @submit="onSubmit"
-        @cancel="this.hideForm" />
+        @cancel="hideForm" />
     </template>
-    <span class="oc-popover-desc">-<a-icon class="setup-icon" type="tool" />{{$t('common_165')}}</span>
+    <span class="oc-popover-desc">-<icon class="setup-icon" type="tool" />{{$t('common_165')}}</span>
   </a-popover>
 </template>
 
@@ -122,7 +122,7 @@ export default {
 <style lang="less" scoped>
 .oc-popover-desc{
   font-size: 12px;
-  color: #1890ff;
+  color: var(--ant-color-primary, #1890ff);
   cursor: pointer;
 }
 .setup-icon{

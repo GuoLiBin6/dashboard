@@ -19,7 +19,7 @@
           @paste="pasteEvent(n - 1, $event)" />
       </div>
     </div>
-    <div class="clear-btn" @click="onClean"><a-icon type="close-circle" /></div>
+    <div class="clear-btn" @click="onClean"><icon type="close-outlined-circle" /></div>
   </div>
 </template>
 

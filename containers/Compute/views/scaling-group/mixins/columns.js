@@ -7,10 +7,15 @@ export default {
       getNameDescriptionTableColumn({
         onManager: this.onManager,
         hideField: true,
-        slotCallback: row => {
-          return (
-            <side-page-trigger name='ScalingGroupSidePage' id={row.id} list={this.list} vm={this}>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            props: {
+              name: 'ScalingGroupSidePage',
+              id: row.id,
+              list: this.list,
+              vm: this,
+            },
+          }, row.name)
         },
       }),
       getStatusTableColumn({ statusModule: 'scalinggroup', minWidth: 130, vm: this }),
@@ -21,8 +26,8 @@ export default {
         hideField: true,
         showOverflow: 'ellipsis',
         width: 120,
-        slotCallback: row => {
-          if (!row.guest_template) return [<data-loading />]
+        slotCallback: (row, h) => {
+          if (!row.guest_template) return [h('data-loading')]
           return row.guest_template
         },
       }),
@@ -32,8 +37,8 @@ export default {
         minWidth: 100,
         sortable: true,
         slots: {
-          default: ({ row }) => {
-            if (row.instance_number === undefined) return [<data-loading />]
+          default: ({ row }, h) => {
+            if (row.instance_number === undefined) return [h('data-loading')]
             return row.instance_number
           },
         },

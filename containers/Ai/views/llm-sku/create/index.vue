@@ -1,7 +1,7 @@
 <template>
   <div>
     <page-header :title="headerTitle" />
-    <page-body needMarginBottom>
+    <page-body>
       <llm-sku-create-form
         ref="createForm"
         mode="create"

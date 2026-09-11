@@ -18,10 +18,12 @@ export default {
       getNameDescriptionTableColumn({
         onManager: this.onManager,
         hideField: true,
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            props: {
+              onTrigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
         hidden: () => {
           return this.$isScopedPolicyMenuHidden('vpc_hidden_columns.name')
@@ -84,11 +86,16 @@ export default {
         width: 80,
         sortable: true,
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             if (row.network_count <= 0) return row.network_count
-            return [
-              <side-page-trigger name='VpcSidePage' id={row.id} tab='network-list' vm={this}>{row.network_count}</side-page-trigger>,
-            ]
+            return [h('side-page-trigger', {
+              props: {
+                name: 'VpcSidePage',
+                id: row.id,
+                tab: 'network-list',
+                vm: this,
+              },
+            }, row.network_count)]
           },
         },
         hidden: () => {

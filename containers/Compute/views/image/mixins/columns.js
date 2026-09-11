@@ -14,9 +14,11 @@ export default {
         addLock: true,
         addEncrypt: true,
         slotCallback: (row, h) => {
-          return (
-            <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{ row.name }</side-page-trigger>
-          )
+          return h('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
         formRules: [
           { required: true, message: i18n.t('compute.text_210') },
@@ -31,16 +33,31 @@ export default {
         minWidth: 80,
         slots: {
           default: ({ row }, h) => {
-            const fileProcess = row.status === 'saving' ? <FileProcess size={ row.size }></FileProcess> : null
-            const log = <side-page-trigger class="ml-1" onTrigger={ () => this.handleOpenSidepage(row, 'event-drawer') }>{ this.$t('common.view_logs') }</side-page-trigger>
+            const fileProcess = row.status === 'saving' ? h(FileProcess, {
+              props: {
+                size: row.size,
+              },
+            }) : null
+            const log = h('side-page-trigger', {
+              class: 'ml-1',
+              on: {
+                trigger: () => this.handleOpenSidepage(row, 'event-drawer'),
+              },
+            }, this.$t('common.view_logs'))
             return [
-              <div class='text-truncate'>
-                <div class="d-flex align-items-center">
-                  <status status={ row.status } statusModule={ 'image' } process={ row.progress } />
-                  { row.status?.includes('fail') ? log : null }
-                </div>
-                { fileProcess }
-              </div>,
+              h('div', { class: 'text-truncate' }, [
+                h('div', { class: 'd-flex align-items-center' }, [
+                  h('status', {
+                    props: {
+                      status: row.status,
+                      statusModule: 'image',
+                      process: row.progress,
+                    },
+                  }),
+                  row.status?.includes('fail') ? log : null,
+                ]),
+                fileProcess,
+              ]),
             ]
           },
         },
@@ -85,7 +102,12 @@ export default {
               name = 'Linux'
             }
             return [
-              <SystemIcon tooltip={ tooltip } name={ name } />,
+              h(SystemIcon, {
+                props: {
+                  tooltip,
+                  name,
+                },
+              }),
             ]
           },
         },

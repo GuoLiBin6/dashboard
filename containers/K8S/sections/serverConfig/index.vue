@@ -34,7 +34,7 @@
                 remote
                 is-default-select
                 @change="handleNetworkChange(i, $event)"
-                :item.sync="item.network"
+                v-model:item="item.network"
                 :need-params="true"
                 :params="getNetworkParams(item.key)"
                 :mapper="networkResourceMapper"
@@ -110,6 +110,7 @@
 </template>
 
 <script>
+import { h } from 'vue'
 import * as R from 'ramda'
 import { mapGetters } from 'vuex'
 import SystemDisk from '@Compute/views/vminstance/create/components/SystemDisk'
@@ -206,11 +207,8 @@ export default {
       this.serverConfigList.splice(index, 1)
     },
     networkLabelFormat (net) {
-      return ( // IP子网
-        <div>
-          <span>{ net.name } ({ net.guest_ip_start } - { net.guest_ip_end }, zone={ net.zone })</span>
-        </div>
-      )
+      const text = `${net.name} (${net.guest_ip_start} - ${net.guest_ip_end}, zone=${net.zone})`
+      return h('div', null, [h('span', null, text)]) // IP子网
     },
     add () {
       const uid = uuid()

@@ -16,8 +16,8 @@
           <a-select
             v-decorator="decorators.dns_type"
             @change="dnsTypeChangeHandle">
-            <template v-for="v in options.dnsTypes">
-              <a-select-option v-if="!(isMultiValueAnswer && v.value === 'CNAME')" :value="v.value" :key="v.value">
+            <template v-for="v in options.dnsTypes" :key="v.value">
+              <a-select-option v-if="!(isMultiValueAnswer && v.value === 'CNAME')" :value="v.value">
                 {{ v.label }}
               </a-select-option>
             </template>

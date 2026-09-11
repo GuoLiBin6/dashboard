@@ -8,9 +8,12 @@ export default {
         edit: false,
         onManager: this.onManager,
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={() => this.handleOpenSidepage(row, '')}>{ row.name }</side-page-trigger>
-          )
+          const h = this.$createElement
+          return h('side-page-trigger', {
+            props: {
+              onTrigger: () => this.handleOpenSidepage(row, ''),
+            },
+          }, row.name)
         },
       }),
       {
@@ -30,11 +33,17 @@ export default {
         title: this.$t('monitor.monitorresources.alert_state'),
         sortable: true,
         slots: {
-          default: ({ row }, h) => {
+          default: ({ row }) => {
+            const h = this.$createElement
             return [
-              <div class='text-truncate'>
-                <status status={row.alert_state} statusModule="monitorresources" />
-              </div>,
+              h('div', { class: 'text-truncate' }, [
+                h('status', {
+                  props: {
+                    status: row.alert_state,
+                    statusModule: 'monitorresources',
+                  },
+                }),
+              ]),
             ]
           },
         },
@@ -56,9 +65,14 @@ export default {
               }
             }
             return [
-              <div class='text-truncate'>
-                <status status={row.status} statusModule={m} />
-              </div>,
+              this.$createElement('div', { class: 'text-truncate' }, [
+                this.$createElement('status', {
+                  props: {
+                    status: row.status,
+                    statusModule: m,
+                  },
+                }),
+              ]),
             ]
           },
         },

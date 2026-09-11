@@ -1,16 +1,20 @@
 <template>
   <div class="cloudaccount pt-2">
     <a-alert type="info" show-icon class="mt-2" v-if="!isCE && !$store.getters.isSysCE && $store.getters.isAdminMode">
-      <template slot="message">{{$t('cloudenv.text_223')}}<icon type="navbar-more" style="font-size: 15px;" />{{$t('cloudenv.text_224')}}</template>
+      <template #message>{{$t('cloudenv.text_223')}}<icon type="navbar-more" style="font-size: 15px;" />{{$t('cloudenv.text_224')}}</template>
     </a-alert>
-    <template v-for="(cloudaccounts, env) of types">
-      <div class="env-item-wrap my-5" v-if="isShowItem(env)" :key="env">
+    <template v-for="(cloudaccounts, env) of types" :key="env">
+      <div class="env-item-wrap my-5" v-if="isShowItem(env)">
         <h2 class="mb-3">{{ envTitle[env] }}</h2>
         <div class="items d-flex flex-wrap">
-          <template v-for="(item, cloudaccount) of cloudaccounts">
-            <div class="item d-flex p-2 mr-3 align-items-center" v-if="isShowItem(item)" :class="{ active: currentItem.name === item.name }" :key="cloudaccount" @click="selectProvider(item)">
-              <img :src="item.logo" :style="item.logoStyle" />
-              <h5 class="flex-fill" v-if="showName(item)">{{ item.name }}</h5>
+          <template v-for="(item, cloudaccount) of cloudaccounts" :key="cloudaccount">
+            <div
+              class="item mr-3"
+              v-if="isShowItem(item)"
+              :class="{ active: currentItem.name === item.name, 'is-logo-only': item.hiddenName }"
+              @click="selectProvider(item)">
+              <img class="item-logo" :src="item.logo" :style="logoStyle(item)" />
+              <h5 v-if="showName(item)">{{ item.name }}</h5>
             </div>
           </template>
         </div>
@@ -122,7 +126,6 @@ export default {
         if (item === 'private' && this.globalSettingSetupKeys.indexOf('vmware') > -1) return true
         return this.globalSettingSetupKeys.indexOf(item) > -1 || (this.globalSettingSetupKeys.indexOf('bill') > -1 && this.isBillEnv(item))
       }
-      // console.log(this.globalSettingSetupKeys, item.provider.toLowerCase(), this.globalSettingSetupKeys.indexOf(item.provider.toLowerCase()) > -1)
       return this.globalSettingSetupKeys.indexOf(item.provider.toLowerCase()) > -1 || this.isShowBillItem(item)
     },
     isBillEnv (env) {
@@ -133,9 +136,7 @@ export default {
     },
     isShowBillItem (item) {
       if (this.globalSettingSetupKeys.indexOf('bill') === -1) return false
-      // 开启费用
       if (billSupportBrands.indexOf(item.provider.toLowerCase()) > -1) {
-        // 没有平台但是有费用
         if (this.globalSettingSetupKeys.indexOf(`bill_${item.provider.toLowerCase()}`) > -1) {
           return true
         }
@@ -152,15 +153,89 @@ export default {
         return true
       }
     },
+    // 只采用宽高配置，忽略 position/top/right，避免破坏垂直居中
+    logoStyle (item) {
+      const style = item.logoStyle || {}
+      if (item.hiddenName === true) {
+        return {
+          display: 'block',
+          width: style.width || '100px',
+          height: style.height || '24px',
+        }
+      }
+      return {
+        display: 'block',
+        height: style.height || '24px',
+        width: style.width || 'auto',
+        maxHeight: '24px',
+      }
+    },
   },
 }
 </script>
 
-<style lang="less">
+<style lang="less" scoped>
+@import '@/styles/less/theme';
+
 .cloudaccount {
   h2 {
     font-size: 14px;
     margin: 0;
+    font-weight: 700;
+  }
+
+  .items {
+    gap: 0;
+  }
+
+  .item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 120px;
+    max-width: 150px;
+    min-height: 40px;
+    margin-bottom: 10px;
+    padding: 8px 10px;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    box-sizing: border-box;
+    cursor: pointer;
+    color: rgba(0, 0, 0, 0.85);
+    background: #fff;
+    transition: border-color 0.15s ease, color 0.15s ease;
+
+    &.is-logo-only {
+      min-width: 120px;
+      max-width: 160px;
+    }
+
+    .item-logo {
+      flex-shrink: 0;
+      display: block;
+      vertical-align: middle;
+    }
+
+    h5 {
+      margin: 0 0 0 8px;
+      font-size: 14px;
+      font-weight: 400;
+      line-height: 24px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-align: center;
+    }
+
+    &:hover,
+    &.active {
+      border-color: var(--antd-wave-shadow-color, @primary-color);
+      color: var(--antd-wave-shadow-color, @primary-color);
+
+      h5 {
+        color: var(--antd-wave-shadow-color, @primary-color);
+      }
+    }
   }
 }
 </style>

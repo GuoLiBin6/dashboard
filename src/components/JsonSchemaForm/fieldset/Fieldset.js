@@ -4,11 +4,7 @@ const Fieldset = {
   name: 'JFieldset',
   mixins: [FormMixin],
   render (h) {
-    return (
-      <div>
-        { this.renderItems(h) }
-      </div>
-    )
+    return h('div', this.renderItems(h))
   },
   methods: {
     renderItems (h) {
@@ -17,9 +13,12 @@ const Fieldset = {
       return (definition.items || definition).map(item => {
         const path = this.getPath(item.key)
         const key = path.join('.')
-        return (
-          <j-control key={ key } path={ path }></j-control>
-        )
+        return h('j-control', {
+          key,
+          props: {
+            path,
+          },
+        })
       })
     },
   },

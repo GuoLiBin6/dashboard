@@ -8,12 +8,12 @@
         <monitor-header
           class="mt-4 mb-4"
           :timeOpts="timeOpts"
-          :time.sync="time"
+          v-model:time="time"
           :showTimegroup="false"
           :showGroupFunc="false"
           @refresh="fetchAllData">
           <template v-slot:radio-button-append>
-            <custom-date :time.sync="time" :customTime.sync="customTime" :showCustomTimeText="time==='custom'" />
+            <custom-date v-model:time="time" v-model:customTime="customTime" :showCustomTimeText="time==='custom'" />
           </template>
         </monitor-header>
         <a-card v-if="isEmpty && isLoading" :title="seriesDescription[0]?.title" size="small">

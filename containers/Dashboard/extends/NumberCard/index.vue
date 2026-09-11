@@ -3,7 +3,7 @@
     ref="usage"
     :is="type"
     :type="type"
-    :visible.sync="visible"
+    v-model:visible="visible"
     :formItemLayout="formItemLayout"
     :options="options"
     @update="update"
@@ -14,7 +14,7 @@
         <label>{{$t('dashboard.text_24')}}</label>
       </a-col>
       <a-col :span="formItemLayout.wrapperCol.span">
-        <a-radio-group v-model="type">
+        <a-radio-group v-model:value="type">
           <a-radio-button v-for="item in typeOpts" :key="item.key" :value="item.key">{{ item.label }}</a-radio-button>
         </a-radio-group>
       </a-col>

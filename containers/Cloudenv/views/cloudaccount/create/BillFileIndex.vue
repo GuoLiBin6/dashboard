@@ -5,11 +5,11 @@
     <a-spin v-if="isUpdate" :spinning="!isRender">
       <content-info :params="params" v-if="isRender" />
     </a-spin>
-    <page-body needMarginBottom>
+    <page-body>
       <div>
         <div v-if="isGoogle" style="margin-bottom: 8px;">
           <span style="width: 190px;margin-right: 45px">{{ $t('cloudenv.bill.data_source') }}</span>
-          <a-radio-group v-model="billform">
+          <a-radio-group v-model:value="billform">
             <a-radio-button value="bigquery">
               Bigquery
             </a-radio-button>

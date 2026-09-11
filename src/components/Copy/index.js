@@ -1,55 +1,45 @@
+import { h } from 'vue'
+import Icon from '@/components/Icon'
 import './index.scss'
 
 export default {
   name: 'Copy',
   props: {
     message: {
-      type: String,
+      type: [String, Number],
       required: true,
     },
   },
-  data () {
-    return {
-      visible: false,
-      title: '',
-    }
-  },
   methods: {
-    clearTimer () {
-      clearTimeout(this.timer)
-      this.timer = null
-    },
     async doCopy (e) {
       e.stopPropagation()
       try {
-        this.title = this.$t('common.copy')
-        await this.$copyText(this.message)
+        await this.$copyText(String(this.message ?? ''))
+        this.$message.success(this.$t('common.copy'))
       } catch (error) {
-        this.title = this.$t('common.copyError')
+        this.$message.error(this.$t('common.copyError'))
       }
-      this.clearTimer()
-      this.timer = setTimeout(() => {
-        this.visible = false
-      }, 800)
     },
   },
-  destroyed () {
-    this.clearTimer()
-  },
-  render (h) {
-    return (
-      <a-tooltip
-        v-model={ this.visible }
-        title={ this.title }
-        trigger='click'
-        destroyTooltipOnHide>
-        <icon type="copy" onClick={ this.doCopy } />
-        {/* <a-icon
-          class='copy-icon'
-          type='copy'
-          class='primary-color'
-          onClick={ this.doCopy } /> */}
-      </a-tooltip>
+  render () {
+    // 列表单元格里大量 a-tooltip 会在 Vue3/antdv4 下频繁 setup 失败并刷屏卡死；
+    // 复制反馈改用 message。icon 必须直接引用组件：h('icon') 不会解析全局组件，图标会空白。
+    return h(
+      'span',
+      {
+        class: 'copy-trigger',
+        role: 'button',
+        tabindex: 0,
+        onClick: (e) => this.doCopy(e),
+        onKeydown: (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            this.doCopy(e)
+          }
+        },
+        title: this.$t('common.copy'),
+      },
+      [h(Icon, { type: 'copy', class: 'copy-trigger__icon' })],
     )
   },
 }

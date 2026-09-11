@@ -1,7 +1,7 @@
 <template>
   <div>
     <page-header :title="$t('aice.llm_benchmark_create')" />
-    <page-body needMarginBottom>
+    <page-body>
       <a-form-model
         ref="form"
         :model="form"
@@ -10,7 +10,7 @@
         :wrapper-col="{ span: 16 }"
         class="mt-4">
         <a-form-model-item :label="$t('common.name')" prop="name">
-          <a-input v-model="form.name" :placeholder="$t('validator.resourceName')" />
+          <a-input v-model:value="form.name" :placeholder="$t('validator.resourceName')" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.llm_benchmark.deployment')" prop="llm_deployment_id">
           <base-select
@@ -25,27 +25,27 @@
         </a-form-model-item>
         <a-divider orientation="left">{{ $t('aice.llm_benchmark.params') }}</a-divider>
         <a-form-model-item :label="$t('aice.llm_benchmark.request_rate')" prop="request_rate">
-          <a-input-number v-model="form.request_rate" :min="0.1" :step="0.1" class="w-100" />
+          <a-input-number v-model:value="form.request_rate" :min="0.1" :step="0.1" class="w-100" />
           <template v-slot:extra>{{ $t('aice.llm_benchmark.create.request_rate_help') }}</template>
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.llm_benchmark.total_requests')" prop="total_requests">
-          <a-input-number v-model="form.total_requests" :min="1" :step="1" class="w-100" />
+          <a-input-number v-model:value="form.total_requests" :min="1" :step="1" class="w-100" />
           <template v-slot:extra>{{ $t('aice.llm_benchmark.create.total_requests_help') }}</template>
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.llm_benchmark.max_duration_seconds')" prop="max_duration_seconds">
-          <a-input-number v-model="form.max_duration_seconds" :min="1" :step="1" class="w-100" />
+          <a-input-number v-model:value="form.max_duration_seconds" :min="1" :step="1" class="w-100" />
           <template v-slot:extra>{{ $t('aice.llm_benchmark.create.max_duration_seconds_help') }}</template>
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.llm_benchmark.max_errors')" prop="max_errors">
-          <a-input-number v-model="form.max_errors" :min="0" :step="1" class="w-100" />
+          <a-input-number v-model:value="form.max_errors" :min="0" :step="1" class="w-100" />
           <template v-slot:extra>{{ $t('aice.llm_benchmark.create.max_errors_help') }}</template>
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.llm_benchmark.dataset_input_tokens')" prop="dataset_input_tokens">
-          <a-input-number v-model="form.dataset_input_tokens" :min="1" :step="1" class="w-100" />
+          <a-input-number v-model:value="form.dataset_input_tokens" :min="1" :step="1" class="w-100" />
           <template v-slot:extra>{{ $t('aice.llm_benchmark.create.dataset_input_tokens_help') }}</template>
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.llm_benchmark.dataset_output_tokens')" prop="dataset_output_tokens">
-          <a-input-number v-model="form.dataset_output_tokens" :min="1" :step="1" class="w-100" />
+          <a-input-number v-model:value="form.dataset_output_tokens" :min="1" :step="1" class="w-100" />
           <template v-slot:extra>{{ $t('aice.llm_benchmark.create.dataset_output_tokens_help') }}</template>
         </a-form-model-item>
       </a-form-model>

@@ -3,16 +3,20 @@ import * as R from 'ramda'
 import Cookies from 'js-cookie'
 import { Base64 } from 'js-base64'
 import store from '@/store'
-import { typeClouds } from '@/utils/common/hypervisor'
 import storage from '@/utils/storage'
 import * as Features from '@/constants/feature'
 import setting from '@/config/setting'
 import i18n from '@/locales'
 import { aesDecryptWithCustomKey } from '@/utils/crypto'
-import { HYPERVISORS } from '@/constants/index'
+import { HYPERVISORS, HYPERVISORS_MAP, EXTRA_HYPERVISORS } from '@/constants/index'
 import { GROUP_VALIDATION_GROUPS } from '@/constants/feature'
 
-const ONECLOUD_AUTH_KEY = 'yunionauth'
+// 不从 hypervisor 引 typeClouds：hypervisor 依赖本文件 hasSetupKey，会形成循环初始化 TDZ
+const hypervisorEnvSource = Object.assign({}, HYPERVISORS_MAP, EXTRA_HYPERVISORS)
+
+// 注意：store/modules/auth 在模块初始化时会调用 getTokenFromCookie。
+// auth.js ↔ store 存在循环依赖，此处若引用本文件尚未初始化的 const，会触发 TDZ。
+// cookie key 必须用字面量，不能引用下方/同文件后置的绑定。
 const HISTORY_USERS_STORAGE_KEY = '__oc_history_users__'
 const LOGGED_USERS_STORAGE_KEY = '__oc_logged_users__'
 const ENABLE_SETUP_STORAGE_KEY = '__oc_enable_setup__'
@@ -21,11 +25,11 @@ const LOGIN_MODE = '__oc_login_mode___'
 export const SESSION_LOGIN_USER_KEY = '__oc_checked_id__'
 
 export function getTokenFromCookie () {
-  return Cookies.get(ONECLOUD_AUTH_KEY)
+  return Cookies.get('yunionauth')
 }
 
 export function setTokenInCookie (token) {
-  return Cookies.set(ONECLOUD_AUTH_KEY, token)
+  return Cookies.set('yunionauth', token)
 }
 
 export function getScopeFromCookie () {
@@ -232,8 +236,8 @@ export function hasHypervisorsByEnv (envs) {
     baremetal: ['baremetal'],
   }
   R.forEachObjIndexed((val, key) => {
-    envsMap[val.env].push(key)
-  }, typeClouds.getHypervisor())
+    if (envsMap[val.env]) envsMap[val.env].push(key)
+  }, hypervisorEnvSource)
   if (R.is(String, envs)) {
     return hasHypervisors(envsMap[envs])
   }
@@ -248,9 +252,9 @@ export function hasBrandsByEnv (envs) {
     private: [],
     public: [],
   }
-  R.forEachObjIndexed((val, key) => {
-    envsMap[val.env].push(key)
-  }, typeClouds.getBrand())
+  R.forEachObjIndexed((val) => {
+    if (envsMap[val.env] && val.brand) envsMap[val.env].push(val.brand)
+  }, hypervisorEnvSource)
   if (R.is(String, envs)) {
     return hasBrands(envsMap[envs])
   }

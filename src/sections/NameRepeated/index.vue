@@ -2,7 +2,7 @@
   <div class="ant-form-extra" style="min-height: 0px;">
     <span v-if="show">{{ text }}</span>
     <span v-else-if="loading && !defaultText">
-      <a-icon type="sync" class="mr-1" spin />
+      <icon type="sync" class="mr-1" spin />
       <span>{{$t('common_183')}}</span>
     </span>
   </div>
@@ -69,7 +69,7 @@ export default {
   created () {
     this.debouncedFetchQueryList = _.debounce(this.fetchQueryList, 300)
   },
-  destroyed () {
+  unmounted () {
     this.debouncedFetchQueryList = null
   },
   methods: {

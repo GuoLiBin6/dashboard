@@ -1,4 +1,35 @@
-@import "~ant-design-vue/lib/style/themes/default";
+// ant-design-vue 4 不再提供旧版 less 主题入口，这里先注释掉，
+// 后续如果需要自定义主题可改用新版 token 方案或按官方文档配置。
+// @import "ant-design-vue/lib/style/themes/default.less";
+
+// 基础主题变量（原来由 Ant Design Vue less 提供，这里手动兜底一份）
+@primary-color: #1890ff;
+@link-color: @primary-color;
+@border-color-base: #d9d9d9;
+@error-color: #ff4d4f;
+@success-color: #52c41a;
+
+// 额外兜底一些在全局样式里使用到、但 AntD 默认主题才会提供的变量，
+// 这里只给出合理的近似值，具体色值可以后续再微调。
+@warning-color: #faad14;
+// 状态灰点 / 次要标识（antd Badge default）；勿用正文色，否则「禁用」等会显得过黑
+@normal-color: #d9d9d9;
+@disabled-color: rgba(0, 0, 0, 0.25);
+@font-size-base: 14px;
+@box-shadow-base: 0 3px 6px -4px rgba(0,0,0,.12),0 6px 16px 0 rgba(0,0,0,.08),0 9px 28px 8px rgba(0,0,0,.05);
+
+// ---------- 文本色阶（全局统一，勿再散落 #000 / #0A1F44 等）----------
+// 标题：页面标题、表格主信息行（略深，看起来更扎实）
+@heading-color: rgba(0, 0, 0, 0.88);
+// 主文本：正文、表格单元格、表单项
+@text-color: rgba(0, 0, 0, 0.75);
+// 次级：辅助说明、统计条、副行文案
+@text-color-secondary: rgba(0, 0, 0, 0.55);
+// 弱提示：placeholder / help
+@text-color-help: rgba(0, 0, 0, 0.35);
+// 字重：正文略加重，标题与强调 600
+@font-weight-base: 400;
+@font-weight-strong: 600;
 
 @border-radius-sm: 0;
 @border-radius-base: 0;
@@ -12,6 +43,14 @@
 @sidebar-light-bg-color: #f0f2f5;
 @sidebar-light-text-color: #6b7180;
 @sidebar-light-text-bg-color: #efefef;
+
+// ant-design-vue 4.x 默认主题中 primary-5 大致为 #40a9ff，这里手动声明，避免依赖已删除的 less 变量。
+@primary-5: #40a9ff;
+// 同样补一个 primary-7，用于 hover/选中态等场景。
+@primary-7: #0958d9;
+// primary-1 用于浅色背景（如 Alert 等），给一个比 primary-color 更浅的颜色
+@primary-1: #e6f7ff;
+
 @sidebar-light-arrow-color: #b0b8cd;
 @sidebar-dark-arrow-color: rgba(255, 255, 255, 0.35);
 @sidebar-light-hover-text-color: @primary-5;
@@ -20,3 +59,20 @@
 @cascade-light-panel-border: #dcdfe6;
 @cascade-light-panel-shadow: 0 6px 20px rgba(0, 0, 0, 0.16), 0 4px 12px rgba(165, 192, 207, 0.38);
 @cascade-light-panel-shadow-l3: 0 8px 28px rgba(0, 0, 0, 0.2), 0 6px 16px rgba(165, 192, 207, 0.42);
+
+// Alert 相关背景色兜底（用于 @alert-info-bg-color）
+@alert-info-bg-color: @primary-1;
+
+// ant-design-vue v4 仅 reset.css 时不会注入该变量；全局样式里大量 var(--antd-wave-shadow-color) 依赖此项
+:root {
+  --antd-wave-shadow-color: @primary-color;
+  --oc-color-text-heading: @heading-color;
+  --oc-color-text: @text-color;
+  --oc-color-text-secondary: @text-color-secondary;
+  --oc-color-text-help: @text-color-help;
+  --oc-font-weight-base: @font-weight-base;
+  --oc-font-weight-strong: @font-weight-strong;
+  // 暗色侧栏 / 展开菜单：同主题色系但更亮，保证深底可读（勿过浅泛白）
+  --oc-sidebar-accent-color: color-mix(in srgb, var(--ant-color-primary, @primary-color) 68%, #fff);
+}
+

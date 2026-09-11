@@ -3,8 +3,8 @@
     <a-alert type="warning" class="mb-2" :showIcon="false" :message="$t('system.text_589')" banner />
     <div class="d-flex justify-content-start">
       <a-button :disabled="loading" @click="refresh">
-        <a-icon v-if="loading" type="sync" spin />
-        <a-icon v-else type="sync" />
+        <icon v-if="loading" type="sync" spin />
+        <icon v-else type="sync" />
       </a-button>
     </div>
     <detail
@@ -209,12 +209,12 @@ export default {
             return '-'
           },
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               const { organization = {} } = row
               const tags = this.getTags(organization)
               if (tags) {
-                const list = tags.map(item => <a-tag class="mr-1 mb-1">{item}</a-tag>)
-                return [...list]
+                const list = tags.map(item => h('a-tag', { class: 'mr-1 mb-1' }, item))
+                return list
               }
               return '-'
             },
@@ -224,9 +224,13 @@ export default {
           field: 'group_count',
           title: this.$t('system.text_457'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (!row.group_count) return '0'
-              return [<a onClick={ () => this.$emit('tab-change', 'project-directly-under-user-list') }>{row.group_count}</a>]
+              return [h('a', {
+                on: {
+                  click: () => this.$emit('tab-change', 'project-directly-under-user-list'),
+                },
+              }, row.group_count)]
             },
           },
         },
@@ -234,9 +238,13 @@ export default {
           field: 'user_count',
           title: this.$t('system.text_458'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (!row.user_count) return '0'
-              return [<a onClick={ () => this.$emit('tab-change', 'project-directly-under-user-list') }>{row.user_count}</a>]
+              return [h('a', {
+                on: {
+                  click: () => this.$emit('tab-change', 'project-directly-under-user-list'),
+                },
+              }, row.user_count)]
             },
           },
         },
@@ -244,8 +252,16 @@ export default {
           field: 'admin',
           title: this.$t('iam.project_admin'),
           slots: {
-            default: ({ row }) => {
-              return [<ProjectAdmin row={ row } manager={ this.onManager } onOk={this.ok} />]
+            default: ({ row }, h) => {
+              return [h(ProjectAdmin, {
+                props: {
+                  row: row,
+                  manager: this.onManager,
+                },
+                on: {
+                  ok: this.ok,
+                },
+              })]
             },
           },
         },
@@ -271,9 +287,9 @@ export default {
               const txt = this.extResources[key] ? this.$t('system.text_459', [this.extResources[key]]) : this.$t('system.text_460')
               const comp = this.resourceListComponent[key] ? this.resourceListComponent[key] : null
               if (txt && comp) {
-                return [
-                  <a onClick={
-                    () => {
+                return this.$createElement('a', {
+                  on: {
+                    click: () => {
                       this.createDialog('ProjectResourcesDialog',
                         {
                           component: comp.component,
@@ -284,9 +300,9 @@ export default {
                           },
                           title: transformLabel(RESOURCES_MAP[key]) || key,
                         })
-                    }
-                  }>{ txt }</a>,
-                ]
+                    },
+                  },
+                }, txt)
               } else {
                 return txt
               }
@@ -305,9 +321,9 @@ export default {
               const txt = this.extResources[key] ? this.$t('system.text_459', [this.extResources[key]]) : this.$t('system.text_460')
               const comp = this.resourceListComponent[key] ? this.resourceListComponent[key] : null
               if (txt && comp) {
-                return [
-                  <a onClick={
-                    () => {
+                return this.$createElement('a', {
+                  on: {
+                    click: () => {
                       this.createDialog('ProjectResourcesDialog',
                         {
                           component: comp.component,
@@ -318,9 +334,9 @@ export default {
                           },
                           title: transformLabel(RESOURCES_MAP[key]) || key,
                         })
-                    }
-                  }>{ txt }</a>,
-                ]
+                    },
+                  },
+                }, txt)
               } else {
                 return txt
               }
@@ -339,9 +355,9 @@ export default {
               const txt = this.extResources[key] ? this.$t('system.text_459', [this.extResources[key]]) : this.$t('system.text_460')
               const comp = this.resourceListComponent[key] ? this.resourceListComponent[key] : null
               if (txt && comp) {
-                return [
-                  <a onClick={
-                    () => {
+                return this.$createElement('a', {
+                  on: {
+                    click: () => {
                       this.createDialog('ProjectResourcesDialog',
                         {
                           component: comp.component,
@@ -352,9 +368,9 @@ export default {
                           },
                           title: transformLabel(RESOURCES_MAP[key]) || key,
                         })
-                    }
-                  }>{ txt }</a>,
-                ]
+                    },
+                  },
+                }, txt)
               } else {
                 return txt
               }

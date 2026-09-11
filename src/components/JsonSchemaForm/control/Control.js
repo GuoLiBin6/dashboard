@@ -58,27 +58,21 @@ const Control = {
           value: decorator,
         },
       ]
-      return (
-        <a-form-item { ...this.groupProps }>
-          { h(component, inputProps) }
-        </a-form-item>
-      )
+      return h('a-form-item', { ...this.groupProps }, [
+        h(component, inputProps),
+      ])
     } else {
       if (definition.formItem && definition.formItem.label) {
         if (component === 'j-fieldset') {
-          return (
-            <a-card class="mb-2">
-              <a-form-item { ...this.groupProps }>
-                { h(component, inputProps) }
-              </a-form-item>
-            </a-card>
-          )
+          return h('a-card', { class: 'mb-2' }, [
+            h('a-form-item', { ...this.groupProps }, [
+              h(component, inputProps),
+            ]),
+          ])
         }
-        return (
-          <a-form-item { ...this.groupProps }>
-            { h(component, inputProps) }
-          </a-form-item>
-        )
+        return h('a-form-item', { ...this.groupProps }, [
+          h(component, inputProps),
+        ])
       } else {
         return h(component, inputProps)
       }

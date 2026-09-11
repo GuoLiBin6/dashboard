@@ -1,7 +1,7 @@
 <template>
   <div>
     <page-header :title="$t('compute.text_892')" />
-    <page-body needMarginBottom>
+    <page-body>
       <a-form :form="form.fc" class="mt-3" v-bind="formItemLayout" hideRequiredMark>
         <a-form-item class="mb-0" :label="$t('compute.text_297', [$t('dictionary.project')])">
           <domain-project :decorators="decorators.projectDomain" :fc="form.fc" :labelInValue="false" />
@@ -52,7 +52,7 @@
         </a-form-item>
         <a-form-item :label="$t('compute.text_876')">
           <a-tooltip placement="top" :title="$t('compute.text_891')">
-            <a-input-number @blur="handleMinBlur" v-model="min" :min="0" :max="Math.max(0, form.fd.desire_instance_number)"  />
+            <a-input-number @blur="handleMinBlur" v-model:value="min" :min="0" :max="Math.max(0, form.fd.desire_instance_number)"  />
             <a-input v-show="false" v-decorator="decorators.min_instance_number" />
           </a-tooltip>
         </a-form-item>
@@ -62,7 +62,7 @@
           </a-select>
         </a-form-item>
         <a-form-item required :label="$t('compute.text_899')">
-          <a-radio-group v-model="isLoadbalancer">
+          <a-radio-group v-model:value="isLoadbalancer">
             <a-radio-button :value="false">{{$t('compute.text_900')}}</a-radio-button>
             <a-tooltip v-if="form.fd.brand === 'Azure'" placement="top" :title="$t('compute.text_901')">
               <a-radio-button :disabled="true" :value="true">{{$t('compute.text_902')}}</a-radio-button>
@@ -75,8 +75,8 @@
         </a-form-item>
         <a-form-item :label="$t('compute.text_903')">
           <a-select v-decorator="decorators.health_check_mode">
-            <template v-for="(v, k) in $t('flexGroupHealthCheckMode')">
-              <a-select-option v-if="k !== 'loadbalancer' || (isLoadbalancer && k === 'loadbalancer')" :key="k" :value="k">{{v}}</a-select-option>
+            <template v-for="(v, k) in $t('flexGroupHealthCheckMode')" :key="k">
+              <a-select-option v-if="k !== 'loadbalancer' || (isLoadbalancer && k === 'loadbalancer')" :value="k">{{v}}</a-select-option>
             </template>
           </a-select>
         </a-form-item>

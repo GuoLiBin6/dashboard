@@ -1,7 +1,7 @@
 <template>
   <div>
-    <page-header :title="$t('storage.text_95')" :tabs="cloudEnvOptions" :current-tab.sync="cloudEnv" />
-    <page-body needMarginBottom>
+    <page-header :title="$t('storage.text_95')" :tabs="cloudEnvOptions" v-model:currentTab="cloudEnv" />
+    <page-body>
       <a-form :form="form.fc" v-bind="formItemLayout" hideRequiredMark>
         <a-form-item :label="$t('storage.text_55', [$t('dictionary.project')])" v-bind="formItemLayout">
           <domain-project :fc="form.fc" :decorators="{ project: decorators.project, domain: decorators.domain }" @update:domain="handleDomainChange" />

@@ -108,8 +108,8 @@ export default {
   },
   methods: {
     handleRedirectChange (bool) {
-      const { redirectChange } = (this.$listeners || {})
-      if (redirectChange) {
+      const redirectChange = this.$attrs && this.$attrs.onRedirectChange
+      if (typeof redirectChange === 'function') {
         return redirectChange(bool)
       }
       this.$store.dispatch('common/updateObject', {

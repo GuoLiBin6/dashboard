@@ -41,9 +41,7 @@ export default {
             title: this.$t('network.vmware_datacenter_prompt'),
             slots: {
               default: ({ row }, h) => {
-                return [
-                  <span>{row.metadata['sys:datacenter']}</span>,
-                ]
+                return [h('span', row.metadata['sys:datacenter'])]
               },
             },
           },
@@ -52,9 +50,7 @@ export default {
             title: this.$t('network.vmware_vm_ips_prompt'),
             slots: {
               default: ({ row }, h) => {
-                return [
-                  <span>{row.metadata['sys:vm_ips']}</span>,
-                ]
+                return [h('span', row.metadata['sys:vm_ips'])]
               },
             },
           },
@@ -63,9 +59,7 @@ export default {
             title: this.$t('network.vmware_vm_macs_prompt'),
             slots: {
               default: ({ row }, h) => {
-                return [
-                  <span>{row.metadata['sys:vm_macs']}</span>,
-                ]
+                return [h('span', row.metadata['sys:vm_macs'])]
               },
             },
           },
@@ -84,11 +78,16 @@ export default {
           field: 'vpc',
           title: 'VPC',
           hideField: true,
-          slotCallback: row => {
+          slotCallback: (row, h) => {
             if (!row.vpc) return '-'
-            return [
-              <side-page-trigger permission='vpcs_get' name='VpcSidePage' id={row.vpc_id} vm={this}>{ row.vpc }</side-page-trigger>,
-            ]
+            return [h('side-page-trigger', {
+              props: {
+                permission: 'vpcs_get',
+                name: 'VpcSidePage',
+                id: row.vpc_id,
+                vm: this,
+              },
+            }, row.vpc)]
           },
         }),
         {
@@ -97,9 +96,11 @@ export default {
           slots: {
             default: ({ row }, h) => {
               if (!row.networks) return row.networks || 0
-              return [
-                <a onClick={ () => this.$emit('tab-change', 'network-list') }>{row.networks}</a>,
-              ]
+              return [h('a', {
+                on: {
+                  click: () => this.$emit('tab-change', 'network-list'),
+                },
+              }, row.networks)]
             },
           },
         },
@@ -107,11 +108,16 @@ export default {
           field: 'region',
           title: this.$t('network.text_199'),
           hideField: true,
-          slotCallback: row => {
+          slotCallback: (row, h) => {
             if (!row.region) return '-'
-            return [
-              <side-page-trigger permission='areas_get' name='CloudregionSidePage' id={row.region_id} vm={this}>{ row.region }</side-page-trigger>,
-            ]
+            return [h('side-page-trigger', {
+              props: {
+                permission: 'areas_get',
+                name: 'CloudregionSidePage',
+                id: row.region_id,
+                vm: this,
+              },
+            }, row.region)]
           },
         }),
       ],

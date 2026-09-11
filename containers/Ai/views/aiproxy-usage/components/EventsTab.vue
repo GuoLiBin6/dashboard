@@ -7,7 +7,7 @@
     @filterChange="onListFilterChange" />
 </template>
 
-<script>
+<script lang="jsx">
 import ListMixin from '@/mixins/list'
 import { getTimeTableColumn } from '@/utils/common/tableColumn'
 import {

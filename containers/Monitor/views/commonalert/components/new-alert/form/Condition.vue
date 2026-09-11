@@ -69,7 +69,7 @@
   </div>
 </template>
 
-<script>
+<script lang="jsx">
 import _ from 'lodash'
 import { metric_zh } from '@Monitor/constants'
 import { uuid } from '@/utils/utils'

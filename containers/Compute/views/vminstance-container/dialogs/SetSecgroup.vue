@@ -18,10 +18,10 @@
             show-sync
             v-decorator="decorators.secgroups"
             resource="secgroups"
-            :resList.sync="secgroupOptions"
+            v-model:resList="secgroupOptions"
             :mapper="mapperSecgroups"
             :params="secgroupsParams"
-            :init-loaded.sync="secgroupsInitLoaded"
+            v-model:initLoaded="secgroupsInitLoaded"
             :select-props="{ allowClear: true, placeholder: $t('compute.text_190'), mode: 'multiple' }" />
         </a-form-item>
       </a-form>

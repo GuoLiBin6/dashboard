@@ -74,7 +74,7 @@ export default {
       return null
     },
   },
-  destroyed () {
+  unmounted () {
     this.cm = null
   },
   created () {

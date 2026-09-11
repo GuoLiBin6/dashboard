@@ -4,7 +4,7 @@
     :columns="columns" />
 </template>
 
-<script>
+<script lang="jsx">
 // import { SERVER_TYPE } from '@Compute/constants'
 import { getCopyWithContentTableColumn } from '@/utils/common/tableColumn'
 import WindowsMixin from '@/mixins/windows'

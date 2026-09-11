@@ -67,11 +67,16 @@ export default {
           field: 'region',
           title: this.$t('network.text_199'),
           hideField: true,
-          slotCallback: row => {
+          slotCallback: (row, h) => {
             if (!row.region) return '-'
-            return [
-              <side-page-trigger permission='areas_get' name='CloudregionSidePage' id={row.region_id} vm={this}>{ row.region }</side-page-trigger>,
-            ]
+            return [h('side-page-trigger', {
+              props: {
+                permission: 'areas_get',
+                name: 'CloudregionSidePage',
+                id: row.region_id,
+                vm: this,
+              },
+            }, row.region)]
           },
         }),
         {
@@ -79,12 +84,11 @@ export default {
           title: this.$t('network.text_199'),
           slots: {
             default: ({ row }) => {
+              const h = this.$createElement
               if (row.zone_1) {
-                const ret = [<div>{ row.zone }({this.$t('db.text_165')})</div>]
+                const ret = [h('div', `${row.zone}(${this.$t('db.text_165')})`)]
                 ret.push(
-                  <div>
-                    {row.zone_1_name}({this.$t('db.text_164')})
-                  </div>,
+                  h('div', `${row.zone_1_name}(${this.$t('db.text_164')})`),
                 )
                 return ret
               }
@@ -119,6 +123,7 @@ export default {
               title: this.$t('network.text_248'),
               slots: {
                 default: ({ row }) => {
+                  const h = this.$createElement
                   const ret = []
                   if (row.eip) {
                     let weakTip = ''
@@ -127,19 +132,23 @@ export default {
                     } else if (row.eip_mode === 'public_ip') {
                       weakTip = this.$t('network.text_305')
                     }
-                    ret.push(<div>
-                      <span>{row.eip}</span>
-                      <span className="text-color-secondary">{weakTip}</span>
-                      <copy message={row.eip}/>
-                    </div>)
+                    ret.push(
+                      h('div', [
+                        h('span', row.eip),
+                        h('span', { class: 'text-color-secondary' }, weakTip),
+                        h('copy', { props: { message: row.eip } }),
+                      ]),
+                    )
                   }
 
                   if (ret.length === 0 || (ret.length > 0 && row.address_type === 'intranet' && !!row.address)) {
-                    ret.push(<div>
-                      <span>{row.address || '-'}</span>
-                      <span className="text-color-secondary">{row.address_type === 'intranet' ? this.$t('network.text_306') : this.$t('network.text_307')}</span>
-                      <copy message={row.address}/>
-                    </div>)
+                    ret.push(
+                      h('div', [
+                        h('span', row.address || '-'),
+                        h('span', { class: 'text-color-secondary' }, row.address_type === 'intranet' ? this.$t('network.text_306') : this.$t('network.text_307')),
+                        h('copy', { props: { message: row.address } }),
+                      ]),
+                    )
                   }
 
                   const _ips = _.get(row, ['metadata', 'sys:FrontendIPs'])
@@ -147,10 +156,12 @@ export default {
                     const ips = _ips.split(',')
                     for (const v of ips) {
                       if (v !== row.address && v !== row.eip) {
-                        ret.push(<div>
-                          <span>{ v }</span>
-                          <copy class="ml-2" message={row.address}/>
-                        </div>)
+                        ret.push(
+                          h('div', [
+                            h('span', v),
+                            h('copy', { class: 'ml-2', props: { message: row.address } }),
+                          ]),
+                        )
                       }
                     }
                   }
@@ -164,12 +175,28 @@ export default {
               title: this.$t('compute.text_105'),
               slots: {
                 default: ({ row }) => {
+                  const h = this.$createElement
                   if (!row.secgroups) return '-'
-                  return row.secgroups.map((item) => {
-                    return <list-body-cell-wrap copy hideField={true} field='name' row={item} message={item.name}>
-                      <side-page-trigger permission='secgroups_get' name='SecGroupSidePage' id={item.id} vm={this}>{ item.name }</side-page-trigger>
-                    </list-body-cell-wrap>
-                  })
+                  return row.secgroups.map(item =>
+                    h('list-body-cell-wrap', {
+                      props: {
+                        copy: true,
+                        hideField: true,
+                        field: 'name',
+                        row: item,
+                        message: item.name,
+                      },
+                    }, [
+                      h('side-page-trigger', {
+                        props: {
+                          permission: 'secgroups_get',
+                          name: 'SecGroupSidePage',
+                          id: item.id,
+                          vm: this,
+                        },
+                      }, item.name),
+                    ]),
+                  )
                 },
               },
               hidden: () => this.$isScopedPolicyMenuHidden('slb_hidden_columns.secgroups'),
@@ -181,7 +208,14 @@ export default {
               slotCallback: row => {
                 if (!row.vpc) return '-'
                 return [
-                  <side-page-trigger permission='vpcs_get' name='VpcSidePage' id={row.vpc_id} vm={this}>{ row.vpc }</side-page-trigger>,
+                  this.$createElement('side-page-trigger', {
+                    props: {
+                      permission: 'vpcs_get',
+                      name: 'VpcSidePage',
+                      id: row.vpc_id,
+                      vm: this,
+                    },
+                  }, row.vpc),
                 ]
               },
               hidden: this.$store.getters.isProjectMode,
@@ -193,7 +227,14 @@ export default {
               slotCallback: row => {
                 if (!row.network) return '-'
                 return [
-                  <side-page-trigger permission='networks_get' name='NetworkSidePage' id={row.network_id} vm={this}>{ row.network }</side-page-trigger>,
+                  this.$createElement('side-page-trigger', {
+                    props: {
+                      permission: 'networks_get',
+                      name: 'NetworkSidePage',
+                      id: row.network_id,
+                      vm: this,
+                    },
+                  }, row.network),
                 ]
               },
               hidden: this.$store.getters.isProjectMode,

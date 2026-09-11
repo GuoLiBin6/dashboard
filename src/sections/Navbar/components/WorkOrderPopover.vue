@@ -3,7 +3,7 @@
     <a-popover trigger="click" :getPopupContainer="triggerNode => triggerNode.parentNode">
       <div class="trigger d-flex align-items-center justify-content-center">
         <span v-if="workOrderMenuTitleUsedText">{{$t('navbar.button.work_order')}}</span>
-        <a-tooltip :title="$t('navbar.button.work_order')" placement="right" v-else>
+        <a-tooltip :title="$t('navbar.button.work_order')" placement="bottom" v-else>
           <a-badge :count="statistics" :overflowCount="99">
             <icon type="navbar-process" style="font-size: 22px;" />
           </a-badge>
@@ -23,38 +23,46 @@
           </div>
           <!-- 技术支持 -->
           <template v-if="customerServiceEnabled">
-            <div class="mt-2 text-color-help" style="font-size: 12px;"><a-icon type="user" /><span class="ml-2">{{$t('common.text00036')}}</span></div>
+            <div class="work-section-title mt-2 text-color-help"><icon type="res-user" class="work-section-icon" width="14" height="14" /><span class="ml-2">{{$t('common.text00036')}}</span></div>
             <ul class="work-list">
-              <i18n path="navbar.button.work_order_undone" tag="li" @click="goHistoricProcessToSupport">
-                <template #num>
-                  <a>{{workflowStatistics['nr-historic-process-instance-cus'] || 0}}</a>
-                </template>
-              </i18n>
-              <i18n path="navbar.button.pending_work_order-tech" tag="li" @click="goProcessTaskToSupport">
-                <template #num>
-                  <a>{{workflowStatistics['nr-process-task-cus'] || 0}}</a>
-                </template>
-              </i18n>
+              <li @click="goHistoricProcessToSupport">
+                <i18n path="navbar.button.work_order_undone" tag="span">
+                  <template #num>
+                    <a>{{workflowStatistics['nr-historic-process-instance-cus'] || 0}}</a>
+                  </template>
+                </i18n>
+              </li>
+              <li @click="goProcessTaskToSupport">
+                <i18n path="navbar.button.pending_work_order-tech" tag="span">
+                  <template #num>
+                    <a>{{workflowStatistics['nr-process-task-cus'] || 0}}</a>
+                  </template>
+                </i18n>
+              </li>
             </ul>
           </template>
           <!-- 待处理工单 -->
           <template v-if="isShowWorkflow">
-            <div class="mt-2 text-color-help" style="font-size: 12px;"><a-icon type="user" /><span class="ml-2">{{$t('navbar.tips.pending_work_order')}}</span></div>
+            <div class="work-section-title mt-2 text-color-help"><icon type="res-user" class="work-section-icon" width="14" height="14" /><span class="ml-2">{{$t('navbar.tips.pending_work_order')}}</span></div>
             <ul class="work-list">
-              <i18n path="navbar.button.work_order_undone" tag="li" @click="goHistoricProcess">
-                <template #num>
-                  <a>{{workflowStatistics['nr-historic-process-instance'] || 0}}</a>
-                </template>
-              </i18n>
-              <i18n path="navbar.button.pending_work_order" tag="li" @click="goProcessTask">
-                <template #num>
-                  <a>{{workflowStatistics['nr-process-task'] || 0}}</a>
-                </template>
-              </i18n>
+              <li @click="goHistoricProcess">
+                <i18n path="navbar.button.work_order_undone" tag="span">
+                  <template #num>
+                    <a>{{workflowStatistics['nr-historic-process-instance'] || 0}}</a>
+                  </template>
+                </i18n>
+              </li>
+              <li @click="goProcessTask">
+                <i18n path="navbar.button.pending_work_order" tag="span">
+                  <template #num>
+                    <a>{{workflowStatistics['nr-process-task'] || 0}}</a>
+                  </template>
+                </i18n>
+              </li>
             </ul>
           </template>
           <template v-if="isShowWorkflow && isShowAddWorkflow">
-            <div class="mt-2 text-color-help" style="font-size: 12px;"><a-icon type="plus" /><span class="ml-2">{{$t('common_204')}}</span></div>
+            <div class="work-section-title mt-2 text-color-help"><icon type="icon_add" class="work-section-icon" width="14" height="14" /><span class="ml-2">{{$t('common_204')}}</span></div>
             <ul class="work-list">
               <li @click="joinProjectHandle" v-if="isProjectMode && projectEnabled">{{$t('navbar.button.join_project')}}</li>
               <li @click="customeServiceHandle" v-if="customerServiceEnabled">{{$t('navbar.button.work_order_support')}}</li>
@@ -194,6 +202,25 @@ export default {
   // padding: 0 20px;
   cursor: pointer;
   text-decoration: none;
+  color: inherit;
+
+  &:hover {
+    :deep(.ant-badge) {
+      color: inherit !important;
+    }
+    :deep(.ant-badge-count),
+    :deep(.ant-scroll-number) {
+      color: #fff !important;
+    }
+    :deep(.oc-icon) {
+      color: inherit !important;
+      fill: currentColor !important;
+    }
+  }
+
+  :deep(.oc-icon) {
+    color: inherit;
+  }
 }
 .work-order-wrap {
   width: 200px;
@@ -204,6 +231,20 @@ export default {
   font-size: 14px;
   padding: 10px 10px;
   border-bottom: 1px solid #f5f5f5;
+}
+.work-section-title {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 0 10px;
+
+  :deep(.work-section-icon.oc-icon) {
+    flex-shrink: 0;
+    width: 14px;
+    height: 14px;
+    font-size: 14px;
+  }
 }
 .loading {
   padding: 15px;
@@ -216,10 +257,35 @@ export default {
   > li {
     padding: 4px 10px;
     &:hover {
-      background-color: #edf6ff;
-      color: #1890ff;
+      background-color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 10%, #fff);
+      color: var(--ant-color-primary, #1890ff);
       cursor: pointer;
+
+      a {
+        color: inherit !important;
+      }
     }
   }
+}
+</style>
+
+<style lang="less">
+/* Popover 内容可能脱离 scoped 作用域，用面板根类兜底 */
+.work-order-wrap .work-section-title {
+  font-size: 12px;
+  line-height: 1.4;
+}
+.work-order-wrap .work-section-icon.oc-icon {
+  flex-shrink: 0;
+  width: 14px !important;
+  height: 14px !important;
+  font-size: 14px !important;
+}
+.work-order-wrap .work-list > li:hover {
+  background-color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 10%, #fff);
+  color: var(--ant-color-primary, #1890ff);
+}
+.work-order-wrap .work-list > li:hover a {
+  color: inherit !important;
 }
 </style>

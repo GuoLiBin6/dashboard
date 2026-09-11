@@ -9,7 +9,13 @@ export const getResourceMatchProjectTableColumn = () => {
     slots: {
       default: ({ row }, h) => {
         const ret = []
-        ret.push(<list-body-cell-wrap copy field='tenant' row={row} />)
+        ret.push(h('list-body-cell-wrap', {
+          props: {
+            copy: true,
+            field: 'tenant',
+            row,
+          },
+        }))
         if (row.project_mapping) {
           let label = ''
           if (row.enable_resource_sync) {
@@ -17,7 +23,18 @@ export const getResourceMatchProjectTableColumn = () => {
           } else if (row.enable_project_sync) {
             label = i18n.t('cloudenv.project_project_mapping')
           }
-          ret.push(<list-body-cell-wrap copy field='project_mapping' row={row} hideField><span class="text-color-secondary">{label || i18n.t('cloudenv.text_580')}：{row.project_mapping}</span></list-body-cell-wrap>)
+          ret.push(
+            h('list-body-cell-wrap', {
+              props: {
+                copy: true,
+                field: 'project_mapping',
+                row,
+                hideField: true,
+              },
+            }, [
+              h('span', { class: 'text-color-secondary' }, `${label || i18n.t('cloudenv.text_580')}：${row.project_mapping}`),
+            ]),
+          )
         }
         return ret
       },

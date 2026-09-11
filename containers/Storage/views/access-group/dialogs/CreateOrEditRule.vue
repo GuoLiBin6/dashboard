@@ -9,7 +9,7 @@
           <span slot="label">
             {{$t('storage.access.group.rule.source')}}&nbsp;
             <a-tooltip :title="$t('storage.access.group.rule.source.tooltip')">
-              <a-icon type="question-circle-o" />
+              <icon type="question-circle" />
             </a-tooltip>
           </span>
           <a-input :disabled="IPCheckboxDisabled" v-decorator="decorators.source" />
@@ -30,7 +30,7 @@
         </a-form-item>
         <a-form-item>
           <span slot="label">{{$t('compute.text_1001')}}<a-tooltip :title="$t('compute.text_1002')">
-              <a-icon type="question-circle-o" />
+              <icon type="question-circle" />
             </a-tooltip>
           </span>
           <a-input-number :min="1" :max="100" v-decorator="decorators.priority" />

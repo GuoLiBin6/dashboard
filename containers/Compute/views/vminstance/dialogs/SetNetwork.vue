@@ -37,13 +37,12 @@
 import * as R from 'ramda'
 import NetworkConfig from '@Compute/sections/ServerNetwork/NetworkConfig'
 import { checkIpInSegment, checkIpV6, getIpv6Start } from '@Compute/utils/createServer'
-import { HYPERVISORS_MAP } from '@/constants'
+import { HYPERVISORS_MAP, EXTRA_HYPERVISORS } from '@/constants'
 import expectStatus from '@/constants/expectStatus'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import validateForm from '@/utils/validate'
-import { typeClouds } from '@/utils/common/hypervisor'
-const hypervisorMap = typeClouds.hypervisorMap
+const hypervisorMap = Object.assign({}, HYPERVISORS_MAP, EXTRA_HYPERVISORS)
 
 export default {
   name: 'VmSetNetworkDialog',

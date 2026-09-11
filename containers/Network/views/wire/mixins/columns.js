@@ -18,10 +18,12 @@ export default {
       getNameDescriptionTableColumn({
         onManager: this.onManager,
         hideField: true,
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            props: {
+              onTrigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getStatusTableColumn({ statusModule: 'wire', vm: this }),
@@ -35,7 +37,7 @@ export default {
         width: 100,
         sortable: true,
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             const handleVisibleChange = async (visible) => {
               if (!visible) return
               const hasLoaded = Array.isArray(row.wireNetworks) || Array.isArray(row.wireHosts)
@@ -69,7 +71,7 @@ export default {
                 title: i18n.t('network.text_607'),
                 width: '25%',
                 slots: {
-                  default: ({ row }) => <div>{ row.guest_ip_start }</div>,
+                  default: ({ row }, h) => h('div', row.guest_ip_start),
                 },
               },
               {
@@ -77,7 +79,7 @@ export default {
                 title: i18n.t('network.text_608'),
                 width: '25%',
                 slots: {
-                  default: ({ row }) => <div>{ row.guest_ip_end }</div>,
+                  default: ({ row }, h) => h('div', row.guest_ip_end),
                 },
               },
             ]
@@ -86,24 +88,35 @@ export default {
             const hasLoadedContent = (networks && networks.length > 0) || (hosts && hosts.length > 0)
             const contentStyle = hasLoadedContent ? { minWidth: '640px', maxWidth: '80vw' } : {}
             const keySuffix = `${networks ? networks.length : 'n'}-${hosts ? hosts.length : 'h'}`
-            return [<a-popover trigger="hover" destroyTooltipOnHide onVisibleChange={handleVisibleChange} key={`wire-network-${row.id}-${keySuffix}`}>
-              <div slot="content" style={contentStyle}>
-                {networks || hosts ? (
-                  <div>
-                    <HostColumn hosts={ hosts || [] } />
-                    <div style="font-size: larger;font-weight: bold;" class="mt-2 mb-2">{i18n.t('network.wire.networks')}:</div>
-                    {networks && networks.length > 0 ? (
-                      <vxe-grid size="mini" border showOverflow={false} columns={columns} data={ networks } />
-                    ) : (
-                      <div>{i18n.t('common.notData')}</div>
-                    )}
-                  </div>
-                ) : (
-                  <data-loading />
-                )}
-              </div>
-              <span style="color: var(--antd-wave-shadow-color)" onMouseenter={() => handleVisibleChange(true)}>{i18n.t('compute.text_619', [row.networks])}</span>
-            </a-popover>]
+            const content = networks || hosts
+              ? h('div', [
+                h(HostColumn, { props: { hosts: hosts || [] } }),
+                h('div', { style: 'font-size: larger;font-weight: bold;', class: 'mt-2 mb-2' }, `${i18n.t('network.wire.networks')}:`),
+                networks && networks.length > 0
+                  ? h('table-lite-grid', { props: { size: 'mini', border: true, showOverflow: false, columns: columns, data: networks } })
+                  : h('div', i18n.t('common.notData')),
+              ])
+              : h('data-loading')
+            return [h('a-popover', {
+              props: {
+                trigger: 'hover',
+                destroyTooltipOnHide: true,
+              },
+              key: `wire-network-${row.id}-${keySuffix}`,
+              on: {
+                openChange: handleVisibleChange,
+              },
+              scopedSlots: {
+                content: () => h('div', { style: contentStyle }, [content]),
+              },
+            }, [
+              h('span', {
+                style: 'color: var(--antd-wave-shadow-color)',
+                on: {
+                  mouseenter: () => handleVisibleChange(true),
+                },
+              }, i18n.t('compute.text_619', [row.networks])),
+            ])]
           },
         },
       },

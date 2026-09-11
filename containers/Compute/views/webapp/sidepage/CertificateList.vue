@@ -42,21 +42,21 @@ export default {
           hideField: true,
           title: this.$t('table.title.name'),
           showDesc: false,
-          slotCallback: row => {
-            return (
-              <span>{ row.name }</span>
-            )
+          slotCallback: (row, h) => {
+            return h('span', row.name)
           },
         }),
         {
           field: 'status',
           title: this.$t('compute.text_268'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               const { expire_time } = row
               if (expire_time) {
                 const time = new Date(expire_time).getTime() - new Date('2024-03-27 08:00:00')
-                return time > 0 ? [<status specifyStatus={{ class: 'status-success', text: this.$t('compute.status_normal') }} />] : [<status specifyStatus={{ class: 'status-danger', text: this.$t('compute.status_expired') }} />]
+                return time > 0
+                  ? [h('status', { props: { specifyStatus: { class: 'status-success', text: this.$t('compute.status_normal') } } })]
+                  : [h('status', { props: { specifyStatus: { class: 'status-danger', text: this.$t('compute.status_expired') } } })]
               }
               return '-'
             },

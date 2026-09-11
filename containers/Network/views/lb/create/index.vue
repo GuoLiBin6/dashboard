@@ -1,7 +1,7 @@
 <template>
   <div>
-    <page-header :title="headerTitle" :tabs="cloudEnvOptions" :current-tab.sync="cloudEnv" />
-    <page-body needMarginBottom>
+    <page-header :title="headerTitle" :tabs="cloudEnvOptions" v-model:currentTab="cloudEnv" />
+    <page-body>
       <component :is="component" :type="type" ref="formRef" />
     </page-body>
     <page-footer>
@@ -72,8 +72,8 @@ export default {
   watch: {
     cloudEnv (val) {
       this.$nextTick(() => {
-        const query = this.getQuery(this.$router.history.current.query)
-        const path = this.$router.history.current.path
+        const query = this.getQuery(this.$route.query)
+        const path = this.$route.path
         const newQuery = JSON.parse(JSON.stringify(query))
         newQuery.type = val === 'onpremise' ? 'idc' : val
         this.$router.push({ path, query: newQuery })
@@ -83,14 +83,14 @@ export default {
   created () {
     if (this.routerQuery !== this.$route.query.type) {
       this.$router.push({
-        path: this.$router.history.current.path,
+        path: this.$route.path,
         query: {
           type: this.routerQuery,
         },
       })
     }
   },
-  beforeDestroy () {
+  beforeUnmount () {
     window.removeEventListener('popstate', this.popstate)
   },
   methods: {

@@ -52,15 +52,19 @@ const List = {
       'j-list-inline': definition.columns,
     })
 
-    return (
-      <div class={ classes }>
-        { this.renderHeader(h) }
-        <draggable class="j-list-body" value={ list } draggable=".j-list-item" onEnd={ this.onDrop }>
-          { this.renderItems(h) }
-        </draggable>
-        { this.renderFooter(h) }
-      </div>
-    )
+    const header = this.renderHeader(h)
+    const body = h(draggable, {
+      class: 'j-list-body',
+      props: {
+        value: list,
+        draggable: '.j-list-item',
+      },
+      on: {
+        end: this.onDrop,
+      },
+    }, this.renderItems(h))
+    const footer = this.renderFooter(h)
+    return h('div', { class: classes }, [header, body, footer].filter(Boolean))
   },
   methods: {
     renderHeader (h) {
@@ -72,18 +76,16 @@ const List = {
             'ant-form-item-required': column.required,
           })
 
-          return (
-            <a-col span={ column.col }>
-              <label class={ classes }>{ column.label }</label>
-            </a-col>
-          )
+          return h('a-col', {
+            props: {
+              span: column.col,
+            },
+          }, [
+            h('label', { class: classes }, [column.label]),
+          ])
         })
 
-        return (
-          <a-row class="j-list-header">
-            { cols }
-          </a-row>
-        )
+        return h('a-row', { class: 'j-list-header' }, cols)
       } else {
         return null
       }
@@ -98,16 +100,22 @@ const List = {
           const newPath = path.concat([idx])
 
           children.push(
-            (
-              <div class="j-list-item">
-                <j-control path={ this.getPath(newPath) }></j-control>
-                <a-icon
-                  class="btn-delete"
-                  type="minus-circle-o"
-                  onClick={ () => this.remove(idx) }
-                />
-              </div>
-            ),
+            h('div', { class: 'j-list-item' }, [
+              h('j-control', {
+                props: {
+                  path: this.getPath(newPath),
+                },
+              }),
+              h('icon', {
+                class: 'btn-delete',
+                props: {
+                  type: 'minus-circle-o',
+                },
+                on: {
+                  click: () => this.remove(idx),
+                },
+              }),
+            ]),
           )
         })(idx)
 
@@ -117,19 +125,27 @@ const List = {
       return children
     },
     renderFooter (h) {
-      return (
-        <a-row class="j-list-footer">
-          <a-col span="4" offset="20">
-            <a-button
-              type="dashed"
-              style="width: 100%;"
-              onClick={ this.add }
-            >
-              <a-icon type="plus" />{this.$t('common_114')}
-            </a-button>
-          </a-col>
-        </a-row>
-      )
+      return h('a-row', { class: 'j-list-footer' }, [
+        h('a-col', {
+          props: {
+            span: 4,
+            offset: 20,
+          },
+        }, [
+          h('a-button', {
+            props: {
+              type: 'dashed',
+            },
+            style: 'width: 100%;',
+            on: {
+              click: this.add,
+            },
+          }, [
+            h('icon', { props: { type: 'plus' } }),
+            this.$t('common_114'),
+          ]),
+        ]),
+      ])
     },
     add () {
       this.list.push(this.size)

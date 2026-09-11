@@ -1,5 +1,5 @@
 <template>
-  <div class="page-body" :style="`padding-bottom:${needMarginBottom ? '74px' : ''}`">
+  <div class="page-body">
     <slot />
   </div>
 </template>
@@ -7,12 +7,6 @@
 <script>
 export default {
   name: 'PageBody',
-  props: {
-    needMarginBottom: {
-      type: Boolean,
-      default: false,
-    },
-  },
 }
 </script>
 

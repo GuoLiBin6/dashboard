@@ -25,6 +25,7 @@
 
 <script>
 import * as R from 'ramda'
+import { h } from 'vue'
 import { mapGetters } from 'vuex'
 import {
   getNameDescriptionTableColumn,
@@ -81,9 +82,11 @@ export default {
           onManager: this.onManager,
           hideField: true,
           slotCallback: row => {
-            return (
-              <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-            )
+            return h('side-page-trigger', {
+              onTrigger: () => this.handleOpenSidepage(row),
+            }, {
+              default: () => row.name,
+            })
           },
         }),
         {

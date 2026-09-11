@@ -52,10 +52,12 @@ export default {
       getNameDescriptionTableColumn({
         onManager: this.onManager,
         hideField: true,
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row, 'gpu-detail') }>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row, 'gpu-detail'),
+            },
+          }, row.name)
         },
       }),
       {
@@ -80,10 +82,14 @@ export default {
           default: ({ row }, h) => {
             const iconType = getVendorIconType(row)
             return [
-              <div class='d-flex'>
-                <span class='text-truncate'>{ row.model }</span>
-                { iconType ? <icon class="ml-1" style="line-height: 24px" type={ iconType } /> : null }
-              </div>,
+              h('div', { class: 'd-flex' }, [
+                h('span', { class: 'text-truncate' }, row.model),
+                iconType ? h('icon', {
+                  class: 'ml-1',
+                  style: { lineHeight: '24px' },
+                  props: { type: iconType },
+                }) : null,
+              ]),
             ]
           },
         },
@@ -102,12 +108,31 @@ export default {
               } else {
                 const url = 'https://admin.pci-ids.ucw.cz/read/PC/' + row.vendor_device_id.replace(':', '/')
                 return [
-                  <list-body-cell-wrap copy hideField={true} field='vendor_device_id' row={row} message={row.vendor_device_id}>
-                    <div class='d-flex'>
-                      <span class='text-truncate'>{ row.vendor_device_id }</span>
-                      <a href={ url } target="pciid"><a-icon type="link" /></a>
-                    </div>
-                  </list-body-cell-wrap>,
+                  h('list-body-cell-wrap', {
+                    props: {
+                      copy: true,
+                      hideField: true,
+                      field: 'vendor_device_id',
+                      row,
+                      message: row.vendor_device_id,
+                    },
+                  }, [
+                    h('div', { class: 'd-flex' }, [
+                      h('span', { class: 'text-truncate' }, row.vendor_device_id),
+                      h('a', {
+                        attrs: {
+                          href: url,
+                          target: 'pciid',
+                        },
+                      }, [
+                        h('icon', {
+                          props: {
+                            type: 'link',
+                          },
+                        }),
+                      ]),
+                    ]),
+                  ]),
                 ]
               }
             }
@@ -136,11 +161,15 @@ export default {
             const ret = []
             if (row.device_path) {
               ret.push(
-                [
-                  <list-body-cell-wrap copy hideField={true} field='device_path' row={row} message={row.device_path}>
-                    {row.device_path}
-                  </list-body-cell-wrap>,
-                ],
+                h('list-body-cell-wrap', {
+                  props: {
+                    copy: true,
+                    hideField: true,
+                    field: 'device_path',
+                    row,
+                    message: row.device_path,
+                  },
+                }, row.device_path),
               )
             }
             return ret
@@ -169,23 +198,26 @@ export default {
         slots: {
           default: ({ row }, h) => {
             const guests = getGuestList(row)
-            if (this.isPreLoad && !guests.length) return [<data-loading />]
+            if (this.isPreLoad && !guests.length) return [h('data-loading')]
             if (!guests.length) return '-'
             return [
-              <div>
-                {guests.map((guest, index) => (
-                  <div class="d-flex align-items-center" key={index}>
-                    <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row, 'associated-instances') }>
-                      { guest.name }
-                    </side-page-trigger>
-                    {guest.status ? (
-                      <div class="ml-2">
-                        <status status={ guest.status } statusModule='server' />
-                      </div>
-                    ) : null}
-                  </div>
-                ))}
-              </div>,
+              h('div', {}, guests.map((guest, index) => {
+                return h('div', { class: 'd-flex align-items-center', key: index }, [
+                  h('side-page-trigger', {
+                    on: {
+                      trigger: () => this.handleOpenSidepage(row, 'associated-instances'),
+                    },
+                  }, guest.name),
+                  guest.status ? h('div', { class: 'ml-2' }, [
+                    h('status', {
+                      props: {
+                        status: guest.status,
+                        statusModule: 'server',
+                      },
+                    }),
+                  ]) : null,
+                ])
+              })),
             ]
           },
         },
@@ -199,7 +231,7 @@ export default {
         title: i18n.t('compute.text_484'),
         hideField: true,
         slotCallback: row => {
-          if (this.isPreLoad && !(row.host && row.host_id)) return [<data-loading />]
+          if (this.isPreLoad && !(row.host && row.host_id)) return [this.$createElement('data-loading')]
           return row.host || row.host_id
         },
       }),

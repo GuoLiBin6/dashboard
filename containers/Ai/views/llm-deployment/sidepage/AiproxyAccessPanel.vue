@@ -72,7 +72,7 @@
         <div class="mb-1">{{ $t('aice.aiproxy.access_protocol') }}</div>
         <p class="text-color-help mb-2">{{ $t('aice.aiproxy.access_protocol_hint') }}</p>
         <a-radio-group
-          v-model="activeProtocol"
+          v-model:value="activeProtocol"
           button-style="solid"
           size="small">
           <a-radio-button value="openai">
@@ -109,7 +109,7 @@
       <div v-if="showModelSelect" class="mb-3">
         <div class="mb-1">{{ $t('aice.aiproxy.client_model_select') }}</div>
         <a-select
-          v-model="selectedClientModelId"
+          v-model:value="selectedClientModelId"
           class="client-model-select"
           style="width: 100%; max-width: 480px;">
           <a-select-option
@@ -319,7 +319,7 @@ export default {
     this.syncPollingState()
     this.enrichBindingDisplayNames()
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.stopPolling()
   },
   methods: {

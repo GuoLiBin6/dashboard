@@ -64,10 +64,15 @@ export default {
           hideField: true,
           addLock: true,
           addBackup: true,
-          slotCallback: row => {
-            return (
-              <side-page-trigger onTrigger={ () => this.sidePageTriggerHandle(this, 'VmInstanceSidePage', { id: row.id, resource: 'servers' }) }>{ row.name }</side-page-trigger>
-            )
+          slotCallback: (row, h) => {
+            const hFn = h || this.$createElement
+            return [
+              hFn('side-page-trigger', {
+                on: {
+                  trigger: () => this.sidePageTriggerHandle(this, 'VmInstanceSidePage', { id: row.id, resource: 'servers' }),
+                },
+              }, row.name),
+            ]
           },
         }),
         getTagTableColumn({ onManager: this.onManager, resource: 'server', columns: () => this.columns }),
@@ -79,13 +84,20 @@ export default {
           minWidth: 120,
           sortable: true,
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
+              const hFn = h || this.$createElement
               const ret = []
               if (row.instance_type) {
-                ret.push(<div class='text-truncate' style={{ color: '#0A1F44' }}>{ row.instance_type }</div>)
+                ret.push(hFn('div', {
+                  class: 'text-truncate',
+                  style: { color: 'var(--oc-color-text-heading)' },
+                }, row.instance_type))
               }
               const config = row.vcpu_count + 'C' + sizestr(row.vmem_size, 'M', 1024) + (row.disk ? sizestr(row.disk, 'M', 1024) : '')
-              return ret.concat(<div class='text-truncate' style={{ color: '#53627C' }}>{ config }</div>)
+              return ret.concat(hFn('div', {
+                class: 'text-truncate',
+                style: { color: 'var(--oc-color-text-secondary)' },
+              }, config))
             },
           },
         },
@@ -102,7 +114,7 @@ export default {
               const version = (row.metadata && row.metadata.os_version) ? `${row.metadata.os_version}` : ''
               const tooltip = (version.includes(name) ? version : `${name} ${version}`) || this.$t('compute.text_339') // 去重
               return [
-                <SystemIcon tooltip={ tooltip } name={ name } />,
+                this.$createElement(SystemIcon, { props: { tooltip, name } }),
               ]
             },
           },
@@ -113,7 +125,7 @@ export default {
           width: 50,
           slots: {
             default: ({ row }) => {
-              return [<PasswordFetcher serverId={ row.id } resourceType='servers' />]
+              return [this.$createElement(PasswordFetcher, { props: { serverId: row.id, resourceType: 'servers' } })]
             },
           },
         },
@@ -133,19 +145,20 @@ export default {
           showOverflow: 'ellipsis',
           slots: {
             default: ({ row }) => {
+              const h = this.$createElement
               const ret = []
               if (row.billing_type === 'postpaid') {
-                ret.push(<div style={{ color: '#0A1F44' }}>{this.$t('billingType.postpaid')}</div>)
+                ret.push(h('div', { style: { color: 'var(--oc-color-text-heading)' } }, this.$t('billingType.postpaid')))
               } else if (row.billing_type === 'prepaid') {
-                ret.push(<div style={{ color: '#0A1F44' }}>{this.$t('billingType.postpaid')}</div>)
+                ret.push(h('div', { style: { color: 'var(--oc-color-text-heading)' } }, this.$t('billingType.prepaid')))
               }
               if (row.expired_at) {
                 const dateArr = this.$moment(row.expired_at).fromNow().split(' ')
                 const date = dateArr.join(' ')
                 const seconds = this.$moment(row.expired_at).diff(new Date()) / 1000
-                const textColor = seconds / 24 / 60 / 60 < 7 ? '#DD2727' : '#53627C'
+                const textColor = seconds / 24 / 60 / 60 < 7 ? '#DD2727' : 'var(--oc-color-text-secondary)'
                 const text = seconds < 0 ? this.$t('compute.text_499') : this.$t('compute.text_500', [date])
-                ret.push(<div style={{ color: textColor }}>{ text }</div>)
+                ret.push(h('div', { style: { color: textColor } }, text))
               }
               return ret
             },

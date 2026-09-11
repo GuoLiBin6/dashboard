@@ -1,7 +1,7 @@
 <template>
   <div class="server-password">
-    <a-form-item class="mb-0">
-      <a-radio-group :disabled="disabled" v-decorator="decorators.loginType" @change="loginTypeChange">
+    <a-form-item class="mb-2">
+      <a-radio-group :value="vmLoginType" :disabled="disabled" v-decorator="decorators.loginType" @change="loginTypeChange">
         <a-radio-button v-for="item of loginTypeMap" :value="item.key" :key="item.key" :disabled="disabledLoginTypes.includes(item.key)">
           {{ item.label }}
           <help-tooltip v-if="['image', 'keypair'].includes(item.key)" :name="`${item.key}Password`" class="ml-2" />

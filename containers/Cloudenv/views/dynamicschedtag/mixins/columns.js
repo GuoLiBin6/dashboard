@@ -7,10 +7,11 @@ export default {
       getNameDescriptionTableColumn({
         onManager: this.onManager,
         hideField: true,
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          const hFn = h || this.$createElement
+          return hFn('side-page-trigger', {
+            on: { trigger: () => this.handleOpenSidepage(row) },
+          }, row.name)
         },
       }),
       getEnabledTableColumn(),
@@ -19,7 +20,7 @@ export default {
         title: i18n.t('cloudenv.text_18'),
         hideField: true,
         slotCallback: (row) => {
-          if (this.isPreLoad && !row.schedtag) return [<data-loading />]
+          if (this.isPreLoad && !row.schedtag) return [this.$createElement('data-loading')]
           return row.schedtag
         },
       }),

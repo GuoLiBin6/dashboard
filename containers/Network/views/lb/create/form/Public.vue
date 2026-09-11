@@ -1,7 +1,7 @@
 <template>
   <a-form :form="form.fc" class="mt-3" v-bind="formItemLayout">
-    <a-form-item :label="$t('network.text_205', [$t('dictionary.project')])" class="mb-0">
-      <domain-project :fc="form.fc" :decorators="decorators" :domain.sync="domain" :project.sync="project" :labelInValue="false" />
+    <a-form-item :label="$t('network.text_205', [$t('dictionary.project')])">
+      <domain-project :fc="form.fc" :decorators="decorators" v-model:domain="domain" v-model:project="project" :labelInValue="false" />
     </a-form-item>
     <a-form-item :label="$t('network.text_21')">
       <a-input v-decorator="decorators.name" :placeholder="$t('validator.resourceName')" />
@@ -72,7 +72,7 @@
             resource="networks"
             need-params
             filterable
-            :item.sync="networkObj"
+            v-model:item="networkObj"
             :params="networkParams"
             :select-props="{ placeholder: $t('network.text_275') }" />
         </a-col>

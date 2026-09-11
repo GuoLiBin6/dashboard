@@ -1,7 +1,8 @@
 <template>
   <base-dialog @cancel="cancelDialog" width="1000px">
-    <div slot="header">{{$t('common.text00093')}}</div>
-    <div class="clearfix pr-2" slot="body">
+    <template #header>{{$t('common.text00093')}}</template>
+    <template #body>
+      <div class="clearfix pr-2">
       <div class="info-wrapper d-flex flex-wrap pb-3" v-if="params.currentData">
         <div class="info-item" v-for="(item, index) in columns" :key="index">
           <div class="label">{{ item.title }}</div>
@@ -14,7 +15,7 @@
         v-clipboard:copy="params.data"
         v-clipboard:success="copySuccess"
         v-clipboard:error="copyError">
-        <a-icon class="primary-color" type="copy" />
+        <icon class="primary-color" type="copy" />
         <a-button type="link" size="small">{{$t('common.text00094')}}</a-button>
       </div>
       <div v-if="screenShotId" class="float-right mr-3">
@@ -27,14 +28,17 @@
           <div class="screen-download" @click="downloadScreenshot">{{ $t('common.download_screenshot') }}</div>
         </div>
       </div>
-    </div>
-    <div slot="footer" class="d-flex justify-content-between" v-if="params.currentData">
-      <a-button :disabled="prevDisabled" @click="changeCurrentData('prev')"> <a-icon type="left" />{{ $t('common.prev_one') }}</a-button>
-      <a-button :disabled="nextDisabled" @click="changeCurrentData('next')">{{ $t('common.next_one') }} <a-icon type="right" /></a-button>
-    </div>
-    <div slot="footer" v-else>
+      </div>
+    </template>
+    <template #footer v-if="params.currentData">
+      <div class="d-flex justify-content-between">
+      <a-button :disabled="prevDisabled" @click="changeCurrentData('prev')"> <icon type="left" />{{ $t('common.prev_one') }}</a-button>
+      <a-button :disabled="nextDisabled" @click="changeCurrentData('next')">{{ $t('common.next_one') }} <icon type="right" style="transform: rotate(180deg);" /></a-button>
+      </div>
+    </template>
+    <template #footer v-else>
       <a-button type="primary" @click="cancelDialog">{{ $t('dialog.ok') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

@@ -38,10 +38,12 @@ export default {
         onManager: this.onManager,
         hideField: true,
         addLock: true,
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            props: {
+              onTrigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getStatusTableColumn({ statusModule: 'nat', vm: this }),

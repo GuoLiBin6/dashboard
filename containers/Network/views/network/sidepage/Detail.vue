@@ -44,21 +44,31 @@ export default {
             field: 'vpc',
             title: 'VPC',
             hideField: true,
-            slotCallback: row => {
+            slotCallback: (row, h) => {
               if (!row.vpc) return '-'
-              return [
-                <side-page-trigger permission='vpcs_get' name='VpcSidePage' id={row.vpc_id} vm={this}>{ row.vpc }</side-page-trigger>,
-              ]
+              return [h('side-page-trigger', {
+                props: {
+                  permission: 'vpcs_get',
+                  name: 'VpcSidePage',
+                  id: row.vpc_id,
+                  vm: this,
+                },
+              }, row.vpc)]
             },
           }),
           {
             field: 'wire',
             title: this.$t('network.text_571'),
             slots: {
-              default: ({ row }) => {
-                return [
-                  <side-page-trigger permission='wires_get' name='WireSidePage' id={row.wire_id} vm={this}>{ row.wire }</side-page-trigger>,
-                ]
+              default: ({ row }, h) => {
+                return [h('side-page-trigger', {
+                  props: {
+                    permission: 'wires_get',
+                    name: 'WireSidePage',
+                    id: row.wire_id,
+                    vm: this,
+                  },
+                }, row.wire)]
               },
             },
           },
@@ -124,13 +134,20 @@ export default {
             title: 'dhcp_relay',
             slots: {
               default: ({ row }) => {
+                const h = this.$createElement
                 const ips = (row.guest_dhcp || '').split(',')
                 if (!ips.length) return '-'
                 const ret = ips.map(item => {
                   const obj = { ip: item }
-                  return <list-body-cell-wrap copy field='ip' row={obj} hideField={true} message={item}>
-                    {item}
-                  </list-body-cell-wrap>
+                  return h('list-body-cell-wrap', {
+                    props: {
+                      copy: true,
+                      field: 'ip',
+                      row: obj,
+                      hideField: true,
+                      message: item,
+                    },
+                  }, item)
                 })
                 return ret
               },
@@ -148,14 +165,27 @@ export default {
             title: this.$t('network.text_622'),
             slots: {
               default: ({ row }) => {
+                const h = this.$createElement
+                const portsUsed = row.ports_used + row.ports6_used
+                const portsUsedNode = portsUsed <= 0
+                  ? 0
+                  : h('a', {
+                    on: {
+                      click: () => this.$emit('tab-change', 'i-p-list'),
+                    },
+                  }, portsUsed)
                 return [
-                  <i18n path='network.text_735' tag="div">
-                    <template slot='ports'>{ row.ports }</template>
-                    <template slot='ports_used'>
-                      { row.ports_used + row.ports6_used <= 0 ? 0 : <a onClick={ () => this.$emit('tab-change', 'i-p-list') }>{row.ports_used + row.ports6_used}</a> }
-                    </template>
-                    <template slot='reserve_vnics'>{ row.reserve_vnics }</template>
-                  </i18n>,
+                  h('i18n', {
+                    props: {
+                      path: 'network.text_735',
+                      tag: 'div',
+                    },
+                    scopedSlots: {
+                      ports: () => row.ports,
+                      ports_used: () => portsUsedNode,
+                      reserve_vnics: () => row.reserve_vnics,
+                    },
+                  }),
                 ]
               },
             },
@@ -165,13 +195,20 @@ export default {
             title: this.$t('network.dns_server'),
             slots: {
               default: ({ row }) => {
+                const h = this.$createElement
                 const ips = (row.guest_dns || '').split(',')
                 if (!ips.length) return '-'
                 const ret = ips.map(item => {
                   const obj = { ip: item }
-                  return <list-body-cell-wrap copy field='ip' row={obj} hideField={true} message={item}>
-                    {item}
-                  </list-body-cell-wrap>
+                  return h('list-body-cell-wrap', {
+                    props: {
+                      copy: true,
+                      field: 'ip',
+                      row: obj,
+                      hideField: true,
+                      message: item,
+                    },
+                  }, item)
                 })
                 return ret
               },
@@ -189,13 +226,20 @@ export default {
             title: this.$t('network.ntp_server'),
             slots: {
               default: ({ row }) => {
+                const h = this.$createElement
                 const ips = (row.guest_ntp || '').split(',')
                 if (!ips.length) return '-'
                 const ret = ips.map(item => {
                   const obj = { ip: item }
-                  return <list-body-cell-wrap copy field='ip' row={obj} hideField={true} message={item}>
-                    {item}
-                  </list-body-cell-wrap>
+                  return h('list-body-cell-wrap', {
+                    props: {
+                      copy: true,
+                      field: 'ip',
+                      row: obj,
+                      hideField: true,
+                      message: item,
+                    },
+                  }, item)
                 })
                 return ret
               },
@@ -236,20 +280,47 @@ export default {
             title: () => {
               return [
                 this.$t('network.additional_wires.title'),
-                <help-tooltip class="ml-1" text={ this.$t('network.additional_wires.title.tooltip') } />,
+                h('help-tooltip', {
+                  class: 'ml-1',
+                  props: {
+                    text: this.$t('network.additional_wires.title.tooltip'),
+                  },
+                }),
               ]
             },
             slots: {
-              default: ({ row }) => {
+              default: ({ row }, h) => {
                 let comps = []
-                const link = <span class='wire-edit' onclick={this.setWireHandle}>
-                  <a-icon class='mr-1' type="edit" style="font-size: 12px;" />{ this.$t('common.setting') }</span>
+                const link = h('span', {
+                  class: 'wire-edit',
+                  on: {
+                    click: this.setWireHandle,
+                  },
+                }, [
+                  h('icon', {
+                    class: 'mr-1',
+                    props: {
+                      type: 'edit',
+                    },
+                    style: {
+                      fontSize: '12px',
+                    },
+                  }),
+                  this.$t('common.setting'),
+                ])
                 if (!row.additional_wires) {
                   comps.push(link)
                   return comps
                 }
                 comps = row.additional_wires.map((item, idx) => {
-                  return <side-page-trigger permission='wires_get' name='WireSidePage' id={item.wire_id} vm={this}>{ item.wire }{ idx < row.additional_wires.length - 1 ? ',' : '' }</side-page-trigger>
+                  return h('side-page-trigger', {
+                    props: {
+                      permission: 'wires_get',
+                      name: 'WireSidePage',
+                      id: item.wire_id,
+                      vm: this,
+                    },
+                  }, `${item.wire}${idx < row.additional_wires.length - 1 ? ',' : ''}`)
                 })
                 comps.push(link)
                 return comps

@@ -48,9 +48,11 @@ export default {
           minWidth: 100,
           sortable: true,
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               return [
-                <side-page-trigger name='DiskSidePage' id={row.disk_id} vm={this} init>{row.disk_name}</side-page-trigger>,
+                h('side-page-trigger', {
+                  props: { name: 'DiskSidePage', id: row.disk_id, vm: this, init: true },
+                }, row.disk_name),
               ]
             },
           },

@@ -2,7 +2,9 @@
   <div>
     <a-tabs v-model="currentTab">
       <a-tab-pane :key="item.id" v-for="item in searchMapsObj" :disabled="item.resData.status && item.resData.status !== 200">
-        <span slot="tab" :class="{ 'text-color-help': getTotal(item) === 0 }">{{ item.label }}({{ getTotal(item) }})</span>
+        <template #tab>
+          <span :class="{ 'text-color-help': getTotal(item) === 0 }">{{ item.label }}({{ getTotal(item) }})</span>
+        </template>
       </a-tab-pane>
     </a-tabs>
     <div v-if="!currentTab">

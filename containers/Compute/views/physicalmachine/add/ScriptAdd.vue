@@ -42,7 +42,7 @@ export default {
       },
     }
   },
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {
@@ -74,10 +74,8 @@ export default {
 .script-add-wrap {
   line-height: 1.5rem;
   max-width: 600px;
-  ::v-deep {
-    .CodeMirror {
-      height: auto !important;
-    }
+  :deep(.CodeMirror) {
+    height: auto !important;
   }
 }
 </style>

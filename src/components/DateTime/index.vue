@@ -1,8 +1,8 @@
 <template>
-  <div>
-    <a-radio-group v-model="time.dateMode" @change="handleDateModeChange">
+  <div class="date-time">
+    <a-radio-group class="date-time-radio-group" v-model:value="time.dateMode" @change="handleDateModeChange">
       <a-radio-button v-for="item in timeOpts" :key="item.key" :value="item.key">{{ item.label }}</a-radio-button>
-      <custom-date :customDate.sync="customDate" :time.sync="time.dateMode" :customTimeLabel="customTimeLabel" :showFormat="customTimeFormat" :canSelectTodayAfter="canSelectTodayAfter" :isHideCustomAdvanced="isHideCustomAdvanced" />
+      <custom-date v-model:customDate="customDate" v-model:time="time.dateMode" :customTimeLabel="customTimeLabel" :showFormat="customTimeFormat" :canSelectTodayAfter="canSelectTodayAfter" :isHideCustomAdvanced="isHideCustomAdvanced" />
     </a-radio-group>
   </div>
 </template>
@@ -295,3 +295,21 @@ export default {
   },
 }
 </script>
+
+<style lang="less" scoped>
+.date-time {
+  display: inline-flex;
+  max-width: 100%;
+  vertical-align: middle;
+}
+// 整组不换行，避免「自定义」单独掉到下一行造成操作栏错乱
+.date-time-radio-group {
+  display: inline-flex !important;
+  flex-wrap: nowrap !important;
+  white-space: nowrap;
+  max-width: 100%;
+  :deep(.ant-radio-button-wrapper) {
+    flex-shrink: 0;
+  }
+}
+</style>

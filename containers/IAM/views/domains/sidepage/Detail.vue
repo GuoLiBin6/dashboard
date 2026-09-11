@@ -3,8 +3,8 @@
     <a-alert type="warning" class="mb-2" :showIcon="false" :message="$t('system.text_586')" banner />
     <div class="d-flex justify-content-start">
       <a-button :disabled="loading" @click="refresh">
-        <a-icon v-if="loading" type="sync" spin />
-        <a-icon v-else type="sync" />
+        <icon v-if="loading" type="sync" spin />
+        <icon v-else type="sync" />
       </a-button>
     </div>
     <detail
@@ -77,10 +77,13 @@ export default {
           field: 'diskList',
           width: '30%',
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (!row.diskList.length) return '-'
               return row.diskList.map(item => {
-                return <div>{sizestrWithUnit(item.value, 'M', 1024)}{this.$t('IAM.text_8', [this.$te(`common.storage.${item.medium_type}`) ? this.$t(`common.storage.${item.medium_type}`) : item.medium_type])}</div>
+                return h('div', [
+                  sizestrWithUnit(item.value, 'M', 1024),
+                  this.$t('IAM.text_8', [this.$te(`common.storage.${item.medium_type}`) ? this.$t(`common.storage.${item.medium_type}`) : item.medium_type]),
+                ])
               })
             },
           },
@@ -90,11 +93,17 @@ export default {
           field: 'gpu',
           width: '15%',
           slots: {
-            default: ({ row }) => {
-              return [<div>
-                <div>{this.$t('IAM.text_5', [row.gpu.gpu])}{this.$t('IAM.text_8', [this.$t('IAM.text_9')])}</div>
-                <div>{this.$t('IAM.text_5', [row.gpu.gpu_server])}{this.$t('IAM.text_8', [this.$t('common_407')])}</div>
-              </div>]
+            default: ({ row }, h) => {
+              return [h('div', [
+                h('div', [
+                  this.$t('IAM.text_5', [row.gpu.gpu]),
+                  this.$t('IAM.text_8', [this.$t('IAM.text_9')]),
+                ]),
+                h('div', [
+                  this.$t('IAM.text_5', [row.gpu.gpu_server]),
+                  this.$t('IAM.text_8', [this.$t('common_407')]),
+                ]),
+              ])]
             },
           },
         },
@@ -171,7 +180,11 @@ export default {
             slots: {
               default: ({ row }, h) => {
                 const ret = [
-                  <a onClick={ () => this.$emit('tab-change', 'project-list') }>{this.$t('system.text_459', [row.project_count || 0])}</a>,
+                  h('a', {
+                    on: {
+                      click: () => this.$emit('tab-change', 'project-list'),
+                    },
+                  }, this.$t('system.text_459', [row.project_count || 0])),
                 ]
                 return ret
               },
@@ -189,10 +202,13 @@ export default {
             title: this.$t('dictionary.user'),
             slots: {
               default: ({ row }, h) => {
-                const ret = [
-                  <a onClick={ () => this.$emit('tab-change', 'user-list') }>{this.$t('system.text_459', [row.user_count || 0])}</a>,
+                return [
+                  h('a', {
+                    on: {
+                      click: () => this.$emit('tab-change', 'user-list'),
+                    },
+                  }, this.$t('system.text_459', [row.user_count || 0])),
                 ]
-                return ret
               },
             },
           },
@@ -208,10 +224,13 @@ export default {
             title: this.$t('dictionary.role'),
             slots: {
               default: ({ row }, h) => {
-                const ret = [
-                  <a onClick={ () => this.$emit('tab-change', 'role-list') }>{this.$t('system.text_459', [row.role_count || 0])}</a>,
+                return [
+                  h('a', {
+                    on: {
+                      click: () => this.$emit('tab-change', 'role-list'),
+                    },
+                  }, this.$t('system.text_459', [row.role_count || 0])),
                 ]
-                return ret
               },
             },
           },
@@ -226,7 +245,11 @@ export default {
             slots: {
               default: ({ row }, h) => {
                 const ret = [
-                  <a onClick={ () => this.$emit('tab-change', 'cloudaccount-list') }>{this.$t('system.text_459', [this.extResources.cloudaccounts || 0])}</a>,
+                  h('a', {
+                    on: {
+                      click: () => this.$emit('tab-change', 'cloudaccount-list'),
+                    },
+                  }, this.$t('system.text_459', [this.extResources.cloudaccounts || 0])),
                 ]
                 return ret
               },
@@ -261,7 +284,12 @@ export default {
         slots: {
           default: ({ row }, h) => {
             return [
-              <vxe-grid class="mb-2" resizable data={ this.usageData } columns={ this.usageColumns } />,
+              h('table-lite-grid', {
+                class: 'mb-2',
+                columnConfig: { resizable: true },
+                data: this.usageData,
+                columns: this.usageColumns,
+              }),
             ]
           },
         },

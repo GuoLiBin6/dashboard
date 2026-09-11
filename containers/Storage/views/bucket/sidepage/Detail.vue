@@ -58,9 +58,22 @@ const RenderSizeTitle = {
     this.fetchSync()
   },
   render () {
-    return (
-      <div>{ this.$t('storage.text_172') } <a onClick={this.fetchSync}><a-icon type="sync" spin={this.loading} /></a></div>
-    )
+    const h = this.$createElement
+    return h('div', [
+      this.$t('storage.text_172') + ' ',
+      h('a', {
+        on: {
+          click: this.fetchSync,
+        },
+      }, [
+        h('icon', {
+          props: {
+            type: 'sync',
+            spin: this.loading,
+          },
+        }),
+      ]),
+    ])
   },
 }
 export default {
@@ -98,8 +111,16 @@ export default {
           hideField: true,
           slotCallback: row => {
             if (!row.cloudregion) return '-'
+            const h = this.$createElement
             return [
-              <side-page-trigger permission='areas_get' name='CloudregionSidePage' id={row.cloudregion_id} vm={this}>{ row.cloudregion }</side-page-trigger>,
+              h('side-page-trigger', {
+                props: {
+                  permission: 'areas_get',
+                  name: 'CloudregionSidePage',
+                  id: row.cloudregion_id,
+                  vm: this,
+                },
+              }, row.cloudregion),
             ]
           },
         }),
@@ -129,21 +150,35 @@ export default {
     extraInfo () {
       const referer = {
         title: ({ row }, h) => {
-          return h('div', {
-            class: 'detail-title',
-          }, [
-            <span class='ml-2'>{i18n.t('storage.text_213')}</span>,
-            <a-tooltip>
-              { !this.isSupportReferer
-                ? (this._isOwner
-                  ? (HYPERVISORS_MAP[row.provider.toLowerCase()]
-                    ? <template slot="title">{i18n.t('storage.text_235', [HYPERVISORS_MAP[row.provider.toLowerCase()].label])}</template>
-                    : '')
-                  : this.$t('storage.text_257'))
-                : null }
-              <a-button type="link" class="ml-2" disabled={ !this.isSupportReferer && this._isOwner } onClick={() => this.handleSetReferer(row)}>{ i18n.t('common.setting') }</a-button>
-            </a-tooltip>,
-          ])
+          const children = []
+          children.push(h('span', { class: 'ml-2' }, i18n.t('storage.text_213')))
+          const tooltipChildren = []
+          if (!this.isSupportReferer) {
+            if (this._isOwner) {
+              const providerConf = HYPERVISORS_MAP[row.provider.toLowerCase()]
+              if (providerConf) {
+                tooltipChildren.push(
+                  h('span', { slot: 'title' }, i18n.t('storage.text_235', [providerConf.label])),
+                )
+              }
+            } else {
+              tooltipChildren.push(this.$t('storage.text_257'))
+            }
+          }
+          tooltipChildren.push(
+            h('a-button', {
+              class: 'ml-2',
+              props: {
+                type: 'link',
+                disabled: !this.isSupportReferer && this._isOwner,
+              },
+              on: {
+                click: () => this.handleSetReferer(row),
+              },
+            }, i18n.t('common.setting')),
+          )
+          children.push(h('a-tooltip', tooltipChildren))
+          return h('div', { class: 'detail-title' }, children)
         },
         items: [],
         hidden: () => this.$isScopedPolicyMenuHidden('oss_hidden_columns.referer'),
@@ -193,12 +228,16 @@ export default {
               title: this.$t('storage.text_219'),
               slots: {
                 default: ({ row }) => {
+                  const h = this.$createElement
                   return row.referer.domain_list ? row.referer.domain_list.map(item => {
-                    return (
-                      <list-body-cell-wrap hideField copy title={ item } message={ item }>
-                        <span>{ item }</span>
-                      </list-body-cell-wrap>
-                    )
+                    return h('list-body-cell-wrap', {
+                      props: {
+                        hideField: true,
+                        copy: true,
+                        title: item,
+                        message: item,
+                      },
+                    }, [h('span', item)])
                   }) : '-'
                 },
               },
@@ -221,12 +260,11 @@ export default {
                   field: 'url',
                   title: 'URL',
                   slots: {
-                    default: ({ row }) => {
-                      return [
-                        <div>
-                          <a href={row.url}>{row.url}</a>
-                          <copy class="ml-1" message={row.url} />
-                        </div>]
+                    default: ({ row }, h) => {
+                      return [h('div', [
+                        h('a', { attrs: { href: row.url } }, row.url),
+                        h('copy', { class: 'ml-1', props: { message: row.url } }),
+                      ])]
                     },
                   },
                 },
@@ -235,9 +273,13 @@ export default {
                   title: this.$t('storage.text_140'),
                 },
               ]
-              return [
-                <vxe-grid class="mb-2" data={ this.data.access_urls || [] } columns={ columns } />,
-              ]
+              return [h('table-lite-grid', {
+                class: 'mb-2',
+                props: {
+                  data: this.data.access_urls || [],
+                  columns,
+                },
+              })]
             },
           },
           hidden: () => this.$isScopedPolicyMenuHidden('oss_hidden_columns.url'),
@@ -255,12 +297,11 @@ export default {
                   field: 'domain',
                   title: this.$t('storage.text_221'),
                   slots: {
-                    default: ({ row }) => {
-                      return [
-                        <div>
-                          <a href={row.domain}>{row.domain}</a>
-                          <copy class="ml-1" message={row.domain} />
-                        </div>]
+                    default: ({ row }, h) => {
+                      return [h('div', [
+                        h('a', { attrs: { href: row.domain } }, row.domain),
+                        h('copy', { class: 'ml-1', props: { message: row.domain } }),
+                      ])]
                     },
                   },
                 },
@@ -291,7 +332,13 @@ export default {
                 },
               ]
               return [
-                <vxe-grid class="mb-2" data={ this.data.cdn_domains || [] } columns={ columns } />,
+                h('table-lite-grid', {
+                  class: 'mb-2',
+                  props: {
+                    data: this.data.cdn_domains || [],
+                    columns: columns,
+                  },
+                }),
               ]
             },
           },
@@ -305,18 +352,42 @@ export default {
               title: this.$t('storage.text_231'),
               slots: {
                 default: ({ row }, h) => {
+                  const tooltipTitle = row.provider !== HYPERVISORS_MAP.qcloud.provider
+                    ? (this._isOwner
+                      ? (HYPERVISORS_MAP[row.provider.toLowerCase()]
+                        ? i18n.t('storage.text_236', [HYPERVISORS_MAP[row.provider.toLowerCase()].label])
+                        : '')
+                      : this.$t('storage.text_257'))
+                    : null
                   return [
-                    <list-body-cell-wrap class="float-left" copy row={ row } field='website_url' title={ row.website_url } />,
-                    <a-tooltip>
-                      { row.provider !== HYPERVISORS_MAP.qcloud.provider
-                        ? (this._isOwner
-                          ? (HYPERVISORS_MAP[row.provider.toLowerCase()]
-                            ? <template slot="title">{i18n.t('storage.text_236', [HYPERVISORS_MAP[row.provider.toLowerCase()].label])}</template>
-                            : '')
-                          : this.$t('storage.text_257'))
-                        : null }
-                      <a-button type="link" class="float-left ml-2" style="display: grid;" disabled={ row.provider !== HYPERVISORS_MAP.qcloud.provider && this._isOwner } onClick={() => this.handleSetWebsite(row)}>{ this.$t('common.setting') }</a-button>
-                    </a-tooltip>,
+                    h('list-body-cell-wrap', {
+                      class: 'float-left',
+                      props: {
+                        copy: true,
+                        row: row,
+                        field: 'website_url',
+                        title: row.website_url,
+                      },
+                    }),
+                    h('a-tooltip', {
+                      props: {
+                        title: tooltipTitle,
+                      },
+                    }, [
+                      h('a-button', {
+                        props: {
+                          type: 'link',
+                          disabled: row.provider !== HYPERVISORS_MAP.qcloud.provider && this._isOwner,
+                        },
+                        class: 'float-left ml-2',
+                        style: {
+                          display: 'grid',
+                        },
+                        on: {
+                          click: () => this.handleSetWebsite(row),
+                        },
+                      }, this.$t('common.setting')),
+                    ]),
                   ]
                 },
               },
@@ -325,7 +396,13 @@ export default {
           hidden: () => this.$isScopedPolicyMenuHidden('oss_hidden_columns.website_url'),
         },
         {
-          title: <RenderSizeTitle data={this.data} />,
+          title: () => {
+            return this.$createElement(RenderSizeTitle, {
+              props: {
+                data: this.data,
+              },
+            })
+          },
           items: [
             {
               field: 'size_bytes',
@@ -381,8 +458,13 @@ export default {
               slots: {
                 default: ({ row }, h) => {
                   return [
-                    <span>{ ACL_TYPE[row.acl] || row.acl }</span>,
-                    <a onClick={() => this.handleSetAcl(row)} class='ml-2'>{ this.$t('common.setting') }</a>,
+                    h('span', ACL_TYPE[row.acl] || row.acl),
+                    h('a', {
+                      class: 'ml-2',
+                      on: {
+                        click: () => this.handleSetAcl(row),
+                      },
+                    }, this.$t('common.setting')),
                   ]
                 },
               },

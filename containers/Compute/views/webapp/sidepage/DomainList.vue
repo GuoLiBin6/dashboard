@@ -42,10 +42,8 @@ export default {
           hideField: true,
           title: this.$t('table.title.name'),
           showDesc: false,
-          slotCallback: row => {
-            return (
-              <span>{ row.name }</span>
-            )
+          slotCallback: (row, h) => {
+            return h('span', row.name)
           },
         }),
         getStatusTableColumn({ statusModule: 'webappDomains' }),

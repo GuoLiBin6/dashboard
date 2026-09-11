@@ -1,6 +1,6 @@
 <template>
   <a-popover destroy-tooltip-on-hide overlay-class-name="tag-table-column-wrap">
-    <template slot="title">
+    <template #title>
       <div class="d-flex align-items-center">
         <div class="flex-fill">{{customTitle ? customTitle : $t('common_267')}}</div>
         <template v-if="validate.validate">
@@ -17,23 +17,25 @@
         </template>
       </div>
     </template>
-    <template slot="content">
+    <template #content>
       <div class="tag-table-column">
         <template v-if="tags.length <= 0">
           <loader :no-data-text="$t('common_268')" />
         </template>
         <template v-else>
-          <template v-for="item of tags">
+          <template v-for="item of tags" :key="`${item.key}${item.value}`">
             <span
               class="tag mb-1 text-truncate d-inline-block"
               :title="item.title"
-              :key="`${item.key}${item.value}`"
               :style="{ backgroundColor: item.backgroundColor, color: item.color, borderColor: item.color }">{{ item.title }}</span>
           </template>
         </template>
       </div>
     </template>
-    <icon type="res-tag" :class="iconClass" />
+    <!-- antdv4：自定义 icon 作 trigger 时需原生节点承接 hover/click -->
+    <span class="tag-table-column-trigger" @click.stop>
+      <icon type="res-tag" :class="iconClass" />
+    </span>
   </a-popover>
 </template>
 
@@ -170,7 +172,7 @@ export default {
   .wrap {
     margin: 0;
   }
-  & ::v-deep .ant-empty-image {
+  & :deep(.ant-empty-image) {
     height: 46px;
     .data-empty {
       margin-top: 0;
@@ -185,5 +187,11 @@ export default {
   font-size: 12px;
   border-style: solid;
   border-width: 1px;
+}
+.tag-table-column-trigger {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  line-height: 1;
 }
 </style>

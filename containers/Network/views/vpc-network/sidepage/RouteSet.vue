@@ -62,10 +62,12 @@ export default {
           minWidth: 100,
           sortable: true,
           slots: {
-            default: ({ row }) => {
-              return [
-                <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.vpc }</side-page-trigger>,
-              ]
+            default: ({ row }, h) => {
+              return [h('side-page-trigger', {
+                props: {
+                  onTrigger: () => this.handleOpenSidepage(row),
+                },
+              }, row.vpc)]
             },
           },
         },

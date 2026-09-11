@@ -1,20 +1,14 @@
 import Vue from 'vue'
+import { getMaxCloudShellHeight } from '@/utils/cloudshell'
 
 // v-cloudshellDragResize: cloudshell 拖拽/resize 属性
 Vue.directive('cloudshellDragResize', { // 属性名称cloudshellDragResize，前面加v- 使用
   bind (el, binding, vnode, oldVnode) {
     // const minWidth = 400
-    const awaiHeight = document.body.offsetHeight - 60
-    const minHeight = 25
+    const minHeight = 28
     const containerDom = el
     const dragDom = el.querySelector('.cloudshell-wrapper')
-    // const dialogHeaderEl = el.querySelector('.cloudshell-header')
-    // const headerResizeEl = el.querySelector('.header-resize-btn')
-    // dialogHeaderEl.style.cssText += ';cursor:move;'
-    // let initL = 5
-    // let initT = document.body.clientHeight - 355
-    // let initW = document.body.clientWidth - 10
-    // let initH = 350
+    // 顶部 15px 为拉伸热区；操作按钮区域在 onmousedown 中单独排除
 
     // 获取原有属性 ie dom元素.currentStyle 火狐谷歌 window.getComputedStyle(dom元素, null);
     // const sty = (function () {
@@ -172,6 +166,10 @@ Vue.directive('cloudshellDragResize', { // 属性名称cloudshellDragResize，�
       // }
 
       dragDom.onmousedown = e => {
+        // 操作按钮区域不进入拖拽拉伸，避免拦截 click
+        if (e.target && e.target.closest && e.target.closest('.cloudshell-action, .cloudshell-actions, .cloudshell-header-title')) {
+          return
+        }
         // const clientX = e.clientX
         const clientY = e.clientY
         // const elW = dragDom.clientWidth
@@ -183,47 +181,26 @@ Vue.directive('cloudshellDragResize', { // 属性名称cloudshellDragResize，�
           document.onmousemove = function (e) {
             // 移动时禁用默认事件
             e.preventDefault()
-            // 往左拉伸
-            // if (cursor === 'col-resize' && clientX > e.clientX) {
-            //   if (dragDom.clientWidth < minWidth) {
-            //     // console.log()
-            //   } else {
-            //     if (Math.abs(clientX - elL) < 20) { // 左
-            //       dragDom.style.width = Math.max(elW + (clientX - e.clientX) * 1, minWidth) + 'px'
-            //       dragDom.style.left = elL - (clientX - e.clientX) * 1 + 'px'
-            //     } else {
-            //       dragDom.style.width = Math.max(elW - (clientX - e.clientX) * 1, minWidth) + 'px'
-            //     }
-            //   }
-            // }
-            // // 往右拉伸
-            // if (cursor === 'col-resize' && clientX < e.clientX) {
-            //   if (dragDom.clientWidth < minWidth) {
-            //     // console.log()
-            //   } else {
-            //     if (Math.abs(clientX - elL) < 20) { // 右
-            //       dragDom.style.width = Math.max(elW + (clientX - e.clientX) * 1, minWidth) + 'px'
-            //       dragDom.style.left = elL - (clientX - e.clientX) * 1 + 'px'
-            //     } else {
-            //       dragDom.style.width = Math.max(elW - (clientX - e.clientX) * 1, minWidth) + 'px'
-            //     }
-            //   }
-            // }
+            // 按当前视口重算上安全边界（navbar + --oc-page-inset）
+            const maxHeight = getMaxCloudShellHeight()
             // 往上拉伸
             if (clientY > e.clientY) {
               if (dragDom.offsetTop < 0) {
                 // dragDom.style.top = '0px'
-              } else if (Math.max(elH + (clientY - e.clientY) * 1, minHeight) > awaiHeight) {
-                containerDom.style.flex = `0 0 ${awaiHeight}px`
-                containerDom.style.height = awaiHeight + 'px'
-                dragDom.style.height = awaiHeight + 'px'
-                dragDom.style.flex = `0 0 ${awaiHeight}px`
+              } else if (Math.max(elH + (clientY - e.clientY) * 1, minHeight) > maxHeight) {
+                containerDom.style.flex = `0 0 ${maxHeight}px`
+                containerDom.style.height = maxHeight + 'px'
+                containerDom.style.maxHeight = maxHeight + 'px'
+                dragDom.style.height = maxHeight + 'px'
+                dragDom.style.flex = `0 0 ${maxHeight}px`
               } else {
                 // dragDom.style.top = elT - (clientY - e.clientY) * 1 + 'px'
-                containerDom.style.flex = `0 0 ${Math.max(elH + (clientY - e.clientY) * 1, minHeight)}px`
-                containerDom.style.height = Math.max(elH + (clientY - e.clientY) * 1, minHeight) + 'px'
-                dragDom.style.height = Math.max(elH + (clientY - e.clientY) * 1, minHeight) + 'px'
-                dragDom.style.flex = `0 0 ${Math.max(elH + (clientY - e.clientY) * 1, minHeight)}px`
+                const nextH = Math.max(elH + (clientY - e.clientY) * 1, minHeight)
+                containerDom.style.flex = `0 0 ${nextH}px`
+                containerDom.style.height = nextH + 'px'
+                containerDom.style.maxHeight = maxHeight + 'px'
+                dragDom.style.height = nextH + 'px'
+                dragDom.style.flex = `0 0 ${nextH}px`
               }
             }
             // 往下拉伸
@@ -232,10 +209,12 @@ Vue.directive('cloudshellDragResize', { // 属性名称cloudshellDragResize，�
                 // dragDom.style.height = minHeight + 'px'
               } else {
                 // dragDom.style.top = elT - (clientY - e.clientY) * 1 + 'px'\
-                containerDom.style.flex = `0 0 ${Math.max(elH - (e.clientY - clientY) * 1, minHeight)}px`
-                containerDom.style.height = Math.max(elH - (e.clientY - clientY) * 1, minHeight) + 'px'
-                dragDom.style.height = Math.max(elH - (e.clientY - clientY) * 1, minHeight) + 'px'
-                dragDom.style.flex = `0 0 ${Math.max(elH - (e.clientY - clientY) * 1, minHeight)}px`
+                const nextH = Math.max(elH - (e.clientY - clientY) * 1, minHeight)
+                containerDom.style.flex = `0 0 ${nextH}px`
+                containerDom.style.height = nextH + 'px'
+                containerDom.style.maxHeight = maxHeight + 'px'
+                dragDom.style.height = nextH + 'px'
+                dragDom.style.flex = `0 0 ${nextH}px`
               }
             }
             binding.value()

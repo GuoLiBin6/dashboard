@@ -76,7 +76,7 @@ export default {
   computed: {
     ...mapGetters(['userInfo']),
   },
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {

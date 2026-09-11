@@ -1,6 +1,6 @@
 <template>
   <div>
-   <page-header :title="$t('dictionary.policy')" :tabs="tabs" :current-tab.sync="currentTab" />
+   <page-header :title="$t('dictionary.policy')" :tabs="tabs" v-model:currentTab="currentTab" />
    <page-body>
      <list ref="list" :id="listId" :type="currentTab" />
    </page-body>

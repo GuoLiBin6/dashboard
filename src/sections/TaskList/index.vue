@@ -56,21 +56,24 @@ export default {
     },
   },
   data () {
+    const taskStage = this.taskStage
     return {
       list: this.initList(),
       columns: [
         getNameDescriptionTableColumn({
           title: '#ID',
-          field: this.taskStage === 'archived' ? 'task_id' : 'id',
+          field: taskStage === 'archived' ? 'task_id' : 'id',
           showDesc: false,
           edit: false,
           minWidth: 200,
           onManager: this.onManager,
           hideField: true,
-          slotCallback: row => {
-            return (
-              <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{this.taskStage === 'archived' ? row.task_id : row.id}</side-page-trigger>
-            )
+          slotCallback: (row, h) => {
+            return h('side-page-trigger', {
+              on: {
+                trigger: () => this.handleOpenSidepage(row),
+              },
+            }, [this.taskStage === 'archived' ? row.task_id : row.id])
           },
         }),
         getStatusTableColumn({

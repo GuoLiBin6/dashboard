@@ -15,13 +15,25 @@ const Radio = {
     const { options } = definition.input || {}
 
     if (options && options.length) {
-      return (
-        <a-radio-group options={ options } onChange={ this.onChange } value={ value } />
-      )
+      return h('a-radio-group', {
+        props: {
+          options,
+          value,
+        },
+        on: {
+          change: this.onChange,
+        },
+      })
     } else {
-      return (
-        <a-radio { ...this.$props } onChange={ this.onChange } checked={ value }>{ definition.formItem.label }</a-radio>
-      )
+      return h('a-radio', {
+        props: {
+          ...this.$props,
+          checked: value,
+        },
+        on: {
+          change: this.onChange,
+        },
+      }, [definition.formItem.label])
     }
   },
   methods: {

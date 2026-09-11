@@ -17,10 +17,11 @@ export default {
       getNameDescriptionTableColumn({
         onManager: this.onManager,
         hideField: true,
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          const hFn = h || this.$createElement
+          return hFn('side-page-trigger', {
+            on: { trigger: () => this.handleOpenSidepage(row) },
+          }, row.name)
         },
         formRules: [
           { required: true, message: this.$t('cloudenv.text_190') },
@@ -43,7 +44,7 @@ export default {
         minWidth: 120,
         slots: {
           default: ({ row }) => {
-            if (this.isPreLoad && (!row.project_domain && !row.project)) return [<data-loading />]
+            if (this.isPreLoad && (!row.project_domain && !row.project)) return [this.$createElement('data-loading')]
             let ret = this.$t('cloudenv.text_504')
             if (!this.$store.getters.l3PermissionEnable) {
               if (row.project) {

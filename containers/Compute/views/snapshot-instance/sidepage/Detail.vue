@@ -70,9 +70,13 @@ export default {
           field: 'rules',
           title: this.$t('table.title.sub_snapshot'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               const len = (row.snapshots && row.snapshots.length) || 0
-              return <a onClick={ () => this.$emit('tab-change', 'sub-snapshot-detail') }>{len}{this.$t('common.text00003')}</a>
+              return h('a', {
+                on: {
+                  click: () => this.$emit('tab-change', 'sub-snapshot-detail'),
+                },
+              }, `${len}${this.$t('common.text00003')}`)
             },
           },
         },
@@ -83,13 +87,25 @@ export default {
             default: ({ row }, h) => {
               if (row.guest) {
                 return [
-                  <div>
-                    <side-page-trigger permission="server_get" name="VmInstanceSidePage" id={row.guest_id} vm={this}>{row.guest}</side-page-trigger>
-                    {row.guest_status ? <status status={ row.guest_status } statusModule='server'/> : ''}
-                  </div>,
+                  h('div', [
+                    h('side-page-trigger', {
+                      props: {
+                        permission: 'server_get',
+                        name: 'VmInstanceSidePage',
+                        id: row.guest_id,
+                        vm: this,
+                      },
+                    }, row.guest),
+                    row.guest_status ? h('status', {
+                      props: {
+                        status: row.guest_status,
+                        statusModule: 'server',
+                      },
+                    }) : '',
+                  ]),
                 ]
               }
-              return [<div>-</div>]
+              return [h('div', '-')]
             },
           },
         },

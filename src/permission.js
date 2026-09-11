@@ -16,12 +16,13 @@ import {
 import router from './router'
 import store from './store'
 
-// 获取scope beforeEach
-const scopePermission = require.context('../scope', false, /.\/permission.js/)
+// 获取scope beforeEach（Vite 使用 import.meta.glob 替代 webpack 的 require.context）
+const scopePermissionModules = import.meta.glob('../scope/permission.js', { eager: true })
 let scopeBeforeEach
-scopePermission.keys().forEach(name => {
-  const obj = scopePermission(name)
-  scopeBeforeEach = obj.beforeEach
+Object.values(scopePermissionModules).forEach(mod => {
+  if (mod && mod.beforeEach) {
+    scopeBeforeEach = mod.beforeEach
+  }
 })
 
 const toLogin = (to, from, next) => {
@@ -91,6 +92,8 @@ router.beforeEach(async (to, from, next) => {
         query: pathQuery && JSON.parse(pathQuery),
       })
     }
+    // 后端不可用时避免从登录页再重定向到 / 导致无限循环请求
+    if (!store.getters.userInfo?.id) return next()
     return next('/')
   }
   if (!auth) {
@@ -114,42 +117,52 @@ router.beforeEach(async (to, from, next) => {
   const hasLicense = !isCE() && !R.isEmpty(store.state.app?.license?.compute) && !R.isNil(store.state.app?.license?.compute)
 
   try {
-    !hasRoles && await store.dispatch('auth/getInfo')
-    !hasCapability && await store.dispatch('auth/getCapabilities')
-    !hasPermission && await store.dispatch('auth/getPermission')
-    !hasScopeResource && await store.dispatch('auth/getScopeResource')
-    !isCE() && !isSAAS() && !hasLicense && await store.dispatch('app/fetchLicense')
-    !hasGlobalSettings && await store.dispatch('globalSetting/getFetchGlobalSetting')
-    !hasProfile && await store.dispatch('profile/get')
-    !hasStats && await store.dispatch('auth/getStats')
-    !hasScopePolicy && await store.dispatch('scopedPolicy/get', {
-      category: [
-        'sub_hidden_menus',
-        'document_configured_callback_address',
-        'server_hidden_columns',
-        'disk_hidden_columns',
-        'snapshot_hidden_columns',
-        'eip_hidden_columns',
-        'network_hidden_columns',
-        'oss_hidden_columns',
-        'rds_hidden_columns',
-        'redis_hidden_columns',
-        'slb_hidden_columns',
-        'mongodb_hidden_columns',
-        'vpc_hidden_columns',
-        'navbar_hidden_items',
-        'dashboard_hidden_actions',
-        'fee_hidden_items',
-        'bill_resource_hidden_columns',
-        'vminstance_hidden_menus',
-        'vminstance_configured_callback_address',
-      ],
-    })
-    !hasGlobalConfig && await store.dispatch('common/fetchGlobalServices')
-    // !hasGlobalServices && await store.dispatch('common/fetchGlobalServices')
-    !hasMonitorResourceAlerts && await store.dispatch('monitor/loadMonitorResourceAlerts')
+    // getInfo 需先完成（后续 permission/scope 依赖用户上下文）
+    if (!hasRoles) {
+      await store.dispatch('auth/getInfo')
+    }
+    const tasks = []
+    if (!hasCapability) tasks.push(store.dispatch('auth/getCapabilities'))
+    if (!hasPermission) tasks.push(store.dispatch('auth/getPermission'))
+    if (!hasScopeResource) tasks.push(store.dispatch('auth/getScopeResource'))
+    if (!isCE() && !isSAAS() && !hasLicense) tasks.push(store.dispatch('app/fetchLicense'))
+    if (!hasGlobalSettings) tasks.push(store.dispatch('globalSetting/getFetchGlobalSetting'))
+    if (!hasProfile) tasks.push(store.dispatch('profile/get'))
+    if (!hasStats) tasks.push(store.dispatch('auth/getStats'))
+    if (!hasScopePolicy) {
+      tasks.push(store.dispatch('scopedPolicy/get', {
+        category: [
+          'sub_hidden_menus',
+          'document_configured_callback_address',
+          'server_hidden_columns',
+          'disk_hidden_columns',
+          'snapshot_hidden_columns',
+          'eip_hidden_columns',
+          'network_hidden_columns',
+          'oss_hidden_columns',
+          'rds_hidden_columns',
+          'redis_hidden_columns',
+          'slb_hidden_columns',
+          'mongodb_hidden_columns',
+          'vpc_hidden_columns',
+          'navbar_hidden_items',
+          'dashboard_hidden_actions',
+          'fee_hidden_items',
+          'bill_resource_hidden_columns',
+          'vminstance_hidden_menus',
+          'vminstance_configured_callback_address',
+        ],
+      }))
+    }
+    if (!hasGlobalConfig) tasks.push(store.dispatch('common/fetchGlobalServices'))
+    if (!hasMonitorResourceAlerts) tasks.push(store.dispatch('monitor/loadMonitorResourceAlerts'))
+    if (tasks.length) {
+      await Promise.all(tasks)
+    }
   } catch (error) {
-    throw error
+    // 统一兜底：接口异常时不要让路由守卫抛错导致白屏
+    console.error(error)
+    return toLogin(to, from, next)
   } finally {
     const { canRenderDefaultLayout = true } = to.meta
     if (canRenderDefaultLayout) {

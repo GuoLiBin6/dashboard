@@ -4,7 +4,7 @@
       <a-input-number v-decorator="decorators.port" />
     </a-form-item>
     <a-form-item :label="$t('compute.vminstance.setup_ssh_authentication.method')">
-      <a-radio-group v-model="method">
+      <a-radio-group v-model:value="method">
         <a-radio-button v-for="m in METHODS" :value="m.value" :key="m.key">{{ m.label }}</a-radio-button>
       </a-radio-group>
     </a-form-item>
@@ -12,7 +12,7 @@
      <span slot="label">
         {{ $t('compute.text_163') }}
         <a-tooltip :title="$t('compute.vminstance.setup_ssh_authentication.create.username.tips')">
-          <a-icon type="question-circle-o" />
+          <icon type="question-circle" />
         </a-tooltip>
       </span>
       <a-input v-decorator="decorators.user" />

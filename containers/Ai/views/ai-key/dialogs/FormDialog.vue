@@ -4,7 +4,7 @@
     <div slot="body">
       <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 5 }" :wrapper-col="{ span: 17 }">
         <a-form-model-item v-if="params.type !== 'edit'" :label="$t('common.name')" prop="generate_name">
-          <a-input v-model="form.generate_name" />
+          <a-input v-model:value="form.generate_name" />
         </a-form-model-item>
         <a-form-model-item v-if="!fixedProviderId" :label="$t('aice.aiproxy.ai_provider_id')" prop="ai_provider_id">
           <base-select
@@ -15,15 +15,15 @@
             version="v2" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.aiproxy.secret')" prop="secret">
-          <a-input-password v-model="form.secret" :placeholder="params.type === 'edit' ? $t('aice.aiproxy.leave_blank_to_keep') : ''" />
+          <a-input-password v-model:value="form.secret" :placeholder="params.type === 'edit' ? $t('aice.aiproxy.leave_blank_to_keep') : ''" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.aiproxy.weight')" prop="weight">
-          <a-input-number v-model="form.weight" :min="0" />
+          <a-input-number v-model:value="form.weight" :min="0" />
         </a-form-model-item>
         <template v-if="params.type === 'edit'">
           <a-form-model-item :label="$t('aice.aiproxy.allowed_model_keys')">
             <a-select
-              v-model="form.allowed_model_keys"
+              v-model:value="form.allowed_model_keys"
               mode="tags"
               allow-clear
               :options="modelKeyOptions"
@@ -32,7 +32,7 @@
           </a-form-model-item>
           <a-form-model-item :label="$t('aice.aiproxy.blocked_model_keys')">
             <a-select
-              v-model="form.blocked_model_keys"
+              v-model:value="form.blocked_model_keys"
               mode="tags"
               allow-clear
               :options="modelKeyOptions"

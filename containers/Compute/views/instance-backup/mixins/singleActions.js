@@ -66,11 +66,18 @@ export default {
                   onManager: this.onManager,
                   name: i18n.t('compute.instance_backup'),
                   alert: i18n.t('compute.instance_backup_delete_alert'),
-                  content: () => {
+                  content: (h) => {
                     const change = (bool) => {
                       this.deleteResProps.force = bool
                     }
-                    return <a-checkbox onInput={ change }>{ this.$t('compute.text_655') }</a-checkbox>
+                    return h('a-checkbox', {
+                      props: {
+                        value: this.deleteResProps.force,
+                      },
+                      on: {
+                        input: change,
+                      },
+                    }, this.$t('compute.text_655'))
                   },
                   requestParams: this.deleteResProps,
                 })

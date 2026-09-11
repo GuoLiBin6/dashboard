@@ -5,7 +5,7 @@
 <template>
   <div>
     <page-header :title="headerTitle" />
-    <page-body needMarginBottom>
+    <page-body>
       <a-divider orientation="left">{{ $t('aice.llm_catalog.import_config') }}</a-divider>
       <local-path-import-sku-form
         ref="importFormRef"

@@ -87,7 +87,7 @@ export default {
     },
   },
   created () { },
-  beforeDestroy () {
+  beforeUnmount () {
     this.isPageDestroyed = true
   },
   methods: {},

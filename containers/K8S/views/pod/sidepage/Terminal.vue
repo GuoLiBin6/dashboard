@@ -2,7 +2,7 @@
   <div>
     <a-form-model :model="form" layout="inline">
       <a-form-model-item :label="$t('k8s.text_1')">
-        <a-select style="min-width: 200px;" v-model="form.activeContainer" @change="fetchUrl">
+        <a-select style="min-width: 200px;" v-model:value="form.activeContainer" @change="fetchUrl">
           <a-select-option v-for="item in containers" :value="item.name" :key="item.name">{{ item.name }}</a-select-option>
         </a-select>
       </a-form-model-item>

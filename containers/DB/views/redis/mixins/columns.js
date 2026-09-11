@@ -13,9 +13,11 @@ export default {
         addLock: true,
         addBackup: true,
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name || row.external_id }</side-page-trigger>
-          )
+          return this.$createElement('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name || row.external_id)
         },
         hidden: () => {
           return this.$isScopedPolicyMenuHidden('redis_hidden_columns.name')
@@ -75,8 +77,13 @@ export default {
         title: i18n.t('db.text_195'),
         width: 50,
         slots: {
-          default: ({ row }) => {
-            return [<PasswordFetcher serverId={row.id} resourceType='elasticcaches' />]
+          default: ({ row }, h) => {
+            return [h(PasswordFetcher, {
+              props: {
+                serverId: row.id,
+                resourceType: 'elasticcaches',
+              },
+            })]
           },
         },
         hidden: () => {
@@ -89,7 +96,7 @@ export default {
         minWidth: 200,
         showOverflow: 'ellipsis',
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             const pri = row.private_dns || row.private_ip_addr
             const pub = row.public_dns || row.public_ip_addr
             if (!pri && !pub) {
@@ -100,15 +107,23 @@ export default {
                 return null
               }
               return [
-                <list-body-cell-wrap hide-field copy message={value}>
-                  {title} : <span>{ value || '-' }</span>
-                </list-body-cell-wrap>,
+                h('list-body-cell-wrap', {
+                  props: {
+                    hideField: true,
+                    copy: true,
+                    message: value,
+                  },
+                }, [
+                  `${title} : `,
+                  h('span', value || '-'),
+                ]),
               ]
             }
-            return [
-              connection(i18n.t('db.text_153'), pri),
-              connection(i18n.t('db.text_154'), pub),
+            const result = [
+              ...(connection(i18n.t('db.text_153'), pri) || []),
+              ...(connection(i18n.t('db.text_154'), pub) || []),
             ]
+            return result
           },
         },
         formatter: ({ row }) => {
@@ -128,16 +143,16 @@ export default {
         title: i18n.t('db.text_303'),
         width: 100,
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             if (!row.private_connect_port && !row.public_connect_port) {
               return '-'
             }
             const ports = []
             if (row.private_connect_port && (row.private_dns || row.private_ip_addr)) {
-              ports.push(<div>{ this.$t('common.intranet_1var', [row.private_connect_port]) }</div>)
+              ports.push(h('div', this.$t('common.intranet_1var', [row.private_connect_port])))
             }
             if (row.public_connect_port && (row.public_dns || row.public_ip_addr)) {
-              ports.push(<div>{ this.$t('common.extranet_1var', [row.public_connect_port]) }</div>)
+              ports.push(h('div', this.$t('common.extranet_1var', [row.public_connect_port])))
             }
             return ports
           },

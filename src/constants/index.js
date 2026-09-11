@@ -163,10 +163,10 @@ export const SCOPES_MAP = {
   },
 }
 
-// 调度策略
-export const SCHEDTAG_POLICY_OPTIONS = Object.keys(i18n.t('schedtagPolicys')).map(key => ({
+// 调度策略（勿对 t() 结果 Object.keys：vue-i18n v11 的 t 对嵌套对象会返回 key 字符串，会拆成单字符选项）
+export const SCHEDTAG_POLICY_OPTIONS = ['prefer', 'require', 'avoid', 'exclude'].map(key => ({
   key,
-  label: i18n.t('schedtagPolicys')[key],
+  label: i18n.t(`schedtagPolicys.${key}`),
 }))
 
 export const ENABLED_OPTS = [

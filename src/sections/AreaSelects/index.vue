@@ -81,11 +81,13 @@
         </a-form-item>
       </a-col>
     </a-row>
-    <div slot="extra" class="mb-3">
-      {{ $t('common.area_selects_not_found_prefix') }}
-      <help-link href="/network">{{ $t('dictionary.network') }}</help-link>
-      {{ $t('common.area_selects_not_found_suffix') }}
-    </div>
+    <template #extra>
+      <div class="mb-3">
+        {{ $t('common.area_selects_not_found_prefix') }}
+        <help-link href="/network">{{ $t('dictionary.network') }}</help-link>
+        {{ $t('common.area_selects_not_found_suffix') }}
+      </div>
+    </template>
   </a-form-item>
 </template>
 
@@ -109,6 +111,7 @@ export default {
     BrandIcon,
   },
   mixins: [createFormFieldDraftMixin],
+  inheritAttrs: false,
   // 对象写法，避免数组 inject 覆盖 mixin 里的草稿 inject
   inject: {
     form: { default: undefined },
@@ -280,6 +283,25 @@ export default {
     },
     zoneMultiple () {
       this.syncMultipleMode('zone')
+    },
+    // capability 晚于 AreaSelects 首轮请求时，补拉一次平台/区域/可用区
+    capability: {
+      handler (val, oldVal) {
+        if (!this.filterBrandResource) return
+        const brandsKey = `${this.filterBrandResource}_brands`
+        const nextBrands = val?.[brandsKey]
+        const prevBrands = oldVal?.[brandsKey]
+        if (R.equals(nextBrands, prevBrands)) return
+        if (!Array.isArray(nextBrands)) return
+        if (this.shouldSkipFetchForAreaDraft()) {
+          this.fetchListsOnly(this.names, { skipDefaultSelect: true }).then(() => {
+            this.tryApplyPendingAreaDraft()
+          })
+          return
+        }
+        this.fetchs()
+      },
+      deep: true,
     },
   },
   created () {
@@ -668,49 +690,45 @@ export default {
       })
     },
     resetSelect (names = this.names, callback) {
-      const _F = () => {}
-      let _resolve = _F
-      const promise = new Promise((resolve) => {
-        _resolve = resolve
-      })
-      const _ = {}
-      if (names && !R.isEmpty(names)) {
-        names.forEach(k => {
-          _[k] = this.emptyFieldValue(k)
-        })
-        this.FC.setFieldsValue(_, () => {
-          _resolve(names)
-          callback && callback()
-        })
+      if (!names || R.isEmpty(names)) {
+        callback && callback()
+        return Promise.resolve(names)
       }
-      return promise
+      const values = {}
+      names.forEach(k => {
+        values[k] = this.emptyFieldValue(k)
+      })
+      // antdFormLegacyCompat.setFieldsValue 无第二参回调，勿 await 回调
+      this.FC.setFieldsValue(values)
+      callback && callback()
+      return Promise.resolve(names)
     },
     filterOption (input, option) {
+      if (!option) return false
       const keyword = String(input || '').toLowerCase()
-      const propsData = option.componentOptions && option.componentOptions.propsData
-      const attrs = option.data && option.data.attrs
-      const label = propsData && propsData.label != null && propsData.label !== ''
-        ? propsData.label
-        : (attrs && attrs.label)
-      if (label != null && label !== '') {
-        return String(label).toLowerCase().indexOf(keyword) >= 0
+      // antdv4：option 为 { label, value, ... }，不再是 Vue2 VNode
+      let text = option.label
+      if (text == null || text === '') {
+        text = option.value
       }
-      const children = option.componentOptions && option.componentOptions.children
-      if (!children || !children.length) return false
-      const lastChild = children[children.length - 1]
-      if (lastChild && lastChild.text) {
-        return String(lastChild.text).toLowerCase().indexOf(keyword) >= 0
+      // Vue2 遗留结构兜底
+      if (text == null || text === '') {
+        const propsData = option.componentOptions && option.componentOptions.propsData
+        const attrs = option.data && option.data.attrs
+        text = propsData && propsData.label != null && propsData.label !== ''
+          ? propsData.label
+          : (attrs && attrs.label)
       }
-      const firstChild = children[0]
-      if (firstChild && firstChild.text) {
-        return String(firstChild.text).toLowerCase().indexOf(keyword) >= 0
+      if (text == null || text === '') {
+        const children = option.componentOptions && option.componentOptions.children
+        if (children && children.length) {
+          const lastChild = children[children.length - 1]
+          if (lastChild && lastChild.text) text = lastChild.text
+          else if (children[0] && children[0].text) text = children[0].text
+        }
       }
-      const nameNode = firstChild && firstChild.children && firstChild.children[0]
-      const nestedText = nameNode && nameNode.text
-      if (nestedText) {
-        return String(nestedText).toLowerCase().indexOf(keyword) >= 0
-      }
-      return false
+      if (text == null || text === '') return true
+      return String(text).toLowerCase().indexOf(keyword) >= 0
     },
     firstName (name) {
       return name.replace(/^\S/, s => s.toUpperCase())
@@ -944,11 +962,9 @@ export default {
     },
     async fetchChange (name, list = [], options = {}) {
       const { skipDefaultSelect = false } = options
-      const events = this._events || {}
-      const changes = events[`${name}FetchSuccess`]
       let _list = findAndPush(list, ({ name }) => name === 'Other')
-      if (changes && changes.length > 0) {
-        const changeFetchSuccess = changes[0]
+      const changeFetchSuccess = this.resolveFetchSuccessHandler(name)
+      if (changeFetchSuccess) {
         const value = await changeFetchSuccess(list, this.FC)
         if (value && R.type(value) === 'Array') {
           _list = value
@@ -981,6 +997,22 @@ export default {
       this.mergeItemCache(name, _list)
       this[`${name}List`] = _list
       return _list
+    },
+    /**
+     * Vue2：父级监听在 this._events
+     * Vue3：父级 @xxxFetchSuccess 落在 $attrs.onXxxFetchSuccess
+     */
+    resolveFetchSuccessHandler (name) {
+      const eventName = `${name}FetchSuccess`
+      const fromEvents = (this._events || {})[eventName]
+      if (Array.isArray(fromEvents) && fromEvents.length) {
+        return fromEvents[0]
+      }
+      const attrKey = `on${name.charAt(0).toUpperCase()}${name.slice(1)}FetchSuccess`
+      const fromAttrs = this.$attrs?.[attrKey]
+      if (typeof fromAttrs === 'function') return fromAttrs
+      if (Array.isArray(fromAttrs) && fromAttrs.length) return fromAttrs[0]
+      return null
     },
     async fetchOne (name, { skipDefaultSelect = true } = {}) {
       const sn = this.firstName(name)

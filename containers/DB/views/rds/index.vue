@@ -12,7 +12,6 @@
         :cloudEnvOptions="cloudEnvOptions"
         :filterParams="filterParams"
         statusResKey="rds"
-        @refresh="refreshHandle"
         @resStatisticsChange="resStatisticsChange" />
     </page-body>
   </div>

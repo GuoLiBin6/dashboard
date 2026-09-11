@@ -21,9 +21,12 @@ export default {
         addLock: true,
         addBackup: true,
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+          const h = this.$createElement
+          return h('side-page-trigger', {
+            props: {
+              onTrigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getTagTableColumn({ onManager: this.onManager, resource: 'elastic_searchs', columns: () => this.columns }),
@@ -42,14 +45,15 @@ export default {
         width: 120,
         slots: {
           default: ({ row }) => {
-            return [<div>
-              <div>{i18n.t('middleware.config_size', [row.vcpu_count, row.vmem_size_gb])}</div>
-              <div>{row.instance_type || '-'}</div>
-            </div>]
+            const h = this.$createElement
+            return [h('div', [
+              h('div', i18n.t('middleware.config_size', [row.vcpu_count, row.vmem_size_gb])),
+              h('div', row.instance_type || '-'),
+            ])]
           },
         },
         formatter: ({ row }) => {
-          return `${i18n.t('middleware.config_size', [row.vcpu_count, row.vmem_size_gb])},row.instance_type || '-'`
+          return `${i18n.t('middleware.config_size', [row.vcpu_count, row.vmem_size_gb])},${row.instance_type || '-'}`
         },
       },
       {
@@ -63,14 +67,15 @@ export default {
         width: 100,
         slots: {
           default: ({ row }) => {
-            return [<div>
-              <div>{ELK_STORAGE[row.storage_type] || row.storage_type || '-'}</div>
-              <div>{i18n.t('middleware.size_gb', [row.disk_size_gb])}</div>
-            </div>]
+            const h = this.$createElement
+            return [h('div', [
+              h('div', ELK_STORAGE[row.storage_type] || row.storage_type || '-'),
+              h('div', i18n.t('middleware.size_gb', [row.disk_size_gb])),
+            ])]
           },
         },
         formatter: ({ row }) => {
-          return `${ELK_STORAGE[row.storage_type] || row.storage_type || '-'},i18n.t('middleware.size_gb', [row.disk_size_gb])`
+          return `${ELK_STORAGE[row.storage_type] || row.storage_type || '-'},${i18n.t('middleware.size_gb', [row.disk_size_gb])}`
         },
       },
       getBillingTableColumn({ vm: this }),

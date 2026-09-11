@@ -16,7 +16,7 @@
                 filterable
                 :params="serviceParams"
                 id-key="name"
-                :item.sync="val.service"
+                v-model:item="val.service"
                 :select-props="{  placeholder: $t('k8s.text_206') }" />
             </a-form-item>
           </a-col>

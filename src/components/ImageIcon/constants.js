@@ -13,6 +13,10 @@ export const IMAGE_MSG = {
     label: 'Linux',
     position: '0px -18px',
   },
+  culinux: {
+    label: 'CULinux',
+    position: '0px -18px',
+  },
   freebsd: {
     label: 'Freebsd',
     position: '0px -54px',

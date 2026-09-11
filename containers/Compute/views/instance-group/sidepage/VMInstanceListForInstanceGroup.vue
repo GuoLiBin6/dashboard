@@ -76,7 +76,8 @@ export default {
           title: this.$t('table.title.os'),
           width: 50,
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
+              const hFn = h || this.$createElement
               let name = ((row.metadata && row.metadata.os_distribution) ? row.metadata.os_distribution : row.os_type) || ''
               if (name.includes('Windows') || name.includes('windows')) {
                 name = 'Windows'
@@ -84,7 +85,7 @@ export default {
               const version = (row.metadata && row.metadata.os_version) ? `${row.metadata.os_version}` : ''
               const tooltip = version.includes(name) ? version : `${name} ${version}` // 去重
               return [
-                <SystemIcon tooltip={ tooltip } name={ name } />,
+                hFn(SystemIcon, { props: { tooltip, name } }),
               ]
             },
           },
@@ -97,12 +98,13 @@ export default {
           minWidth: 120,
           slots: {
             default: ({ row }) => {
+              const h = this.$createElement
               const ret = []
               if (row.instance_type) {
-                ret.push(<div style={{ color: '#0A1F44' }}>{ row.instance_type }</div>)
+                ret.push(h('div', { style: { color: 'var(--oc-color-text-heading)' } }, row.instance_type))
               }
               const config = row.vcpu_count + 'C' + sizestr(row.vmem_size, 'M', 1024) + (row.disk ? sizestr(row.disk, 'M', 1024) : '')
-              return ret.concat(<div style={{ color: '#53627C' }}>{ config }</div>)
+              return ret.concat(h('div', { style: { color: 'var(--oc-color-text-secondary)' } }, config))
             },
           },
         },

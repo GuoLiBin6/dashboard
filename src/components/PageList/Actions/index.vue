@@ -1,12 +1,12 @@
 <template>
-  <div v-if="beforeShowMenuLoaded" style="display:flex;flex-wrap:wrap;">
-    <template v-for="(item,index) of options">
+  <div v-if="beforeShowMenuLoaded" style="display:flex;flex-wrap:wrap;gap:5px;">
+    <template v-for="(item,index) of options" :key="item.label">
       <!-- 一组操作，下拉形式展示 -->
       <template v-if="item.actions">
         <dropmenus
           v-if="!getDeepHidden(item)"
+
           :group="group"
-          :key="item.label"
           :item="item"
           :row="row"
           :button-type="buttonType"
@@ -26,7 +26,6 @@
           :button-type="buttonType"
           :button-size="buttonSize"
           :button-block="buttonBlock"
-          :class="{ 'ml-2': group && ((index === 0 && showSync) || index !== 0) }"
           :button-style="buttonStyle"
           @clear-selected="clearSelected" />
       </template>

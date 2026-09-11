@@ -68,12 +68,12 @@
         <a-input-number v-decorator="decorators.count" @blur="countBlur" :min="1" :max="100" />
       </a-form-item>
       <a-form-item v-if="form.fd.hypervisor === 'zettakit' || form.fd.hypervisor === 'kvm'">
-        <span slot="label">
+        <template #label>
           {{ $t('compute.text_1152') }}&nbsp;
           <a-tooltip :title="$t('compute.vgpu_check.tooltip')">
-            <a-icon type="question-circle-o" />
+            <icon type="question-circle" />
           </a-tooltip>
-        </span>
+        </template>
         <pci :decorators="decorators.pci" :pciDevTypeOptions="pciDevTypeOptions" :form="form" :pci-options="pciOptions" :form-draft-key="vmDraftFields.pci" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_1058')" class="mb-0">
@@ -159,15 +159,15 @@
           v-decorator="decorators.tag" :default-checked="tagDefaultChecked" :form-draft-key="vmDraftFields.tag" />
       </a-form-item>
       <!-- <a-divider orientation="left">{{$t('compute.text_309')}}</a-divider> -->
-      <a-collapse :bordered="false" v-model="collapseActive">
+      <a-collapse :bordered="false" v-model:activeKey="collapseActive" :expand-icon="renderCollapseExpandIcon">
         <a-collapse-panel :header="$t('compute.text_309')" key="1" :forceRender="true">
           <a-form-item v-if="!isServertemplate">
-            <span slot="label">
+            <template #label>
               {{ $t('common_388') }}&nbsp;
               <a-tooltip :title="hostNameTips">
-                <a-icon type="question-circle-o" />
+                <icon type="question-circle" />
               </a-tooltip>
-            </span>
+            </template>
             <host-name v-decorator="decorators.hostName" :isWindows="isWindows" />
           </a-form-item>
           <a-form-item :label="$t('compute.text_105')" v-if="showSecgroup">
@@ -207,7 +207,7 @@
         :isOpenWorkflow="isOpenWorkflow"
         :isOpenOrderSetWorkflow="isOpenOrderSetWorkflow"
         :isModifyWorkflow="isModifyWorkflow"
-        :errors.sync="errors"
+        v-model:errors="errors"
         :isServertemplate="isServertemplate"
         :hasMeterService="hasMeterService"
         @add-cart="addShopCart"

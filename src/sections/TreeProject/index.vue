@@ -8,10 +8,9 @@
       <div class="search-box mt-2 mb-2">
         <a-input-search
           class="search"
-          v-model="searchValue"
+          v-model:value="searchValue"
           :placeholder="$t('common.search')"
-          allowClear
-          @search="onSearch" />
+          allowClear />
       </div>
       <data-empty v-if="!loading && !treeData.length" />
       <div :style="contentStyle">
@@ -19,12 +18,16 @@
           v-if="treeData.length"
           default-expand-all
           show-icon
-          :selectedKeys.sync="selectedKeys"
+          v-model:selectedKeys="selectedKeys"
           :treeData="filteredTreeData"
           @select="handleTreeNodeSelect"
           style="padding:10px 0">
-          <a-icon slot="switcherIcon" type="caret-down" style="font-size: 16px;color:#999" />
-          <icon slot="organization" class="tree-node-icon" style="font-size: 14px;color:#999" type="organization" />
+          <template #switcherIcon>
+            <icon type="caret-down" style="font-size: 16px;color:#999" />
+          </template>
+          <template #icon>
+            <icon class="tree-node-icon" style="font-size: 14px;color:#999" type="organization" />
+          </template>
         </a-tree>
       </div>
     </div>
@@ -33,6 +36,7 @@
 </template>
 
 <script>
+import { h } from 'vue'
 import { mapState, mapActions, mapGetters } from 'vuex'
 import * as R from 'ramda'
 import { uuid } from '@/utils/utils'
@@ -250,17 +254,13 @@ export default {
       const treeNode = tree
       treeNode.tag = treeNode.key
       if (treeNode.value === 'root') {
-        treeNode.title = (
-          <span class="tree-node-title">{this.$t('common_737')}{this.formatCount(treeNode.count)}</span>
-        )
+        treeNode.title = h('span', { class: 'tree-node-title' }, [this.$t('common_737'), this.formatCount(treeNode.count)])
       } else if (treeNode.value === '___no_value__') {
-        treeNode.title = (
-          <span class="tree-node-title"><span class="tag-title-budge">{treeNode.tag.replace('user:', '').replace('org:', '')}:</span>{`${this.$t('common_736')}${this.formatCount(treeNode.count)}`}</span>
-        )
+        const budge = h('span', { class: 'tag-title-budge' }, [treeNode.tag.replace('user:', '').replace('org:', '') + ':'])
+        treeNode.title = h('span', { class: 'tree-node-title' }, [budge, `${this.$t('common_736')}${this.formatCount(treeNode.count)}`])
       } else {
-        treeNode.title = (
-          <span class="tree-node-title"><span class="tag-title-budge">{treeNode.tag.replace('user:', '').replace('org:', '')}:</span>{`${treeNode.value}${this.formatCount(treeNode.count)}`}</span>
-        )
+        const budge = h('span', { class: 'tag-title-budge' }, [treeNode.tag.replace('user:', '').replace('org:', '') + ':'])
+        treeNode.title = h('span', { class: 'tree-node-title' }, [budge, `${treeNode.value}${this.formatCount(treeNode.count)}`])
       }
       treeNode.key = uuid()
       if (treeNode.children && treeNode.children.length) {
@@ -270,7 +270,6 @@ export default {
       } else {
         treeNode.isLeaf = true
       }
-      treeNode.slots = { icon: 'organization' }
       return treeNode
     },
     genProjectTagFilter (data) {
@@ -304,6 +303,8 @@ export default {
 <style lang="less" scoped>
 .tree-wrapper {
   border: 1px solid #f1f1f1;
+  border-radius: 6px;
+  overflow: hidden;
   position: relative;
 }
 

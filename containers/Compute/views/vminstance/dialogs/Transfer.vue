@@ -37,7 +37,7 @@
           <a-form-item>
             <span slot="label">
               {{ $t('compute.vminstance.transfer.max_brand_width') }}
-              <a-tooltip :title="$t('compute.transfer.max_brand_width.tooltip')"><a-icon type="question-circle-o" /></a-tooltip>
+              <a-tooltip :title="$t('compute.transfer.max_brand_width.tooltip')"><icon type="question-circle" /></a-tooltip>
             </span>
             <migration-bandwidth :decorators="decorators" :form="form" />
           </a-form-item>
@@ -305,10 +305,8 @@ export default {
               title: this.$t('common.reason'),
               slots: {
                 default: ({ row }, h) => {
-                  const ret = row.reasons.map(item => {
-                    return <li>{item}</li>
-                  })
-                  return [<ul style={{ marginLeft: '-26px' }}>{ ...ret }</ul>]
+                  const items = (row.reasons || []).map((item) => h('li', {}, item))
+                  return [h('ul', { style: { marginLeft: '-26px' } }, items)]
                 },
               },
             },

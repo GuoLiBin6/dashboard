@@ -72,8 +72,14 @@ export default {
               field: 'output',
               slots: {
                 default: ({ row }, h) => {
+                  const create = this.$createElement
                   return [
-                    <code-mirror value={ row.output } options={ this.cmOptions } />,
+                    create('code-mirror', {
+                      props: {
+                        value: row.output,
+                        options: this.cmOptions,
+                      },
+                    }),
                   ]
                 },
               },
@@ -150,10 +156,8 @@ export default {
 
 <style lang="less" scoped>
 .ansible-playbook {
-  ::v-deep {
-    .CodeMirror {
-      height: 700px !important;
-    }
+  :deep(.CodeMirror) {
+    height: 700px !important;
   }
 }
 </style>

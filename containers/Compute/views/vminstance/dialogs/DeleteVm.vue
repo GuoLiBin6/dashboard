@@ -3,8 +3,10 @@
     <div slot="header">{{formType === 'modifyWorkflow' ? this.$t('common.modify_workflow') + `(${$t('compute.perform_delete')})` : $t('compute.perform_delete')}}</div>
     <div slot="body">
       <a-alert class="mb-2" type="warning">
-        <div slot="message">{{$t('compute.text_1392')}}</div>
-        <div v-if="isSomePrepaid" slot="message" class="mt-2">{{$t('compute.prepaid_delete_server.alert')}}</div>
+        <template #message>
+          <div>{{$t('compute.text_1392')}}</div>
+          <div v-if="isSomePrepaid" class="mt-2">{{$t('compute.prepaid_delete_server.alert')}}</div>
+        </template>
       </a-alert>
       <dialog-selected-tips :name="params.name || $t('dictionary.server')" :count="dataList.length" :action="this.params.title || (formType === 'modifyWorkflow' ? this.$t('common.modify_workflow') + `(${$t('compute.perform_delete')})` : $t('compute.perform_delete'))" />
       <dialog-table v-if="columns.length" :data="dataList" :columns="columns.slice(0, 3)" />

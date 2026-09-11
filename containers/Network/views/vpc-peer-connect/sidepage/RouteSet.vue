@@ -118,10 +118,15 @@ export default {
           field: 'route_table_id',
           title: this.$t('dictionary.route_table'),
           slots: {
-            default: ({ row }) => {
-              return [
-                <side-page-trigger name='RouteTableSidePage' options={{ resource: 'route_tables' }} id={row.route_table_id} vm={this}>{row.route_table_id}</side-page-trigger>,
-              ]
+            default: ({ row }, h) => {
+              return [h('side-page-trigger', {
+                props: {
+                  name: 'RouteTableSidePage',
+                  options: { resource: 'route_tables' },
+                  id: row.route_table_id,
+                  vm: this,
+                },
+              }, row.route_table_id)]
             },
           },
         },

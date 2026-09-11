@@ -8,6 +8,7 @@ import { message, notification } from 'ant-design-vue'
 import * as R from 'ramda'
 import axios from 'axios'
 import qs from 'qs'
+import { h } from 'vue'
 import store from '@/store'
 import router from '@/router'
 import {
@@ -19,12 +20,16 @@ import {
   resolveHttpErrorDisplay,
   getProxyWafInterceptHint,
 } from '@/utils/error'
+
 import { uuid, genReferRouteQuery, isBlob, blobToJson } from '@/utils/utils'
 import { SHOW_SYSTEM_RESOURCE } from '@/constants'
 import i18n from '@/locales'
 
 const http = axios.create({
-  baseURL: process.env.VUE_APP_BASE_API,
+  // Vite dev 下如果未配置 VUE_APP_BASE_API，默认走 /api 以命中 dev server proxy
+  baseURL: process.env.VUE_APP_BASE_API || '/api',
+  // 兜底：后端/网关偶发无响应时避免请求永久 pending 导致页面“卡死”
+  timeout: 30000,
 })
 
 // 超过1.5s的请求显示正在加载message
@@ -57,33 +62,48 @@ const transSpecChart = (transVal) => {
     try {
       transVal = JSON.parse(transVal)
     } catch (error) {
-      throw error
+      // 解析失败不应打断响应链路（否则 Network 成功但业务侧拿不到数据）
+      return transVal
     }
   }
   return transVal
 }
 
 const responseLog = (response) => {
-  if (process.env.NODE_ENV === 'development') {
+  // 注意：直接 console.log 大对象（尤其是列表配置 parameters.value）会让 Chrome 主线程明显卡顿，
+  // 甚至导致整个页面“看起来卡死”。因此默认不打印完整 response.data，需要时手动开启。
+  try {
+    if (process.env.NODE_ENV !== 'development') return
+    if (typeof window === 'undefined') return
+    const enabled = window.__OC_HTTP_LOG__ === true || (window.localStorage && window.localStorage.getItem('__OC_HTTP_LOG__') === '1')
+    if (!enabled) return
     const randomColor = `rgba(${Math.round(Math.random() * 255)},${Math.round(
       Math.random() * 255,
     )},${Math.round(Math.random() * 255)})`
-    console.log(
-      '%c┍----------------------------------------------------------------------------┑',
-      `color:${randomColor};`,
-    )
+    console.log('%c┍----------------------------------------------------------------------------┑', `color:${randomColor};`)
     console.log('| 请求地址：', response.config.url)
     try {
       console.log('| 请求参数：', response.config.data ? JSON.parse(response.config.data) : {})
     } catch (error) {
       console.log('| 请求参数：', '未知')
     }
-    console.log('| 返回数据：', response.data)
-    console.log(
-      '%c┕----------------------------------------------------------------------------┙',
-      `color:${randomColor};`,
-    )
-  }
+    const d = response.data
+    const summary = (() => {
+      try {
+        if (Array.isArray(d)) return { type: 'array', length: d.length }
+        if (d && typeof d === 'object') {
+          const keys = Object.keys(d)
+          const dataLen = Array.isArray(d.data) ? d.data.length : undefined
+          return { type: 'object', keys: keys.slice(0, 12), keysCount: keys.length, dataLen }
+        }
+        return { type: typeof d }
+      } catch (e) {
+        return { type: 'unknown' }
+      }
+    })()
+    console.log('| 返回数据(summary)：', summary)
+    console.log('%c┕----------------------------------------------------------------------------┙', `color:${randomColor};`)
+  } catch (e) {}
 }
 
 // 统一处理重复请求，进行cancel
@@ -94,6 +114,16 @@ export const getRequestKey = config => {
   if (t) {
     ret += `$$${t}`
     delete config.params.$t
+  }
+  // 关键：requestKey 必须区分 params，否则不同参数的同一路径请求会互相 cancel，造成长期 pending/卡死
+  if (config.params && typeof config.params === 'object') {
+    try {
+      const paramsKey = qs.stringify(config.params, {
+        arrayFormat: 'repeat',
+        sort: (a, b) => String(a).localeCompare(String(b)),
+      })
+      if (paramsKey) ret += `$$p:${paramsKey}`
+    } catch (e) {}
   }
   // 是否展示系统资源控制
   if (store.getters.isAdminMode && store.getters.profile && store.getters.profile.value && store.getters.profile.value[SHOW_SYSTEM_RESOURCE]) {
@@ -136,12 +166,14 @@ const showErrorNotify = ({ errorMsg, reqMsg }) => {
     key,
     class: 'error-notification',
     message,
-    description: h => getDescription(errorMsg, h),
-    icon: h => <a-icon type="info-circle" class="error-color" />,
-    btn: h => {
+    // Vue3/ant-design-vue 4 下 description/icon/btn 不再传入 h，这里直接使用 vue 的 h 创建 VNode
+    description: getDescription(errorMsg, h),
+    icon: h('icon', { attrs: { type: 'info-circle' }, class: 'error-color' }),
+    btn: (() => {
       const id = `ErrorDialog-${uuid(32)}`
       const { hide_web_error_details = false } = store.getters.auth.regions || {}
-      return hide_web_error_details ? null : h('a-button', {
+      if (hide_web_error_details) return null
+      return h('a-button', {
         props: {
           type: 'link',
           size: 'small',
@@ -170,7 +202,7 @@ const showErrorNotify = ({ errorMsg, reqMsg }) => {
           },
         },
       }, i18n.t('common_224'))
-    },
+    })(),
   }
 
   const last = errors[message] || 0
@@ -223,6 +255,14 @@ const showHttpErrorMessage = (error) => {
 // request interceptor
 http.interceptors.request.use(
   (config) => {
+    // 避免出现浏览器请求 /undefined（通常是 url 传成了 undefined）
+    const url = config && config.url
+    if (url == null || url === '' || url === 'undefined') {
+      const err = new Error(`[http] invalid request url: ${String(url)}`)
+      // eslint-disable-next-line no-console
+      console.error(err, config)
+      return Promise.reject(err)
+    }
     pendingCount++
     config.method === 'get' && pendingCount === 1 && showLoading()
     config.headers['x-yunion-lang'] = store.getters.setting.language
@@ -247,7 +287,7 @@ http.interceptors.request.use(
   (error) => {
     pendingCount--
     pendingCount === 0 && hiddenLoading()
-    Promise.reject(error)
+    return Promise.reject(error)
   },
 )
 
@@ -292,6 +332,10 @@ http.interceptors.response.use(
     return response
   },
   (error) => {
+    // 失败也必须清理 requestMap，否则会无限增长导致卡顿/卡死
+    try {
+      cancelRquest(error?.config?.$requestKey)
+    } catch (e) {}
     pendingCount--
     pendingCount === 0 && hiddenLoading()
     if (error.response) {
@@ -302,10 +346,10 @@ http.interceptors.response.use(
       }
       if (status === 401 && needLogout(error)) {
         store.dispatch('auth/logout').then(() => {
-          if (!router.currentRoute.meta.authPage) {
+          if (!router.currentRoute.value.meta.authPage) {
             router.push({
               path: '/auth/login',
-              query: genReferRouteQuery(router.currentRoute),
+              query: genReferRouteQuery(router.currentRoute.value),
             })
           }
         })

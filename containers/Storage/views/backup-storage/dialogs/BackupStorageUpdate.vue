@@ -1,7 +1,7 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{this.params.title}}</div>
-    <div slot="body">
+    <template #header>{{this.params.title}}</template>
+    <template #body>
       <dialog-selected-tips :name="$t('compute.backup_storage')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
       <a-form :form="form.fc" v-bind="formItemLayout">
@@ -37,11 +37,11 @@
           <a-input :placeholder="$t('storage.url.input.place_holder')" v-decorator="decorators.object_bucket_url_ext" />
         </a-form-item>
       </a-form>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

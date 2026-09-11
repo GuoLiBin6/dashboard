@@ -15,7 +15,7 @@
             :need-params="true"
             :params="vpcParmasConcat"
             :mapper="vpcResourceMapper"
-            :item.sync="selectedVpc"
+            v-model:item="selectedVpc"
             :select-props="{ allowClear: true, placeholder: $t('compute.text_194') }" />
         </a-form-item>
       </a-col>
@@ -192,7 +192,7 @@ export default {
     this._ipSubnetDraftRetryTimer = null
     this._ipSubnetDraftRetryCount = 0
   },
-  beforeDestroy () {
+  beforeUnmount () {
     if (this._ipSubnetDraftRetryTimer) {
       clearTimeout(this._ipSubnetDraftRetryTimer)
       this._ipSubnetDraftRetryTimer = null

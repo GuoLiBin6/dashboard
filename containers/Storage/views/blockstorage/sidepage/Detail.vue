@@ -114,9 +114,26 @@ export default {
               field: 'commit_bound',
               title: this.$t('storage.text_60'),
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   return [
-                    <a class="edit-item" onClick={this.updateCommitBound}>{row.commit_bound} <a class="edit-icon"><a-icon type='edit' /></a></a>,
+                    h('a', {
+                      class: 'edit-item',
+                      on: {
+                        click: this.updateCommitBound,
+                      },
+                    }, [
+                      row.commit_bound,
+                      ' ',
+                      h('a', {
+                        class: 'edit-icon',
+                      }, [
+                        h('icon', {
+                          attrs: {
+                            type: 'edit',
+                          },
+                        }),
+                      ]),
+                    ]),
                   ]
                 },
               },

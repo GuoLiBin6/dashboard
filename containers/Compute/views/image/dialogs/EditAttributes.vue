@@ -4,7 +4,7 @@
     <div slot="body">
       <a-form v-bind="formItemLayout" :form="form.fc">
         <a-form-item :label="$t('compute.text_228')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.name" :plcaeholder="$t('compute.text_627')" />
+          <a-input v-decorator="decorators.name" :placeholder="$t('compute.text_627')" />
         </a-form-item>
         <!-- <a-form-item :label="$t('common.text00076')" v-bind="formItemLayout">
           <a-radio-group v-decorator="decorators.protected">
@@ -42,12 +42,15 @@
           :extra="$t('compute.image.min_disk.extra')"
           v-bind="formItemLayout"
           v-if="!isHostImage">
-          <a-input-number
-            :min="1"
-            :max="1000"
-            :step="50"
-            :precision="0"
-            v-decorator="decorators.minDisk" />GB
+          <div class="d-flex align-items-center">
+            <a-input-number
+              :min="1"
+              :max="1000"
+              :step="50"
+              :precision="0"
+              v-decorator="decorators.minDisk" />
+            <span class="ml-2">GB</span>
+          </div>
         </a-form-item>
         <a-form-item :label="$t('compute.text_634')" v-bind="formItemLayout">
           <a-radio-group v-decorator="decorators.diskDriver">

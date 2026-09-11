@@ -1,26 +1,22 @@
 <template>
-  <div class="page-header" :class="title ? ['d-flex', 'align-items-center'] : []">
-    <template>
-      <slot name="title" />
-      <h3 v-if="title">{{ title }}</h3>
-      <div class="mini-title mb-2" v-if="miniTitle">
-        {{ miniTitle }}
+  <div class="page-header" :class="hasTitle ? ['d-flex', 'align-items-center'] : []">
+    <slot name="title" />
+    <h3 v-if="hasTitle" class="page-header__title">{{ title }}</h3>
+    <div class="mini-title mb-2" v-if="miniTitle">
+      {{ miniTitle }}
+    </div>
+    <template v-if="tabs">
+      <div class="ml-4 position-relative h-100 page-header__tabs-wrap" style="flex: 1 1 auto">
+        <a-tabs
+          :activeKey="currentTab"
+          class="page-header-tabs"
+          :animated="false"
+          :tab-bar-style="{ padding: '0 30px', marginBottom: 0, width: '100%' }"
+          size="large"
+          @change="handleTabChange">
+          <a-tab-pane v-for="item of tabs" :key="item.key" :tab="item.label" />
+        </a-tabs>
       </div>
-      <template v-if="tabs">
-        <div class="ml-4 position-relative h-100" style="flex: 1 1 auto">
-          <a-tabs
-            :defaultActiveKey="currentTab"
-            class="page-header-tabs"
-            :animated="false"
-            :tab-bar-style="{ padding: '0 30px', marginBottom: 0, width: '100%' }"
-            size="large"
-            @change="handleTabChange">
-            <template v-for="item of tabs">
-              <a-tab-pane :tab="item.label" :key="item.key" />
-            </template>
-          </a-tabs>
-        </div>
-      </template>
     </template>
     <slot name="res-status-tab" />
     <div v-if="isShowResStatusTab" style="position: absolute; right: 0; top: 10px;">
@@ -41,7 +37,7 @@ export default {
   },
   props: {
     title: {
-      type: String,
+      type: [String, Number],
     },
     miniTitle: {
       type: String,
@@ -54,6 +50,14 @@ export default {
     },
     statusOpts: Array,
     statusClickHandle: Function,
+  },
+  computed: {
+    // 避免仅依赖 v-if="title"：空串、仅空白、或 flex 叠盖导致「看不见标题」
+    hasTitle () {
+      const t = this.title
+      if (t == null || t === '') return false
+      return String(t).trim() !== ''
+    },
   },
   methods: {
     handleTabChange (val) {
@@ -69,12 +73,20 @@ export default {
 .page-header {
   height: 60px;
   position: relative;
-  > h3 {
-    font-size: 28px;
-    color: #000;
+  .page-header__title {
+    flex-shrink: 0;
+    position: relative;
+    z-index: 2;
+    max-width: 100%;
+    font-size: 24px;
+    line-height: 1.3;
+    color: @heading-color;
     margin: 0;
     padding: 0;
-    font-weight: bold;
+    font-weight: @font-weight-strong;
+  }
+  .page-header__tabs-wrap {
+    min-width: 0;
   }
   &::before {
     position: absolute;
@@ -96,17 +108,19 @@ export default {
   bottom: 0;
   left: 0;
   width: 100%;
-  ::v-deep {
-    .ant-tabs-bar {
-      border-bottom: 0;
-    }
-    .ant-tabs-nav .ant-tabs-tab {
-      padding: 16px 16px 20px 16px;
-      font-weight: bold;
-    }
-    .ant-tabs-nav-wrap {
-      margin-bottom: 0;
-    }
+  :deep(.ant-tabs-bar) {
+    border-bottom: 0;
+  }
+  :deep(.ant-tabs-nav .ant-tabs-tab) {
+    padding: 16px 16px 20px 16px;
+    font-weight: @font-weight-strong;
+    color: @text-color;
+  }
+  :deep(.ant-tabs-nav .ant-tabs-tab-active) {
+    color: @heading-color;
+  }
+  :deep(.ant-tabs-nav-wrap) {
+    margin-bottom: 0;
   }
 }
 </style>

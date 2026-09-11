@@ -7,7 +7,7 @@
     resource="llm_benchmarks" />
 </template>
 
-<script>
+<script lang="jsx">
 import WindowsMixin from '@/mixins/windows'
 import { renderBenchmarkState } from '../utils/state'
 import { downloadBenchmarkArtifact, fetchBenchmarkLog } from '../utils/artifacts'

@@ -39,20 +39,20 @@ export default {
     columns: Array,
   },
   data () {
-    const formatPostpaid = (row) => {
+    const formatPostpaid = (row, h) => {
       const ret = []
       if (row.billing_type === 'postpaid') {
-        ret.push(<div style={{ color: '#0A1F44' }}>{ this.$t('billingType.postpaid') }</div>)
+        ret.push(h('div', { style: { color: 'var(--oc-color-text-heading)' } }, this.$t('billingType.postpaid')))
       } else if (row.billing_type === 'prepaid') {
-        ret.push(<div style={{ color: '#0A1F44' }}>{ this.$t('billingType.prepaid') }</div>)
+        ret.push(h('div', { style: { color: 'var(--oc-color-text-heading)' } }, this.$t('billingType.prepaid')))
       }
       if (row.expired_at) {
         const dateArr = this.$moment(row.expired_at).fromNow().split(' ')
         const date = dateArr.join(' ')
         const seconds = this.$moment(row.expired_at).diff(new Date()) / 1000
-        const textColor = seconds / 24 / 60 / 60 < 7 ? '#DD2727' : '#53627C'
+        const textColor = seconds / 24 / 60 / 60 < 7 ? '#DD2727' : 'var(--oc-color-text-secondary)'
         const text = seconds < 0 ? this.$t('db.text_162') : this.$t('db.text_163', [date])
-        ret.push(<div style={{ color: textColor }}>{text}</div>)
+        ret.push(h('div', { style: { color: textColor } }, text))
       }
       return ret
     }
@@ -65,8 +65,8 @@ export default {
           field: 'charge_type',
           title: this.$t('db.text_54'),
           slots: {
-            default: ({ row }) => {
-              return formatPostpaid(row)
+            default: ({ row }, h) => {
+              return formatPostpaid(row, h)
             },
           },
         },
@@ -74,23 +74,43 @@ export default {
           field: 'region',
           title: this.$t('db.text_40'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (!row.region_id) return row.region || '-'
               const p = hasPermission({ key: 'cloudregions_get' })
               let node
               if (p) {
-                node = (
-                  <list-body-cell-wrap copy row={ row } onManager={ this.onManager } field='region' title={ row.region } hideField={ true }>
-                    <side-page-trigger permission='areas_get' name='CloudregionSidePage' id={row.region_id} vm={this}>{ row.region }</side-page-trigger>
-                  </list-body-cell-wrap>
-                )
+                node = h('list-body-cell-wrap', {
+                  props: {
+                    copy: true,
+                    row: row,
+                    onManager: this.onManager,
+                    field: 'region',
+                    title: row.region,
+                    hideField: true,
+                  },
+                }, [
+                  h('side-page-trigger', {
+                    props: {
+                      permission: 'areas_get',
+                      name: 'CloudregionSidePage',
+                      id: row.region_id,
+                      vm: this,
+                    },
+                  }, row.region),
+                ])
               } else {
-                node = (
-                  <list-body-cell-wrap copy row={ row } onManager={ this.onManager } field='region' title={ row.region } />
-                )
+                node = h('list-body-cell-wrap', {
+                  props: {
+                    copy: true,
+                    row: row,
+                    onManager: this.onManager,
+                    field: 'region',
+                    title: row.region,
+                  },
+                })
               }
               return [
-                <div class='text-truncate'>{ node }</div>,
+                h('div', { class: 'text-truncate' }, [node]),
               ]
             },
           },
@@ -100,7 +120,7 @@ export default {
           hiddenField: 'region',
           title: this.$t('db.text_133'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               const ret = []
               let i = 0
               for (;;) {
@@ -108,9 +128,7 @@ export default {
                 const value = row[`zone${i}_name`]
                 if (!value) break
                 ret.push(
-                  <div>
-                    {value}({i > 1 ? this.$t('db.text_164') : this.$t('db.text_165')})
-                  </div>,
+                  h('div', `${value}(${i > 1 ? this.$t('db.text_164') : this.$t('db.text_165')})`),
                 )
               }
               return ret
@@ -122,11 +140,19 @@ export default {
           title: this.$t('db.intranet_ip'),
           minWidth: 200,
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               const ip_addrs = (row.ip_addrs || '').split(',')
               return [
                 ...ip_addrs.map(ip => {
-                  return (<list-body-cell-wrap hide-field copy message={ip}><span>{ip}</span></list-body-cell-wrap>)
+                  return h('list-body-cell-wrap', {
+                    props: {
+                      hideField: true,
+                      copy: true,
+                      message: ip,
+                    },
+                  }, [
+                    h('span', ip),
+                  ])
                 }),
               ]
             },
@@ -224,7 +250,7 @@ export default {
               field: 'connection_str',
               title: this.$t('db.text_173'),
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   const addr = row.connection_str
                   const btnTxt = addr ? this.$t('db.text_174') : this.$t('db.text_175')
                   const isRunning = row.status === 'running'
@@ -233,21 +259,29 @@ export default {
                   // 华为云不支持开启外网地址和关闭外网地址
                   if (row.provider !== 'Huawei') {
                     if (isRunning) {
-                      RenderSwitchBtn = (<a-button type="link" onClick={() => this.handleSwitchPublicAddress(!addr)}>{btnTxt}</a-button>)
+                      RenderSwitchBtn = h('a-button', {
+                        props: { type: 'link' },
+                        on: {
+                          click: () => this.handleSwitchPublicAddress(!addr),
+                        },
+                      }, btnTxt)
                     } else {
-                      RenderSwitchBtn = (
-                        <a-tooltip placement='top' title={notRunninTip}>
-                          <a-button type="link" disabled>{btnTxt}</a-button>
-                        </a-tooltip>
-                      )
+                      RenderSwitchBtn = h('a-tooltip', {
+                        props: {
+                          placement: 'top',
+                          title: notRunninTip,
+                        },
+                      }, [
+                        h('a-button', {
+                          props: { type: 'link', disabled: true },
+                        }, btnTxt),
+                      ])
                     }
                   }
-                  return (
-                    <div>
-                      {addr ? row.provider === 'Qcloud' ? addr : `${addr}:${row.port}` : '-'}
-                      {RenderSwitchBtn}
-                    </div>
-                  )
+                  return h('div', [
+                    addr ? (row.provider === 'Qcloud' ? addr : `${addr}:${row.port}`) : '-',
+                    RenderSwitchBtn,
+                  ])
                 },
               },
             },
@@ -284,9 +318,24 @@ export default {
                 default: ({ row }) => {
                   if (!row.secgroups) return '-'
                   return row.secgroups.map((item) => {
-                    return <list-body-cell-wrap copy hideField={true} field='name' row={item} message={item.name}>
-                      <side-page-trigger permission='secgroups_get' name='SecGroupSidePage' id={item.id} vm={this}>{ item.name }</side-page-trigger>
-                    </list-body-cell-wrap>
+                    return h('list-body-cell-wrap', {
+                      props: {
+                        copy: true,
+                        hideField: true,
+                        field: 'name',
+                        row: item,
+                        message: item.name,
+                      },
+                    }, [
+                      h('side-page-trigger', {
+                        props: {
+                          permission: 'secgroups_get',
+                          name: 'SecGroupSidePage',
+                          id: item.id,
+                          vm: this,
+                        },
+                      }, item.name),
+                    ])
                   })
                 },
               },

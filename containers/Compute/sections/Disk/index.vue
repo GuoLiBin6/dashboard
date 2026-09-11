@@ -1,15 +1,21 @@
 <template>
-  <div class="disk-wrapper d-flex w-auto">
+  <div class="disk-wrapper d-flex align-items-start w-auto">
     <a-form-item :wrapperCol="{ span: 24 }" :validate-status="storageStatusMap.type">
-      <a-tag color="blue" v-if="diskTypeLabel && !disabled">{{ diskTypeLabel }}</a-tag>
-      <a-select v-else v-decorator="decorator.type" labelInValue :style="{minWidth: '300px'}" @change="typeChange" :disabled="disabled || imageType === 'snapshot'">
-        <a-select-option v-for="(item, key) of typesMap" :key="key" :value="key">{{ item.label }}</a-select-option>
-      </a-select>
+      <a-tag class="disk-type-tag" v-if="diskTypeLabel && !disabled">{{ diskTypeLabel }}</a-tag>
+      <a-select
+        v-else
+        v-decorator="decorator.type"
+        labelInValue
+        :style="{minWidth: '300px'}"
+        :options="diskTypeSelectOptions"
+        @change="typeChange"
+        :disabled="disabled || imageType === 'snapshot'" />
     </a-form-item>
     <a-form-item class="mx-1" :wrapperCol="{ span: 24 }">
       <a-tooltip :title="tooltip" placement="top">
         <disk-size-input
           v-decorator="decorator.size"
+          :value="sizeFieldValue"
           :step="10"
           :min="minSize"
           :max="max"
@@ -26,25 +32,25 @@
             v-decorator="decorator.snapshot"
             resource="snapshots"
             :params="snapshotsParams"
-            :item.sync="snapshotObj"
+            v-model:item="snapshotObj"
             :select-props="{ placeholder: $t('compute.text_124') }" />
         </a-form-item>
-        <a-button class="mt-1" type="link" v-show="!simplify" @click="() => showSnapshot = !showSnapshot">{{ showSnapshot ? $t('compute.text_135') : $t('compute.text_133') }}</a-button>
+        <a-button type="link" v-show="!simplify" @click="() => showSnapshot = !showSnapshot">{{ showSnapshot ? $t('compute.text_135') : $t('compute.text_133') }}</a-button>
       </template>
       <template v-if="!showSnapshot && has('mount-point') && !disabled && imageType !== 'backup' && imageType !== 'snapshot'">
         <disk-mountpoint
           class="mx-1"
           v-if="showMountpoint"
           :decorators="{ filetype: decorator.filetype, mountPath: decorator.mountPath }" />
-          <a-button class="mt-1" type="link" @click="() => showMountpoint = !showMountpoint">{{ showMountpoint ? $t('compute.text_135') : $t('compute.text_134') }}</a-button>
+          <a-button type="link" @click="() => showMountpoint = !showMountpoint">{{ showMountpoint ? $t('compute.text_135') : $t('compute.text_134') }}</a-button>
       </template>
       <template v-if="has('schedtag') && !showStorage && !isStorageShow && imageType !== 'backup' && imageType !== 'snapshot'">
         <schedtag-policy v-if="showSchedtag" :form="form" :decorators="{ schedtag: decorator.schedtag, policy: decorator.policy }" :schedtag-params="schedtagParams" :policyReactInSchedtag="false" />
-        <a-button v-if="!disabled" v-show="!simplify" class="mt-1" type="link" @click="() => showSchedtag = !showSchedtag">{{ showSchedtag ? $t('compute.text_135') : $t('compute.text_1315') }}</a-button>
+        <a-button v-if="!disabled" v-show="!simplify" type="link" @click="() => showSchedtag = !showSchedtag">{{ showSchedtag ? $t('compute.text_135') : $t('compute.text_1315') }}</a-button>
       </template>
       <template v-if="has('storage') && !showSchedtag && imageType !== 'snapshot'">
         <storage style="min-width: 480px; max-width: 500px;" :diskKey="diskKey" :decorators="decorator" :storageParams="storageParams" v-if="showStorage" :form="form" :storageHostParams="storageHostParams" @storageHostChange="(val) => $emit('storageHostChange', val)" />
-        <a-button v-if="!disabled" class="mt-1" type="link" @click="storageShowClick">{{ showStorage ? $t('compute.text_135') : $t('compute.text_1350') }}</a-button>
+        <a-button v-if="!disabled" type="link" @click="storageShowClick">{{ showStorage ? $t('compute.text_135') : $t('compute.text_1350') }}</a-button>
       </template>
       <!-- 关机重置 -->
       <a-form-item v-if="isAutoResetShow">
@@ -58,7 +64,7 @@
             :options="preallocationOptions"
             :select-props="{ allowClear: true, placeholder: $t('common.select') }" />
         </a-form-item>
-        <a-button v-if="!disabled" class="mt-1" type="link" @click="preallocationShowClick">{{ showPreallocation ? $t('compute.text_135') : $t('compute.assign_preallocation') }}</a-button>
+        <a-button v-if="!disabled" type="link" @click="preallocationShowClick">{{ showPreallocation ? $t('compute.text_135') : $t('compute.assign_preallocation') }}</a-button>
       </template>
       <!-- iops 创建时可设置，修改时禁用 -->
       <template v-if="has('iops') && !disabled && isIopsShow">
@@ -73,7 +79,7 @@
               :precision="0" />
           </a-tooltip>
         </a-form-item>
-        <a-button class="mt-1" type="link" @click="() => changeIopsShow(!showIops)">{{ showIops ? $t('compute.text_135') : $t('compute.set_iops') }}</a-button>
+        <a-button type="link" @click="() => changeIopsShow(!showIops)">{{ showIops ? $t('compute.text_135') : $t('compute.set_iops') }}</a-button>
       </template>
       <!-- throughput 创建时可设置，修改时禁用 -->
       <template v-if="has('throughput') && !disabled && isThroughputShow">
@@ -88,7 +94,7 @@
               :precision="0" />
           </a-tooltip>
         </a-form-item>
-        <a-button class="mt-1" type="link" @click="() => changeThroughputShow(!showThroughput)">{{ showThroughput ? $t('compute.text_135') : $t('compute.set_throughput') }}</a-button>
+        <a-button type="link" @click="() => changeThroughputShow(!showThroughput)">{{ showThroughput ? $t('compute.text_135') : $t('compute.set_throughput') }}</a-button>
       </template>
     </template>
     <template v-if="has('iops') && disabled && isIopsShow && defaultIops && iamgeType !== 'backup' && imageType !== 'snapshot'">
@@ -102,9 +108,9 @@
       <template slot="title">
         <div slot="help">{{ storageStatusMap.tooltip }}</div>
       </template>
-      <a-icon type="exclamation-circle" class="storage-icon" :class="storageClass" />
+      <icon type="exclamation-circle" class="storage-icon" :class="storageClass" />
     </a-tooltip>
-    <a-button v-if="!disabled && hasAdvanced" class="mt-1" type="link" @click="() => showAdvanced = !showAdvanced">{{ showAdvanced ? $t('compute.hide_advanced') : $t('compute.advanced') }}</a-button>
+    <a-button v-if="!disabled && hasAdvanced" type="link" @click="() => showAdvanced = !showAdvanced">{{ showAdvanced ? $t('compute.hide_advanced') : $t('compute.advanced') }}</a-button>
   </div>
 </template>
 
@@ -146,7 +152,7 @@ export default {
     },
     max: {
       type: Number,
-      required: true,
+      default: 0,
     },
     elements: {
       type: Array,
@@ -252,6 +258,26 @@ export default {
     tooltip () {
       return this.$t('compute.text_137', [this.minSize, this.max])
     },
+    // 显式绑定 fd，避免 antdv4 InputNumber 在 setFieldsValue 后不刷新展示
+    sizeFieldValue () {
+      const key = this.decorator?.size?.[0]
+      if (!key || !this.form) return undefined
+      const fc = this.form.fc
+      if (fc && typeof fc.getFieldValue === 'function') {
+        const v = fc.getFieldValue(key)
+        if (v !== undefined && v !== null && v !== '') return v
+      }
+      const fd = this.form.fd
+      if (!fd) return undefined
+      if (Object.prototype.hasOwnProperty.call(fd, key) && fd[key] !== undefined && fd[key] !== null && fd[key] !== '') {
+        return fd[key]
+      }
+      const m = String(key).match(/^([^[]+)\[(.+)\]$/)
+      if (m && fd[m[1]] && typeof fd[m[1]] === 'object') {
+        return fd[m[1]][m[2]]
+      }
+      return undefined
+    },
     iopsTooltip () {
       if (this.iopsLimit.min && this.iopsLimit.max) {
         return `${this.iopsLimit.min} ~ ${this.iopsLimit.max}`
@@ -273,6 +299,13 @@ export default {
     },
     hasAdvanced () {
       return this.has('snapshot') || this.has('mount-point') || this.has('schedtag') || this.has('storage') || this.has('iops') || this.has('throughput') || this.isAutoResetShow || this.isVMware
+    },
+    // antdv4 labelInValue + a-select-option 插槽会得到 VNode label（循环引用），改用 options 保证为字符串
+    diskTypeSelectOptions () {
+      return Object.keys(this.typesMap || {}).map(key => ({
+        value: key,
+        label: this.typesMap[key].label,
+      }))
     },
   },
   watch: {
@@ -379,7 +412,10 @@ export default {
       return `${n}GB`
     },
     typeChange (val) {
-      this.$emit('diskTypeChange', val)
+      const key = val?.key ?? val?.value
+      const label = this.typesMap?.[key]?.label || (typeof val?.label === 'string' ? val.label : key)
+      // 统一为业务侧 { key, label }，避免 VNode label 传入 a-tag / 下游表单
+      this.$emit('diskTypeChange', { key, value: key, label })
       if (this.showStorage) {
         this.$emit('storageHostChange', { disk: this.diskKey, storageHosts: [] })
       }
@@ -425,11 +461,39 @@ export default {
 </script>
 
 <style lang="less" scoped>
-.disk-wrapper{
-  .storage-icon{
-    position: relative;
-    top: 12px;
+.disk-wrapper {
+  // 顶对齐：校验错误撑高某一项时，其它控件 / 操作按钮不跟着垂直居中错位
+  align-items: flex-start;
+  // 行内 form-item 去底边距；行间距改由 wrapper / 外层 row 承担
+  margin-bottom: 24px;
+  :deep(.ant-form-item) {
+    margin-bottom: 0;
+  }
+  // 与输入框同高并垂直居中文字，视觉居中且不受下方错误文案影响
+  :deep(.ant-btn-link),
+  :deep(.ant-checkbox-wrapper) {
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+  }
+  .disk-type-tag.ant-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    height: 32px;
+    margin: 0;
+    padding: 0 10px;
+    line-height: 30px;
+    border-radius: 6px;
+    font-size: 14px;
+    color: var(--ant-color-primary, #1890ff);
+    background: color-mix(in srgb, var(--ant-color-primary, #1890ff) 10%, #fff);
+    border-color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 40%, #fff);
+  }
+  .storage-icon {
     margin-left: 10px;
+    margin-top: 8px;
   }
 }
 </style>

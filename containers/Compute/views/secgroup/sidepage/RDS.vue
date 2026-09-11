@@ -124,7 +124,7 @@ export default {
       this.refresh()
     })
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.$bus.$off('RdsRefresh')
   },
   methods: {

@@ -41,7 +41,7 @@
             <a-switch v-decorator="decorators.disable_usb_kbd" />
           </a-form-item>
           <a-form-item :label="$t('compute.text_494')" :extra="$t('compute.daemon.tooltip')" v-if="canAdminUpdate">
-            <a-switch v-model="is_daemon" />
+            <a-switch v-model:value="is_daemon" />
           </a-form-item>
         </template>
       </a-form>

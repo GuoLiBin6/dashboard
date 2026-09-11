@@ -12,9 +12,15 @@ export default {
         onManager: this.onManager,
         hideField: true,
         slotCallback: row => {
-          return (
-            <side-page-trigger vm={this} name='IpSetSidePage' id={row.id} list={this.list} tab='ip-set-detail'>{ row.name }</side-page-trigger>
-          )
+          return this.$createElement('side-page-trigger', {
+            props: {
+              vm: this,
+              name: 'IpSetSidePage',
+              id: row.id,
+              list: this.list,
+              tab: 'ip-set-detail',
+            },
+          }, row.name)
         },
       }),
       {

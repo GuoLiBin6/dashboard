@@ -15,7 +15,7 @@
                   <span slot="label">
                     {{ $t('compute.iops') }}&nbsp;
                     <a-tooltip :title="$t('compute.text_1248_tip')">
-                      <a-icon type="question-circle-o" />
+                      <icon type="question-circle" />
                     </a-tooltip>
                   </span>
                   <span>
@@ -28,7 +28,7 @@
                   <span slot="label">
                     {{ $t('compute.bps') }}&nbsp;
                     <a-tooltip :title="$t('compute.text_1248_1_tip')">
-                      <a-icon type="question-circle-o" />
+                      <icon type="question-circle" />
                     </a-tooltip>
                   </span>
                   <span>

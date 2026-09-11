@@ -83,6 +83,7 @@ module.exports = {
       resolve: {
         extensions: ['.js', '.vue', '.json'],
         alias: {
+          // vxe-table v4 + xe-utils v3 不再需要对 xe-utils/methods/xe-utils 做映射
           '@': resolve('./src'),
           '~': resolve('./src'),
           '@@': resolve('.'),

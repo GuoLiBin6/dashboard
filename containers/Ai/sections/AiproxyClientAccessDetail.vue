@@ -1,9 +1,9 @@
 <template>
   <a-card size="small" class="aiproxy-client-access-detail mt-3">
-    <div slot="title">{{ $t('aice.aiproxy.access_protocol_detail') }}</div>
+    <template #title>{{ $t('aice.aiproxy.access_protocol_detail') }}</template>
     <template v-if="protocol === 'anthropic' && anthropicBlocked">
       <a-alert type="warning" show-icon>
-        <template slot="message">{{ $t('aice.aiproxy.provider_client_hint.anthropic_unsupported') }}</template>
+        <template #message>{{ $t('aice.aiproxy.provider_client_hint.anthropic_unsupported') }}</template>
       </a-alert>
     </template>
     <template v-else>
@@ -14,8 +14,8 @@
             type="info"
             show-icon
             class="mb-3">
-            <template slot="message">{{ $t('aice.aiproxy.provider_client_hint.title') }}</template>
-            <template slot="description">
+            <template #message>{{ $t('aice.aiproxy.provider_client_hint.title') }}</template>
+            <template #description>
               <p class="mb-0">{{ $t(clientHintKey, { model: displayModel }) }}</p>
             </template>
           </a-alert>
@@ -61,8 +61,8 @@
           <div class="agent-cli-pane">
             <template v-if="protocol === 'openai'">
               <a-alert type="info" show-icon class="mb-3">
-                <template slot="message">{{ $t('aice.aiproxy.codex_config_title') }}</template>
-                <template slot="description">
+                <template #message>{{ $t('aice.aiproxy.codex_config_title') }}</template>
+                <template #description>
                   <p class="mb-0">{{ $t('aice.aiproxy.codex_config_hint') }}</p>
                 </template>
               </a-alert>
@@ -80,8 +80,8 @@
             <template v-else-if="protocol === 'anthropic'">
               <template v-if="showClaudeModelMapping">
                 <a-alert type="info" show-icon class="mb-3">
-                  <template slot="message">{{ $t('aice.aiproxy.claude_code_model_mapping') }}</template>
-                  <template slot="description">
+                  <template #message>{{ $t('aice.aiproxy.claude_code_model_mapping') }}</template>
+                  <template #description>
                     <p class="mb-0">{{ $t('aice.aiproxy.claude_code_model_mapping_hint') }}</p>
                   </template>
                 </a-alert>
@@ -92,7 +92,7 @@
                     class="claude-env-row">
                     <div class="claude-env-label">{{ $t(field.labelKey) }}</div>
                     <a-select
-                      v-model="claudeEnvSelections[field.key]"
+                      v-model:value="claudeEnvSelections[field.key]"
                       class="claude-env-select"
                       style="width: 100%;">
                       <a-select-option
@@ -105,8 +105,8 @@
                   </div>
                 </div>
                 <a-alert type="info" show-icon class="mb-3">
-                  <template slot="message">{{ $t('aice.aiproxy.claude_code_config_title') }}</template>
-                  <template slot="description">
+                  <template #message>{{ $t('aice.aiproxy.claude_code_config_title') }}</template>
+                  <template #description>
                     <p class="mb-0">{{ $t('aice.aiproxy.claude_code_config_hint') }}</p>
                   </template>
                 </a-alert>

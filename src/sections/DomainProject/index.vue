@@ -3,7 +3,7 @@
     <template v-if="!isAdminMode && !isDomainMode">
       <div style="margin-bottom: 24px;">{{ projectData.label }}</div>
     </template>
-    <a-row :gutter="8" v-else>
+    <a-row :gutter="8" v-else class="domain-project-row">
       <a-col :span="12">
         <a-form-item :class="{ 'mb-0': mb0 }" v-if="isAdminMode && l3PermissionEnable" :wrapperCol="{ span: 24 }">
           <base-select
@@ -11,13 +11,14 @@
             v-decorator="decorators.domain"
             resource="domains"
             remote
+            min-width="0"
             :is-default-select="isDefaultSelect"
             :params="domainParams"
             :select-props="{
               allowClear,
               labelInValue,
               placeholder: $t('rules.domain'),
-              dropdownClassName: 'oc-select-dropdown',
+              popupClassName: 'oc-select-dropdown',
               labelInValueKeyName: 'key',
             }"
             @change="domainChange"
@@ -35,13 +36,14 @@
             v-decorator="decorators.project"
             resource="projects"
             remote
+            min-width="0"
             :is-default-select="isDefaultSelect"
             :params="projectParams"
             :select-props="{
               allowClear,
               labelInValue,
               placeholder: $t('rules.project'),
-              dropdownClassName: 'oc-select-dropdown',
+              popupClassName: 'oc-select-dropdown',
               labelInValueKeyName: 'key',
             }"
             :beforeDefaultSelectCallBack="beforeProjectDefaultSelectCallBack"
@@ -169,7 +171,7 @@ export default {
           const draftPreferred = await this.resolveDomainProjectDraftPreferred(defaultDomain.key)
           if (draftPreferred.domain) {
             defaultDomain = draftPreferred.domain
-          } else {
+          } else if (this.domain?.key) {
             const domainData = await this.$store.dispatch('storage/getDomainById', this.domain)
             if (domainData) {
               defaultDomain = { key: domainData.id, label: domainData.name }
@@ -187,7 +189,7 @@ export default {
         const projectChange = async () => {
           if (!this.ignoreStorage) {
             const draft = this.readFormFieldDraft()
-            if (!(draft?.project?.key)) {
+            if (!(draft?.project?.key) && this.project?.key) {
               const projectData = await this.$store.dispatch('storage/getProjectById', { ...this.project, project_domain: defaultDomain.key })
               if (projectData) {
                 defaultProject = { key: projectData.id, label: projectData.name }
@@ -243,7 +245,7 @@ export default {
               const draftPreferred = await this.resolveDomainProjectDraftPreferred(this.domain?.key || data[0]?.key)
               if (draftPreferred.project) {
                 defaultProject = draftPreferred.project
-              } else {
+              } else if (this.project?.key) {
                 const projectData = await this.$store.dispatch('storage/getProjectById', { ...this.project, project_domain: this.domain?.key })
                 if (projectData) {
                   defaultProject = { key: projectData.id, label: projectData.name }
@@ -459,3 +461,16 @@ export default {
   },
 }
 </script>
+
+<style lang="less" scoped>
+.domain-project-row {
+  :deep(.ant-col) {
+    min-width: 0;
+  }
+  :deep(.ant-select) {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: 100%;
+  }
+}
+</style>

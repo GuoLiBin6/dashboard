@@ -4,6 +4,7 @@ import WindowsMixin from '@/mixins/windows'
 import storage from '@/utils/storage'
 import store from '@/store'
 import i18n from '@/locales'
+import legacyH from '@/utils/legacyCreateElement'
 
 export default {
   name: 'TopAlert',
@@ -24,13 +25,14 @@ export default {
     renderMessageChildren (messageOptions = []) {
       return messageOptions.map(item => {
         if (R.is(Array, item)) {
-          return this.$createElement(...R.clone(item))
+          return legacyH(...R.clone(item))
         }
-        return this.$createElement('span', item)
+        return legacyH('span', item)
       })
     },
     renderMessage (key, { alertProps, messageOptions, interval = 1000 * 60 * 60 * 24 } = {}) {
-      return this.$createElement('a-alert', {
+      return legacyH('a-alert', {
+        key,
         class: 'global-top-alert',
         style: {
           marginBottom: '8px',
@@ -158,7 +160,7 @@ export default {
           }
         }
       }, this.topAlert)
-      return this.$createElement('div', { class: 'top-alert' }, items)
+      return legacyH('div', { class: 'top-alert' }, items)
     }
     return null
   },

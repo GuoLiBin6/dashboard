@@ -7,53 +7,35 @@
       :title="$t('scope.text_230', [this.$t('dictionary.user')])"
       class="mb-4"
       :loading="loading">
-      <vxe-table
+      <table-lite-grid
         :data="userTableData"
         :show-header="false"
-        border="none">
-        <vxe-table-column field="label" title="label" width="190" align="right">
-          <template v-slot="{ row }">{{ row.label }}:</template>
-        </vxe-table-column>
-        <vxe-table-column field="value" title="value">
-          <template v-slot="{ row }">
-            <template v-if="!row.isProjects">
-              <list-body-cell-wrap copy field="value" :row="row" />
+        :columns="userTableColumns"
+        :border="false">
+        <template #label="{ row }">{{ row.label }}:</template>
+        <template #value="{ row }">
+          <list-body-cell-wrap v-if="!row.isProjects" copy field="value" :row="row" />
+          <table-lite-grid
+            v-else
+            :data="row.value"
+            :columns="projectTableColumns"
+            show-overflow="title"
+            border>
+            <template #current="{ row: project }">
+              <a-tooltip v-if="project.current" :title="$t('scope.text_231', [$t('dictionary.project')])">
+                <icon type="check-circle" theme="twoTone" twoToneColor="#52c41a" />
+              </a-tooltip>
             </template>
-            <template v-else>
-              <vxe-table :data="row.value" show-overflow="title" border>
-                <vxe-table-column field="current" width="35">
-                  <template v-slot="{ row }">
-                    <template v-if="row.current">
-                      <a-tooltip :title="$t('scope.text_231', [$t('dictionary.project')])">
-                        <a-icon type="check-circle" theme="twoTone" twoToneColor="#52c41a" />
-                      </a-tooltip>
-                    </template>
-                  </template>
-                </vxe-table-column>
-                <vxe-table-column field="id" title="ID" min-width="160">
-                  <template v-slot="{ row }">
-                    <list-body-cell-wrap copy field="id" :row="row" />
-                  </template>
-                </vxe-table-column>
-                <vxe-table-column field="name" :title="$t('scope.text_21')" />
-                <vxe-table-column field="domain" :title="$t('table.title.domain')" />
-                <vxe-table-column field="roles" :title="$t('table.title.role')">
-                  <template v-slot="{ row }">{{ getRoles(row.roles).join(', ') || '-' }}</template>
-                </vxe-table-column>
-                <vxe-table-column field="project_policies" :title="$t('table.title.projectPolicy')">
-                  <template v-slot="{ row }">{{ row.project_policies && row.project_policies.join(', ') || '-' }}</template>
-                </vxe-table-column>
-                <vxe-table-column field="domain_policies" :title="$t('table.title.domainPolicy')">
-                  <template v-slot="{ row }">{{ row.domain_policies && row.domain_policies.join(', ') || '-' }}</template>
-                </vxe-table-column>
-                <vxe-table-column field="system_policies" :title="$t('table.title.managePolicy')">
-                  <template v-slot="{ row }">{{ row.system_policies && row.system_policies.join(', ') || '-' }}</template>
-                </vxe-table-column>
-              </vxe-table>
+            <template #id="{ row: project }">
+              <list-body-cell-wrap copy field="id" :row="project" />
             </template>
-          </template>
-        </vxe-table-column>
-      </vxe-table>
+            <template #roles="{ row: project }">{{ getRoles(project.roles).join(', ') || '-' }}</template>
+            <template #project_policies="{ row: project }">{{ project.project_policies && project.project_policies.join(', ') || '-' }}</template>
+            <template #domain_policies="{ row: project }">{{ project.domain_policies && project.domain_policies.join(', ') || '-' }}</template>
+            <template #system_policies="{ row: project }">{{ project.system_policies && project.system_policies.join(', ') || '-' }}</template>
+          </table-lite-grid>
+        </template>
+      </table-lite-grid>
     </a-card>
     <idp-card />
     <a-card
@@ -64,9 +46,13 @@
       <div class="d-flex">
         <div class="user-info-item-label flex-grow-0 flex-shrink-0 text-right">{{$t('scope.text_239')}}</div>
         <div class="flex-fill ml-3">
-          <a-switch :checked-children="$t('table.title.on')" :un-checked-children="$t('table.title.off')" @change="doUpdateShowSystemRsChangeHandle" v-model="isShowSystemResource" />
+          <a-switch
+            v-model:checked="isShowSystemResource"
+            :checked-children="$t('table.title.on')"
+            :un-checked-children="$t('table.title.off')"
+            @change="doUpdateShowSystemRsChangeHandle" />
           <a-tooltip :title="$t('scope.text_242')" placement="right">
-            <a-icon type="question-circle-o" class="ml-2" style="position: relative; top: 2px;" />
+            <icon type="question-circle" class="ml-2" style="position: relative; top: 2px;" />
           </a-tooltip>
         </div>
       </div>
@@ -76,7 +62,6 @@
 
 <script>
 import { mapGetters } from 'vuex'
-// import ContactStatus from './components/ContactStatus'
 import { SHOW_SYSTEM_RESOURCE, contactMap } from '@/constants'
 import WindowsMixin from '@/mixins/windows'
 import Contact from './components/Contact'
@@ -87,7 +72,6 @@ export default {
   components: {
     Contact,
     IdpCard,
-    // ContactStatus,
   },
   mixins: [WindowsMixin],
   data () {
@@ -111,10 +95,28 @@ export default {
       })
       return ret
     },
+    projectTableColumns () {
+      return [
+        { field: 'current', width: 35, slots: { default: 'current' } },
+        { field: 'id', title: 'ID', minWidth: 160, slots: { default: 'id' } },
+        { field: 'name', title: this.$t('scope.text_21') },
+        { field: 'domain', title: this.$t('table.title.domain') },
+        { field: 'roles', title: this.$t('table.title.role'), slots: { default: 'roles' } },
+        { field: 'project_policies', title: this.$t('table.title.projectPolicy'), slots: { default: 'project_policies' } },
+        { field: 'domain_policies', title: this.$t('table.title.domainPolicy'), slots: { default: 'domain_policies' } },
+        { field: 'system_policies', title: this.$t('table.title.managePolicy'), slots: { default: 'system_policies' } },
+      ]
+    },
+    userTableColumns () {
+      return [
+        { field: 'label', width: 190, align: 'right', slots: { default: 'label' } },
+        { field: 'value', slots: { default: 'value' } },
+      ]
+    },
     userTableData () {
       const us = this.userInfo
       const passwordExpiresAtStr = us.password_expires_at ? this.$moment(this.userInfo.password_expires_at).format() : '-'
-      const ret = [
+      return [
         { label: this.$t('scope.text_244'), value: us.name },
         { label: this.$t('scope.text_245'), value: us.displayname },
         { label: this.$t('table.title.userId'), value: us.id },
@@ -125,14 +127,13 @@ export default {
         { label: this.$t('scope.text_250'), value: us.enable_mfa ? this.$t('table.title.on') : this.$t('table.title.off') },
         { label: this.$t('dictionary.project'), value: this.projects, isProjects: true },
       ]
-      return ret
     },
   },
   watch: {
     profile: {
       handler: function (val) {
         if (val) {
-          this.isShowSystemResource = val.value && val.value[SHOW_SYSTEM_RESOURCE]
+          this.isShowSystemResource = !!(val.value && val.value[SHOW_SYSTEM_RESOURCE])
         }
       },
       deep: true,
@@ -149,8 +150,10 @@ export default {
     },
     async doUpdateShowSystemRsChangeHandle (v) {
       try {
-        this.$store.dispatch('profile/update', { [SHOW_SYSTEM_RESOURCE]: v })
+        this.isShowSystemResource = !!v
+        await this.$store.dispatch('profile/update', { [SHOW_SYSTEM_RESOURCE]: !!v })
       } catch (error) {
+        this.isShowSystemResource = !v
         throw error
       }
     },
@@ -160,6 +163,6 @@ export default {
 
 <style lang="less" scoped>
 .user-info-item-label {
-  width: 170px;
+  width: 190px;
 }
 </style>

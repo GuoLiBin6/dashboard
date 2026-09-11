@@ -64,10 +64,15 @@ export default {
             { required: true, message: this.$t('compute.text_210') },
             { validator: this.$validate('serverCreateName') },
           ],
-          slotCallback: row => {
-            return (
-              <side-page-trigger permission="server_get" name="VmInstanceSidePage" id={row.id} vm={this}>{ row.name }</side-page-trigger>
-            )
+          slotCallback: (row, h) => {
+            return h('side-page-trigger', {
+              props: {
+                permission: 'server_get',
+                name: 'VmInstanceSidePage',
+                id: row.id,
+                vm: this,
+              },
+            }, row.name)
           },
         }),
         getIpsTableColumn({ field: 'ip', title: 'IP' }),
@@ -84,7 +89,12 @@ export default {
               const version = (row.metadata && row.metadata.os_version) ? `${row.metadata.os_version}` : ''
               const tooltip = (version.includes(name) ? version : `${name} ${version}`) || this.$t('compute.text_339') // 去重
               return [
-                <SystemIcon tooltip={ tooltip } name={ name } />,
+                this.$createElement(SystemIcon, {
+                  props: {
+                    tooltip,
+                    name,
+                  },
+                }),
               ]
             },
           },
@@ -95,7 +105,14 @@ export default {
           width: 50,
           slots: {
             default: ({ row }) => {
-              return [<PasswordFetcher serverId={ row.id } resourceType='servers' />]
+              return [
+                this.$createElement(PasswordFetcher, {
+                  props: {
+                    serverId: row.id,
+                    resourceType: 'servers',
+                  },
+                }),
+              ]
             },
           },
         },
@@ -111,10 +128,16 @@ export default {
             default: ({ row }) => {
               const ret = []
               if (row.instance_type) {
-                ret.push(<div class='text-truncate' style={{ color: '#0A1F44' }}>{ row.instance_type }</div>)
+                ret.push(this.$createElement('div', {
+                  class: 'text-truncate',
+                  style: { color: 'var(--oc-color-text-heading)' },
+                }, row.instance_type))
               }
               const config = row.vcpu_count + 'C' + sizestr(row.vmem_size, 'M', 1024) + (row.disk ? sizestr(row.disk, 'M', 1024) : '')
-              return ret.concat(<div class='text-truncate' style={{ color: '#53627C' }}>{ config }</div>)
+              return ret.concat(this.$createElement('div', {
+                class: 'text-truncate',
+                style: { color: 'var(--oc-color-text-secondary)' },
+              }, config))
             },
           },
         },

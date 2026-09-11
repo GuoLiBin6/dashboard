@@ -6,7 +6,6 @@
       :style="{ width }"
       :value="dataVal"
       v-bind="$attrs"
-      v-on="$listeners"
       show-search
       :loading="c_loading"
       :size="size"
@@ -16,11 +15,13 @@
       :option-label-prop="layout === 'between' ? 'label' : 'children'"
       @search="handleSearch"
       @change="changeHanlde">
-      <a-spin v-if="c_loading" slot="notFoundContent" size="small" />
+      <template #notFoundContent>
+        <a-spin v-if="c_loading" size="small" />
+      </template>
       <a-select-option v-if="showStatus && statusDesc && (resOpts && resOpts.length > 0)" :key="-1" :value="-1" :disabled="true">
         <a-badge status="success" class="text-left text-wrap" :text="statusDesc" />
       </a-select-option>
-      <template v-if="!$scopedSlots.optTpl">
+      <template v-if="!$slots.optTpl">
         <!-- 双列左右排布 -->
         <template v-if="layout === 'between'">
           <a-select-option v-for="obj of resOpts" :key="obj.key" :value="obj.key" :label="obj.label" :disabled="obj.disabled">
@@ -63,7 +64,7 @@
       </template>
       <slot v-else name="optTpl" :resOpts="resOpts" />
     </a-select>
-    <a-icon v-if="showSync" type="sync" class="ml-2 primary-color" :spin="c_loading" @click="refresh" />
+    <icon v-if="showSync" type="sync" class="ml-2 primary-color oc-select-sync" :spin="c_loading" @click="refresh" />
   </div>
 </template>
 
@@ -254,6 +255,10 @@ export default {
       })
     },
     changeHanlde (value) {
+      this.dataVal = value
+      this.$emit('input', value)
+      this.$emit('change', value)
+      this.$emit('update:value', value)
       const curObjArr = this.resOpts.filter(obj => {
         if (Array.isArray(value)) {
           return value.includes(obj.key || obj.id)
@@ -304,9 +309,12 @@ export default {
     background-color: transparent;
   }
 }
-.ant-select-selection-selected-value {
+.ant-select-selection-item {
   .ant-badge {
     display: none;
   }
+}
+.oc-select-sync {
+  cursor: pointer;
 }
 </style>

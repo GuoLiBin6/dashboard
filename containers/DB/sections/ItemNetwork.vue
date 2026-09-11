@@ -24,14 +24,13 @@ export default {
   inject: ['form', 'formItemLayout', 'scopeParams'],
   methods: {
     vpcFormat (vpc) {
+      const h = this.$createElement
       const { name, manager } = vpc
-      return (
-        <div class='d-flex'>
-          <a-badge status={ vpc.network_count ? 'success' : 'default' } />
-          <span class='text-truncate flex-fill mr-2' title={ name }>{ name }</span>
-          <span style="color: #8492a6; font-size: 13px">{ this.$t('db.text_340', [manager]) }</span>
-        </div>
-      )
+      return h('div', { class: 'd-flex' }, [
+        h('a-badge', { props: { status: vpc.network_count ? 'success' : 'default' } }),
+        h('span', { class: 'text-truncate flex-fill mr-2', attrs: { title: name } }, name),
+        h('span', { style: { color: '#8492a6', fontSize: '13px' } }, this.$t('db.text_340', [manager])),
+      ])
     },
     /** zone / zones 可能是 string、数组或 {key,id,value}，统一成可 split 的 id */
     normalizeZoneValue (zone) {

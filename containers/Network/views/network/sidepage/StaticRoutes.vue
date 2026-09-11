@@ -3,14 +3,14 @@
     <div class="mb-2">
       <a-button type="primary" @click="handleSetStaticRoutes">{{ $t('network.set_static_routes') }}</a-button>
     </div>
-    <vxe-grid
+    <table-lite-grid
       :data="routeList"
       :columns="listColumns"
       resizable>
       <template v-slot:empty>
         <loader :loading="false" />
       </template>
-    </vxe-grid>
+    </table-lite-grid>
   </div>
 </template>
 

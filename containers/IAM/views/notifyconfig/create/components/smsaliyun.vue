@@ -24,7 +24,7 @@
       </template>
       <a-input v-decorator="decorators.signature" />
     </a-form-item>
-    <a-collapse :border="false" v-model="activeKey">
+    <a-collapse :border="false" v-model:activeKey="activeKey">
       <a-collapse-panel key="1" :header="$t('system.mobile_cn_tpl')">
         <a-form-item :label="$t('system.text_295')">
           <template v-slot:extra>

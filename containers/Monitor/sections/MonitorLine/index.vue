@@ -1,27 +1,27 @@
 <template>
   <a-card size="small" class="explorer-monitor-line" :style="monitorLineCardStyle">
-    <div slot="title" v-if="title">
+    <template #title v-if="title">
       <a-row type="flex">
         <a-col>
-          <a class="font-weight-bold h-100 d-block" style="margin-right: 6px;" @click="toggleShowTableLegend">
-            <a-icon type="line-chart" style="font-size: 14px;" v-if="showTableLegend" />
-            <a-icon type="credit-card" style="font-size: 14px;" v-if="!showTableLegend" />
+          <a class="font-weight-bold h-100 d-block" style="margin-right: 6px; cursor: pointer;" @click.stop="toggleShowTableLegend">
+            <icon type="line-chart" style="font-size: 14px;" v-if="innerShowTableLegend" />
+            <icon type="credit-card" style="font-size: 14px;" v-if="!innerShowTableLegend" />
           </a>
         </a-col>
         <a-col :span="21">
           {{ title }}
         </a-col>
       </a-row>
-    </div>
-    <div slot="extra" v-if="showTableExport && !isTemplate">
+    </template>
+    <template #extra v-if="showTableExport && !isTemplate">
       <a-button v-if="showTableExport && curPager.total" type="link" :title="$t('monitor.full_export')" @click="exportTable">
         {{ $t('table.action.export') }}
       </a-button>
       <slot name="extra" />
-    </div>
+    </template>
     <loader v-if="loading" :loading="true" />
     <template v-else>
-      <div class="d-flex">
+      <div class="d-flex monitor-line-chart-row">
         <uchart :data="uChartData" :options="uChartOptions" :otherCursorMovePoint="otherCursorMovePoint" />
         <div v-if="alertHandlerShow && lineChartOptionsC.dataset.length" class="alert-handler-wrapper position-relative">
           <div class="position-absolute clearfix d-flex align-items-center" :style="{ top: `${topStyleRange[1]}px` }">
@@ -30,36 +30,29 @@
           </div>
         </div>
       </div>
-      <vxe-grid
-        v-if="tableData && tableData.length && showTable && showTableLegend"
+      <table-lite-grid
+        v-if="tableData && tableData.length && showTable && innerShowTableLegend"
         max-height="500"
         size="mini"
         border
-        row-id="raw_name"
         ref="tableRef"
-        highlight-hover-row
         class="mt-3"
+        :row-config="{ keyField: 'raw_name' }"
+        :column-config="{ resizable: true }"
         :columns="columns"
         :data="tableData"
-        :row-style="getRowStyle"
-        resizable
-        :sort-config="sortConfig"
         @cell-click="cellClick"
         @sort-change="sortChange" />
-      <div class="vxe-grid--pager-wrapper" v-if="showTableLegend">
-        <div class="vxe-pager size--mini">
-          <div class="vxe-pager--wrapper">
-            <span class="vxe-pager--total" v-if="!pager || (pager && pager.total < 11)">{{ total }}</span>
-            <vxe-pager
-              v-else
-              size="mini"
-              @page-change="pageChange"
-              :page-sizes="getPageSizes"
-              :current-page.sync="curPager.page"
-              :page-size.sync="curPager.limit"
-              :total="curPager.total" />
-          </div>
-        </div>
+      <div class="mt-1" v-if="innerShowTableLegend">
+        <span v-if="!pager || (pager && pager.total < 11)" style="color:#606266;font-size:12px;">{{ total }}</span>
+        <list-pager
+          v-else
+          :current-page="curPager.page"
+          :page-size="curPager.limit"
+          :total="curPager.total"
+          :page-sizes="getPageSizes"
+          @change-page="onPagerPage"
+          @change-size="onPagerSize" />
       </div>
     </template>
   </a-card>
@@ -73,11 +66,13 @@ import { metric_zh, tableColumnMaps } from '@Monitor/constants'
 import { getChartTooltipLabel } from '@Monitor/utils'
 import { ColorHash } from '@/utils/colorHash'
 import { transformUnit } from '@/utils/utils'
+import ListPager from '@/components/PageList/components/ListPager.vue'
 const MAX_COLUMNS = 10
 
 export default {
   name: 'ExplorerMonitorLine',
   components: {
+    ListPager,
   },
   props: {
     isTemplate: {
@@ -137,7 +132,7 @@ export default {
     },
     showTableLegend: {
       type: Boolean,
-      default: true,
+      default: false, // 默认只展示图
     },
     monitorLineCardStyle: {
       type: Object,
@@ -168,6 +163,7 @@ export default {
       alertHandlerShow: false,
       topStyleRange: [220, 20],
       curPager: Object.assign({}, this.pager || { seriesIndex: 0, total: 0, limit: 10, page: 0 }),
+      innerShowTableLegend: this.showTableLegend,
     }
   },
   computed: {
@@ -247,9 +243,19 @@ export default {
           slots: {
             default: ({ row, rowIndex }) => {
               if (this.highlights.some(item => item.index === rowIndex)) {
-                return [<icon type="checkbox-fill" style={{ fontSize: '20px', color: (that.colors.length && that.colors[rowIndex]) || that.colorHash.hex(`${rowIndex * 1000}`), cursor: 'pointer', transform: 'translateY(3px)' }}></icon>]
+                return [
+                  this.$createElement('icon', {
+                    props: { type: 'checkbox-fill' },
+                    style: { fontSize: '20px', color: (that.colors.length && that.colors[rowIndex]) || that.colorHash.hex(`${rowIndex * 1000}`), cursor: 'pointer', transform: 'translateY(3px)' },
+                  }),
+                ]
               }
-              return [<icon type="checkbox-empty" style="font-size:20px;cursor:pointer;transform:translateY(3px)"></icon>]
+              return [
+                this.$createElement('icon', {
+                  props: { type: 'checkbox-empty' },
+                  style: { fontSize: '20px', cursor: 'pointer', transform: 'translateY(3px)' },
+                }),
+              ]
             },
             header: ({ column }, h) => {
               let type = 'checkbox-empty'
@@ -319,7 +325,7 @@ export default {
                     }
                     val = `${this.description.label || label}${this.isSelectFunction ? `(${this.isSelectFunction.toUpperCase()})` : ''}` || cellValue
                   }
-                  return [<span>{val}</span>]
+                  return [this.$createElement('span', {}, val)]
                 },
               },
             })
@@ -338,7 +344,7 @@ export default {
               slots: {
                 default: ({ row, rowIndex }) => {
                   const val = row[groupByField] || '-'
-                  return [<span>{val}</span>]
+                  return [this.$createElement('span', {}, val)]
                 },
               },
             })
@@ -361,7 +367,7 @@ export default {
               const cellValue = row.result
               const unit = _.get(this.description, 'description.unit') || _.get(this.description, 'unit')
               const val = transformUnit(cellValue, unit)
-              return [<span>{val.text}</span>]
+              return [this.$createElement('span', {}, val.text)]
             },
           },
           sortable: true,
@@ -376,7 +382,7 @@ export default {
           slots: {
             default: ({ row, rowIndex }) => {
               const val = row.raw_name || ''
-              return [<span>{val}</span>]
+              return [this.$createElement('span', {}, val)]
             },
           },
           formatter: ({ row }) => {
@@ -392,7 +398,7 @@ export default {
           slots: {
             default: ({ row, rowIndex }) => {
               const val = (row.raw_name || '').replace('unknown-0-', '')
-              return [<span>{val}</span>]
+              return [this.$createElement('span', {}, val)]
             },
           },
           formatter: ({ row }) => {
@@ -433,17 +439,6 @@ export default {
         }
       }
       return title
-    },
-    sortConfig () {
-      if (this.reducedResultOrder && this.columns.some(item => item.field === 'result')) {
-        return {
-          defaultSort: {
-            field: 'result',
-            order: this.reducedResultOrder,
-          },
-        }
-      }
-      return {}
     },
     getPageSizes () {
       const ret = [10, 20, 50, 100, 200]
@@ -533,7 +528,7 @@ export default {
           },
           {
             scale: 'y',
-            size: 75,
+            size: 90,
             splits: (self, scaleMin, scaleMax) => {
               // 使用自定义生成的刻度
               return yTicks
@@ -620,6 +615,9 @@ export default {
     tableData (val) {
       this.highlights = val.map((item, index) => ({ index, color: item.color }))
     },
+    showTableLegend (val) {
+      this.innerShowTableLegend = val
+    },
   },
   created () {
     this.colorHash = new ColorHash({
@@ -631,7 +629,7 @@ export default {
     })
     this.getMonitorLine()
   },
-  destroyed () {
+  unmounted () {
     this.colorHash = null
   },
   methods: {
@@ -924,6 +922,12 @@ export default {
     pageChange ({ type, currentPage, pageSize, $event }) {
       this.$emit('pageChange', { seriesIndex: this.curPager.seriesIndex, total: this.curPager.total, limit: pageSize, page: currentPage })
     },
+    onPagerPage (currentPage) {
+      this.$emit('pageChange', { seriesIndex: this.curPager.seriesIndex, total: this.curPager.total, limit: this.curPager.limit, page: currentPage })
+    },
+    onPagerSize (pageSize) {
+      this.$emit('pageChange', { seriesIndex: this.curPager.seriesIndex, total: this.curPager.total, limit: pageSize, page: 1 })
+    },
     sortChange ({ order }) {
       this.$emit('reducedResultOrderChange', order)
     },
@@ -1005,14 +1009,6 @@ export default {
         }
       })
     },
-    getRowStyle ({ $rowIndex, column, columnIndex, $columnIndex }) {
-      if ($rowIndex === this.highlight.index) {
-        return {
-          color: this.highlight.color,
-        }
-      }
-      return null
-    },
     showThreshold () {
       if (this.threshold > this.yMax) {
         this.alertHandlerShow = true
@@ -1054,7 +1050,7 @@ export default {
       if (this.isTemplate) {
         return
       }
-      this.showTableLegend = !this.showTableLegend
+      this.innerShowTableLegend = !this.innerShowTableLegend
     },
   },
 }
@@ -1062,11 +1058,16 @@ export default {
 
 <style lang="less" scoped>
 .explorer-monitor-line {
-  ::v-deep .ant-card-body {
+  :deep(.ant-card-body) {
     width: 100%;
+  }
+  .monitor-line-chart-row {
+    width: 100%;
+    min-width: 0;
   }
   .alert-handler-wrapper {
     width: 50px;
+    flex: 0 0 50px;
     .alert-handler-line {
       background-color: red;
       height: 2px;

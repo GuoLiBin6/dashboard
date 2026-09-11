@@ -3,7 +3,7 @@
     <div slot="header">{{$t('compute.kickstart_complete_action')}}</div>
     <div slot="body">
       <a-alert class="mb-2" type="warning">
-        <div slot="message">{{$t('compute.kickstart_complete_tip_2')}}</div>
+        <template #message>{{$t('compute.kickstart_complete_tip_2')}}</template>
       </a-alert>
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.kickstart_complete_action')" />
       <dialog-table :data="params.data" :columns="columns" />

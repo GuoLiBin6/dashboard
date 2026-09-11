@@ -96,11 +96,11 @@ export default {
           title: this.$t('db.text_39'),
           minWidth: 150,
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (row.start_time && row.end_time) {
                 return [
-                  <div>{this.$moment(row.start_time).format()}</div>,
-                  <div>{this.$moment(row.end_time).format()}</div>,
+                  h('div', this.$moment(row.start_time).format()),
+                  h('div', this.$moment(row.end_time).format()),
                 ]
               }
               return '-'

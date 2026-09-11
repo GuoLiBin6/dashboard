@@ -1,0 +1,90 @@
+diff --git a/node_modules/v-charts/lib/core.js b/node_modules/v-charts/lib/core.js
+index 49d56ac..7383ca1 100644
+--- a/node_modules/v-charts/lib/core.js
++++ b/node_modules/v-charts/lib/core.js
+@@ -73,6 +73,9 @@ function setAnimation (options, animation) {
+ 
+ var core = {
+   render: function render(h) {
++    // Vue 3: $slots.default 是函数；Vue 2 是 VNode[]
++    var defaultSlot = this.$slots && this.$slots.default;
++    var slotNodes = typeof defaultSlot === 'function' ? defaultSlot() : defaultSlot;
+     return h('div', {
+       class: [utilsLite.camelToKebab(this.$options.name || this.$options._componentTag)],
+       style: this.canvasStyle
+@@ -84,7 +87,7 @@ var core = {
+       style: { display: this.dataEmpty ? '' : 'none' }
+     }), h(Loading, {
+       style: { display: this.loading ? '' : 'none' }
+-    }), this.$slots.default]);
++    }), slotNodes]);
+   },
+ 
+ 
+@@ -203,7 +206,7 @@ var core = {
+   methods: {
+     dataHandler: function dataHandler() {
+       if (!this.chartHandler) return;
+-      var data = this.data;
++      var data = this.data || { columns: [], rows: [] };
+       var _data = data,
+           _data$columns = _data.columns,
+           columns = _data$columns === undefined ? [] : _data$columns,
+@@ -365,20 +368,20 @@ var core = {
+     },
+     addWatchToProps: function addWatchToProps() {
+       var _this3 = this;
+-
+-      var watchedVariable = this._watchers.map(function (watcher) {
+-        return watcher.expression;
+-      });
+-      Object.keys(this.$props).forEach(function (prop) {
+-        if (!~watchedVariable.indexOf(prop) && !~constants.STATIC_PROPS.indexOf(prop)) {
+-          var opts = {};
+-          if (~['[object Object]', '[object Array]'].indexOf(utilsLite.getType(_this3.$props[prop]))) {
+-            opts.deep = true;
+-          }
++      // Vue 3 无 _watchers；不再读取内部字段，直接给非静态 props 挂 watch
++      var props = this.$props || {};
++      var staticProps = constants.STATIC_PROPS || [];
++      Object.keys(props).forEach(function (prop) {
++        if (~staticProps.indexOf(prop)) return;
++        var opts = {};
++        if (~['[object Object]', '[object Array]'].indexOf(utilsLite.getType(props[prop]))) {
++          opts.deep = true;
++        }
++        try {
+           _this3.$watch(prop, function () {
+             _this3.changeHandler();
+           }, opts);
+-        }
++        } catch (e) { /* ignore invalid prop watch */ }
+       });
+     },
+     createEventProxy: function createEventProxy() {
+@@ -422,9 +425,22 @@ var core = {
+     this.registeredEvents = [];
+     this._once = {};
+     this._store = {};
+-    this.resizeHandler = utilsLite.debounce(this.resize, this.resizeDelay);
+-    this.changeHandler = utilsLite.debounce(this.dataHandler, this.changeDelay);
+-    this.addWatchToProps();
++    try {
++      var lite = utilsLite && utilsLite.default ? utilsLite.default : utilsLite;
++      var debounce = lite && lite.debounce;
++      if (typeof debounce === 'function') {
++        this.resizeHandler = debounce(this.resize, this.resizeDelay);
++        this.changeHandler = debounce(this.dataHandler, this.changeDelay);
++      } else {
++        this.resizeHandler = this.resize.bind(this);
++        this.changeHandler = this.dataHandler.bind(this);
++      }
++      this.addWatchToProps();
++    } catch (e) {
++      console.warn('[v-charts] created hook fallback', e);
++      this.resizeHandler = this.resize && this.resize.bind(this);
++      this.changeHandler = this.dataHandler && this.dataHandler.bind(this);
++    }
+   },
+   mounted: function mounted() {
+     this.init();

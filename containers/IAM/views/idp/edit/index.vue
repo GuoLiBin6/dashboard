@@ -12,7 +12,7 @@
         <template v-if="!isUpdate">
           <template v-if="isAdmin">
             <a-form-item :label="$t('common_548')">
-              <a-radio-group v-model="isShowDomain">
+              <a-radio-group v-model:value="isShowDomain">
                 <a-radio-button :value="false">{{$t('system.text_15')}}</a-radio-button>
                 <a-radio-button :value="true">{{$t('dictionary.domain')}}</a-radio-button>
               </a-radio-group>
@@ -48,10 +48,8 @@
           </a-form-item>
           <a-form-item :label="$t('common_550')">
             <a-radio-group  v-decorator="decorators.template" @change="handleTemplateChange">
-              <template v-for="(item) of templateOptions[form.fd.driver]">
-                <a-radio-button
-                  :value="item.key"
-                  :key="item.key">{{ item.label }}</a-radio-button>
+              <template v-for="(item) of templateOptions[form.fd.driver]" :key="item.key">
+                <a-radio-button :value="item.key">{{ item.label }}</a-radio-button>
               </template>
             </a-radio-group>
             <template v-if="docLink" #extra>
@@ -268,7 +266,7 @@ export default {
       }
     },
   },
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {

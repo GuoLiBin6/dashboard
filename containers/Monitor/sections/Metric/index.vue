@@ -1,53 +1,46 @@
 <template>
-  <a-row :gutter="gutter">
-    <a-form-item :extra="extra" style="margin-bottom:0">
-      <a-col :span="span" v-if="showResType">
-        <a-form-item class="mr-1">
-          <base-select
-            class="metric-select"
-            minWidth="192px"
-            v-decorator="decorators.metric_res_type"
-            :options="metricTypeOpts"
-            filterable
-            :disabled="disabled"
-            :select-props="{ placeholder: $t('monitor.text_111'), loading }"
-            @change="metricTypeChange" />
-        </a-form-item>
-      </a-col>
-      <a-col :span="span">
-        <a-form-item class="mr-1">
-          <base-select
-            class="metric-select"
-            minWidth="192px"
-            v-decorator="decorators.metric_key"
-            :options="metricKeyOpts"
-            filterable
-            :disabled="disabled"
-            :item.sync="metricKeyItem"
-            :select-props="{ placeholder: $t('monitor.text_112'), loading }"
-            @change="metricKeyChange" />
-        </a-form-item>
-      </a-col>
-      <a-col :span="span">
-        <a-form-item>
-          <base-select
-            class="metric-select"
-            minWidth="192px"
-            filterable
-            v-decorator="decorators.metric_value"
-            :item.sync="metricValueItem"
-            :options="metricOpts"
-            :labelFormat="metricValueLabelFormat"
-            :disabled="disabled"
-            @change="metricValueChange"
-            :select-props="{ placeholder: $t('monitor.text_113'), allowClear: true, loading }" />
-        </a-form-item>
-      </a-col>
-    </a-form-item>
-  </a-row>
+  <div class="metric-fields" :class="{ 'metric-fields--no-type': !showResType }">
+    <div v-if="showResType" class="metric-fields__item">
+      <base-select
+        class="metric-select"
+        minWidth="0"
+        v-decorator="decorators.metric_res_type"
+        :options="metricTypeOpts"
+        filterable
+        :disabled="disabled"
+        :select-props="{ placeholder: $t('monitor.text_111'), loading }"
+        @change="metricTypeChange" />
+    </div>
+    <div class="metric-fields__item">
+      <base-select
+        class="metric-select"
+        minWidth="0"
+        v-decorator="decorators.metric_key"
+        :options="metricKeyOpts"
+        filterable
+        :disabled="disabled"
+        v-model:item="metricKeyItem"
+        :select-props="{ placeholder: $t('monitor.text_112'), loading }"
+        @change="metricKeyChange" />
+    </div>
+    <div class="metric-fields__item">
+      <base-select
+        class="metric-select"
+        minWidth="0"
+        filterable
+        v-decorator="decorators.metric_value"
+        v-model:item="metricValueItem"
+        :options="metricOpts"
+        :labelFormat="metricValueLabelFormat"
+        :disabled="disabled"
+        @change="metricValueChange"
+        :select-props="{ placeholder: $t('monitor.text_113'), allowClear: true, loading }" />
+    </div>
+    <div v-if="extra" class="metric-fields__extra">{{ extra }}</div>
+  </div>
 </template>
 
-<script>
+<script lang="jsx">
 import _ from 'lodash'
 import { metric_zh } from '@Monitor/constants'
 
@@ -95,8 +88,6 @@ export default {
   computed: {
     metricTypeOpts () {
       return this.res_types.map(val => {
-        // let label = val
-        // if (this.$te(`dictionary.${val}`)) label = this.$t(`dictionary.${val}`)
         const label = val === 'system' ? this.$t('common.system_service') : this.$t(`dictionary.${val}`)
         return {
           key: val,
@@ -142,18 +133,7 @@ export default {
         return []
       }
     },
-    span () {
-      if (this.showResType) return 8
-      return 12
-    },
-    gutter () {
-      if (this.showResType) return 8
-      return 0
-    },
     extra () {
-      // if (this.metricValueItem.id === 'balance' && this.metricValueItem.metric_res_type === 'cloudaccount') {
-      //   return this.$t('monitor.currency_select_tip')
-      // }
       return ''
     },
   },
@@ -228,13 +208,35 @@ export default {
 </script>
 
 <style lang="less" scoped>
-.metric-select {
-  min-width: 192px !important;
-  flex: 1 1 auto;
+.metric-fields {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
   width: 100%;
-  ::v-deep .ant-select {
-    width: 100%;
-    min-width: 192px;
+  min-width: 0;
+
+  &__item {
+    flex: 1 1 0;
+    min-width: 0;
+    margin-bottom: 0 !important;
+  }
+
+  &__extra {
+    flex: 1 0 100%;
+    margin-top: 4px;
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 12px;
+  }
+}
+
+.metric-select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+
+  :deep(.ant-select) {
+    width: 100% !important;
+    min-width: 0 !important;
   }
 }
 </style>

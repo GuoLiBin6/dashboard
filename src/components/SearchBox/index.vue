@@ -6,8 +6,8 @@
     @click="handleWrapClick"
     ref="search-box-wrap">
     <ul class="clearfix">
-      <template v-for="(item, key) of filteredValue">
-        <li :key="key" class="mb-1 mt-1">
+      <template v-for="(item, key) of filteredValue" :key="key">
+        <li class="mb-1 mt-1">
           <tag
             :value="item"
             :all-value="newValues"
@@ -35,15 +35,17 @@
           :value-separator="valueSeparator"
           :default-search-key="defaultSearchKey"
           :fetch-distinct-field="fetchDistinctField"
-          :search.sync="autocompleterSearch"
+          :hide-key-list-search="hideKeyListSearch"
+          v-model:search="autocompleterSearch"
           @focus-input="focusInput"
           @confirm="handleSearch"
           @remove-tag="handleRemoveTag"
-          @update-show="handleUpdateShow" />
+          @update-show="handleUpdateShow"
+          @date-editing-change="editing => dateEditing = editing" />
       </li>
     </ul>
-    <div v-if="!hidePlaceholder" class="text-weak help-tips text-truncate">{{ placeholder }}</div>
-    <icon type="search" class="cursor-pointer" />
+    <div v-if="!hidePlaceholder" class="text-weak help-tips">{{ placeholder }}</div>
+    <icon type="search" class="search-box-icon cursor-pointer" />
   </div>
 </template>
 
@@ -73,9 +75,13 @@ export default {
     },
     placeholder: {
       type: String,
-      default: i18n.t('common.text00015'),
+      default: () => i18n.t('common.text00015'),
     },
     fetchDistinctField: Function,
+    hideKeyListSearch: {
+      type: Boolean,
+      default: false,
+    },
   },
   data () {
     return {
@@ -158,6 +164,7 @@ export default {
       if (!this.dateEditing) {
         this.focus = true
         this.showCompleter = true
+        this.$emit('focus-change', true)
         this.$nextTick(() => {
           e.target.id !== 'dropdownSearchInput' && this.focusInput()
         })
@@ -167,9 +174,21 @@ export default {
      * @description wrap clickoutside事件
      */
     handleWrapClickoutside () {
-      // this.$refs.completer.handleOk()
+      // 日期/时间面板挂在 body 上，交互中勿关闭过滤弹层
+      if (this.dateEditing) return
+      if (document.querySelector('.ant-picker-dropdown:not(.ant-picker-dropdown-hidden)')) return
       this.focus = false
       this.showCompleter = false
+      this.$emit('focus-change', false)
+    },
+    /** 外部主动展开并聚焦（如 navbar 收起态点击） */
+    open () {
+      this.focus = true
+      this.showCompleter = true
+      this.$emit('focus-change', true)
+      this.$nextTick(() => {
+        this.focusInput()
+      })
     },
     /**
      * @description 搜索事件
@@ -282,17 +301,32 @@ export default {
     },
     handleUpdateFocus (focus) {
       this.focus = focus
+      this.$emit('focus-change', focus)
     },
   },
 }
 </script>
 
 <style lang="less" scoped>
+@import "../../styles/less/theme";
+
 .search-box-wrap {
   width: 100%;
-  height: 30px;
+  min-height: 32px;
+  height: auto;
   position: relative;
-  padding-left: 30px;
+  padding: 1px 8px 1px 30px;
+  background-color: #fff;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  &:hover {
+    border-color: var(--ant-color-primary, @primary-color);
+  }
+  &.ant-input-number-focused {
+    border-color: var(--ant-color-primary, @primary-color);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--ant-color-primary, @primary-color) 12%, transparent);
+  }
   > ul {
     white-space: nowrap;
     display: inline-block;
@@ -301,22 +335,29 @@ export default {
     padding: 0;
     list-style: none;
     > li {
-      // position: relative;
-      height: 20px;
+      height: 22px;
       float: left;
+      display: flex;
+      align-items: center;
     }
   }
   .help-tips {
     position: absolute;
     font-size: 12px;
-    line-height: 24px;
-    top: 2px;
+    line-height: 26px;
+    top: 3px;
     left: 30px;
-    right: 36px;
+    right: 8px;
+    pointer-events: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
-  .cursor-pointer{
+  .search-box-icon {
     position: absolute;
     left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
   }
 }
 </style>

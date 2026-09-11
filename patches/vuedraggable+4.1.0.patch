@@ -1,0 +1,78 @@
+diff --git a/node_modules/vuedraggable/dist/vuedraggable.common.js b/node_modules/vuedraggable/dist/vuedraggable.common.js
+index 2350144..0183cc7 100644
+--- a/node_modules/vuedraggable/dist/vuedraggable.common.js
++++ b/node_modules/vuedraggable/dist/vuedraggable.common.js
+@@ -4796,7 +4796,9 @@ var draggableComponent = Object(external_commonjs_vue_commonjs2_vue_root_Vue_["d
+     var $attrs = this.$attrs,
+         $el = this.$el,
+         componentStructure = this.componentStructure;
+-    componentStructure.updated();
++    if (componentStructure) {
++      componentStructure.updated();
++    }
+     var sortableOptions = createSortableOption({
+       $attrs: $attrs,
+       callBackBuilder: {
+@@ -4817,7 +4819,9 @@ var draggableComponent = Object(external_commonjs_vue_commonjs2_vue_root_Vue_["d
+     targetDomElement.__draggable_component__ = this;
+   },
+   updated: function updated() {
+-    this.componentStructure.updated();
++    if (this.componentStructure) {
++      this.componentStructure.updated();
++    }
+   },
+   beforeUnmount: function beforeUnmount() {
+     if (this._sortable !== undefined) this._sortable.destroy();
+diff --git a/node_modules/vuedraggable/dist/vuedraggable.umd.js b/node_modules/vuedraggable/dist/vuedraggable.umd.js
+index 5a38c45..85375a7 100644
+--- a/node_modules/vuedraggable/dist/vuedraggable.umd.js
++++ b/node_modules/vuedraggable/dist/vuedraggable.umd.js
+@@ -4805,7 +4805,9 @@ var draggableComponent = Object(external_commonjs_vue_commonjs2_vue_root_Vue_["d
+     var $attrs = this.$attrs,
+         $el = this.$el,
+         componentStructure = this.componentStructure;
+-    componentStructure.updated();
++    if (componentStructure) {
++      componentStructure.updated();
++    }
+     var sortableOptions = createSortableOption({
+       $attrs: $attrs,
+       callBackBuilder: {
+@@ -4826,7 +4828,9 @@ var draggableComponent = Object(external_commonjs_vue_commonjs2_vue_root_Vue_["d
+     targetDomElement.__draggable_component__ = this;
+   },
+   updated: function updated() {
+-    this.componentStructure.updated();
++    if (this.componentStructure) {
++      this.componentStructure.updated();
++    }
+   },
+   beforeUnmount: function beforeUnmount() {
+     if (this._sortable !== undefined) this._sortable.destroy();
+diff --git a/node_modules/vuedraggable/src/vuedraggable.js b/node_modules/vuedraggable/src/vuedraggable.js
+index 2e8eb38..9db534e 100644
+--- a/node_modules/vuedraggable/src/vuedraggable.js
++++ b/node_modules/vuedraggable/src/vuedraggable.js
+@@ -122,7 +122,9 @@ const draggableComponent = defineComponent({
+     }
+ 
+     const { $attrs, $el, componentStructure } = this;
+-    componentStructure.updated();
++    if (componentStructure) {
++      componentStructure.updated();
++    }
+ 
+     const sortableOptions = createSortableOption({
+       $attrs,
+@@ -139,7 +141,9 @@ const draggableComponent = defineComponent({
+   },
+ 
+   updated() {
+-    this.componentStructure.updated();
++    if (this.componentStructure) {
++      this.componentStructure.updated();
++    }
+   },
+ 
+   beforeUnmount() {

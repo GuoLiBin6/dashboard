@@ -3,7 +3,7 @@
     <a-alert :showIcon="false" :message="$t('cloudenv.text_194')" banner />
     <a-form class="pt-3" :form="form.fc" v-bind="formLayout">
       <a-form-item v-if="isAzure" :label="$t('cloudenv.text_360')">
-        <a-radio-group v-model="billType">
+        <a-radio-group v-model:value="billType">
           <a-radio-button
             v-for="item in billTypeOptions"
             :key="item.value"
@@ -35,7 +35,7 @@
       <template v-if="useBillingBucket && !isEA && !isApi">
         <a-divider v-if="!isHiddenDriver" orientation="left">{{ $t('cloudenv.text_199') }}</a-divider>
         <a-form-item :label="$t('cloudenv.text_200')">
-          <a-radio-group v-model="cloudAccountType">
+          <a-radio-group v-model:value="cloudAccountType">
             <a-radio-button :value="1">{{ $t('cloudenv.text_201') }}</a-radio-button>
             <a-radio-button v-if="!isHuawei && !isAzure" :value="2">{{ $t('cloudenv.text_202') }}</a-radio-button>
           </a-radio-group>
@@ -49,8 +49,8 @@
             showSearch
             :loading="cloudAccountLoading"
             v-decorator="decorators.billing_bucket_account">
-            <template v-for="item in cloudAccounts">
-              <a-select-option v-if="id !== item.id" :key="item.id" :value="item.id">{{ item.name }}</a-select-option>
+            <template v-for="item in cloudAccounts" :key="item.id">
+              <a-select-option v-if="id !== item.id" :value="item.id">{{ item.name }}</a-select-option>
             </template>
           </a-select>
         </a-form-item>
@@ -95,7 +95,7 @@
       <template v-if="isApi">
         <a-divider v-if="!isHiddenDriver" orientation="left">{{ $t('cloudenv.text_199') }}</a-divider>
         <a-form-item :label="$t('cloudenv.text_200')">
-          <a-radio-group v-model="cloudAccountType">
+          <a-radio-group v-model:value="cloudAccountType">
             <a-radio-button :value="1">{{ $t('cloudenv.text_201') }}</a-radio-button>
             <a-radio-button v-if="!isHuawei" :value="2">{{ $t('cloudenv.text_202') }}</a-radio-button>
           </a-radio-group>
@@ -109,8 +109,8 @@
             showSearch
             :loading="cloudAccountLoading"
             v-decorator="decorators.billing_account">
-            <template v-for="item in cloudAccounts">
-              <a-select-option v-if="id !== item.id" :key="item.id" :value="item.id">{{ item.name }}</a-select-option>
+            <template v-for="item in cloudAccounts" :key="item.id">
+              <a-select-option v-if="id !== item.id" :value="item.id">{{ item.name }}</a-select-option>
             </template>
           </a-select>
         </a-form-item>
@@ -152,7 +152,7 @@
     </a-form>
   </div>
 </template>
-<script>
+<script lang="jsx">
 import * as R from 'ramda'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'

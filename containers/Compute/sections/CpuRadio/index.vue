@@ -1,7 +1,7 @@
 <template>
   <div class="d-flex">
     <a-form-item :extra="extra">
-      <a-radio-group v-decorator="decorator" @change="change" :disabled="disabled">
+      <a-radio-group :value="radioValue" v-decorator="decorator" @change="change" :disabled="disabled">
         <a-radio-button v-show="showUnlimited" :key="0" :value="0">{{ $t('compute.unlimited') }}</a-radio-button>
         <a-radio-button v-for="item in realOptions" :value="item" :key="item" v-show="item < max || !showMore" :disabled="disableOptionHandle(item)">{{$t('compute.text_120', [ item ])}}</a-radio-button>
         <a-radio-button v-if="showMore" @click="showMore = !showMore">...</a-radio-button>
@@ -93,6 +93,11 @@ export default {
     isVMware () {
       return this.hypervisor === HYPERVISORS_MAP.esxi.key
     },
+    radioValue () {
+      const name = this.decorator && this.decorator[0]
+      const v = name && this.form?.fd?.[name]
+      return v !== undefined && v !== null ? v : this.cpu
+    },
     cpuSocketsExtra () {
       if (this.isServerRunning) {
         return `${this.$t('compute.core_per_sockets')}: ` + (this.cpuSocketsInit)
@@ -144,6 +149,10 @@ export default {
       this.cpu = cpu
       // 仅用户点选写草稿
       this.writeFormFieldDraft(cpu)
+      const name = this.decorator && this.decorator[0]
+      if (name && this.form?.fc?.setFieldsValue) {
+        this.form.fc.setFieldsValue({ [name]: cpu })
+      }
       this.$emit('change', e.target.value)
     },
     tryRestoreCpuDraft (opts) {

@@ -42,9 +42,9 @@ export const getUrlTableColumn = () => {
     slots: {
       default: ({ row }, h) => {
         return [
-          <a-tooltip title={`${row.url}`}>
-            <a-tag class="d-block text-truncate mb-1" style="max-width: 400px;">{row.url}</a-tag>
-          </a-tooltip>,
+          h('a-tooltip', { props: { title: row.url } }, [
+            h('a-tag', { class: 'd-block text-truncate mb-1', style: { maxWidth: '400px' } }, row.url),
+          ]),
         ]
       },
     },

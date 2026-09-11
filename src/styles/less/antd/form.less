@@ -1,3 +1,70 @@
+// 全局表单 label 左对齐（与 Form labelAlign=left 一致；覆盖 antd 默认 right）
 .ant-form-item-label {
   text-align: left;
+}
+.ant-form-item-label > label {
+  text-align: left;
+}
+
+// antdv4 样式走 CSS-in-JS，部分场景（弹窗/嵌套）margin 可能丢失；与 antdv1 保持 24px 行距
+.ant-form-item {
+  margin-bottom: 24px;
+}
+// 勿全局清零嵌套 Form.Item（同步策略规则等卡片内嵌套项会丢间距）；
+// DomainProject 等需要去间距的场景请显式加 mb-0
+.ant-form-item.mb-0 {
+  margin-bottom: 0;
+}
+
+// 横向表单按内容统一 label 宽：max(label) + --oc-form-label-gap（默认 50px）
+// 见 plugins/ocLayoutForm.js；opt-out：class="oc-layout-form-off" 或 layout=inline/vertical
+.oc-layout-form,
+.ant-form.ant-form-horizontal:not(.oc-layout-form-off) {
+  --oc-form-label-gap: 50px;
+
+  .ant-form-item-row {
+    display: flex !important;
+    flex-wrap: nowrap;
+    align-items: flex-start;
+  }
+  .ant-form-item-label {
+    flex: 0 0 var(--oc-form-label-width, max-content) !important;
+    width: var(--oc-form-label-width, max-content) !important;
+    max-width: var(--oc-form-label-width, max-content) !important;
+    padding-right: 0 !important;
+    > label {
+      white-space: nowrap;
+    }
+  }
+  .ant-form-item-control {
+    flex: 1 1 auto !important;
+    min-width: 0;
+    width: auto !important;
+    max-width: none !important;
+  }
+  // 折叠面板内的 Form.Item 与表单其它项共用同一 label 宽
+  .ant-collapse .ant-form-item-label {
+    flex: 0 0 var(--oc-form-label-width, max-content) !important;
+    width: var(--oc-form-label-width, max-content) !important;
+    max-width: var(--oc-form-label-width, max-content) !important;
+  }
+  .ant-collapse .ant-form-item-control {
+    flex: 1 1 auto !important;
+    min-width: 0;
+    width: auto !important;
+    max-width: none !important;
+  }
+  // 行内嵌套 Form.Item 不参与统一宽度
+  .ant-form-item .ant-form-item {
+    .ant-form-item-label {
+      flex: none !important;
+      width: auto !important;
+      max-width: none !important;
+    }
+    .ant-form-item-control {
+      flex: 1 1 auto !important;
+      width: auto !important;
+      max-width: none !important;
+    }
+  }
 }

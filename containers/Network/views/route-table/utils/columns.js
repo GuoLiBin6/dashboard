@@ -7,7 +7,7 @@ export const getVpcTableColumn = (vm) => {
     slots: {
       default: ({ row }, h) => {
         return [
-          <side-page-trigger name='VpcSidePage' id={row.vpc_id} vm={vm}>{row.vpc}</side-page-trigger>,
+          h('side-page-trigger', { props: { name: 'VpcSidePage', id: row.vpc_id, vm } }, row.vpc),
         ]
       },
     },

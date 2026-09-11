@@ -21,7 +21,7 @@ export default {
     this.webconsoleManager = new this.$Manager('webconsole', 'v1')
     this.singleActions = Actions.getSingleActions.call(this)
   },
-  destroyed () {
+  unmounted () {
     this.webconsoleManager = null
   },
   methods: {

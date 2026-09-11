@@ -1,95 +1,122 @@
 <template>
-  <div class="p-2">
-    <a-form-model layout="vertical" :model="fd" :rules="rules">
-      <a-form-model-item class="mb-0">
-        <a-radio-group v-model="fd.type" size="small">
-          <template v-for="item of typeOptions">
-            <a-radio-button :value="item.key" :key="item.key">{{ item.label }}</a-radio-button>
-          </template>
-        </a-radio-group>
-      </a-form-model-item>
-      <a-form-model-item :label="fd.type === 'range' && $t('common.text00119')" class="mb-0" v-if="fd.type === 'before' || fd.type === 'range'">
-        <a-row :gutter="8">
-          <a-col :span="12">
-            <a-form-model-item class="mb-0">
-              <a-date-picker
-                v-model="fd.date1"
-                :allowClear="false"
-                :placeholder="$t('common_648')"
-                class="w-100"
-                :getCalendarContainer="getPopupContainer"
-                @click.native.stop.prevent />
-            </a-form-model-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-model-item class="mb-0">
-              <a-time-picker
-                v-model="fd.time1"
-                :allowClear="false"
-                :placeholder="$t('compute.text_856')"
-                class="w-100"
-                :getPopupContainer="getPopupContainer"
-                @click.native.stop.prevent />
-            </a-form-model-item>
-          </a-col>
-        </a-row>
-      </a-form-model-item>
-      <a-form-model-item :label="fd.type === 'range' && $t('common.text00120')" class="mb-0" v-if="fd.type === 'after' || fd.type === 'range'">
-        <a-row :gutter="8">
-          <a-col :span="12">
-            <a-form-model-item class="mb-0">
-              <a-date-picker
-                v-model="fd.date2"
-                :allowClear="false"
-                :placeholder="$t('common_648')"
-                class="w-100"
-                :getCalendarContainer="getPopupContainer"
-                @click.native.stop.prevent />
-            </a-form-model-item>
-          </a-col>
-          <a-col :span="12">
-            <a-form-model-item class="mb-0">
-              <a-time-picker
-                v-model="fd.time2"
-                :allowClear="false"
-                :placeholder="$t('compute.text_856')"
-                class="w-100"
-                :getPopupContainer="getPopupContainer"
-                @click.native.stop.prevent />
-            </a-form-model-item>
-          </a-col>
-        </a-row>
-      </a-form-model-item>
-    </a-form-model>
+  <div class="date-select">
+    <a-radio-group v-model:value="fd.type" size="small" class="date-select-type">
+      <a-radio-button v-for="item of typeOptions" :key="item.key" :value="item.key">{{ item.label }}</a-radio-button>
+    </a-radio-group>
+    <div
+      v-if="fd.type === 'before' || fd.type === 'range'"
+      class="date-select-fields">
+      <div v-if="fd.type === 'range'" class="date-select-label">{{ $t('common.text00119') }}</div>
+      <a-row :gutter="8">
+        <a-col :span="12">
+          <a-date-picker
+            v-model:value="fd.date1"
+            class="w-100"
+            format="YYYY-MM-DD"
+            :allowClear="false"
+            :placeholder="$t('common_648')"
+            :getPopupContainer="popupContainer"
+            :popupStyle="popupStyle"
+            @change="onFieldChange"
+            @openChange="onOpenChange" />
+        </a-col>
+        <a-col :span="12">
+          <a-time-picker
+            v-model:value="fd.time1"
+            class="w-100"
+            format="HH:mm:ss"
+            :allowClear="false"
+            :placeholder="$t('compute.text_856')"
+            :getPopupContainer="popupContainer"
+            :popupStyle="popupStyle"
+            @change="onFieldChange"
+            @ok="onFieldChange"
+            @openChange="onOpenChange" />
+        </a-col>
+      </a-row>
+    </div>
+    <div
+      v-if="fd.type === 'after' || fd.type === 'range'"
+      class="date-select-fields">
+      <div v-if="fd.type === 'range'" class="date-select-label">{{ $t('common.text00120') }}</div>
+      <a-row :gutter="8">
+        <a-col :span="12">
+          <a-date-picker
+            v-model:value="fd.date2"
+            class="w-100"
+            format="YYYY-MM-DD"
+            :allowClear="false"
+            :placeholder="$t('common_648')"
+            :getPopupContainer="popupContainer"
+            :popupStyle="popupStyle"
+            @change="onFieldChange"
+            @openChange="onOpenChange" />
+        </a-col>
+        <a-col :span="12">
+          <a-time-picker
+            v-model:value="fd.time2"
+            class="w-100"
+            format="HH:mm:ss"
+            :allowClear="false"
+            :placeholder="$t('compute.text_856')"
+            :getPopupContainer="popupContainer"
+            :popupStyle="popupStyle"
+            @change="onFieldChange"
+            @ok="onFieldChange"
+            @openChange="onOpenChange" />
+        </a-col>
+      </a-row>
+    </div>
   </div>
 </template>
 
 <script>
+import dayjs from 'dayjs'
+import customParseFormat from 'dayjs/plugin/customParseFormat'
 import moment from 'moment'
+
+dayjs.extend(customParseFormat)
+
+function toDayjsDate (val) {
+  if (!val) return dayjs()
+  if (dayjs.isDayjs(val)) return val
+  if (val && typeof val.toDate === 'function') return dayjs(val.toDate())
+  return dayjs(val)
+}
+
+function toDayjsTime (val) {
+  if (!val) return dayjs('00:00:00', 'HH:mm:ss')
+  if (dayjs.isDayjs(val)) return val
+  if (val && typeof val.format === 'function') {
+    return dayjs(val.format('HH:mm:ss'), 'HH:mm:ss')
+  }
+  if (typeof val === 'string') {
+    const part = val.includes(' ') ? val.split(' ')[1] : val
+    return dayjs(part.slice(0, 8), 'HH:mm:ss')
+  }
+  return dayjs(val)
+}
 
 export default {
   name: 'DateSelect',
+  // 子树内 ant DatePicker 按 Vue3 行为跑，避免 compat 弄丢面板 onSelect
+  compatConfig: { MODE: 3 },
+  inheritAttrs: false,
+  emits: ['change', 'date-editing-change'],
   props: {
     value: Array,
-    getPopupContainer: Function,
   },
   data () {
     const value = this.value || []
-    const initDate1 = (value[0] && moment(value[0])) || moment()
-    const initTime1 = (value[0] && moment(value[0], 'YYYY-MM-DD HH:mm:ss')) || moment('00:00:00', 'HH:mm:ss')
-    const initDate2 = (value[1] && moment(value[1])) || moment()
-    const initTime2 = (value[1] && moment(value[1], 'YYYY-MM-DD HH:mm:ss')) || moment('00:00:00', 'HH:mm:ss')
     let initType = 'before'
     if (value && value.length) {
-      if (value[0] && value[1]) {
-        initType = 'range'
-      } else if (value[0]) {
-        initType = 'before'
-      } else if (value[1]) {
-        initType = 'after'
-      }
+      if (value[0] && value[1]) initType = 'range'
+      else if (value[0]) initType = 'before'
+      else if (value[1]) initType = 'after'
     }
     return {
+      popupStyle: Object.freeze({ zIndex: 4000 }),
+      openCount: 0,
       typeOptions: [
         { label: this.$t('common_649'), key: 'before' },
         { label: this.$t('common_650'), key: 'after' },
@@ -97,53 +124,87 @@ export default {
       ],
       fd: {
         type: initType,
-        date1: initDate1,
-        time1: initTime1,
-        date2: initDate2,
-        time2: initTime2,
-      },
-      rules: {
-        date1: [
-          { required: true, message: this.$t('common_652'), trigger: 'blur' },
-        ],
-        time1: [
-          { required: true, message: this.$t('common_653'), trigger: 'blur' },
-        ],
-        date2: [
-          { required: true, message: this.$t('common_654'), trigger: 'blur' },
-        ],
-        time2: [
-          { required: true, message: this.$t('common_655'), trigger: 'blur' },
-        ],
+        date1: toDayjsDate(value[0]),
+        time1: value[0] ? toDayjsTime(value[0]) : dayjs('00:00:00', 'HH:mm:ss'),
+        date2: toDayjsDate(value[1]),
+        time2: value[1] ? toDayjsTime(value[1]) : dayjs('00:00:00', 'HH:mm:ss'),
       },
     }
   },
   watch: {
-    fd: {
-      handler (val) {
-        const date1 = val.date1.format('YYYY-MM-DD')
-        const time1 = val.time1.format('HH:mm:ss')
-        const date2 = val.date2 && val.date2.format('YYYY-MM-DD')
-        const time2 = val.time2 && val.time2.format('HH:mm:ss')
-        let selectValue = []
-        if (val.type === 'before') {
-          selectValue = [[moment(`${date1} ${time1}`).utc(), null]]
-        } else if (val.type === 'after') {
-          selectValue = [[null, moment(`${date2} ${time2}`).utc()]]
-        } else if (val.type === 'range') {
-          selectValue = [[moment(`${date1} ${time1}`).utc(), moment(`${date2} ${time2}`).utc()]]
-        }
-        this.$emit('change', selectValue)
-      },
-      deep: true,
-      immediate: true,
+    'fd.type' () {
+      this.emitChange()
     },
   },
-  beforeDestroy () {
-    this.$emit('date-editing-change', false)
+  created () {
+    this.popupContainer = () => document.body
   },
   mounted () {
-    this.$emit('date-editing-change', true)
+    this.emitChange()
+  },
+  methods: {
+    onOpenChange (open) {
+      this.openCount = Math.max(0, this.openCount + (open ? 1 : -1))
+      this.$emit('date-editing-change', this.openCount > 0)
+      if (!open) {
+        this.$nextTick(() => this.emitChange())
+      }
+    },
+    onFieldChange () {
+      // 时间面板打开期间也同步，否则点选看不到/落不进 fd
+      this.emitChange()
+    },
+    emitChange () {
+      const { type, date1, date2, time1, time2 } = this.fd
+      if (!date1 || !time1) return
+      const d1 = date1.format('YYYY-MM-DD')
+      const t1 = time1.format('HH:mm:ss')
+      let selectValue = []
+      if (type === 'before') {
+        selectValue = [[moment(`${d1} ${t1}`).utc(), null]]
+      } else if (type === 'after') {
+        if (!date2 || !time2) return
+        selectValue = [[null, moment(`${date2.format('YYYY-MM-DD')} ${time2.format('HH:mm:ss')}`).utc()]]
+      } else if (type === 'range') {
+        if (!date2 || !time2) return
+        selectValue = [[
+          moment(`${d1} ${t1}`).utc(),
+          moment(`${date2.format('YYYY-MM-DD')} ${time2.format('HH:mm:ss')}`).utc(),
+        ]]
+      }
+      this.$emit('change', selectValue)
+    },
+  },
+  beforeUnmount () {
+    this.$emit('date-editing-change', false)
   },
 }
 </script>
+
+<style lang="less" scoped>
+.date-select {
+  padding: 12px 12px 10px;
+}
+.date-select-type {
+  display: flex;
+  width: 100%;
+  margin-bottom: 12px;
+  :deep(.ant-radio-button-wrapper) {
+    flex: 1;
+    text-align: center;
+    font-size: 12px;
+    height: 28px;
+    line-height: 26px;
+    padding: 0 4px;
+  }
+}
+.date-select-fields + .date-select-fields {
+  margin-top: 12px;
+}
+.date-select-label {
+  margin-bottom: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(0, 0, 0, 0.45);
+}
+</style>

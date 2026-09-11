@@ -6,7 +6,8 @@
     :export-data-options="exportDataOptions" />
 </template>
 
-<script>
+<script lang="jsx">
+import { h } from 'vue'
 // import * as R from 'ramda'
 import PasswordFetcher from '@Compute/sections/PasswordFetcher'
 import { getBrandTableColumn } from '@/utils/common/tableColumn'
@@ -77,7 +78,14 @@ export default {
           width: 50,
           slots: {
             default: ({ row }) => {
-              return [<PasswordFetcher serverId={ row.id } resourceType='cloudusers' />]
+              return [
+                h(PasswordFetcher, {
+                  props: {
+                    serverId: row.id,
+                    resourceType: 'cloudusers',
+                  },
+                }),
+              ]
             },
           },
         },
@@ -89,7 +97,13 @@ export default {
           slots: {
             default: ({ row }) => {
               if (!row.iam_login_url) return '-'
-              return [<help-link href={ row.iam_login_url } />]
+              return [
+                h('help-link', {
+                  attrs: {
+                    href: row.iam_login_url,
+                  },
+                }),
+              ]
             },
           },
         },
@@ -104,7 +118,7 @@ export default {
             // content: ({ row }) => {
             //   if (R.isNil(row.cloudgroups) || R.isEmpty(row.cloudgroups)) return this.$t('common_708', [this.$t('dictionary.cloudgroup')])
             //   return [
-            //     <vxe-grid
+            //     <table-lite-grid
             //       showOverflow='title'
             //       data={ row.cloudgroups }
             //       columns={[

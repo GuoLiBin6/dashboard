@@ -33,10 +33,8 @@ export default {
     const { title, decorators, width = 400 } = this.params
     const { getFieldDecorator } = this.form
     const RenderHeader = () => {
-      if (title) {
-        return <div slot="header">{title}</div>
-      }
-      return null
+      if (!title) return null
+      return h('div', { slot: 'header' }, [title])
     }
     const formItem = (decorator) => {
       const [name, options, inputParams] = decorator
@@ -45,20 +43,17 @@ export default {
         if (render && R.type(render) === 'Function') {
           return render(this.form)
         }
-        return name === 'password' ? <a-input-password placeholder={placeholder} /> : <a-input placeholder={placeholder} />
+        if (name === 'password') {
+          return h('a-input-password', { attrs: { placeholder } })
+        }
+        return h('a-input', { attrs: { placeholder } })
       }
-      return (
-        <a-form-item label={label}>
-          {
-            getFieldDecorator(name, options)(
-              <RenderFormVal/>,
-            )
-          }
-          {
-            extra ? <div slot="extra">{extra()}</div> : null
-          }
-        </a-form-item>
-      )
+      const formItemChildren = []
+      formItemChildren.push(getFieldDecorator(name, options)(RenderFormVal()))
+      if (extra) {
+        formItemChildren.push(h('div', { slot: 'extra' }, [extra()]))
+      }
+      return h('a-form-item', { attrs: { label } }, formItemChildren)
     }
     const RenderForm = () => {
       const decoratorArrs = Object.keys(decorators)
@@ -72,34 +67,29 @@ export default {
       }
       const { formItemLayout } = this.params
       const { wrapperCol, labelCol } = formItemLayout || defaultFormItemLayout
-      if (decorators && decoratorArrs.length > 0) {
-        return (
-          <div slot="body">
-            <a-form class="mt-3" form={this.form} wrapperCol={wrapperCol} labelCol={labelCol}>
-              {decoratorArrs.map(k => {
-                return formItem(decorators[k])
-              })}
-            </a-form>
-          </div>
-        )
-      }
-      return null
+      if (!decorators || decoratorArrs.length === 0) return null
+      const items = decoratorArrs.map(k => formItem(decorators[k]))
+      const form = h('a-form', {
+        class: 'mt-3',
+        props: { form: this.form, wrapperCol, labelCol },
+      }, items)
+      return h('div', { slot: 'body' }, [form])
     }
     const RenderFormFooter = () => {
-      return (
-        <div slot="footer">
-          <a-button type="primary" onClick={this.handleConfirm} loading={this.loading}>{ this.$t('dialog.ok') }</a-button>
-          <a-button onClick={this.cancelDialog}>{ this.$t('dialog.cancel') }</a-button>
-        </div>
-      )
+      const okBtn = h('a-button', {
+        attrs: { type: 'primary' },
+        on: { click: this.handleConfirm },
+        props: { loading: this.loading },
+      }, [this.$t('dialog.ok')])
+      const cancelBtn = h('a-button', {
+        on: { click: this.cancelDialog },
+      }, [this.$t('dialog.cancel')])
+      return h('div', { slot: 'footer' }, [okBtn, cancelBtn])
     }
-    return (
-      <base-dialog onCancel={this.cancelDialog} width={width}>
-        <RenderHeader/>
-        <RenderForm/>
-        <RenderFormFooter />
-      </base-dialog>
-    )
+    return h('base-dialog', {
+      on: { cancel: this.cancelDialog },
+      props: { width },
+    }, [RenderHeader(), RenderForm(), RenderFormFooter()])
   },
 }
 </script>

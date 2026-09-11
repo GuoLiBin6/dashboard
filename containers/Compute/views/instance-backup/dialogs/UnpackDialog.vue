@@ -3,9 +3,9 @@
     <div slot="header">{{action}}</div>
     <div slot="body">
       <a-alert class="mb-2" type="warning">
-        <div slot="message">
+        <template #message>
           {{ $t('compute.unpack_alert') }}
-        </div>
+        </template>
       </a-alert>
       <dialog-selected-tips :name="$t('compute.instance_backup')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />

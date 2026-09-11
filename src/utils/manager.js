@@ -35,8 +35,8 @@ export class Manager {
     return path
   }
 
-  get ({ id, params, ctx = [] } = {}) {
-    return Vue.http.get(`${this.contextPath(ctx)}${this.resource}/${id}`, { params })
+  get ({ id, params, ctx = [], cancelToken, timeout } = {}) {
+    return Vue.http.get(`${this.contextPath(ctx)}${this.resource}/${id}`, { params, cancelToken, timeout })
   }
 
   batchGet ({ id, params = {}, ctx = [] } = {}) {
@@ -47,12 +47,12 @@ export class Manager {
     return Vue.http.get(`${this.contextPath(ctx)}${this.resource}/${id}/${spec}`, { params })
   }
 
-  list ({ params, ctx = [], cancelToken } = {}) {
-    return Vue.http.get(`${this.contextPath(ctx)}${this.resource}`, { params, cancelToken })
+  list ({ params, ctx = [], cancelToken, timeout } = {}) {
+    return Vue.http.get(`${this.contextPath(ctx)}${this.resource}`, { params, cancelToken, timeout })
   }
 
-  create ({ data, ctx = [], params } = {}) {
-    return Vue.http.post(`${this.contextPath(ctx)}${this.resource}`, data, { params })
+  create ({ data, ctx = [], params, cancelToken, timeout } = {}) {
+    return Vue.http.post(`${this.contextPath(ctx)}${this.resource}`, data, { params, cancelToken, timeout })
   }
 
   batchCreate ({ data, count, ctx = [] } = {}) {

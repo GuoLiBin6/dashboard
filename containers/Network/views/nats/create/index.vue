@@ -1,7 +1,7 @@
 <template>
   <div>
     <page-header :title="$t('network.create_nat')" />
-    <page-body needMarginBottom>
+    <page-body>
       <a-form
         class="mt-3"
         v-bind="formItemLayout"
@@ -84,7 +84,7 @@
   </div>
 </template>
 
-<script>
+<script lang="jsx">
 import * as R from 'ramda'
 import { mapGetters } from 'vuex'
 import { DECORATORS } from '@Network/views/nats/constants'

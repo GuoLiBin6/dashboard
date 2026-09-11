@@ -7,8 +7,14 @@ function getSelectedData (row, vm) {
 
 export function disableDeleteAction (params = {}, dialogParams = {}) {
   const { name = i18n.t('common_92'), hidden } = dialogParams
-  const { list, onManager, columns, createDialog, ...optionParams } = params
-  const getData = (row) => row ? [row] : list.selectedItems
+  // 禁止对 Vue 组件实例做 rest 解构（会触发 ownKeys 警告并在生产环境取不到键）
+  const list = params.list
+  const onManager = params.onManager
+  const columns = params.columns
+  const createDialog = params.createDialog
+  const permission = params.permission || dialogParams.permission
+  const extraMeta = params.extraMeta || dialogParams.extraMeta
+  const getData = (row) => row ? [row] : (list && list.selectedItems)
   const options = {
     label: i18n.t('common_277'),
     action: (row) => {
@@ -33,8 +39,9 @@ export function disableDeleteAction (params = {}, dialogParams = {}) {
       }
     },
     hidden,
-    ...optionParams,
   }
+  if (permission) options.permission = permission
+  if (extraMeta) options.extraMeta = extraMeta
   return options
 }
 
@@ -261,7 +268,8 @@ export function getEnabledSwitchActions (vm, row, permissions = [], params = {})
     const data = getSelectedData(row, vm)
     return {
       permission: _permissions[index],
-      label: i18n.t('status.enabled')[type],
+      // vue-i18n v9+ 的 t() 不再返回嵌套对象，需用完整 key
+      label: i18n.t(`status.enabled.${type}`),
       action: (rowItem) => openDialog(rowItem, type, index),
       meta: (rowItem) => {
         if (metas && metas.length > 0) {

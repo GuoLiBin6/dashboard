@@ -1,39 +1,57 @@
 <template>
-  <overview-card-layout :card_style="`${card_stype} ${showMonitor ? '' : ''}`">
+  <overview-card-layout :card_style="`${card_style || ''} ${showMonitor ? '' : ''}`">
     <template #header>
       <div v-if="!readOnly">
         <a-row type="flex" style="padding: 12px;border-bottom: 1px solid #e8e8e8">
           <a-col class="d-flex" style="flex: 1 1 auto">
             <!-- 折叠 -->
             <a v-if="!isTemplate" class="font-weight-bold h-100 d-block" style="margin-right: 6px;" @click="toggleShowMonitor">
-              <a-icon type="down" style="font-size: 12px;" v-if="showMonitor" />
-              <a-icon type="right" style="font-size: 12px;" v-if="!showMonitor" />
+              <icon type="pull-down" style="font-size: 12px;" v-if="showMonitor" />
+              <icon type="pull-down" style="font-size: 12px;transform: rotate(-90deg);" v-if="!showMonitor" />
             </a>
             <!-- 表格隐藏 -->
             <a-tooltip>
-              <template slot="title">
+              <template #title>
                 {{ $t('monitor.show_hide_legend_table') }}
               </template>
               <a class="font-weight-bold h-100 d-block" style="margin-right: 6px;" @click="toggleShowTableLegend">
-                <a-icon type="line-chart" style="font-size: 14px;" v-if="showMonitor && showLegend" />
-                <a-icon type="credit-card" style="font-size: 14px;" v-if="showMonitor && !showLegend" />
-                <a-icon type="minus" style="font-size: 14px;" v-if="!showMonitor" />
+                <icon type="line-chart" style="font-size: 14px;" v-if="showMonitor && showLegend" />
+                <icon type="credit-card" style="font-size: 14px;" v-if="showMonitor && !showLegend" />
+                <icon type="minus" style="font-size: 14px;" v-if="!showMonitor" />
               </a>
             </a-tooltip>
             <!-- 名称 -->
             <span>{{ panel.panel_name || (chart.metric && chart.metric.label) }}</span>
           </a-col>
           <a-col v-if="!useLocalPanels && !isTemplate" class="flex: 0 0 24px">
-            <a-dropdown style="float: right" :trigger="['click']" placement="bottomRight">
+            <a-dropdown
+              style="float: right"
+              :trigger="['click']"
+              placement="bottomRight"
+              overlayClassName="monitor-action-dropdown">
               <a class="ant-dropdown-link font-weight-bold h-100 d-block action-btn" @click="e => e.preventDefault()">
                 <icon type="more" style="font-size: 18px; margin-left: 9px;" />
               </a>
-              <a-menu slot="overlay" @click="handleActionClick">
-                <a-menu-item key="handleEdit"><a-icon type="edit" />{{$t('dashboard.text_104')}}</a-menu-item>
-                <a-menu-item key="handleClone"><a-icon type="copy" />{{$t('dashboard.text_107')}}</a-menu-item>
-                <a-menu-item key="handleExport"><a-icon type="download" />{{$t('table.action.export')}}</a-menu-item>
-                <a-menu-item key="handleDelete"><a-icon type="delete" />{{$t('scope.text_18')}}</a-menu-item>
-              </a-menu>
+              <template #overlay>
+                <a-menu @click="handleActionClick">
+                  <a-menu-item key="handleEdit">
+                    <template #icon><icon type="edit" /></template>
+                    {{ $t('dashboard.text_104') }}
+                  </a-menu-item>
+                  <a-menu-item key="handleClone">
+                    <template #icon><icon type="copy" /></template>
+                    {{ $t('dashboard.text_107') }}
+                  </a-menu-item>
+                  <a-menu-item key="handleExport">
+                    <template #icon><icon type="download" /></template>
+                    {{ $t('table.action.export') }}
+                  </a-menu-item>
+                  <a-menu-item key="handleDelete">
+                    <template #icon><icon type="delete" /></template>
+                    {{ $t('scope.text_18') }}
+                  </a-menu-item>
+                </a-menu>
+              </template>
             </a-dropdown>
           </a-col>
         </a-row>
@@ -57,14 +75,13 @@
       :monitorLineCardStyle="{border:'none'}"
       :otherCursorMovePoint="otherCursorMovePoint"
       @pageChange="pageChange"
-      @chartInstance="setChartInstance"
       @exportTable="exportTable"
       @reducedResultOrderChange="reducedResultOrderChange"
       @cursorMove="cursorMove" />
   </overview-card-layout>
 </template>
 
-<script>
+<script lang="jsx">
 import _ from 'lodash'
 import * as R from 'ramda'
 import { metric_zh, tableColumnMaps } from '@Monitor/constants'
@@ -109,7 +126,7 @@ export default {
     },
     editChart: {
       type: Function,
-      required: true,
+      default: () => {},
     },
     card_style: {
       type: String,

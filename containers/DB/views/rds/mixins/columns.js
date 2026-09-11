@@ -16,9 +16,11 @@ export default {
           { validator: this.$validate('resourceCreateName') },
         ],
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+          return this.$createElement('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
         hidden: () => {
           return this.$isScopedPolicyMenuHidden('rds_hidden_columns.name')
@@ -84,7 +86,7 @@ export default {
         title: i18n.t('db.text_152'),
         minWidth: 200,
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             const pri = row.internal_connection_str
             const pub = row.connection_str
             const ip_addrs = (row.ip_addrs || '').split(',')
@@ -95,27 +97,41 @@ export default {
               if (!value) {
                 return null
               }
-              // return (
-              //   <div class="d-flex align-items-center">
-              //     <span class="text-truncate">
-              //       {title}：{value}
-              //     </span>
-              //     <copy message={value} />
-              //   </div>
-              // )
               return [
-                <list-body-cell-wrap field='value' row={{ value }} hide-field copy message={value}>
-                  {title} : <span>{ value || '-' }</span>
-                </list-body-cell-wrap>,
+                h('list-body-cell-wrap', {
+                  props: {
+                    field: 'value',
+                    row: { value },
+                    hideField: true,
+                    copy: true,
+                    message: value,
+                  },
+                }, [
+                  `${title} : `,
+                  h('span', value || '-'),
+                ]),
               ]
             }
-            return [
-              connection(i18n.t('db.text_153'), pri),
-              connection(i18n.t('db.text_154'), pub),
-              ...ip_addrs.map(ip => {
-                return (<list-body-cell-wrap hide-field field='ip' row={{ ip }} copy message={ip}><span>IP: {ip}</span></list-body-cell-wrap>)
-              }),
+            const result = [
+              ...(connection(i18n.t('db.text_153'), pri) || []),
+              ...(connection(i18n.t('db.text_154'), pub) || []),
             ]
+            ip_addrs.forEach(ip => {
+              if (ip) {
+                result.push(h('list-body-cell-wrap', {
+                  props: {
+                    hideField: true,
+                    field: 'ip',
+                    row: { ip },
+                    copy: true,
+                    message: ip,
+                  },
+                }, [
+                  h('span', `IP: ${ip}`),
+                ]))
+              }
+            })
+            return result
           },
         },
         formatter: ({ row }) => {
@@ -198,15 +214,29 @@ export default {
           default: ({ row }, h) => {
             const ret = []
             ret.push(
-              <list-body-cell-wrap hide-field copy field={'region'} row={row}>
-                <span style={{ color: '#0A1F44' }}>{ row.region }</span>
-              </list-body-cell-wrap>,
+              h('list-body-cell-wrap', {
+                props: {
+                  hideField: true,
+                  copy: true,
+                  field: 'region',
+                  row: row,
+                },
+              }, [
+                h('span', { style: { color: 'var(--oc-color-text-heading)' } }, row.region),
+              ]),
             )
             if (row.zone1_name) {
               ret.push(
-                <list-body-cell-wrap hide-field copy field="zone1_name" row={row}>
-                  <span style={{ color: '#53627C' }}>{ row.zone1_name }</span>
-                </list-body-cell-wrap>,
+                h('list-body-cell-wrap', {
+                  props: {
+                    hideField: true,
+                    copy: true,
+                    field: 'zone1_name',
+                    row: row,
+                  },
+                }, [
+                  h('span', { style: { color: 'var(--oc-color-text-secondary)' } }, row.zone1_name),
+                ]),
               )
             }
             return ret

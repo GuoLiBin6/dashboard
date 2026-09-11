@@ -106,9 +106,8 @@ export default {
                   })
                 },
               },
-              disableDeleteAction(Object.assign(this, {
+              disableDeleteAction(this, {
                 permission: 'elastic_searchs_update',
-              }), {
                 name: this.$t('dictionary.elasticsearch'),
               }),
               {

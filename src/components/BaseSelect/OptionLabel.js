@@ -8,12 +8,10 @@ const resourceMode = {
   networks: {
     vnode: (vm, h) => {
       const text = vm.getLabel()
-      return ( // IP子网
-        <div class='d-flex'>
-          <span class='text-truncate flex-fill mr-2' title={ text }>{ text }</span>
-          <span style="color: #8492a6; font-size: 13px">{i18n.t('common.text00001')}: { vm.data.ports - vm.data.ports_used }</span>
-        </div>
-      )
+      return h('div', { class: 'd-flex' }, [ // IP子网
+        h('span', { class: 'text-truncate flex-fill mr-2', attrs: { title: text } }, text),
+        h('span', { style: { color: '#8492a6', fontSize: '13px' } }, `${i18n.t('common.text00001')}: ${vm.data.ports - vm.data.ports_used}`),
+      ])
     },
     labelFormat: item => {
       let label = item.name
@@ -35,11 +33,9 @@ const resourceMode = {
   vpcs: {
     vnode: (vm, h) => {
       const text = vm.getLabel()
-      return (
-        <div class="d-flex">
-          <span class='text-truncate flex-fill' title={ text }>{ text }</span>
-        </div>
-      )
+      return h('div', { class: 'd-flex' }, [
+        h('span', { class: 'text-truncate flex-fill', attrs: { title: text } }, text),
+      ])
     },
     labelFormat: item => {
       let label = item.name
@@ -66,27 +62,25 @@ const resourceMode = {
   eips: {
     vnode: (vm, h) => {
       const { name, ip_addr } = vm.data
-      return (
-        <div class='d-flex'>
-          <span class='text-truncate flex-fill mr-3' title={ name }>{ name }</span>
-          {
-            ip_addr ? <span style="color: #8492a6; font-size: 13px">IP: { ip_addr}</span> : null
-          }
-        </div>
-      )
+      const children = [
+        h('span', { class: 'text-truncate flex-fill mr-3', attrs: { title: name } }, name),
+      ]
+      if (ip_addr) {
+        children.push(h('span', { style: { color: '#8492a6', fontSize: '13px' } }, `IP: ${ip_addr}`))
+      }
+      return h('div', { class: 'd-flex' }, children)
     },
   },
   cloudproviders: {
     vnode: (vm, h) => {
       const { name, cloudaccount } = vm.data
-      return (
-        <div class='d-flex'>
-          <span class='text-truncate flex-fill mr-3' title={ name }>{ name }</span>
-          {
-            cloudaccount ? <span style="color: #8492a6; font-size: 13px">{i18n.t('common.account')}: { cloudaccount}</span> : null
-          }
-        </div>
-      )
+      const children = [
+        h('span', { class: 'text-truncate flex-fill mr-3', attrs: { title: name } }, name),
+      ]
+      if (cloudaccount) {
+        children.push(h('span', { style: { color: '#8492a6', fontSize: '13px' } }, `${i18n.t('common.account')}: ${cloudaccount}`))
+      }
+      return h('div', { class: 'd-flex' }, children)
     },
   },
   // repos: {
@@ -118,12 +112,10 @@ const resourceMode = {
       }
       let concatText = concats.length ? concats.join('、') : null
       concatText = concatText ? `${i18n.t('common_599')}: ${concatText}` : i18n.t('common_731')
-      return (
-        <div class='d-flex'>
-          <span class='text-truncate flex-fill mr-2' title={ text }>{ text }</span>
-          <div style="color: #8492a6; font-size: 13px">{ concatText }</div>
-        </div>
-      )
+      return h('div', { class: 'd-flex' }, [
+        h('span', { class: 'text-truncate flex-fill mr-2', attrs: { title: text } }, text),
+        h('div', { style: { color: '#8492a6', fontSize: '13px' } }, concatText),
+      ])
     },
   },
   storages: {
@@ -133,12 +125,10 @@ const resourceMode = {
       const allowedBrands = ['VMware', 'OneCloud']
       const actual_capacity_used = allowedBrands.includes(store.data.brand) ? sizestr(store.data.actual_capacity_used, 'M', 1024) : '-'
       const allocated = sizestr(store.data.used_capacity, 'M', 1024)
-      return ( // block storage
-        <div class='d-flex'>
-          <span class='text-truncate flex-fill mr-2' title={ text }>{ text }</span>
-          <span style="color: #8492a6; font-size: 13px">{ i18n.t('storage.text_180', [capacity]) } / { i18n.t('storage.text_181', [allocated])} / { i18n.t('storage.text_178', [actual_capacity_used]) }</span>
-        </div>
-      )
+      return h('div', { class: 'd-flex' }, [ // block storage
+        h('span', { class: 'text-truncate flex-fill mr-2', attrs: { title: text } }, text),
+        h('span', { style: { color: '#8492a6', fontSize: '13px' } }, `${i18n.t('storage.text_180', [capacity])} / ${i18n.t('storage.text_181', [allocated])} / ${i18n.t('storage.text_178', [actual_capacity_used])}`),
+      ])
     },
   },
   alertdashboards: {
@@ -154,34 +144,34 @@ const resourceMode = {
       if (data.scope === 'project') {
         desc = i18n.t('monitor.dashboard.select.option', [data.project, i18n.t('cloudenv.text_254')])
       }
-      return (
-        <div class='d-flex'>
-          <span class='text-truncate flex-fill mr-2' title={ data.name }>{ data.name }</span>
-          <div style="color: #8492a6; font-size: 13px">{ desc }</div>
-        </div>
-      )
+      return h('div', { class: 'd-flex' }, [
+        h('span', { class: 'text-truncate flex-fill mr-2', attrs: { title: data.name } }, data.name),
+        h('div', { style: { color: '#8492a6', fontSize: '13px' } }, desc),
+      ])
     },
   },
   projects: {
     vnode: (vm, h) => {
       const project = vm.data
-      return (
-        <div class='d-flex'>
-          <span class='text-truncate flex-fill mr-2' title={ project.name }>{ project.name }</span>
-          {(vm.isAdminMode && vm.l3PermissionEnable) ? <span style="color: #8492a6; font-size: 13px">{i18n.t('common_257')}{i18n.t('dictionary.domain')}: {project.project_domain}</span> : null}
-        </div>
-      )
+      const children = [
+        h('span', { class: 'text-truncate flex-fill mr-2', attrs: { title: project.name } }, project.name),
+      ]
+      if (vm.isAdminMode && vm.l3PermissionEnable) {
+        children.push(h('span', { style: { color: '#8492a6', fontSize: '13px' } }, `${i18n.t('common_257')}${i18n.t('dictionary.domain')}: ${project.project_domain}`))
+      }
+      return h('div', { class: 'd-flex' }, children)
     },
   },
   roles: {
     vnode: (vm, h) => {
       const role = vm.data
-      return (
-        <div class='d-flex'>
-          <span class='text-truncate flex-fill mr-2' title={ role.name }>{ role.name }</span>
-          {(vm.isAdminMode && vm.l3PermissionEnable) ? <span style="color: #8492a6; font-size: 13px">{i18n.t('common_257')}{i18n.t('dictionary.domain')}: {role.project_domain}</span> : null}
-        </div>
-      )
+      const children = [
+        h('span', { class: 'text-truncate flex-fill mr-2', attrs: { title: role.name } }, role.name),
+      ]
+      if (vm.isAdminMode && vm.l3PermissionEnable) {
+        children.push(h('span', { style: { color: '#8492a6', fontSize: '13px' } }, `${i18n.t('common_257')}${i18n.t('dictionary.domain')}: ${role.project_domain}`))
+      }
+      return h('div', { class: 'd-flex' }, children)
     },
   },
   robots: {
@@ -196,22 +186,19 @@ const resourceMode = {
           typeText = vm.data.type
         }
       }
-      return (
-        <div class='d-flex'>
-          <span class='text-truncate flex-fill mr-2' title={ text }>{ text }</span>
-          <div style="color: #8492a6; font-size: 13px">{ typeText }</div>
-        </div>
-      )
+      return h('div', { class: 'd-flex' }, [
+        h('span', { class: 'text-truncate flex-fill mr-2', attrs: { title: text } }, text),
+        h('div', { style: { color: '#8492a6', fontSize: '13px' } }, typeText),
+      ])
     },
   },
   dns_zones: {
     vnode: (vm, h) => {
-      return (
-        <div class='d-flex'>
-          <span class='text-truncate flex-fill mr-2' title={vm.data.name}>{vm.data.name}</span>
-          <span style="color: #8492a6; font-size: 13px" class="oc-selected-display-none">{getBrandName(vm.data.brand)}{vm.data.manager ? ` - ${i18n.t('dictionary.cloudprovider') + ':' + vm.data.manager}` : ''}</span>
-        </div>
-      )
+      const brandText = `${getBrandName(vm.data.brand)}${vm.data.manager ? ` - ${i18n.t('dictionary.cloudprovider')}:${vm.data.manager}` : ''}`
+      return h('div', { class: 'd-flex' }, [
+        h('span', { class: 'text-truncate flex-fill mr-2', attrs: { title: vm.data.name } }, vm.data.name),
+        h('span', { class: 'oc-selected-display-none', style: { color: '#8492a6', fontSize: '13px' } }, brandText),
+      ])
     },
   },
 }
@@ -265,6 +252,6 @@ export default {
     }
     const str = this.getLabel()
     const text = R.is(String, str) ? str : this.text
-    return (<div title={text}>{ text }</div>)
+    return h('div', { attrs: { title: text } }, text)
   },
 }

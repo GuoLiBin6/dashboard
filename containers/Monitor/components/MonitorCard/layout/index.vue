@@ -1,5 +1,5 @@
 <template>
-  <a-row :class="card_style">
+  <a-row class="monitor-card-layout" :class="card_style">
     <a-col :class="card_style" :span="24">
       <div :class="['monitor-overview-card', card_style]">
         <div>
@@ -28,9 +28,17 @@ export default {
 </script>
 
 <style lang="less" scoped>
+.monitor-card-layout {
+  width: 100%;
+  display: block;
+}
 .monitor-overview-card {
+  box-sizing: border-box;
   border: 1px solid #F1F1F1;
-  // padding: 12px 24px;
+  border-radius: 6px;
+  padding: 12px 16px;
+  margin-left: 6px;
+  margin-right: 6px;
   .header {
     font-weight: 500;
     .title-wrapper {
@@ -43,5 +51,7 @@ export default {
 }
 .no-border {
   border: none;
+  margin-left: 0;
+  margin-right: 0;
 }
 </style>

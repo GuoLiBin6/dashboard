@@ -38,7 +38,12 @@ export default {
             minWidth: 120,
             slotCallback: row => {
               return [
-                <list-body-cell-wrap field='name' row={row} />,
+                this.$createElement('list-body-cell-wrap', {
+                  props: {
+                    field: 'name',
+                    row,
+                  },
+                }),
               ]
             },
           }),
@@ -57,30 +62,58 @@ export default {
                 if (row.access_ip) {
                   if (row.ipmi_ip) {
                     cellWrap.push(
-                      <div class="d-flex">
-                        <list-body-cell-wrap row={row} field="access_ip" copy><span class="text-color-help">{this.$t('compute.text_1319')}</span></list-body-cell-wrap>
-                      </div>,
+                      this.$createElement('div', { class: 'd-flex' }, [
+                        this.$createElement('list-body-cell-wrap', {
+                          props: {
+                            row,
+                            field: 'access_ip',
+                            copy: true,
+                          },
+                        }, [
+                          this.$createElement('span', { class: 'text-color-help' }, this.$t('compute.text_1319')),
+                        ]),
+                      ]),
                     )
                   } else {
                     cellWrap.push(
-                      <div class="d-flex">
-                        <list-body-cell-wrap row={row} field="access_ip" copy></list-body-cell-wrap>
-                      </div>,
+                      this.$createElement('div', { class: 'd-flex' }, [
+                        this.$createElement('list-body-cell-wrap', {
+                          props: {
+                            row,
+                            field: 'access_ip',
+                            copy: true,
+                          },
+                        }),
+                      ]),
                     )
                   }
                 }
                 if (row.ipmi_ip) {
                   if (row.access_ip) {
                     cellWrap.push(
-                      <div class="d-flex">
-                        <list-body-cell-wrap row={row} field="ipmi_ip" copy><span class="text-color-help">{this.$t('compute.text_1320')}</span></list-body-cell-wrap>
-                      </div>,
+                      this.$createElement('div', { class: 'd-flex' }, [
+                        this.$createElement('list-body-cell-wrap', {
+                          props: {
+                            row,
+                            field: 'ipmi_ip',
+                            copy: true,
+                          },
+                        }, [
+                          this.$createElement('span', { class: 'text-color-help' }, this.$t('compute.text_1320')),
+                        ]),
+                      ]),
                     )
                   } else {
                     cellWrap.push(
-                      <div class="d-flex">
-                        <list-body-cell-wrap row={row} field="ipmi_ip" copy></list-body-cell-wrap>
-                      </div>,
+                      this.$createElement('div', { class: 'd-flex' }, [
+                        this.$createElement('list-body-cell-wrap', {
+                          props: {
+                            row,
+                            field: 'ipmi_ip',
+                            copy: true,
+                          },
+                        }),
+                      ]),
                     )
                   }
                 }
@@ -97,7 +130,7 @@ export default {
             sortByList: ['', 'order_by_cpu_commit_rate'],
             slots: {
               default: ({ row }) => {
-                if (row.cpu_commit_rate === undefined) return [<data-loading />]
+                if (row.cpu_commit_rate === undefined) return [this.$createElement('data-loading')]
                 return row.cpu_count ? `${row.cpu_count}/${percentstr(row.cpu_commit_rate)}` : 'N/A'
               },
             },
@@ -110,7 +143,7 @@ export default {
             sortByList: ['', 'order_by_mem_commit_rate'],
             slots: {
               default: ({ row }) => {
-                if (row.mem_commit_rate === undefined) return [<data-loading />]
+                if (row.mem_commit_rate === undefined) return [this.$createElement('data-loading')]
                 return row.mem_size ? `${sizestr(row.mem_size, 'M', 1024)}/${percentstr(row.mem_commit_rate)}` : 'N/A'
               },
             },
@@ -122,7 +155,7 @@ export default {
             sortByList: ['order_by_storage', 'order_by_storage_commit_rate'],
             slots: {
               default: ({ row }) => {
-                if (row.storage === undefined) return [<data-loading />]
+                if (row.storage === undefined) return [this.$createElement('data-loading')]
                 return row.storage ? `${sizestr(row.storage, 'M', 1024)}/${percentstr(row.storage_commit_rate)}` : 'N/A'
               },
             },
@@ -143,7 +176,7 @@ export default {
             sortable: true,
             slots: {
               default: ({ row }, h) => {
-                if (row.nonsystem_guests === undefined) return [<data-loading />]
+                if (row.nonsystem_guests === undefined) return [this.$createElement('data-loading')]
                 return `${row.nonsystem_guests}`
               },
             },

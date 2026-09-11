@@ -172,9 +172,8 @@ export default {
                 },
               ],
             }),
-            disableDeleteAction(Object.assign(this, {
+            disableDeleteAction(this, {
               permission: 'lb_loadbalancers_update',
-            }), {
               name: this.$t('dictionary.loadbalancer'),
             }),
             {

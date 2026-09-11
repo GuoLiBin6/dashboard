@@ -2,12 +2,12 @@
   <div class="h-100 position-relative">
     <div class="dashboard-card-wrap">
       <div class="dashboard-card-header">
-        <div class="dashboard-card-header-left">{{ form.fd.name || $t('dashboard.text_6') }}<a-icon class="ml-2" type="loading" v-if="loading" /></div>
+        <div class="dashboard-card-header-left">{{ form.fd.name || $t('dashboard.text_6') }}<icon class="ml-2" type="loading" v-if="loading" /></div>
         <div class="dashboard-card-header-right"><slot name="actions" :handle-edit="handleEdit" /></div>
       </div>
       <div class="dashboard-card-body d-flex align-items-center justify-content-center">
-        <div class="d-flex align-items-baseline">
-          <div class="number-card-number mr-1">{{ this.usage.usage }}</div>
+        <div class="number-card-value">
+          <div class="number-card-number">{{ this.usage.usage }}</div>
           <div class="number-card-unit">{{ this.usage.unit }}</div>
         </div>
       </div>
@@ -214,17 +214,25 @@ export default {
 </script>
 
 <style lang="less" scoped>
+.number-card-value {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+}
 .number-card-number {
   font-size: 50px;
+  line-height: 1;
   color: #000;
 }
 .number-card-unit {
   font-size: 14px;
+  line-height: 1;
   color: #4F4B53;
-  margin-left: 5px;
+  margin-left: 6px;
+  padding-bottom: 4px;
 }
 .drawer-wrapper {
-  &::v-deep.ant-drawer.ant-drawer-open .ant-drawer-mask {
+  &:deep(.ant-drawer.ant-drawer-open .ant-drawer-mask) {
     animation: none;
   }
 }

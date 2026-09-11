@@ -8,7 +8,7 @@
     :showGroupActions="showGroupActions" />
 </template>
 
-<script>
+<script lang="jsx">
 import numerify from 'numerify'
 import { getNameDescriptionTableColumn, getTimeTableColumn, getStatusTableColumn, getEnabledTableColumn } from '@/utils/common/tableColumn'
 import { getEnabledSwitchActions } from '@/utils/common/tableActions'

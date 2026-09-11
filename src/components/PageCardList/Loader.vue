@@ -23,7 +23,7 @@ export default {
 
 <style lang="less" scoped>
 .page-card-loader {
-  ::v-deep .ant-skeleton .ant-skeleton-paragraph {
+  :deep(.ant-skeleton .ant-skeleton-paragraph) {
     padding: 0;
   }
 }

@@ -11,9 +11,11 @@ export default {
         edit: false,
         showDesc: false,
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{ row.name }</side-page-trigger>
-          )
+          return this.$createElement('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       {
@@ -55,7 +57,7 @@ export default {
               text = i18n.t('k8s.text_302')
               className = 'error-color'
             }
-            return [<div class={className}>{text}</div>]
+            return [h('div', { class: className }, text)]
           },
         },
       },

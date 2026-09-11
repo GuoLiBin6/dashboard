@@ -1,6 +1,6 @@
 <template>
-  <a-popover v-model="visible" trigger="click" placement="left">
-    <template slot="content">
+  <a-popover v-model:open="visible" trigger="click" placement="left">
+    <template #content>
       <div v-if="mfaShow" class="wrap-inner">
         <h5 class="auth-base-title text-center">{{ $t('auth.secret.verify.title') }}</h5>
         <div class="verify-tip">{{ $t('auth.secret.reset.prefix1') }}</div>
@@ -9,10 +9,10 @@
         </div>
         <div class="status-tip">
           <div v-if="error" class="error">{{ $t('auth.secret.validate') }}</div>
-          <div v-if="mfaLoading" class="loading"><a-icon type="sync" spin />{{ $t('auth.secret.loading') }}</div>
+          <div v-if="mfaLoading" class="loading"><icon type="sync" spin />{{ $t('auth.secret.loading') }}</div>
         </div>
       </div>
-      <a-icon type="sync" spin v-else-if="infoShow && loading" />
+      <icon type="sync" spin v-else-if="infoShow && loading" />
       <div v-else-if="infoShow && !loading" class="info-wrapper">
         <div>
           <span class="label inline-block">{{$t('compute.text_1017')}}：</span>
@@ -152,7 +152,7 @@ export default {
 </script>
 
 <style lang="less" scoped>
-@import '~@/styles/less/theme';
+@import '@/styles/less/theme';
 .info-btn:hover{
   color: @primary-color;
 }

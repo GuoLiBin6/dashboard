@@ -99,10 +99,12 @@ export default {
         onManager: this.onManager,
         hideField: true,
         addLock: true,
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{row.name}</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, [row.name])
         },
       }),
       getTagTableColumn({ onManager: this.onManager, resource: 'file_system', columns: () => this.columns }),

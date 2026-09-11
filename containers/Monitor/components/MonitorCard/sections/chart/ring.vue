@@ -9,11 +9,11 @@
       :loading="loading"
       :chartEvents="chartEvents"
       :extraToolbox="extraToolbox" />
-    <download-excel v-show="false" ref="excel" :data="chartData.rows" :fields="exportExcelColumns" :name="`${exportName||title}.xls`" />
+    <download-excel v-show="false" ref="excel" :data="(chartData && chartData.rows) || []" :fields="exportExcelColumns" :name="`${exportName||title}.xls`" />
   </div>
 </template>
 
-<script>
+<script lang="jsx">
 import commonChartProps from './common'
 
 export default {

@@ -4,10 +4,10 @@
     <div slot="body">
       <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 5 }" :wrapper-col="{ span: 17 }">
         <a-form-model-item v-if="params.type !== 'edit'" :label="$t('aice.aiproxy.provider_type')">
-          <a-radio-group v-model="form.provider_type" :options="providerTypeOptions" />
+          <a-radio-group v-model:value="form.provider_type" :options="providerTypeOptions" />
         </a-form-model-item>
         <a-form-model-item v-if="params.type !== 'edit'" :label="$t('common.name')" prop="generate_name">
-          <a-input v-model="form.generate_name" />
+          <a-input v-model:value="form.generate_name" />
         </a-form-model-item>
         <a-form-model-item v-else :label="$t('common.name')">
           <span>{{ form.name }}</span>
@@ -26,19 +26,19 @@
           </a-form-model-item>
           <template v-if="showBuiltinProviderConfig">
             <a-form-model-item v-if="showApiMode" :label="$t('aice.aiproxy.api_mode')">
-              <a-select v-model="form.api_mode" :options="apiModeOptions" />
+              <a-select v-model:value="form.api_mode" :options="apiModeOptions" />
             </a-form-model-item>
             <a-form-model-item v-if="showMoonshotRegion" :label="$t('aice.aiproxy.moonshot_region')">
-              <a-radio-group v-model="form.moonshot_region" :options="moonshotRegionOptions" />
+              <a-radio-group v-model:value="form.moonshot_region" :options="moonshotRegionOptions" />
             </a-form-model-item>
             <a-form-model-item v-if="showMoonshotRegion" :label="$t('aice.aiproxy.api_url')">
               <a-input :value="form.base_url" readonly />
             </a-form-model-item>
             <a-form-model-item v-if="showBaseUrl" :label="$t('aice.aiproxy.api_url')" prop="base_url">
-              <a-input v-model="form.base_url" />
+              <a-input v-model:value="form.base_url" />
             </a-form-model-item>
             <a-form-model-item v-if="params.type !== 'edit'" :label="$t('aice.aiproxy.api_key_field')" prop="api_key">
-              <a-input-password v-model="form.api_key" />
+              <a-input-password v-model:value="form.api_key" />
             </a-form-model-item>
           </template>
         </template>
@@ -50,23 +50,23 @@
               :icon-size="18" />
           </a-form-model-item>
           <a-form-model-item :label="$t('aice.aiproxy.api_mode')">
-            <a-select v-model="form.api_mode" :options="apiModeOptions" />
+            <a-select v-model:value="form.api_mode" :options="apiModeOptions" />
           </a-form-model-item>
           <a-form-model-item :label="$t('aice.aiproxy.api_url')" prop="base_url" :required="isCustom">
-            <a-input v-model="form.base_url" :placeholder="baseUrlPlaceholder" />
+            <a-input v-model:value="form.base_url" :placeholder="baseUrlPlaceholder" />
           </a-form-model-item>
           <a-form-model-item v-if="params.type !== 'edit'" :label="$t('aice.aiproxy.api_key_field')" prop="api_key">
-            <a-input-password v-model="form.api_key" />
+            <a-input-password v-model:value="form.api_key" />
           </a-form-model-item>
         </template>
         <a-form-model-item v-if="params.type !== 'edit' && connectivityTested" :label="$t('aice.aiproxy.model_key')" required>
           <a-input
-            v-model="modelSearch"
+            v-model:value="modelSearch"
             allow-clear
             :placeholder="$t('common.search')"
             class="mb-2" />
           <div class="provider-model-list">
-            <a-checkbox-group v-model="selectedModelKeys" class="d-flex flex-column">
+            <a-checkbox-group v-model:value="selectedModelKeys" class="d-flex flex-column">
               <a-checkbox
                 v-for="opt in filteredModelOptions"
                 :key="opt.value"

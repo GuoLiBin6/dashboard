@@ -1,21 +1,23 @@
 <template>
   <div>
-    <a-breadcrumb style="padding: 5px;">
+    <div style="padding: 5px;">
       <span>{{ $t('cloudenv.text_374') + ": " }}</span>
-      <a-breadcrumb-item v-for="(item, index) in navs" :key="item.id">
-        <template v-if="index === lastIndex">
-          <span class="monitor-overview-breadcrumb-span">{{ locationTitle(item.location) }}</span>
-        </template>
-        <template v-else>
-          <a class="monitor-overview-breadcrumb-link" @click="changeNav(index)">{{ item.location }}</a>
-        </template>
-      </a-breadcrumb-item>
-    </a-breadcrumb>
+      <a-breadcrumb style="display: inline-block;">
+        <a-breadcrumb-item v-for="(item, index) in navs" :key="item.id">
+          <template v-if="index === lastIndex">
+            <span class="monitor-overview-breadcrumb-span">{{ locationTitle(item.location) }}</span>
+          </template>
+          <template v-else>
+            <a class="monitor-overview-breadcrumb-link" @click="changeNav(index)">{{ item.location }}</a>
+          </template>
+        </a-breadcrumb-item>
+      </a-breadcrumb>
+    </div>
     <div
         v-if="this.total > 1"
         class="col-3"
         :style="{ fontSize: '20px', padding: '5px'}">
-      <a-icon type="arrow-left" class="anticon anticon-arrow-left monitor-overview-breadcrumb-link" :style="{ cursor: 'pointer', }" @click="changeNav(navs.length-2)" />
+      <icon type="arrow-right" class="anticon anticon-arrow-left monitor-overview-breadcrumb-link" :style="{ cursor: 'pointer', transform: 'rotate(180deg)' }" @click="changeNav(navs.length-2)" />
       <span :style="{ paddingLeft: '5px' }">{{ navs[navs.length-1].name }}</span>
     </div>
   </div>

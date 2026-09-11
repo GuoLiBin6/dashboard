@@ -18,9 +18,11 @@ export default {
         ],
         edit: row => row.idp_driver !== 'ldap',
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+          return this.$createElement('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       {
@@ -28,7 +30,14 @@ export default {
         title: i18n.t('scope.text_245'),
         slots: {
           default: ({ row }) => {
-            return [<list-body-cell-wrap copy row={ row } field='displayname' title={ row.displayname || '-' } />]
+            return [this.$createElement('list-body-cell-wrap', {
+              props: {
+                copy: true,
+                row,
+                field: 'displayname',
+                title: row.displayname || '-',
+              },
+            })]
           },
         },
       },

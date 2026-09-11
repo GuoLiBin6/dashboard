@@ -32,31 +32,31 @@
             version="v1"
             :params="imagesParams"
             :mapper="imagesResourceMapper"
-            :resList.sync="imagesData"
+            v-model:resList="imagesData"
             @update:item="imagechange"
             :select-props="{ placeholder: $t('compute.text_833') }" />
         </a-form-item>
         <a-form-item v-bind="formItemLayout" :label="$t('compute.text_834')" v-if="isShowImages">
           <div class="d-flex flex-wrap">
-            <template v-for="(item, idx) of diskOptionsDate">
-              <div :key="idx" class="disk-option-item">
+            <template v-for="(item, idx) of diskOptionsDate" :key="idx">
+              <div class="disk-option-item">
                 <a-card hoverable>
                   <template slot="title">
                     <icon type="res-disk" />
                     {{ item.title }}
                     <a-tooltip :title="$t('compute.text_304')">
-                      <a-icon type="check-circle" theme="twoTone" twoToneColor="#52c41a" v-show="(idx === 0 && !isShowFalseIcon) || idx !== 0" />
+                      <icon type="check-circle" theme="twoTone" twoToneColor="#52c41a" v-show="(idx === 0 && !isShowFalseIcon) || idx !== 0" />
                     </a-tooltip>
                     <a-tooltip :title="$t('compute.text_305')">
-                      <a-icon type="close-circle" theme="twoTone" twoToneColor="#eb2f96" v-show="idx === 0 && isShowFalseIcon" />
+                      <icon type="close-circle" theme="twoTone" twoToneColor="#eb2f96" v-show="idx === 0 && isShowFalseIcon" />
                     </a-tooltip>
                   </template>
                   <a href="javascript:;" slot="extra" @click="handleDiskItemRemove(idx)" v-show="idx === diskOptionsDate.length - 1">{{$t('compute.perform_delete')}}</a>
                   <div class="d-flex align-items-center">
                     <ve-pie :data="item.chartData" :settings="chartSettings" :events="chartFun(idx)" width="200px" height="200px" :legend-visible="false" :tooltip="tooltip" />
                     <div class="flex-fill ml-2">
-                      <template v-for="k in item.diskInfo">
-                        <div :key="k">
+                      <template v-for="k in item.diskInfo" :key="k">
+                        <div>
                           <a-checkbox defaultChecked disabled>
                             {{k}}
                           </a-checkbox>

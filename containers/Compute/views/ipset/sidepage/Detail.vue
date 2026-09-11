@@ -6,7 +6,7 @@
     :extra-info="extraInfo" />
 </template>
 
-<script>
+<script lang="jsx">
 const IPSET_TYPE = {
   ipv4_cidr_list: 'IPv4',
   ipv6_cidr_list: 'IPv6',

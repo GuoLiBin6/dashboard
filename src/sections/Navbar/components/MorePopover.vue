@@ -1,19 +1,21 @@
 <template>
   <div>
     <a-dropdown :trigger="['click']" :getPopupContainer="triggerNode => triggerNode.parentNode">
-      <a-tooltip :title="$t('common.more')" placement="right">
-        <div class="trigger d-flex align-items-center justify-content-center">
+      <div class="trigger d-flex align-items-center justify-content-center">
+        <a-tooltip :title="$t('common.more')" placement="bottom">
           <icon type="navbar-more" style="font-size: 20px;" />
-        </div>
-      </a-tooltip>
-      <a-menu slot="overlay" @click="handleDropdownClick">
-        <a-menu-item key="/guide" v-if="isAdminMode && !isCE() && showMenuMap.feature_select && showMenuMap.more">{{$t('navbar.button.feature_select')}}</a-menu-item>
-        <a-menu-item :key="docsUrl" v-if="showMenuMap.docs && showMenuMap.more">{{$t('navbar.button.docs')}}</a-menu-item>
-        <a-menu-item key="/licenses" v-if="showMenuMap.about && showMenuMap.more">
-          <span>{{isCE() || $store.getters.isSysCE ? $t('scope.text_145') : $t('navbar.button.about')}}</span>
-          <a-icon v-if="!isOEM && isAdminMode && updateAvailable" type="cloud-upload" class="success-color ml-1" />
-        </a-menu-item>
-      </a-menu>
+        </a-tooltip>
+      </div>
+      <template #overlay>
+        <a-menu @click="handleDropdownClick">
+          <a-menu-item key="/guide" v-if="isAdminMode && !isCE() && showMenuMap.feature_select && showMenuMap.more">{{$t('navbar.button.feature_select')}}</a-menu-item>
+          <a-menu-item :key="docsUrl" v-if="showMenuMap.docs && showMenuMap.more">{{$t('navbar.button.docs')}}</a-menu-item>
+          <a-menu-item key="/licenses" v-if="showMenuMap.about && showMenuMap.more">
+            <span>{{isCE() || $store.getters.isSysCE ? $t('scope.text_145') : $t('navbar.button.about')}}</span>
+            <icon v-if="!isOEM && isAdminMode && updateAvailable" type="cloud-upload" class="about-upgrade-icon ml-1" fill="#52c41a" style="color: #52c41a" />
+          </a-menu-item>
+        </a-menu>
+      </template>
     </a-dropdown>
   </div>
 </template>
@@ -46,7 +48,7 @@ export default {
       return DOCS_MAP.introduction()
     },
   },
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {
@@ -91,5 +93,26 @@ export default {
   // padding: 0 20px;
   cursor: pointer;
   text-decoration: none;
+  color: inherit;
+
+  :deep(.oc-icon) {
+    color: inherit;
+  }
+}
+.about-upgrade-icon,
+.about-upgrade-icon.oc-icon,
+:deep(.about-upgrade-icon) {
+  color: #52c41a !important;
+  fill: #52c41a !important;
+}
+</style>
+
+<style lang="less">
+/* 下拉挂在 navbar-item-icon 内，需压过其 :hover color:inherit !important */
+.navbar-item-icon .about-upgrade-icon.oc-icon,
+.navbar-item-icon:hover .about-upgrade-icon.oc-icon,
+.ant-dropdown-menu .about-upgrade-icon.oc-icon {
+  color: #52c41a !important;
+  fill: #52c41a !important;
 }
 </style>

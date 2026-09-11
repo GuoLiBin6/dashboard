@@ -11,7 +11,6 @@
         :id="listId"
         :filterParams="filterParams"
         statusResKey="host"
-        @refresh="refreshHandle"
         @resStatisticsChange="resStatisticsChange" />
     </page-body>
   </div>

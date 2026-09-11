@@ -91,7 +91,7 @@ export default {
       }
     },
   },
-  destroyed () {
+  unmounted () {
     clearTimeout(this.timer)
     this.timer = null
   },

@@ -2,8 +2,8 @@
   <a-card style="border: none;">
     <h5 class="text-center mb-4">{{ title }}</h5>
     <a-form :form="form.fc" @submit.prevent="handleSubmit">
-      <template v-for="(questionGroup, idx) of questionGroupKeys">
-        <div :key="idx">
+      <template v-for="(questionGroup, idx) of questionGroupKeys" :key="questionGroup">
+        <div>
           <a-form-item :label="`${$t('common.text00113')}${idx + 1}`" v-bind="formItemLayout">
             <a-select :placeholder="$t('common.text00114')" v-decorator="decorators[`question${idx}`]" :disabled="isVerify">
               <a-select-option
@@ -30,6 +30,8 @@
 <script>
 import i18n from '@/locales'
 
+const QUESTION_GROUPS = ['group1', 'group2', 'group3']
+
 export default {
   name: 'SecretQuestionForm',
   props: {
@@ -45,8 +47,9 @@ export default {
     },
   },
   data () {
-    const authSecretQuestion = this.$t('authSecretQuestion')
-    const questionGroupKeys = Object.keys(authSecretQuestion)
+    // vue-i18n v9+：$t 对对象文案返回 key 字符串，需用 $tm
+    const authSecretQuestion = this.$tm('authSecretQuestion') || {}
+    const questionGroupKeys = QUESTION_GROUPS.filter(key => Array.isArray(authSecretQuestion[key]))
     const decorators = {}
     for (let i = 0, len = questionGroupKeys.length; i < len; i++) {
       let initQuestion = authSecretQuestion[questionGroupKeys[i]][0].label

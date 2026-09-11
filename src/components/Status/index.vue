@@ -1,17 +1,17 @@
 <template>
   <div class="status-wrapper">
-    <div class="d-flex" :title="statusText">
+    <div class="d-flex align-items-center status-inner-row" :title="statusText">
       <div class="status-icon d-flex justify-content-center align-items-center flex-grow-0 flex-shrink-0">
-        <a-icon v-if="!statusClass" type="sync" spin />
+        <icon v-if="!statusClass" type="sync" spin />
         <span v-else class="status-dot" :class="statusClass" />
       </div>
-      <div class="status-text text-truncate">
+      <div class="status-text text-truncate flex-fill status-text-flex">
         {{ statusText }}
         <slot name="icon" />
         <span v-if="showProcess && !changedStatus">({{curProcess}}%)</span>
       </div>
-      <div class="flex-fill">
-        <copy v-if="!isBooleanValue" class="status-copy" :message="status" style="margin-top:3px;margin-left:5px" />
+      <div v-if="!isBooleanValue" class="status-copy-host flex-shrink-0">
+        <copy :message="String(status)" />
       </div>
     </div>
     <div v-if="changedStatus && showProcess" style="width:100px;margin-left:5px">
@@ -152,6 +152,9 @@ export default {
 
 .status-wrapper {
   width: 100%;
+  overflow: visible;
+  position: relative;
+  z-index: 0;
   .status-icon {
     width: 20px;
     .status-success.status-dot {
@@ -188,13 +191,32 @@ export default {
       height: 10px;
     }
   }
-  .status-copy {
-    display: none;
+  .status-inner-row {
+    width: 100%;
+    min-width: 0;
   }
-  &:hover {
-    .status-copy {
-      display: inline-block;
-    }
+  .status-text-flex {
+    min-width: 0;
+  }
+  .status-copy-host {
+    margin-left: 4px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+    transition: opacity 0.12s ease;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+  .status-wrapper:hover .status-copy-host {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+  .status-copy-host :deep(svg),
+  .status-copy-host :deep(.copy-trigger) {
+    cursor: pointer;
   }
 }
 

@@ -9,7 +9,7 @@ export const getVpcTableColumn = (vm) => {
     slots: {
       default: ({ row }, h) => {
         return [
-          <side-page-trigger name='VpcSidePage' id={row.vpc_id} vm={vm}>{row.vpc}</side-page-trigger>,
+          h('side-page-trigger', { props: { name: 'VpcSidePage', id: row.vpc_id, vm } }, row.vpc),
         ]
       },
     },
@@ -40,9 +40,9 @@ export const getExtPeerAccountTableColumn = () => {
       default: ({ row }, h) => {
         const text = !row.peer_vpc_name ? `${row.peer_account_id || row.ext_peer_account_id}(${i18n.t('network.cross_account')})` : i18n.t('network.same_account')
         return [
-          <list-body-cell-wrap copy field='ext_peer_account_id' row={row} hideField='true' message={text}>
-            { text }
-          </list-body-cell-wrap>,
+          h('list-body-cell-wrap', {
+            props: { copy: true, field: 'ext_peer_account_id', row, hideField: 'true', message: text },
+          }, text),
         ]
       },
     },

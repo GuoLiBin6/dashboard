@@ -1,11 +1,18 @@
 <template>
   <div>
-    <div class="d-flex align-items-center" v-for="(item, i) in ipSubnets" :key="item.key">
+    <div class="ip-subnets-item" v-for="(item, i) in ipSubnets" :key="item.key">
       <ip-subnet
+        class="ip-subnets-item__block"
         showIpv6
         isButtonHide
         :decorator="genDecorator(item.key)" />
-      <a-button shape="circle" icon="minus" size="small" v-if="!hiddenDeleteAction && ipSubnets.length > 1" @click="decrease(i)" class="ml-2" />
+      <a-button
+        shape="circle"
+        icon="minus"
+        size="small"
+        class="ip-subnets-item__remove"
+        v-if="!hiddenDeleteAction && ipSubnets.length > 1"
+        @click="decrease(i)" />
     </div>
     <div class="d-flex align-items-center" v-if="!hiddenAddAction && remain > 0">
       <a-button type="primary" shape="circle" icon="plus" size="small" @click="add" />
@@ -75,3 +82,22 @@ export default {
   },
 }
 </script>
+
+<style lang="less" scoped>
+.ip-subnets-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.ip-subnets-item__block {
+  flex: 1;
+  min-width: 0;
+}
+
+.ip-subnets-item__remove {
+  flex-shrink: 0;
+  margin-top: 20px;
+}
+</style>

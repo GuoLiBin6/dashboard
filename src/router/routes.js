@@ -11,6 +11,15 @@ import Icons from '@/components/Icon/Icons'
 // 这里保持同一个数组引用，通过 splice 原地更新，保证引用 menusConfig 的组件能自动感知变更。
 export const menusConfig = []
 
+/** 循环依赖时 store 可能仍在 TDZ，直接读会抛 ReferenceError */
+function getStoreSafe () {
+  try {
+    return store
+  } catch (e) {
+    return null
+  }
+}
+
 function refreshMenusConfig () {
   const cfg = getModulesRouteConfig()
   menusConfig.splice(0, menusConfig.length, ...cfg)
@@ -23,13 +32,7 @@ refreshMenusConfig()
 let __menusConfigSubscribed = false
 function ensureMenusConfigSubscribe () {
   if (__menusConfigSubscribed) return
-  let s = store
-  try {
-    // eslint-disable-next-line global-require
-    s = s || (require('@/store').default)
-  } catch (e) {
-    // ignore
-  }
+  const s = getStoreSafe()
   if (s && typeof s.subscribe === 'function') {
     __menusConfigSubscribed = true
     s.subscribe((mutation) => {
@@ -66,19 +69,25 @@ const routes = [
   { name: 'NoProject', path: '/no-project', component: NoProject, meta: { layout: 'full-screen' } },
   { name: '404', path: '/404', component: NotFoundPage, meta: { layout: 'full-screen', auth: false } },
   { name: '403', path: '/403', component: NoPermission, meta: { layout: 'full-screen', auth: false } },
-  { name: 'NotFound', path: '*', component: NotFoundPage, meta: { layout: 'full-screen', auth: false } },
+  { name: 'NotFound', path: '/:pathMatch(.*)*', component: NotFoundPage, meta: { layout: 'full-screen', auth: false } },
 ]
 
-if (process.env.VUE_APP_ENABLE_ICON) {
-  routes.push({ name: 'Icons', path: '/icons', component: Icons, meta: { layout: 'full-screen', auth: false } })
-}
+// if (process.env.VUE_APP_ENABLE_ICON) {
+routes.push({ name: 'Icons', path: '/icons', component: Icons, meta: { layout: 'full-screen', auth: false } })
+// }
 
 function getScopeRoutes () {
-  const r = require.context('../../scope', true, /.\/router\/routes.js/)
-  const keys = r.keys()
+  // private/EE：必须走 @scope/router/routes.js（相对 ../../scope 只会命中 CE，缺少 /user /guide /global-search-result 等）
+  const isPrivate = process.env.VUE_APP_IS_PRIVATE
+  const moduleRoute = process.env.VUE_APP_MODULE_ROUTE
+  const scopeRoutesModules = (isPrivate || moduleRoute)
+    ? import.meta.glob('@scope/router/routes.js', { eager: true })
+    : import.meta.glob('../../scope/**/router/routes.js', { eager: true })
+  const keys = Object.keys(scopeRoutesModules)
   let ret = []
   if (keys && keys.length) {
-    ret = r(keys[0]).default
+    const module = scopeRoutesModules[keys[0]]
+    ret = module?.default || []
   }
   return ret
 }
@@ -87,10 +96,21 @@ function getModulesRouteConfig () {
   const isPrivate = process.env.VUE_APP_IS_PRIVATE
   const moduleRoute = process.env.VUE_APP_MODULE_ROUTE
   let ret = []
-  const r = (isPrivate || moduleRoute) ? require.context('../../scope', true, /.\/router\/index.js/) : require.context('../../containers', true, /^((?![\\/]node_modules).)*.\/router\/index.js$/)
-  r.keys().forEach(dir => {
-    ret = ret.concat(r(dir).default)
+  // Vite 使用 import.meta.glob 替代 webpack 的 require.context
+  // private/EE：必须走 @scope/router（相对 ../../scope 只会命中 CE，且无 index.js）
+  const routeModules = (isPrivate || moduleRoute)
+    ? {
+      ...import.meta.glob('@scope/router/index.js', { eager: true }),
+      ...import.meta.glob('../../scope/**/router/index.js', { eager: true }),
+    }
+    : import.meta.glob('../../containers/**/router/index.js', { eager: true })
+  Object.keys(routeModules).forEach(key => {
+    const module = routeModules[key]
+    if (module?.default) {
+      ret = ret.concat(module.default)
+    }
   })
+  const store = getStoreSafe()
   const isAI = store?.getters?.globalSetting?.value?.productVersion === 'AI'
   // 用“排序权重”调整展示顺序：仅 AI 产品时，把 AI 模块放到 Compute 前面
   ret = ret

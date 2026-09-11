@@ -8,6 +8,9 @@
 <script>
 // lib
 import _CodeMirror from 'codemirror'
+import 'codemirror/lib/codemirror.css'
+import 'codemirror/theme/material.css'
+import 'codemirror/mode/yaml/yaml.js'
 import 'codemirror/addon/scroll/annotatescrollbar.js'
 import 'codemirror/addon/search/matchesonscrollbar.js'
 import 'codemirror/addon/search/match-highlighter.js'
@@ -85,7 +88,7 @@ export default {
   mounted () {
     this.initialize()
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.destroy()
   },
   methods: {

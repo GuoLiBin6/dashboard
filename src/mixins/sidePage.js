@@ -160,7 +160,7 @@ export default {
       return (this.params.list.data[this.id] && this.params.list.data[this.id].data) || {}
     },
   },
-  destroyed () {
+  unmounted () {
     this.clearWaitJob()
     this.manager = null
   },
@@ -222,8 +222,14 @@ export default {
       this.destroySidePage(this.windowId)
     },
     handleTabChange (val) {
+      const pid = this.sidePageData && this.sidePageData.parentWindowId
+      if (!pid) return
+      const w = this.$store.getters.windows && this.$store.getters.windows[pid]
+      const cur = w && (w.currentTab || w._currentTab)
+      // 防止重复写入导致 Tabs/SidePage 反复更新（递归更新）
+      if (cur === val) return
       this._updateWindow({
-        id: this.sidePageData.parentWindowId,
+        id: pid,
         currentTab: val,
       })
     },

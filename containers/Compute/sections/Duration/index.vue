@@ -1,11 +1,11 @@
 <template>
   <div>
     <a-form-item class="mb-0">
-      <a-radio-group @change="change" v-decorator="decorators.durationStandard">
+      <a-radio-group :value="durationStandardValue" @change="change" v-decorator="decorators.durationStandard">
         <a-radio-button v-for="item in opts" :key="item.key" :value="item.key">{{ item.label }}</a-radio-button>
       </a-radio-group>
     </a-form-item>
-    <a-form-item v-if="showDuration">
+    <a-form-item v-if="showDuration" class="mt-2">
       <duration-input v-decorator="decorators.duration" @change="onCustomDurationChange" />
     </a-form-item>
   </div>
@@ -21,6 +21,9 @@ const defaultOpts = ['none', '1h', '6h', '1d', '3d', '1w', '1m', 'custom']
 export default {
   name: 'Duration',
   mixins: [createFormFieldDraftMixin],
+  inject: {
+    formInject: { from: 'form', default: null },
+  },
   props: {
     formDraftKey: {
       type: String,
@@ -44,7 +47,17 @@ export default {
       opts: [],
       loading: false,
       showDuration: this.decorators.durationStandard[1].initialValue === 'custom',
+      durationStandardLocal: this.decorators.durationStandard[1].initialValue,
     }
+  },
+  computed: {
+    formRef () {
+      return this.form || this.formInject || null
+    },
+    durationStandardValue () {
+      const name = this.decorators.durationStandard[0]
+      return (name && this.formRef?.fd?.[name]) || this.durationStandardLocal
+    },
   },
   created () {
     this.getOpts()
@@ -149,10 +162,12 @@ export default {
       return getDurationLabel(item)
     },
     change (e) {
-      if (e.target.value === 'custom') {
-        this.showDuration = true
-      } else {
-        this.showDuration = false
+      const val = e && e.target ? e.target.value : e
+      this.durationStandardLocal = val
+      this.showDuration = val === 'custom'
+      const name = this.decorators.durationStandard[0]
+      if (this.formRef?.fc?.setFieldsValue) {
+        this.formRef.fc.setFieldsValue({ [name]: val })
       }
       this.$nextTick(() => this.persistDurationDraft())
     },

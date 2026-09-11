@@ -4,7 +4,7 @@
     <div slot="body">
       <a-form
         :form="form.fc">
-        <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-bind="formItemLayout" class="mb-0">
+        <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-bind="formItemLayout">
           <domain-project :fc="form.fc" :form-layout="formItemLayout" :decorators="{ project: decorators.project, domain: decorators.domain }" />
         </a-form-item>
         <a-form-item :label="$t('compute.text_1016')" v-bind="formItemLayout">
@@ -27,7 +27,7 @@
             v-decorator="decorators.tag" :allowNoValue="false" />
         </a-form-item>
       </a-form>
-      <a-tabs defaultActiveKey="in" @change="tabCallback">
+      <a-tabs v-model:activeKey="checkedTab">
         <a-tab-pane :tab="$t('compute.text_993')" key="in">
           <a-table
           :columns="columns"
@@ -246,9 +246,6 @@ export default {
   methods: {
     handleSelectChange (e) {
       this.templateType = e
-    },
-    tabCallback (e) {
-      this.checkedTab = e
     },
     validateForm () {
       return new Promise((resolve, reject) => {

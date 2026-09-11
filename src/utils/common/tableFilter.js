@@ -42,19 +42,18 @@ export function getBrandItems (key = 'brands', outBrands = []) {
 }
 
 export function mapperStatusToItems (items, statusModule) {
-  const scopeStatus = i18n.t(`scopeStatus.${statusModule}`) || {}
-  const status = i18n.t(`status.${statusModule}`) || {}
+  // vue-i18n v9+：t('status.module') 不会返回嵌套对象，需按 key 逐条翻译
   return items.map(item => {
     let label = item.label
     let t = ''
-    if (scopeStatus && i18n.te(`scopeStatus.${statusModule}.${item.key}`)) {
-      label = i18n.t(`scopeStatus.${statusModule}.${item.key}`)
-    } else if (status) {
-      if (!R.is(String, status)) {
-        label = status[item.key] || item.label
-        if (label.includes('@:dictionary')) {
-          t = `status.${statusModule}.${item.key}`
-        }
+    const scopeKey = `scopeStatus.${statusModule}.${item.key}`
+    const statusKey = `status.${statusModule}.${item.key}`
+    if (i18n.te(scopeKey)) {
+      label = i18n.t(scopeKey)
+    } else if (i18n.te(statusKey)) {
+      label = i18n.t(statusKey)
+      if (R.is(String, label) && label.includes('@:dictionary')) {
+        t = statusKey
       }
     }
     return {

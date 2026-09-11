@@ -1,68 +1,86 @@
 <template>
-  <div @click="handleWrapClick">
+  <div class="search-box-tag-wrap" @click="handleWrapClick">
     <a-popover
-      v-model="visible"
+      v-model:open="visible"
       trigger="click"
       destroyTooltipOnHide
       placement="bottomLeft"
       overlayClassName="search-box-tag-popover-wrap"
       :getPopupContainer="getPopupContainer"
-      :align="{offset: [0, 0]}">
-      <div class="auto-completer-wrap" slot="content" :style="{ width: isDate || isMonth ? '300px' : '200px' }">
-        <ul class="auto-completer-items">
-          <template v-if="isDropdown">
-            <div class="pt-2 pb-2 pl-2" v-if="config.supportNegation && config.items">
-              <a-radio-group v-model="condition">
-                <a-radio value="equals">{{ $t('common.contains') }}</a-radio>
-                <a-radio value="not_equals">{{ $t('common.not_contains') }}</a-radio>
-              </a-radio-group>
-            </div>
-            <!-- 如果有配置项则渲染 -->
-            <template v-if="config.items">
-              <a-input-search
-                id="dropdownSearchInput"
-                class="dropdown-search-input"
-                :placeholder="$t('common.search')"
-                @change="onSearch" />
-              <li
-                v-for="item of filteredItems"
-                :key="item.key">
-                <span>
-                  <a-checkbox
-                    class="w-100"
-                    :checked="newValue && newValue.includes(item.key)"
-                    :value="item.key"
-                    @change="handleValueChange"><span class="text-wrap text-break" :title="item.label">{{ item.label }}</span></a-checkbox>
-                </span>
-              </li>
-            </template>
-            <!-- 如果需要渲染时间选择器 -->
-            <template v-else-if="isDate">
-              <date-select
-                :value="newValue"
-                @change="handleDateChange"
-                :getPopupContainer="getDateSelectPopupContainer"
-                @date-editing-change="editing => $emit('date-editing-change', editing)" />
-            </template>
-            <!-- 如果需要渲染月份选择器 -->
-            <template v-else-if="isMonth">
-              <month-select
-                :value="newValue"
-                @change="handleMonthChange"
-                :getPopupContainer="getMonthSelectPopupContainer"
-                @date-editing-change="editing => $emit('date-editing-change', editing)" />
-            </template>
+      :align="{ offset: [0, 14] }">
+      <template #content>
+        <div class="auto-completer-wrap" :style="{ width: isDate || isMonth ? '300px' : '200px' }">
+          <template v-if="isDropdown && isDate">
+            <date-select
+              :value="newValue"
+              @change="handleDateChange"
+              @date-editing-change="editing => $emit('date-editing-change', editing)" />
           </template>
-          <template v-else>
-            <a-input :value="newValue.join(newValueSeparator)" ref="input" @keydown.13="handleConfirm" @change="handleInputChange" />
+          <template v-else-if="isDropdown && isMonth">
+            <month-select
+              :value="newValue"
+              @change="handleMonthChange"
+              @date-editing-change="editing => $emit('date-editing-change', editing)" />
           </template>
-        </ul>
-        <div class="actions">
-          <span @click="handleConfirm($event)" class="primary-color" :class="{ disabled: confirmDisable }">{{$t('common.ok')}}</span>
-          <span @click="handleCancel($event)">{{$t('common.cancel')}}</span>
+          <ul v-else class="auto-completer-items">
+            <template v-if="isDropdown">
+              <div class="pt-2 pb-2 pl-2" v-if="config.supportNegation && config.items">
+                <a-radio-group v-model:value="condition">
+                  <a-radio value="equals">{{ $t('common.contains') }}</a-radio>
+                  <a-radio value="not_equals">{{ $t('common.not_contains') }}</a-radio>
+                </a-radio-group>
+              </div>
+              <!-- 如果有配置项则渲染 -->
+              <template v-if="config.items">
+                <div class="dropdown-search-input-wrap">
+                  <a-input
+                    id="dropdownSearchInput"
+                    class="dropdown-search-input"
+                    :bordered="false"
+                    :placeholder="$t('common.search')"
+                    @change="onSearch">
+                    <template #suffix>
+                      <icon type="search" class="dropdown-search-suffix-icon" />
+                    </template>
+                  </a-input>
+                </div>
+                <li
+                  v-for="item of filteredItems"
+                  :key="item.key">
+                  <span>
+                    <a-checkbox
+                      class="w-100"
+                      :checked="newValue && newValue.includes(item.key)"
+                      :value="item.key"
+                      @change="handleValueChange"><span class="text-wrap text-break" :title="item.label">{{ item.label }}</span></a-checkbox>
+                  </span>
+                </li>
+              </template>
+            </template>
+            <template v-else>
+              <a-input :value="newValue.join(newValueSeparator)" ref="input" @keydown.13="handleConfirm" @change="handleInputChange" />
+            </template>
+          </ul>
+          <div class="actions">
+            <span @click="handleConfirm($event)" class="primary-color" :class="{ disabled: confirmDisable }">{{$t('common.ok')}}</span>
+            <span @click="handleCancel($event)">{{$t('common.cancel')}}</span>
+          </div>
         </div>
-      </div>
-      <a-tag class="tag" closable @close="handleClose($event)">{{ getLabel(label) }}</a-tag>
+      </template>
+      <a-tag class="tag" closable :bordered="false" @close="handleClose">
+        <template #closeIcon>
+          <icon type="close-outlined" class="search-box-tag-close" />
+        </template>
+        <span class="tag-prefix primary-color">{{ fieldLabel }}</span>
+        <span class="tag-key-sep primary-color">{{ displayKeySep }}</span>
+        <template v-if="labelValues.length">
+          <template v-for="(item, index) in labelValues" :key="index">
+            <span v-if="index > 0" class="tag-value-sep">{{ newValueSeparator }}</span>
+            <span>{{ item }}</span>
+          </template>
+        </template>
+        <template v-else>{{ displayValueText }}</template>
+      </a-tag>
     </a-popover>
   </div>
 </template>
@@ -133,32 +151,33 @@ export default {
       }
       return null
     },
-    label () {
-      const label = this.options[this.id].label
-      let ret = `${label}${this.condition === 'equals' ? this.keySeparator : ' != '}`
-      if (this.isDate || this.isMonth) {
-        if (this.value[0] && this.value[1]) {
-          ret += this.value.join('~')
-        } else if (this.value[0]) {
-          ret += `<${this.value[0]}`
-        } else if (this.value[1]) {
-          ret += `>${this.value[1]}`
+    fieldLabel () {
+      return this.options[this.id].label
+    },
+    displayKeySep () {
+      return this.condition === 'equals' ? ':' : '!='
+    },
+    labelValues () {
+      if (this.isDate || this.isMonth) return []
+      return this.value.map(value => {
+        if (this.itemKeyMap) {
+          const label = this.itemKeyMap.get(value)
+          if (label) return label
+        } else if (this.options[this.id].items && this.options[this.id].items.length) {
+          const target = this.options[this.id].items.find(item => item.key === value)
+          if (target) return target.label
         }
-      } else {
-        // 优化：使用 Map 索引替代 find，从 O(n) 优化到 O(1)
-        ret += this.value.map(value => {
-          if (this.itemKeyMap) {
-            const label = this.itemKeyMap.get(value)
-            if (label) return label
-          } else if (this.options[this.id].items && this.options[this.id].items.length) {
-            // 降级方案：如果 Map 不存在，使用原来的方法
-            const target = this.options[this.id].items.find(item => item.key === value)
-            if (target) return target.label
-          }
-          return value
-        }).filter(item => !!item).join(this.newValueSeparator)
+        return value
+      }).filter(item => !!item)
+    },
+    displayValueText () {
+      if (this.isDate || this.isMonth) {
+        if (this.value[0] && this.value[1]) return this.value.join(' ~ ')
+        if (this.value[0]) return `<${this.value[0]}`
+        if (this.value[1]) return `>${this.value[1]}`
+        return ''
       }
-      return ret
+      return ''
     },
     config () {
       return this.options[this.id]
@@ -207,7 +226,7 @@ export default {
       try {
         this.fetchDistinctField(conf).then((values) => {
           this.$nextTick(() => {
-            this.$set(conf, 'items', values)
+            conf.items = values
           })
         })
       } catch (error) {
@@ -220,7 +239,13 @@ export default {
       this.dropdownSearch = e.target.value
     },
     handleClose (e) {
-      e.stopPropagation()
+      // 阻止 Tag 内部先把自己隐藏，等父级从 filter 中移除后再卸载（与 ant-design-vue 4 的 close 流程一致）
+      if (e && typeof e.preventDefault === 'function') {
+        e.preventDefault()
+      }
+      if (e && typeof e.stopPropagation === 'function') {
+        e.stopPropagation()
+      }
       this.$emit('remove', this.id)
     },
     async handleWrapClick (e) {
@@ -306,20 +331,14 @@ export default {
       val = val.split(this.newValueSeparator)
       this.newValue = val
     },
-    getPopupContainer (trigger) {
-      return trigger.parentNode
+    getPopupContainer () {
+      return document.body
     },
-    getDateSelectPopupContainer (trigger) {
-      return this.$parent.$refs['search-box-wrap']
+    getDateSelectPopupContainer () {
+      return document.body
     },
-    getMonthSelectPopupContainer (trigger) {
-      return this.$parent.$refs['search-box-wrap']
-    },
-    getLabel (label) {
-      if (label.length > 40) {
-        return `${label.slice(0, 40)}...`
-      }
-      return label
+    getMonthSelectPopupContainer () {
+      return document.body
     },
   },
 }
@@ -327,17 +346,74 @@ export default {
 
 <style lang="less">
 .search-box-tag-popover-wrap {
+  .ant-popover-inner {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 6px 16px 0 rgba(0, 0, 0, 0.08), 0 3px 6px -4px rgba(0, 0, 0, 0.12), 0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  }
   .ant-popover-inner-content {
     padding: 0;
+  }
+  .ant-popover-arrow {
+    &::before {
+      background: #fff;
+    }
+  }
+  .auto-completer-wrap {
+    border-radius: 10px;
+    overflow: hidden;
+    border: none;
   }
 }
 </style>
 
 <style lang="less" scoped>
+.search-box-tag-wrap {
+  cursor: pointer;
+}
 .tag {
-  text-overflow: ellipsis;
-  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  /* 勿用 overflow:hidden，否则会裁掉右侧关闭图标（与 AD4 Tag 结构有关） */
+  overflow: visible;
   word-break: break-all;
+  background: #f5f5f5;
+  margin: 0 6px 0 0;
+  padding: 1px 8px;
+  line-height: 18px;
+  height: 22px;
+  cursor: pointer;
+  :deep(.ant-tag-close-icon) {
+    flex-shrink: 0;
+    margin-inline-start: 10px;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+    cursor: pointer;
+  }
+}
+.tag-key-sep {
+  margin-right: 4px;
+}
+.tag-value-sep {
+  color: rgba(0, 0, 0, 0.25);
+  margin: 0 4px;
+  font-weight: 400;
+}
+.search-box-tag-close {
+  width: 9px;
+  height: 9px;
+  font-size: 9px;
+  vertical-align: middle;
+  color: rgba(0, 0, 0, 0.35);
+  :deep(svg) {
+    width: 9px;
+    height: 9px;
+  }
+  &:hover {
+    color: rgba(0, 0, 0, 0.65);
+  }
 }
 .auto-completer-wrap {
   width: 200px;
@@ -410,9 +486,28 @@ export default {
   }
 }
 
-.dropdown-search-input ::v-deep .ant-input {
-  border: none;
+.dropdown-search-input-wrap {
   border-bottom: 1px solid #d9d9d9;
-  border-top: 1px solid #d9d9d9;
+}
+:deep(.dropdown-search-input) {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent;
+}
+:deep(.dropdown-search-input.ant-input-affix-wrapper-focused),
+:deep(.dropdown-search-input:focus-within) {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+:deep(.dropdown-search-input .ant-input) {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent;
+}
+.dropdown-search-suffix-icon {
+  width: 14px;
+  height: 14px;
+  color: rgba(0, 0, 0, 0.45);
+  vertical-align: middle;
 }
 </style>

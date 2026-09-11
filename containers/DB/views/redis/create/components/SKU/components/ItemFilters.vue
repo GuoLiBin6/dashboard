@@ -25,8 +25,8 @@
     </a-form-item>
      <a-form-item :label="$t('db.text_272')" v-bind="formItemLayout">
       <a-radio-group v-decorator="decorators.performance_type || ['performance_type', { initialValue: 'standard' }]" @change="onPerformanceChange">
-        <template v-for="item in performance_types">
-           <a-radio-button v-if="item" :key="item" :value="item">{{PERFORMANCE_TYPE[item] || item}}</a-radio-button>
+        <template v-for="item in performance_types" :key="item">
+           <a-radio-button v-if="item" :value="item">{{PERFORMANCE_TYPE[item] || item}}</a-radio-button>
         </template>
       </a-radio-group>
     </a-form-item>

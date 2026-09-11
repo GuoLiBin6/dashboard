@@ -1,6 +1,6 @@
 <template>
   <div>
-    <page-header :title="$t('common_661')" :tabs="cloudEnvOptions" :current-tab.sync="cloudEnv" />
+    <page-header :title="$t('common_661')" :tabs="cloudEnvOptions" v-model:currentTab="cloudEnv" />
     <page-body>
       <a-form
         class="mt-3"
@@ -84,10 +84,10 @@
       </a-form>
     </page-body>
     <page-footer>
-      <div slot="right">
+      <template #right>
         <a-button class="mr-3" type="primary" :loading="loading" @click="handleConfirm">{{ $t('dialog.ok') }}</a-button>
         <a-button @click="cancel">{{ this.$t('dialog.cancel') }}</a-button>
-      </div>
+      </template>
     </page-footer>
   </div>
 </template>
@@ -360,13 +360,23 @@ export default {
       })
     },
     vpcLabelFormat (item) {
+      const h = this.$createElement
       if (item.manager) {
         if (item.cidr_block) {
-          return <div><span class="text-color-secondary">VPC:</span> { item.name }<span>（{ item.cidr_block }）</span><span class="ml-2 text-color-secondary">{this.$t('common_711')}: { item.manager }</span></div>
+          return h('div', [
+            h('span', { class: 'text-color-secondary' }, 'VPC:'),
+            ' ' + item.name,
+            h('span', '（' + item.cidr_block + '）'),
+            h('span', { class: 'ml-2 text-color-secondary' }, this.$t('common_711') + ': ' + item.manager),
+          ])
         }
-        return <div><span class="text-color-secondary">VPC:</span> { item.name }<span class="ml-2 text-color-secondary">{this.$t('common_711')}: { item.manager }</span></div>
+        return h('div', [
+          h('span', { class: 'text-color-secondary' }, 'VPC:'),
+          ' ' + item.name,
+          h('span', { class: 'ml-2 text-color-secondary' }, this.$t('common_711') + ': ' + item.manager),
+        ])
       }
-      return <div>{ item.name }</div>
+      return h('div', item.name)
     },
     cancel () {
       this.$router.push({

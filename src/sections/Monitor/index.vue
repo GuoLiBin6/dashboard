@@ -21,7 +21,7 @@
   </div>
 </template>
 
-<script>
+<script lang="jsx">
 import _ from 'lodash'
 import * as R from 'ramda'
 import { numerify } from '@/filters'

@@ -27,7 +27,7 @@ export default {
       form: this.$form.createForm(this),
     }
   },
-  destroyed () {
+  unmounted () {
     clearInterval(this.codeInt)
   },
   methods: {

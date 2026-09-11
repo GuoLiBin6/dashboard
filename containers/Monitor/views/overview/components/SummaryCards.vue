@@ -1,14 +1,18 @@
 <template>
-  <div>
-    <a-icon type="sync" spin v-if="loading" />
-    <a-row v-else-if="cards.length > 0" type="flex" style="margin-left: 128px;">
-      <a-col v-for="card in cards" :key="card.title" :span="8" style="width: 400px" class="mt-4">
-        <overview-summary-card :card="card" @resourceClick="handleResClick" />
-      </a-col>
-    </a-row>
-    <a-row v-else type="flex" style="justify-content:center">
+  <div class="summary-cards">
+    <div v-if="loading" class="summary-cards__loading">
+      <icon type="sync" spin />
+    </div>
+    <div v-else-if="cards.length > 0" class="summary-cards__grid">
+      <overview-summary-card
+        v-for="card in cards"
+        :key="card.title"
+        :card="card"
+        @resourceClick="handleResClick" />
+    </div>
+    <div v-else class="summary-cards__empty">
       <data-empty :description="emptyContent" />
-    </a-row>
+    </div>
   </div>
 </template>
 
@@ -153,6 +157,28 @@ export default {
 }
 </script>
 
-<style scoped>
+<style lang="less" scoped>
+.summary-cards {
+  padding-top: 4px;
 
+  &__loading,
+  &__empty {
+    display: flex;
+    justify-content: center;
+    padding: 24px 0;
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+    align-items: start;
+  }
+}
+
+@media (max-width: 768px) {
+  .summary-cards__grid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

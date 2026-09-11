@@ -1,6 +1,6 @@
 <template>
   <div>
-    <page-header :title="$t('compute.text_693')" :tabs="cloudEnvOptions" :current-tab.sync="cloudEnv" />
+    <page-header :title="$t('compute.text_693')" :tabs="cloudEnvOptions" v-model:currentTab="cloudEnv" />
     <page-body>
       <image-recovery-list :id="listId" :cloud-env="cloudEnv" />
     </page-body>

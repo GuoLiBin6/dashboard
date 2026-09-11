@@ -1,19 +1,33 @@
 import { getDefaultPortMappingsForType, getDefaultSkuSpecForType } from '@Ai/views/llm-sku/constants/llmTypeConfig'
 import { expandRowsToDevices } from '@Ai/utils/deviceFormUtils'
+import openclawIcon from '@/assets/images/llm-images/openclaw.svg'
+import hermesIcon from '@/assets/images/llm-images/hermes-agent.svg'
+import ollamaIcon from '@/assets/images/llm-images/ollama.svg'
+import vllmIcon from '@/assets/images/llm-images/vllm.svg'
+import difyIcon from '@/assets/images/llm-images/dify.svg'
+import comfyuiIcon from '@/assets/images/llm-images/comfyui.svg'
+import desktopIcon from '@/assets/images/llm-images/linuxserver.png'
+import defaultIcon from '@/assets/images/llm-images/default.svg'
 
 export const BUNDLE_IMPORT_KIND = 'bundle'
 
-export const LLM_TYPE_ICONS = {
-  openclaw: require('@/assets/images/llm-images/openclaw.svg'),
-  'hermes-agent': require('@/assets/images/llm-images/hermes-agent.svg'),
-  ollama: require('@/assets/images/llm-images/ollama.svg'),
-  vllm: require('@/assets/images/llm-images/vllm.svg'),
-  dify: require('@/assets/images/llm-images/dify.svg'),
-  comfyui: require('@/assets/images/llm-images/comfyui.svg'),
-  desktop: require('@/assets/images/llm-images/linuxserver.png'),
+function resolveAssetUrl (asset) {
+  if (!asset) return ''
+  if (typeof asset === 'string') return asset
+  return asset.default || ''
 }
 
-const DEFAULT_ICON = require('@/assets/images/llm-images/default.svg')
+export const LLM_TYPE_ICONS = {
+  openclaw: resolveAssetUrl(openclawIcon),
+  'hermes-agent': resolveAssetUrl(hermesIcon),
+  ollama: resolveAssetUrl(ollamaIcon),
+  vllm: resolveAssetUrl(vllmIcon),
+  dify: resolveAssetUrl(difyIcon),
+  comfyui: resolveAssetUrl(comfyuiIcon),
+  desktop: resolveAssetUrl(desktopIcon),
+}
+
+const DEFAULT_ICON = resolveAssetUrl(defaultIcon)
 
 export function getTypeIcon (llmType) {
   return LLM_TYPE_ICONS[llmType] || DEFAULT_ICON

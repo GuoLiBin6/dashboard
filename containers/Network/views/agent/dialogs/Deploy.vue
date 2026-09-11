@@ -17,7 +17,7 @@
                   <div>{{$t('network.text_46')}}<br />climc user-create lbagent --password XXX --system-account
                   <br />climc project-add-user system lbagent admin</div>
                 </template>
-                <a-icon type="info-circle" />
+                <icon type="info-circle" />
               </a-tooltip>
             </span>
           </template>
@@ -43,7 +43,7 @@
                     <div class="pl-2">{{$t('network.text_57')}}</div>
                     <div class="pl-2">{{$t('network.text_58')}}</div>
                   </div>
-                <a-icon type="info-circle" />
+                <icon type="info-circle" />
               </a-tooltip>
             </span>
           </template>
@@ -88,8 +88,8 @@
         </a-form-item>
       </a-form>
       <a-alert v-if="isRunning">
-        <div slot="message">{{$t('network.text_66')}}<a @click="openAsbook(ansiblePlaybookId)">{{$t('network.text_67')}}</a>
-        </div>
+        <template #message>{{$t('network.text_66')}}<a @click="openAsbook(ansiblePlaybookId)">{{$t('network.text_67')}}</a>
+        </template>
       </a-alert>
     </div>
     <div slot="footer">

@@ -1,24 +1,24 @@
 <template>
-  <a-form :form="form" layout="inline">
-      <a-form-item v-if="!isTemplate" style="margin-right: 8px;">
+  <a-form :form="form" layout="inline" class="overview-filter-form">
+      <a-form-item v-if="!isTemplate">
         <refresh  @refresh="handleRefresh" :loading="loading" />
       </a-form-item>
-      <a-form-item style="margin-right: 8px;">
+      <a-form-item>
         <basic-select  v-model="res" :options="resOptions" @change="handleResChange" />
       </a-form-item>
-      <a-form-item style="margin-right: 8px;">
-        <metric-select  v-decorator="decorators.metric" :options="metricOptions" @change="handleMetricChange" />
+      <a-form-item>
+        <metric-select :value="metric" v-decorator="decorators.metric" :options="metricOptions" @change="handleMetricChange" />
       </a-form-item>
-      <a-form-item style="margin-right: 8px;">
-        <time-select v-decorator="decorators.from" @change="handleFromChange" />
+      <a-form-item>
+        <time-select :value="from" v-decorator="decorators.from" @change="handleFromChange" />
       </a-form-item>
-      <a-form-item v-if="!isLineChart" style="margin-right: 8px;">
+      <a-form-item v-if="!isLineChart">
         <top-n-select v-decorator="decorators.limit" @change="handleLimitChange" />
       </a-form-item>
-      <a-form-item v-if="!isTemplate" style="margin-right: 8px;" class="ml-2" :label="$t('monitor.overview.aggregate')">
+      <a-form-item v-if="!isTemplate" :label="$t('monitor.overview.aggregate')">
         <basic-select v-model="dimentionId" :options="dimentions"  style="min-width: 90px" />
       </a-form-item>
-      <a-form-item v-if="isTemplate" style="margin-right: 8px;">
+      <a-form-item v-if="isTemplate">
         <base-select v-model="fucType" :options="fucTypeOptions" :select-props="{ mode: 'multiple' }" />
       </a-form-item>
   </a-form>
@@ -258,6 +258,12 @@ export default {
   },
   created () {
     this.$uM = new this.$Manager('unifiedmonitors', 'v1')
+    // 指令 mounted 晚于父组件 mounted，先注册字段保证 validateFields 能拿到 initialValue
+    Object.values(this.decorators).forEach((d) => {
+      if (Array.isArray(d) && d[0]) {
+        this.form.getFieldDecorator(d[0], d[1] || {})
+      }
+    })
   },
   mounted () {
     this.handleRefreshAll()
@@ -874,10 +880,13 @@ export default {
       const loading = this.startLoading()
       try {
         const values = await this.validateForm()
-        await this.fetchChartData(values.metric.value, values)
-        this.emitChart(this.charts[values.metric.value])
+        const metric = values.metric || this.metric
+        // metric.value 可能为 0，不能用 !value 判断
+        if (!metric || metric.value == null) return
+        await this.fetchChartData(metric.value, { ...values, metric })
+        this.emitChart(this.charts[metric.value])
       } catch (error) {
-        throw error
+        console.error('[filterForm] handleRefresh', error)
       } finally {
         loading.stop()
       }
@@ -886,16 +895,20 @@ export default {
       const loading = this.startLoading()
       try {
         const values = await this.validateForm()
+        const metric = values.metric || this.metric
+        // metric.value 可能为 0，不能用 !value 判断
+        if (!metric || metric.value == null) return
+        const formValues = { ...values, metric }
         // isTemplate 时只请求当前指标
-        const vs = this.isTemplate ? [values.metric.value] : Object.keys(this.charts)
+        const vs = this.isTemplate ? [metric.value] : Object.keys(this.charts)
         for (const v of vs) {
-          await this.fetchChartData(v, values)
+          await this.fetchChartData(v, formValues)
         }
 
-        this.emitChart(this.charts[values.metric.value])
+        this.emitChart(this.charts[metric.value])
         this.emitTable()
       } catch (error) {
-        throw error
+        console.error('[filterForm] handleRefreshAll', error)
       } finally {
         loading.stop()
       }
@@ -914,3 +927,18 @@ export default {
   },
 }
 </script>
+
+<style lang="less" scoped>
+.overview-filter-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  row-gap: 8px;
+
+  :deep(.ant-form-item) {
+    margin-inline-end: 0;
+    margin-bottom: 0;
+  }
+}
+</style>

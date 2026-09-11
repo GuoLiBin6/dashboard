@@ -1,15 +1,15 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{ params.title }}</div>
-    <div slot="body">
+    <template #header>{{ params.title }}</template>
+    <template #body>
       <a-alert v-if="alertProps" v-bind="alertProps" class="mb-2" />
       <dialog-selected-tips :count="params.data.length" :action="params.title" :name="params.name" />
       <dialog-table v-if="params.columns && params.columns.length" :data="params.data" :columns="params.columns.slice(0, 3)" />
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ submitButtonText }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

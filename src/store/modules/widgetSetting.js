@@ -1,4 +1,3 @@
-import Vue from 'vue'
 import { WIDGET_SETTINGS } from '@/constants'
 import http from '@/utils/http'
 
@@ -9,7 +8,7 @@ export default {
   mutations: {
     UPDATE (state, payload = {}) {
       for (const key in payload) {
-        Vue.set(state, key, payload[key])
+        state[key] = payload[key]
       }
     },
   },

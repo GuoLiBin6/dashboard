@@ -25,6 +25,7 @@
 
 <script>
 import * as R from 'ramda'
+import { h } from 'vue'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import ListSelect from '@/sections/ListSelect'
@@ -92,24 +93,25 @@ export default {
             slots: {
               default: ({ row }) => {
                 if (R.isNil(row.cloudpolicies) || R.isEmpty(row.cloudpolicies)) return this.$t('cloudenv.text_330')
-                return [<list-body-cell-popover text={this.$t('cloudenv.text_245', [(row.cloudpolicies && row.cloudpolicies.length) || 0])} min-width="600px">
-                  <vxe-grid
-                    showOverflow={false}
-                    row-config={{ isHover: true }}
-                    column-config={{ resizable: false }}
-                    data={ row.cloudpolicies }
-                    columns={[
-                      {
-                        field: 'name',
-                        title: this.$t('common.name'),
-                      },
-                      {
-                        field: 'description',
-                        title: this.$t('table.title.desc'),
-                        formatter: ({ cellValue }) => cellValue || '-',
-                      },
-                    ]} />
-                </list-body-cell-popover>]
+                return [
+                  h('list-body-cell-popover', {
+                    text: this.$t('cloudenv.text_245', [(row.cloudpolicies && row.cloudpolicies.length) || 0]),
+                    'min-width': '600px',
+                  }, {
+                    default: () => [
+                      h('table-lite-grid', {
+                        showOverflow: false,
+                        rowConfig: { isHover: true },
+                        columnConfig: { resizable: false },
+                        data: row.cloudpolicies,
+                        columns: [
+                          { field: 'name', title: this.$t('common.name') },
+                          { field: 'description', title: this.$t('table.title.desc'), formatter: ({ cellValue }) => cellValue || '-' },
+                        ],
+                      }),
+                    ],
+                  }),
+                ]
               },
             },
           },

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <a-radio-group v-model="range_scope" @change="billingScopeChangeHandler">
+    <a-radio-group v-model:value="range_scope" @change="billingScopeChangeHandler">
       <a-radio-button
         v-for="item in rangeScopeOptions"
         :value="item.value"

@@ -1,4 +1,4 @@
-<script>
+<script lang="jsx">
 import * as R from 'ramda'
 import { isWithinRange } from '@/utils/validate'
 
@@ -80,75 +80,7 @@ export default {
     },
   },
   methods: {
-    // formatStatus (status) {
-    //   return (
-    //     <div style="display: inline-block;">
-    //       {status
-    //         ? <a-icon class="success-color" type="check-circle" style="font-size: 19px" />
-    //         : <a-icon class="error-color" type="close-circle" style="font-size: 19px" />
-    //       }
-    //     </div>
-    //   )
-    // },
   },
-  // render () {
-  //   const Thead = () => {
-  //     const tds = [<td>序号</td>, <td> 名称 </td>, <td> { this.type === 'host' ? this.$t('cloudenv.text_171') : this.$t('cloudenv.text_172') }</td>, <td>网络是否满足</td>]
-  //     return (
-  //       <tr class="thead">
-  //         { (this.listData && this.listData.length > 0) ? this.listData[0].map(() => tds) : null }
-  //       </tr>
-  //     )
-  //   }
-  //   const Tbody = () => {
-  //     let index = 0
-  //     const trs = this.listData.map(rows => {
-  //       return <tr>
-  //         {
-  //           rows.map(row => {
-  //             const tds = []
-  //             const o = {
-  //               index: ++index,
-  //               name: row.name,
-  //               ips: row.ips,
-  //               status: this.formatStatus(row.isSuitable),
-  //             }
-  //             Object.keys(o).forEach(k => {
-  //               if (k === 'ips') {
-  //                 tds.push(
-  //                   <td>{ o.ips && o.ips.length > 0 ? o.ips.map(ip => ip).join('、') : '-'}</td>,
-  //                 )
-  //               } else {
-  //                 tds.push(
-  //                   <td>
-  //                     {o[k]}
-  //                   </td>,
-  //                 )
-  //               }
-  //             })
-  //             return tds
-  //           })
-  //         }
-  //       </tr>
-  //     })
-  //     return trs
-  //   }
-  //   return (
-  //     <div class="prepare-content">
-  //       {
-  //         (this.nets && this.nets.length > 0)
-  //           ? <table class="prepare-table">
-  //             <tbody>
-  //               <Thead />
-  //               <Tbody />
-  //             </tbody>
-  //           </table>
-  //           : <a-alert show-icon message={this.type === 'host' ? this.$t('cloudenv.text_173') : this.$t('cloudenv.text_174')} type="error" class="mt-4" />
-  //       }
-
-  //     </div>
-  //   )
-  // },
   render () {
     let index = 0
     const columns = [
@@ -182,7 +114,7 @@ export default {
         slots: {
           default: ({ row }) => {
             if (!R.isNil(row[0] && row[0].isSuitable)) {
-              return row[0] && row[0].isSuitable ? [<a-icon class="success-color" type="check-circle" style="font-size: 19px" />] : [<a-icon class="error-color" type="close-circle" style="font-size: 19px" />]
+              return row[0] && row[0].isSuitable ? [<icon class="success-color" type="check-circle" style="font-size: 19px" />] : [<icon class="error-color" type="close-circle" style="font-size: 19px" />]
             }
             return '-'
           },
@@ -218,7 +150,7 @@ export default {
         slots: {
           default: ({ row }) => {
             if (!R.isNil(row[1] && row[1].isSuitable)) {
-              return row[1] && row[1].isSuitable ? [<a-icon class="success-color" type="check-circle" style="font-size: 19px" />] : [<a-icon class="error-color" type="close-circle" style="font-size: 19px" />]
+              return row[1] && row[1].isSuitable ? [<icon class="success-color" type="check-circle" style="font-size: 19px" />] : [<icon class="error-color" type="close-circle" style="font-size: 19px" />]
             }
             return '-'
           },
@@ -229,7 +161,7 @@ export default {
       <div class='prepare-content'>
         {
           (this.nets && this.nets.length > 0)
-            ? <vxe-grid border show-overflow='title' height='300' size='mini' scroll-y={{ gt: 10 }} highlight-hover-row data={ this.listData } columns={ columns } />
+            ? <table-lite-grid border show-overflow='title' height='300' size='mini' scroll-y={{ gt: 10 }} highlight-hover-row data={ this.listData } columns={ columns } />
             : <a-alert show-icon message={this.type === 'host' ? this.$t('cloudenv.text_173') : this.$t('cloudenv.text_174')} type='error' class='mt-4' />
         }
       </div>

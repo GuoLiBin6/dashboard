@@ -3,11 +3,11 @@
     <div slot="header">{{action}}</div>
     <div slot="body">
       <a-alert class="mb-2" type="warning">
-        <div slot="message" v-if="params.data.length === 1">{{$t('compute.text_1167')}}</div>
-        <div slot="message" v-else>
+        <template #message v-if="params.data.length === 1">{{$t('compute.text_1167')}}</template>
+        <template #message v-else>
           <p>{{$t('compute.text_1168')}}</p>
           <p>{{$t('compute.text_1169')}}</p>
-        </div>
+        </template>
       </a-alert>
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
@@ -15,11 +15,11 @@
         :form="form.fc"
         v-bind="formItemLayout">
         <a-form-item :label="$t('compute.text_1170')">
-          <a-radio-group name="radioGroup" :defaultValue="true" v-if="isGroupAction" v-model="isOpenGpu">
+          <a-radio-group name="radioGroup" :defaultValue="true" v-if="isGroupAction" v-model:value="isOpenGpu">
             <a-radio :value="true">{{$t('compute.text_902')}}</a-radio>
             <a-radio :value="false">{{$t('compute.text_723')}}</a-radio>
           </a-radio-group>
-          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-model="isOpenGpu" v-else />
+          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-model:value="isOpenGpu" v-else />
         </a-form-item>
         <!-- 多对一：批量绑定同一透传设备 -->
         <template v-if="isOpenGpu && isGroupAction">
@@ -27,7 +27,7 @@
             <span slot="label">
               {{ $t('compute.text_607') }}&nbsp;
               <a-tooltip :title="$t('compute.vgpu_check.tooltip')">
-                <a-icon type="question-circle-o" />
+                <icon type="question-circle" />
               </a-tooltip>
             </span>
             <base-select
@@ -37,7 +37,7 @@
               :labelFormat="labelFormat"
               :disabled-items="disabledItems"
               filterable
-              :resList.sync="gpuOpt"
+              v-model:resList="gpuOpt"
               :mapper="mapper"
               resource="isolated_devices"
               :select-props="{ allowClear: true, placeholder: $t('compute.text_1172'), mode: 'default' }"
@@ -102,7 +102,7 @@
                         :need-params="false"
                         :labelFormat="labelFormat"
                         filterable
-                        :resList.sync="gpuOpt"
+                        v-model:resList="gpuOpt"
                         :disabled-items="getRowDisabledItems(k)"
                         resource="isolated_devices"
                         :select-props="{ allowClear: true, placeholder: $t('compute.text_1172'), mode: 'default' }"
@@ -165,6 +165,7 @@
 
 <script>
 import * as R from 'ramda'
+import { h } from 'vue'
 import {
   getDeviceGpuType,
   getGuestIsolatedDeviceMemoryRequest,
@@ -287,7 +288,7 @@ export default {
               const ret = []
               if (row.isolated_devices) {
                 row.isolated_devices.map(item => {
-                  ret.push(<list-body-cell-wrap row={{ showName: `${item.addr || ''} ${item.model || ''}` }} field="showName" />)
+                  ret.push(h('list-body-cell-wrap', { row: { showName: `${item.addr || ''} ${item.model || ''}` }, field: 'showName' }))
                 })
               }
               return ret

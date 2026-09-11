@@ -7,7 +7,7 @@
           :is="step.steps[step.currentStep].component"
           :lbDetail="lbDetail"
           ref="formRef"
-          :allFd.sync="allFd"
+          v-model:allFd="allFd"
           :currentComponent="currentComponent"
           :listenerData="listenerData"
           :isUpdate="isUpdate" />

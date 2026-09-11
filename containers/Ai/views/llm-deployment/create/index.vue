@@ -1,7 +1,7 @@
 <template>
   <div>
     <page-header :title="$t('aice.llm_deployment_create')" />
-    <page-body needMarginBottom>
+    <page-body>
       <a-form
         :form="form.fc"
         :label-col="{ span: 4 }"

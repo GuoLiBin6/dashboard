@@ -30,7 +30,7 @@
             :ctx="[['servers', this.params.data[0].id]]"
             :filterable="true"
             :isDefaultSelect="true"
-            :item.sync="selectDisk" />
+            v-model:item="selectDisk" />
         </a-form-item>
         <a-form-item
           :label="$t('compute.backup_name')"
@@ -73,9 +73,9 @@ import { INPUT_DEBOUNCE_TIMER } from '@/constants/config'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import { sizestr } from '@/utils/utils'
-import { typeClouds } from '@/utils/common/hypervisor'
+import { HYPERVISORS_MAP, EXTRA_HYPERVISORS } from '@/constants'
 
-const hypervisorMap = typeClouds.hypervisorMap
+const hypervisorMap = Object.assign({}, HYPERVISORS_MAP, EXTRA_HYPERVISORS)
 
 export default {
   name: 'VmBackupCreateDialog',

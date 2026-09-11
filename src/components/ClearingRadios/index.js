@@ -61,48 +61,38 @@ export default {
   render (h) {
     const { getFieldDecorator, getFieldValue } = this.FC
     const isPrepaid = getFieldValue('billing_type') === 'prepaid'
-    const RenderDuration = isPrepaid ? (
-      <div>
-        {getFieldDecorator('duration', {
-          initialValue: this.duration,
-        })(
-          <a-radio-group>
-            {Object.keys(this.$t('buyDurations')).map(k => {
-              return (
-                <a-radio-button key={k} value={k}>
-                  {this.$t('buyDurations')[k]}
-                </a-radio-button>
-              )
-            })}
-          </a-radio-group>,
-        )}
-        {getFieldDecorator('auto_renew', {
-          valuePropName: 'checked',
-          initialValue: this.auto_renew,
-        })(
-          <a-checkbox class="ml-4">{this.$t('common_728')}</a-checkbox>,
-        )}
-      </div>
-    ) : null
-    return (
-      <div>
-        <a-form-item labelCol={this.labelCol} wrapperCol={this.wrapperCol} label={i18n.t('table.title.bill_type')}>
-          {getFieldDecorator('billing_type', {
-            initialValue: this.billing_type,
-          })(
-            <a-radio-group>
-              {Object.keys(BILL_TYPES_MAP).map(k => {
-                return (
-                  <a-radio-button key={k} value={k}>
-                    {BILL_TYPES_MAP[k].label}
-                  </a-radio-button>
-                )
-              })}
-            </a-radio-group>,
-          )}
-          {RenderDuration}
-        </a-form-item>
-      </div>
-    )
+    const RenderDuration = () => {
+      if (!isPrepaid) return null
+      const durationOptions = Object.keys(this.$t('buyDurations')).map(k => {
+        return h('a-radio-button', { key: k, attrs: { value: k } }, [this.$t('buyDurations')[k]])
+      })
+      const durationGroup = h('a-radio-group', durationOptions)
+      const durationField = getFieldDecorator('duration', {
+        initialValue: this.duration,
+      })(durationGroup)
+      const autoRenewField = getFieldDecorator('auto_renew', {
+        initialValue: this.auto_renew,
+      })(h('a-checkbox', {
+        class: 'ml-4',
+        attrs: { defaultChecked: this.auto_renew },
+      }, [this.$t('common_728')]))
+      return h('div', [durationField, autoRenewField])
+    }
+    const billingOptions = Object.keys(BILL_TYPES_MAP).map(k => {
+      return h('a-radio-button', { key: k, attrs: { value: k } }, [BILL_TYPES_MAP[k].label])
+    })
+    const billingGroup = h('a-radio-group', billingOptions)
+    const billingField = getFieldDecorator('billing_type', {
+      initialValue: this.billing_type,
+    })(billingGroup)
+    return h('div', [
+      h('a-form-item', {
+        attrs: {
+          labelCol: this.labelCol,
+          wrapperCol: this.wrapperCol,
+          label: i18n.t('table.title.bill_type'),
+        },
+      }, [billingField, RenderDuration()]),
+    ])
   },
 }

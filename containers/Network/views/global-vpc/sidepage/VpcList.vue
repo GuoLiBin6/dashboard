@@ -44,8 +44,9 @@ export default {
           title: this.$t('network.vpc.cidr_block.ipv4.label'),
           slots: {
             default: ({ row }) => {
+              const h = this.$createElement
               const ips = row.cidr_block
-              return ips ? ips.split(',').map((ip) => <div>{ip}</div>) : null
+              return ips ? ips.split(',').map(ip => h('div', ip)) : null
             },
           },
         },

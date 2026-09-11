@@ -315,24 +315,21 @@ export const getDescription = (errorMsg, h) => {
   if (R.is(Array, errorMsg)) { // 批量报错的话直接返回第一个class
     const first = errorMsg[0]
     if (first?.proxyWafHint) {
-      return (
-        <div>
-          <div>{ first.class }</div>
-          <div class="mt-2" style="color: #fa8c16;">{ first.proxyWafHint }</div>
-        </div>
-      )
+      return h('div', [
+        h('div', first.class),
+        h('div', { class: 'mt-2', style: 'color: #fa8c16;' }, first.proxyWafHint),
+      ])
     }
-    return <div>{ first.class }</div>
+    return h('div', first.class)
   }
   if (errorMsg.proxyWafHint) {
     const vnode = classDriver(errorMsg, h)
-    return (
-      <div>
-        <div>{ vnode }</div>
-        <div class="mt-2" style="color: #fa8c16;">{ errorMsg.proxyWafHint }</div>
-      </div>
-    )
+    return h('div', [
+      h('div', [vnode]),
+      h('div', { class: 'mt-2', style: 'color: #fa8c16;' }, errorMsg.proxyWafHint),
+    ])
   }
+
   return classDriver(errorMsg, h)
 }
 
@@ -385,19 +382,23 @@ const classDriver = (errorMsg, h) => {
         })
       }
       const quotaErrors = Object.values(quotaErrorsMap)
-      return (
-        <div>
-          {
-            quotaErrors.length ? quotaErrors.map(item => {
-              let vnode = item.label
-              if (item.sidePageName && item.id && item.resource) {
-                vnode = <div class="mt-1"><side-page-trigger onTrigger={ () => handleOpenSidepage(item) } noStore>{item.label}</side-page-trigger></div>
-              }
-              return vnode
-            }) : desc
-          }
-        </div>
-      )
+      if (!quotaErrors.length) return desc
+      const children = quotaErrors.map(item => {
+        if (item.sidePageName && item.id && item.resource) {
+          return h('div', { class: 'mt-1' }, [
+            h('side-page-trigger', {
+              props: {
+                noStore: true,
+              },
+              on: {
+                trigger: () => handleOpenSidepage(item),
+              },
+            }, [item.label]),
+          ])
+        }
+        return item.label
+      })
+      return h('div', children)
     },
     TooManyRequests: () => {
       return null

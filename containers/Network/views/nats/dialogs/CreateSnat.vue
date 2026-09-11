@@ -9,7 +9,7 @@
           <a-input v-decorator="decorators.name" :placeholder="$t('network.text_44')" />
         </a-form-item>
         <a-form-item :label="$t('network.text_249')">
-          <a-radio-group v-model="resource" @change="onResourceTypeChanged">
+          <a-radio-group v-model:value="resource" @change="onResourceTypeChanged">
             <a-radio value="networks">{{$t('network.snat.type.network')}}</a-radio>
             <a-radio value="servers">{{$t('network.snat.type.server')}}</a-radio>
           </a-radio-group>
@@ -20,7 +20,7 @@
             :params="resParams"
             :select-props="resouce_props"
             :resource="resource"
-            :resList.sync="resOptions"
+            v-model:resList="resOptions"
             :filterable="true" />
         </a-form-item>
         <a-form-item :label="$t('network.text_539')">

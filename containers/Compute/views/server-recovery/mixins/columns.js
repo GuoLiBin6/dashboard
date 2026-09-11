@@ -13,10 +13,12 @@ export default {
         edit: false,
         editDesc: false,
         hideField: true,
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{row.name}</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getCopyWithContentTableColumn({ field: 'id', title: 'ID' }),
@@ -32,10 +34,16 @@ export default {
           default: ({ row }) => {
             const ret = []
             if (row.instance_type) {
-              ret.push(<div class='text-truncate' style={{ color: '#0A1F44' }}>{ row.instance_type }</div>)
+              ret.push(this.$createElement('div', {
+                class: 'text-truncate',
+                style: { color: 'var(--oc-color-text-heading)' },
+              }, row.instance_type))
             }
             const config = row.vcpu_count + 'C' + sizestr(row.vmem_size, 'M', 1024) + (row.disk ? sizestr(row.disk, 'M', 1024) : '')
-            return ret.concat(<div class='text-truncate' style={{ color: '#53627C' }}>{ config }</div>)
+            return ret.concat(this.$createElement('div', {
+              class: 'text-truncate',
+              style: { color: 'var(--oc-color-text-secondary)' },
+            }, config))
           },
         },
       },
@@ -45,7 +53,7 @@ export default {
         width: 60,
         slots: {
           default: ({ row }) => {
-            if (this.isPreLoad && !row.metadata) return [<data-loading />]
+            if (this.isPreLoad && !row.metadata) return [this.$createElement('data-loading')]
             let name = (row.metadata && row.metadata.os_distribution) ? row.metadata.os_distribution : row.os_type || ''
             if (name.includes('Windows') || name.includes('windows')) {
               name = 'Windows'
@@ -53,7 +61,12 @@ export default {
             const version = (row.metadata && row.metadata.os_version) ? `${row.metadata.os_version}` : ''
             const tooltip = (version.includes(name) ? version : `${name} ${version}`) || i18n.t('compute.text_339') // 去重
             return [
-              <SystemIcon tooltip={ tooltip } name={ name } />,
+              this.$createElement(SystemIcon, {
+                props: {
+                  tooltip,
+                  name,
+                },
+              }),
             ]
           },
         },
@@ -64,7 +77,7 @@ export default {
         title: i18n.t('compute.text_111'),
         hideField: true,
         slotCallback: row => {
-          if (this.isPreLoad && !row.host) return [<data-loading />]
+          if (this.isPreLoad && !row.host) return [this.$createElement('data-loading')]
           if (findPlatform(row.hypervisor, 'hypervisor') === SERVER_TYPE.public) {
             return '-'
           }

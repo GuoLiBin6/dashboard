@@ -1,7 +1,7 @@
 <template>
   <div>
     <a-form-item class="nat-sku-valid" :label="$t('compute.text_109')" v-bind="formItemLayout">
-      <vxe-grid
+      <table-lite-grid
         ref="tableRef"
         row-id="id"
         max-height="500"
@@ -14,7 +14,7 @@
         <template v-slot:empty>
           <page-list-empty :loading="loading" />
         </template>
-      </vxe-grid>
+      </table-lite-grid>
     </a-form-item>
     <a-form-item class="nat-sku-valid" v-bind="tailFormItemLayout">
       <template v-show="false">
@@ -24,7 +24,7 @@
   </div>
 </template>
 
-<script>
+<script lang="jsx">
 import * as R from 'ramda'
 import { BILL_TYPES_MAP } from '@Network/views/nats/constants'
 import PageListEmpty from '@/components/PageList/Loader'
@@ -151,7 +151,7 @@ export default {
         slots: {
           default: ({ row: { provider, rate } }) => {
             if (this.rateLoading) {
-              return [<a-icon type="loading" />]
+              return [<icon type="loading" />]
             }
             const isPackage = this.form.getFieldValue('billing_type') === BILL_TYPES_MAP.prepaid.key
             if (rate) {
@@ -287,7 +287,7 @@ export default {
 }
 </script>
 <style lang="less" scoped>
-::v-deep .rds-sku-valid .ant-form-item-control{
+:deep(.rds-sku-valid .ant-form-item-control){
   line-height: 0;
 }
 </style>

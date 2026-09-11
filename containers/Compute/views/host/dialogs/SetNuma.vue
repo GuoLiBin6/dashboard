@@ -6,7 +6,7 @@
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 2)" />
       <a-form-model :form="form" :rules="rules" v-bind="formItemLayout">
         <a-form-model-item :label="$t('compute.sched_numa')" :extra="extraInfo">
-          <a-switch v-model="form.enable_numa_allocate" :checkedChildren="$t('table.title.on')" :unCheckedChildren="$t('table.title.off')" />
+          <a-switch v-model:value="form.enable_numa_allocate" :checkedChildren="$t('table.title.on')" :unCheckedChildren="$t('table.title.off')" />
         </a-form-model-item>
       </a-form-model>
     </div>

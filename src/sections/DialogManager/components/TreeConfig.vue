@@ -1,11 +1,12 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{ params.title }}</div>
-    <div slot="body" style="height:400px;overflow-y:auto">
+    <template #header>{{ params.title }}</template>
+    <template #body>
+    <div style="height:400px;overflow-y:auto">
       <template v-if="!transferLoading">
-        <a-form v-bind="formItemLayout">
-          <template v-for="(item,index) in keysList">
-            <a-form-item :key="index" :label="`${$t('common_743')}${index+1}`">
+          <a-form v-bind="formItemLayout">
+            <template v-for="(item,index) in keysList" :key="index">
+              <a-form-item :label="`${$t('common_743')}${index+1}`">
               <div class="d-flex">
                 <div class="flex-fill">
                   <base-select
@@ -31,10 +32,11 @@
       </template>
       <div v-else class="loading"><a-spin :spinning="transferLoading" /></div>
     </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button v-bind="okButtonProps" @click="handleConfirm">{{ $t("dialog.ok") }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

@@ -2,38 +2,39 @@
   <div class="d-flex align-items-center project-admin">
     <list-body-cell-wrap
       :row="row"
-      :onManager="onManager"
+      :onManager="manager"
       field="admin"
       :title="row.admin"
       hide-field>
       <side-page-trigger v-if="row.admin_id && hasPer" permission="users_get" name="UserSidePage" :id="row.admin_id" :vm="this">{{ row.admin }}</side-page-trigger>
       <span v-else>{{row.admin || '-'}}</span>
-      <a-icon v-if="!visiable" type="edit" class="primary-color ml-2 edit-icon" @click="showForm" />
+      <icon v-if="!visiable" type="edit" class="primary-color ml-2 edit-icon" @click="showForm" />
     </list-body-cell-wrap>
     <a-popover
-      v-model="visiable"
+      v-model:open="visiable"
       :title="$t('iam.modify_sth', [$t('iam.project_admin')])"
       trigger="click"
       :destroyTooltipOnHide="true">
-      <a-icon v-if="visiable" type="edit" class="primary-color ml-2" />
-      <div slot="content" style="width: 300px">
-        <a-form-model ref="form" :model="form" :rules="rules" v-bind="layout">
-          <a-form-model-item :label="$t('system.text_6')" prop="admin_id">
-            <base-select
-              v-model="form.admin_id"
-              resource="users"
-              filterable
-              remote
-              :params="userParams"
-              :select-props="{allowClear: true, placeholder: $t('common.tips.select', [$t('iam.project_admin')])}" />
-          </a-form-model-item>
-          <div class="text-right">
-            <a-button type="primary" @click="handleConfirm">{{ $t('dialog.ok') }}</a-button>
-            <a-button class="ml-3" @click="cancel">{{ $t('dialog.cancel') }}</a-button>
-          </div>
-        </a-form-model>
-
-      </div>
+      <icon v-if="visiable" type="edit" class="primary-color ml-2" />
+      <template #content>
+        <div style="width: 300px">
+          <a-form-model ref="form" :model="form" :rules="rules" v-bind="layout">
+            <a-form-model-item :label="$t('system.text_6')" prop="admin_id">
+              <base-select
+                v-model="form.admin_id"
+                resource="users"
+                filterable
+                remote
+                :params="userParams"
+                :select-props="{allowClear: true, placeholder: $t('common.tips.select', [$t('iam.project_admin')])}" />
+            </a-form-model-item>
+            <div class="text-right">
+              <a-button type="primary" @click="handleConfirm">{{ $t('dialog.ok') }}</a-button>
+              <a-button class="ml-3" @click="cancel">{{ $t('dialog.cancel') }}</a-button>
+            </div>
+          </a-form-model>
+        </div>
+      </template>
     </a-popover>
   </div>
 

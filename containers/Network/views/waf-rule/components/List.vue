@@ -133,10 +133,12 @@ export default {
             hideField: true,
             edit: false,
             showDesc: false,
-            slotCallback: row => {
-              return (
-                <side-page-trigger onTrigger={() => this.handleOpenSidepage(row, '')}>{row.name}</side-page-trigger>
-              )
+            slotCallback: (row, h) => {
+              return h('side-page-trigger', {
+                props: {
+                  onTrigger: () => this.handleOpenSidepage(row, ''),
+                },
+              }, row.name)
             },
           }),
           {

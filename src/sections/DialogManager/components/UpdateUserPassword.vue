@@ -1,9 +1,9 @@
 <template>
   <base-dialog @cancel="cancelDialog" :width="620" :modalProps="{ ...params.modalProps }">
-    <div slot="header">{{$t('common_135')}}</div>
-    <div slot="body">
+    <template #header>{{$t('common_135')}}</template>
+    <template #body>
       <a-alert class="mb-2" type="warning" v-if="params.tip">
-        <div slot="message">{{params.tip}}</div>
+        <template #message>{{params.tip}}</template>
       </a-alert>
       <a-form :form="form.fc">
         <a-form-item :label="$t('common_136')" v-bind="formItemLayout">
@@ -19,12 +19,12 @@
           <a-input v-decorator="decorators.passcode" :placeholder="$t('common_142')" />
         </a-form-item>
       </a-form>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" :loading="loading" @click="handleConfirm">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="handleLogout">{{ $t('common_348') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 
@@ -147,7 +147,7 @@ export default {
     }),
     ...mapGetters(['userInfo']),
   },
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {

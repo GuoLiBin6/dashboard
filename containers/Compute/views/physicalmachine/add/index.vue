@@ -1,13 +1,13 @@
 <template>
   <div>
     <page-header :title="$t('compute.text_804')" />
-    <page-body needMarginBottom>
+    <page-body>
       <a-alert class="mb-3" :message="$t('compute.physicalmachine_add')" />
       <a-form :form="form.fc" v-bind="formItemLayout">
         <a-form-item :label="$t('compute.text_805')" :extra="desc">
           <a-radio-group v-decorator="decorators.type" @change="handleTypeChange">
-            <template v-for="(item, key) of types">
-              <a-radio-button :value="key" :key="key">{{ item.label }}</a-radio-button>
+            <template v-for="(item, key) of types" :key="key">
+              <a-radio-button :value="key">{{ item.label }}</a-radio-button>
             </template>
           </a-radio-group>
         </a-form-item>
@@ -285,7 +285,7 @@ export default {
       immediate: true,
     },
   },
-  destroyed () {
+  unmounted () {
     this.hm = null
     this.um = null
   },

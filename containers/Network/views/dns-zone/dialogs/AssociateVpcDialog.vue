@@ -37,6 +37,7 @@
 </template>
 
 <script>
+import { h } from 'vue'
 import { mapGetters } from 'vuex'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
@@ -145,11 +146,20 @@ export default {
     vpcLabelFormat (item) {
       if (item.manager) {
         if (item.cidr_block) {
-          return <div><span class="text-color-secondary">VPC:</span> { item.name }<span>（{ item.cidr_block }）</span><span class="ml-2 text-color-secondary">{this.$t('common_711')}: { item.manager }</span></div>
+          return h('div', {}, [
+            h('span', { class: 'text-color-secondary' }, 'VPC:'),
+            ` ${item.name} `,
+            h('span', {}, `（${item.cidr_block}）`),
+            h('span', { class: 'ml-2 text-color-secondary' }, `${this.$t('common_711')}: ${item.manager}`),
+          ])
         }
-        return <div><span class="text-color-secondary">VPC:</span> { item.name }<span class="ml-2 text-color-secondary">{this.$t('common_711')}: { item.manager }</span></div>
+        return h('div', {}, [
+          h('span', { class: 'text-color-secondary' }, 'VPC:'),
+          ` ${item.name} `,
+          h('span', { class: 'ml-2 text-color-secondary' }, `${this.$t('common_711')}: ${item.manager}`),
+        ])
       }
-      return <div>{ item.name }</div>
+      return h('div', {}, String(item.name || ''))
     },
   },
 }

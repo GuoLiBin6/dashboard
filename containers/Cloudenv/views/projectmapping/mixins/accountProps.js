@@ -29,9 +29,12 @@ export default {
             onManager: this.onManager,
             hideField: true,
             slotCallback: row => {
-              return (
-                <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{ row.name }</side-page-trigger>
-              )
+              const h = this.$createElement
+              return h('side-page-trigger', {
+                on: {
+                  trigger: () => this.handleOpenSidepage(row),
+                },
+              }, row.name)
             },
           }),
           getAccessUrlTableColumn(),
@@ -44,15 +47,33 @@ export default {
             showOverflow: 'title',
             slots: {
               default: ({ row }) => {
+                const h = this.$createElement
                 const ret = []
                 if (row.auto_create_project) {
-                  ret.push(<span class='mr-2'>{this.$t('cloudenv.text_493')}</span>)
-                  ret.push(<help-tooltip name='cloudaccountAutoCreateProject' />)
+                  ret.push(h('span', { class: 'mr-2' }, this.$t('cloudenv.text_493')))
+                  ret.push(h('help-tooltip', {
+                    props: {
+                      name: 'cloudaccountAutoCreateProject',
+                    },
+                  }))
                 } else {
-                  ret.push(<list-body-cell-wrap copy field='tenant' row={row} />)
+                  ret.push(h('list-body-cell-wrap', {
+                    props: {
+                      copy: true,
+                      field: 'tenant',
+                      row,
+                    },
+                  }))
                 }
                 if (row.project_mapping) {
-                  ret.push(<list-body-cell-wrap copy field='project_mapping' row={row} hideField>{this.$t('cloudenv.text_580')}：{row.project_mapping}</list-body-cell-wrap>)
+                  ret.push(h('list-body-cell-wrap', {
+                    props: {
+                      copy: true,
+                      field: 'project_mapping',
+                      row,
+                      hideField: true,
+                    },
+                  }, `${this.$t('cloudenv.text_580')}：${row.project_mapping}`))
                 }
                 return ret
               },

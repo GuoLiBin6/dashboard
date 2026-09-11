@@ -3,11 +3,13 @@
     <div class="dashboard-card-wrap">
       <div class="dashboard-card-header">
         <div class="dashboard-card-header-left">
-          {{ form.fd.name || $t('dashboard.text_6') }}<a-icon class="ml-2" type="loading" v-if="loading" />
-          <span v-if="isResDeny" class="ml-2"><a-icon class="warning-color mr-1" type="warning" />{{ $t('common.permission.403') }}</span>
+          {{ form.fd.name || $t('dashboard.text_6') }}<icon class="ml-2" type="loading" v-if="loading" />
+          <span v-if="isResDeny" class="ml-2"><icon class="warning-color mr-1" type="warning" />{{ $t('common.permission.403') }}</span>
           <span v-if="isUsageKeyDeny" class="ml-2">
-            <a-tooltip class="mr-2"><template slot="title">{{ $t('dashboard.usage_key_deny_tips') }}</template><icon type="help" /></a-tooltip>
-            <a-icon class="warning-color mr-1" type="warning" />
+            <a-tooltip class="mr-2" :title="$t('dashboard.usage_key_deny_tips')">
+              <span class="dashboard-card-help"><icon type="help" /></span>
+            </a-tooltip>
+            <icon class="warning-color mr-1" type="warning" />
             {{ $t('dashboard.usage_key_deny_tips_2') }}
           </span>
         </div>
@@ -28,7 +30,7 @@
           </div>
 
           <div class="d-flex bottomborder-box align-items-end" :style="itemStyle">
-            <div :class="`label-unit ${jumpParams.reservedPath ? 'label-jump' : ''}`" @click="goJump('reserved')">{{ unUseLabel }}<a-tooltip v-if="showTips" class="ml-1" :title="$t('dashboard.un_usage_tips')"><icon type="help" /></a-tooltip></div>
+            <div :class="`label-unit ${jumpParams.reservedPath ? 'label-jump' : ''}`" @click="goJump('reserved')">{{ unUseLabel }}<a-tooltip v-if="showTips" class="ml-1" :title="$t('dashboard.un_usage_tips')"><span class="dashboard-card-help"><icon type="help" /></span></a-tooltip></div>
             <div class="flex-number mr-1 ml-1 text-right">{{isResDeny ? '-' : displayUnUsage.usage}}</div>
             <div class="label-unit">{{displayUnUsage.unit}}</div>
           </div>
@@ -41,14 +43,14 @@
 
           <div class="d-flex bottomborder-box align-items-end" :style="itemStyle" v-if="showGpuReserved">
             <div :class="`flex-shrink-0 flex-grow-0 label-unit ${jumpParams.reservedPath ? 'label-jump' : ''}`" @click="goJump('reserved')">
-              {{$t('dashboard.text_183')}}<a-tooltip v-if="showTips" class="ml-1" :title="$t('dashboard.gpu_reserved_tips')"><icon type="help" /></a-tooltip>
+              {{$t('dashboard.text_183')}}<a-tooltip v-if="showTips" class="ml-1" :title="$t('dashboard.gpu_reserved_tips')"><span class="dashboard-card-help"><icon type="help" /></span></a-tooltip>
             </div>
             <div class="flex-number mr-1 ml-1 text-right">{{isResDeny ? '-' : gpuReserved.usage}}</div>
             <div  class="label-unit">{{gpuReserved.unit}}</div>
           </div>
 
           <div class="d-flex bottomborder-box align-items-end" :style="itemStyle">
-            <div :class="`label-unit ${jumpParams.allPath ? 'label-jump' : ''}`" @click="goJump('all')">{{ $t('dashboard.text_181') }}<a-tooltip v-if="showTips" class="ml-1" :title="$t('dashboard.all_usage_tips')"><icon type="help" /></a-tooltip></div>
+            <div :class="`label-unit ${jumpParams.allPath ? 'label-jump' : ''}`" @click="goJump('all')">{{ $t('dashboard.text_181') }}<a-tooltip v-if="showTips" class="ml-1" :title="$t('dashboard.all_usage_tips')"><span class="dashboard-card-help"><icon type="help" /></span></a-tooltip></div>
             <div class="flex-number mr-1 ml-1 text-right">{{isResDeny ? '-' : allUsage.usage}}</div>
             <div class="label-unit">{{allUsage.unit}}</div>
           </div>
@@ -735,7 +737,7 @@ export default {
   // font-weight: bold;
 }
 .ring-drawer-wrapper {
-  &::v-deep.ant-drawer.ant-drawer-open .ant-drawer-mask {
+  &:deep(.ant-drawer.ant-drawer-open .ant-drawer-mask) {
     animation: none;
   }
 }

@@ -6,8 +6,8 @@
     <a-tabs v-model="curlProtocol" size="small">
       <a-tab-pane key="openai" :tab="$t('aice.aiproxy.protocol.openai')">
         <a-alert type="info" show-icon>
-          <template slot="message">{{ $t('aice.aiproxy.endpoint_example') }}</template>
-          <template slot="description">
+          <template #message>{{ $t('aice.aiproxy.endpoint_example') }}</template>
+          <template #description>
             <div class="access-code-block">
               <copy class="access-code-copy" :message="openaiCurlExample" />
               <pre class="mb-0 access-code">{{ openaiCurlExample }}</pre>
@@ -17,8 +17,8 @@
       </a-tab-pane>
       <a-tab-pane key="anthropic" :tab="$t('aice.aiproxy.protocol.anthropic')">
         <a-alert type="info" show-icon>
-          <template slot="message">{{ $t('aice.aiproxy.endpoint_example') }}</template>
-          <template slot="description">
+          <template #message>{{ $t('aice.aiproxy.endpoint_example') }}</template>
+          <template #description>
             <p class="text-color-help mb-2">{{ $t('aice.aiproxy.anthropic_base_url_hint') }}</p>
             <div class="access-code-block">
               <copy class="access-code-copy" :message="anthropicCurlExample" />
@@ -27,8 +27,8 @@
           </template>
         </a-alert>
         <a-alert type="info" show-icon class="mt-2">
-          <template slot="message">{{ $t('aice.aiproxy.claude_code_config_title') }}</template>
-          <template slot="description">
+          <template #message>{{ $t('aice.aiproxy.claude_code_config_title') }}</template>
+          <template #description>
             <div class="access-code-block">
               <copy class="access-code-copy" :message="claudeCodeEnvExample" />
               <pre class="mb-0 access-code">{{ claudeCodeEnvExample }}</pre>
@@ -40,7 +40,7 @@
   </div>
 </template>
 
-<script>
+<script lang="jsx">
 import { getEnabledTableColumn, getProjectTableColumn, getTimeTableColumn } from '@/utils/common/tableColumn'
 import {
   buildAiproxyCurlExample,

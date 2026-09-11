@@ -6,7 +6,7 @@
         :form="form.fc" v-bind="formItemLayout" hideRequiredMark>
         <dialog-table :data="dataList" :columns="columns" />
         <a-form-item label="SSD" :extra="$t('compute.disk.ssd_extra')">
-          <a-switch v-model="is_ssd" />
+          <a-switch v-model:value="is_ssd" />
         </a-form-item>
         <a-form-item :label="$t('compute.cache_mode')">
           <a-select v-decorator="decorators.cache_mode">
@@ -32,6 +32,7 @@
 </template>
 
 <script>
+import { h } from 'vue'
 import { mapGetters } from 'vuex'
 import { getNameDescriptionTableColumn } from '@/utils/common/tableColumn'
 import i18n from '@/locales'
@@ -102,9 +103,11 @@ export default {
             { validator: this.$validate('resourceCreateName') },
           ],
           slotCallback: row => {
-            return (
-              <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.disk }</side-page-trigger>
-            )
+            return h('side-page-trigger', {
+              onTrigger: () => this.handleOpenSidepage(row),
+            }, {
+              default: () => row.disk,
+            })
           },
         }),
         {

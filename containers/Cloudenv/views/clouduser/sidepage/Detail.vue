@@ -30,9 +30,9 @@ export default {
           field: 'iam_login_url',
           title: this.$t('cloudenv.clouduser_list_t3'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (!row.iam_login_url) return '-'
-              return [<help-link href={ row.iam_login_url } />]
+              return [h('help-link', { props: { href: row.iam_login_url } })]
             },
           },
         },

@@ -3,93 +3,97 @@
     <span v-if="!hasTriggerContent" class="regional-availability-empty">-</span>
     <span v-else class="regional-availability-root" @click.stop="handleWrapClick">
     <a-popover
-      v-model="visible"
+      v-model:open="visible"
       trigger="click"
       placement="left"
       overlay-class-name="regional-availability-popover-overlay"
       destroy-tooltip-on-hide
-      @visibleChange="handleVisibleChange">
-      <div slot="content" class="regional-availability-popover">
-        <div class="regional-availability-popover-header">
-          <a-icon type="close" class="regional-availability-close" @click.stop="handleClose" />
-        </div>
-        <div class="regional-availability-popover-body">
-          <div class="regional-availability-popover-content">
-            <!-- 当前区域和可用区 -->
-            <div class="regional-availability-current">
-              <span
-                class="regional-availability-indicator status-dot"
-                :class="isCurrentRegionAvailable ? 'status-success' : 'status-danger'" />
-              <a-tooltip
-                :title="currentRegionTooltip || null"
-                placement="top"
-                :get-popup-container="getTooltipContainer">
-                <span class="regional-availability-region-name">{{ region || '-' }}</span>
-              </a-tooltip>
-              <div v-if="!hiddenZone && currentRegionZones.length" class="regional-availability-zone-list">
+      @openChange="handleVisibleChange">
+      <template #content>
+        <div class="regional-availability-popover">
+          <div class="regional-availability-popover-header">
+            <icon type="close-outlined" class="regional-availability-close" @click.stop="handleClose" />
+          </div>
+          <div class="regional-availability-popover-body">
+            <div class="regional-availability-popover-content">
+              <!-- 当前区域和可用区 -->
+              <div class="regional-availability-current">
+                <span
+                  class="regional-availability-indicator status-dot"
+                  :class="isCurrentRegionAvailable ? 'status-success' : 'status-danger'" />
                 <a-tooltip
-                  v-for="zoneItem in currentRegionZones"
-                  :key="zoneItem.zone_id || zoneItem.zone"
-                  :title="getAvailabilityTooltip('zone', zoneItem) || null"
+                  :title="currentRegionTooltip || null"
                   placement="top"
                   :get-popup-container="getTooltipContainer">
-                  <span
-                    class="regional-availability-zone-item"
-                    :class="{ 'is-current': zoneItem.zone === zone }">
-                    <span
-                      class="regional-availability-indicator status-dot"
-                      :class="isZoneAvailable(zoneItem) ? 'status-success' : 'status-danger'" />
-                    {{ formatZoneName(zoneItem.zone) }}
-                  </span>
+                  <span class="regional-availability-region-name">{{ region || '-' }}</span>
                 </a-tooltip>
-              </div>
-            </div>
-            <!-- 其他区域和可用区 -->
-            <template v-if="otherRegions.length">
-              <div
-                class="regional-availability-other-header"
-                @click.stop="toggleExpanded">
-                <span class="regional-availability-other-title">{{ $t('compute.regional_availability_other_regions') }}</span>
-                <a-icon class="regional-availability-other-icon" :type="expanded ? 'caret-up' : 'caret-down'" />
-              </div>
-              <div
-                v-show="expanded"
-                class="regional-availability-other-body"
-                :class="{ 'is-region-only': hiddenZone || isRegionOnlyData }">
-                <div
-                  v-for="item in otherRegions"
-                  :key="item.id"
-                  class="regional-availability-region-row">
-                  <span
-                    class="regional-availability-indicator status-dot"
-                    :class="isRegionAvailable(item) ? 'status-success' : 'status-danger'" />
+                <div v-if="!hiddenZone && currentRegionZones.length" class="regional-availability-zone-list">
                   <a-tooltip
-                    :title="getAvailabilityTooltip('region', item) || null"
+                    v-for="zoneItem in currentRegionZones"
+                    :key="zoneItem.zone_id || zoneItem.zone"
+                    :title="getAvailabilityTooltip('zone', zoneItem) || null"
                     placement="top"
                     :get-popup-container="getTooltipContainer">
-                    <span class="regional-availability-region-name">{{ item.cloudregion }}</span>
+                    <span
+                      class="regional-availability-zone-item"
+                      :class="{ 'is-current': zoneItem.zone === zone }">
+                      <span
+                        class="regional-availability-indicator status-dot"
+                        :class="isZoneAvailable(zoneItem) ? 'status-success' : 'status-danger'" />
+                      {{ formatZoneName(zoneItem.zone) }}
+                    </span>
                   </a-tooltip>
-                  <div v-if="!hiddenZone && item.zones.length" class="regional-availability-zone-list">
-                    <a-tooltip
-                      v-for="zoneItem in item.zones"
-                      :key="zoneItem.zone_id || zoneItem.zone"
-                      :title="getAvailabilityTooltip('zone', zoneItem) || null"
-                      placement="top"
-                      :get-popup-container="getTooltipContainer">
-                      <span class="regional-availability-zone-item">
-                        <span
-                          class="regional-availability-indicator status-dot"
-                          :class="isZoneAvailable(zoneItem) ? 'status-success' : 'status-danger'" />
-                        {{ formatZoneName(zoneItem.zone) }}
-                      </span>
-                    </a-tooltip>
-                  </div>
                 </div>
               </div>
-            </template>
+              <!-- 其他区域和可用区 -->
+              <template v-if="otherRegions.length">
+                <div
+                  class="regional-availability-other-header"
+                  @click.stop="toggleExpanded">
+                  <span class="regional-availability-other-title">{{ $t('compute.regional_availability_other_regions') }}</span>
+                  <span
+                    class="regional-availability-other-icon"
+                    :class="{ 'is-expanded': expanded }" />
+                </div>
+                <div
+                  v-show="expanded"
+                  class="regional-availability-other-body"
+                  :class="{ 'is-region-only': hiddenZone || isRegionOnlyData }">
+                  <div
+                    v-for="item in otherRegions"
+                    :key="item.id"
+                    class="regional-availability-region-row">
+                    <span
+                      class="regional-availability-indicator status-dot"
+                      :class="isRegionAvailable(item) ? 'status-success' : 'status-danger'" />
+                    <a-tooltip
+                      :title="getAvailabilityTooltip('region', item) || null"
+                      placement="top"
+                      :get-popup-container="getTooltipContainer">
+                      <span class="regional-availability-region-name">{{ item.cloudregion }}</span>
+                    </a-tooltip>
+                    <div v-if="!hiddenZone && item.zones.length" class="regional-availability-zone-list">
+                      <a-tooltip
+                        v-for="zoneItem in item.zones"
+                        :key="zoneItem.zone_id || zoneItem.zone"
+                        :title="getAvailabilityTooltip('zone', zoneItem) || null"
+                        placement="top"
+                        :get-popup-container="getTooltipContainer">
+                        <span class="regional-availability-zone-item">
+                          <span
+                            class="regional-availability-indicator status-dot"
+                            :class="isZoneAvailable(zoneItem) ? 'status-success' : 'status-danger'" />
+                          {{ formatZoneName(zoneItem.zone) }}
+                        </span>
+                      </a-tooltip>
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
           </div>
         </div>
-      </div>
+      </template>
       <!-- 触发器 -->
       <span class="regional-availability-trigger">
         <list-body-cell-wrap v-if="region && !hiddenRegion" hide-field copy field="region" :row="{ region }">
@@ -362,7 +366,7 @@ export default {
     padding: 8px 12px 0;
   }
   .regional-availability-close {
-    font-size: 12px;
+    font-size: 14px;
     color: #8c8c8c;
     cursor: pointer;
     &:hover {
@@ -424,11 +428,12 @@ export default {
     border-bottom: 1px solid #f0f0f0;
   }
   .regional-availability-other-header {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     padding: 12px 0 8px;
     cursor: pointer;
     user-select: none;
+    line-height: 22px;
   }
   .regional-availability-other-title {
     color: #0A1F44;
@@ -436,9 +441,18 @@ export default {
     line-height: 22px;
   }
   .regional-availability-other-icon {
-    margin-left: 4px;
-    font-size: 12px;
-    color: #53627C;
+    display: inline-block;
+    flex-shrink: 0;
+    width: 0;
+    height: 0;
+    margin-left: 8px;
+    border-style: solid;
+    border-width: 7px 6px 0;
+    border-color: #53627C transparent transparent;
+    transition: transform 0.2s ease;
+    &.is-expanded {
+      transform: rotate(180deg);
+    }
   }
   .regional-availability-other-body {
     padding-bottom: 4px;

@@ -2,9 +2,9 @@
   <div class="onecloud-sub-map-item">
     <div class="font-weight-bold mb-2 map-label">{{ getLabel(sub.meta) }}</div>
     <ul class="list-unstyled">
-      <template v-for="item of menus">
-        <li :key="item.path">
-          <router-link :to="item.path" class="map-link text-truncate" :title="getLabel(item.meta)" @click.native="() => handleClick(item)">{{ getLabel(item.meta) }}</router-link>
+      <template v-for="item of menus" :key="item.path">
+        <li>
+          <router-link :to="item.path" class="map-link text-truncate" :title="getLabel(item.meta)" @click="() => handleClick(item)">{{ getLabel(item.meta) }}</router-link>
         </li>
       </template>
     </ul>

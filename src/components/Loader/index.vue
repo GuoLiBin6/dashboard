@@ -2,7 +2,7 @@
   <div class="wrap d-flex justify-content-center align-items-center">
     <div v-if="loading" class="text-center">
       <div class="loading-image">
-        <a-icon type="sync" spin />
+        <icon type="sync" spin />
       </div>
       <div class="loading-description">{{$t('common.loding')}}</div>
     </div>

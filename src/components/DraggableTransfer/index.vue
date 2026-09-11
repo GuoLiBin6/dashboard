@@ -14,12 +14,16 @@
         </div>
       </div>
       <div class="transfer-list-body">
-        <draggable v-if="!loading && resourceDataList.length" v-model="resourceDataList" handle=".handle">
-          <template v-for="(item, index) in resourceDataList">
-            <div class="transfer-list-item d-flex" :key="item[idKey] || idx">
-              <a-checkbox class="mr-2" :checked="item.checked" @change="handleItemCheckChange('left', index)" />
-              <div class="transfer-list-item-label" @click="handleItemCheckChange('left', index)">{{item.label}}</div>
-              <a-icon v-if="draggable.left" class="ml-2 handle" type="drag" />
+        <draggable
+          v-if="!loading && resourceDataList.length"
+          v-model="resourceDataList"
+          :item-key="idKey"
+          handle=".handle">
+          <template #item="slotProps">
+            <div class="transfer-list-item d-flex">
+              <a-checkbox class="mr-2" :checked="slotProps?.element?.checked" @change="handleItemCheckChange('left', slotProps.index)" />
+              <div class="transfer-list-item-label" @click="handleItemCheckChange('left', slotProps.index)">{{ slotProps?.element?.label }}</div>
+              <icon v-if="draggable.left" class="ml-2 handle" type="drag" />
             </div>
           </template>
         </draggable>
@@ -34,13 +38,13 @@
         class="action"
         :disabled="!resourceCheckedCount"
         @click="handleActionClick('right')">
-        <a-icon type="right" />
+        <icon type="left" style="transform: rotate(180deg);" />
       </a-button>
       <a-button
         class="action mt-2"
         :disabled="!targetCheckedCount"
         @click="handleActionClick('left')">
-        <a-icon type="left" />
+        <icon type="left" />
       </a-button>
     </div>
     <!-- 右侧选中数据 -->
@@ -57,12 +61,17 @@
         </div>
       </div>
       <div class="transfer-list-body">
-        <draggable v-if="!loading && targetDataList.length" v-model="targetDataList" handle=".handle" style="height:100%">
-          <template v-for="(item, index) in targetDataList">
-            <div class="transfer-list-item d-flex" :key="item[idKey] || index">
-              <a-checkbox class="mr-2" :checked="item.checked" @change="handleItemCheckChange('right', index)" />
-              <div class="transfer-list-item-label" @click="handleItemCheckChange('right', index)">{{item.label}}</div>
-              <a-icon v-if="draggable.right" class="ml-2 handle" type="drag" />
+        <draggable
+          v-if="!loading && targetDataList.length"
+          v-model="targetDataList"
+          :item-key="idKey"
+          handle=".handle"
+          style="height:100%">
+          <template #item="slotProps">
+            <div class="transfer-list-item d-flex">
+              <a-checkbox class="mr-2" :checked="slotProps?.element?.checked" @change="handleItemCheckChange('right', slotProps.index)" />
+              <div class="transfer-list-item-label" @click="handleItemCheckChange('right', slotProps.index)">{{ slotProps?.element?.label }}</div>
+              <icon v-if="draggable.right" class="ml-2 handle" type="drag" />
             </div>
           </template>
         </draggable>
@@ -183,11 +192,11 @@ export default {
       if (direction === 'left') {
         const item = R.clone(this.resourceDataList[idx])
         item.checked = !item.checked
-        this.$set(this.resourceDataList, idx, item)
+        this.resourceDataList.splice(idx, 1, item)
       } else if (direction === 'right') {
         const item = R.clone(this.targetDataList[idx])
         item.checked = !item.checked
-        this.$set(this.targetDataList, idx, item)
+        this.targetDataList.splice(idx, 1, item)
       }
     },
     handleCheckAllChange (direction) {

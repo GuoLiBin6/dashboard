@@ -13,7 +13,11 @@ export default {
         onManager: this.onManager,
         hideField: true,
         slotCallback: row => (
-          <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{row.name}</side-page-trigger>
+          this.$createElement('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         ),
       }),
       getEnabledTableColumn(),

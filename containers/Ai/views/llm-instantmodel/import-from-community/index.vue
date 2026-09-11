@@ -5,7 +5,7 @@
 <template>
   <div>
     <page-header :title="headerTitle" />
-    <page-body needMarginBottom>
+    <page-body>
       <div class="catalog-model-page">
         <community-model-grid @select="onTagSelect" />
       </div>
@@ -13,7 +13,7 @@
 
     <a-drawer
       wrap-class-name="catalog-drawer-wrap"
-      :visible="drawerVisible"
+      :open="drawerVisible"
       :width="'50%'"
       destroy-on-close
       placement="right"
@@ -102,5 +102,9 @@ export default {
 <style lang="less" scoped>
 </style>
 
-<style lang="less" src="@Ai/sections/catalog-model-sets/catalog-model-page.less"></style>
-<style lang="less" src="@Ai/sections/catalog-model-sets/catalog-drawer.less"></style>
+<style lang="less">
+@import "@Ai/sections/catalog-model-sets/catalog-model-page.less";
+</style>
+<style lang="less">
+@import "@Ai/sections/catalog-model-sets/catalog-drawer.less";
+</style>

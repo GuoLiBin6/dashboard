@@ -80,10 +80,8 @@ export default {
 
 <style lang="less" scoped>
 .data-view {
-  &::v-deep {
-    .CodeMirror {
-      height: 600px !important;
-    }
+  &:deep(.CodeMirror) {
+    height: 600px !important;
   }
 }
 </style>

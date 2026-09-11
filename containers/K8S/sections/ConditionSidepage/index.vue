@@ -1,5 +1,5 @@
 <template>
-  <vxe-grid :data="data.conditions || []" :columns="columns" resizable />
+  <table-lite-grid :data="data.conditions || []" :columns="columns" resizable />
 </template>
 
 <script>

@@ -4,7 +4,7 @@
     :title="$t('compute.text_91')"
     icon="res-vminstance"
     :res-name="detailData.name"
-    :current-tab="params.windowData.currentTab"
+    :current-tab="currentTabKey"
     :tabs="filterDetailTabs"
     :loaded="loaded"
     @tab-change="handleTabChange">
@@ -16,9 +16,21 @@
         button-type="link"
         button-size="small" />
     </template>
+    <template v-if="renderError">
+      <a-alert
+        type="error"
+        show-icon
+        :message="$t('common.text_249') || 'Render error'"
+        :description="renderError.message || String(renderError)" />
+      <div class="mt-2 text-color-help" style="white-space: pre-wrap;">
+        {{ `tab=${currentTabKey}\ncomponent=${activeTabComponentName}` }}
+      </div>
+    </template>
     <component
+      v-else-if="activeTabComponent"
       v-bind="listActives"
-      :is="params.windowData.currentTab"
+      :key="currentTabKey"
+      :is="activeTabComponent"
       :data="componentData"
       :serverColumns="columns"
       :res-id="data.id"
@@ -33,8 +45,10 @@
       gpuResource="guestisolateddevices"
       taskResource="compute-tasks"
       @refresh="refresh"
-      @single-refresh="singleRefresh"
-      @tab-change="handleTabChange" />
+      @single-refresh="singleRefresh" />
+    <template v-else>
+      <data-empty :description="`Invalid tab: ${currentTabKey}`" />
+    </template>
   </base-side-page>
 </template>
 
@@ -47,6 +61,8 @@ import WindowsMixin from '@/mixins/windows'
 import Actions from '@/components/PageList/Actions'
 import { hasPermission } from '@/utils/auth'
 import { isScopedPolicyMenuHidden } from '@/utils/scopedPolicy'
+import TaskDrawer from '@/components/TaskDrawer'
+import EventDrawer from '@/components/EventDrawer'
 import NetworkListForVmInstanceSidepage from './Network'
 import VmInstanceDetail from './Detail'
 import VmInstanceMonitorSidepage from './Monitor'
@@ -76,6 +92,8 @@ export default {
     VmSnapshotSidepage,
     GpuList,
     ScheduledtasksList,
+    TaskDrawer,
+    EventDrawer,
     // EipListForVmInstanceSidepage,
   },
   mixins: [SidePageMixin, WindowsMixin, ColumnsMixin, SingleActionsMixin],
@@ -124,41 +142,77 @@ export default {
       agent_fail_reason: '',
       agent_fail_code: '',
       isPageDestroyed: false,
+      renderError: null,
     }
   },
   computed: {
+    // tab 状态由 SidePageMixin.handleTabChange 写入「父 window」的 currentTab
+    // 这里必须读 store 里的父 window，不能依赖创建时传入的 params.windowData（可能为空/不响应）
+    currentTabKey () {
+      const parentWindowId = this.sidePageData && this.sidePageData.parentWindowId
+      const parentWindow = parentWindowId && this.$store.getters.windows[parentWindowId]
+      // 必须优先读 store 里「父 window」的 currentTab：SidePageMixin.handleTabChange 只更新这里。
+      // params.windowData.currentTab 往往是打开侧栏时的快照，会挡住后续切换，导致 tab 不生效。
+      const fromStore = parentWindow && (parentWindow.currentTab || parentWindow._currentTab)
+      // 只认 store，避免 params.tab / windowData 快照与 store 互相覆盖造成 tab 抖动与递归更新
+      return fromStore || 'vm-instance-detail'
+    },
+    activeTabComponentName () {
+      const c = this.activeTabComponent
+      if (typeof c === 'string') return c
+      return c && (c.name || c.__name) ? (c.name || c.__name) : 'AnonymousComponent'
+    },
+    // Vue3 下仅用字符串 :is 可能无法稳定解析本地注册组件，显式传入组件对象；任务/日志 tab 仍用全局注册的字符串名
+    activeTabComponent () {
+      const tab = this.currentTabKey
+      const map = {
+        'vm-instance-detail': VmInstanceDetail,
+        'secgroup-list': SecgroupList,
+        'network-list-for-vm-instance-sidepage': NetworkListForVmInstanceSidepage,
+        'disk-list-for-vm-instance-sidepage': DiskListForVmInstanceSidepage,
+        'vm-snapshot-sidepage': VmSnapshotSidepage,
+        'gpu-list': GpuList,
+        'vm-instance-monitor-sidepage': VmInstanceMonitorSidepage,
+        'vm-instance-alert-history': VmInstanceAlertHistory,
+        'scheduledtasks-list': ScheduledtasksList,
+        'task-drawer': TaskDrawer,
+        'event-drawer': EventDrawer,
+      }
+      if (!tab) return null
+      return map[tab] !== undefined ? map[tab] : tab
+    },
     componentParams () {
       const tabs = ['secgroup-list', 'disk-list-for-vm-instance-sidepage']
       const snapshotsTabs = ['vm-snapshot-sidepage']
-      if (tabs.includes(this.params.windowData.currentTab)) {
+      if (tabs.includes(this.currentTabKey)) {
         return {
           detail: true,
           server: this.detailData.id,
         }
       }
-      if (this.params.windowData.currentTab === 'host-list') {
+      if (this.currentTabKey === 'host-list') {
         return {
           detail: true,
           id: this.detailData.host_id,
         }
       }
-      if (this.params.windowData.currentTab === 'network-list-for-vm-instance-sidepage') {
+      if (this.currentTabKey === 'network-list-for-vm-instance-sidepage') {
         return {
           associate_id: this.detailData.id,
           detail: true,
         }
       }
-      if (snapshotsTabs.includes(this.params.windowData.currentTab)) {
+      if (snapshotsTabs.includes(this.currentTabKey)) {
         return {
           server_id: this.detailData.id,
         }
       }
-      if (this.params.windowData.currentTab === 'gpu-list') {
+      if (this.currentTabKey === 'gpu-list') {
         return {
           guest_id: this.data.id,
         }
       }
-      if (this.params.windowData.currentTab === 'scheduledtasks-list') {
+      if (this.currentTabKey === 'scheduledtasks-list') {
         return {
           label: this.data.id,
         }
@@ -203,10 +257,10 @@ export default {
       const _ = {
         'secgroup-list': this.secgroupListActives,
       }
-      return _[this.params.windowData.currentTab] || {}
+      return _[this.currentTabKey] || {}
     },
     listId () {
-      switch (this.params.windowData.currentTab) {
+      switch (this.currentTabKey) {
         case 'network-list-for-vm-instance-sidepage':
           return 'NetworkListForVminstanceSidepage'
         case 'disk-list-for-vm-instance-sidepage':
@@ -229,13 +283,13 @@ export default {
       return Object.assign({}, this.detailData, { agent_status: this.agent_status, agent_fail_reason: this.agent_fail_reason, agent_fail_code: this.agent_fail_code })
     },
     hiddenColumns () {
-      if (this.params.windowData.currentTab === 'scheduledtasks-list') {
+      if (this.currentTabKey === 'scheduledtasks-list') {
         return ['resource_type', 'labels']
       }
       return []
     },
     hiddenSingleActions () {
-      return this.params.windowData.currentTab === 'scheduledtasks-list'
+      return this.currentTabKey === 'scheduledtasks-list'
     },
     showActions () {
       return !this.$isScopedPolicyMenuHidden('server_hidden_columns.perform_action')
@@ -257,6 +311,16 @@ export default {
       })
     },
   },
+  watch: {
+    currentTabKey () {
+      // 避免某一 tab 渲染失败后永久挡住其它 tab
+      this.renderError = null
+    },
+  },
+  errorCaptured (err) {
+    this.renderError = err
+    return false
+  },
   created () {
     this.initHiddenTab()
     this.initChangeTab()
@@ -269,7 +333,7 @@ export default {
       })
     })
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.isPageDestroyed = true
   },
   methods: {

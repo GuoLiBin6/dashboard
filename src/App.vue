@@ -1,6 +1,11 @@
 <template>
-  <a-config-provider :locale="locale">
-    <div id="app" @click="handleAppAction">
+  <icon-context-provider>
+    <a-config-provider :locale="locale" :theme="antdTheme">
+      <div
+        id="app"
+        :class="{ 'app-global-rounded': showGlobalRounded, 'oc-theme-light': theme === 'light' }"
+        :style="appGlobalBgStyle"
+        @click="handleAppAction">
       <component :is="layout">
         <router-view style="height: 100%;" />
       </component>
@@ -9,7 +14,8 @@
       <side-page-manager />
       <window-resize-listener />
     </div>
-  </a-config-provider>
+    </a-config-provider>
+  </icon-context-provider>
 </template>
 
 <script>
@@ -18,18 +24,21 @@ import { mapGetters, mapState } from 'vuex'
 import zhCN from 'ant-design-vue/es/locale/zh_CN'
 import enUS from 'ant-design-vue/es/locale/en_US'
 import jaJP from 'ant-design-vue/es/locale/ja_JP'
-import DefaultLayout from '@scope/layouts/Default'
 import FullScreenLayout from '@/layouts/FullScreen'
+// 同步加载：异步 Layout + 默认插槽在生产分包下易触发 renderSlot null.ce
+import DefaultLayout from '@scope/layouts/Default'
 import DialogManager from '@/sections/DialogManager'
 import SidePageManager from '@/sections/SidePageManager'
 import WindowResizeListener from '@/sections/WindowResizeListener'
 import notificationListener from '@/utils/notificationListener'
 import i18n from '@/locales'
-import { updateThemeColor } from '@/utils/theme/utils'
+import { hexToRgbChannels, resolveThemeBgColor, isThemeBgNone, THEME_BG_ALPHA } from '@/utils/theme/utils'
 import setting from '@/config/setting'
 import WindowsMixin from '@/mixins/windows'
 import LogoutMixin from '@/mixins/logout'
 import AuthTabSyncMixin from '@/mixins/authTabSync'
+import IconContextProvider from '@/IconContextProvider'
+import { isCE } from '@/utils/utils'
 
 const antdLocales = {
   'zh-CN': zhCN,
@@ -40,6 +49,7 @@ const antdLocales = {
 export default {
   name: 'App',
   components: {
+    IconContextProvider,
     DefaultLayout,
     FullScreenLayout,
     DialogManager,
@@ -49,19 +59,72 @@ export default {
   mixins: [WindowsMixin, LogoutMixin, AuthTabSyncMixin],
   data () {
     return {
-      locale: antdLocales[this.$store.getters.setting.language],
       monitorAlertTimer: null,
+      antdTheme: {
+        token: {
+          colorPrimary: process.env.THEME_COLOR || '#1890ff',
+          // info（含 a-alert type=info）默认蓝，需与主题色对齐
+          colorInfo: process.env.THEME_COLOR || '#1890ff',
+          colorLink: process.env.THEME_COLOR || '#1890ff',
+          colorLinkHover: process.env.THEME_COLOR || '#1890ff',
+          colorLinkActive: process.env.THEME_COLOR || '#1890ff',
+          colorText: 'rgba(0, 0, 0, 0.75)',
+          colorTextSecondary: 'rgba(0, 0, 0, 0.55)',
+          colorTextTertiary: 'rgba(0, 0, 0, 0.45)',
+          colorTextQuaternary: 'rgba(0, 0, 0, 0.35)',
+          colorTextHeading: 'rgba(0, 0, 0, 0.88)',
+          fontWeightStrong: 600,
+          fontSize: 14,
+        },
+      },
     }
   },
   computed: {
-    ...mapGetters(['auth', 'theme', 'themeColor', 'scope']),
+    locale () {
+      return antdLocales[this.$store?.getters?.setting?.language] || zhCN
+    },
+    ...mapGetters(['auth', 'theme', 'themeColor', 'themeBgColor', 'scope', 'globalRounded', 'isSysCE']),
     ...mapState({
       globalSetting: state => state.globalSetting,
       tenant: state => state.auth.tenant,
       session: state => state.auth.auth.session,
     }),
+    // 仅商业版应用可配置背景色
+    enableThemeBg () {
+      return !isCE() && !this.isSysCE
+    },
     layout () {
-      return `${(this.$route.meta.layout || 'default')}-layout`
+      const route = this.$route || {}
+      const path = route.path || ''
+      const meta = route.meta || {}
+      // 登录/认证相关路由一律使用全屏布局，避免 meta 异常导致只渲染 DefaultLayout
+      if (path.startsWith('/auth') || meta.authPage || meta.layout === 'full-screen') {
+        return 'FullScreenLayout'
+      }
+      return 'DefaultLayout'
+    },
+    // 业务页与登录/认证页统一套圆角壳与主题色底（由 setting.globalRounded 控制）
+    showGlobalRounded () {
+      if (!this.globalRounded) return false
+      if (this.layout === 'DefaultLayout') return true
+      const route = this.$route || {}
+      const path = route.path || ''
+      const meta = route.meta || {}
+      return path.startsWith('/auth') || !!meta.authPage
+    },
+    // 全局圆角壳背景：直接绑 style，避免 animation forwards 锁死旧色
+    appGlobalBgStyle () {
+      if (!this.showGlobalRounded) return undefined
+      const raw = this.enableThemeBg ? this.themeBgColor : null
+      const hex = resolveThemeBgColor(raw)
+      const rgb = hexToRgbChannels(hex)
+      // 「无背景」用实色灰；彩色半透明
+      const alpha = isThemeBgNone(raw) ? 1 : THEME_BG_ALPHA
+      return {
+        '--oc-global-bg-rgb': rgb,
+        '--oc-global-bg-alpha': alpha,
+        backgroundColor: `rgba(${rgb}, ${alpha})`,
+      }
     },
   },
   watch: {
@@ -98,9 +161,22 @@ export default {
     },
     themeColor: {
       handler (val) {
-        if (val && val !== process.env.THEME_COLOR) {
-          updateThemeColor(val)
+        const primary = val || process.env.THEME_COLOR || '#1890ff'
+        // 换新 token 引用，确保 ConfigProvider / cssinjs 重新衍生 colorInfo*
+        this.antdTheme.token = {
+          ...this.antdTheme.token,
+          colorPrimary: primary,
+          colorInfo: primary,
+          colorLink: primary,
+          // link 按钮 hover/active 默认衍生自 colorInfo，不跟 colorLink，需显式同步为主题色
+          colorLinkHover: primary,
+          colorLinkActive: primary,
         }
+        document.documentElement.style.setProperty('--antd-wave-shadow-color', primary)
+        document.documentElement.style.setProperty('--ant-color-primary', primary)
+        document.documentElement.style.setProperty('--ant-color-info', primary)
+        document.documentElement.style.setProperty('--ant-color-link', primary)
+        document.documentElement.style.setProperty('--ant-color-link-hover', primary)
       },
       immediate: true,
     },
@@ -109,7 +185,7 @@ export default {
     this.initIO()
     this.initMonitorAlertNotify()
   },
-  beforeDestroy () {
+  beforeUnmount () {
     // 组件销毁时清除定时器
     if (this.monitorAlertTimer) {
       clearInterval(this.monitorAlertTimer)

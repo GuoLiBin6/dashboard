@@ -1,30 +1,52 @@
 <template>
-  <base-dialog v-if="isShowMonitorAlert" @cancel="cancelDialog" :modalProps="modalProps" width="400px" :drag="false">
-    <div class="oc-monitor-alert-header" slot="header">{{$t('common.monitor_alert_fatal')}}</div>
-    <div class="oc-monitor-alert-body" slot="body">
-      <ul>
-        <li v-for="obj of monitorResourceAlerts" :key="obj.alert_id">
-          [{{ levelMaps[obj.level] ? levelMaps[obj.level].label : obj.level }}] {{obj.alert_name}} {{$t('common.monitor_alert')}}<br />
-          <!-- 策略名称 -->
-          {{$t('monitor.text_99')}}: {{obj.alert_name}}<br />
-          <!-- 触发时间 -->
-          {{$t('monitor.text_14')}}: {{getTriggerTime(obj.trigger_time)}}<br />
-          <!-- 报警级别 -->
-          {{$t('compute.text_738')}}: {{ levelMaps[obj.level] ? levelMaps[obj.level].label : obj.level }}<br />
-          <!-- 触发条件 -->
-          {{$t('monitor.condition')}}: {{ getMetircAlert(obj, 'alert_rule') }}<br />
-          <!-- 资源数量 -->
-          {{$t('cloudenv.text_417')}}：1<br />
-          <!-- 资源名称 -->
-          {{$t('common_151')}}：{{obj.res_name}}
-        </li>
-      </ul>
-    </div>
-    <div slot="footer">
-      <!-- 查看详情 -->
-      <a-button type="primary" @click="handleConfirm" :loading="loading">{{$t('common_224')}}</a-button>
-      <a-button @click="cancelDialog">{{$t('common.later_handle')}}</a-button>
-    </div>
+  <base-dialog
+    v-if="isShowMonitorAlert"
+    @cancel="cancelDialog"
+    :modalProps="modalProps"
+    width="400px"
+    :drag="false">
+    <!-- Vue 3 插槽语法：header -->
+    <template #header>
+      <div class="oc-monitor-alert-header">
+        {{$t('common.monitor_alert_fatal')}}
+      </div>
+    </template>
+
+    <!-- Vue 3 插槽语法：body -->
+    <template #body>
+      <div class="oc-monitor-alert-body">
+        <ul>
+          <li v-for="obj of monitorResourceAlerts" :key="obj.alert_id">
+            [{{ levelMaps[obj.level] ? levelMaps[obj.level].label : obj.level }}] {{obj.alert_name}} {{$t('common.monitor_alert')}}<br />
+            <!-- 策略名称 -->
+            {{$t('monitor.text_99')}}: {{obj.alert_name}}<br />
+            <!-- 触发时间 -->
+            {{$t('monitor.text_14')}}: {{getTriggerTime(obj.trigger_time)}}<br />
+            <!-- 报警级别 -->
+            {{$t('compute.text_738')}}: {{ levelMaps[obj.level] ? levelMaps[obj.level].label : obj.level }}<br />
+            <!-- 触发条件 -->
+            {{$t('monitor.condition')}}: {{ getMetircAlert(obj, 'alert_rule') }}<br />
+            <!-- 资源数量 -->
+            {{$t('cloudenv.text_417')}}：1<br />
+            <!-- 资源名称 -->
+            {{$t('common_151')}}：{{obj.res_name}}
+          </li>
+        </ul>
+      </div>
+    </template>
+
+    <!-- Vue 3 插槽语法：footer -->
+    <template #footer>
+      <div>
+        <!-- 查看详情 -->
+        <a-button type="primary" @click="handleConfirm" :loading="loading">
+          {{$t('common_224')}}
+        </a-button>
+        <a-button @click="cancelDialog">
+          {{$t('common.later_handle')}}
+        </a-button>
+      </div>
+    </template>
   </base-dialog>
 </template>
 
@@ -42,6 +64,8 @@ export default {
     return {
       timer: null,
       modalProps: {
+        // 作为右下角通知使用，不需要遮罩层挡住页面交互
+        mask: false,
         dialogStyle: {
           position: 'fixed',
           right: '15px',
@@ -75,13 +99,20 @@ export default {
       this.modalProps.dialogStyle.bottom = '0'
     }, 500)
   },
-  destroyed () {
+  unmounted () {
     clearTimeout(this.timer)
   },
   methods: {
     getMetircAlert (row, field) {
       const results = getMetircAlertUtil(row, field, true)
-      return results?.split('：')[1] || '-'
+      // 兼容返回值为字符串或对象/其他类型的情况，避免 results?.split 不是函数的报错
+      if (typeof results === 'string') {
+        return results.split('：')[1] || '-'
+      }
+      if (results && typeof results === 'object' && results.text) {
+        return results.text
+      }
+      return results || '-'
     },
     async handleConfirm () {
       this.cancelDialog()

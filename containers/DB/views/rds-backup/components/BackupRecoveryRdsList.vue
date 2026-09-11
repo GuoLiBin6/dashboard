@@ -1,5 +1,5 @@
 <template>
-  <vxe-grid
+  <table-lite-grid
     :columns="tableColumn"
     :data="rdsList"
     :loading="loading"
@@ -9,7 +9,7 @@
     <template v-slot:empty>
       <page-list-empty :loading="loading" />
     </template>
-  </vxe-grid>
+  </table-lite-grid>
 </template>
 <script>
 import { sizestr } from '@/utils/utils'

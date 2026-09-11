@@ -13,6 +13,7 @@
   </div>
 </template>
 <script>
+import { h } from 'vue'
 import { RDS_ACCOUNT_PRIVILEGES } from '@DB/constants'
 export default {
   inject: ['form'],
@@ -82,7 +83,7 @@ export default {
       const { id } = item
       const { getFieldDecorator } = this.form.fc
       const renderRadios = ['rw', 'r'].map(v => {
-        return <a-radio value={v}>{RDS_ACCOUNT_PRIVILEGES[v]}</a-radio>
+        return h('a-radio', { value: v }, { default: () => RDS_ACCOUNT_PRIVILEGES[v] })
       })
       const _handleChange = () => {
         this.$nextTick(() => {
@@ -90,26 +91,17 @@ export default {
         })
       }
       const initialValue = (item.privileges === 'rw' || item.privileges === 'r') ? item.privileges : 'rw'
-      return (
-        <a-form-item class="radios">
-          {
-            getFieldDecorator(id, {
-              initialValue,
-            })(
-              <a-radio-group onChange={_handleChange}>
-                {renderRadios}
-              </a-radio-group>,
-            )
-          }
-        </a-form-item>
+      const radioGroupVNode = getFieldDecorator(id, { initialValue })(
+        h('a-radio-group', { onChange: _handleChange }, { default: () => renderRadios }),
       )
+      return h('a-form-item', { class: 'radios' }, { default: () => [radioGroupVNode] })
     },
     renderItem (item) {
-      const customLabel = (
-        <span class="custom-item">
-          <b>{item.title}</b> {this.renderItemRadions(item)}
-        </span>
-      )
+      const customLabel = h('span', { class: 'custom-item' }, [
+        h('b', {}, item.title),
+        ' ',
+        this.renderItemRadions(item),
+      ])
 
       return {
         label: customLabel,

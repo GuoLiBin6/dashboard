@@ -1,9 +1,9 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{$t('common.ssh_password_tip')}}</div>
-    <div slot="body">
+    <template #header>{{$t('common.ssh_password_tip')}}</template>
+    <template #body>
       <a-alert type="warning" class="mb-2">
-        <div slot="message">{{$t('common.ssh_login_err')}}<help-tooltip :text="errorMsg" class="ml-1" />，{{$t('common.ssh_login_err_msg')}}</div>
+        <template #message>{{$t('common.ssh_login_err')}}<help-tooltip :text="errorMsg" class="ml-1" />，{{$t('common.ssh_login_err_msg')}}</template>
       </a-alert>
       <a-form-model
         ref="form"
@@ -17,24 +17,24 @@
           </list-body-cell-wrap>
         </a-form-model-item>
         <a-form-model-item :label="$t('scope.text_406')" prop="username">
-          <a-input v-model="formData.username" :placeholder="$t('common.tips.input', [$t('scope.text_406')])" />
+          <a-input v-model:value="formData.username" :placeholder="$t('common.tips.input', [$t('scope.text_406')])" />
         </a-form-model-item>
         <a-form-model-item :label="$t('common_328')" prop="password">
-          <a-input-password v-model="formData.password" :placeholder="$t('common.tips.input', [$t('common_328')])" />
+          <a-input-password v-model:value="formData.password" :placeholder="$t('common.tips.input', [$t('common_328')])" />
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.text_349')" prop="port">
-          <a-input v-model="formData.port" :placeholder="$t('compute.text_350')" />
+          <a-input v-model:value="formData.port" :placeholder="$t('compute.text_350')" />
         </a-form-model-item>
         <!-- <a-form-model-item :label="$t('common.text00089')">
           <div class="error-color">{{errorMsg}}</div>
         </a-form-model-item> -->
         <button type="submit" tabindex="-1" aria-hidden="true" class="ssh-auth-form-submit" />
       </a-form-model>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" :loading="loading" @click="handleConfirm">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 
@@ -90,7 +90,7 @@ export default {
       formEl.addEventListener('keydown', this._formEnterHandler)
     })
   },
-  beforeDestroy () {
+  beforeUnmount () {
     const formEl = this.$refs.form?.$el
     if (formEl && this._formEnterHandler) {
       formEl.removeEventListener('keydown', this._formEnterHandler)

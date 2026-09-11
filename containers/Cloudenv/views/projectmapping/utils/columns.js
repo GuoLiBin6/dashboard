@@ -21,7 +21,7 @@ export const getAccessUrlTableColumn = () => {
         })
         return txt ||
         [
-          <a class="link-color" target="_blank" href={ row.access_url }>{ row.access_url }</a>,
+          h('a', { class: 'link-color', attrs: { target: '_blank', href: row.access_url } }, row.access_url),
         ]
       },
     },
@@ -39,9 +39,15 @@ export const getAccountTableColumn = () => {
         const subscribeIds = (row.account && row.account.split('/')) || []
         const text = subscribeIds.length > 1 ? subscribeIds[1] : subscribeIds[0]
         return [
-          <list-body-cell-wrap message={text} copy hideField={true}>
-            <span>{text}</span>
-          </list-body-cell-wrap>,
+          h('list-body-cell-wrap', {
+            props: {
+              message: text,
+              copy: true,
+              hideField: true,
+            },
+          }, [
+            h('span', text),
+          ]),
         ]
       },
     },

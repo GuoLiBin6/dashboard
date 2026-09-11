@@ -38,8 +38,15 @@ export default {
           field: 'displayname',
           title: this.$t('scope.text_245'),
           slots: {
-            default: ({ row }) => {
-              return [<list-body-cell-wrap copy row={ row } field='displayname' title={ row.displayname || '-' } />]
+            default: ({ row }, h) => {
+              return [h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  row: row,
+                  field: 'displayname',
+                  title: row.displayname || '-',
+                },
+              })]
             },
           },
         },
@@ -62,9 +69,13 @@ export default {
           field: 'group_count',
           title: this.$t('system.text_514'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (!row.group_count) return '0'
-              return [<a onClick={ () => this.$emit('tab-change', 'Group') }>{row.group_count}</a>]
+              return [h('a', {
+                on: {
+                  click: () => this.$emit('tab-change', 'Group'),
+                },
+              }, row.group_count)]
             },
           },
         },
@@ -72,9 +83,13 @@ export default {
           field: 'project_count',
           title: this.$t('system.text_560'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (!row.project_count) return '0'
-              return [<a onClick={ () => this.$emit('tab-change', 'projects') }>{row.project_count}</a>]
+              return [h('a', {
+                on: {
+                  click: () => this.$emit('tab-change', 'projects'),
+                },
+              }, row.project_count)]
             },
           },
         },
@@ -118,7 +133,7 @@ export default {
               field: 'password_expires_at',
               title: this.$t('system.text_519'),
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   const expiresAt = row.password_expires_at
                   if (expiresAt) {
                     const days = this.$moment(expiresAt).diff(new Date(), 'days')
@@ -128,11 +143,11 @@ export default {
                     }
                     if (days <= 7 && days >= 0 && hours > 0) {
                       if (days === 0) {
-                        return <div style="color:red">{ this.$t('system.text_520', [hours >= 1 ? parseInt(hours) : 1]) }</div>
+                        return h('div', { style: 'color:red' }, this.$t('system.text_520', [hours >= 1 ? parseInt(hours) : 1]))
                       }
-                      return <div style="color:orange">{ this.$t('system.text_557', [days]) }</div>
+                      return h('div', { style: 'color:orange' }, this.$t('system.text_557', [days]))
                     }
-                    return <div style="color:red">{ this.$t('system.text_558', [days]) }</div>
+                    return h('div', { style: 'color:red' }, this.$t('system.text_558', [days]))
                   }
                   return '-'
                 },
@@ -144,24 +159,27 @@ export default {
           field: 'idps',
           title: this.$t('common_460', [this.$t('dictionary.identity_provider')]),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               return [
-                <vxe-grid
-                  data={row.idps}
-                  columns={[
-                    { title: this.$t('common_704'), field: 'idp' },
-                    {
-                      title: this.$t('system.text_204'),
-                      field: 'idp_driver',
-                      formatter: ({ cellValue }) => driverOptions[cellValue] || cellValue,
-                    },
-                    {
-                      title: this.$t('common_550'),
-                      field: 'template',
-                      formatter: ({ row }) => this.$t('idpTmplTitles')[row.template] ? this.$t(`idpTmplTitles.${row.template}`) : row.template || '-',
-                    },
-                    { title: this.$t('common_705'), field: 'idp_entity_id' },
-                  ]} />,
+                h('table-lite-grid', {
+                  props: {
+                    data: row.idps,
+                    columns: [
+                      { title: this.$t('common_704'), field: 'idp' },
+                      {
+                        title: this.$t('system.text_204'),
+                        field: 'idp_driver',
+                        formatter: ({ cellValue }) => driverOptions[cellValue] || cellValue,
+                      },
+                      {
+                        title: this.$t('common_550'),
+                        field: 'template',
+                        formatter: ({ row }) => this.$t('idpTmplTitles')[row.template] ? this.$t(`idpTmplTitles.${row.template}`) : row.template || '-',
+                      },
+                      { title: this.$t('common_705'), field: 'idp_entity_id' },
+                    ],
+                  },
+                }),
               ]
             },
           },

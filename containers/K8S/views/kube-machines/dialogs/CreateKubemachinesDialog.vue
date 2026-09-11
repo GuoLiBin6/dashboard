@@ -3,7 +3,7 @@
     <div slot="header">{{$t('k8s.create')}}</div>
     <div slot="body">
       <a-alert :showIcon="false" banner class="mt-2">
-        <template slot="message">
+        <template #message>
           <div>
             <p>{{$t('k8s.text_147')}}</p>
             <p>{{$t('k8s.text_148')}}</p>

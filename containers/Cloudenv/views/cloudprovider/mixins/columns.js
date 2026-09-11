@@ -18,10 +18,11 @@ export default {
       getNameDescriptionTableColumn({
         onManager: this.onManager,
         hideField: true,
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          const hFn = h || this.$createElement
+          return hFn('side-page-trigger', {
+            on: { trigger: () => this.handleOpenSidepage(row) },
+          }, row.name)
         },
       }),
       {
@@ -30,13 +31,13 @@ export default {
         showOverflow: 'ellipsis',
         minWidth: 160,
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             const subscribeIds = (row.account && row.account.split('/')) || []
             const text = subscribeIds.length > 1 ? subscribeIds[1] : subscribeIds[0]
             return [
-              <list-body-cell-wrap message={text} copy hideField={true}>
-                <span>{text}</span>
-              </list-body-cell-wrap>,
+              h('list-body-cell-wrap', {
+                props: { message: text, copy: true, hideField: true },
+              }, [h('span', {}, text)]),
             ]
           },
         },
@@ -56,7 +57,7 @@ export default {
           default: ({ row }) => {
             if (row.sync_status !== 'idle') { // 表示正在同步中
               return [
-                <status status={ row.sync_status } statusModule='cloudaccountSyncStatus' />,
+                this.$createElement('status', { props: { status: row.sync_status, statusModule: 'cloudaccountSyncStatus' } }),
               ]
             } else {
               const time = this.$moment(row.last_sync)

@@ -1,14 +1,12 @@
-const requireComponent = require.context('@scope', true, /expectStatus\.(js)$/)
-const keys = requireComponent.keys().filter(item => {
-  const arr = item.split('/')
-  return arr[1] === 'constants' && /\.(js)$/.test(arr[2])
+// 加载 @scope/constants 下扩展的状态配置（Vite 使用 import.meta.glob）
+const scopeStatusModules = import.meta.glob('/src/scope/constants/expectStatus.js', {
+  eager: true,
+  import: 'default',
 })
+
 let extraStatus = {}
-keys.forEach(fileName => {
-  // 获取组件配置
-  const componentConfig = requireComponent(fileName)
-  console.log('status', componentConfig)
-  const { default: DEFAULT_STATUS = {} } = componentConfig
+Object.values(scopeStatusModules).forEach((DEFAULT_STATUS) => {
+  if (!DEFAULT_STATUS) return
   extraStatus = { ...extraStatus, ...DEFAULT_STATUS }
 })
 

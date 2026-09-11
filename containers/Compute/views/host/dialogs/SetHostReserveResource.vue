@@ -19,6 +19,7 @@
 </template>
 
 <script>
+import { h } from 'vue'
 import ReserveResource from '@Compute/sections/ReserveResource'
 import { sizestr } from '@/utils/utils'
 import DialogMixin from '@/mixins/dialog'
@@ -78,9 +79,11 @@ export default {
           onManager: this.params.onManager,
           hideField: true,
           slotCallback: row => {
-            return (
-              <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row, 'host-detail') }>{ row.name }</side-page-trigger>
-            )
+            return h('side-page-trigger', {
+              onTrigger: () => this.handleOpenSidepage(row, 'host-detail'),
+            }, {
+              default: () => row.name,
+            })
           },
         }),
         getIsolatedDeviceCountColumns(),
@@ -90,12 +93,14 @@ export default {
           minWidth: 100,
           showOverflow: 'title',
           slots: {
-            default: ({ row }, h) => {
+            default: ({ row }) => {
               const rs = row.reserved_resource_for_gpu || {}
               const ret = []
               if (rs.reserved_cpu) {
                 const config = rs.reserved_cpu + 'C' + (rs.reserved_memory ? sizestr(rs.reserved_memory, 'M', 1024) : '') + (rs.reserved_storage ? sizestr(rs.reserved_storage, 'M', 1024) : '')
-                return ret.concat(<div class='text-truncate' style={{ color: '#53627C' }}>{ config }</div>)
+                return ret.concat(
+                  h('div', { class: 'text-truncate', style: { color: 'var(--oc-color-text-secondary)' } }, config),
+                )
               }
               return ret
             },

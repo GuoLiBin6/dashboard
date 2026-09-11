@@ -6,7 +6,7 @@
       <dialog-table v-if="params.columns && params.columns.length" :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-form-model ref="form" :model="form" :rules="rules" v-bind="formItemLayout">
         <a-form-model-item :label="$t('monitor.alert_ticket_type')">
-          <a-radio-group v-model="form.ticket_type">
+          <a-radio-group v-model:value="form.ticket_type">
             <template v-if="params.enabledKeys.includes('alert-event')">
               <a-tooltip v-if="!params.activeKeys.includes('alert-event')" :title="$t('monitor.convert_to_ticket.alert_event_disabled_tip')">
                 <a-radio-button :disabled="true" value="alert-event">{{ $t('monitor.alert_ticket_type.alert_event') }}</a-radio-button>

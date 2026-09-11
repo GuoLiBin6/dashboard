@@ -54,7 +54,7 @@
       <div class="echart-world-map__popover-row">
         <span class="echart-world-map__popover-label">{{ $t('regionMap.diameter') }}</span>
         <a-input-number
-          v-model="diameterKm"
+          v-model:value="diameterKm"
           class="echart-world-map__popover-input"
           :min="10"
           :max="10000"
@@ -369,21 +369,35 @@ export default {
     }
     this.initChart()
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.destroyChart()
   },
   methods: {
     initChart () {
       if (!this.$refs.chartEl) return
+      // v-if 刚挂载时可能尚未完成布局，0 宽初始化会导致 geo 缩到角落，仅 resize 也无法恢复
+      const el = this.$refs.chartEl
+      if (el.clientWidth <= 0 || el.clientHeight <= 0) {
+        if (this._initChartRetryCount == null) this._initChartRetryCount = 0
+        if (this._initChartRetryCount < 30) {
+          this._initChartRetryCount += 1
+          requestAnimationFrame(() => this.initChart())
+        }
+        return
+      }
+      this._initChartRetryCount = 0
       this.destroyChart()
       this.mapName = ensureWorldMercatorMap()
-      this.chart = echarts.init(this.$refs.chartEl)
+      this.chart = echarts.init(el)
       this.bindChartEvents()
       this.renderChart(true)
       if (this.locateOnLoad) {
         this.tryLocateUser(true)
       }
       this.bindResize()
+      this.$nextTick(() => {
+        this.handleResize()
+      })
       this.$emit('load', this.chart)
     },
     bindChartEvents () {
@@ -1006,11 +1020,22 @@ export default {
       window.removeEventListener('resize', this.handleResize)
     },
     handleResize () {
-      if (this.chart) {
-        this.chart.resize()
-        if (this.diameterPanelVisible) {
-          this.openDiameterPanel()
-        }
+      if (!this.chart) return
+      const el = this.$refs.chartEl
+      if (el && (el.clientWidth <= 0 || el.clientHeight <= 0)) return
+      this.chart.resize()
+      // layoutCenter/layoutSize 在错误尺寸下算死后，需重新 setOption 才能铺满
+      if (this.useLayoutPosition && !this.hasGeoRoam) {
+        this.chart.setOption({
+          geo: {
+            layoutCenter: this.layoutCenter,
+            layoutSize: this.layoutSize,
+            zoom: this.geoZoom,
+          },
+        })
+      }
+      if (this.diameterPanelVisible) {
+        this.openDiameterPanel()
       }
     },
     destroyChart () {

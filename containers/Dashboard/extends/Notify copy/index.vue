@@ -2,7 +2,7 @@
   <div class="h-100 position-relative">
     <div class="dashboard-card-wrap">
       <div class="dashboard-card-header">
-        <div class="dashboard-card-header-left">{{ form.fd.name || $t('dashboard.text_6') }}<a-icon class="ml-2" type="loading" v-if="loading" /></div>
+        <div class="dashboard-card-header-left">{{ form.fd.name || $t('dashboard.text_6') }}<icon class="ml-2" type="loading" v-if="loading" /></div>
         <div class="dashboard-card-header-right">
           <slot name="actions" :handle-edit="handleEdit" />
           <router-link v-if="!edit" to="/notice" class="ml-2">
@@ -17,12 +17,12 @@
           </div>
           <div class="d-flex flex-shrink-0 flex-grow-0 mt-1">
             <div class="text-color-help flex-fill">{{ data[0]['author'] }} · {{ $moment(data[0]['updated_at']).fromNow() }}</div>
-            <div class="flex-shrink-0 flex-grow-0" @click.stop.prevent="doLike" style="cursor: pointer;">{{ readmarkTotal }}<a-icon class="ml-1" type="like" :style="{ color: likeColor }" :theme="liked ? 'filled' : 'outlined'" /></div>
+            <div class="flex-shrink-0 flex-grow-0" @click.stop.prevent="doLike" style="cursor: pointer;">{{ readmarkTotal }}<icon class="ml-1" type="like" :style="{ color: likeColor }" :theme="liked ? 'filled' : 'outlined'" /></div>
           </div>
         </template>
       </div>
     </div>
-    <base-drawer :visible.sync="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit">
+    <base-drawer v-model:visible="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit">
       <a-form
         hideRequiredMark
         :form="form.fc"
@@ -118,7 +118,7 @@ export default {
       }
     },
   },
-  destroyed () {
+  unmounted () {
     this.rm = null
   },
   created () {

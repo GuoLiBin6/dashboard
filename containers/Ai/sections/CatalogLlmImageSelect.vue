@@ -1,7 +1,7 @@
 <template>
   <div class="catalog-llm-image-select">
     <a-radio-group
-      v-model="imageSourceTab"
+      v-model:value="imageSourceTab"
       class="catalog-llm-image-select__tabs">
       <a-radio-button value="local">
         {{ $t('aice.llm_image.local_images') }}

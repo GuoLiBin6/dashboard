@@ -1,14 +1,14 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{ action }}</div>
-    <div slot="body">
+    <template #header>{{ action }}</template>
+    <template #body>
       <dialog-selected-tips :name="$t('dictionary.secgroup')" :count="params.data.length" action="移除" />
       <dialog-table :data="params.data" :columns="columns" />
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

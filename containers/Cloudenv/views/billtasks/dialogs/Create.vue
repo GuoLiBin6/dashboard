@@ -18,11 +18,11 @@
         <a-form-model-item v-if="isMonthShow" :label="$t('cloudenv.text_212')" v-bind="formItemLayout" prop="start_day">
           <span slot="extra" style="color:red;">{{ blockTip }}</span>
           <a-form-model-item style="display:inline-block" prop="start_day">
-            <a-month-picker v-model="form.start_day" :disabled-date="dateDisabledStart" @change="startChange" :disabled="ignore_time" />
+            <a-month-picker v-model:value="form.start_day" :disabled-date="dateDisabledStart" @change="startChange" :disabled="ignore_time" />
           </a-form-model-item>
           <span class="ml-2 mr-2">~</span>
           <a-form-model-item style="display:inline-block" prop="end_day">
-            <a-month-picker v-model="form.end_day" :disabled-date="dateDisabledEnd" :disabled="ignore_time" />
+            <a-month-picker v-model:value="form.end_day" :disabled-date="dateDisabledEnd" :disabled="ignore_time" />
           </a-form-model-item>
           <a-checkbox class="ml-2" v-model="ignore_time">{{$t('cloudenv.run_all_bills')}}</a-checkbox>
         </a-form-model-item>

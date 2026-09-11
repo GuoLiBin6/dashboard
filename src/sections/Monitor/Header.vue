@@ -1,19 +1,22 @@
 <template>
-  <div :class="className">
+  <div :class="['monitor-header', className]">
     <template v-if="showAutoRefresh">
       <a-tooltip placement="top">
-        <template slot="title" v-show="refreshTooltips && lastSync !== ''">
+        <template #title v-if="refreshTooltips && lastSync !== ''">
           <span>{{ $t('refresh.last_sync_at', [lastSync]) }}</span>
         </template>
-        <a-button style="width: 45px;padding-left: 15px;padding-right: 15px;" :icon="loading ? 'loading':'sync'" @click="emitRefresh" />
+        <a-button style="width: 45px;padding-left: 15px;padding-right: 15px;" @click="emitRefresh">
+          <icon type="sync" :spin="loading" />
+        </a-button>
       </a-tooltip>
-      <a-select class="ml-2 mr-2" v-model="syncConfig.duration" @change="handleDurationChange" style="width: 90px">
+      <a-select class="ml-2 mr-2" v-model:value="syncConfig.duration" @change="handleDurationChange" style="width: 90px">
         <a-select-option :dropdownMatchSelectWidth="false" v-for="d of durations" :key="d.label" :value="d.value">
           {{ d.label }}
         </a-select-option>
       </a-select>
     </template>
     <refresh-button v-else-if="showSync" :loading="loading" @refresh="refresh" class="mr-2" />
+    <slot name="between-refresh-time" />
     <a-radio-group class="mr-3" @change="timeChange" :value="time">
       <a-radio-button v-if="allowEmptyTime" key="all" value="all">{{ $t('common_737') }}</a-radio-button>
       <a-radio-button v-for="item in timeOpts" v-show="!item.hidden" :key="item.key" :value="item.key">{{ item.label }}</a-radio-button>
@@ -22,25 +25,19 @@
       </slot>
     </a-radio-group>
     <template v-if="showTimeGroupInput">
-      <div class="ant-form-item-label">
-          <label :title="$t('common_166')">{{$t('common_166')}}</label>
-      </div>
+      <span class="monitor-header-label">{{ $t('common_166') }}</span>
       <a-input-number :min="1" :value="timeGroupValue" @change="timeGroupValueChange" />
-      {{ $t('common_time.minute') }}
+      <span class="ml-1">{{ $t('common_time.minute') }}</span>
     </template>
     <template v-if="showTimegroup">
-      <div class="ant-form-item-label">
-        <label :title="$t('common_166')">{{$t('common_166')}}</label>
-      </div>
-      <a-select class="mr-2" style="width: 80px" :value="timeGroup" @change="timeGroupChange">
+      <span class="monitor-header-label">{{ $t('common_166') }}</span>
+      <a-select class="mr-2" style="width: 100px" :value="timeGroup" @change="timeGroupChange">
         <a-select-option v-for="item in timeGroupOpts" :key="item.key" :value="item.key">{{ item.label }}</a-select-option>
       </a-select>
     </template>
     <template v-if="showGroupFunc">
-      <div class="ant-form-item-label">
-        <label :title="$t('common.group_by')">{{$t('common.group_by')}}</label>
-      </div>
-      <a-select v-model="groupFunc" @change="groupFuncChange" style="width:80px">
+      <span class="monitor-header-label">{{ $t('common.group_by') }}</span>
+      <a-select :value="groupFunc" @change="groupFuncChange" style="width:100px">
         <a-select-option v-for="item in groupFuncOpts" :key="item.key" :value="item.key">{{ item.label }}</a-select-option>
       </a-select>
     </template>
@@ -271,7 +268,7 @@ export default {
       }
     },
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.cancelAutoRefresh()
   },
   methods: {
@@ -335,3 +332,19 @@ export default {
   },
 }
 </script>
+
+<style lang="less" scoped>
+.monitor-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 8px;
+}
+.monitor-header-label {
+  display: inline-block;
+  margin-right: 8px;
+  margin-left: 4px;
+  color: rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
+}
+</style>

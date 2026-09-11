@@ -57,9 +57,14 @@ export default {
           slots: {
             default: ({ row }, h) => {
               return [
-                <div class='text-truncate'>
-                  <status status={ row.status === 'active' } statusModule='enabled' />
-                </div>,
+                h('div', { class: 'text-truncate' }, [
+                  h('status', {
+                    props: {
+                      status: row.status === 'active',
+                      statusModule: 'enabled',
+                    },
+                  }),
+                ]),
               ]
             },
           },

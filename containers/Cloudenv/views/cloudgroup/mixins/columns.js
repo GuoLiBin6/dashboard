@@ -19,10 +19,17 @@ export default {
         formRules: [
           { required: true, message: i18n.t('common.text00042') },
         ],
-        slotCallback: row => {
-          return (
-            <side-page-trigger permission='cloudgroup_get' name='CloudgroupSidePage' id={row.id} list={this.list} vm={this}>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          const hFn = h || this.$createElement
+          return hFn('side-page-trigger', {
+            props: {
+              permission: 'cloudgroup_get',
+              name: 'CloudgroupSidePage',
+              id: row.id,
+              list: this.list,
+              vm: this,
+            },
+          }, row.name)
         },
       }),
       getStatusTableColumn({ statusModule: 'cloudgroup' }),
@@ -50,21 +57,30 @@ export default {
                 formatter: ({ cellValue }) => cellValue || '-',
               },
             ]
-            return [<a-popover trigger="hover" onVisibleChange={handleVisibleChange} key={`popover-${row.id}-${row.feCloudpolicies ? row.feCloudpolicies.length : 0}`}>
-              <div slot="content" style={row.feCloudpolicies && row.feCloudpolicies.length > 0 ? { minWidth: '600px' } : {}}>
-                {row.feCloudpolicies && row.feCloudpolicies.length > 0 ? (
-                  <vxe-grid
-                    showOverflow={false}
-                    row-config={{ isHover: true }}
-                    column-config={{ resizable: false }}
-                    data={ row.feCloudpolicies }
-                    columns={ columns } />
-                ) : (
-                  <data-loading />
-                )}
-              </div>
-              <span style="color: var(--antd-wave-shadow-color)">{i18n.t('cloudenv.text_245', [row.cloudpolicies.length])}</span>
-            </a-popover>]
+            const h = this.$createElement
+            const contentVnode = row.feCloudpolicies && row.feCloudpolicies.length > 0
+              ? h('table-lite-grid', {
+                props: {
+                  showOverflow: false,
+                  rowConfig: { isHover: true },
+                  columnConfig: { resizable: false },
+                  data: row.feCloudpolicies,
+                  columns,
+                },
+              })
+              : h('data-loading')
+            return [h('a-popover', {
+              props: { trigger: 'hover' },
+              on: { openChange: handleVisibleChange },
+              key: `popover-${row.id}-${row.feCloudpolicies ? row.feCloudpolicies.length : 0}`,
+              scopedSlots: {
+                content: () => h('div', {
+                  style: row.feCloudpolicies && row.feCloudpolicies.length > 0 ? { minWidth: '600px' } : {},
+                }, [contentVnode]),
+              },
+            }, [
+              h('span', { style: 'color: var(--antd-wave-shadow-color)' }, i18n.t('cloudenv.text_245', [row.cloudpolicies.length])),
+            ])]
           },
         },
         formatter: ({ row }) => {

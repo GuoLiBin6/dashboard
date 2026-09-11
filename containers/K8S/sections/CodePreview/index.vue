@@ -2,13 +2,13 @@
   <div class="code-preview">
     <div class="code-preview-item mt-3" v-for="item in dataList" :key="item.title">
       <div class="code-preview-item_title mb-1">
-        <a-icon class="mr-1" :type="item.showContent ? 'eye-invisible' : 'eye'" @click="() => item.showContent = !item.showContent" theme="twoTone" twoToneColor="#1890ff" />
+        <icon class="mr-1" :type="item.showContent ? 'eye-invisible' : 'eye'" @click="() => item.showContent = !item.showContent" theme="twoTone" twoToneColor="#1890ff" />
         <span>{{ item.title }}</span>
         <a-button
           type="link"
           v-clipboard:copy="item.content"
           v-clipboard:success="_ => $message.success($t('k8s.text_31'))"
-          v-clipboard:error="_ => $message.error($t('k8s.text_32'))"><a-icon type="copy" />{{$t('k8s.text_33')}}</a-button>
+          v-clipboard:error="_ => $message.error($t('k8s.text_32'))"><icon type="copy" />{{$t('k8s.text_33')}}</a-button>
       </div>
       <template v-if="item.showContent">
         <pre class="code-preview-item_content" v-if="item.key === 'ca.crt'">{{ item.content }}</pre>
@@ -21,6 +21,20 @@
 <script>
 import * as R from 'ramda'
 import { Base64 } from 'js-base64'
+
+function safeBase64Decode (value) {
+  if (!R.is(String, value) || !value) return value || ''
+  try {
+    return Base64.decode(value)
+  } catch (e) {
+    try {
+      return Base64.decode(value.replace(/\s/g, ''))
+    } catch (e2) {
+      // 非合法 Base64（或后端已解码）时直接展示原文，避免侧栏整页报错
+      return value
+    }
+  }
+}
 
 export default {
   name: 'K8SCodePreviewSidepageDetail',
@@ -36,7 +50,7 @@ export default {
       R.forEachObjIndexed((value, key) => {
         dataList.push({
           title: key,
-          content: Base64.decode(value),
+          content: safeBase64Decode(value),
           showContent: false,
         })
       }, this.data.data)

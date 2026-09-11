@@ -30,7 +30,7 @@ export const getResourceCountTableColumn = ({ vm = {} } = {}) => {
     width: 80,
     slots: {
       default: ({ row }, h) => {
-        if (vm.isPreLoad && !row.resource_count) return [<data-loading />]
+        if (vm.isPreLoad && !row.resource_count) return [h('data-loading')]
         return `${row.resource_count || 0}`
       },
     },

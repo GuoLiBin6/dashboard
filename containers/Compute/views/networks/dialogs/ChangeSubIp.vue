@@ -13,7 +13,7 @@
           <a-form-model-item v-for="(item, index) in form.subips" :key="index" :prop="`subips.${index}.ip`" class="mb-1">
             <a-row :gutter="8">
               <a-col v-if="item.from !== 'old'" :span="20" class="d-flex align-items-center">
-                 <a-radio-group v-model="form.subips[index].type">
+                 <a-radio-group v-model:value="form.subips[index].type">
                   <a-radio-button value="allocation">{{ $t('compute.automatic_allocation') }}</a-radio-button>
                   <a-radio-button value="specify">{{ $t('compute.manually_specify') }}</a-radio-button>
                 </a-radio-group>

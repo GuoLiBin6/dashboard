@@ -3,8 +3,8 @@
     <div class="dashboard-card-wrap">
       <div class="dashboard-card-header">
         <div class="dashboard-card-header-left">
-          {{ form.fd.name }}<a-icon class="ml-2" type="loading" v-if="loading" />
-          <span v-if="isResDeny" class="ml-2"><a-icon class="warning-color mr-1" type="warning" />{{ $t('common.permission.403') }}</span>
+          {{ form.fd.name }}<icon class="ml-2" type="loading" v-if="loading" />
+          <span v-if="isResDeny" class="ml-2"><icon class="warning-color mr-1" type="warning" />{{ $t('common.permission.403') }}</span>
         </div>
         <div class="dashboard-card-header-right">
           <slot name="actions" :handle-edit="handleEdit" />
@@ -26,7 +26,7 @@
         </template>
       </div>
     </div>
-    <base-drawer :visible.sync="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit">
+    <base-drawer v-model:visible="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit">
       <a-form
         hideRequiredMark
         :form="form.fc"
@@ -47,7 +47,7 @@
   </div>
 </template>
 
-<script>
+<script lang="jsx">
 import * as R from 'ramda'
 import { mapGetters } from 'vuex'
 import { load } from '@Dashboard/utils/cache'

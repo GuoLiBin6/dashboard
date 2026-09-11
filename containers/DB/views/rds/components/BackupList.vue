@@ -6,7 +6,7 @@
     :single-actions="singleActions" />
 </template>
 
-<script>
+<script lang="jsx">
 import { getStatusTableColumn, getNameDescriptionTableColumn } from '@/utils/common/tableColumn'
 import WindowsMixin from '@/mixins/windows'
 import expectStatus from '@/constants/expectStatus'

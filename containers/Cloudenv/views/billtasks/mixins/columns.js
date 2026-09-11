@@ -32,10 +32,13 @@ export default {
         field: 'task_type',
         title: this.$t('cloudenv.task_type'),
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             const name = this.$te(`cloudenv.task_type.${row.task_type}`) ? this.$t(`cloudenv.task_type.${row.task_type}`) : row.task_type || '-'
+            const hFn = h || this.$createElement
             return [
-              <side-page-trigger onTrigger={() => this.handleOpenSidepage({ name, ...row })}>{name}</side-page-trigger>,
+              hFn('side-page-trigger', {
+                on: { trigger: () => this.handleOpenSidepage({ name, ...row }) },
+              }, name),
             ]
           },
         },

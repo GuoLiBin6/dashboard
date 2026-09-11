@@ -1,7 +1,7 @@
 <template>
   <div>
     <page-header :title="$t('system.text_130', [$t('system.notify_channels')])" />
-    <page-body needMarginBottom>
+    <page-body>
       <a-form
         class="mt-3"
         :form="form.fc"
@@ -162,7 +162,7 @@ export default {
     this.notifytemplatesManager = new this.$Manager('notifytemplates/save', 'v1')
     this.fetchTypes({ attribution: this.$store.getters.scope, scope: this.$store.getters.scope })
   },
-  destroyed () {
+  unmounted () {
     this.manager = null
     this.notifytemplatesManager = null
   },

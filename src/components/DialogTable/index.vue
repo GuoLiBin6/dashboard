@@ -1,24 +1,25 @@
 <template>
   <div class="mb-2">
-    <vxe-grid
+    <table-lite-grid
       ref="grid"
-      :show-overflow="showOverflow?false:'title'"
-      highlight-hover-row
-      :row-id="idKey"
+      :show-overflow="showOverflow ? false : 'title'"
+      :row-config="{ isHover: true, keyField: idKey }"
+      :column-config="{ resizable: true }"
       :data="cData"
-      :expandConfig="expandConfig"
+      :expand-config="expandConfig"
       :columns="tableColumns"
       :max-height="280"
-      :scroll-y="{gt: 5}"
       :loading="cLoading"
-      resizable
-      v-on="vxeGridEvents"
-      v-bind="{ ...vxeGridProps }" />
+      :row-key="idKey"
+      v-on="vxeGridEvents || {}"
+      v-bind="vxeGridProps || {}" />
   </div>
 </template>
 
 <script>
 import { Manager } from '@/utils/manager'
+import { wrapVxeColumnSlots } from '@/utils/common/tableColumn'
+import legacyH from '@/utils/legacyCreateElement'
 
 export default {
   name: 'DialogTable',
@@ -44,11 +45,11 @@ export default {
     errors: {
       type: Object,
     },
-    vxeGridProps: { // vex-grid 的属性
+    vxeGridProps: {
       type: Object,
       required: false,
     },
-    vxeGridEvents: { // vex-grid 的事件
+    vxeGridEvents: {
       type: Object,
       required: false,
     },
@@ -75,31 +76,43 @@ export default {
   },
   computed: {
     tableColumns () {
-      const ret = this.columns.map(v => { return { ...v, visible: true } })
+      let cols = (this.columns || []).map(v => ({ ...v, visible: true }))
       if (this.errors) {
-        ret.push({
+        cols = cols.concat([{
           field: '_result',
           title: this.$t('table.title.exec_result'),
           width: 100,
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (this.errors[row[this.idKey]]) {
                 return [
-                  <a-tooltip title={ this.errors[row[this.idKey]].detail }>
-                    <a-icon class='error-color' type='close-circle' style={{ fontSize: '14px' }} />
-                  </a-tooltip>,
+                  h('a-tooltip', {
+                    attrs: { title: this.errors[row[this.idKey]].detail },
+                  }, [
+                    h('icon', {
+                      class: 'error-color',
+                      attrs: { type: 'close-circle' },
+                      style: { fontSize: '14px' },
+                    }),
+                  ]),
                 ]
               }
               return [
-                <a-tooltip title={ this.$t('message.exec_success') }>
-                  <a-icon class='success-color' type='check-circle' style={{ fontSize: '14px' }} />
-                </a-tooltip>,
+                h('a-tooltip', {
+                  attrs: { title: this.$t('message.exec_success') },
+                }, [
+                  h('icon', {
+                    class: 'success-color',
+                    attrs: { type: 'check-circle' },
+                    style: { fontSize: '14px' },
+                  }),
+                ]),
               ]
             },
           },
-        })
+        }])
       }
-      return ret
+      return wrapVxeColumnSlots(cols, legacyH)
     },
   },
   watch: {
@@ -107,8 +120,9 @@ export default {
       this.$nextTick(() => {
         if (val) {
           const firstErrorId = Object.keys(val)[0]
-          if (firstErrorId) {
-            this.$refs.grid.scrollToRow(this.$refs.grid.getRowById(firstErrorId))
+          if (firstErrorId && this.$refs.grid) {
+            const row = this.$refs.grid.getRowById(firstErrorId)
+            if (row) this.$refs.grid.scrollToRow(row)
           }
         }
       })

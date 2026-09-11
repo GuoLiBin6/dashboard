@@ -14,10 +14,12 @@ export default {
           { required: true, message: this.$t('storage.text_56') },
           { validator: this.$validate('blockStorageName') },
         ],
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name_cn ? `${row.name}(${row.name_cn})` : row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, [row.name_cn ? `${row.name}(${row.name_cn})` : row.name])
         },
       }),
       getStatusTableColumn({ statusModule: 'blockstorage', vm: this }),
@@ -36,7 +38,7 @@ export default {
         slots: {
           default: ({ row }, h) => {
             const title = `${this.$t('common_407')}: ${sizestr(row.actual_capacity_used, 'M', 1024)}\n${this.$t('common_234')}: ${sizestr(row.capacity, 'M', 1024)}`
-            return [<UsedPercent title={title} used={row.actual_capacity_used} total={row.capacity} usedFormatter={(val) => sizestr(val, 'M', 1024)} totalFormatter={(val) => sizestr(val, 'M', 1024)} />]
+            return [h('UsedPercent', { props: { title, used: row.actual_capacity_used, total: row.capacity, usedFormatter: (val) => sizestr(val, 'M', 1024), totalFormatter: (val) => sizestr(val, 'M', 1024) } })]
           },
         },
         formatter: ({ row }) => {
@@ -51,7 +53,7 @@ export default {
         slots: {
           default: ({ row }, h) => {
             const title = `${this.$t('common_233')}: ${sizestr(row.used_capacity, 'M', 1024)}\n${this.$t('common_234')}: ${sizestr(row.virtual_capacity, 'M', 1024)}`
-            return [<UsedPercent title={title} used={row.used_capacity} total={row.virtual_capacity} usedFormatter={(val) => sizestr(val, 'M', 1024)} totalFormatter={(val) => sizestr(val, 'M', 1024)} />]
+            return [h('UsedPercent', { props: { title, used: row.used_capacity, total: row.virtual_capacity, usedFormatter: (val) => sizestr(val, 'M', 1024), totalFormatter: (val) => sizestr(val, 'M', 1024) } })]
           },
         },
         formatter: ({ row }) => {
@@ -85,15 +87,18 @@ export default {
             const tags = _.sortBy(row.schedtags, ['default', 'name'])
             if (!tags.length) {
               return [
-                <div class='text-color-help'>{ this.$t('storage.text_171') }</div>,
+                h('div', { class: 'text-color-help' }, this.$t('storage.text_171')),
               ]
             }
-            const list = tags.map(tag => <a-tag class='mb-2 mr-1' color='blue'>{tag.name}</a-tag>)
-            return [<list-body-cell-popover text={this.$t('compute.text_619', [tags.length])} max-width="400px">
-              <div style="display: inline-flex; flex-wrap: wrap; max-width: 40vw;">
-                {...list}
-              </div>
-            </list-body-cell-popover>]
+            const list = tags.map(tag => h('a-tag', { class: 'mb-2 mr-1', props: { color: 'blue' } }, tag.name))
+            return [h('list-body-cell-popover', {
+              props: {
+                text: this.$t('compute.text_619', [tags.length]),
+                maxWidth: '400px',
+              },
+            }, [
+              h('div', { style: 'display: inline-flex; flex-wrap: wrap; max-width: 40vw;' }, list),
+            ])]
           },
         },
       },

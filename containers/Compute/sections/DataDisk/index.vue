@@ -2,8 +2,9 @@
   <div class="data-disk">
     <template v-if="dataDisks.length === 0 && (disabled || imageType === 'backup' || imageType === 'snapshot')"><span class="warning-color">{{$t('compute.text_128')}}</span></template>
     <template v-else>
-      <div class="d-flex" v-for="(item, i) in dataDisks" :key="item.key">
+      <div class="d-flex align-items-start data-disk-row" v-for="(item, i) in dataDisks" :key="item.key">
         <disk
+          class="data-disk-row__disk"
           :ref="'disks'"
           :diskKey="item.key"
           :max="max(i)"
@@ -32,10 +33,14 @@
           @snapshotChange="val => snapshotChange(item, val, i)"
           @diskTypeChange="val => diskTypeChange(item, val, i)"
           @storageHostChange="(val) => $emit('storageHostChange', val)" />
-        <a-button v-if="!getDisabled(item, 'minus') && (dataDisks.length > 1 ? (i !== 0) : true) && isAddDiskShow" shape="circle" icon="minus" size="small" @click="decrease(item.key)" class="mt-2" />
+        <a-button v-if="!getDisabled(item, 'minus') && (dataDisks.length > 1 ? (i !== 0) : true) && isAddDiskShow" shape="circle" size="small" @click="decrease(item.key)" class="ml-1 data-disk-row__action">
+          <template #icon><icon type="minus" /></template>
+        </a-button>
       </div>
       <div class="d-flex align-items-center" v-if="diskRemain > 0 && !disabled && isAddDiskShow && imageType !== 'backup' && imageType !== 'snapshot'">
-        <a-button type="primary" shape="circle" icon="plus" size="small" @click="add" />
+        <a-button type="primary" shape="circle" size="small" @click="add">
+          <template #icon><icon type="plus" /></template>
+        </a-button>
         <a-button type="link" @click="add">{{$t('compute.text_129')}}</a-button>
         <span class="count-tips">{{$t('compute.text_130')}}<span class="remain-num">{{ diskRemain }}</span>{{$t('compute.text_131')}}</span>
       </div>
@@ -83,7 +88,8 @@ export default {
       required: true,
     },
     sku: {
-      type: Object,
+      type: [Object, String],
+      default: undefined,
     },
     simplify: {
       type: Boolean,
@@ -362,7 +368,10 @@ export default {
       return Math.max(remain, 0)
     },
     diskTypeLabel () {
-      return _.get(this.dataDisks, '[0].diskType.label')
+      const label = _.get(this.dataDisks, '[0].diskType.label')
+      if (typeof label === 'string') return label
+      const key = _.get(this.dataDisks, '[0].diskType.key') || _.get(this.dataDisks, '[0].diskType.value')
+      return _.get(this.typesMap, `[${key}].label`) || ''
     },
     getSnapshotsParams () {
       const staticParams = {
@@ -709,8 +718,9 @@ export default {
       this.dataDisks.push(dataDiskItem)
       this.$nextTick(() => {
         const configs = {}
+        const sizeVal = R.is(Number, size) ? size : (min || this.min(idx))
         const value = {
-          [this._fp('Sizes', key)]: R.is(Number, size) ? size : (min || this.min(idx)),
+          [this._fp('Sizes', key)]: sizeVal,
         }
         value[this._fp('Types', key)] = dataDiskTypes
         if (schedtag) { // 磁盘调度标签
@@ -751,17 +761,23 @@ export default {
           configs.showAdvanced = true
           configs.showPreallocation = true
         }
+        const applySize = () => {
+          this.form.fc.setFieldsValue(value)
+          // 双写 fd，保证 Disk.sizeFieldValue 立刻可读
+          if (this.form.fd) {
+            Object.keys(value).forEach((k) => {
+              this.form.fd[k] = value[k]
+            })
+          }
+          this.setDiskMedium(dataDiskTypes)
+        }
         if (configs.showAdvanced) {
           setTimeout(() => {
             this.$refs.disks[this.dataDisks.findIndex(val => val.key === key)].setValues(configs)
-            setTimeout(() => {
-              this.form.fc.setFieldsValue(value)
-            }, 1000)
-            this.setDiskMedium(dataDiskTypes)
+            setTimeout(applySize, 1000)
           }, 1000)
         } else {
-          this.form.fc.setFieldsValue(value)
-          this.setDiskMedium(dataDiskTypes)
+          applySize()
         }
         if (!this.diskDraftRestoring && !this.isInitForm) {
           this.$nextTick(() => this.persistFormFieldDraftSnapshot())
@@ -894,19 +910,21 @@ export default {
       }
     },
     getDiskTypeLabel (i, diskTypeLabel) {
+      // antdv4 labelInValue 可能残留 VNode，展示前强制成字符串
+      const safeLabel = typeof diskTypeLabel === 'string' ? diskTypeLabel : ''
       if (this.getHypervisor() === HYPERVISORS_MAP.esxi.key) {
-        return this.$te(`common.storage.${diskTypeLabel}`) ? this.$t(`common.storage.${diskTypeLabel}`) : diskTypeLabel
+        return this.$te(`common.storage.${safeLabel}`) ? this.$t(`common.storage.${safeLabel}`) : safeLabel
       }
       if (i === 0 || this.getHypervisor() === HYPERVISORS_MAP.aliyun.key) {
         return ''
       }
-      if (this.$te(`common.storage.${diskTypeLabel}`)) {
-        return this.$t(`common.storage.${diskTypeLabel}`)
+      if (safeLabel && this.$te(`common.storage.${safeLabel}`)) {
+        return this.$t(`common.storage.${safeLabel}`)
       }
-      if (_.get(this.typesMap, `[${diskTypeLabel}].label`)) {
-        return _.get(this.typesMap, `[${diskTypeLabel}].label`)
+      if (safeLabel && _.get(this.typesMap, `[${safeLabel}].label`)) {
+        return _.get(this.typesMap, `[${safeLabel}].label`)
       }
-      return diskTypeLabel
+      return safeLabel
     },
     isSomeLocal (types) {
       const localTypes = types.filter(item => item.indexOf('local') !== -1)
@@ -917,9 +935,23 @@ export default {
 </script>
 
 <style lang="less" scoped>
-@import '~@/styles/less/theme';
+@import '@/styles/less/theme';
 
 .data-disk {
+  .data-disk-row {
+    margin-bottom: 24px;
+    align-items: flex-start;
+    // 行间距由 row 承担，避免 disk-wrapper margin 把「-」按钮撑偏
+    :deep(.data-disk-row__disk.disk-wrapper),
+    :deep(.disk-wrapper) {
+      margin-bottom: 0;
+    }
+    // 小圆钮保持 antd 固有尺寸，仅微调顶距与输入框视觉对齐（勿改 height，否则会被拉扁）
+    .data-disk-row__action {
+      margin-top: 4px;
+      flex-shrink: 0;
+    }
+  }
   .count-tips {
     .remain-num {
       color: @primary-color;

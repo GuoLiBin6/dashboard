@@ -17,7 +17,7 @@
             resource="eips"
             :showSync="true"
             :labelFormat="eiplabelFormat"
-            :resList.sync="eipOptions" />
+            v-model:resList="eipOptions" />
         </a-form-item>
         <a-form-item :label="$t('network.text_542')" v-bind="formItemLayout">
           <base-select
@@ -27,7 +27,7 @@
             resource="servers"
             :filterable="true"
             :labelFormat="serverlabelFormat"
-            :resList.sync="serverOptions"
+            v-model:resList="serverOptions"
             :mapper="serversMapper" />
         </a-form-item>
         <a-form-item :label="$t('network.text_544')" v-bind="formItemLayout" :extra="$t('network.text_545')">

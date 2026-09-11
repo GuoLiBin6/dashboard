@@ -59,7 +59,7 @@ export default {
         })
     }
     const clusterTypesOpt = [
-      { key: 'k8s', label: 'K8S', icon: { type: 'k8s' }, style: { color: 'rgb(50, 109, 230)' } },
+      { key: 'k8s', label: 'K8S', icon: { type: 'k8s', preserveColor: true }, style: { color: 'rgb(50, 109, 230)' } },
       { key: 'openshift', label: 'OpenShift', icon: { type: 'openshift' }, style: { color: 'rgb(225, 38, 52)' } },
     ]
     return {

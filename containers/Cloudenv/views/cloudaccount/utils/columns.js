@@ -23,9 +23,14 @@ export const getAccessUrlTableColumn = () => {
             txt = i18n.t('cloudAccountAccessType')[_k]
           }
         })
-        return txt ||
-        [
-          <a class="link-color" target="_blank" href={ row.access_url }>{ row.access_url }</a>,
+        if (txt) return txt
+        // Fallback to plain text if render function helper is not provided
+        if (!h) return row.access_url
+        return [
+          h('a', {
+            class: 'link-color',
+            attrs: { target: '_blank', href: row.access_url },
+          }, row.access_url),
         ]
       },
     },
@@ -94,64 +99,43 @@ export const getPublicScopeTableColumn = ({
         if (!row.is_public) return i18n.t('cloudAccountShareDesc.none')
         const { share_mode: shareMode, public_scope: publicScope, shared_domains: sharedDomains } = row
         if (publicScope === 'domain') {
-          if (shareMode === 'provider_domain' && sharedDomains && sharedDomains.length > 0) {
-            return [
-              <a onClick={() => {
-                vm.createDialog('CommonDialog', {
-                  hiddenCancel: true,
-                  header: i18n.t('cloudenv.text_282'),
-                  body: () => {
-                    return (
-                      <dialog-table
-                        vxeGridProps={{ showOverflow: 'title' }}
-                        data={ sharedDomains }
-                        columns={
-                          [
-                            getCopyWithContentTableColumn({
-                              field: 'id',
-                              title: 'ID',
-                              minWidth: 140,
-                            }),
-                            getCopyWithContentTableColumn({
-                              field: 'name',
-                              title: i18n.t('cloudenv.text_95'),
-                            }),
-                          ]
-                        } />
-                    )
+          const openSharedDialog = () => {
+            vm.createDialog('CommonDialog', {
+              hiddenCancel: true,
+              header: i18n.t('cloudenv.text_282'),
+              body: (h) => {
+                return h('dialog-table', {
+                  props: {
+                    vxeGridProps: { showOverflow: 'title' },
+                    data: sharedDomains,
+                    columns: [
+                      getCopyWithContentTableColumn({
+                        field: 'id',
+                        title: 'ID',
+                        minWidth: 140,
+                      }),
+                      getCopyWithContentTableColumn({
+                        field: 'name',
+                        title: i18n.t('cloudenv.text_95'),
+                      }),
+                    ],
                   },
                 })
-              }}>{ i18n.t('cloudAccountShareDesc.provider') }</a>,
+              },
+            })
+          }
+          if (shareMode === 'provider_domain' && sharedDomains && sharedDomains.length > 0) {
+            return [
+              h('a', {
+                on: { click: openSharedDialog },
+              }, i18n.t('cloudAccountShareDesc.provider')),
             ]
           }
           if (shareMode === 'system' && sharedDomains && sharedDomains.length > 0) {
             return [
-              <a onClick={() => {
-                vm.createDialog('CommonDialog', {
-                  hiddenCancel: true,
-                  header: i18n.t('cloudenv.text_282'),
-                  body: () => {
-                    return (
-                      <dialog-table
-                        vxeGridProps={{ showOverflow: 'title' }}
-                        data={ sharedDomains }
-                        columns={
-                          [
-                            getCopyWithContentTableColumn({
-                              field: 'id',
-                              title: 'ID',
-                              minWidth: 140,
-                            }),
-                            getCopyWithContentTableColumn({
-                              field: 'name',
-                              title: i18n.t('cloudenv.text_95'),
-                            }),
-                          ]
-                        } />
-                    )
-                  },
-                })
-              }}>{ i18n.t('cloudAccountShareDesc.account') }</a>,
+              h('a', {
+                on: { click: openSharedDialog },
+              }, i18n.t('cloudAccountShareDesc.account')),
             ]
           }
         }
@@ -195,7 +179,9 @@ export const getResourceMatchProjectTableColumn = ({ isEdit = false, editCallbac
           if (tenant) {
             tooltip = tooltip + '<div>' + (i18n.t('cloudenv.default_project') + ': ' + tenant) + '</div>'
           }
-          ret.push(<list-body-cell-wrap field='text' row={{ text: i18n.t('cloudenv.text_493') }} edit={isEdit} customEdit={!!editCallback} customEditCallback={editCallback}><help-tooltip text={tooltip} class="ml-2 mr-1" /></list-body-cell-wrap>)
+          ret.push(h('list-body-cell-wrap', {
+            props: { field: 'text', row: { text: i18n.t('cloudenv.text_493') }, edit: isEdit, customEdit: !!editCallback, customEditCallback: editCallback },
+          }, [h('help-tooltip', { props: { text: tooltip }, class: 'ml-2 mr-1' })]))
           if (project_mapping) {
             let label = ''
             if (row.enable_resource_sync) {
@@ -203,10 +189,14 @@ export const getResourceMatchProjectTableColumn = ({ isEdit = false, editCallbac
             } else if (row.enable_project_sync) {
               label = i18n.t('cloudenv.project_project_mapping')
             }
-            ret.push(<list-body-cell-wrap copy edit={isEdit} field='project_mapping' row={row} hideField customEdit={!!editCallback} customEditCallback={editCallback}><span class="text-color-secondary">{label || i18n.t('cloudenv.text_580')}：{project_mapping}</span></list-body-cell-wrap>)
+            ret.push(h('list-body-cell-wrap', {
+              props: { copy: true, edit: isEdit, field: 'project_mapping', row, hideField: true, customEdit: !!editCallback, customEditCallback: editCallback },
+            }, [h('span', { class: 'text-color-secondary' }, label || i18n.t('cloudenv.text_580') + '：' + project_mapping)]))
           }
         } else {
-          ret.push(<list-body-cell-wrap copy edit={isEdit} field='tenant' row={row} hideField customEdit={!!editCallback} customEditCallback={editCallback}><span>{i18n.t('cloudenv.target_project')}：{tenant}</span></list-body-cell-wrap>)
+          ret.push(h('list-body-cell-wrap', {
+            props: { copy: true, edit: isEdit, field: 'tenant', row, hideField: true, customEdit: !!editCallback, customEditCallback: editCallback },
+          }, [h('span', {}, i18n.t('cloudenv.target_project') + '：' + tenant)]))
         }
         return ret
       },
@@ -250,7 +240,7 @@ export const getBlockResourceTableColumn = () => {
         if (!row.skip_sync_resources) return '-'
         const skip_sync_resources = row.skip_sync_resources || []
         return skip_sync_resources.map(item => {
-          return <a-tag>{BLOCKED_RESOURCES_MAP[item]?.label || item }</a-tag>
+          return h('a-tag', {}, BLOCKED_RESOURCES_MAP[item]?.label || item)
         })
       },
     },

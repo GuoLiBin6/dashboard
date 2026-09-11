@@ -3,7 +3,7 @@
     <div slot="header">{{$t('compute.text_1232')}}</div>
     <div slot="body">
       <a-alert class="mb-2" type="warning" v-if="tip">
-        <div slot="message">{{tip}}</div>
+        <template #message>{{tip}}</template>
       </a-alert>
       <dialog-selected-tips :name="params.name" :count="params.data.length" :action="$t('compute.text_1232')" />
       <dialog-table :data="params.data" :columns="columns" />

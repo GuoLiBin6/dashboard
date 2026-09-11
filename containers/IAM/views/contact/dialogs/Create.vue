@@ -38,23 +38,16 @@
           <a-input v-decorator="decorators.email" />
         </a-form-item>
         <a-form-item>
-          <span slot="label">
+          <template #label>
             {{ $t('common_599') }}
-            <a-tooltip effect="dark" placement="top">
-              <a-icon type="info-circle" />
-              <div slot="title">{{$t('system.contact')}}</div>
+            <a-tooltip placement="top">
+              <template #title>{{ $t('system.contact') }}</template>
+              <icon type="info-circle" />
             </a-tooltip>
-          </span>
+          </template>
           <a-checkbox-group
-            v-decorator="decorators.enabled_contact_types">
-            <a-checkbox
-              v-for="(v, index) in contactArrOpts"
-              :key="index"
-              :value="v.value"
-              :disabled="v.disabled">
-              {{ v.label }}
-            </a-checkbox>
-          </a-checkbox-group>
+            v-decorator="decorators.enabled_contact_types"
+            :options="contactArrOpts" />
         </a-form-item>
       </a-form>
     </div>
@@ -158,7 +151,7 @@ export default {
   computed: {
     ...mapGetters(['isAdminMode', 'isDomainMode', 'scope', 'userInfo']),
   },
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {

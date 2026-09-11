@@ -11,7 +11,7 @@
         :rules="rules"
         v-bind="formItemLayout">
         <a-form-model-item :label="$t('cloudenv.resource_map_type')" :extra="resourceMapExtra" prop="resource_map_type">
-          <a-checkbox-group v-model="fd.resource_map_type" :options="resourceMapTypeOpts" @change="resourceMapTypeChange" />
+          <a-checkbox-group v-model:value="fd.resource_map_type" :options="resourceMapTypeOpts" @change="resourceMapTypeChange" />
         </a-form-model-item>
         <!-- 同步策略 -->
         <a-form-model-item v-if="openProjectMapping" :label="$t('cloudenv.text_580')" prop="project_mapping_id">
@@ -22,7 +22,7 @@
             :params="projectMappingParams" />
         </a-form-model-item>
         <a-form-model-item v-if="openProjectMapping" :label="$t('cloudenv.effective_scope')" prop="effective_scope" :extra="effectiveScopeExtra">
-          <a-radio-group v-model="fd.effective_scope">
+          <a-radio-group v-model:value="fd.effective_scope">
             <a-radio-button value="resource">{{$t('cloudenv.resource_tag')}}</a-radio-button>
             <a-radio-button value="project">{{$t('cloudenv.project_tag')}}</a-radio-button>
           </a-radio-group>
@@ -42,7 +42,7 @@
           <a-switch
             :checkedChildren="$t('cloudenv.text_84')"
             :unCheckedChildren="$t('cloudenv.text_85')"
-            v-model="fd.isOpenBlockedResources" />
+            v-model:value="fd.isOpenBlockedResources" />
         </a-form-item>
         <a-form-item :label="$t('cloudenv.block_resources_type')" v-if="!ignoreBlockedResources && fd.isOpenBlockedResources">
           <base-select

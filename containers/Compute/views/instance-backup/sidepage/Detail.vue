@@ -50,9 +50,16 @@ export default {
           minWidth: 100,
           sortable: true,
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               return [
-                <side-page-trigger name='VmInstanceSidePage' id={row.guest_id} vm={this} init>{row.guest}</side-page-trigger>,
+                h('side-page-trigger', {
+                  props: {
+                    name: 'VmInstanceSidePage',
+                    id: row.guest_id,
+                    vm: this,
+                    init: true,
+                  },
+                }, row.guest),
               ]
             },
           },

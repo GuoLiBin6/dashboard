@@ -13,7 +13,7 @@
       :fileList="fileList"
       :remove="handleRemove">
       <div class="pt-3 pb-3">
-        <p class="ant-upload-drag-icon"><a-icon type="inbox" /></p>
+        <p class="ant-upload-drag-icon"><icon type="inbox" /></p>
         <p class="ant-upload-text">{{$t('compute.text_818')}}</p>
         <p class="ant-upload-hint">{{$t('compute.text_819')}}</p>
       </div>

@@ -66,9 +66,16 @@ export default {
           title: this.$t('network.text_240'),
           field: 'networks',
           slots: {
-            default: ({ row }, h) => {
+            default: ({ row }) => {
+              const h = this.$createElement
               return [
-                <vxe-grid class="mb-2" data={ row.networks } columns={ this.columns } />,
+                h('table-lite-grid', {
+                  class: 'mb-2',
+                  props: {
+                    data: row.networks,
+                    columns: this.columns,
+                  },
+                }),
               ]
             },
           },

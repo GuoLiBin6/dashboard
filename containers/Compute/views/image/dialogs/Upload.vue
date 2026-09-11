@@ -3,12 +3,12 @@
     <div slot="header">{{params.imageType === 'appPackage' ? $t('compute.upload_app_package') : $t('compute.text_664')}}</div>
     <div slot="body">
       <a-alert class="mb-2" type="warning">
-        <div slot="message">{{$t('compute.text_665')}}</div>
+        <template #message>{{$t('compute.text_665')}}</template>
       </a-alert>
       <a-form
         v-bind="formItemLayout"
         :form="form.fc">
-        <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])" class="mb-0" v-bind="formItemLayout">
+        <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-bind="formItemLayout">
           <domain-project :fc="form.fc" :decorators="{ project: decorators.project, domain: decorators.domain }" />
         </a-form-item>
         <a-form-item :label="$t('compute.text_627')" v-bind="formItemLayout">
@@ -31,7 +31,7 @@
             @reject="handleUploadReject"
             :fileList="fileList"
             :beforeUpload="beforeUpload">
-            <a-button> <a-icon type="upload" />{{$t('compute.text_245')}}</a-button>
+            <a-button> <icon type="upload" />{{$t('compute.text_245')}}</a-button>
           </a-upload>
           <a-progress
             v-if="loading"
@@ -201,7 +201,7 @@ export default {
         : this.$t('compute.text_671')
     },
   },
-  destroyed () {
+  unmounted () {
     this.clearTimer()
   },
   methods: {

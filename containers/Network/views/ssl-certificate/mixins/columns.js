@@ -14,9 +14,12 @@ export default {
         onManager: this.onManager,
         hideField: true,
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{row.name}</side-page-trigger>
-          )
+          const h = this.$createElement
+          return h('side-page-trigger', {
+            props: {
+              onTrigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getStatusTableColumn({
@@ -31,18 +34,12 @@ export default {
         field: 'sans',
         label: this.$t('network.ssl_certificate.sans'),
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             if (!row.sans) return '-'
             const list = row.sans.split(',').map(sans => {
-              return (
-                <div>{sans}</div>
-              )
+              return h('div', sans)
             })
-            return [
-              <div>
-                {...list}
-              </div>,
-            ]
+            return [h('div', list)]
           },
         },
       },

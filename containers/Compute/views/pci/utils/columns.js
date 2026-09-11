@@ -14,9 +14,10 @@ export const getDevTypeColumn = ({ vm }) => {
     title: i18n.t('compute.pci.dev_type'),
     field: 'dev_type',
     slotCallback: (row, h) => {
-      return (
-        <side-page-trigger onTrigger={() => vm.handleOpenSidepage(row)}>{row.dev_type}</side-page-trigger>
-      )
+      const hFn = h || (() => {})
+      return hFn('side-page-trigger', {
+        on: { trigger: () => vm.handleOpenSidepage(row) },
+      }, row.dev_type)
     },
   })
 }

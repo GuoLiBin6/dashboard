@@ -3,7 +3,7 @@
     <div slot="header">{{$t('common.permission_tip')}}</div>
     <div slot="body">
       <a-alert class="mb-2" type="warning" v-if="params.tip">
-        <div slot="message">{{params.tip}}</div>
+        <template #message>{{params.tip}}</template>
       </a-alert>
     </div>
     <div slot="footer">

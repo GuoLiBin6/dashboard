@@ -6,7 +6,7 @@
     <a-row :gutter="8" class="mb-3">
       <a-col :span="10">
         <a-input-search
-          v-model="filter.search"
+          v-model:value="filter.search"
           :placeholder="$t('aice.llm_catalog.search.placeholder')"
           allow-clear
           @search="applyFilter"
@@ -14,7 +14,7 @@
       </a-col>
       <a-col :span="10">
         <a-select
-          v-model="filter.llmType"
+          v-model:value="filter.llmType"
           :placeholder="$t('aice.llm_image.filter_by_type')"
           allow-clear
           style="width: 100%"

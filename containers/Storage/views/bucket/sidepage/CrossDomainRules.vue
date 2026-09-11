@@ -155,9 +155,14 @@ export default {
             default: ({ row }) => {
               const allowed_origins = row.allowed_origins || []
               return allowed_origins.map(item => {
-                return (<list-body-cell-wrap hideField copy title={ item } message={ item }>
-                  <span>{ item }</span>
-                </list-body-cell-wrap>)
+                return this.$createElement('list-body-cell-wrap', {
+                  props: {
+                    hideField: true,
+                    copy: true,
+                    title: item,
+                    message: item,
+                  },
+                }, [this.$createElement('span', [item])])
               })
             },
           },
@@ -176,9 +181,14 @@ export default {
             default: ({ row }) => {
               const allowed_headers = row.allowed_headers || []
               return allowed_headers.map(item => {
-                return (<list-body-cell-wrap hideField copy title={ item } message={ item }>
-                  <span>{ item }</span>
-                </list-body-cell-wrap>)
+                return h('list-body-cell-wrap', {
+                  props: {
+                    hideField: true,
+                    copy: true,
+                    title: item,
+                    message: item,
+                  },
+                }, [h('span', item)])
               })
             },
           },
@@ -190,9 +200,14 @@ export default {
             default: ({ row }) => {
               const expose_headers = row.expose_headers || []
               return expose_headers.map(item => {
-                return (<list-body-cell-wrap hideField copy title={ item } message={ item }>
-                  <span>{ item }</span>
-                </list-body-cell-wrap>)
+                return h('list-body-cell-wrap', {
+                  props: {
+                    hideField: true,
+                    copy: true,
+                    title: item,
+                    message: item,
+                  },
+                }, [h('span', item)])
               })
             },
           },

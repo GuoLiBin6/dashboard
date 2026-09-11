@@ -40,7 +40,11 @@ export default {
           field: 'content',
           slots: {
             default: ({ row }) => {
-              return [<a-button type="link" onClick={() => this.handleContentView(row)} style="padding-left:0">{this.$t('cloudenv.text_463')}</a-button>]
+              return [this.$createElement('a-button', {
+                props: { type: 'link' },
+                style: { paddingLeft: 0 },
+                on: { click: () => this.handleContentView(row) },
+              }, this.$t('cloudenv.text_463'))]
             },
           },
         },

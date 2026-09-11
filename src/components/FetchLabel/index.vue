@@ -1,9 +1,9 @@
 <template>
   <div>
-    <a-icon type="loading" v-if="loading" />
+    <icon type="loading" v-if="loading" spin />
     <span v-if="text">{{ text }}</span>
     <a-tooltip title="error" v-if="error">
-      <a-icon type="exclamation-circle" theme="twoTone" two-tone-color="red" />
+      <icon type="exclamation-circle" theme="twoTone" two-tone-color="red" />
     </a-tooltip>
   </div>
 </template>

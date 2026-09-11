@@ -36,7 +36,7 @@
     <a-form-item :label="$t('monitor.commonalerts.form.column.silent')" class="mb-0">
       <a-form-item class="mr-1">
         <base-select v-decorator="decorators.silent_period" :options="silentOpts" style="display: inline-flex;" />
-        <a-tooltip style="padding-left: 5px;" placement="top"><a-icon type="question-circle" />
+        <a-tooltip style="padding-left: 5px;" placement="top"><icon type="question-circle" />
         <template slot="title">
           <span>{{ $t('monitor.commonalerts.form.column.silent.tips') }}</span>
         </template>
@@ -69,7 +69,7 @@
         filterable
         show-sync
         @change="contactArrOptsChange"
-        :resList.sync="recipientOpts"
+        v-model:resList="recipientOpts"
         :select-props="{ mode: 'multiple', placeholder: $t('compute.text_741') }"
         :params="contactParams" />
     </a-form-item>

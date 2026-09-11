@@ -17,10 +17,12 @@ export default {
         onManager: this.onManager,
         hideField: true,
         addEncrypt: true,
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getStatusTableColumn({ statusModule: 'snapshot', vm: this }),
@@ -30,18 +32,19 @@ export default {
         title: i18n.t('table.title.sub_snapshot'),
         minWidth: 220,
         slots: {
-          default: ({ row }) => {
-            if (this.isPreLoad && !row.snapshots) return [<data-loading />]
+          default: ({ row }, h) => {
+            if (this.isPreLoad && !row.snapshots) return [h('data-loading')]
             const len = (row.snapshots && row.snapshots.length) || 0
             if (len === 0) return i18n.t('compute.text_619', [len])
-            const list = row.snapshots.map(val => (
-              <a-tag class='mb-2 mr-1'>{ val.name }</a-tag>
-            ))
-            return [<list-body-cell-popover text={i18n.t('compute.text_619', [len])} max-width="400px">
-              <div style="display: inline-flex; flex-wrap: wrap; max-width: 40vw;">
-                {...list}
-              </div>
-            </list-body-cell-popover>]
+            const list = row.snapshots.map(val => h('a-tag', { class: 'mb-2 mr-1' }, val.name))
+            return [h('list-body-cell-popover', {
+              props: {
+                text: i18n.t('compute.text_619', [len]),
+                maxWidth: '400px',
+              },
+            }, [
+              h('div', { style: 'display: inline-flex; flex-wrap: wrap; max-width: 40vw;' }, list),
+            ])]
           },
         },
         formatter: ({ row }) => {
@@ -68,8 +71,8 @@ export default {
         title: i18n.t('table.title.snapshot_size'),
         width: 70,
         slots: {
-          default: ({ row }) => {
-            if (this.isPreLoad && !row.size_mb) return [<data-loading />]
+          default: ({ row }, h) => {
+            if (this.isPreLoad && !row.size_mb) return [h('data-loading')]
             return sizestr(row.size_mb, 'M', 1024)
           },
         },
@@ -84,12 +87,12 @@ export default {
         showOverflow: 'ellipsis',
         slots: {
           default: ({ row }, h) => {
-            if (this.isPreLoad && !row.guest) return [<data-loading />]
+            if (this.isPreLoad && !row.guest) return [h('data-loading')]
             return [
-              <div class='text-truncate'>
-                {row.guest ? <list-body-cell-wrap copy field='guest' row={row} /> : '-'}
-                {row.guest_status ? <status status={ row.guest_status } statusModule='server'/> : ''}
-              </div>,
+              h('div', { class: 'text-truncate' }, [
+                row.guest ? h('list-body-cell-wrap', { props: { copy: true, field: 'guest', row: row } }) : '-',
+                row.guest_status ? h('status', { props: { status: row.guest_status, statusModule: 'server' } }) : '',
+              ]),
             ]
           },
         },

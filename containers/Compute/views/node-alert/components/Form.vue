@@ -57,8 +57,8 @@
         resource="receivers"
         version="v1"
         :params="recipientParams"
-        :resList.sync="recipientOpts"
-        :initLoaded.sync="recipientsLoaded"
+        v-model:resList="recipientOpts"
+        v-model:initLoaded="recipientsLoaded"
         :select-props="{ placeholder: $t('common.tips.select', [$t('compute.text_740')]), allowClear: true, mode: 'multiple' }" />
     </a-form-item>
   </a-form>

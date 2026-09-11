@@ -9,7 +9,7 @@
         :model="fd"
         :rules="rules">
         <a-form-model-item v-if="step.currentStep === 0" prop="extrnal_project_name" :label="$t('cloudenv.text_95')" v-bind="formItemLayout">
-          <a-input v-model="fd.extrnal_project_name" />
+          <a-input v-model:value="fd.extrnal_project_name" />
         </a-form-model-item>
         <a-form-model-item v-if="step.currentStep === 0 && isAzure" prop="provider" :label="$t('dictionary.cloudprovider')" v-bind="formItemLayout">
           <base-select
@@ -20,9 +20,9 @@
         </a-form-model-item>
         <template v-if="step.currentStep === 1">
           <a-form-model-item :label="$t('cloudenv.text_360')" prop="type" v-bind="formItemLayout">
-            <a-radio-group v-model="fd.type">
-              <template v-for="item of typeOptions">
-                <a-radio-button :key="item.key" :value="item.key">{{ item.label }}</a-radio-button>
+            <a-radio-group v-model:value="fd.type">
+              <template v-for="item of typeOptions" :key="item.key">
+                <a-radio-button :value="item.key">{{ item.label }}</a-radio-button>
               </template>
             </a-radio-group>
           </a-form-model-item>
@@ -30,18 +30,18 @@
             <a-form-model-item prop="project" :label="params.projectLabel || $t('res.project')" v-bind="formItemLayout">
           <a-row :gutter="8">
             <a-col :span="12">
-              <a-select v-model="domain" show-search @search="getConditionDomains" :filter-option="false" allow-clear dropdownClassName="oc-select-dropdown">
-                <template v-for="item of domains">
-                  <a-select-option :key="item.id" :value="item.id">
+              <a-select v-model:value="domain" show-search @search="getConditionDomains" :filter-option="false" allow-clear dropdownClassName="oc-select-dropdown">
+                <template v-for="item of domains" :key="item.id">
+                  <a-select-option :value="item.id">
                     <span class="text-color-secondary option-prefix">{{ $t('res.domain') }}: </span>{{ item.name }}
                   </a-select-option>
                 </template>
               </a-select>
             </a-col>
             <a-col :span="12">
-              <a-select v-model="fd.project" show-search @search="fetchProjects" :filter-option="false" allow-clear dropdownClassName="oc-select-dropdown">
-                <template v-for="item of projects">
-                  <a-select-option :key="item.id" :value="item.id">
+              <a-select v-model:value="fd.project" show-search @search="fetchProjects" :filter-option="false" allow-clear dropdownClassName="oc-select-dropdown">
+                <template v-for="item of projects" :key="item.id">
+                  <a-select-option :value="item.id">
                     <span class="text-color-secondary option-prefix">{{ $t('res.project') }}: </span>{{ item.name }}
                   </a-select-option>
                 </template>
@@ -51,7 +51,7 @@
         </a-form-model-item>
           </template>
           <a-form-model-item v-if="fd.type === 'create'" prop="local_project_name" :label="$t('cloudenv.text_95')" v-bind="formItemLayout">
-            <a-input v-model="fd.local_project_name" />
+            <a-input v-model:value="fd.local_project_name" />
           </a-form-model-item>
         </template>
       </a-form-model>
@@ -150,7 +150,7 @@ export default {
       }
     },
   },
-  destroyed () {
+  unmounted () {
     this.dm = null
     this.pm = null
   },

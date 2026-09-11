@@ -1,11 +1,11 @@
 <template>
   <div>
     <div class="tag-list">
-      <template v-for="item of tags">
+      <template v-for="item of tags" :key="`${item.key}${item.value}`">
         <span
           class="tag mb-1 d-inline-block"
           :title="item.title"
-          :key="`${item.key}${item.value}`"
+
           :style="{ backgroundColor: item.backgroundColor, color: item.color, borderColor: item.color }">
           <div class="d-flex align-items-center">
             <span class="flex-fill text-truncate">{{ item.title }}</span>

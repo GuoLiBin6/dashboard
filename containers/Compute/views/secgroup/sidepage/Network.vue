@@ -31,7 +31,9 @@ export default {
           title: this.$t('dictionary.server'),
           slots: {
             default: ({ row }) => {
-              return [<side-page-trigger permission='servers_get' name='VmInstanceSidePage' id={row.guest_id} vm={this}>{row.guest}</side-page-trigger>]
+              return [this.$createElement('side-page-trigger', {
+                props: { permission: 'servers_get', name: 'VmInstanceSidePage', id: row.guest_id, vm: this },
+              }, row.guest)]
             },
           },
         },

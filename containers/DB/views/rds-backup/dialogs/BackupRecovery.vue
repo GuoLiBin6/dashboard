@@ -5,7 +5,7 @@
       <dialog-selected-tips :name="$t('dictionary.dbinstancebackups')" :count="params.data.length" :action="params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-form-item :label="$t('db.text_221')" v-bind="formItemLayout">
-        <a-radio-group v-model="recoveryType">
+        <a-radio-group v-model:value="recoveryType">
           <a-tooltip>
             <template #title v-if="(isAliyun && !isSupportCurrentVersion) || !params.data[0].db_names">
               <p v-if="isAliyun && !isSupportCurrentVersion">{{$t('db.text_363')}}</p>

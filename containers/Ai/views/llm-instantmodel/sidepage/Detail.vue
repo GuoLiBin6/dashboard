@@ -8,7 +8,7 @@
     resource="instant_apps" />
 </template>
 
-<script>
+<script lang="jsx">
 import WindowsMixin from '@/mixins/windows'
 import {
   getEnabledTableColumn,
@@ -88,7 +88,13 @@ export default {
           slots: {
             default: ({ row }, h) => {
               return [
-                <code-mirror value={ this.mountPaths } options={ this.cmOptions } />]
+                h('code-mirror', {
+                  props: {
+                    value: this.mountPaths,
+                    options: this.cmOptions,
+                  },
+                }),
+              ]
             },
           },
         },

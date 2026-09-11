@@ -1,14 +1,14 @@
 <template>
   <base-dialog @cancel="cancelDialog" width="500px">
-    <div slot="header">{{$t('common.no_data_start_month')}}</div>
-    <div slot="body">
+    <template #header>{{$t('common.no_data_start_month')}}</template>
+    <template #body>
       {{ $t('common.no_data_start_month_tip') }}
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-checkbox v-model="no_tip" style="float:left">{{ $t('common.no_tip_in_this_month') }}</a-checkbox>
       <a-button type="primary" @click="handleConfirm">{{ $t('common.switch_to_last_month') }}</a-button>
       <a-button @click="cancel">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

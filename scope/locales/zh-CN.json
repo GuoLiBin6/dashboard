@@ -17,7 +17,8 @@
     "qingcloud": "青云",
     "chinaunion": "联通云",
     "volcengine": "火山引擎",
-    "rockbase": "RockBase"
+    "rockbase": "RockBase",
+    "nutanix": "Nutanix"
   },
   "scopeProviders": {
     "esxi": "VMware",

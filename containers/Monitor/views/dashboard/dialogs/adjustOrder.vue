@@ -1,53 +1,73 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{$t('monitor.adjust_chart_order')}}</div>
-    <div slot="body">
+    <template #header>{{ $t('monitor.adjust_chart_order') }}</template>
+    <template #body>
       <dialog-selected-tips :name="$t('monitor.dashboard.title')" :count="params.data.length" :action="$t('monitor.adjust_chart_order')" />
       <dialog-table :data="params.data" :columns="params.columns" />
-      <draggable
-        handle=".drag-icon"
-        chosen-class="chosen"
-        v-model="panels">
-        <transition-group type="transition" name="flip-list">
-          <template v-for="(item, index) in panels">
-            <a-col class="panel-item d-flex" :key="item.panel_id">
-              <div class="label">{{ index + 1 }}. {{ item.panel_name }}</div>
-              <a-icon type="drag" class="drag-icon pr-3" @click.prevent="() => {}" />
-            </a-col>
-          </template>
-        </transition-group>
-      </draggable>
-    </div>
-    <div slot="footer">
+      <!-- 不用 vuedraggable：@vue/compat 下 #item 插槽偶发无参数导致整段不渲染；排序改用 Sortable 绑定本容器 -->
+      <div ref="panelsSortableRoot">
+        <div
+          v-for="(element, index) in panels"
+          :key="element.panel_id"
+          class="panel-item d-flex">
+          <div class="label">{{ index + 1 }}. {{ element.panel_name }}</div>
+          <icon type="dragable" class="drag-icon pr-3" @click.prevent="() => {}" />
+        </div>
+      </div>
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 
 <script>
-import draggable from 'vuedraggable'
+import Sortable from 'sortablejs'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 
 export default {
   name: 'MonitorDashboardAdjustOrderDialog',
-  components: {
-    draggable,
-  },
   mixins: [DialogMixin, WindowsMixin],
   data () {
     return {
       loading: false,
-      form: this.$form.createForm(this),
-      formItemLayout: {
-        wrapperCol: { span: 20 },
-        labelCol: { span: 3 },
-      },
-      panels: [...this.params.dashboard.alert_panel_details || []],
+      panels: [...(this.params.dashboard.alert_panel_details || [])],
     }
   },
+  mounted () {
+    this.initPanelsSortable()
+  },
+  beforeUnmount () {
+    this.destroyPanelsSortable()
+  },
   methods: {
+    initPanelsSortable () {
+      this.destroyPanelsSortable()
+      this.$nextTick(() => {
+        const el = this.$refs.panelsSortableRoot
+        if (!el || !this.panels.length) return
+        this._panelsSortable = Sortable.create(el, {
+          handle: '.drag-icon',
+          animation: 150,
+          ghostClass: 'chosen',
+          onEnd: (evt) => {
+            const { oldIndex, newIndex } = evt
+            if (oldIndex == null || newIndex == null || oldIndex === newIndex) return
+            if (oldIndex < 0 || newIndex < 0 || oldIndex >= this.panels.length || newIndex >= this.panels.length) return
+            const [moved] = this.panels.splice(oldIndex, 1)
+            this.panels.splice(newIndex, 0, moved)
+          },
+        })
+      })
+    },
+    destroyPanelsSortable () {
+      if (this._panelsSortable) {
+        this._panelsSortable.destroy()
+        this._panelsSortable = null
+      }
+    },
     async handleConfirm () {
       this.loading = true
       try {
@@ -81,10 +101,19 @@ export default {
     flex: 1 1 auto;
   }
   .drag-icon {
-    flex: 0 0 24px;
+    flex: 0 0 32px;
+    font-size: 20px;
+    line-height: 32px;
+    text-align: center;
+    cursor: move;
+    color: rgba(0, 0, 0, 0.65);
   }
   &:hover {
     background: #e8eaec;
   }
+}
+.chosen {
+  opacity: 0.5;
+  background: #c8ebfb;
 }
 </style>

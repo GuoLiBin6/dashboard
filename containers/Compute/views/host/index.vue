@@ -1,12 +1,10 @@
 <template>
   <div>
     <page-header
-     :title="$t('compute.text_111')"
-     :tabs="cloudEnvOptions"
-     :current-tab.sync="cloudEnv"
-     isShowResStatusTab
-     :status-opts="statusOpts"
-     :status-click-handle="statusClickHandle" />
+      :title="$t('compute.text_111')"
+      isShowResStatusTab
+      :status-opts="statusOpts"
+      :status-click-handle="statusClickHandle" />
     <page-body>
       <host-list
         :get-params="listParams"
@@ -14,7 +12,6 @@
         :filterParams="filterParams"
         statusResKey="host"
         :tableOverviewIndexs="tableOverviewIndexs"
-        @refresh="refreshHandle"
         @resStatisticsChange="resStatisticsChange" />
     </page-body>
   </div>

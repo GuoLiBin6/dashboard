@@ -3,12 +3,12 @@
     <div class="dashboard-card-wrap">
       <div class="dashboard-card-header">
         <div class="dashboard-card-header-left">
-          {{ form.fd.name }}<a-icon class="ml-2" type="loading" v-if="loading" />
-          <span v-if="isResDeny" class="ml-2"><a-icon class="warning-color mr-1" type="warning" />{{ $t('common.permission.403') }}</span>
+          {{ form.fd.name }}<icon class="ml-2" type="loading" v-if="loading" />
+          <span v-if="isResDeny" class="ml-2"><icon class="warning-color mr-1" type="warning" />{{ $t('common.permission.403') }}</span>
         </div>
         <div class="dashboard-card-header-right">
           <slot name="actions" :handle-edit="handleEdit" />
-          <a class="ml-2" v-if="!edit" @click="goPage">
+          <a class="ml-2" href="javascript:;" v-if="!edit" @click.prevent="goPage">
             <icon type="arrow-right" style="font-size:18px" />
           </a>
         </div>
@@ -17,8 +17,8 @@
         <template v-if="seriesData && seriesData.length">
           <div class="flex-fill position-relative">
             <div class="dashboard-fco-wrap">
-              <template v-for="item in seriesData">
-                <div class="mt-2 mb-2" :key="item.name">
+              <template v-for="item in seriesData" :key="item.name">
+                <div class="mt-2 mb-2">
                   <div class="d-flex mini-text">
                     <div class="flex-fill text-truncate" :title="item.name">{{ item.name }}</div>
                     <div class="flex-grow-0 flex-shrink-0 text-color-help ml-2">{{ getLabel(item.value) }}</div>
@@ -34,7 +34,7 @@
         </template>
       </div>
     </div>
-    <base-drawer :visible.sync="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit">
+    <base-drawer v-model:visible="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit">
       <a-form
         hideRequiredMark
         :form="form.fc"
@@ -50,15 +50,15 @@
         </a-form-item>
         <a-form-item :label="$t('dashboard.text_55')">
           <a-select v-decorator="decorators.brand" allowClear :placeholder="$t('dashboard.text_99')" mode="multiple">
-            <template v-for="item of brands">
-              <a-select-option :key="item.key" :value="item.key">{{ item.label }}</a-select-option>
+            <template v-for="item of brands" :key="item.key">
+              <a-select-option :value="item.key">{{ item.label }}</a-select-option>
             </template>
           </a-select>
         </a-form-item>
         <a-form-item :label="$t('dashboard.text_20')">
           <a-select v-decorator="decorators.usage">
-            <template v-for="item of usageOptions[form.fd.resType]">
-              <a-select-option :key="item.key" :value="item.key">{{ item.label }}</a-select-option>
+            <template v-for="item of usageOptions[form.fd.resType]" :key="item.key">
+              <a-select-option :value="item.key">{{ item.label }}</a-select-option>
             </template>
           </a-select>
           <div slot="extra" v-if="showDocsLink()">
@@ -85,8 +85,8 @@
         </a-form-item>
         <a-form-item :label="$t('dashboard.text_60')">
           <a-select v-decorator="decorators.time">
-            <template v-for="item of timeOptions">
-              <a-select-option :key="item.key" :value="item.key">{{ item.label }}</a-select-option>
+            <template v-for="item of timeOptions" :key="item.key">
+              <a-select-option :value="item.key">{{ item.label }}</a-select-option>
             </template>
           </a-select>
         </a-form-item>
@@ -766,7 +766,7 @@ export default {
       return ret
     },
     goPage () {
-      this.$router.push('./monitoroverview')
+      this.$router.push('/monitoroverview')
     },
     changeName (resType, usage) {
       let usage_label = ''

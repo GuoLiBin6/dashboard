@@ -1,7 +1,7 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{$t('compute.change_boot_index')}}</div>
-    <div slot="body">
+    <template #header>{{$t('compute.change_boot_index')}}</template>
+    <template #body>
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.change_boot_index')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <div class="d-flex">
@@ -10,23 +10,24 @@
           style="flex: 1 1 auto"
           handle=".drag-icon"
           ghost-class="ghost"
+          :item-key="bootItemKey"
           v-model="boots">
-          <transition-group type="transition" name="flip-list">
-            <div class="checkbox-item d-flex" v-for="item in boots" :key="item">
+          <template #item="slotProps">
+            <div class="checkbox-item d-flex">
               <div class="d-flex" style="flex: 1 1 auto">
-                <div class="type-label">{{typesMap[item.type].label}}</div>
-                <div class="type-name">{{item.name}}</div>
+                <div class="type-label">{{typesMap[slotProps?.element?.type]?.label}}</div>
+                <div class="type-name">{{slotProps?.element?.name}}</div>
               </div>
-              <a-icon type="drag" class="drag-icon" style="font-size:18px" @click="iconClick" />
+              <icon type="dragable" class="drag-icon" style="font-size:18px" @click="iconClick" />
             </div>
-          </transition-group>
+          </template>
         </draggable>
       </div>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 
@@ -63,6 +64,10 @@ export default {
     this.initBoots()
   },
   methods: {
+    bootItemKey (item) {
+      if (!item) return ''
+      return `${item.type}:${item.ordinal ?? item.index ?? item.name ?? ''}`
+    },
     initBoots () {
       const { disks_info = [], cdrom = [] } = this.params.data[0] || {}
       const ret = []
@@ -131,10 +136,8 @@ export default {
   padding: 5px 0;
   margin-bottom: 10px;
   background: #eee;
-  ::v-deep {
-    .checkbox-property {
-      padding-right: 15px;
-    }
+  :deep(.checkbox-property) {
+    padding-right: 15px;
   }
   .type-label {
     flex: 0 0 80px;
@@ -167,10 +170,8 @@ export default {
 .ghost {
   opacity: 0.7;
   background: @primary-color;
-  ::v-deep {
-    label span {
-      color: #fff;
-    }
+  :deep(label span) {
+    color: #fff;
   }
 }
 .form-label {

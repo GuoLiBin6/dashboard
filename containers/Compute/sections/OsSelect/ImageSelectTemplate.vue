@@ -4,7 +4,7 @@
       <div :key="`${item.name} ${item.id}`">
         <a-row>
           <a-col :span="24">
-            <div>{{ item.name }}<a-icon type="safety-certificate" v-if="isEncryped(item)" :title="$t('common.text.encrption_enable')" /></div>
+            <div>{{ item.name }}<icon type="safety-certificate" v-if="isEncryped(item)" :title="$t('common.text.encrption_enable')" /></div>
           </a-col>
         </a-row>
         <a-row>

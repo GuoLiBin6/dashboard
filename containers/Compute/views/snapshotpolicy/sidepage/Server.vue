@@ -51,7 +51,16 @@ export default {
           title: this.$t('compute.text_228'),
           hideField: true,
           slotCallback: row => {
-            return [<side-page-trigger permission="servers_get" name="VmInstanceSidePage" id={row.id} vm={this}>{ row.name }</side-page-trigger>]
+            return [
+              this.$createElement('side-page-trigger', {
+                props: {
+                  permission: 'servers_get',
+                  name: 'VmInstanceSidePage',
+                  id: row.id,
+                  vm: this,
+                },
+              }, row.name),
+            ]
           },
         }),
         getStatusTableColumn({ statusModule: 'server' }),
@@ -70,9 +79,17 @@ export default {
           sortable: true,
           minWidth: 80,
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (row.vcpu_count) {
-                return [<list-body-cell-wrap row={{ row }} hide-field field="vcpu_count">{row.vcpu_count}</list-body-cell-wrap>]
+                return [
+                  h('list-body-cell-wrap', {
+                    props: {
+                      row: { row },
+                      hideField: true,
+                      field: 'vcpu_count',
+                    },
+                  }, row.vcpu_count),
+                ]
               }
               return []
             },
@@ -87,10 +104,18 @@ export default {
           sortable: true,
           minWidth: 80,
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (row.vmem_size) {
                 const config = (row.vmem_size / 1024) + 'G'
-                return [<list-body-cell-wrap row={{ row }} hide-field field="vmem_size">{config}</list-body-cell-wrap>]
+                return [
+                  h('list-body-cell-wrap', {
+                    props: {
+                      row: { row },
+                      hideField: true,
+                      field: 'vmem_size',
+                    },
+                  }, config),
+                ]
               }
               return []
             },
@@ -112,10 +137,18 @@ export default {
           sortable: true,
           minWidth: 80,
           slots: {
-            default: ({ row }) => {
-              if (this.isPreLoad && !row.disk) return [<data-loading />]
+            default: ({ row }, h) => {
+              if (this.isPreLoad && !row.disk) return [h('data-loading')]
               const config = row.disk ? sizestr(row.disk, 'M', 1024) : ''
-              return [<list-body-cell-wrap row={{ row }} hide-field field="disk">{config}</list-body-cell-wrap>]
+              return [
+                h('list-body-cell-wrap', {
+                  props: {
+                    row: { row },
+                    hideField: true,
+                    field: 'disk',
+                  },
+                }, config),
+              ]
             },
           },
           formatter: ({ row }) => {

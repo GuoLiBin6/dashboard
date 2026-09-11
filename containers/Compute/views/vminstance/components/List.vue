@@ -1475,9 +1475,8 @@ export default {
                 label: this.$t('compute.perform_delete'),
                 submenus: [
                   // 设置删除保护
-                  disableDeleteAction(Object.assign(this, {
+                  disableDeleteAction(this, {
                     permission: 'server_update',
-                  }), {
                     name: this.$t('dictionary.server'),
                     meta: () => {
                       // 某些云不支持

@@ -2,8 +2,8 @@
   <div>
     <a-form-item>
       <a-radio-group v-decorator="decorator.networkType" @change="change">
-        <template  v-for="(item, key) in originNetworkMaps">
-          <a-radio-button v-if="(isServertemplate && (key !== 'schedtag')) || !isServertemplate" :value="key" :key="key">
+        <template  v-for="(item, key) in originNetworkMaps" :key="key">
+          <a-radio-button v-if="(isServertemplate && (key !== 'schedtag')) || !isServertemplate" :value="key">
             {{ item.t ? $t(item.t) : item.label }}
             <help-tooltip v-if="key === 'default'" :name="`${key}ServerNetwork`" class="ml-2" />
           </a-radio-button>

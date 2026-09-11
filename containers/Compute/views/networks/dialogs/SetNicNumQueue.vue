@@ -12,7 +12,7 @@
         v-bind="formItemLayout">
         <a-form-model-item :label="$t('compute.num_queues')" prop="num_queues">
           <a-input-number
-            v-model="form.num_queues"
+            v-model:value="form.num_queues"
             :min="1"
             style="width: 100%" />
         </a-form-model-item>

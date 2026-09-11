@@ -32,9 +32,11 @@ export default {
           field: 'schedtag',
           title: this.$t('cloudenv.text_385'),
           hideField: true,
-          slotCallback: row => {
+          slotCallback: (row, h) => {
             if (!row.schedtag) return '-'
-            return [<side-page-trigger onTrigger={ () => this.handleOpenSchedtagDetail(row.schedtag_id) }>{ row.schedtag }</side-page-trigger>]
+            return [h('side-page-trigger', {
+              on: { trigger: () => this.handleOpenSchedtagDetail(row.schedtag_id) },
+            }, row.schedtag)]
           },
         }),
         {

@@ -1,13 +1,13 @@
 <template>
   <div class="network-config">
     <!-- 适配大、小屏幕 -->
-    <div class="mb-2" :class="{ 'd-flex align-items-start' : isBigScreen && !isDialog }" v-for="(item, i) in networkList" :key="item.key">
-      <div class="d-flex">
-        <a-tag color="blue" class="mr-1" style="height: 20px; margin-top: 10px;">{{ isBonding ? 'bond' : $t('compute.text_193')}}{{i + count}}</a-tag>
+    <div class="network-config-row" :class="{ 'd-flex align-items-start' : isBigScreen && !isDialog }" v-for="(item, i) in networkList" :key="item.key">
+      <div class="d-flex align-items-start network-config-main">
+        <a-tag class="network-nic-tag">{{ isBonding ? 'bond' : $t('compute.text_193')}}{{i + count}}</a-tag>
         <a-form-item
           v-show="showVpc"
           :wrapperCol="{ span: 24 }"
-          class="mb-0 mr-1">
+          class="mb-0 mr-1 network-vpc-item">
           <oc-select
             v-if="i === 0"
             v-decorator="decorator.vpcs(item.key)"
@@ -22,7 +22,7 @@
             :placeholder="$t('compute.text_194')"
             @selectChange="(curObjArr) => vpcSelectChange(curObjArr, i, item)"
             @fetchSuccess="(data) => fetchVpcSuccessHandle(data, item)" />
-          <a-tag v-else color="blue" class="w-100 mr-1">{{ getVpcTag(networkList[0].vpc) }}</a-tag>
+          <a-tag v-else class="network-vpc-tag">{{ getVpcTag(networkList[0].vpc) }}</a-tag>
         </a-form-item>
         <a-form-item
           :wrapperCol="{ span: 24 }"
@@ -34,7 +34,7 @@
             resource="networks"
             remote
             show-sync
-            :item.sync="item.network"
+            v-model:item="item.network"
             :isDefaultSelect="canDefaultSelect && i === 0"
             :need-params="true"
             :params="{ ...networkParamsC, $t: item.key }"
@@ -44,11 +44,12 @@
             @change="v => networkChange(v, item, i)"
             :select-props="{ allowClear: true, placeholder: $t('compute.text_195') }"
             :min-width="isDialog ? '200px' : '500px'" />
-            <div slot="extra" v-if="i === 0">{{$t('compute.text_196')}}<help-link href="/network">{{$t('compute.perform_create')}}</help-link>
-            </div>
+          <template v-if="i === 0" #extra>
+            {{$t('compute.text_196')}}<help-link href="/network">{{$t('compute.perform_create')}}</help-link>
+          </template>
         </a-form-item>
       </div>
-      <div :class="{ 'd-flex ml-1' : isBigScreen && !isDialog }">
+      <div class="network-advanced" :class="{ 'network-advanced--inline' : isBigScreen && !isDialog }">
         <!-- 高级 -->
         <template v-if="showAdvanced">
           <!-- ip -->
@@ -57,10 +58,10 @@
               <a-form-item class="mb-0" style="display:inline-block" :wrapperCol="{ span: 24 }">
                 <ip-select v-decorator="decorator.ips(item.key, item.network)" :value="item.ip" :network="item.network" @change="e => ipChange(e, i)" />
               </a-form-item>
-              <a-button type="link" class="mt-1" @click="triggerShowIp(item)">{{$t('compute.text_135')}}</a-button>
+              <a-button type="link" @click="triggerShowIp(item)">{{$t('compute.text_135')}}</a-button>
             </template>
             <a-tooltip v-else :title="ipBtnTooltip">
-              <a-button type="link" class="mr-1 mt-1" :disabled="ipsDisabled" @click="triggerShowIp(item)">{{$t('compute.text_198')}}</a-button>
+              <a-button type="link" class="mr-1" :disabled="ipsDisabled" @click="triggerShowIp(item)">{{$t('compute.text_198')}}</a-button>
             </a-tooltip>
           </template>
           <!-- mac -->
@@ -73,10 +74,10 @@
                   @change="e => macChange(e, i)"
                   v-decorator="decorator.macs(item.key, item.network)" />
               </a-form-item>
-              <a-button type="link" class="mt-1" @click="triggerShowMac(item)">{{$t('compute.text_135')}}</a-button>
+              <a-button type="link" @click="triggerShowMac(item)">{{$t('compute.text_135')}}</a-button>
             </template>
             <a-tooltip v-else :title="ipBtnTooltip">
-              <a-button type="link" class="mr-1 mt-1" :disabled="ipsDisabled" @click="triggerShowMac(item)">{{$t('compute.mac_config')}}</a-button>
+              <a-button type="link" class="mr-1" :disabled="ipsDisabled" @click="triggerShowMac(item)">{{$t('compute.mac_config')}}</a-button>
             </a-tooltip>
           </template>
           <!-- 透传设备 -->
@@ -89,9 +90,9 @@
                   :data="gpuOptions"
                   :placeholder="$t('compute.sriov_device_tips')" />
               </a-form-item>
-              <a-button type="link" class="mt-1" @click="triggerShowDevice(item)">{{$t('compute.text_135')}}</a-button>
+              <a-button type="link" @click="triggerShowDevice(item)">{{$t('compute.text_135')}}</a-button>
             </template>
-            <a-button v-else type="link" class="mr-1 mt-1" @click="triggerShowDevice(item)">{{ $t('compute.config_transparent_net') }}</a-button>
+            <a-button v-else type="link" class="mr-1" @click="triggerShowDevice(item)">{{ $t('compute.config_transparent_net') }}</a-button>
           </template>
           <!-- 安全组 -->
         <template v-if="showSecgroupConfig">
@@ -104,42 +105,53 @@
                 :select-props="{ allowClear: true, placeholder: $t('compute.secgroup_tips'), mode: 'multiple' }" />
             </a-form-item>
           </template>
-          <a-button v-else type="link" class="mr-1 mt-1" @click="triggerShowSecgroup(item)">{{ $t('compute.config_secgroup') }}</a-button>
+          <a-button v-else type="link" class="mr-1" @click="triggerShowSecgroup(item)">{{ $t('compute.config_secgroup') }}</a-button>
         </template>
           <!-- ipv6 -->
           <template>
-            <a-form-item class="mb-0" style="display:inline-block" :wrapperCol="{ span: 24 }" v-if="isSupportIPv6(item) && isSupportIPv4(item)">
-              <div class="d-flex align-items-center">
+            <a-form-item class="mb-0 network-ipv6-item" style="display:inline-block" :wrapperCol="{ span: 24 }" v-if="isSupportIPv6(item) && isSupportIPv4(item)">
+              <div class="d-flex align-items-center network-ipv6-switch">
                 <a-checkbox style="width: max-content" v-decorator="decorator.ipv6s(item.key, item.network)" @change="(e) => triggerRequireIpv6(item, e)" />
-                <a-dropdown>
-                  <a-menu slot="overlay" @click="(e) => triggerIpv6Mode(item, e, i)" v-decorator="decorator.ipv6_mode(item.key, item.network)">
-                    <a-menu-item key="all">{{ $t('compute.server_create.require_ipv6_all') }}</a-menu-item>
-                    <a-menu-item key="only">{{ $t('compute.server_create.require_ipv6_only') }}</a-menu-item>
-                  </a-menu>
-                  <a-button type="link" class="pl-1">{{ item.ipv6Mode === 'only' ? $t('compute.server_create.require_ipv6_only') : $t('compute.server_create.require_ipv6_all') }}<a-icon type="down" /> </a-button>
+                <a-dropdown :trigger="['click']">
+                  <a class="ant-dropdown-link network-ipv6-dropdown-link" @click.prevent>
+                    {{ item.ipv6Mode === 'only' ? $t('compute.server_create.require_ipv6_only') : $t('compute.server_create.require_ipv6_all') }}
+                    <icon type="pull-down" />
+                  </a>
+                  <template #overlay>
+                    <a-menu @click="(e) => triggerIpv6Mode(item, e, i)">
+                      <a-menu-item key="all">{{ $t('compute.server_create.require_ipv6_all') }}</a-menu-item>
+                      <a-menu-item key="only">{{ $t('compute.server_create.require_ipv6_only') }}</a-menu-item>
+                    </a-menu>
+                  </template>
                 </a-dropdown>
+                <!-- 保留表单字段，供提交 / setFieldsValue -->
+                <a-input type="hidden" v-decorator="decorator.ipv6_mode(item.key, item.network)" />
               </div>
             </a-form-item>
             <template v-if="(isSupportIPv6(item) && item.requireIpv6) || (!isSupportIPv4(item) && isSupportIPv6(item))">
               <template v-if="item.ipv6Show">
-                <a-form-item class="mb-0 ml-1" style="width: 350px;display:inline-block" :wrapperCol="{ span: 24 }">
-                  <span class="mr-1">{{ getIpv6Prefix(item.network?.guest_ip6_start) }}</span>
-                  <a-form-item class="mb-0" style="display:inline-block">
-                    <a-input
-                      style="width: 164px"
-                      :placeholder="$t('compute.complete_ipv6_address')"
-                      @change="e => ipv6Change(e, i)"
-                      v-decorator="decorator.ips6(item.key, item.network)" />
-                  </a-form-item>
-                  <a-button type="link" class="mt-1" @click="triggerShowIpv6(item)">{{$t('compute.text_135')}}</a-button>
+                <a-form-item class="mb-0 ml-1 network-ipv6-address-item" :wrapperCol="{ span: 24 }">
+                  <div class="network-ipv6-address">
+                    <span class="network-ipv6-prefix">{{ getIpv6Prefix(item.network?.guest_ip6_start) }}</span>
+                    <a-form-item class="mb-0 network-ipv6-input-item" :wrapperCol="{ span: 24 }">
+                      <a-input
+                        style="width: 164px"
+                        :placeholder="$t('compute.complete_ipv6_address')"
+                        @change="e => ipv6Change(e, i)"
+                        v-decorator="decorator.ips6(item.key, item.network)" />
+                    </a-form-item>
+                    <a-button type="link" class="network-ipv6-cancel" @click="triggerShowIpv6(item)">{{$t('compute.text_135')}}</a-button>
+                  </div>
                 </a-form-item>
               </template>
-              <a-button v-else type="link" class="mt-1" @click="triggerShowIpv6(item)">{{$t('compute.ipv6_config')}}</a-button>
+              <a-button v-else type="link" @click="triggerShowIpv6(item)">{{$t('compute.ipv6_config')}}</a-button>
             </template>
           </template>
         </template>
-        <a-button class="mt-1" type="link" @click="() => showAdvanced = !showAdvanced">{{ showAdvanced ? $t('compute.hide_advanced') : $t('compute.advanced') }}</a-button>
-        <a-button shape="circle" icon="minus" size="small" v-if="i !== 0" @click="decrease(item.key, i)" class="mt-2" />
+        <a-button type="link" @click="() => showAdvanced = !showAdvanced">{{ showAdvanced ? $t('compute.hide_advanced') : $t('compute.advanced') }}</a-button>
+        <span v-if="i !== 0" class="network-row-remove-wrap">
+          <a-button shape="circle" icon="minus" size="small" @click="decrease(item.key, i)" />
+        </span>
       </div>
     </div>
     <div class="d-flex align-items-center" v-if="networkCountRemaining > 0">
@@ -307,7 +319,7 @@ export default {
   mounted () {
     window.addEventListener('resize', this.onResize)
   },
-  beforeDestroy () {
+  beforeUnmount () {
     window.removeEventListener('resize', this.onResize)
   },
   methods: {
@@ -647,6 +659,156 @@ export default {
     .remain-num {
       color: @primary-color;
     }
+  }
+  .network-config-row {
+    margin-bottom: 16px;
+  }
+  // 保持内容宽度（不拉满），右侧留给「高级」；仅钉死 VPC 列宽与 oc-select 默认 200px 对齐
+  .network-config-main {
+    flex: 0 0 auto;
+    width: auto;
+  }
+  .network-nic-tag.ant-tag {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    height: 32px !important;
+    margin: 0 8px 0 0 !important;
+    padding: 0 10px !important;
+    line-height: 30px !important;
+    font-size: 14px;
+    border-radius: 6px;
+    flex: 0 0 auto;
+    color: var(--ant-color-primary, #1890ff);
+    background: color-mix(in srgb, var(--ant-color-primary, #1890ff) 10%, #fff);
+    border-color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 40%, #fff);
+  }
+  .network-vpc-item {
+    flex: 0 0 200px;
+    width: 200px;
+    min-width: 200px;
+    max-width: 200px;
+    :deep(.ant-form-item-control),
+    :deep(.ant-form-item-control-input),
+    :deep(.ant-form-item-control-input-content) {
+      width: 100%;
+    }
+    :deep(.oc-select),
+    :deep(.ant-select) {
+      width: 200px !important;
+      min-width: 200px !important;
+      max-width: 200px !important;
+    }
+  }
+  .network-vpc-tag.ant-tag {
+    display: inline-flex !important;
+    align-items: center;
+    box-sizing: border-box;
+    width: 200px !important;
+    max-width: 200px;
+    height: 32px !important;
+    margin: 0 !important;
+    padding: 0 11px !important;
+    line-height: 30px !important;
+    border-radius: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--ant-color-primary, #1890ff);
+    background: color-mix(in srgb, var(--ant-color-primary, #1890ff) 10%, #fff);
+    border-color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 40%, #fff);
+  }
+  .network-item {
+    flex: 0 0 auto;
+    :deep(.ant-form-item-extra) {
+      margin-top: 4px;
+    }
+  }
+  // 高级区顶部对齐：校验错误撑高时不把旁边按钮挤到垂直居中
+  .network-advanced--inline {
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    margin-left: 8px;
+    min-height: 32px;
+    :deep(.ant-form-item) {
+      margin-bottom: 0;
+    }
+    :deep(.ant-btn-link) {
+      height: 32px;
+      padding-top: 0;
+      padding-bottom: 0;
+      line-height: 32px;
+    }
+    :deep(.ant-checkbox-wrapper) {
+      display: inline-flex;
+      align-items: center;
+      height: 32px;
+      margin-inline-end: 0;
+    }
+  }
+  .network-row-remove-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    margin-left: 4px;
+  }
+  .network-ipv6-switch {
+    height: 32px;
+    :deep(input[type='hidden']) {
+      display: none;
+    }
+  }
+  .network-ipv6-dropdown-link {
+    display: inline-flex;
+    align-items: center;
+    height: 32px;
+    padding-left: 4px;
+    color: var(--ant-color-primary, #1890ff);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .network-ipv6-address-item {
+    :deep(.ant-form-item-control-input-content) {
+      display: block;
+    }
+  }
+  .network-ipv6-address {
+    display: inline-flex;
+    align-items: flex-start;
+    flex-wrap: nowrap;
+    min-height: 32px;
+  }
+  .network-ipv6-prefix {
+    flex: 0 0 auto;
+    margin-right: 8px;
+    white-space: nowrap;
+    height: 32px;
+    line-height: 32px;
+  }
+  .network-ipv6-input-item {
+    flex: 0 0 auto;
+    margin: 0 !important;
+    // 错误文案只出现在输入框下方，不参与和「取消」的垂直居中
+    :deep(.ant-form-item-row) {
+      display: block;
+    }
+    :deep(.ant-form-item-control-input) {
+      min-height: 32px;
+    }
+    :deep(.ant-form-item-explain),
+    :deep(.ant-form-item-extra) {
+      min-height: 0;
+      margin-top: 2px;
+      line-height: 20px;
+    }
+  }
+  .network-ipv6-cancel {
+    flex: 0 0 auto;
+    height: 32px !important;
+    line-height: 32px !important;
   }
 }
 </style>

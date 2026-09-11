@@ -22,14 +22,28 @@ export default {
   isSidepageOpen: (state, getters) => getters['sidePage/isSidepageOpen'],
   userConfigInfo: (state, getters) => state.userConfig.info,
   profile: (state, getters) => state.profile.data,
-  theme: (state, getters) => {
+  theme: (state) => {
     const profile = state.profile.data
     return (profile.value && profile.value.theme) || state.setting.theme
   },
-  themeColor: (state, getters) => {
+  // 开源版仅默认蓝色；商业版才读 profile / 本地多主题色
+  themeColor: (state) => {
+    const isOpenSource = !process.env.VUE_APP_IS_PRIVATE || state.app.isSysCE
+    if (isOpenSource) {
+      return process.env.THEME_COLOR || '#1890FF'
+    }
     const profile = state.profile.data
     return (profile.value && profile.value.themeColor) || state.setting.themeColor
   },
+  themeBgColor: (state) => {
+    const isOpenSource = !process.env.VUE_APP_IS_PRIVATE || state.app.isSysCE
+    if (isOpenSource) {
+      return 'none'
+    }
+    const profile = state.profile.data
+    return (profile.value && profile.value.themeBgColor) || state.setting.themeBgColor
+  },
+  globalRounded: state => !!state.setting.globalRounded,
   setting: state => state.setting,
   scopedPolicy: state => state.scopedPolicy,
   globalConfig: state => state.common.globalConfig,

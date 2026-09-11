@@ -6,7 +6,7 @@
       <dialog-table :data="params.data" :columns="columns" />
       <a-form-model v-bind="formItemLayout">
         <a-form-model-item :label="$t('compute.billing_type')">
-          <a-radio-group v-model="billingType">
+          <a-radio-group v-model:value="billingType">
             <a-radio-button value="prepaid">{{ $t('compute.sku.prepaid_status') }}</a-radio-button>
             <a-radio-button value="postpaid">{{ $t('compute.sku.postpaid_status') }}</a-radio-button>
           </a-radio-group>

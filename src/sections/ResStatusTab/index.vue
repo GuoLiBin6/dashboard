@@ -2,7 +2,7 @@
   <div class="d-flex flex-row-reverse mb-3 res-status-tab">
     <ul class="res-status-list d-flex">
       <a-tooltip v-for="(obj, idx) in statusOpts" :key="idx" placement="bottom">
-        <template slot="title" v-if="obj.list && obj.list.length > 0">
+        <template #title v-if="obj.list && obj.list.length > 0">
           <div class="status-list">
             <div v-for="(item, idxs) in obj.list" class="status-item" :key="idxs" @click="statusClickHandle(item)">
               <span>{{ item.title }}</span>: <span>{{ item.num }}</span>

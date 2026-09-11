@@ -136,20 +136,20 @@ export default {
         addBackup: true,
         editDesc: false,
         edit: false,
-        slotCallback: row => {
-          return (
-            <side-page-trigger>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          const hFn = h || this.$createElement
+          return hFn('side-page-trigger', {}, row.name)
         },
       }),
       getStatusTableColumn({
         minWidth: 130,
         statusModule: 'server',
-        slotCallback: row => {
+        slotCallback: (row, h) => {
+          const hFn = h || this.$createElement
           return [
-            <div class='d-flex align-items-center text-truncate'>
-              <status status={ row.status } statusModule='server' />
-            </div>,
+            hFn('div', { class: 'd-flex align-items-center text-truncate' }, [
+              hFn('status', { props: { status: row.status, statusModule: 'server' } }),
+            ]),
           ]
         },
       }),
@@ -334,17 +334,24 @@ export default {
       this.fetchServers()
     },
     vpcLabelFormat (item) {
+      const h = this.$createElement
       if (item.manager) {
         if (item.cidr_block) {
-          return <div> { item.name }<span>（{ item.cidr_block }）</span><span class="ml-2 text-color-secondary">{this.$t('common_711')}: { item.manager }</span></div>
+          return h('div', [
+            ' ' + item.name,
+            h('span', '（' + item.cidr_block + '）'),
+            h('span', { class: 'ml-2 text-color-secondary' }, this.$t('common_711') + ': ' + item.manager),
+          ])
         }
-        return <div> { item.name }<span class="ml-2 text-color-secondary">{this.$t('common_711')}: { item.manager }</span></div>
+        return h('div', [
+          ' ' + item.name,
+          h('span', { class: 'ml-2 text-color-secondary' }, this.$t('common_711') + ': ' + item.manager),
+        ])
       }
-      return <div>{ item.name }</div>
+      return h('div', item.name)
     },
     networkLabelFormat (item) {
-      /* <span className="text-color-secondary option-prefix"></span> */
-      return <div> { item.name } ({ item.guest_ip_start } - { item.guest_ip_end })</div>
+      return this.$createElement('div', ' ' + item.name + ' (' + item.guest_ip_start + ' - ' + item.guest_ip_end + ')')
     },
     handleRadioChange (row) {
       if (row) {
@@ -453,12 +460,12 @@ export default {
 </script>
 
 <style scoped>
-.vpc-selector .ant-select-selection-selected-value div:before {
+.vpc-selector :deep(.ant-select-selection-item) div:before {
   content: 'VPC:';
   color: rgba(0, 0, 0, 0.45);
 }
 
-.network-selector .ant-select-selection-selected-value div:before {
+.network-selector :deep(.ant-select-selection-item) div:before {
   content: var(--network-title);
   color: rgba(0, 0, 0, 0.45);
 }

@@ -3,9 +3,9 @@
     <div slot="header">{{$t('compute.text_1236')}}</div>
     <div slot="body">
       <a-alert class="mb-2" type="warning" v-if="isPublic">
-        <div slot="message">
+        <template #message>
           {{ $t('compute.save_image_prompt.public_cloud', [$t('common.public_cloud_customized_image')]) }}
-        </div>
+        </template>
       </a-alert>
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_1236')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
@@ -40,8 +40,9 @@ import * as R from 'ramda'
 import { SERVER_TYPE } from '@Compute/constants'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
-import { typeClouds, findPlatform } from '@/utils/common/hypervisor'
-const hypervisorMap = typeClouds.hypervisorMap
+import { findPlatform } from '@/utils/common/hypervisor'
+import { HYPERVISORS_MAP, EXTRA_HYPERVISORS } from '@/constants'
+const hypervisorMap = Object.assign({}, HYPERVISORS_MAP, EXTRA_HYPERVISORS)
 
 export default {
   name: 'VmSaveImageDialog',
@@ -111,7 +112,7 @@ export default {
     },
     isPublic () {
       const noSupportBrand = [
-        typeClouds.hypervisorMap.ctyun.brand,
+        hypervisorMap.ctyun.brand,
       ]
       return (findPlatform(this.params.data[0].hypervisor) === SERVER_TYPE.public && !noSupportBrand.includes(this.params.data[0].brand))
     },

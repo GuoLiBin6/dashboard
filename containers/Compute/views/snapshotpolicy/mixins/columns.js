@@ -17,10 +17,12 @@ export default {
       getNameDescriptionTableColumn({
         onManager: this.onManager,
         hideField: true,
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row, 'detail') }>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row, 'detail'),
+            },
+          }, row.name)
         },
       }),
       getStatusTableColumn({ statusModule: 'snapshotpolicy', vm: this }),
@@ -39,17 +41,31 @@ export default {
         title: i18n.t('compute.bind_resource_count'),
         minWidth: 120,
         slots: {
-          default: ({ row }) => {
-            if (row.binding_disk_count === undefined) return [<data-loading />]
+          default: ({ row }, h) => {
+            if (row.binding_disk_count === undefined) return [h('data-loading')]
             if (row.type === 'server') {
               if (row.binding_resource_count <= 0) return row.binding_resource_count
               return [
-                <side-page-trigger name='SnapshotPolicySidePage' id={row.id} tab='snapshot-policy-server' vm={this}>{row.binding_resource_count}</side-page-trigger>,
+                h('side-page-trigger', {
+                  props: {
+                    name: 'SnapshotPolicySidePage',
+                    id: row.id,
+                    tab: 'snapshot-policy-server',
+                    vm: this,
+                  },
+                }, row.binding_resource_count),
               ]
             }
             if (row.binding_disk_count <= 0) return row.binding_disk_count
             return [
-              <side-page-trigger name='SnapshotPolicySidePage' id={row.id} tab='snapshot-policy-disk' vm={this}>{row.binding_disk_count}</side-page-trigger>,
+              h('side-page-trigger', {
+                props: {
+                  name: 'SnapshotPolicySidePage',
+                  id: row.id,
+                  tab: 'snapshot-policy-disk',
+                  vm: this,
+                },
+              }, row.binding_disk_count),
             ]
           },
         },
@@ -67,7 +83,7 @@ export default {
         showOverflow: 'ellipsis',
         slots: {
           default: ({ row }, h) => {
-            if (row.repeat_weekdays === undefined) return [<data-loading />]
+            if (row.repeat_weekdays === undefined) return [h('data-loading')]
             let text = ''
             if (row.repeat_weekdays && row.repeat_weekdays.length) {
               text += i18n.t('compute.text_1098') + row.repeat_weekdays.map(item => weekOptions[item - 1]).join('、')
@@ -79,14 +95,20 @@ export default {
               text += i18n.t('compute.text_1099')
             }
             return [
-              <list-body-cell-wrap copy field='repeat_weekdays' hideField row={row} message={text}>
-                {{ text }}
-              </list-body-cell-wrap>,
+              h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  field: 'repeat_weekdays',
+                  hideField: true,
+                  row,
+                  message: text,
+                },
+              }, text),
             ]
           },
         },
         formatter: ({ row }) => {
-          if (row.repeat_weekdays === undefined) return [<data-loading />]
+          if (row.repeat_weekdays === undefined) return [this.$createElement('data-loading')]
           let text = ''
           if (row.repeat_weekdays && row.repeat_weekdays.length) {
             text += i18n.t('compute.text_1098') + row.repeat_weekdays.map(item => weekOptions[item - 1]).join('、')

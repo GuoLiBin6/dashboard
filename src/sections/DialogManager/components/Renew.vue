@@ -3,7 +3,7 @@
     <div slot="header">{{title}}</div>
     <div slot="body">
       <a-alert class="mb-2" type="warning" v-if="tip">
-        <div slot="message">{{tip}}</div>
+        <template #message>{{tip}}</template>
       </a-alert>
       <dialog-selected-tips :name="params.name" :count="params.data.length" :action="title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />

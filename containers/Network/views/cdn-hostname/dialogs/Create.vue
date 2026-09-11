@@ -8,17 +8,17 @@
         ref="form"
         v-bind="formItemLayout">
         <a-form-model-item :label="$t('network.cdn.hostname')" prop="hostname">
-          <a-input v-model="form.hostname" />
+          <a-input v-model:value="form.hostname" />
         </a-form-model-item>
         <a-form-model-item :label="$t('network.cdn.min_tls_version')" prop="min_tls_version">
-          <a-select v-model="form.min_tls_version">
+          <a-select v-model:value="form.min_tls_version">
             <a-select-option v-for="item in MIN_TLS_VERSIONS" :key="item.key" :value="item.key">
               {{ item.label }}
             </a-select-option>
           </a-select>
         </a-form-model-item>
         <a-form-model-item :label="$t('network.cdn.certificate_type')" prop="certificate_type">
-          <a-select v-model="form.certificate_type">
+          <a-select v-model:value="form.certificate_type">
             <a-select-option value="cloudflare">
               {{ $t('network.cdn.certificate_type_cloudflare') }}
             </a-select-option>
@@ -29,7 +29,7 @@
         </a-form-model-item>
         <template v-if="form.certificate_type === 'cloudflare'">
           <a-form-model-item :label="$t('network.cdn.certificate_authority')" prop="certificate_authority">
-            <a-select v-model="form.certificate_authority">
+            <a-select v-model:value="form.certificate_authority">
               <a-select-option value="google">
                 {{ $t('network.cdn.certificate_authority.google') }}
               </a-select-option>
@@ -42,7 +42,7 @@
             </a-select>
           </a-form-model-item>
           <a-form-model-item :label="$t('network.cdn.ceritificate_verify_method')" prop="method">
-            <a-select v-model="form.method">
+            <a-select v-model:value="form.method">
               <a-select-option value="http">
                 {{ $t('network.cdn.certificate_verify_method.http') }}
               </a-select-option>
@@ -54,10 +54,10 @@
         </template>
         <template v-else>
           <a-form-model-item :label="$t('network.cdn.certificate_type_custom')" prop="custom_certificate">
-            <a-textarea v-model="form.custom_certificate" :placeholder="$t('common.pem_certificate.placeholder')" :rows="5" />
+            <a-textarea v-model:value="form.custom_certificate" :placeholder="$t('common.pem_certificate.placeholder')" :rows="5" />
           </a-form-model-item>
           <a-form-model-item :label="$t('network.cdn.bundle_method')" prop="bundle_method">
-            <a-select v-model="form.bundle_method">
+            <a-select v-model:value="form.bundle_method">
               <a-select-option value="ubiquitous">
                 {{ $t('network.cdn.bundle_method.ubiquitous') }}
               </a-select-option>
@@ -70,14 +70,14 @@
             </a-select>
           </a-form-model-item>
           <a-form-model-item :label="$t('network.cdn.custom_key')" prop="custom_key">
-            <a-textarea v-model="form.custom_key" :placeholder="$t('common.pem_private_key.placeholder')" :rows="5" />
+            <a-textarea v-model:value="form.custom_key" :placeholder="$t('common.pem_private_key.placeholder')" :rows="5" />
           </a-form-model-item>
         </template>
         <a-form-model-item :label="$t('network.cdn.wildcard_enabled')" required>
-          <a-switch v-model="form.wildcard" :disabled="form.method === 'http'" />
+          <a-switch v-model:value="form.wildcard" :disabled="form.method === 'http'" />
         </a-form-model-item>
         <a-form-model-item :label="$t('network.cdn.origin_server')" prop="origin_server">
-          <a-select v-model="form.origin_server">
+          <a-select v-model:value="form.origin_server">
             <a-select-option value="default">
               {{ $t('network.cdn.origin_server.default') }}
             </a-select-option>
@@ -87,7 +87,7 @@
           </a-select>
         </a-form-model-item>
         <a-form-model-item v-if="form.origin_server === 'custom'" :label="$t('network.cdn.origin_server.custom')" prop="custom_origin_server">
-          <a-input v-model="form.custom_origin_server" />
+          <a-input v-model:value="form.custom_origin_server" />
         </a-form-model-item>
       </a-form-model>
     </div>

@@ -7,7 +7,7 @@
     need-params
     remote
     idKey="name"
-    :item.sync="sku"
+    v-model:item="sku"
     :label-format="labelFormat"
     :mapper="mapper"
     :params="params"

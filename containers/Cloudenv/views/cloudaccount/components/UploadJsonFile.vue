@@ -1,7 +1,7 @@
 <template>
  <div>
    <a-form-item :label="$t('cloudenv.text_113')">
-    <a-radio-group @change="handleTypeChange" v-model="type">
+    <a-radio-group @change="handleTypeChange" v-model:value="type">
         <a-radio-button :value="1">{{$t('cloudenv.text_114')}}</a-radio-button>
         <a-radio-button :value="2">{{$t('cloudenv.text_115')}}</a-radio-button>
       </a-radio-group>
@@ -14,7 +14,7 @@
       :fileList="fileList">
       <div style="padding: 10px;">
         <p class="ant-upload-drag-icon">
-        <a-icon type="inbox" />
+        <icon type="inbox" />
       </p>
         <p class="ant-upload-text">{{$t('cloudenv.text_117')}}</p>
         <p class="ant-upload-hint">{{$t('cloudenv.text_118')}}</p>

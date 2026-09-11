@@ -199,15 +199,15 @@ export default {
   render (h) {
     const { form, layout, prefixCls, hideRequiredMark } = this
 
-    return (
-      <a-form
-        form={ form.fc }
-        layout={ layout }
-        prefixCls={ prefixCls }
-        hideRequiredMark={ hideRequiredMark }
-      >
-        <j-fieldset />
-      </a-form>
-    )
+    return h('a-form', {
+      props: {
+        form: form.fc,
+        layout,
+        prefixCls,
+        hideRequiredMark,
+      },
+    }, [
+      h('j-fieldset'),
+    ])
   },
 }

@@ -3,7 +3,7 @@
     <page-header
      :title="$t('compute.text_92')"
      :tabs="cloudEnvOptions"
-     :current-tab.sync="cloudEnv"
+     v-model:currentTab="cloudEnv"
      isShowResStatusTab
      :status-opts="statusOpts"
      :status-click-handle="statusClickHandle" />
@@ -13,7 +13,6 @@
         :cloud-env="cloudEnv"
         :filterParams="filterParams"
         statusResKey="server"
-        @refresh="refreshHandle"
         @resStatisticsChange="resStatisticsChange" />
     </page-body>
   </div>

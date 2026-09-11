@@ -3,8 +3,8 @@
     <div class="dashboard-card-wrap">
       <div class="dashboard-card-header">
         <div class="dashboard-card-header-left">
-          {{ form.fd.name || $t('dashboard.text_6') }}<a-icon class="ml-2" type="loading" v-if="loading" />
-          <span v-if="isResDeny" class="ml-2"><a-icon class="warning-color mr-1" type="warning" />{{ $t('common.permission.403') }}</span>
+          {{ form.fd.name || $t('dashboard.text_6') }}<icon class="ml-2" type="loading" v-if="loading" />
+          <span v-if="isResDeny" class="ml-2"><icon class="warning-color mr-1" type="warning" />{{ $t('common.permission.403') }}</span>
         </div>
         <div class="dashboard-card-header-right">
           <slot name="actions" :handle-edit="handleEdit" />
@@ -18,14 +18,14 @@
           <div class="flex-fill position-relative">
             <div class="dashboard-fco-wrap">{{ data[0]['content'] }}</div>
           </div>
-          <div class="d-flex flex-shrink-0 flex-grow-0 mt-1">
+          <div class="d-flex flex-shrink-0 flex-grow-0 mt-1 pt-1">
             <div class="text-color-help flex-fill">{{ data[0]['author'] }} · {{ $moment(data[0]['updated_at']).fromNow() }}</div>
-            <div class="flex-shrink-0 flex-grow-0" @click.stop.prevent="doLike" style="cursor: pointer;">{{ readmarkTotal }}<a-icon class="ml-1" type="like" :style="{ color: likeColor }" :theme="liked ? 'filled' : 'outlined'" /></div>
+            <div class="flex-shrink-0 flex-grow-0" @click.stop.prevent="doLike" style="cursor: pointer;">{{ readmarkTotal }}<icon class="ml-1" type="like" :style="{ color: likeColor }" :theme="liked ? 'filled' : 'outlined'" /></div>
           </div>
         </template>
       </div>
     </div>
-    <base-drawer :visible.sync="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit">
+    <base-drawer v-model:visible="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit">
       <a-form
         hideRequiredMark
         :form="form.fc"
@@ -131,23 +131,21 @@ export default {
       handler (val) {
         this.fetchNotices()
       },
-      immediate: true,
     },
     'dataRangeParams.domain': {
       handler (val) {
         this.fetchNotices()
       },
-      immediate: true,
     },
     'dataRangeParams.project': {
       handler (val) {
         this.fetchNotices()
       },
-      immediate: true,
     },
   },
-  destroyed () {
+  unmounted () {
     this.rm = null
+    this.noticesManager = null
   },
   created () {
     this.rm = new this.$Manager('readmarks', 'v1')
@@ -162,7 +160,7 @@ export default {
       return this.fetchNotices()
     },
     async fetchNotices () {
-      if (this.isResDeny) return
+      if (this.isResDeny || !this.noticesManager) return
       this.loading = true
       try {
         // const data = await load({
@@ -203,13 +201,13 @@ export default {
         const response = await this.noticesManager.list({
           params,
         })
-        this.data = response.data.data || []
+        this.data = response?.data?.data || []
       } finally {
         this.loading = false
       }
     },
     async fetchReadmarks () {
-      if (this.isResDeny) return
+      if (this.isResDeny || !this.rm) return
       try {
         const response = await this.rm.list({
           params: {
@@ -254,3 +252,11 @@ export default {
   },
 }
 </script>
+
+<style lang="less" scoped>
+.dashboard-fco-wrap {
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+</style>

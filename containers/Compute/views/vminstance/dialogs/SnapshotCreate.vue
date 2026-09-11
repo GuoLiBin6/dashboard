@@ -3,7 +3,7 @@
     <div slot="header">{{$t('compute.disk_perform_create_snapshot')}}</div>
     <div slot="body">
       <a-alert class="mb-2" type="warning">
-        <div slot="message">{{$t('compute.text_1251')}}</div>
+        <template #message>{{$t('compute.text_1251')}}</template>
       </a-alert>
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.disk_perform_create_snapshot')" />
       <dialog-table
@@ -38,7 +38,7 @@
             :ctx="[['servers', this.params.data[0].id]]"
             :filterable="true"
             :isDefaultSelect="true"
-            :item.sync="selectDisk" />
+            v-model:item="selectDisk" />
         </a-form-item>
         <a-form-item
           :label="$t('compute.text_415')">
@@ -81,9 +81,9 @@ import { INPUT_DEBOUNCE_TIMER } from '@/constants/config'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import { sizestr } from '@/utils/utils'
-import { typeClouds } from '@/utils/common/hypervisor'
+import { HYPERVISORS_MAP, EXTRA_HYPERVISORS } from '@/constants'
 
-const hypervisorMap = typeClouds.hypervisorMap
+const hypervisorMap = Object.assign({}, HYPERVISORS_MAP, EXTRA_HYPERVISORS)
 
 export default {
   name: 'VmSnapshotCreateDialog',

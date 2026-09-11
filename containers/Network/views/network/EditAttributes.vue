@@ -1,7 +1,7 @@
 <template>
   <div>
     <page-header :title="$t('network.text_606')" style="margin-bottom: 7px;" />
-    <page-body needMarginBottom>
+    <page-body>
       <a-form class="mt-3" :form="form.fc">
         <a-divider orientation="left">{{$t('network.text_397')}}</a-divider>
         <a-form-item :label="$t('network.text_21')" v-bind="formItemLayout">
@@ -64,10 +64,10 @@
           <a-collapse-panel :header="$t('network.text_94')" key="1" forceRender>
             <a-form-item :label="$t('network.text_743')" v-bind="formItemLayout" v-if="hasBgpType">
               <a-input v-decorator="decorators.bgp_type" />
-              <span slot="extra">{{$t('network.text_744')}}</span>
+              <template #extra>{{$t('network.text_744')}}</template>
             </a-form-item>
             <a-form-item v-bind="formItemLayout">
-              <span slot="label">{{$t('network.text_583')}}<help-tooltip class="ml-1" name="networkPolicy" /></span>
+              <template #label>{{$t('network.text_583')}}<help-tooltip class="ml-1" name="networkPolicy" /></template>
               <a-radio-group v-decorator="decorators.alloc_policy">
                 <a-radio-button
                   v-for="item of allocPolicyoptions"
@@ -79,7 +79,7 @@
               <a-input :placeholder="$t('validator.IPs')" v-decorator="decorators.guest_dns" />
             </a-form-item>
             <a-form-item v-bind="formItemLayout">
-              <span slot="label">{{$t('network.text_586')}}<help-tooltip class="ml-1" name="networkDomain" /></span>
+              <template #label>{{$t('network.text_586')}}<help-tooltip class="ml-1" name="networkDomain" /></template>
               <a-input :placeholder="$t('validator.domain')" v-decorator="decorators.guest_domain" />
             </a-form-item>
             <a-form-item :label="$t('network.ntp_server')" v-bind="formItemLayout">

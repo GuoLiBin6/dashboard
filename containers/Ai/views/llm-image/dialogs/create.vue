@@ -4,12 +4,12 @@
     <div slot="body">
       <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 4 }" :wrapper-col="{ span: 18 }">
         <a-form-model-item :label="$t('common.name')" prop="name">
-          <a-input v-model="form.name" :placeholder="$t('common.tips.input', [$t('common.name')])" :disabled="type === 'edit'" />
+          <a-input v-model:value="form.name" :placeholder="$t('common.tips.input', [$t('common.name')])" :disabled="type === 'edit'" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.llm_type')" prop="llm_type">
           <a-radio-group
             v-if="type !== 'edit'"
-            v-model="form.llm_type"
+            v-model:value="form.llm_type"
             class="llm-type-picker"
             button-style="solid">
             <a-radio-button v-for="opt in llmTypeOptions" :key="opt.id" :value="opt.id">
@@ -19,14 +19,14 @@
           <span v-else>{{ llmTypeName }}</span>
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.llm_image.name')" prop="image_name">
-          <a-input v-model="form.image_name" :placeholder="$t('common.tips.input', [$t('aice.llm_image.name')])" />
+          <a-input v-model:value="form.image_name" :placeholder="$t('common.tips.input', [$t('aice.llm_image.name')])" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.llm_image.label')" prop="image_label">
-          <a-input v-model="form.image_label" :placeholder="$t('common.tips.input', [$t('aice.llm_image.label')])" />
+          <a-input v-model:value="form.image_label" :placeholder="$t('common.tips.input', [$t('aice.llm_image.label')])" />
         </a-form-model-item>
         <a-form-model-item v-if="form.llm_type === 'desktop'" :label="$t('aice.llm_image.app_name')" prop="app_name">
           <a-input
-            v-model="form.app_name"
+            v-model:value="form.app_name"
             :placeholder="$t('common.tips.input', [$t('aice.llm_image.app_name')])" />
         </a-form-model-item>
       </a-form-model>

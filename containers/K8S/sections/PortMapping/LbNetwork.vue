@@ -7,7 +7,7 @@
         class="w-100"
         filterable
         :params="params"
-        :item.sync="selectNet"
+        v-model:item="selectNet"
         resource="networks"
         v-decorator="decorator"
         @change="networkChange"

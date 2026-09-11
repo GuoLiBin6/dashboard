@@ -3,7 +3,7 @@ import './style/index.scss'
 
 /* istanbul ignore next */
 List.install = function (Vue) {
-  Vue.component(List.name, List)
+  if (!Vue.component(List.name)) Vue.component(List.name, List)
 }
 
 export default List

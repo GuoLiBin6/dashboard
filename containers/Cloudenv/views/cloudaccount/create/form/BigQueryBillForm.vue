@@ -4,7 +4,7 @@
     <a-form class="pt-3" :form="form.fc" v-bind="formLayout">
       <a-divider orientation="left">{{$t('cloudenv.text_199')}}</a-divider>
       <a-form-item :label="$t('cloudenv.text_200')">
-        <a-radio-group v-model="billingType">
+        <a-radio-group v-model:value="billingType">
           <a-radio-button :value="1">{{$t('cloudenv.text_201')}}</a-radio-button>
           <a-radio-button :value="2">{{$t('cloudenv.text_202')}}</a-radio-button>
         </a-radio-group>
@@ -18,8 +18,8 @@
           showSearch
           :loading="cloudAccountLoading"
           v-decorator="decorators.billing_bigquery_account">
-          <template v-for="item in cloudAccounts">
-            <a-select-option v-if="id !== item.id" :key="item.id" :value="item.id">{{item.name}}</a-select-option>
+          <template v-for="item in cloudAccounts" :key="item.id">
+            <a-select-option v-if="id !== item.id" :value="item.id">{{item.name}}</a-select-option>
           </template>
         </a-select>
       </a-form-item>
@@ -57,7 +57,7 @@
   </div>
 </template>
 
-<script>
+<script lang="jsx">
 import * as R from 'ramda'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'

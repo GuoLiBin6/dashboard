@@ -6,7 +6,7 @@
       <dialog-table :data="params.data" :columns="columns" />
       <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
         <a-form-item :label="$t('compute.repo.edit_mode')">
-          <a-radio-group v-model="editMode">
+          <a-radio-group v-model:value="editMode">
             <a-radio-button value="custom">{{ $t('compute.repo.edit_mode.custom') }}</a-radio-button>
             <a-radio-button value="yaml">{{ $t('compute.repo.edit_mode.yaml') }}</a-radio-button>
           </a-radio-group>

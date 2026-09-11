@@ -4,7 +4,7 @@
       <a-tooltip
         :title="switchDisabled ? $t('compute.bastionHost.bastion_host.switch_disabled') : null">
         <a-switch
-          v-decorator="decorator.bastion_host_enable"
+          :checked="!!bastionHostEnable"
           :checkedChildren="$t('compute.text_115')"
           :unCheckedChildren="$t('compute.text_116')"
           :disabled="switchDisabled"
@@ -174,6 +174,9 @@ export default {
     },
     changeHandle (v) {
       this.bastionHostEnable = v
+      if (this.form && this.form.fc) {
+        this.form.fc.setFieldsValue({ bastion_host_enable: v })
+      }
       this.$nextTick(() => this.persistFormFieldDraftSnapshot())
     },
     bastionHostChangeHandle (v) {

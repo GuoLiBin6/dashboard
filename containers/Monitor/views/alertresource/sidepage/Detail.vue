@@ -44,9 +44,16 @@ export default {
           title: this.$t('monitor.associate_alarm_strategy'),
           field: 'strategy',
           slots: {
-            default: ({ row }, h) => {
+            default: () => {
+              const h = this.$createElement
               return [
-                <vxe-grid class="mb-2" data={ this.alertList } columns={ this.alertColumns } />,
+                h('table-lite-grid', {
+                  class: 'mb-2',
+                  props: {
+                    data: this.alertList,
+                    columns: this.alertColumns,
+                  },
+                }),
               ]
             },
           },
@@ -66,8 +73,16 @@ export default {
           field: '_option',
           title: this.$t('table.title._action'),
           slots: {
-            default: ({ row }, h) => {
-              return [<a-button type='link' onClick={e => this.goMonitor(row)}>{ this.$t('monitor.view_monitor')}</a-button>]
+            default: ({ row }) => {
+              const h = this.$createElement
+              return [h('a-button', {
+                props: {
+                  type: 'link',
+                },
+                on: {
+                  click: () => this.goMonitor(row),
+                },
+              }, this.$t('monitor.view_monitor'))]
             },
           },
         },

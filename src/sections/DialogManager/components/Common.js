@@ -36,17 +36,27 @@ export default {
     },
   },
   render (h) {
-    return (
-      <base-dialog onCancel={this.cancelDialog} width={this.params.width} modalProps={this.params.modalProps}>
-        <div slot='header'>{ this.params.header }</div>
-        <div slot='body'>
-          { this.renderBody() }
-        </div>
-        <div slot='footer'>
-          <a-button type="primary" onClick={ this.handleConfirm } loading={ this.loading }>{ this.$t('dialog.ok') }</a-button>
-          { !this.params.hiddenCancel ? <a-button onClick={ this.cancelDialog }>{ this.$t('dialog.cancel') }</a-button> : null }
-        </div>
-      </base-dialog>
-    )
+    const header = h('div', { slot: 'header' }, [this.params.header])
+    const body = h('div', { slot: 'body' }, [this.renderBody()])
+    const footerChildren = [
+      h('a-button', {
+        attrs: { type: 'primary' },
+        on: { click: this.handleConfirm },
+        props: { loading: this.loading },
+      }, [this.$t('dialog.ok')]),
+    ]
+    if (!this.params.hiddenCancel) {
+      footerChildren.push(h('a-button', {
+        on: { click: this.cancelDialog },
+      }, [this.$t('dialog.cancel')]))
+    }
+    const footer = h('div', { slot: 'footer' }, footerChildren)
+    return h('base-dialog', {
+      on: { cancel: this.cancelDialog },
+      props: {
+        width: this.params.width,
+        modalProps: this.params.modalProps,
+      },
+    }, [header, body, footer])
   },
 }

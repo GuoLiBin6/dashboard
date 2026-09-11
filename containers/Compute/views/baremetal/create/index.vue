@@ -1,6 +1,6 @@
 <template>
   <div>
-    <page-header :title="title" :current-tab.sync="createCloudEnv" :tabs="cloudEnvOptions" />
+    <page-header :title="title" v-model:currentTab="createCloudEnv" :tabs="cloudEnvOptions" />
     <component :is="createCloudEnv" :cloudEnv="createCloudEnv" :initFormData="initFormData" :isInitForm="isInitForm" />
   </div>
 </template>

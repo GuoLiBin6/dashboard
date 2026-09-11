@@ -1,13 +1,13 @@
 <template>
   <div>
     <a-form-item v-if="transformations && transformations.length" :label="$t('network_waf_statement.label.transformations')" v-bind="formLayout">
-      <template v-for="(transformation, index) in transformations">
-        <a-select v-if="isEdit" v-model="transformations[index]" :key="index">
+      <template v-for="(transformation, index) in transformations" :key="index">
+        <a-select v-if="isEdit" v-model:value="transformations[index]">
           <a-select-option v-for="item in transformationOptions" :value="item.value" :key="item.value">
             {{item.label}}
           </a-select-option>
         </a-select>
-        <box-show v-else :value="getShowValue(index)" :key="index" />
+        <box-show v-else :value="getShowValue(index)" />
       </template>
     </a-form-item>
   </div>

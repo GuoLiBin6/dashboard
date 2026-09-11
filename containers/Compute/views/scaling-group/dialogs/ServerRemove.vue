@@ -6,7 +6,7 @@
       <dialog-table :data="params.data" :columns="columns" />
       <a-form v-bind="formItemLayout">
         <a-form-item :label="$t('compute.text_951')">
-          <a-radio-group v-model="isDelete">
+          <a-radio-group v-model:value="isDelete">
             <a-radio :value="true">{{$t('compute.text_952')}}</a-radio>
             <a-radio :value="false">{{$t('compute.text_953')}}</a-radio>
           </a-radio-group>

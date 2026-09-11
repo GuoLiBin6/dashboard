@@ -298,9 +298,13 @@ export default {
       this.loading = false
     },
     percentFormat (vm) {
+      const h = this.$createElement
       const per = (vm.percent || 0) / 100
-      const oversell = per > 100 ? <a-tag color="red">{this.$t('common_714')}</a-tag> : null
-      return (<div>{oversell}<div class="mt-2 text-color">{ numerify(per * 100, vm.numerifyFloat) }{ vm.unit }</div></div>)
+      const oversell = per > 100 ? h('a-tag', { props: { color: 'red' } }, this.$t('common_714')) : null
+      return h('div', [
+        oversell,
+        h('div', { class: 'mt-2 text-color' }, numerify(per * 100, vm.numerifyFloat) + vm.unit),
+      ])
     },
     genGaugeQueryData (val) {
       const select = [

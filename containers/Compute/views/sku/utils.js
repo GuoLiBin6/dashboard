@@ -10,7 +10,7 @@ export const chargeTypeColumn = () => {
         const chargeTypes = []
         if (row.postpaid_status === 'available') chargeTypes.push(i18n.t('billingType.postpaid'))
         if (row.prepaid_status === 'available') chargeTypes.push(i18n.t('billingType.prepaid'))
-        return chargeTypes.map(val => <div>{ val }</div>)
+        return chargeTypes.map(val => h('div', {}, val))
       },
     },
   }

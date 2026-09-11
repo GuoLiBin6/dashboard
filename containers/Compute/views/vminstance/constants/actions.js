@@ -2,6 +2,7 @@ import qs from 'qs'
 import { SERVER_TYPE, SMART_SSH_FORM_DECORATORS } from '@Compute/constants'
 import { isServerNetworkTagMode } from '@Compute/utils/secgroupDisplay'
 import VncInfoFetcher from '@Compute/sections/VncInfoFetcher'
+import Icon from '@/components/Icon'
 import { disableDeleteAction } from '@/utils/common/tableActions'
 import { typeClouds, findPlatform } from '@/utils/common/hypervisor'
 import i18n from '@/locales'
@@ -82,7 +83,8 @@ const getSingleActions = function (ctx) {
         }
         if (obj.provider === 'OneCloud' && obj.status === 'running') {
           vncRemote.render = (obj, params, h) => {
-            return <VncInfoFetcher onManager={this.onManager} row={obj} buttonText={i18n.t('compute.text_1274')} buttonProps={params} />
+            // Vue3：用 import 的组件变量，避免依赖字符串全局注册导致渲染为空
+            return h(VncInfoFetcher, { onManager: this.onManager, row: obj, buttonText: i18n.t('compute.text_1274'), buttonProps: params })
           }
         }
         ret.push(vncRemote)
@@ -178,18 +180,24 @@ const getSingleActions = function (ctx) {
                       decorators: SMART_SSH_FORM_DECORATORS,
                     })
                   }
-                  return <a-tooltip placement="left" title={obj.rescue_mode ? i18n.t('compute.start_rescue.validate_tooltip') : !isRunning ? i18n.t('compute.text_1309', [i18n.t('compute.text_574')]) : ''}>
-                    <span style={styleObj} class='d-flex justify-content-between align-items-center' title={ipAddr}>
-                      <span onClick={isRunning ? sshConnectHandle : () => { }}>{`SSH ${ipAddr.length > 17 ? `${ipAddr.slice(0, 17)}...` : ipAddr}`}</span>
-                      {
-                        isRunning ? <span>
-                          <a-tooltip title={i18n.t('compute.custom_ssh_connect', ['SSH'])}>
-                            <a-icon class="ml-2" type="edit" onClick={isRunning ? sshSettingInfoHandle : () => { }} />
-                          </a-tooltip>
-                        </span> : null
-                      }
-                    </span>
-                  </a-tooltip>
+                  const tooltipTitle = obj.rescue_mode ? i18n.t('compute.start_rescue.validate_tooltip') : !isRunning ? i18n.t('compute.text_1309', [i18n.t('compute.text_574')]) : ''
+                  const inner = isRunning
+                    ? h('span', {}, [
+                      h('a-tooltip', { title: i18n.t('compute.custom_ssh_connect', ['SSH']) }, {
+                        default: () => [
+                          h(Icon, { class: 'ml-2', type: 'edit', onClick: sshSettingInfoHandle }),
+                        ],
+                      }),
+                    ])
+                    : null
+                  return h('a-tooltip', { placement: 'left', title: tooltipTitle }, {
+                    default: () => [
+                      h('span', { style: styleObj, class: 'd-flex justify-content-between align-items-center', title: ipAddr }, [
+                        h('span', { onClick: isRunning ? sshConnectHandle : () => {} }, `SSH ${ipAddr.length > 17 ? `${ipAddr.slice(0, 17)}...` : ipAddr}`),
+                        inner,
+                      ]),
+                    ],
+                  })
                 },
               })
             } else {
@@ -275,18 +283,24 @@ const getSingleActions = function (ctx) {
                       color: 'rgba(0, 0, 0, 0.25)',
                     }
                   }
-                  return <a-tooltip placement="left" title={obj.rescue_mode ? i18n.t('compute.start_rescue.validate_tooltip') : !isRunning ? i18n.t('compute.text_1309', [i18n.t('compute.text_574')]) : ''}>
-                    <span style={styleObj} class='d-flex justify-content-between align-items-center'>
-                      <span onClick={isRunning ? rdpConnectHandle : () => { }}>{`RDP ${ipAddr}`}</span>
-                      {
-                        isRunning ? <span>
-                          <a-tooltip title={!isRunning ? '' : i18n.t('compute.custom_ssh_connect', ['RDP'])}>
-                            <a-icon class="ml-2" type="edit" onClick={isRunning ? rdpSettingInfoHandle : () => { }} />
-                          </a-tooltip>
-                        </span> : null
-                      }
-                    </span>
-                  </a-tooltip>
+                  const tooltipTitle = obj.rescue_mode ? i18n.t('compute.start_rescue.validate_tooltip') : !isRunning ? i18n.t('compute.text_1309', [i18n.t('compute.text_574')]) : ''
+                  const inner = isRunning
+                    ? h('span', {}, [
+                      h('a-tooltip', { title: i18n.t('compute.custom_ssh_connect', ['RDP']) }, {
+                        default: () => [
+                          h(Icon, { class: 'ml-2', type: 'edit', onClick: rdpSettingInfoHandle }),
+                        ],
+                      }),
+                    ])
+                    : null
+                  return h('a-tooltip', { placement: 'left', title: tooltipTitle }, {
+                    default: () => [
+                      h('span', { style: styleObj, class: 'd-flex justify-content-between align-items-center' }, [
+                        h('span', { onClick: isRunning ? rdpConnectHandle : () => {} }, `RDP ${ipAddr}`),
+                        inner,
+                      ]),
+                    ],
+                  })
                 },
               })
             }
@@ -2074,9 +2088,8 @@ const getSingleActions = function (ctx) {
             label: i18n.t('compute.perform_delete'),
             submenus: [
               // 设置删除保护
-              disableDeleteAction(Object.assign(this, {
+              disableDeleteAction(this, {
                 permission: 'server_update',
-              }), {
                 name: i18n.t('dictionary.server'),
                 meta: () => {
                   const ret = { validate: true }

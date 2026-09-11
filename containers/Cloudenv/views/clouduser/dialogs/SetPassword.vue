@@ -10,7 +10,7 @@
         :rules="rules"
         v-bind="formItemLayout">
         <a-form-model-item :label="$t('cloudenv.clouduser_list_t2')" prop="password">
-          <a-input-password v-model="fd.password" :placeholder="$t('validator.password')" />
+          <a-input-password v-model:value="fd.password" :placeholder="$t('validator.password')" />
         </a-form-model-item>
       </a-form-model>
     </div>

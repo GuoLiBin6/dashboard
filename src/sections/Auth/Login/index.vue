@@ -1,5 +1,5 @@
 <template>
-  <div class="login-index-wrap flex-fill d-flex h-100 align-items-center" v-loading.fullscreen="!regionsLoading">
+  <div class="login-ce-container login-index-wrap flex-fill d-flex h-100 align-items-center" v-loading.fullscreen="!regionsLoading">
     <div class="login-index-left d-flex flex-fill align-items-center pl-4 pr-4 pt-4" :style="{backgroundImage: loginBg}">
       <div>
         <h2 :style="{ color: getI18nColorVal(companyInfo, 'login_page_slogan'), lineHeight: getI18nVal(companyInfo, 'login_page_slogan').includes('<br') ? '1.5em' : '1em' }" v-html="getI18nVal(companyInfo, 'login_page_slogan') || $t('login.desc1')" />
@@ -26,9 +26,11 @@
               href="javascript:;"
               @click="onSwitchLoginMode('mobile')">{{ $t('auth.mobile') }}</a>
             </div>
-          <transition-page>
-            <router-view />
-          </transition-page>
+          <router-view v-slot="{ Component }">
+            <transition-page>
+              <component :is="Component" :key="$route.fullPath" />
+            </transition-page>
+          </router-view>
         </div>
       </div>
     </div>
@@ -41,6 +43,7 @@ import { mapGetters, mapState } from 'vuex'
 import { getLoginDomain } from '@/utils/common/cookie'
 import { getI18nVal, getI18nColorVal } from '@/utils/i18n'
 import { getLoginModeInStorage } from '@/utils/auth'
+import defaultBg from './assets/bg.png'
 
 export default {
   name: 'AccountIndex',
@@ -63,6 +66,7 @@ export default {
       prevHeight: 0,
       regionsLoading: false,
       loginMode: mode,
+      defaultBg,
     }
   },
   computed: {
@@ -104,7 +108,7 @@ export default {
     },
     loginBg () {
       const bg_img = this.companyInfo.login_page_backgroup_image
-      if (!bg_img) return `url(${require('./assets/bg.png')})`
+      if (!bg_img) return `url(${this.defaultBg})`
       return `url(data:image/png;base64,${bg_img})`
     },
   },
@@ -187,7 +191,12 @@ export default {
       this.$notification.error({
         class: 'error-notification',
         message: error_class,
-        icon: h => <a-icon type="info-circle" class="error-color" />,
+        icon: h => h('icon', {
+          attrs: {
+            type: 'info-circle',
+          },
+          class: 'error-color',
+        }),
       })
       this.$router.replace({
         path,
@@ -262,78 +271,89 @@ export default {
 </script>
 
 <style lang="less">
-.login-index-left {
-  height: 420px;
-  // background-image: url('./assets/bg.png');
-  background-repeat: no-repeat;
-  background-position: center left;
-  background-color: #fff;
-  background-size: cover;
-}
-.login-index-left {
-  h2 {
-    margin-bottom: 30px;
-    font-weight: 400;
-    font-size:34px;
+.login-ce-container {
+  .login-index-left {
+    height: 420px;
+    // background-image: url('./assets/bg.png');
+    background-repeat: no-repeat;
+    background-position: center left;
+    background-color: #fff;
+    background-size: cover;
   }
-  h4 {
-    margin-bottom: 30px;
-    font-weight: 400;
-    font-size:22px;
+  .login-index-left {
+    h2 {
+      margin-bottom: 30px;
+      font-weight: 400;
+      font-size:34px;
+    }
+    h4 {
+      margin-bottom: 30px;
+      font-weight: 400;
+      font-size:22px;
+    }
+    h6 {
+      font-weight: 400;
+      color:rgb(102,102,102);
+      font-size:16px;
+    }
   }
-  h6 {
-    font-weight: 400;
-    color:rgb(102,102,102);
-    font-size:16px;
+  .login-index-right {
+    min-height: 420px;
+    min-width: 400px;
+    width: 400px;
   }
-}
-.login-index-right {
-  min-height: 420px;
-  min-width: 400px;
-  width: 400px;
-}
-.login-content-wrap {
-  padding: 20px 60px 20px;
-  > h4 {
-    font-weight: 400;
-    margin-bottom: 40px;
+  .login-content-wrap {
+    padding: 20px 60px 20px;
+    > h4 {
+      font-weight: 400;
+      margin-bottom: 40px;
+    }
   }
-}
-.fast-login-title {
-  font-size: 12px;
-  color: #999;
-  > span {
-    width: 40px;
-    height: 1px;
-    background-color: #d9d9d9;
+  .fast-login-title {
+    font-size: 12px;
+    color: #999;
+    > span {
+      width: 40px;
+      height: 1px;
+      background-color: #d9d9d9;
+    }
   }
-}
-.fast-login-item {
-  height: 35px;
-  overflow: hidden;
-  img {
-    height: 60%;
-  }
-}
-
-.login-mode-group {
-  padding-bottom: 30px;
-
-  .login-mode {
-    display: inline-block;
-    height: 30px;
-    line-height: 30px;
-    text-align: center;
-    font-weight: 500;
-    font-size: 16px;
-    color: rgb(24, 24, 24);
-    vertical-align: middle;
+  .fast-login-item {
+    height: 35px;
+    overflow: hidden;
     cursor: pointer;
-    margin-left: 10px;
-    margin-right: 10px;
-    &.active {
-      border-bottom: 2px solid #1890ff;
-      color: #1890ff;
+    img {
+      height: 60%;
+      pointer-events: none;
+    }
+  }
+
+  .login-mode-group {
+    padding-bottom: 30px;
+
+    .login-mode {
+      display: inline-block;
+      height: 30px;
+      line-height: 30px;
+      text-align: center;
+      font-weight: 500;
+      font-size: 16px;
+      color: rgb(24, 24, 24);
+      text-decoration: none;
+      vertical-align: middle;
+      cursor: pointer;
+      margin-left: 10px;
+      margin-right: 10px;
+      &:hover,
+      &:focus,
+      &:active {
+        text-decoration: none;
+        color: var(--ant-color-primary, #1890ff);
+      }
+      &.active {
+        border-bottom: 2px solid var(--ant-color-primary, #1890ff);
+        color: var(--ant-color-primary, #1890ff);
+      }
     }
   }
 }

@@ -14,24 +14,28 @@
       :withoutTagKey="withoutTagKey"
       @change="handleTagFilterChange">
       <template v-slot:trigger>
-        <a-button class="flex-shrink-0" style="margin-right: -1px;"><icon type="res-tag" />{{buttonText || $t('common.text00012')}}</a-button>
+        <a-button class="flex-shrink-0"><icon type="res-tag" class="mr-1" />{{buttonText || $t('common.text00012')}}</a-button>
       </template>
     </tag-select>
-    <div class="tag-wrap" v-if="tags && tags.length > 0">
-      <div class="tag-wrap-inner">
-        <div class="tag-list">
-          <template v-for="item of tags">
-            <div
-              class="tag-item"
-              :key="`${item.key}${item.value}`"
-              :title="item.title"
-              :style="{ backgroundColor: item.backgroundColor, color: item.color, borderColor: item.color }">
-              {{ item.title }}<a-icon type="close" class="ml-1" @click="removeTag(item)" />
-            </div>
-          </template>
-          <a-icon class="remove-all-btn ml-1" type="delete" @click="handleTagFilterChange({})" />
-        </div>
+    <div class="tag-wrap ml-2" v-if="tags && tags.length > 0">
+      <div class="tag-list">
+        <template v-for="item of tags" :key="`${item.key}${item.value}`">
+          <div
+            class="tag-item"
+            :title="item.title"
+            :style="{ backgroundColor: item.backgroundColor, color: item.color, borderColor: item.color }">
+            <span class="tag-item-text">{{ item.title }}</span>
+            <icon type="close" class="tag-item-close" @click="removeTag(item)" />
+          </div>
+        </template>
       </div>
+      <a-tooltip :title="$t('common.clear_tags')" placement="top">
+        <span class="remove-all-btn-wrap">
+          <a-button class="remove-all-btn" @click="handleTagFilterChange({})">
+            <icon type="delete" />
+          </a-button>
+        </span>
+      </a-tooltip>
     </div>
   </div>
 </template>
@@ -144,64 +148,92 @@ export default {
 <style lang="less" scoped>
 .tag-filter-wrap {
   min-width: 0;
-}
-.tag-wrap {
-  display: inline-block;
-  height: 32px;
-  min-width: 0;
-  position: relative;
-  padding: 0 12px 0 0;
-}
-.tag-wrap-inner {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-.tag-list {
-  display: inline-block;
-  width: 100%;
-  background-color: #fff;
-  position: static;
-  z-index: 99;
-  overflow-y: auto;
-  overflow-x: hidden;
-  white-space: nowrap;
-  border: 1px solid #d9d9d9;
-  min-height: 100%;
-  padding: 4px 10px 0 3px;
-  &:hover {
-    position: relative;
-    white-space: normal;
+  align-items: center;
+  // antdv4 default 按钮 hover 用 colorPrimaryHover（偏浅），细线 SVG 会比文字更淡
+  // 统一为主色，保证 icon / 文字 / 边框一致
+  :deep(.ant-btn:not(:disabled):hover),
+  :deep(.ant-btn:not(:disabled):focus) {
+    color: var(--ant-color-primary, #1890ff) !important;
+    border-color: var(--ant-color-primary, #1890ff) !important;
+    .oc-icon,
+    .oc-icon path {
+      color: var(--ant-color-primary, #1890ff) !important;
+      fill: var(--ant-color-primary, #1890ff) !important;
+    }
+  }
+  :deep(.ant-btn .oc-icon) {
+    color: inherit;
+    fill: currentColor;
   }
 }
+.tag-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  max-width: 100%;
+  height: 32px;
+}
+.tag-list {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
 .tag-item {
-  position: relative;
-  display: inline-block;
-  margin: 0 0 4px 4px;
-  line-height: 20px;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: 32px;
+  line-height: 30px;
   font-size: 12px;
   white-space: nowrap;
   max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  padding: 0 15px 0 4px;
+  padding: 0 8px;
   border-style: solid;
   border-width: 1px;
-  vertical-align: middle;
-  .anticon {
+  border-radius: 6px;
+  box-sizing: border-box;
+  .tag-item-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 160px;
+  }
+  .tag-item-close {
+    flex-shrink: 0;
     cursor: pointer;
-    position: absolute;
-    top: 8px;
-    right: 4px;
-    top: 50%;
-    transform: translateY(-50%);
+    margin-left: 6px;
+    width: 10px;
+    height: 10px;
+    font-size: 10px;
+    opacity: 0.75;
+    &:hover {
+      opacity: 1;
+    }
   }
 }
+.remove-all-btn-wrap {
+  display: inline-flex;
+  flex-shrink: 0;
+}
 .remove-all-btn {
-  cursor: pointer;
-  font-size: 12px;
-  position: relative;
-  vertical-align: middle;
-  line-height: 1;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  .oc-icon {
+    font-size: 14px;
+  }
 }
 </style>

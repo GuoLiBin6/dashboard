@@ -3,9 +3,9 @@
     <template v-slot:title>
       <div v-html="content" class="help-tooltip-content-wrap" />
     </template>
-    <template v-slot:default>
+    <span class="oc-tooltip-trigger">
       <icon type="question" />
-    </template>
+    </span>
   </a-tooltip>
 </template>
 
@@ -40,5 +40,10 @@ export default {
   > p {
     font-size: 12px;
   }
+}
+.oc-tooltip-trigger {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
 }
 </style>

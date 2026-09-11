@@ -1,7 +1,7 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{ params.title }}</div>
-    <div slot="body">
+    <template #header>{{ params.title }}</template>
+    <template #body>
       <a-form :form="form.fc" hideRequiredMark>
         <a-form-item>
           <a-divider orientation="left">{{$t('common.text00084')}}</a-divider>
@@ -9,35 +9,32 @@
             :indeterminate="columnsIndeterminate"
             @change="handleColumnsCheckAllChange"
             :checked="columnsCheckAll">{{$t('common.checkAll')}}</a-checkbox>
-          <a-checkbox-group v-decorator="decorators.columnsSelected" @change="handleColumnsSelectedChange" class="w-100">
-            <a-row>
-              <draggable
-                handle=".drag-icon"
-                ghost-class="ghost"
-                v-model="columnFields">
-                <transition-group type="transition" name="flip-list">
-                  <template v-for="item of columnFields">
-                    <a-col
-                      v-if="item.title"
-                      :span="6"
-                      :key="item.property"
-                      class="mb-2 checkbox-item d-flex align-items-center">
-                      <a-checkbox :value="item.property" :disabled="item.disabled" class="text-truncate checkbox-property">
-                        <span :title="item.title">{{ item.title }}</span>
-                      </a-checkbox>
-                      <a-icon type="drag" class="drag-icon pr-3" @click="iconClick" />
-                    </a-col>
-                  </template>
-                </transition-group>
-              </draggable>
-            </a-row>
+          <a-checkbox-group :value="columnsSelected" @update:value="onColumnsSelectedUpdate" class="w-100">
+            <!-- 不用 vuedraggable：@vue/compat 下 #item 插槽偶发无参数导致整段不渲染；排序改用 Sortable 绑定本容器 -->
+            <div ref="columnsSortableRoot" class="customlist-grid">
+              <div
+                v-for="item in columnFields"
+                :key="item.property"
+                v-show="item && (item.title || item.property)"
+                class="customlist-cell mb-2 checkbox-item checkbox-item--columns">
+                <div class="checkbox-item__main">
+                  <a-checkbox :value="item.property" :disabled="item.disabled" class="text-truncate checkbox-property">
+                    <span class="checkbox-item__drag-handle checkbox-item__title" :title="item.title || item.property">{{ item.title || item.property }}</span>
+                  </a-checkbox>
+                  <div class="checkbox-item__drag-handle checkbox-item__gap" aria-hidden="true" />
+                </div>
+                <div class="checkbox-item__handle checkbox-item__drag-handle" @click.stop="iconClick">
+                  <icon type="dragable" class="drag-icon" />
+                </div>
+              </div>
+            </div>
           </a-checkbox-group>
         </a-form-item>
         <!-- 标签 -->
         <template v-if="showTags">
           <a-form-item>
             <a-divider orientation="left">{{$t('common.text00086')}}</a-divider>
-            <a-checkbox-group v-decorator="decorators.tagsSelected" class="w-100">
+            <a-checkbox-group :value="tagsSelected" @update:value="onTagsSelectedUpdate" class="w-100">
               <div class="tag-fields-wrap">
                 <a-row>
                   <a-col
@@ -56,7 +53,7 @@
         <template v-if="showProjectTags">
           <a-form-item>
             <a-divider orientation="left">{{$t('common.project_tag_key')}}</a-divider>
-            <a-checkbox-group v-decorator="decorators.projectTagsSelected" class="w-100">
+            <a-checkbox-group :value="projectTagsSelected" @update:value="onProjectTagsSelectedUpdate" class="w-100">
               <div class="tag-fields-wrap">
                 <a-row>
                   <a-col
@@ -72,18 +69,18 @@
           </a-form-item>
         </template>
       </a-form>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 
 <script>
 import * as R from 'ramda'
 import { mapGetters } from 'vuex'
-import draggable from 'vuedraggable'
+import Sortable from 'sortablejs'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import { getTagTitle, isUserTag, isExtTag } from '@/utils/common/tag'
@@ -91,25 +88,102 @@ import { arrToObjByKey } from '@/utils/utils'
 
 export default {
   name: 'CustomListDialog',
-  components: {
-    draggable,
-  },
   mixins: [DialogMixin, WindowsMixin],
   data () {
+    const customsRaw = Array.isArray(this.params?.customs) ? this.params.customs : []
+    const hidenColumns = Array.isArray(this.params?.hidenColumns) ? this.params.hidenColumns : []
+    const hiddenColumnsFromConfig = Array.isArray(this.params?.config?.hiddenColumns) ? this.params.config.hiddenColumns : []
+
+    // vxe-table 可能存在分组列（children/columns），自定义列只展示叶子列
+    const flattenCustoms = (list = []) => {
+      const out = []
+      const walk = (arr) => {
+        ;(arr || []).forEach((it) => {
+          const children = it && (it.children || it.columns)
+          if (Array.isArray(children) && children.length) {
+            walk(children)
+          } else {
+            out.push(it)
+          }
+        })
+      }
+      walk(list)
+      return out
+    }
+    const customs = flattenCustoms(customsRaw)
+
+    const resolveColumnKey = (item) => {
+      if (typeof item === 'string') return item
+      if (!item || typeof item !== 'object') return undefined
+      return item.property || item.field || item.key
+    }
+    const resolveColumnTitle = (item) => {
+      if (typeof item === 'string') return item
+      if (!item || typeof item !== 'object') return ''
+      const t = item.title ?? item.label
+      if (typeof t === 'string') return t
+      return String(resolveColumnKey(item) || '')
+    }
+    const normalizeColumn = (item) => {
+      if (typeof item === 'string') {
+        const property = resolveColumnKey(item)
+        return { property, title: property, visible: property ? !hiddenColumnsFromConfig.includes(property) : true }
+      }
+      const safeItem = (item && typeof item === 'object') ? item : {}
+      const property = resolveColumnKey(safeItem)
+      const title = resolveColumnTitle(safeItem)
+      const visible = typeof safeItem.visible === 'boolean'
+        ? safeItem.visible
+        : (property ? !hiddenColumnsFromConfig.includes(property) : true)
+      return {
+        ...safeItem,
+        property,
+        title,
+        visible,
+      }
+    }
+
     // 普通的列
-    const columnFields = this.params.customs.filter(item => {
-      return item.type !== 'checkbox' && item.type !== 'radio' && item.property !== '_action' && item.property !== '_action_placeholder' && !isUserTag(item.property) && !isExtTag(item.property) && !this.params.hidenColumns.includes(item.property)
-    })
+    const columnFields = customs
+      .map(normalizeColumn)
+      .filter(item => {
+        const key = item.property
+        if (!key) return false
+        return item.type !== 'checkbox' &&
+          item.type !== 'radio' &&
+          key !== '_action' &&
+          key !== '_action_placeholder' &&
+          !isUserTag(key) &&
+          !isExtTag(key) &&
+          !hidenColumns.includes(key)
+      })
     const initialColumnsSelected = columnFields.filter(item => item.visible).map(item => item.property)
     // 标签列
-    const tagFields = this.params.customs.filter(item => {
-      return item.type !== 'checkbox' && item.type !== 'radio' && item.property !== '_action' && item.property !== '_action_placeholder' && (isUserTag(item.property) || isExtTag(item.property)) && (item.slots && item.slots.tag_type && item.slots.tag_type({}) === 'resource')
+    const tagFields = customs.map(normalizeColumn).filter(item => {
+      const key = item.property
+      return item.type !== 'checkbox' &&
+        item.type !== 'radio' &&
+        key !== '_action' &&
+        key !== '_action_placeholder' &&
+        (isUserTag(key) || isExtTag(key)) &&
+        (item.slots && item.slots.tag_type && item.slots.tag_type({}) === 'resource')
     })
-    const instanceTagFields = this.params.customs.filter(item => {
-      return item.type !== 'checkbox' && item.type !== 'radio' && item.property !== '_action' && item.property !== '_action_placeholder' && (isUserTag(item.property) || isExtTag(item.property)) && (item.slots && item.slots.tag_type && item.slots.tag_type({}) === 'instance')
+    const instanceTagFields = customs.map(normalizeColumn).filter(item => {
+      const key = item.property
+      return item.type !== 'checkbox' &&
+        item.type !== 'radio' &&
+        key !== '_action' &&
+        key !== '_action_placeholder' &&
+        (isUserTag(key) || isExtTag(key)) &&
+        (item.slots && item.slots.tag_type && item.slots.tag_type({}) === 'instance')
     })
-    const projectTagFields = this.params.customs.filter(item => {
-      return item.type !== 'checkbox' && item.type !== 'radio' && item.property !== '_action' && item.property !== '_action_placeholder' && (item.slots && item.slots.tag_type && item.slots.tag_type({}) === 'project')
+    const projectTagFields = customs.map(normalizeColumn).filter(item => {
+      const key = item.property
+      return item.type !== 'checkbox' &&
+        item.type !== 'radio' &&
+        key !== '_action' &&
+        key !== '_action_placeholder' &&
+        (item.slots && item.slots.tag_type && item.slots.tag_type({}) === 'project')
     })
     const initialTagsSelected = tagFields.filter(item => {
       return this.params.config.showTagKeys.includes(item.property)
@@ -158,6 +232,10 @@ export default {
       tagFields,
       instanceTagFields,
       projectTagFields,
+      /** ant-design-vue v4 无 v-decorator 联动；与 legacy setFieldsValue 共用一份选中态 */
+      columnsSelected: [...initialColumnsSelected],
+      tagsSelected: [...initialTagsSelected],
+      projectTagsSelected: [...initialProjectTagsSelected],
       columnsIndeterminate: initialColumnsSelected.length !== 0 && columnFields.length !== initialColumnsSelected.length,
       columnsCheckAll: columnFields.length === initialColumnsSelected.length,
     }
@@ -226,8 +304,41 @@ export default {
     if (this.params.showTagColumns2) {
       this.fetchProjectTags()
     }
+    this.syncFormFieldValues()
+  },
+  mounted () {
+    this.initColumnsSortable()
+  },
+  beforeUnmount () {
+    this.destroyColumnsSortable()
   },
   methods: {
+    initColumnsSortable () {
+      this.destroyColumnsSortable()
+      this.$nextTick(() => {
+        const el = this.$refs.columnsSortableRoot
+        if (!el || !Array.isArray(this.columnFields) || !this.columnFields.length) return
+        this._columnsSortable = Sortable.create(el, {
+          handle: '.checkbox-item__drag-handle',
+          animation: 150,
+          ghostClass: 'ghost',
+          onEnd: (evt) => {
+            const { oldIndex, newIndex } = evt
+            if (oldIndex == null || newIndex == null || oldIndex === newIndex) return
+            const list = this.columnFields
+            if (oldIndex < 0 || newIndex < 0 || oldIndex >= list.length || newIndex >= list.length) return
+            const [moved] = list.splice(oldIndex, 1)
+            list.splice(newIndex, 0, moved)
+          },
+        })
+      })
+    },
+    destroyColumnsSortable () {
+      if (this._columnsSortable) {
+        this._columnsSortable.destroy()
+        this._columnsSortable = null
+      }
+    },
     async fetchTags () {
       let manager = new this.$Manager('metadatas')
       try {
@@ -312,16 +423,16 @@ export default {
         manager = null
       }
     },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((errors, values) => {
-          if (errors) {
-            reject(errors)
-          } else {
-            resolve(values)
-          }
-        })
+    syncFormFieldValues () {
+      this.form.fc.setFieldsValue({
+        columnsSelected: this.columnsSelected,
+        tagsSelected: this.tagsSelected,
+        projectTagsSelected: this.projectTagsSelected,
       })
+    },
+    validateForm () {
+      this.syncFormFieldValues()
+      return Promise.resolve(this.form.fc.getFieldsValue())
     },
     async handleConfirm () {
       try {
@@ -349,10 +460,23 @@ export default {
       this.columnsIndeterminate = !!val.length && val.length < this.columnFields.length
       this.columnsCheckAll = val.length === this.columnFields.length
     },
+    onColumnsSelectedUpdate (val) {
+      this.columnsSelected = val
+      this.syncFormFieldValues()
+      this.handleColumnsSelectedChange(val)
+    },
+    onTagsSelectedUpdate (val) {
+      this.tagsSelected = val
+      this.syncFormFieldValues()
+    },
+    onProjectTagsSelectedUpdate (val) {
+      this.projectTagsSelected = val
+      this.syncFormFieldValues()
+    },
     handleColumnsCheckAllChange (e) {
-      this.form.fc.setFieldsValue({
-        columnsSelected: e.target.checked ? this.columnFields.map(item => item.property) : [],
-      })
+      const next = e.target.checked ? this.columnFields.map(item => item.property) : []
+      this.columnsSelected = next
+      this.syncFormFieldValues()
       this.columnsCheckAll = e.target.checked
       this.columnsIndeterminate = false
     },
@@ -370,51 +494,108 @@ export default {
   max-height: 100px;
   overflow: auto;
 }
-.checkbox-item {
-  ::v-deep {
-    .ant-checkbox-wrapper {
-      display: flex;
-      align-items: center;
-      .ant-checkbox {
-        margin-top: 3px;
-        & + span {
-          flex: 1;
-          overflow: hidden;
-          text-overflow:ellipsis;
-          white-space: nowrap;
-        }
-      }
-    }
-    .drag-icon {
-      visibility: hidden;
-    }
-    .checkbox-property {
-      padding-right: 15px;
-    }
+.customlist-grid {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+}
+.customlist-cell {
+  flex: 0 0 25%;
+  max-width: 25%;
+  min-width: 0;
+}
+/* 标签区仍用下方通用 .checkbox-item 文案省略；列自定义区单独布局（拖拽柄不占 label 宽度、hover 可靠） */
+.checkbox-item--columns {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 4px;
+}
+.checkbox-item__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.checkbox-item__gap {
+  flex: 1 1 0;
+  min-width: 6px;
+  min-height: 22px;
+  align-self: stretch;
+}
+.checkbox-item__drag-handle {
+  cursor: move;
+  user-select: none;
+}
+.checkbox-item__title {
+  display: inline-block;
+  max-width: 100%;
+}
+.checkbox-item__handle {
+  flex: 0 0 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 22px;
+  color: rgba(0, 0, 0, 0.45);
+}
+.checkbox-item--columns .checkbox-item__handle :deep(.drag-icon) {
+  cursor: move;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+  flex-shrink: 0;
+}
+/* 悬停行（文案区、右侧柄区）显示；仅悬停原生 input 时隐藏 */
+.checkbox-item--columns:hover .checkbox-item__handle :deep(.drag-icon) {
+  opacity: 1;
+}
+.checkbox-item--columns:has(.ant-checkbox-input:hover) .checkbox-item__handle :deep(.drag-icon) {
+  opacity: 0;
+}
+.checkbox-item:not(.checkbox-item--columns) {
+  :deep(.ant-checkbox-wrapper) {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-width: 0;
   }
-  &:hover {
-    ::v-deep {
-      .drag-icon {
-        visibility: visible !important;;
-      }
-    }
+}
+.checkbox-item--columns.checkbox-item {
+  :deep(.ant-checkbox-wrapper) {
+    display: flex;
+    align-items: center;
+    width: auto;
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+.checkbox-item {
+  :deep(.ant-checkbox-wrapper) {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
+  :deep(.ant-checkbox-wrapper > span:last-child) {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  :deep(.ant-checkbox) {
+    margin-top: 0;
   }
 }
 .flip-list-move {
   transition: transform 0.5s;
 }
-.drag-icon {
-  position: absolute;
-  right: 0;
-  cursor: move;
-}
 .ghost {
   opacity: 0.7;
   background: @primary-color;
-  ::v-deep {
-    label span {
-      color: #fff;
-    }
+  :deep(label span) {
+    color: #fff;
   }
 }
 </style>

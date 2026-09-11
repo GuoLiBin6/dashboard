@@ -1,7 +1,7 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{$t('network.text_26')}}</div>
-    <div slot="body">
+    <template #header>{{$t('network.text_26')}}</template>
+    <template #body>
       <a-form
         :form="form.fc">
         <a-form-item :label="$t('network.text_211')" v-bind="formItemLayout">
@@ -34,11 +34,11 @@
             :autosize="{ minRows: 2, maxRows: 6 }" />
         </a-form-item>
       </a-form>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

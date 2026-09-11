@@ -10,14 +10,14 @@ export const getAssociateNameTableColumn = ({ vm = {}, hidden } = {}) => {
     minWidth: 120,
     slots: {
       default: ({ row }, h) => {
-        if (vm.isPreLoad && !row.associate_name) return [<data-loading />]
+        if (vm.isPreLoad && !row.associate_name) return [h('data-loading')]
         const { associate_name, associate_id, associate_type, server_private_ip } = row
         if (vm && associate_type) {
           const associate = ASSOCIATE_MAP[associate_type] || {}
           const text = `${associate_name || '-'}(${associate.name || '-'}${server_private_ip ? `: ${server_private_ip}` : ''})`
           if (associate_name && associate_id) {
             return [
-              <side-page-trigger permission={associate.permission} tab={associate.tab} name={associate.sidePage} id={associate_id} vm={vm}>{text}</side-page-trigger>,
+              h('side-page-trigger', { props: { permission: associate.permission, tab: associate.tab, name: associate.sidePage, id: associate_id, vm } }, text),
             ]
           } else {
             return `${associate_name || '-'}${associate.name ? `(${associate.name})` : ''}`
@@ -63,11 +63,13 @@ export const getIPWithBgpTypeTableColumn = ({ hidden } = {}) => {
         }
         if (extraList.length) {
           ret.push(
-            <list-body-cell-wrap row={row} field="ip_addr" copy><span class="text-color-help">({ extraList.join(',') })</span></list-body-cell-wrap>,
+            h('list-body-cell-wrap', { props: { row, field: 'ip_addr', copy: true } }, [
+              h('span', { class: 'text-color-help' }, '(' + extraList.join(',') + ')'),
+            ]),
           )
         } else {
           ret.push(
-            <list-body-cell-wrap row={row} field="ip_addr" copy></list-body-cell-wrap>,
+            h('list-body-cell-wrap', { props: { row, field: 'ip_addr', copy: true } }),
           )
         }
         return ret

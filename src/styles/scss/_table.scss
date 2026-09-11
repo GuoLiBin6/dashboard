@@ -1,11 +1,7 @@
-@import 'vxe-table/styles/variable';
-$vxe-font-size: 12px;
-$vxe-table-row-hover-background-color: rgb(248, 248, 248);
-$vxe-table-row-current-background-color: rgb(245, 245, 245);
-$vxe-table-row-hover-current-background-color: rgb(245, 245, 245);
-$vxe-table-row-cheched-background-color: $vxe-table-row-hover-background-color;
-$vxe-table-row-hover-cheched-background-color: $vxe-table-row-hover-background-color;
-@import 'vxe-table/styles/default';
+// vxe-table v4 在 Vue3 下建议直接引入 css：
+//   import 'vxe-pc-ui/lib/style.css'
+//   import 'vxe-table/lib/style.css'
+// 这里仅保留项目自定义覆盖，避免依赖 vxe-table 2.x 的 scss 入口路径。
 
 .vxe-table.t--border .vxe-header--column:last-child,
 .vxe-table.t--border .vxe-footer--column:last-child {

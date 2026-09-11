@@ -16,7 +16,7 @@ export const getK8sClusterProviderColumn = () => {
         const data = HYPERVISORS_MAP[row.provider]
         if (!data || !data.brand) return '-'
         return [
-          <BrandIcon name={ data.brand } />,
+          h(BrandIcon, { props: { name: data.brand } }),
         ]
       },
     },
@@ -46,10 +46,15 @@ export const getK8sClusterDistribution = () => {
           title += `${row.version} `
         }
         return [
-          <div class="d-inline-flex align-items-right flex-column">
-            <Icon class="d-block text-left" type={ type } style={ styles } />
-            <div>{ title }</div>
-          </div>,
+          h('div', { class: 'd-inline-flex align-items-right flex-column' }, [
+            h('icon', {
+              class: 'd-block text-left',
+              // k8s 为蓝底+白图案多色图标，需保留原色，否则中间图案会被 currentColor 染成同色消失
+              props: { type, preserveColor: type === 'k8s' },
+              style: styles,
+            }),
+            h('div', {}, title),
+          ]),
         ]
       },
     },

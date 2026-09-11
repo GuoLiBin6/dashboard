@@ -1,13 +1,15 @@
 <template>
   <div>
     <a-alert :showIcon="false" banner>
-      <div slot="message">{{$t('cloudenv.text_225')}}<div style="margin-left: 68px">{{$t('cloudenv.text_226')}}</div>
-      </div>
+      <template #message>
+        {{$t('cloudenv.text_225')}}
+        <div style="margin-left: 68px">{{$t('cloudenv.text_226')}}</div>
+      </template>
    </a-alert>
     <a-form class="mt-3" :form="form.fc">
       <a-divider orientation="left">{{$t('cloudenv.text_227')}}</a-divider>
       <a-form-item :label="$t('cloudenv.text_228')" v-bind="formLayout">
-        <a-switch :checkedChildren="$t('cloudenv.text_84')" :unCheckedChildren="$t('cloudenv.text_85')" v-model="configNetwork" />
+        <a-switch :checkedChildren="$t('cloudenv.text_84')" :unCheckedChildren="$t('cloudenv.text_85')" v-model:value="configNetwork" />
       </a-form-item>
       <template v-if="configNetwork">
         <a-form-item :label="$t('cloudenv.text_184')" v-bind="formLayout">

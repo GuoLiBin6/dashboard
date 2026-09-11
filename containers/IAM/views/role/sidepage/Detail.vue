@@ -6,7 +6,7 @@
     :isEditName="false" />
 </template>
 
-<script>
+<script lang="jsx">
 import WindowsMixin from '@/mixins/windows'
 import {
   getPublicScopeTableColumn,
@@ -55,10 +55,12 @@ export default {
           field: 'match_policies',
           title: this.$t('system.text_11'),
           slots: {
-            default: ({ row }) => {
-              return (
-                <a onClick={ () => this.$emit('tab-change', 'policies-list-for-role-sidepage') }>{ (row.match_policies && row.match_policies.length) || 0 }</a>
-              )
+            default: ({ row }, h) => {
+              return h('a', {
+                on: {
+                  click: () => this.$emit('tab-change', 'policies-list-for-role-sidepage'),
+                },
+              }, (row.match_policies && row.match_policies.length) || 0)
             },
           },
         },

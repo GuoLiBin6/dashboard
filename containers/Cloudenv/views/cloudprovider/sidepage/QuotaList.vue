@@ -64,9 +64,15 @@ export default {
               const { name } = row
               const text = this.$t('cloudproviderquotaNames')[name] || name
               return [
-                <list-body-cell-wrap hideField copy field={'name'} row={row} message={text}>
-                  {text}
-                </list-body-cell-wrap>,
+                h('list-body-cell-wrap', {
+                  props: {
+                    hideField: true,
+                    copy: true,
+                    field: 'name',
+                    row,
+                    message: text,
+                  },
+                }, text),
               ]
             },
           },
@@ -85,7 +91,7 @@ export default {
           minWidth: 330,
           sortable: true,
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               const { used_count: uc, max_count: mc } = row
               const percent = uc / mc * 100
               const format = (percent, successPercent) => {
@@ -98,15 +104,26 @@ export default {
               if (Math.round(percent) > 80) {
                 strokeColor = '#f5222d'
               }
+              const hFn = h || this.$createElement
               return [
-                <a-row>
-                  <a-col span={14}>
-                    <a-progress status={'active'} strokeColor={strokeColor} format={format} size="small" percent={percent} />
-                  </a-col>
-                  <a-col span={10}>
-                    <span style={{ fontSize: '12px', paddingLeft: '20px' }}>{uc}（{this.$t('common.total', [mc])}）</span>
-                  </a-col>
-                </a-row>,
+                hFn('a-row', [
+                  hFn('a-col', { props: { span: 14 } }, [
+                    hFn('a-progress', {
+                      props: {
+                        status: 'active',
+                        strokeColor,
+                        format,
+                        size: 'small',
+                        percent,
+                      },
+                    }),
+                  ]),
+                  hFn('a-col', { props: { span: 10 } }, [
+                    hFn('span', {
+                      style: { fontSize: '12px', paddingLeft: '20px' },
+                    }, uc + '（' + this.$t('common.total', [mc]) + '）'),
+                  ]),
+                ]),
               ]
             },
           },

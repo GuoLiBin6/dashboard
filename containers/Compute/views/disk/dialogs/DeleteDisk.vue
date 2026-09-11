@@ -3,7 +3,7 @@
     <div slot="header">{{$t('compute.perform_delete')}}</div>
     <div slot="body">
       <!-- <a-alert class="mb-4" type="warning" v-if="isCeph">
-        <div slot="message">{{$t('compute.text_419')}}</div>
+        <template #message>{{$t('compute.text_419')}}</template>
       </a-alert> -->
       <dialog-selected-tips :count="params.data.length" :name="$t('dictionary.disk')" :action="this.params.title" />
       <dialog-table v-if="params.columns && params.columns.length" :data="params.data" :columns="params.columns.slice(0, 3)" />

@@ -78,13 +78,25 @@ export default {
             default: ({ row }, h) => {
               if (row.guest) {
                 return [
-                  <div>
-                    <side-page-trigger permission="server_get" name="VmInstanceSidePage" id={row.guest_id} vm={this}>{row.guest}</side-page-trigger>
-                    {row.guest_status ? <status status={ row.guest_status } statusModule='server'/> : ''}
-                  </div>,
+                  h('div', [
+                    h('side-page-trigger', {
+                      props: {
+                        permission: 'server_get',
+                        name: 'VmInstanceSidePage',
+                        id: row.guest_id,
+                        vm: this,
+                      },
+                    }, row.guest),
+                    row.guest_status ? h('status', {
+                      props: {
+                        status: row.guest_status,
+                        statusModule: 'server',
+                      },
+                    }) : '',
+                  ]),
                 ]
               }
-              return [<div>-</div>]
+              return [h('div', '-')]
             },
           },
         },
@@ -102,13 +114,25 @@ export default {
             default: ({ row }, h) => {
               if (row.disk_status) {
                 return [
-                  <div>
-                    <side-page-trigger permission="disks_get" name="DiskSidePage" id={row.disk_id} vm={this}>{ row.disk_name }</side-page-trigger>
-                    {row.disk_status ? <status status={ row.disk_status } statusModule='disk'/> : ''}
-                  </div>,
+                  h('div', [
+                    h('side-page-trigger', {
+                      props: {
+                        permission: 'disks_get',
+                        name: 'DiskSidePage',
+                        id: row.disk_id,
+                        vm: this,
+                      },
+                    }, row.disk_name),
+                    row.disk_status ? h('status', {
+                      props: {
+                        status: row.disk_status,
+                        statusModule: 'disk',
+                      },
+                    }) : '',
+                  ]),
                 ]
               }
-              return [<div>-</div>]
+              return [h('div', '-')]
             },
           },
         },
@@ -124,9 +148,24 @@ export default {
               }
               const text = row.storage || '-'
               return [
-                <list-body-cell-wrap copy hideField={true} field='storage' row={row} message={text}>
-                  <side-page-trigger permission='storages_get' name='BlockStorageSidePage' id={row.storage_id} vm={this}>{row.storage}</side-page-trigger>
-                </list-body-cell-wrap>,
+                h('list-body-cell-wrap', {
+                  props: {
+                    copy: true,
+                    hideField: true,
+                    field: 'storage',
+                    row,
+                    message: text,
+                  },
+                }, [
+                  h('side-page-trigger', {
+                    props: {
+                      permission: 'storages_get',
+                      name: 'BlockStorageSidePage',
+                      id: row.storage_id,
+                      vm: this,
+                    },
+                  }, row.storage),
+                ]),
               ]
             },
           },

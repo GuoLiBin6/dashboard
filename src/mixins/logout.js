@@ -103,10 +103,10 @@ export default {
     },
     logout () {
       store.dispatch('auth/logout').then(() => {
-        if (!router.currentRoute.meta.authPage) {
+        if (!router.currentRoute.value.meta.authPage) {
           router.push({
             path: '/auth/login',
-            query: genReferRouteQuery(router.currentRoute),
+            query: genReferRouteQuery(router.currentRoute.value),
           })
           // 登出后将记录检测时间的config置空，便于重新登录后重新获取新的config
           store.commit('common/SET_GLOBAL_CONFIG', {})

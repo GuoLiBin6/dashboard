@@ -63,13 +63,13 @@
         </a-form-item>
         <a-form-item v-if="!isNetworkModeNew" :label="$t('compute.network_check_result')">
           <a-spin v-if="networkCheckLoading">
-            <a-icon slot="indicator" type="loading" spin />
+            <icon slot="indicator" type="loading" spin />
           </a-spin>
           <span v-else>
             <span v-if="checkNetworkResultSuccess" class="success">{{$t('compute.network_check_result.success')}}</span>
             <span v-else class="error">
               {{$t('compute.network_check_result.error')}}
-              <a-icon type="sync" class="mr-2 pointer" :spin="spinLoading" @click="networkCheckHandle" />
+              <icon type="sync" class="mr-2 pointer" :spin="spinLoading" @click="networkCheckHandle" />
               <help-link :href="href">{{$t('compute.network_check_result.new_create')}}</help-link>
             </span>
           </span>

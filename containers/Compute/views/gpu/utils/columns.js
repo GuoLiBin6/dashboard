@@ -18,7 +18,7 @@ export const getReserveResourceColumn = () => {
         const ret = []
         if (row.reserved_cpu) {
           const config = row.reserved_cpu + 'C' + (row.reserved_memory ? sizestr(row.reserved_memory, 'M', 1024) : '') + (row.reserved_storage ? sizestr(row.reserved_storage, 'M', 1024) : '')
-          return ret.concat(<div class='text-truncate' style={{ color: '#53627C' }}>{ config }</div>)
+          return ret.concat(h('div', { class: 'text-truncate', style: { color: 'var(--oc-color-text-secondary)' } }, config))
         }
         return ret
       },

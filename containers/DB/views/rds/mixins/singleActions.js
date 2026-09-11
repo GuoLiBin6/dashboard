@@ -196,7 +196,8 @@ export default {
                 return ret
               },
             },
-            disableDeleteAction(Object.assign(this, { permission: 'rds_dbinstances_update' }), {
+            disableDeleteAction(this, {
+              permission: 'rds_dbinstances_update',
               name: this.$t('dictionary.dbinstances'),
             }),
             {

@@ -4,7 +4,7 @@
     :columns="columns" />
 </template>
 
-<script>
+<script lang="jsx">
 import { ALL_STORAGE } from '@Compute/constants'
 import { getStatusTableColumn } from '@/utils/common/tableColumn'
 import { sizestr } from '@/utils/utils'

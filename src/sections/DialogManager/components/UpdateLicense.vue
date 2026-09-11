@@ -1,6 +1,6 @@
 <template>
   <base-dialog width="580px" class="license-dialog">
-    <div slot="body">
+    <template #body>
       <div class="titles">
          <img class="logo" :src="logo" alt="" />
          <h2>{{$t('common_120', [companyInfo.name])}}</h2>
@@ -11,8 +11,8 @@
           <div>
             <div class="flex-fill d-flex all-sn align-items-end">
               <div class="border pb-2 px-3">
-                <template v-for="item of allSn">
-                  <div class="mt-2" :key="item">
+                <template v-for="item of allSn" :key="item">
+                  <div class="mt-2">
                     <span>{{ item }}</span>
                   </div>
                 </template>
@@ -30,24 +30,24 @@
             :remove="hanldeRemoveFile"
             action="/api/v1/licenses">
             <p class="ant-upload-drag-icon">
-              <a-icon type="cloud-upload" />
+              <icon type="cloud-upload" />
             </p>
             <p class="ant-upload-text">{{$t('common_124')}}</p>
             <p class="ant-upload-hint">{{$t('common_125')}}</p>
           </a-upload-dragger>
-          <div slot="extra"  v-if="license || email">
+          <template #extra v-if="license || email">
             <div class="mt-2 mb-1">{{$t('common_126')}}</div>
             <ul>
               <!-- <li v-if="license">{{$t('common_127')}}<help-link :href="license">{{$t('common_128')}}</help-link></li> -->
               <li v-if="email">{{$t('common_129')}}<a :href="`mailto:${email}`">{{ email }}</a>{{$t('common_130')}}</li>
             </ul>
-          </div>
+          </template>
         </a-form-item>
         <a-form-item v-bind="formItemOffset">
           <a-button block type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
         </a-form-item>
       </a-form>
-    </div>
+    </template>
     <!-- <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
     </div> -->
@@ -190,7 +190,7 @@ export default {
 </script>
 
 <style lang="less">
-@import "~@/styles/less/theme";
+@import "@/styles/less/theme";
 .license-dialog {
   .ant-modal-header, .ant-modal-close, .ant-modal-footer{
     display: none;

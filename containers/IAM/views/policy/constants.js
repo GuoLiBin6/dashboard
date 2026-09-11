@@ -1,16 +1,17 @@
 import i18n from '@/locales'
 
-const requireComponent = require.context('@scope', true, /policyConfig\.(js)$/)
-const keys = requireComponent.keys().filter(item => {
-  const arr = item.split('/')
-  return arr[1] === 'constants' && /\.(js)$/.test(arr[2])
-})
+// 加载 @scope/constants 下扩展的策略配置（Vite 使用 import.meta.glob）
+const scopePolicyModules = {
+  ...import.meta.glob('/scope/constants/policyConfig.js', { eager: true }),
+  // 兼容旧路径（部分环境把 scope 挂在 src 下）
+  ...import.meta.glob('/src/scope/constants/policyConfig.js', { eager: true }),
+}
+
 let extraServices = {}
 let extraResources = {}
-keys.forEach(fileName => {
-  // 获取组件配置
-  const componentConfig = requireComponent(fileName)
-  const { SERVICES_MAP = {}, RESOURCES_MAP = {} } = componentConfig
+Object.values(scopePolicyModules).forEach((mod) => {
+  if (!mod) return
+  const { SERVICES_MAP = {}, RESOURCES_MAP = {} } = mod
   extraServices = { ...extraServices, ...SERVICES_MAP }
   extraResources = { ...extraResources, ...RESOURCES_MAP }
 })

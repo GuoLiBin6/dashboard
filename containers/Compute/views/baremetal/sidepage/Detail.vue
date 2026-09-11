@@ -72,8 +72,8 @@ export default {
           title: this.$t('table.title.init_keypair'),
           minWidth: 50,
           slots: {
-            default: ({ row }) => {
-              return [<PasswordFetcher serverId={row.id} resourceType='servers' />]
+            default: ({ row }, h) => {
+              return [h(PasswordFetcher, { props: { serverId: row.id, resourceType: 'servers' } })]
             },
           },
         },
@@ -149,9 +149,11 @@ export default {
               title: this.$t('compute.text_97'),
               hideField: true,
               message: this.diskInfos.image,
-              slotCallback: row => {
+              slotCallback: (row, h) => {
                 if (this.diskInfos.image) {
-                  return [<side-page-trigger onTrigger={() => this.handleOpenSystemImageDetail(this.diskInfos.imageId)}>{this.diskInfos.image}</side-page-trigger>]
+                  return [h('side-page-trigger', {
+                    on: { trigger: () => this.handleOpenSystemImageDetail(this.diskInfos.imageId) },
+                  }, this.diskInfos.image)]
                 }
                 return '-'
               },
@@ -160,10 +162,17 @@ export default {
               field: 'host',
               title: this.$t('compute.text_112'),
               hideField: true,
-              slotCallback: row => {
+              slotCallback: (row, h) => {
                 if (!row.host) return '-'
                 return [
-                  <side-page-trigger permission='hosts_get' name='PhysicalmachineSidePage' id={row.host_id} vm={this}>{row.host}</side-page-trigger>,
+                  h('side-page-trigger', {
+                    props: {
+                      permission: 'hosts_get',
+                      name: 'PhysicalmachineSidePage',
+                      id: row.host_id,
+                      vm: this,
+                    },
+                  }, row.host),
                 ]
               },
               hidden: () => this.$store.getters.isProjectMode,
@@ -172,10 +181,17 @@ export default {
               field: 'vpc',
               title: 'VPC',
               hideField: true,
-              slotCallback: row => {
+              slotCallback: (row, h) => {
                 if (!row.vpc) return '-'
                 return [
-                  <side-page-trigger permission='vpcs_get' name='VpcSidePage' id={row.vpc_id} vm={this}>{row.vpc}</side-page-trigger>,
+                  h('side-page-trigger', {
+                    props: {
+                      permission: 'vpcs_get',
+                      name: 'VpcSidePage',
+                      id: row.vpc_id,
+                      vm: this,
+                    },
+                  }, row.vpc),
                 ]
               },
               hidden: () => this.$store.getters.isProjectMode,
@@ -198,7 +214,7 @@ export default {
               field: 'sysDisk',
               title: this.$t('compute.text_49'),
               formatter: ({ row }) => {
-                if (this.diskInfos.sysDisk) return <a onClick={() => this.$emit('tab-change', 'disk-list-for-baremetal-sidepage')}>{this.diskInfos.sysDisk}</a>
+                if (this.diskInfos.sysDisk) return this.$createElement('a', { on: { click: () => this.$emit('tab-change', 'disk-list-for-baremetal-sidepage') } }, this.diskInfos.sysDisk)
                 return '-'
               },
             },
@@ -206,7 +222,7 @@ export default {
               field: 'dataDisk',
               title: this.$t('compute.text_50'),
               formatter: ({ row }) => {
-                if (this.diskInfos.dataDisk) return <a onClick={() => this.$emit('tab-change', 'disk-list-for-baremetal-sidepage')}>{this.diskInfos.dataDisk}</a>
+                if (this.diskInfos.dataDisk) return this.$createElement('a', { on: { click: () => this.$emit('tab-change', 'disk-list-for-baremetal-sidepage') } }, this.diskInfos.dataDisk)
                 return '-'
               },
             },
@@ -214,12 +230,19 @@ export default {
               field: 'cdrom',
               title: 'ISO',
               hideField: true,
-              slotCallback: row => {
+              slotCallback: (row, h) => {
                 if (!row.cdrom) return '-'
                 const idx = row.cdrom.indexOf('(')
                 const id = row.cdrom.substring(idx + 1, row.cdrom.indexOf('/'))
                 return [
-                  <side-page-trigger permission='images_get' name='SystemImageSidePage' id={id} vm={this}>{row.cdrom.substring(0, idx) || '-'}</side-page-trigger>,
+                  h('side-page-trigger', {
+                    props: {
+                      permission: 'images_get',
+                      name: 'SystemImageSidePage',
+                      id,
+                      vm: this,
+                    },
+                  }, row.cdrom.substring(0, idx) || '-'),
                 ]
               },
             }),
@@ -240,7 +263,7 @@ export default {
                   ids[val.model] = val.id
                 })
                 return Object.keys(obj).map(k => {
-                  return <span>{this.$t('compute.text_370', [obj[k], k])}</span>
+                  return this.$createElement('span', {}, this.$t('compute.text_370', [obj[k], k]))
                 })
               },
             },

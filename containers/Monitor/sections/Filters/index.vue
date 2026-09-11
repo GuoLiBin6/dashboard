@@ -1,58 +1,77 @@
 <template>
-  <div>
-    <a-row v-for="(item, i) in filters" :key="item.key" class="d-flex align-items-center">
-      <a-col :span="9" class="d-flex">
-        <a-form-item class="mr-1" v-if="i !== 0" style="width: 70px;">
-          <base-select
-            minWidth="70px"
-            v-decorator="decorators.tagCondition(item.key)"
-            :options="conditionOpts"
-            :disabled="disabled"
-            :select-props="{ placeholder: $t('common.select') }" />
-        </a-form-item>
-        <a-form-item class="mr-1" :style="{ width: `calc(100% - ${i === 0 ? 0 : 70}px)` }">
-          <base-select
-            class="w-100"
-            :minWidth="`max(170px, calc(100% - ${i === 0 ? 0 : 70}px))`"
-            v-decorator="decorators.tagKey(item.key)"
-            :options="tagKeyOpts"
-            filterable
-            :disabled="disabled"
-            @change="val => tagKeyChange(val, i, item)"
-            :select-props="{ placeholder: $t('monitor.text_109'), allowClear: true, loading }" />
-        </a-form-item>
-      </a-col>
-      <a-col :span="3">
-        <a-form-item class="mr-1">
-          <base-select
-            minWidth="80px"
-            v-decorator="decorators.tagOperator(item.key)"
-            :options="tagOperatorOpts"
-            :disabled="disabled"
-            :select-props="{ placeholder: $t('common.select') }" />
-        </a-form-item>
-      </a-col>
-      <a-col :span="12" class="d-flex">
-        <a-form-item :style="{ width: `calc(100% - ${i === 0 ? 0 : 20}px)` }">
-          <base-select
-            class="w-100 mr-1"
-            v-decorator="decorators.tagValue(item.key)"
-            :options="item.tagValueOpts"
-            filterable
-            needBlur
-            :disabled="disabled"
-            :select-props="{ mode: 'multiple', placeholder: $t('monitor.text_110'), allowClear: true, loading }"
-            @change="val => tagValuesChange(val, i, item)"
-            @dropdownChange="val => tagValuesDropdownChange(val, i, item)"
-            @blur="val => tagValuesChange(val, i, item)" />
-        </a-form-item>
-        <a-form-item style="width: 20px;" v-if="!disabled && i !== 0">
-          <a-button shape="circle" icon="minus" size="small" @click="remove(i)" class="mt-2 ml-2" />
-        </a-form-item>
-      </a-col>
-    </a-row>
+  <div class="explorer-filters">
+    <div v-for="(item, i) in filters" :key="item.key" class="explorer-filters__row">
+      <div v-if="i !== 0" class="explorer-filters__condition">
+        <base-select
+          minWidth="0"
+          :filterable="false"
+          optionLabelProp="label"
+          idKey="key"
+          nameKey="label"
+          v-decorator="decorators.tagCondition(item.key)"
+          :value="getFilterValue(decorators.tagCondition(item.key)[0])"
+          :options="conditionOpts"
+          :disabled="disabled"
+          @change="() => handleFilterFieldChange()"
+          :select-props="{ placeholder: $t('common.select') }" />
+      </div>
+      <div class="explorer-filters__key">
+        <base-select
+          class="w-100"
+          minWidth="0"
+          optionLabelProp="label"
+          idKey="key"
+          nameKey="label"
+          v-decorator="decorators.tagKey(item.key)"
+          :value="getFilterValue(decorators.tagKey(item.key)[0])"
+          :options="tagKeyOpts"
+          filterable
+          :disabled="disabled"
+          @change="val => tagKeyChange(val, i, item)"
+          :select-props="{ placeholder: $t('monitor.text_109'), allowClear: true, loading }" />
+      </div>
+      <div class="explorer-filters__operator">
+        <base-select
+          minWidth="0"
+          :filterable="false"
+          optionLabelProp="label"
+          idKey="key"
+          nameKey="label"
+          v-decorator="decorators.tagOperator(item.key)"
+          :value="getFilterValue(decorators.tagOperator(item.key)[0])"
+          :options="tagOperatorOpts"
+          :disabled="disabled"
+          @change="() => handleFilterFieldChange()"
+          :select-props="{ placeholder: $t('common.select') }" />
+      </div>
+      <div class="explorer-filters__value">
+        <base-select
+          class="w-100"
+          minWidth="0"
+          optionLabelProp="label"
+          idKey="key"
+          nameKey="label"
+          v-decorator="decorators.tagValue(item.key)"
+          :value="getFilterValue(decorators.tagValue(item.key)[0])"
+          :options="item.tagValueOpts"
+          filterable
+          needBlur
+          :disabled="disabled"
+          :select-props="{ mode: 'multiple', placeholder: $t('monitor.text_110'), allowClear: true, loading }"
+          @change="val => tagValuesChange(val, i, item)"
+          @dropdownChange="val => tagValuesDropdownChange(val, i, item)"
+          @blur="val => tagValuesChange(val, i, item)" />
+      </div>
+      <div v-if="!disabled && i !== 0" class="explorer-filters__remove">
+        <a-button shape="circle" size="small" @click="remove(i)">
+          <template #icon><icon type="minus" /></template>
+        </a-button>
+      </div>
+    </div>
     <div class="d-flex align-items-center" v-if="!disabled">
-      <a-button type="primary" shape="circle" icon="plus" size="small" @click="add" />
+      <a-button type="primary" shape="circle" size="small" @click="add">
+        <template #icon><icon type="plus" /></template>
+      </a-button>
       <a-button type="link" @click="add">{{ $t('monitor.monitor_add_filters') }}</a-button>
     </div>
   </div>
@@ -152,6 +171,16 @@ export default {
     }
   },
   methods: {
+    getFilterValue (name) {
+      const fd = this.form.fd || {}
+      // 优先读扁平 key，保证对 form.fd 的响应式依赖
+      const val = Object.prototype.hasOwnProperty.call(fd, name)
+        ? fd[name]
+        : this.form.fc.getFieldValue(name)
+      // 空串/null 当作未选，避免与 placeholder 叠字
+      if (val === '' || val === null) return undefined
+      return val
+    },
     fillFilters (tags) {
       const tagFields = {}
       this.filters = tags.map(item => {
@@ -218,9 +247,7 @@ export default {
       }
     },
     tagValuesChange (val, i, item) {
-      if (!this.dropdownVisible[i]) {
-        this.$emit('tagValuesChange', item)
-      }
+      this.$emit('tagValuesChange', item)
     },
     reset () {
       this.filters = [{ key: uuid(), tagValueOpts: [] }]
@@ -239,7 +266,14 @@ export default {
       if (val) {
         this.filters[i].tagValueOpts = this.tagValueOpts(val)
       }
-      this.$emit('tagValuesChange')
+      this.$nextTick(() => {
+        this.$emit('tagValuesChange')
+      })
+    },
+    handleFilterFieldChange () {
+      this.$nextTick(() => {
+        this.$emit('tagValuesChange')
+      })
     },
     tagValueOpts (tagKey) {
       if (R.is(Object, this.metricInfo.tag_value) && tagKey) {
@@ -261,3 +295,65 @@ export default {
   },
 }
 </script>
+
+<style lang="less" scoped>
+.explorer-filters {
+  width: 100%;
+  min-width: 0;
+
+  &__row {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    width: 100%;
+    min-width: 0;
+  }
+
+  &__condition {
+    flex: 0 0 72px;
+    width: 72px;
+    min-width: 0;
+  }
+
+  &__key {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
+  &__operator {
+    flex: 0 0 90px;
+    width: 90px;
+    min-width: 0;
+  }
+
+  &__value {
+    flex: 1.2 1 0;
+    min-width: 0;
+  }
+
+  &__remove {
+    flex: 0 0 24px;
+    width: 24px;
+    min-width: 24px;
+  }
+
+  :deep(.ant-select),
+  :deep(.base-select),
+  :deep(.base-select .ant-select) {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+
+  // 有选中项时隐藏 placeholder，兜底叠字
+  :deep(.ant-select-selection-item ~ .ant-select-selection-placeholder),
+  :deep(.ant-select-selection-overflow:not(:empty) ~ .ant-select-selection-placeholder) {
+    display: none !important;
+    opacity: 0 !important;
+  }
+  :deep(.ant-select-selection-placeholder) {
+    pointer-events: none;
+  }
+}
+</style>

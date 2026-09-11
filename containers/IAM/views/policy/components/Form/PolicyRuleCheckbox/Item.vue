@@ -10,7 +10,7 @@
         :indeterminate="resource.isIndeterminate"
         :disabled="resource.disabled">{{$t('system.text_320')}}</a-checkbox>
       <a-checkbox-group
-        v-model="normalChecked"
+        v-model:value="normalChecked"
         @change="handleCheckedActionsChange"
         :options="normalActions" />
       <!-- 执行操作 -->
@@ -211,7 +211,8 @@ export default {
         extraChecked = []
       }
       const checked = [...normalChecked, ...extraChecked]
-      if (extraChecked.length === this.extraActions.length) {
+      // 无 extra 时 length 同为 0，不能再用 length 判断，否则取消勾选仍会把 perform 加回去
+      if (val && (!this.extraActions.length || extraChecked.length === this.extraActions.length)) {
         checked.push('perform')
       }
       const isIndeterminate = checked.length > 0 && checked.length < this.resource.actions.length

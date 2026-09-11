@@ -71,7 +71,7 @@ export default {
 </script>
 
 <style lang="less" scoped>
-@import '~@/styles/less/theme';
+@import '@/styles/less/theme';
 
 .extend-gallery-wrap {
   background-color: #fff;

@@ -12,10 +12,12 @@ export default {
         hideField: true,
         addLock: true,
         addBackup: true,
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name || row.external_id }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name || row.external_id)
         },
         hidden: () => {
           return this.$isScopedPolicyMenuHidden('mongodb_hidden_columns.name')
@@ -43,13 +45,13 @@ export default {
         minWidth: 120,
         sortable: true,
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             const ret = []
             if (row.instance_type) {
-              ret.push(<div class='text-truncate' style={{ color: '#0A1F44' }}>{ row.instance_type }</div>)
+              ret.push(h('div', { class: 'text-truncate', style: { color: 'var(--oc-color-text-heading)' } }, row.instance_type))
             }
             const config = row.vcpu_count + 'C' + sizestr(row.vmem_size_mb || 0, 'M', 1024) + sizestr(row.disk_size_mb || 0, 'M', 1024)
-            return ret.concat(<div class='text-truncate' style={{ color: '#53627C' }}>{ config }</div>)
+            return ret.concat(h('div', { class: 'text-truncate', style: { color: 'var(--oc-color-text-secondary)' } }, config))
           },
         },
         formatter: ({ row }) => {
@@ -69,10 +71,17 @@ export default {
         title: i18n.t('db.text_152'),
         minWidth: 200,
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             if (!row.ip_addr) return '-'
             const ret = row.ip_addr.split(';').map(ip => {
-              return <list-body-cell-wrap hide-field copy row={{ ip: `${ip}:${row.port}` }} field="ip">{`${ip}:${row.port}`}</list-body-cell-wrap>
+              return h('list-body-cell-wrap', {
+                props: {
+                  hideField: true,
+                  copy: true,
+                  row: { ip: `${ip}:${row.port}` },
+                  field: 'ip',
+                },
+              }, `${ip}:${row.port}`)
             })
             return ret
           },
@@ -93,10 +102,17 @@ export default {
         title: i18n.t('db.network_address'),
         minWidth: 200,
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             if (!row.network_address) return '-'
             const ret = row.network_address.split(',').map(ip => {
-              return <list-body-cell-wrap hide-field copy row={{ ip }} field="ip">{ip}</list-body-cell-wrap>
+              return h('list-body-cell-wrap', {
+                props: {
+                  hideField: true,
+                  copy: true,
+                  row: { ip },
+                  field: 'ip',
+                },
+              }, ip)
             })
             return ret
           },
@@ -116,10 +132,13 @@ export default {
         field: 'engine_version',
         title: i18n.t('db.text_377'),
         slots: {
-          default: ({ row }) => {
-            const ret = [<div>{row.engine} {row.engine_version}</div>]
+          default: ({ row }, h) => {
+            const ret = [h('div', `${row.engine} ${row.engine_version}`)]
             if (row.disk_size_mb) {
-              ret.push(<div class='text-truncate' style={{ color: '#53627C' }}>{ sizestr(row.disk_size_mb, 'M', 1024) }</div>)
+              ret.push(h('div', {
+                class: 'text-truncate',
+                style: { color: 'var(--oc-color-text-secondary)' },
+              }, sizestr(row.disk_size_mb, 'M', 1024)))
             }
             return ret
           },

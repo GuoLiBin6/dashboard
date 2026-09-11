@@ -1,6 +1,6 @@
 <template>
   <div>
-    <page-header :title="$t('common_631')" :tabs="tabs" :current-tab.sync="currentComponent" />
+    <page-header :title="$t('common_631')" :tabs="tabs" v-model:currentTab="currentComponent" />
     <page-body>
       <keep-alive>
         <component :is="currentComponent" :id="currentComponent" />

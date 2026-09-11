@@ -1,7 +1,7 @@
 <template>
   <div>
     <page-header :title="$t('system.text_167', [$t('dictionary.policy')])" />
-    <page-body need-margin-bottom>
+    <page-body>
       <policy-form ref="policyForm" :edit-type="editType" @edit-type-change="val => editType = val" />
     </page-body>
     <page-footer>

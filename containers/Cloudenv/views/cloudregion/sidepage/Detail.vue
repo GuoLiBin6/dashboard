@@ -34,8 +34,8 @@ export default {
           field: 'zone_count',
           title: this.$t('cloudenv.text_370'),
           slots: {
-            default: ({ row }) => {
-              return row.zone_count > 0 ? [<a onClick={ () => this.$emit('tab-change', 'zone-list') }>{ row.zone_count }</a>] : 0
+            default: ({ row }, h) => {
+              return row.zone_count > 0 ? [h('a', { on: { click: () => this.$emit('tab-change', 'zone-list') } }, row.zone_count)] : 0
             },
           },
         },
@@ -43,8 +43,8 @@ export default {
           field: 'vpc_count',
           title: this.$t('cloudenv.text_371'),
           slots: {
-            default: ({ row }) => {
-              return row.vpc_count > 0 ? [<a onClick={ () => this.$emit('tab-change', 'v-p-c-list') }>{ row.vpc_count }</a>] : 0
+            default: ({ row }, h) => {
+              return row.vpc_count > 0 ? [h('a', { on: { click: () => this.$emit('tab-change', 'v-p-c-list') } }, row.vpc_count)] : 0
             },
           },
         },
@@ -52,8 +52,8 @@ export default {
           field: 'network_count',
           title: this.$t('cloudenv.text_372'),
           slots: {
-            default: ({ row }) => {
-              return row.network_count > 0 ? [<a onClick={ () => this.$emit('tab-change', 'network-list') }>{ row.network_count }</a>] : 0
+            default: ({ row }, h) => {
+              return row.network_count > 0 ? [h('a', { on: { click: () => this.$emit('tab-change', 'network-list') } }, row.network_count)] : 0
             },
           },
         },

@@ -14,14 +14,13 @@
           <draggable
             handle=".drag-icon"
             chosen-class="chosen"
+            item-key="id"
             v-model="images">
-            <transition-group type="transition" name="flip-list">
-              <template v-for="item of images">
-                <div class="item" :key="item.id">
-                  <a-icon type="drag" class="drag-icon pr-3" @click.prevent="() => {}" />{{item.name}}
-                </div>
-              </template>
-            </transition-group>
+            <template #item="slotProps">
+              <div class="item">
+                <icon type="dragable" class="drag-icon pr-3" @click.prevent="() => {}" />{{slotProps?.element?.name}}
+              </div>
+            </template>
           </draggable>
         </a-form-item>
       </a-form>

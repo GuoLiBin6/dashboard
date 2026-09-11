@@ -12,10 +12,11 @@ export default {
         hideField: true,
         addLock: true,
         addBackup: true,
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          const hFn = h || this.$createElement
+          return hFn('side-page-trigger', {
+            on: { trigger: () => this.handleOpenSidepage(row) },
+          }, row.name)
         },
       }),
       getStatusTableColumn({ statusModule: 'server', vm: this }),
@@ -33,13 +34,14 @@ export default {
         minWidth: 120,
         sortable: true,
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
+            const hFn = h || this.$createElement
             const ret = []
             if (row.instance_type) {
-              ret.push(<div class='text-truncate' style={{ color: '#0A1F44' }}>{ row.instance_type }</div>)
+              ret.push(hFn('div', { class: 'text-truncate', style: { color: 'var(--oc-color-text-heading)' } }, row.instance_type))
             }
             const config = row.vcpu_count + 'C' + sizestr(row.vmem_size, 'M', 1024) + (row.disk ? sizestr(row.disk, 'M', 1024) : '')
-            return ret.concat(<div class='text-truncate' style={{ color: '#53627C' }}>{ config }</div>)
+            return ret.concat(hFn('div', { class: 'text-truncate', style: { color: 'var(--oc-color-text-secondary)' } }, config))
           },
         },
       },
@@ -48,7 +50,8 @@ export default {
         title: i18n.t('table.title.os'),
         width: 50,
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
+            const hFn = h || this.$createElement
             let name = (row.metadata && row.metadata.os_distribution) ? row.metadata.os_distribution : row.os_type || ''
             if (name.includes('Windows') || name.includes('windows')) {
               name = 'Windows'
@@ -56,7 +59,7 @@ export default {
             const version = (row.metadata && row.metadata.os_version) ? `${row.metadata.os_version}` : ''
             const tooltip = (version.includes(name) ? version : `${name} ${version}`) || i18n.t('compute.text_339') // 去重
             return [
-              <SystemIcon tooltip={ tooltip } name={ name } />,
+              hFn(SystemIcon, { props: { tooltip, name } }),
             ]
           },
         },
@@ -67,7 +70,7 @@ export default {
         width: 50,
         slots: {
           default: ({ row }) => {
-            return [<PasswordFetcher serverId={ row.id } resourceType='servers' />]
+            return [this.$createElement(PasswordFetcher, { props: { serverId: row.id, resourceType: 'servers' } })]
           },
         },
       },
@@ -75,9 +78,10 @@ export default {
         field: 'host',
         title: i18n.t('res.machine'),
         hideField: true,
-        slotCallback: row => {
+        slotCallback: (row, h) => {
           if (!row.host) return '-'
-          return [<span>{ row.host }</span>]
+          const hFn = h || this.$createElement
+          return [hFn('span', {}, row.host)]
         },
         hidden: () => this.$store.getters.isProjectMode,
       }),

@@ -17,9 +17,11 @@ export default {
         hideField: true,
         edit: false,
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+          return this.$createElement('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       {
@@ -34,7 +36,13 @@ export default {
         slots: {
           default: ({ row }, h) => {
             const cnRole = NODE_ROLE_MAP[row.role] || row.role
-            return [<a-tag class="mr-2 d-block text-truncate" title={cnRole} color="blue">{cnRole}</a-tag>]
+            return [h('a-tag', {
+              class: 'mr-2 d-block text-truncate',
+              attrs: {
+                title: cnRole,
+                color: 'blue',
+              },
+            }, cnRole)]
           },
         },
       },
@@ -78,7 +86,11 @@ export default {
             const brand = HYPERVISORS_MAP[row.hypervisor].brand
             if (!brand) return '-'
             return [
-              <BrandIcon name={ brand } />,
+              h(BrandIcon, {
+                props: {
+                  name: brand,
+                },
+              }),
             ]
           },
         },

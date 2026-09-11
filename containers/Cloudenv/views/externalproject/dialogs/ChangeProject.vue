@@ -11,18 +11,18 @@
         <a-form-model-item prop="project" :label="params.projectLabel || $t('res.project')" v-bind="formItemLayout">
           <a-row :gutter="8">
             <a-col :span="12">
-              <a-select v-model="domain" show-search @search="getConditionDomains" :filter-option="false" allow-clear dropdownClassName="oc-select-dropdown">
-                <template v-for="item of domains">
-                  <a-select-option :key="item.id" :value="item.id">
+              <a-select v-model:value="domain" show-search @search="getConditionDomains" :filter-option="false" allow-clear dropdownClassName="oc-select-dropdown">
+                <template v-for="item of domains" :key="item.id">
+                  <a-select-option :value="item.id">
                     <span class="text-color-secondary option-prefix">{{ $t('res.domain') }}: </span>{{ item.name }}
                   </a-select-option>
                 </template>
               </a-select>
             </a-col>
             <a-col :span="12">
-              <a-select v-model="fd.project" show-search @search="fetchProjects" :filter-option="false" allow-clear dropdownClassName="oc-select-dropdown">
-                <template v-for="item of projects">
-                  <a-select-option :key="item.id" :value="item.id">
+              <a-select v-model:value="fd.project" show-search @search="fetchProjects" :filter-option="false" allow-clear dropdownClassName="oc-select-dropdown">
+                <template v-for="item of projects" :key="item.id">
+                  <a-select-option :value="item.id">
                     <span class="text-color-secondary option-prefix">{{ $t('res.project') }}: </span>{{ item.name }}
                   </a-select-option>
                 </template>
@@ -93,7 +93,7 @@ export default {
       }
     },
   },
-  destroyed () {
+  unmounted () {
     this.dm = null
     this.pm = null
   },

@@ -1,8 +1,53 @@
-.copy-icon {
-  display: inline-block;
+.copy-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  color: rgba(0, 0, 0, 0.45);
   cursor: pointer;
-  position: relative;
+  line-height: 1;
+  vertical-align: middle;
+  transition-property: color, background-color, transform, opacity;
+  transition-duration: 0.15s;
+  transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+
+  .copy-trigger__icon,
+  .oc-icon {
+    width: 13px;
+    height: 13px;
+    font-size: 13px;
+  }
+
+  &:hover {
+    color: var(--ant-color-primary, #1890ff);
+    background-color: rgba(0, 0, 0, 0.04);
+  }
+
   &:active {
-    transform: translateY(2px);
+    transform: scale(0.96);
+    color: var(--ant-color-primary, #1890ff);
+    background-color: rgba(0, 0, 0, 0.06);
+  }
+
+  &:focus-visible {
+    outline: 2px solid rgba(24, 144, 255, 0.35);
+    outline-offset: 1px;
+  }
+}
+
+/* 兼容旧 class */
+.copy-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+
+  &:active {
+    transform: scale(0.96);
   }
 }

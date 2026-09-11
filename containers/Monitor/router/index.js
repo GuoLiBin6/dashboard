@@ -52,7 +52,7 @@ export default {
       },
       submenus: [
         {
-          name: 'Query',
+          name: 'MonitorDashboardRoot',
           meta: {
             label: i18n.t('monitor.dashboard.title'),
             permission: 'unifiedmonitors_get',
@@ -85,7 +85,7 @@ export default {
           ],
         },
         {
-          name: 'Query',
+          name: 'MonitorExplorer',
           meta: {
             label: i18n.t('monitor.text_119'),
             permission: 'unifiedmonitors_get',

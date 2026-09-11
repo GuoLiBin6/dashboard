@@ -8,34 +8,34 @@
         ref="form"
         v-bind="formItemLayout">
         <a-form-model-item :label="$t('network.cdn.ssl_setting')" prop="ssl_setting" :extra="$t(`network.cdn.ssl_setting.${form.ssl_setting}.extra`)">
-          <a-select v-model="form.ssl_setting">
+          <a-select v-model:value="form.ssl_setting">
             <a-select-option v-for="item in SSL_SETTINGS" :key="item.key" :value="item.key">
               {{ item.label }}
             </a-select-option>
           </a-select>
         </a-form-model-item>
         <a-form-model-item :label="$t('network.cdn.https_enabled')" prop="https_enabled" :extra="$t(`network.cdn.https_enabled.extra`)">
-          <a-switch v-model="form.https_enabled" />
+          <a-switch v-model:value="form.https_enabled" />
         </a-form-model-item>
         <a-form-model-item :label="$t('network.cdn.https_rewrites')" prop="https_rewrites">
-          <a-switch v-model="form.https_rewrites" />
+          <a-switch v-model:value="form.https_rewrites" />
         </a-form-model-item>
         <a-form-model-item :label="$t('network.cdn.cache_level')" prop="cache_level">
-          <a-select v-model="form.cache_level">
+          <a-select v-model:value="form.cache_level">
             <a-select-option v-for="item in CACHE_LEVELS" :key="item.key" :value="item.key">
               {{ item.label }}
             </a-select-option>
           </a-select>
         </a-form-model-item>
         <a-form-model-item :label="$t('network.cdn.browser_cache_ttl')" prop="browser_cache_ttl">
-          <a-select v-model="form.browser_cache_ttl">
+          <a-select v-model:value="form.browser_cache_ttl">
             <a-select-option v-for="item in BROWSER_CACHE_TTL" :key="item.key" :value="item.key">
               {{ item.label }}
             </a-select-option>
           </a-select>
         </a-form-model-item>
         <a-form-model-item :label="$t('network.cdn.dnssec_enabled')" prop="dnssec_enabled">
-          <a-switch v-model="form.dnssec_enabled" />
+          <a-switch v-model:value="form.dnssec_enabled" />
         </a-form-model-item>
       </a-form-model>
     </div>

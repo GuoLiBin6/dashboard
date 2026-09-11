@@ -22,11 +22,17 @@ export default {
         field: 'none',
         title: this.$t('common.status'),
         slots: {
-          default: ({ row }, h) => {
+          default: () => {
+            const h = this.$createElement
             return [
-              <div class='text-truncate'>
-                <status status='alerted' statusModule='alertresource' />
-              </div>,
+              h('div', { class: 'text-truncate' }, [
+                h('status', {
+                  props: {
+                    status: 'alerted',
+                    statusModule: 'alertresource',
+                  },
+                }),
+              ]),
             ]
           },
         },
@@ -44,9 +50,12 @@ export default {
                 edit: false,
                 showDesc: false,
                 slotCallback: row => {
-                  return (
-                    <side-page-trigger onTrigger={() => this.handleOpenAlertSidepage(row)}>{ row.alert }</side-page-trigger>
-                  )
+                  const h = this.$createElement
+                  return h('side-page-trigger', {
+                    props: {
+                      onTrigger: () => this.handleOpenAlertSidepage(row),
+                    },
+                  }, row.alert)
                 },
               }),
               getTimeTableColumn({ field: 'trigger_time', title: this.$t('monitor.text_14') }),
@@ -66,10 +75,14 @@ export default {
                 field: 'action',
                 title: this.$t('compute.text_863'),
                 slots: {
-                  default: ({ row }, h) => {
+                  default: ({ row }) => {
+                    const h = this.$createElement
                     const ret = []
                     ret.push(
-                      <a-button type="link" onClick = {() => viewTag(row)}>{ this.$t('common.view') }</a-button>,
+                      h('a-button', {
+                        props: { type: 'link' },
+                        on: { click: () => viewTag(row) },
+                      }, this.$t('common.view')),
                     )
                     return ret
                   },
@@ -86,9 +99,25 @@ export default {
               })
             }
             const data = row.childData || []
-            return [<list-body-cell-popover text={this.$t('common_701', [row.count || 0])} min-width="700px">
-              <vxe-grid size="mini" resizable border showOverflow={false} row-config={{ isHover: true }} column-config={{ resizable: false }} columns={columns} data={data} />
-            </list-body-cell-popover>]
+            return [this.$createElement('list-body-cell-popover', {
+              props: {
+                text: this.$t('common_701', [row.count || 0]),
+                minWidth: '700px',
+              },
+            }, [
+              this.$createElement('table-lite-grid', {
+                props: {
+                  size: 'mini',
+                  resizable: true,
+                  border: true,
+                  showOverflow: false,
+                  rowConfig: { isHover: true },
+                  columnConfig: { resizable: false },
+                  columns: columns,
+                  data: data,
+                },
+              }),
+            ])]
           },
         },
       },

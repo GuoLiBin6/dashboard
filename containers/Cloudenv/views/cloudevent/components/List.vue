@@ -11,7 +11,7 @@
   </div>
 </template>
 
-<script>
+<script lang="jsx">
 import get from 'lodash/get'
 import {
   getCopyWithContentTableColumn,

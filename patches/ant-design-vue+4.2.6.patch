@@ -1,0 +1,16 @@
+diff --git a/node_modules/ant-design-vue/es/input/Password.js b/node_modules/ant-design-vue/es/input/Password.js
+index ef299a6..65bfc36 100644
+--- a/node_modules/ant-design-vue/es/input/Password.js
++++ b/node_modules/ant-design-vue/es/input/Password.js
+@@ -106,7 +106,10 @@ export default defineComponent({
+           e.preventDefault();
+         }
+       };
+-      return cloneElement(isValidElement(icon) ? icon : _createVNode("span", null, [icon]), iconProps);
++      // 在 @vue/compat 的 legacy 组件转换路径下，cloneElement/props 合并可能丢失事件与 class，
++      // 导致小眼睛能渲染但无法点击、且缺少 `${prefixCls}-icon` class。
++      // 这里用外层包裹明确挂载事件/样式，保证行为稳定。
++      return _createVNode("span", iconProps, [icon]);
+     };
+     const {
+       prefixCls,

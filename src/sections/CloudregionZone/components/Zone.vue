@@ -1,5 +1,5 @@
 <template>
-  <a-select dropdownClassName="oc-select-dropdown" :value="valueC" allow-clear @change="handleChange" showSearch :filterOption="filterOption">
+  <a-select popupClassName="oc-select-dropdown" :value="valueC" allow-clear @change="handleChange" showSearch :filterOption="filterOption">
     <a-select-option v-for="item in options" :key="item.id">
       <span class="text-color-secondary option-prefix">{{ $t('dictionary.zone') }}: </span>{{ _$t(item) }}
     </a-select-option>
@@ -11,6 +11,9 @@ import * as R from 'ramda'
 
 export default {
   name: 'CloudregionZoneZone',
+  inject: {
+    form: { default: null },
+  },
   props: {
     value: {
     },
@@ -21,10 +24,12 @@ export default {
   },
   computed: {
     valueC () {
-      if (R.is(Object, this.value)) {
-        return this.value.key
+      // v-decorator 在 Vue3 下不一定能把 value 注入 props，回退读 form.fd
+      const v = this.value || this.form?.fd?.zone
+      if (R.is(Object, v)) {
+        return v.key || undefined
       }
-      return undefined
+      return v || undefined
     },
   },
   methods: {

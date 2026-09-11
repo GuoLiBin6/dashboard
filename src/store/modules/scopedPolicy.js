@@ -1,15 +1,14 @@
 import * as R from 'ramda'
-import Vue from 'vue'
 import http from '@/utils/http'
 
 export default {
   state: {},
   mutations: {
     SET_DATA (state, { name, data }) {
-      Vue.set(state, name, data)
+      state[name] = data
     },
     DEL_DATA (state, { name }) {
-      Vue.delete(state, name)
+      delete state[name]
     },
   },
   actions: {

@@ -83,13 +83,16 @@ export default {
         minWidth: 50,
         slots: {
           default: ({ row }, h) => {
-            const ret = []
-            if (row.billing_type === 'postpaid') {
-              ret.push(<div style={{ color: '#0A1F44' }}>{i18n.t('billingType.postpaid')}</div>)
-            } else if (row.billing_type === 'prepaid') {
-              ret.push(<div style={{ color: '#0A1F44' }}>{i18n.t('billingType.prepaid')}</div>)
-            }
-            return ret
+            const hFn = h || this.$createElement
+            const text = row.billing_type === 'postpaid'
+              ? i18n.t('billingType.postpaid')
+              : row.billing_type === 'prepaid'
+                ? i18n.t('billingType.prepaid')
+                : ''
+            if (!text) return []
+            return [
+              hFn('div', { style: { color: 'var(--oc-color-text-heading)' } }, text),
+            ]
           },
         },
       },
@@ -121,7 +124,7 @@ export default {
         slots: {
           default: ({ row }, h) => {
             return [
-              <div style={{ color: '#f5222d', fontSize: '14px' }}>{ row.fee }</div>,
+              (h || this.$createElement)('div', { style: { color: '#f5222d', fontSize: '14px' } }, row.fee),
             ]
           },
         },
@@ -136,7 +139,7 @@ export default {
             const [c, p] = parseFee(row.fee)
             const fee = row.billing_type === 'postpaid' ? p * 24 * 30 : p / d
             return [
-              <div style={{ color: '#f5222d', fontSize: '14px' }}>{ `${c}${fee.toFixed(2)}` }</div>,
+              (h || this.$createElement)('div', { style: { color: '#f5222d', fontSize: '14px' } }, `${c}${fee.toFixed(2)}`),
             ]
           },
         },
@@ -151,7 +154,7 @@ export default {
             const [c, p] = parseFee(row.fee)
             const fee = row.billing_type === 'postpaid' ? p * 24 * 30 * 12 : p * 12 / d
             return [
-              <div style={{ color: '#f5222d', fontSize: '14px' }}>{ `${c}${fee.toFixed(2)}` }</div>,
+              (h || this.$createElement)('div', { style: { color: '#f5222d', fontSize: '14px' } }, `${c}${fee.toFixed(2)}`),
             ]
           },
         },

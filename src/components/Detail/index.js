@@ -9,6 +9,8 @@ import { changeToArr } from '@/utils/utils'
 import store from '@/store'
 import expectStatus from '@/constants/expectStatus'
 import './style.scss'
+import h from '@/utils/legacyCreateElement'
+
 // 需要添加区域（cloudregion/cloudregion_id), 可用区（zone/zone_id)，云账号(account/account_id)，云订阅（manager/manager_id)的资源
 const appendOutherResources = ['servers', 'hosts', 'disks', 'storages', 'vpcs', 'wires', 'networks', 'natgateways', 'snapshots', 'eips', 'dbinstances', 'elasticcaches', 'servertemplates', 'buckets', 'networkinterfaces', 'lbs', 'nats', 'nas', 'kafkas', 'elasticsearchs', 'webapps', 'cdn_domains', 'inter_vpc_networks', 'route_tables', 'vpc_peering_connections', 'ipv6_gateways', 'tablestores', 'modelarts_pools', 'meter_instance_caches']
 
@@ -20,23 +22,43 @@ const getDefaultLastBaseInfo = (vm, h, { data, onManager, resource }) => {
         field: 'region',
         title: i18n.t('res.region'),
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             if (!row.region_id) return row.region || '-'
             const p = hasPermission({ key: 'cloudregions_get' })
             let node
             if (p) {
-              node = (
-                <list-body-cell-wrap copy row={ data } onManager={ onManager } field='region' title={ row.region } hideField={ true }>
-                  <side-page-trigger permission='areas_get' name='CloudregionSidePage' id={row.region_id} vm={vm}>{ row.region }</side-page-trigger>
-                </list-body-cell-wrap>
-              )
+              node = h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  row: data,
+                  onManager,
+                  field: 'region',
+                  title: row.region,
+                  hideField: true,
+                },
+              }, [
+                h('side-page-trigger', {
+                  props: {
+                    permission: 'areas_get',
+                    name: 'CloudregionSidePage',
+                    id: row.region_id,
+                    vm,
+                  },
+                }, [row.region]),
+              ])
             } else {
-              node = (
-                <list-body-cell-wrap copy row={ data } onManager={ onManager } field='region' title={ row.region } />
-              )
+              node = h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  row: data,
+                  onManager,
+                  field: 'region',
+                  title: row.region,
+                },
+              })
             }
             return [
-              <div class='text-truncate'>{ node }</div>,
+              h('div', { class: 'text-truncate' }, [node]),
             ]
           },
         },
@@ -50,23 +72,43 @@ const getDefaultLastBaseInfo = (vm, h, { data, onManager, resource }) => {
         hiddenField: 'region',
         title: i18n.t('res.zone'),
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             if (!row.zone_id) return row.zone || '-'
             const p = hasPermission({ key: 'zones_get' })
             let node
             if (p) {
-              node = (
-                <list-body-cell-wrap copy row={ data } onManager={ onManager } field='zone' title={ row.zone } hideField={ true }>
-                  <side-page-trigger permission='zones_get' name='ZoneSidePage' id={row.zone_id} vm={vm}>{ row.zone }</side-page-trigger>
-                </list-body-cell-wrap>
-              )
+              node = h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  row: data,
+                  onManager,
+                  field: 'zone',
+                  title: row.zone,
+                  hideField: true,
+                },
+              }, [
+                h('side-page-trigger', {
+                  props: {
+                    permission: 'zones_get',
+                    name: 'ZoneSidePage',
+                    id: row.zone_id,
+                    vm,
+                  },
+                }, [row.zone]),
+              ])
             } else {
-              node = (
-                <list-body-cell-wrap copy row={ data } onManager={ onManager } field='zone' title={ row.zone } />
-              )
+              node = h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  row: data,
+                  onManager,
+                  field: 'zone',
+                  title: row.zone,
+                },
+              })
             }
             return [
-              <div class='text-truncate'>{ node }</div>,
+              h('div', { class: 'text-truncate' }, [node]),
             ]
           },
         },
@@ -79,23 +121,43 @@ const getDefaultLastBaseInfo = (vm, h, { data, onManager, resource }) => {
         field: 'account',
         title: i18n.t('res.cloudaccount'),
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             if (!row.account_id) return row.account || '-'
             const p = hasPermission({ key: 'cloudaccounts_get' })
             let node
             if (p) {
-              node = (
-                <list-body-cell-wrap copy row={ data } onManager={ onManager } field='account' title={ row.account } hideField={ true }>
-                  <side-page-trigger permission='cloudaccounts_get' name='CloudaccountSidePage' id={row.account_id} vm={vm}>{ row.account }</side-page-trigger>
-                </list-body-cell-wrap>
-              )
+              node = h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  row: data,
+                  onManager,
+                  field: 'account',
+                  title: row.account,
+                  hideField: true,
+                },
+              }, [
+                h('side-page-trigger', {
+                  props: {
+                    permission: 'cloudaccounts_get',
+                    name: 'CloudaccountSidePage',
+                    id: row.account_id,
+                    vm,
+                  },
+                }, [row.account]),
+              ])
             } else {
-              node = (
-                <list-body-cell-wrap copy row={ data } onManager={ onManager } field='account' title={ row.account } />
-              )
+              node = h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  row: data,
+                  onManager,
+                  field: 'account',
+                  title: row.account,
+                },
+              })
             }
             return [
-              <div class='text-truncate'>{ node }</div>,
+              h('div', { class: 'text-truncate' }, [node]),
             ]
           },
         },
@@ -110,23 +172,43 @@ const getDefaultLastBaseInfo = (vm, h, { data, onManager, resource }) => {
         hiddenField: 'account',
         title: i18n.t('res.cloudprovider'),
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             if (!row.manager_id) return row.manager || '-'
             const p = hasPermission({ key: 'cloudproviders_get' })
             let node
             if (p) {
-              node = (
-                <list-body-cell-wrap copy row={ data } onManager={ onManager } field='manager' title={ row.manager } hideField={ true }>
-                  <side-page-trigger permission='cloudproviders_get' name='CloudproviderSidePage' id={row.manager_id} vm={vm}>{ row.manager }</side-page-trigger>
-                </list-body-cell-wrap>
-              )
+              node = h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  row: data,
+                  onManager,
+                  field: 'manager',
+                  title: row.manager,
+                  hideField: true,
+                },
+              }, [
+                h('side-page-trigger', {
+                  props: {
+                    permission: 'cloudproviders_get',
+                    name: 'CloudproviderSidePage',
+                    id: row.manager_id,
+                    vm,
+                  },
+                }, [row.manager]),
+              ])
             } else {
-              node = (
-                <list-body-cell-wrap copy row={ data } onManager={ onManager } field='manager' title={ row.manager } />
-              )
+              node = h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  row: data,
+                  onManager,
+                  field: 'manager',
+                  title: row.manager,
+                },
+              })
             }
             return [
-              <div class='text-truncate'>{ node }</div>,
+              h('div', { class: 'text-truncate' }, [node]),
             ]
           },
         },
@@ -165,11 +247,17 @@ const getDefaultTopBaseInfo = (vm, h, { idKey, statusKey, statusModule, data, on
         field: 'external_id',
         title: i18n.t('table.title.external_id'),
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
+            const cell = h('list-body-cell-wrap', {
+              props: {
+                copy: true,
+                row: data,
+                field: 'external_id',
+                title: row.external_id,
+              },
+            })
             return [
-              <div class='text-truncate'>
-                <list-body-cell-wrap copy row={ data } field='external_id' title={ row.external_id } />
-              </div>,
+              h('div', { class: 'text-truncate' }, [cell]),
             ]
           },
         },
@@ -182,11 +270,18 @@ const getDefaultTopBaseInfo = (vm, h, { idKey, statusKey, statusModule, data, on
         field: idKey,
         title: 'ID',
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
+            const cell = h('list-body-cell-wrap', {
+              props: {
+                copy: true,
+                row: data,
+                onManager,
+                field: idKey,
+                title: row[idKey],
+              },
+            })
             return [
-              <div class='text-truncate'>
-                <list-body-cell-wrap copy row={ data } onManager={ onManager } field={ idKey } title={ row[idKey] } />
-              </div>,
+              h('div', { class: 'text-truncate' }, [cell]),
             ]
           },
         },
@@ -198,26 +293,34 @@ const getDefaultTopBaseInfo = (vm, h, { idKey, statusKey, statusModule, data, on
       field: statusKey,
       title: i18n.t('common.status'),
       slots: {
-        default: ({ row }) => {
+        default: ({ row }, h) => {
           if (vm.specifyStatus) {
-            return [<status specifyStatus={vm.specifyStatus} />]
+            return [h('status', { props: { specifyStatus: vm.specifyStatus } })]
           }
-          const cancel = <a class="ml-1"
-            onClick={() => vm.createDialog('VmLiveMigrateCancelDialog', {
-              data: [row],
-              columns: columns,
-              onManager: vm.onManager,
-            })}>{vm.$t('common.cancel')}</a>
-          const rescue_mode = <span class="text-color-help">({ i18n.t('compute.rescue') })</span>
-
+          const cancel = h('a', {
+            class: 'ml-1',
+            on: {
+              click: () => vm.createDialog('VmLiveMigrateCancelDialog', {
+                data: [row],
+                columns,
+                onManager: vm.onManager,
+              }),
+            },
+          }, [vm.$t('common.cancel')])
+          const rescue_mode = h('span', { class: 'text-color-help' }, [i18n.t('compute.rescue')])
           if (statusModule && row[statusKey]) {
-            return [
-              <div class='d-flex align-items-center text-truncate'>
-                <status status={row[statusKey]} statusModule={statusModule} process={row.progress} showStatusProgress={vm.showStatusProgress} />
-                { row.status === 'live_migrating' ? cancel : null }
-                { row.rescue_mode === true ? rescue_mode : null }
-              </div>,
-            ]
+            const statusNode = h('status', {
+              props: {
+                status: row[statusKey],
+                statusModule,
+                process: row.progress,
+                showStatusProgress: vm.showStatusProgress,
+              },
+            })
+            const children = [statusNode]
+            if (row.status === 'live_migrating') children.push(cancel)
+            if (row.rescue_mode === true) children.push(rescue_mode)
+            return [h('div', { class: 'd-flex align-items-center text-truncate' }, children)]
           }
           return '-'
         },
@@ -231,33 +334,46 @@ const getDefaultTopBaseInfo = (vm, h, { idKey, statusKey, statusModule, data, on
         hiddenField: 'tenant',
         title: i18n.t('res.domain'),
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             const domain = row.project_domain || row.domain
             if (!row.domain_id) return domain || '-'
             if (!domain) return '-'
             const p = hasPermission({ key: 'domains_get' })
             let node
             if (p) {
-              node = (
-                <list-body-cell-wrap copy row={ data } onManager={ onManager } field='project_domain' title={ row.project_domain } message={domain} hideField={ true }>
-                  <side-page-trigger
-                    permission='domains_get'
-                    name='DomainSidePage'
-                    id={row.project_domain}
-                    options={{ getParams: { pending_delete: 'any' } }}
-                    vm={vm}>
-                    {domain}
-                  </side-page-trigger>
-                </list-body-cell-wrap>
-              )
+              const trigger = h('side-page-trigger', {
+                props: {
+                  permission: 'domains_get',
+                  name: 'DomainSidePage',
+                  id: row.project_domain,
+                  options: { getParams: { pending_delete: 'any' } },
+                  vm,
+                },
+              }, [domain])
+              node = h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  row: data,
+                  onManager,
+                  field: 'project_domain',
+                  title: row.project_domain,
+                  message: domain,
+                  hideField: true,
+                },
+              }, [trigger])
             } else {
-              node = (
-                <list-body-cell-wrap copy row={ data } onManager={ onManager } field='project_domain' title={ row.project_domain } message={domain} />
-              )
+              node = h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  row: data,
+                  onManager,
+                  field: 'project_domain',
+                  title: row.project_domain,
+                  message: domain,
+                },
+              })
             }
-            return [
-              <div class='text-truncate'>{ node }</div>,
-            ]
+            return [h('div', { class: 'text-truncate' }, [node])]
           },
         },
         hidden: () => store.getters.isProjectMode,
@@ -270,49 +386,54 @@ const getDefaultTopBaseInfo = (vm, h, { idKey, statusKey, statusModule, data, on
         field: 'tenant',
         title: i18n.t('res.project'),
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             if (!row.tenant_id) return row.tenant || '-'
             if (!row.tenant) return '-'
             const p = hasPermission({ key: 'projects_get' })
             const customEditCallback = () => {
               vm.createDialog('ChangeOwenrDialog', {
                 data: [row],
-                onManager: onManager,
+                onManager,
                 name: i18n.t(`dictionary.${resource.substring(0, resource.length - 1)}`),
-                resource: resource,
+                resource,
               })
             }
             let node
             if (p) {
-              node = (
-                <list-body-cell-wrap copy
-                  row={ data }
-                  onManager={ onManager }
-                  field='tenant'
-                  title={ row.tenant }
-                  hideField={ true }
-                  edit={ true }
-                  customEdit={ true }
-                  customEditCallback={ customEditCallback } >
-                  <side-page-trigger
-                    permission='projects_get'
-                    name='ProjectSidePage'
-                    id={row.tenant_id}
-                    vm={vm}
-                    options={{ getParams: { pending_delete: 'any' } }}
-                  >
-                    {row.tenant}
-                  </side-page-trigger>
-                </list-body-cell-wrap>
-              )
+              const trigger = h('side-page-trigger', {
+                props: {
+                  permission: 'projects_get',
+                  name: 'ProjectSidePage',
+                  id: row.tenant_id,
+                  vm,
+                  options: { getParams: { pending_delete: 'any' } },
+                },
+              }, [row.tenant])
+              node = h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  row: data,
+                  onManager,
+                  field: 'tenant',
+                  title: row.tenant,
+                  hideField: true,
+                  edit: true,
+                  customEdit: true,
+                  customEditCallback,
+                },
+              }, [trigger])
             } else {
-              node = (
-                <list-body-cell-wrap copy row={ data } onManager={ onManager } field='tenant' title={ row.tenant } />
-              )
+              node = h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  row: data,
+                  onManager,
+                  field: 'tenant',
+                  title: row.tenant,
+                },
+              })
             }
-            return [
-              <div class='text-truncate'>{ node }</div>,
-            ]
+            return [h('div', { class: 'text-truncate' }, [node])]
           },
         },
       },
@@ -469,13 +590,16 @@ export default {
         if (item.slots && item.slots.default) {
           val = item.slots.default({ row: this.data }, h)
           // 内容为空则直接渲染-
-          if (val && val.length && val[0].elm) {
-            if (!R.trim(val[0].elm.innerText)) {
+          // Vue3 无 elm；组件型 VNode（如 PasswordFetcher 仅图标）也不应按 innerText 判空
+          const first = Array.isArray(val) ? val[0] : null
+          if (first && first.elm && typeof first.type !== 'object') {
+            if (!R.trim(first.elm.innerText || '')) {
               val = '-'
             }
           }
         } else if (item.formatter) {
-          const _val = item.formatter({ row: this.data, cellValue: this.data[item.field] })
+          // 与列表列 formatter 一致：第二参数为 h（Detail.vue 中多处 formatter: ({ row }, h) => ...）
+          const _val = item.formatter({ row: this.data, cellValue: this.data[item.field] }, h)
           val = _val || (R.type(_val) === 'Number' ? _val : '-')
         } else {
           const _val = _.get(this.data, item.field)
@@ -490,7 +614,7 @@ export default {
       if (renderTitle && item.title) {
         children.push(h('div', { class: 'detail-item-title', attrs: { title: R.is(String, item.title) ? item.title : '' } }, R.is(String, item.title) ? item.title : changeToArr(item.title(h))))
       }
-      children.push(<div class={classNames('detail-item-value', { 'ml-0': !renderTitle || !item.title })}>{val}</div>)
+      children.push(h('div', { class: classNames('detail-item-value', { 'ml-0': !renderTitle || !item.title }) }, [val]))
       return h('div', {
         class: 'detail-item mt-2',
       }, children)
@@ -518,11 +642,10 @@ export default {
       }, [
         h('icon', {
           props: {
-            name: icon,
+            type: icon,
           },
         }),
-        <span class='ml-2'>{title}</span>,
-        // h('span', { class: 'ml-2' }, title),
+        h('span', { class: 'ml-2' }, title),
       ])
     },
     renderContent (h, icon, title, items = [], item, type) {
@@ -576,7 +699,7 @@ export default {
               field: 'description',
               ...this.descProps,
             },
-            style: { color: '#999' },
+            style: { color: 'var(--oc-color-text-secondary)' },
           }),
         ]),
       ]
@@ -606,12 +729,11 @@ export default {
       }, children)
     },
   },
-  render (h, ctx) {
-    return (
-      <div class={this.fullWidth ? 'detail-wrap detail-wrap-full' : 'detail-wrap'}>
-        { this.renderBase(h) }
-        { this.extraInfo && this.renderExtra(h) }
-      </div>
-    )
+  render () {
+    const children = [this.renderBase(h)]
+    if (this.extraInfo) children.push(this.renderExtra(h))
+    return h('div', {
+      class: this.fullWidth ? 'detail-wrap detail-wrap-full' : 'detail-wrap',
+    }, children)
   },
 }

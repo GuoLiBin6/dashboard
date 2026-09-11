@@ -43,11 +43,18 @@ export default {
     },
   },
   created () {
-    this.$bus.$on('VmMonitorTypeChange', (tab) => {
-      this.$refs.dashboardCards.initMonitorConfig()
-    })
+    this.$bus.$on('VmMonitorTypeChange', this.onVmMonitorTypeChange)
+  },
+  beforeUnmount () {
+    this.$bus.$off('VmMonitorTypeChange', this.onVmMonitorTypeChange)
   },
   methods: {
+    onVmMonitorTypeChange () {
+      this.$nextTick(() => {
+        this.$refs.dashboardCards?.initMonitorConfig?.()
+      })
+    },
+
     genQueryData (val) {
       const opt = val
       if (!val.extraTags) {

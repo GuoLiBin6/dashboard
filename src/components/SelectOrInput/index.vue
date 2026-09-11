@@ -107,17 +107,27 @@ export default {
       this.type = type
     },
     filterOption (input, option) {
-      let text = _.get(option, 'componentOptions.propsData.value') || _.get(option, 'context.value')
-      if (!text) {
+      if (!option) return false
+      const keyword = String(input || '').toLowerCase()
+      // antdv4：优先用 option.label / value
+      let text = option.label
+      if (text == null || text === '') {
+        text = option.value
+      }
+      if (text == null || text === '') {
+        text = _.get(option, 'componentOptions.propsData.value') || _.get(option, 'context.value')
+      }
+      if (text == null || text === '') {
         const propsData = _.get(option, 'componentOptions.children[0].componentOptions.propsData')
-        const nameKey = propsData.nameKey
-        if (nameKey) {
-          text = propsData.data[nameKey]
+        if (propsData) {
+          const nameKey = propsData.nameKey || 'name'
+          if (nameKey && propsData.data) {
+            text = propsData.data[nameKey]
+          }
         }
       }
-      if (text) {
-        return text.toLowerCase().includes(input.toLowerCase())
-      }
+      if (text == null || text === '') return false
+      return String(text).toLowerCase().includes(keyword)
     },
     getUsePlaceholder (type) {
       return this.$t(`common.tips.${type}`, [this.name])

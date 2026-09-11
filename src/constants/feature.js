@@ -1,13 +1,11 @@
 import * as R from 'ramda'
 import i18n from '@/locales'
 
-/** 可选：仅当存在 generalScope/constants/featureMenus.js 且导出 FEATURE_MENUS 时覆盖；无该文件、无 constants 或整个 generalScope 不存在时不报错，用本文件内联的 FEATURE_MENUS。context 必须用 ee 包根目录，勿用 ../../generalScope 作根（目录不存在时 webpack 会解析失败）。 */
+/** 可选：仅当存在 generalScope/constants/featureMenus.js 且导出 FEATURE_MENUS 时覆盖；无该文件时不报错，用本文件内联的 FEATURE_MENUS。 */
 function loadFeatureMenusFromGeneralScope () {
   try {
-    const ctx = require.context('../../', true, /^\.\/generalScope\/constants\/featureMenus\.js$/)
-    const keys = ctx.keys()
-    if (!keys.length) return null
-    const mod = ctx(keys[0])
+    const mods = import.meta.glob('/generalScope/constants/featureMenus.js', { eager: true })
+    const mod = Object.values(mods)[0]
     return mod && mod.FEATURE_MENUS != null ? mod.FEATURE_MENUS : null
   } catch (e) {
     return null
@@ -395,10 +393,10 @@ function fullfillLicenseItems () {
     const key = item.origin_key || item.key
     if (item.meta.is_account) {
       item.label = i18n.getOemDictionaryI18n(key.toLowerCase(), i18n.getI18n([`scopeCloudProvidersMap.${key}`, `scopeProviders.${key}`, `license.provider.${key}`], key))
-      item.icon = require(`@/assets/images/providers/${key}.svg`)
+      item.icon = new URL(`../assets/images/providers/${key}.svg`, import.meta.url).href
     } else {
       item.label = i18n.getOemDictionaryI18n(key.toLowerCase(), i18n.getI18n(`license.feature.${key}`, key))
-      item.icon = require(`@/assets/images/features/${key}.svg`)
+      item.icon = new URL(`../assets/images/features/${key}.svg`, import.meta.url).href
     }
     item.value = item.key
   })

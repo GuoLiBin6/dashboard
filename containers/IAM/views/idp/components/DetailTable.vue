@@ -62,9 +62,9 @@ export default {
             default: ({ row }, h) => {
               if (!row.project_domain) return this.$t('system.text_15')
               return [
-                <list-body-cell-wrap copy field={'project_domain'} row={row} hideField={true} message={row.project_domain}>
-                  {row.project_domain}{this.$t('dictionary.domain')}
-                </list-body-cell-wrap>,
+                h('list-body-cell-wrap', {
+                  props: { copy: true, field: 'project_domain', row, hideField: true, message: row.project_domain },
+                }, row.project_domain + this.$t('dictionary.domain')),
               ]
             },
           },

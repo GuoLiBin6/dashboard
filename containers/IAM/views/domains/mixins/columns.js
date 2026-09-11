@@ -16,9 +16,11 @@ export default {
           { required: true, message: i18n.t('system.text_168') },
         ],
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+          return this.$createElement('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getTagTableColumn({ onManager: this.onManager, resource: 'domains', params: { service: 'identity', resources: 'domain' }, columns: () => this.columns, tipName: this.$t('dictionary.domain') }),
@@ -27,11 +29,18 @@ export default {
         field: 'idp',
         title: this.$t('dictionary.identity_provider'),
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             if (!row.idp) return '-'
             const text = row.idp
             return [
-              <side-page-trigger name='IDPSidePage' tab='idp-detail' id={row.idp_id} vm={this}>{text}</side-page-trigger>,
+              h('side-page-trigger', {
+                props: {
+                  name: 'IDPSidePage',
+                  tab: 'idp-detail',
+                  id: row.idp_id,
+                  vm: this,
+                },
+              }, text),
             ]
           },
         },

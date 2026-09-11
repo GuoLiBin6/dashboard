@@ -20,7 +20,12 @@ export default {
           default: ({ row }) => {
             if (row.sync_status !== 'idle') { // 表示正在同步中
               return [
-                <status status={ row.sync_status } statusModule='cloudaccountSyncStatus' />,
+                this.$createElement('status', {
+                  props: {
+                    status: row.sync_status,
+                    statusModule: 'cloudaccountSyncStatus',
+                  },
+                }),
               ]
             } else {
               let time
@@ -39,7 +44,12 @@ export default {
           default: ({ row }) => {
             if (row.sync_status !== 'idle') { // 表示正在同步中
               return [
-                <status status={ row.sync_status } statusModule='cloudaccountSyncStatus' />,
+                this.$createElement('status', {
+                  props: {
+                    status: row.sync_status,
+                    statusModule: 'cloudaccountSyncStatus',
+                  },
+                }),
               ]
             }
             const time = this.$moment(row.last_sync_end_at)
@@ -56,7 +66,12 @@ export default {
         slots: {
           default: ({ row }) => {
             return [
-              <status status={ row.sync_status } statusModule='cloudaccountSyncStatus' />,
+              this.$createElement('status', {
+                props: {
+                  status: row.sync_status,
+                  statusModule: 'cloudaccountSyncStatus',
+                },
+              }),
             ]
           },
         },

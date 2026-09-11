@@ -3,15 +3,15 @@
     <div slot="header">{{$t('common_114')}}</div>
     <div slot="body">
       <!--a-alert :showIcon="false" banner class="mb-2">
-        <div slot="message">{{$t('system.text_453', [$t('dictionary.policy', $t('dictionary.role'))]) }}
-        </div>
+        <template #message>{{$t('system.text_453', [$t('dictionary.policy', $t('dictionary.role'))]) }}
+        </template>
       </a-alert-->
       <dialog-selected-tips :name="$t('dictionary.project')" :count="params.data.length" :action="$t('common_114')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 2)" />
       <a-form
         :form="form.fc">
         <a-form-item :label="$t('system.text_48')" v-bind="formItemLayout">
-          <a-radio-group v-model="type" @change="handleTypeChange">
+          <a-radio-group v-model:value="type" @change="handleTypeChange">
             <a-radio-button
               v-for="item of typeOptions"
               :key="item.value"
@@ -254,7 +254,7 @@ export default {
   //     this.form.fc.resetFields()
   //   },
   // },
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {

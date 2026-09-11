@@ -1,10 +1,10 @@
 <template>
   <div>
     <page-header :title="$t('system.text_188', [$t('dictionary.policy')])" />
-    <page-body need-margin-bottom>
+    <page-body>
       <template v-if="loading">
         <div class="text-center">
-          <a-icon type="loading" />
+          <icon type="loading" />
           <p>{{$t('system.text_318', [$t('dictionary.policy')])}}</p>
         </div>
       </template>

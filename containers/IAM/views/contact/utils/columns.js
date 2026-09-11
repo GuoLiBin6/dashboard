@@ -38,6 +38,7 @@ export const getVerifiedContactTypesTableColumn = ({ field = 'verified_contact_t
     minWidth: 120,
     slots: {
       default: ({ row }, h) => {
+        const hFn = h || vm?.$createElement
         const color = {
           true: '#52c41a',
           false: 'rgba(0, 0, 0, 0.25)',
@@ -53,29 +54,64 @@ export const getVerifiedContactTypesTableColumn = ({ field = 'verified_contact_t
             case 'webconsole':
               note = enabled ? note : i18n.t('system.text_576')
               title = enabled ? i18n.t('system.webconsole', [i18n.t(`status.verified.${enabled}`)]) : note
-              renderComponents.push(<icon type='webconsole' onClick={() => vm.verifyConcact(item, row)} style={{ color: color[enabled] }} title={title} />)
+              renderComponents.push(hFn('icon', {
+                props: { type: 'webconsole' },
+                style: { color: color[enabled] },
+                attrs: { title },
+                on: { click: () => vm.verifyConcact(item, row) },
+              }))
               break
             case 'email':
               note = enabled ? note : i18n.t('system.text_576')
               title = enabled ? i18n.t('system.text_148', [i18n.t(`status.verified.${enabled}`)]) : note
-              renderComponents.push(<icon class='ml-2' type='email' onClick={() => vm.verifyConcact(item, row)} style={{ color: color[enabled] }} title={title} />)
+              renderComponents.push(hFn('icon', {
+                class: 'ml-2',
+                props: { type: 'email' },
+                style: { color: color[enabled] },
+                attrs: { title },
+                on: { click: () => vm.verifyConcact(item, row) },
+              }))
               break
             case 'mobile':
               note = enabled ? note : i18n.t('system.text_576')
               title = enabled ? i18n.t('system.text_149', [i18n.t(`status.verified.${enabled}`)]) : note
-              renderComponents.push(<icon class='ml-2' type='mobile' onClick={() => vm.verifyConcact(item, row)} style={{ color: color[enabled] }} title={title} />)
+              renderComponents.push(hFn('icon', {
+                class: 'ml-2',
+                props: { type: 'mobile' },
+                style: { color: color[enabled] },
+                attrs: { title },
+                on: { click: () => vm.verifyConcact(item, row) },
+              }))
               break
             case 'dingtalk':
               title = enabled ? i18n.t('system.text_150', [i18n.t(`status.verified.${enabled}`)]) : note
-              renderComponents.push(<icon class='ml-2' type='dingtalk' onClick={() => vm.verifyConcact(item, row)} style={{ color: color[enabled] }} title={title} />)
+              renderComponents.push(hFn('icon', {
+                class: 'ml-2',
+                props: { type: 'dingtalk' },
+                style: { color: color[enabled] },
+                attrs: { title },
+                on: { click: () => vm.verifyConcact(item, row) },
+              }))
               break
             case 'feishu':
               title = enabled ? i18n.t('system.text_151', [i18n.t(`status.verified.${enabled}`)]) : note
-              renderComponents.push(<icon class='ml-2' type='feishu' onClick={() => vm.verifyConcact(item, row)} style={{ color: color[enabled] }} title={title} />)
+              renderComponents.push(hFn('icon', {
+                class: 'ml-2',
+                props: { type: 'feishu' },
+                style: { color: color[enabled] },
+                attrs: { title },
+                on: { click: () => vm.verifyConcact(item, row) },
+              }))
               break
             case 'workwx':
               title = enabled ? i18n.t('system.wecom', [i18n.t(`status.verified.${enabled}`)]) : note
-              renderComponents.push(<icon class='ml-2' type='workwx' onClick={() => vm.verifyConcact(item, row)} style={{ color: color[enabled] }} title={title} />)
+              renderComponents.push(hFn('icon', {
+                class: 'ml-2',
+                props: { type: 'workwx' },
+                style: { color: color[enabled] },
+                attrs: { title },
+                on: { click: () => vm.verifyConcact(item, row) },
+              }))
               break
             default:
               break

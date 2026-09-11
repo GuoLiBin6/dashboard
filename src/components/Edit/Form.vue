@@ -1,20 +1,21 @@
 <template>
-  <a-form-model
+  <a-form
     ref="form"
     :model="form"
     :rules="rules"
-    :style="{ width: `${width}px` }">
-    <a-form-model-item v-if="inputType === 'input'" :label="label" v-bind="formLayout" prop="input">
-      <a-input class="w-100" v-model="form.input" :placeholder="placeholder" allowClear />
-    </a-form-model-item>
-    <a-form-model-item v-else-if="inputType === 'inputNumber'" :label="label" v-bind="formLayout" prop="input">
-      <a-input-number class="w-100" v-model="form.input" :min="numberMin" :placeholder="placeholder" />
-    </a-form-model-item>
+    :style="{ width: `${width}px` }"
+    v-bind="formLayout">
+    <a-form-item v-if="inputType === 'input'" :label="label" name="input">
+      <a-input class="w-100" v-model:value="form.input" :placeholder="placeholder" allow-clear />
+    </a-form-item>
+    <a-form-item v-else-if="inputType === 'inputNumber'" :label="label" name="input">
+      <a-input-number class="w-100" v-model:value="form.input" :min="numberMin" :placeholder="placeholder" />
+    </a-form-item>
     <div class="text-right">
-      <a-button type="primary" html-type="submit" @click="handleSubmit">{{ okText }}</a-button>
-      <a-button class="ml-3" @click="cancel">{{ cancelText }}</a-button>
+      <a-button type="primary" @click.prevent="handleSubmit">{{ okText }}</a-button>
+      <a-button class="ml-3" @click.prevent="cancel">{{ cancelText }}</a-button>
     </div>
-  </a-form-model>
+  </a-form>
 </template>
 
 <script>

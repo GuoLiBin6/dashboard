@@ -3,17 +3,13 @@
     :form="form"
     :style="{ width: `${width}px` }"
     @submit="handleSubmit">
-    <a-alert class="mb-2" type="warning">
-      <div slot="message">
-        {{ $t('help.ipSupplement') }}
-      </div>
-    </a-alert>
-    <a-form-item :label="nicLabel(nic)" v-for="(nic, i) in localNics" :key="i">
+    <a-alert class="mb-2" type="warning" :message="$t('help.ipSupplement')" />
+    <a-form-item :label="nicLabel(nic)" v-for="(nic, i) in localNics" :key="i" v-bind="formLayout">
       <div class="d-flex">
       <base-select
         class="w-100 mr-2"
         resource="wires"
-        v-model="localNics[i].wire"
+        v-model:value="localNics[i].wire"
         :need-params="true"
         :is-default-select="true"
         :auto-load-default-select="true"
@@ -23,8 +19,8 @@
       <base-select
         class="w-100 mr-2"
         resource="networks"
-        v-model="localNics[i].net"
-        :item.sync="localNics[i].network"
+        v-model:value="localNics[i].net"
+        v-model:item="localNics[i].network"
         :show-sync="true"
         :need-params="true"
         :is-default-select="true"
@@ -33,11 +29,11 @@
         :min-width="'200px'" />
       <ip-select v-decorator="decorators.input(i)" :value="nic.ip" :network="nic.network" @change="e => ipChange(e, i)" />
       </div>
-      <div slot="extra" v-if="i === 0">{{$t('compute.text_196')}}<help-link :href="`/network/create?vpc=default&wire=${nic.wire}&domain=${domain}&project=${project}&type=idc`">{{$t('compute.perform_create')}}</help-link></div>
+      <template v-if="i === 0" #extra>{{$t('compute.text_196')}}<help-link :href="`/network/create?vpc=default&wire=${nic.wire}&domain=${domain}&project=${project}&type=idc`">{{$t('compute.perform_create')}}</help-link></template>
     </a-form-item>
     <div class="text-right">
       <a-button type="primary" html-type="submit" :loading="loading">{{$t('common.ok')}}</a-button>
-      <a-button class="ml-3" @click="cancel">{{$t('common.cancel')}}</a-button>
+      <a-button class="ml-3" html-type="button" @click.stop.prevent="cancel">{{$t('common.cancel')}}</a-button>
     </div>
   </a-form>
 </template>
@@ -162,7 +158,7 @@ export default {
       return `${this.$t('common.ip_supplement.nic_label')} MAC ${nic.mac} ${this.$t('common.ip_supplement.network_label')} "${nic.dswitch}"`
     },
     ipChange (val, i) {
-      this.$set(this.localNics[i], 'ip', val)
+      this.localNics[i].ip = val
     },
     cancel () {
       this.$emit('cancel')

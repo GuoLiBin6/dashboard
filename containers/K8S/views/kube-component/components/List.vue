@@ -19,10 +19,19 @@
   </div>
 </template>
 
-<script>
+<script lang="jsx">
 import ClusterSelect from '@K8S/sections/ClusterSelect'
 import k8sCreateMixin from '@K8S/mixins/create'
 import WindowsMixin from '@/mixins/windows'
+import monitorIcon from '../assets/images/monitor.png'
+import fluentbitIcon from '../assets/images/fluentbit.png'
+import cephcsiIcon from '../assets/images/cephcsi.svg'
+
+const componentIcons = {
+  monitor: monitorIcon,
+  fluentbit: fluentbitIcon,
+  cephcsi: cephcsiIcon,
+}
 
 export default {
   name: 'KubeComponentList',
@@ -44,7 +53,7 @@ export default {
       cardFields: {
         url: {
           formatter: (data) => {
-            return require(`../assets/images/${data.name.toLowerCase()}${data.name.toLowerCase() === 'cephcsi' ? '.svg' : '.png'}`)
+            return componentIcons[data.name.toLowerCase()] || ''
           },
         },
         title: 'name',

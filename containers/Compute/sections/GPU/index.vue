@@ -15,7 +15,7 @@
         </a-col>
         <a-col :span="12">
           <a-form-item>
-            <base-select v-decorator="decorators.gpu" :options="realGpuOptions" :item.sync="curGpuItem"
+            <base-select v-decorator="decorators.gpu" :options="realGpuOptions" v-model:item="curGpuItem"
               :selectProps="{ placeholder: $t('compute.text_147') }" />
           </a-form-item>
         </a-col>

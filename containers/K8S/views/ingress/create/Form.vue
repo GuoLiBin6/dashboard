@@ -8,7 +8,7 @@
         <cluster-select v-decorator="decorators.cluster" @input="setCluster" />
       </a-form-item>
       <a-form-item :label="$t('k8s.text_23')">
-        <namespace-select v-decorator="decorators.namespace" :cluster="cluster" @input="setNamespace" :namespaceObj.sync="namespaceObj" />
+        <namespace-select v-decorator="decorators.namespace" :cluster="cluster" @input="setNamespace" v-model:namespaceObj="namespaceObj" />
       </a-form-item>
       <a-form-item :label="$t('k8s.ingress.className')">
         <a-input v-decorator="decorators.className" :placeholder="$t('k8s.ingress.className.input')" @change="inputClassNameChange" />

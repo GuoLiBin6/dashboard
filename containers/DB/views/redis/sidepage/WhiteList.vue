@@ -7,7 +7,6 @@
 </template>
 
 <script>
-import * as R from 'ramda'
 import { getStatusTableColumn, getCopyWithContentTableColumn } from '@/utils/common/tableColumn'
 import WindowsMixin from '@/mixins/windows'
 import expectStatus from '@/constants/expectStatus'
@@ -46,11 +45,13 @@ export default {
           field: 'ip',
           title: 'IP',
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (row.ip_list) {
                 const ips = row.ip_list.split(',')
                 return ips.map(ip => {
-                  return <div><a-tag>{ip}</a-tag></div>
+                  return h('div', [
+                    h('a-tag', ip),
+                  ])
                 })
               }
               return ''
@@ -146,16 +147,15 @@ export default {
   },
   computed: {
     allIPList () {
-      if (this.list && !R.isEmpty(this.list.data)) {
-        let ipList = []
-        Object.values(this.list.data).forEach(({ data }) => {
-          if (data.ip_list && R.type(data.ip_list) === 'String' && !R.isEmpty(data.ip_list)) {
-            ipList = [...ipList, ...data.ip_list.split(',')]
-          }
-        })
-        return ipList
-      }
-      return []
+      const listData = this.list && this.list.data
+      if (!listData || Object.keys(listData).length === 0) return []
+      const ipList = []
+      Object.values(listData).forEach(({ data }) => {
+        if (typeof data.ip_list === 'string' && data.ip_list.length > 0) {
+          ipList.push(...data.ip_list.split(','))
+        }
+      })
+      return ipList
     },
   },
   created () {

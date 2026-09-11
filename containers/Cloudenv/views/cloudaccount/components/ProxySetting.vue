@@ -3,14 +3,14 @@
     <a-switch
       :checkedChildren="$t('cloudenv.text_84')"
       :unCheckedChildren="$t('cloudenv.text_85')"
-      v-model="isOpenProxy" />
+      v-model:value="isOpenProxy" />
     <div v-if="isOpenProxy" class="d-flex align-items-center w-50">
       <a-select class="base-select" :loading="loading" showSearch :filterOption="filterOption" v-decorator="decorator">
         <a-select-option v-for="item of proxyOpts" :key="item.id" :value="item.id">
           {{item.name}} {{item.id === 'DIRECT' ? $t('cloudenv.text_110') :  null}}
         </a-select-option>
       </a-select>
-      <a @click="fetchQueryProxy"><a-icon :spin="loading" type="sync" class="ml-2" /></a>
+      <a @click="fetchQueryProxy"><icon :spin="loading" type="sync" class="ml-2" /></a>
     </div>
     <div slot="extra">
       <div v-if="!isOpenProxy">{{$t('cloudenv.text_111')}}</div>

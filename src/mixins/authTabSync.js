@@ -18,7 +18,7 @@ export default {
   created () {
     document.addEventListener('visibilitychange', this.syncAuthFromCookie)
   },
-  beforeDestroy () {
+  beforeUnmount () {
     document.removeEventListener('visibilitychange', this.syncAuthFromCookie)
     this.closeAuthTabLoading()
   },

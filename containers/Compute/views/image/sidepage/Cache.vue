@@ -145,7 +145,7 @@ export default {
           minWidth: 240,
           showOverflow: 'title',
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (!row.hosts) {
                 return '-'
               }
@@ -154,9 +154,24 @@ export default {
                 const host = row.hosts[i]
                 const host_id = row.host_info[i].id
                 ret.push(
-                  <list-body-cell-wrap copy hideField={true} field='host' row={row} message={host}>
-                    <side-page-trigger permission='hosts_get' name='HostSidePage' id={host_id} vm={this}>{host}</side-page-trigger>
-                  </list-body-cell-wrap>,
+                  h('list-body-cell-wrap', {
+                    props: {
+                      copy: true,
+                      hideField: true,
+                      field: 'host',
+                      row,
+                      message: host,
+                    },
+                  }, [
+                    h('side-page-trigger', {
+                      props: {
+                        permission: 'hosts_get',
+                        name: 'HostSidePage',
+                        id: host_id,
+                        vm: this,
+                      },
+                    }, host),
+                  ]),
                 )
               }
               return ret
@@ -169,7 +184,7 @@ export default {
           minWidth: 300,
           showOverflow: 'title',
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (!row.storages) {
                 return '-'
               }
@@ -178,9 +193,24 @@ export default {
                 const storage = row.storages[i]
                 const storage_id = row.storage_info[i].id
                 ret.push(
-                  <list-body-cell-wrap copy hideField={true} field='storage' row={row} message={storage}>
-                    <side-page-trigger permission='storages_get' name='BlockStorageSidePage' id={storage_id} vm={this}>{storage}</side-page-trigger>
-                  </list-body-cell-wrap>,
+                  h('list-body-cell-wrap', {
+                    props: {
+                      copy: true,
+                      hideField: true,
+                      field: 'storage',
+                      row,
+                      message: storage,
+                    },
+                  }, [
+                    h('side-page-trigger', {
+                      props: {
+                        permission: 'storages_get',
+                        name: 'BlockStorageSidePage',
+                        id: storage_id,
+                        vm: this,
+                      },
+                    }, storage),
+                  ]),
                 )
               }
               return ret
@@ -328,7 +358,7 @@ export default {
       }
     }, 10000)
   },
-  destroyed () {
+  unmounted () {
     clearInterval(this.timer)
   },
   methods: {

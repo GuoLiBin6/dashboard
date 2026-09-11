@@ -11,6 +11,7 @@
 </template>
 
 <script>
+import yaml from 'js-yaml'
 import WindowsMixin from '@/mixins/windows'
 import {
   getStatusTableColumn,
@@ -19,7 +20,6 @@ import {
   getTaskNameTableColumn,
   getSubtaskCountTableColumn,
 } from '@/utils/common/tableColumn'
-const yaml = require('js-yaml')
 
 export default {
   name: 'TaskDetail',
@@ -68,12 +68,36 @@ export default {
               const { token_credential = {} } = user_cred
               const { project_domain = '', tenant = '', context = {} } = token_credential
               const ret = [
-                <list-body-cell-wrap style="margin: 3px 0 2px 0" copy field='user' row={token_credential} />,
-                <div>
-                  <span class='text-weak' title={ this.$t('shareScope.domain') }> { project_domain } </span>
-                  <span class='text-weak' title={ this.$t('shareScope.project') }> { tenant } </span>
-                </div>,
-                <list-body-cell-wrap style="margin: 3px 0 2px 0" copy field='ip' row={context} />,
+                h('list-body-cell-wrap', {
+                  props: {
+                    copy: true,
+                    field: 'user',
+                    row: token_credential,
+                  },
+                  style: 'margin: 3px 0 2px 0',
+                }),
+                h('div', [
+                  h('span', {
+                    class: 'text-weak',
+                    attrs: {
+                      title: this.$t('shareScope.domain'),
+                    },
+                  }, [project_domain]),
+                  h('span', {
+                    class: 'text-weak',
+                    attrs: {
+                      title: this.$t('shareScope.project'),
+                    },
+                  }, [tenant]),
+                ]),
+                h('list-body-cell-wrap', {
+                  props: {
+                    copy: true,
+                    field: 'ip',
+                    row: context,
+                  },
+                  style: 'margin: 3px 0 2px 0',
+                }),
               ]
               return ret
             },
@@ -188,9 +212,13 @@ export default {
           title: this.$t('task.title.stages'),
           slots: {
             default: ({ row }, h) => {
-              return [
-                <vxe-grid class="mb-2" data={ this.taskStages } columns={ this.stageColumns } />,
-              ]
+              return [h('table-lite-grid', {
+                class: 'mb-2',
+                props: {
+                  data: this.taskStages,
+                  columns: this.stageColumns,
+                },
+              })]
             },
           },
         },
@@ -201,8 +229,12 @@ export default {
           title: this.$t('task.title.failed_reason'),
           slots: {
             default: ({ row }, h) => {
-              return [
-                <code-mirror value={ this.failedReasons } options={ this.cmOptions } />]
+              return [h('code-mirror', {
+                props: {
+                  value: this.failedReasons,
+                  options: this.cmOptions,
+                },
+              })]
             },
           },
         })
@@ -213,8 +245,12 @@ export default {
           title: this.$t('task.title.parameters'),
           slots: {
             default: ({ row }, h) => {
-              return [
-                <code-mirror value={ this.taskParams } options={ this.cmOptions } />]
+              return [h('code-mirror', {
+                props: {
+                  value: this.taskParams,
+                  options: this.cmOptions,
+                },
+              })]
             },
           },
         })

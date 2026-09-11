@@ -90,7 +90,7 @@ export default {
       href: DOCS_MAP.mailConfig('workwx'),
     }
   },
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {

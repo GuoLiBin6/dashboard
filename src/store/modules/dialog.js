@@ -1,5 +1,3 @@
-import Vue from 'vue'
-
 export default {
   state: {
     dialogIds: [],
@@ -7,14 +5,14 @@ export default {
   },
   mutations: {
     CREATE (state, payload) {
-      Vue.set(state.dialogs, payload.id, payload)
+      state.dialogs[payload.id] = payload
       state.dialogIds.push(payload.id)
     },
     UPDATE (state, payload) {
       const keys = Object.keys(payload)
       for (let i = 0, len = keys.length; i < len; i++) {
         if (keys[i] !== 'id') {
-          Vue.set(state.dialogs[payload.id], keys[i], payload[keys[i]])
+          state.dialogs[payload.id][keys[i]] = payload[keys[i]]
         }
       }
     },
@@ -22,7 +20,7 @@ export default {
       const index = state.dialogIds.indexOf(id)
       if (index <= -1) return
       state.dialogIds.splice(index, 1)
-      Vue.delete(state.dialogs, id)
+      delete state.dialogs[id]
     },
   },
   actions: {

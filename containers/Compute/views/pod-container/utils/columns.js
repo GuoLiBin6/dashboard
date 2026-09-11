@@ -21,33 +21,41 @@ export const getEnvTableColumn = () => {
     slots: {
       default: ({ row }, h) => {
         if (!row.spec || !row.spec.envs || !row.spec.envs.length) return '-'
-        return [<list-body-cell-popover text={i18n.t('cloudenv.text_245', [(row.spec.envs && row.spec.envs.length) || 0])} min-width="500px">
-          <vxe-grid
-            showOverflow={false}
-            row-config={{ isHover: true }}
-            column-config={{ resizable: false }}
-            data={row.spec.envs}
-            columns={[
-              {
-                field: 'key',
-                title: i18n.t('common.name'),
-                slots: {
-                  default: ({ row }, h) => {
-                    return row.key || '-'
-                  },
-                },
+        const hFn = h || (() => {})
+        const columns = [
+          {
+            field: 'key',
+            title: i18n.t('common.name'),
+            slots: {
+              default: ({ row: r }) => r.key || '-',
+            },
+          },
+          {
+            field: 'value',
+            title: i18n.t('compute.repo.value'),
+            slots: {
+              default: ({ row: r }) => r.value || '-',
+            },
+          },
+        ]
+        return [
+          hFn('list-body-cell-popover', {
+            props: {
+              text: i18n.t('cloudenv.text_245', [(row.spec.envs && row.spec.envs.length) || 0]),
+              minWidth: '500px',
+            },
+          }, [
+            hFn('table-lite-grid', {
+              props: {
+                showOverflow: false,
+                rowConfig: { isHover: true },
+                columnConfig: { resizable: false },
+                data: row.spec.envs,
+                columns,
               },
-              {
-                field: 'value',
-                title: i18n.t('compute.repo.value'),
-                slots: {
-                  default: ({ row }, h) => {
-                    return row.value || '-'
-                  },
-                },
-              },
-            ]} />
-        </list-body-cell-popover>]
+            }),
+          ]),
+        ]
       },
     },
     formatter: ({ row }) => {

@@ -20,9 +20,11 @@ export default {
         hideField: true,
         edit: false,
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+          return this.$createElement('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getK8sClusterProviderColumn(),
@@ -57,21 +59,34 @@ export default {
           default: ({ row }, h) => {
             let warnTooltip = row.sync_message
             if (warnTooltip) {
-              warnTooltip = (
-                <a-tooltip placement="top" title={warnTooltip}>
-                  <div class='text-truncate'>
-                    <a-icon type="bulb" theme="twoTone" twoToneColor="#f5222d" class="mr-2" />
-                    <span>{ i18n.t('k8s.text_402') }</span>
-                  </div>
-                </a-tooltip>
-              )
+              warnTooltip = h('a-tooltip', {
+                props: {
+                  placement: 'top',
+                  title: warnTooltip,
+                },
+              }, [
+                h('div', { class: 'text-truncate' }, [
+                  h('icon', {
+                    props: {
+                      type: 'bulb',
+                      theme: 'twoTone',
+                      twoToneColor: '#f5222d',
+                    },
+                    class: 'mr-2',
+                  }),
+                  h('span', i18n.t('k8s.text_402')),
+                ]),
+              ])
             }
             return [
-              <div class='text-truncate'>
-                <status status={ row.sync_status } statusModule="kubecluster_sync_status">
-                  { warnTooltip }
-                </status>
-              </div>,
+              h('div', { class: 'text-truncate' }, [
+                h('status', {
+                  props: {
+                    status: row.sync_status,
+                    statusModule: 'kubecluster_sync_status',
+                  },
+                }, warnTooltip ? [warnTooltip] : []),
+              ]),
             ]
           },
         },

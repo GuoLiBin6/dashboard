@@ -1,9 +1,14 @@
-import 'moment/locale/zh-cn'
+import momentLib, { syncMomentLocale } from '@/utils/moment'
+import { syncDayjsLocale } from '@/utils/dayjs'
+
+export { syncMomentLocale, syncDayjsLocale }
 
 export default {
   install (Vue, options) {
-    const moment = options && options.moment ? options.moment : require('moment')
+    const moment = options && options.moment ? options.moment : momentLib
     moment.defaultFormat = 'YYYY-MM-DD HH:mm:ss'
+    syncMomentLocale(moment)
+    syncDayjsLocale()
     Object.defineProperties(Vue.prototype, {
       $moment: {
         get () {

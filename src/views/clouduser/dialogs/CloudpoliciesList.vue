@@ -1,15 +1,15 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{$t('common_322')}}</div>
-    <div slot="body">
+    <template #header>{{$t('common_322')}}</template>
+    <template #body>
       <page-list
         :list="list"
         :columns="columns"
         :enableVirtualScroll="false" />
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="cancelDialog">{{ $t('dialog.ok') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

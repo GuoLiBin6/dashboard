@@ -2,7 +2,7 @@
   <div class="h-100 position-relative">
     <div class="dashboard-card-wrap">
       <div class="dashboard-card-header">
-        <div class="dashboard-card-header-left">{{ form.fd.name || $t('dashboard.userinfo') }}<a-icon class="ml-2" type="loading" v-if="loading" /></div>
+        <div class="dashboard-card-header-left">{{ form.fd.name || $t('dashboard.userinfo') }}<icon class="ml-2" type="loading" v-if="loading" /></div>
         <div class="dashboard-card-header-right">
           <slot name="actions" :handle-edit="handleEdit" />
           <!-- <router-link v-if="!edit" to="/log" class="ml-2">
@@ -24,7 +24,7 @@
         </div>
       </div>
     </div>
-    <base-drawer :visible.sync="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit">
+    <base-drawer v-model:visible="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit">
       <a-form
         hideRequiredMark
         :form="form.fc"
@@ -95,15 +95,19 @@ export default {
     },
     userTableData () {
       const us = this.userInfo
+      const roles = Array.isArray(us && us.roles) ? us.roles : []
+      const projectName = us && us.projectName ? us.projectName : ''
+      const projectDomain = us && us.projectDomain ? us.projectDomain : ''
+      const lastActiveAt = us ? us.last_active_at : null
       const ret = [
-        { label: this.$t('dashboard.text_186'), value: us.roles.join(',') },
-        { label: this.$t('dashboard.text_187'), value: `${us.projectName} (${us.projectDomain})` },
-        { label: this.$t('dashboard.text_189'), value: this.$moment(us.last_active_at).format('') },
+        { label: this.$t('dashboard.text_186'), value: roles.join(',') },
+        { label: this.$t('dashboard.text_187'), value: `${projectName} (${projectDomain})`.trim() },
+        { label: this.$t('dashboard.text_189'), value: this.$moment(lastActiveAt).format('') },
       ]
       return ret
     },
   },
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {
@@ -132,7 +136,7 @@ export default {
 }
 </script>
 <style scoped lang="less">
-@import '~@/styles/less/theme';
+@import '@/styles/less/theme';
 
 .selected-user-content {
   align-items: center;

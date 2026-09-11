@@ -39,15 +39,29 @@ export default {
         {
           field: 'project_domain',
           title: this.$t('dictionary.domain'),
-          formatter: ({ row }) => {
-            return <side-page-trigger permission="domains_get" name="DomainSidePage" id={row.domain_id} vm={this}>{ row.project_domain }</side-page-trigger>
+          formatter: ({ row }, h) => {
+            return h('side-page-trigger', {
+              props: {
+                permission: 'domains_get',
+                name: 'DomainSidePage',
+                id: row.domain_id,
+                vm: this,
+              },
+            }, row.project_domain)
           },
         },
         {
           field: 'tenant',
           title: this.$t('dictionary.project'),
-          formatter: ({ row }) => {
-            return <side-page-trigger permission="projects_get" name="ProjectSidePage" id={row.tenant_id} vm={this}>{ row.tenant }</side-page-trigger>
+          formatter: ({ row }, h) => {
+            return h('side-page-trigger', {
+              props: {
+                permission: 'projects_get',
+                name: 'ProjectSidePage',
+                id: row.tenant_id,
+                vm: this,
+              },
+            }, row.tenant)
           },
         },
         getPublicScopeTableColumn({ vm: this, resource: 'guestimages' }),
@@ -63,10 +77,16 @@ export default {
           title: this.$t('table.title.child_image'),
           width: 150,
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               const arr = [...(row.data_images || [])]
-              arr.push(row.root_image.name)
-              return <a onClick={ () => this.$emit('tab-change', 'children-image-list') }>{arr.length}</a>
+              if (row.root_image?.name) arr.push(row.root_image.name)
+              return [
+                h('a', {
+                  on: {
+                    click: () => this.$emit('tab-change', 'children-image-list'),
+                  },
+                }, arr.length),
+              ]
             },
           },
         },
@@ -176,7 +196,13 @@ export default {
           slots: {
             default: ({ row }, h) => {
               return [
-                <vxe-grid class="mb-2" data={ this.imgSubformat } columns={ this.imageColumns } />,
+                h('table-lite-grid', {
+                  class: 'mb-2',
+                  props: {
+                    data: this.imgSubformat,
+                    columns: this.imageColumns,
+                  },
+                }),
               ]
             },
           },

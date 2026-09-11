@@ -1,6 +1,6 @@
 <template>
   <div>
-    <page-header :title="$t('scope.cloudid')" :tabs="tabs" :current-tab.sync="currentTab" />
+    <page-header :title="$t('scope.cloudid')" :tabs="tabs" v-model:currentTab="currentTab" />
     <template v-if="!loaded">
       <p class="text-center"><a-spin /></p>
     </template>

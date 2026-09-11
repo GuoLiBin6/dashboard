@@ -77,9 +77,13 @@ export default {
       if (this.percentFormat) {
         return this.percentFormat(this)
       }
+      const h = this.$createElement
       const per = this.percent || 0
-      const oversell = per > 100 ? <a-tag color="red">{ this.$t('common_714') }</a-tag> : null
-      return (<div>{oversell}<div class="mt-2 text-color">{ numerify(per, this.numerifyFloat) }{ this.unit }</div></div>)
+      const oversell = per > 100 ? h('a-tag', { props: { color: 'red' } }, this.$t('common_714')) : null
+      return h('div', [
+        oversell,
+        h('div', { class: 'mt-2 text-color' }, [numerify(per, this.numerifyFloat), this.unit]),
+      ])
     },
   },
 }

@@ -1,6 +1,6 @@
 <template>
   <base-select
-    v-model="value"
+    v-model="innerValue"
     remote
     resource="domains"
     :params="domainParams"
@@ -28,6 +28,7 @@ export default {
   },
   data () {
     return {
+      innerValue: this.value,
     }
   },
   computed: {
@@ -46,14 +47,21 @@ export default {
       }
     },
   },
-  beforeDestroy () {
+  watch: {
+    value (val) {
+      this.innerValue = val
+    },
+  },
+  beforeUnmount () {
   },
   created () {
   },
   methods: {
     handleChange (val) {
+      this.innerValue = val
       this.$emit('change', val)
       this.$emit('input', val)
+      this.$emit('update:value', val)
     },
   },
 }

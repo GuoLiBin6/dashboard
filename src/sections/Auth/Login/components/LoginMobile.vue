@@ -8,14 +8,14 @@
       <a-alert type="error" v-if="!isMobileChannelEnabled" :message="$t('auth.mobile.channel_not_ready')" banner />
       <!-- 用户名 -->
       <a-form-model-item prop="mobile">
-        <a-input :disabled="!isMobileChannelEnabled" v-model="fd.mobile" :placeholder="placeholderOpts.mobile" :autocomplete="isForgetLoginUser?'off':'on'">
-          <a-icon slot="prefix" type="mobile" style="color: rgba(0, 0, 0, .25)" />
+        <a-input :disabled="!isMobileChannelEnabled" v-model:value="fd.mobile" :placeholder="placeholderOpts.mobile" :autocomplete="isForgetLoginUser?'off':'on'">
+          <template #prefix><icon type="phone" style="color: rgba(0, 0, 0, .25)" /></template>
         </a-input>
       </a-form-model-item>
       <!-- 域 -->
       <template v-if="showDomainSelect && regions.domains">
         <a-form-model-item prop="domain">
-          <a-select v-model="fd.domain" :placeholder="placeholderOpts.domain">
+          <a-select v-model:value="fd.domain" :placeholder="placeholderOpts.domain">
             <a-select-option
               v-for="item in regions.domains"
               :key="item"
@@ -26,7 +26,7 @@
       <!-- 区域 -->
       <template v-if="showRegionSelect">
         <a-form-model-item prop="region">
-          <a-select v-model="fd.region" :placeholder="placeholderOpts.region">
+          <a-select v-model:value="fd.region" :placeholder="placeholderOpts.region">
             <a-select-option
               v-for="item in regions.regions"
               :key="item"
@@ -37,12 +37,12 @@
       <!-- 验证码 -->
       <template>
         <a-form-model-item prop="captcha" class="captcha-form-item">
-          <a-input v-model="fd.captcha" :placeholder="placeholderOpts.captcha" :disabled="captchaValid">
-            <a-icon slot="prefix" type="safety-certificate" style="color: rgba(0, 0, 0, .25)" />
+          <a-input v-model:value="fd.captcha" :placeholder="placeholderOpts.captcha" :disabled="captchaValid">
+            <template #prefix><icon type="safety-certificate" style="color: rgba(0, 0, 0, .25)" /></template>
             <template #suffix>
               <div class="captcha-suffix d-flex align-items-center justify-content-end">
-                <a-icon v-show="captchaLoading" slot="suffix" type="loading" style="color: rgba(0, 0, 0, .25)" />
-                <img v-show="!captchaLoading && captchaImg" slot="suffix" :src="captchaImg" @click="fetchCaptcha" />
+                <icon v-show="captchaLoading" type="loading" style="color: rgba(0, 0, 0, .25)" spin />
+                <img v-show="!captchaLoading && captchaImg" :src="captchaImg" @click="fetchCaptcha" />
               </div>
             </template>
           </a-input>
@@ -51,8 +51,8 @@
       <!-- 手机验证码 -->
       <template>
         <a-form-model-item prop="verify" class="captcha-form-item">
-          <a-input v-model="fd.verify" :placeholder="placeholderOpts.verify">
-            <a-icon slot="prefix" type="file-text" style="color: rgba(0, 0, 0, .25)" />
+          <a-input v-model:value="fd.verify" :placeholder="placeholderOpts.verify">
+            <template #prefix><icon type="file-text" style="color: rgba(0, 0, 0, .25)" /></template>
             <template #suffix>
               <div class="captcha-suffix d-flex align-items-center justify-content-end">
                 <a-button :disabled="!enableSendSmsCode" @click="getWebSmsCode" style="width: 100%" type="link">
@@ -206,7 +206,7 @@ export default {
   mounted () {
     this.initMobile()
   },
-  destroyed () {
+  unmounted () {
     this.clearTimer()
   },
   methods: {
@@ -273,7 +273,22 @@ export default {
             epochstr: +new Date(),
           },
         })
-        this.captchaImg = await this.makeCaptchaTransparent(response.data)
+        const contentType = response?.headers?.['content-type'] || 'image/png'
+        if (!String(contentType).startsWith('image/')) {
+          try {
+            const text = new TextDecoder('utf-8').decode(new Uint8Array(response.data))
+            // eslint-disable-next-line no-console
+            console.error('[captcha] invalid content-type:', contentType, text.slice(0, 200))
+          } catch (e) {
+            // eslint-disable-next-line no-console
+            console.error('[captcha] invalid content-type:', contentType)
+          }
+          this.captchaImg = ''
+          return
+        }
+        const bytes = new Uint8Array(response.data)
+        const blob = new Blob([bytes], { type: contentType })
+        this.captchaImg = URL.createObjectURL(blob)
         this.fd.captcha = ''
         this.initCaptchaTimer && this.initCaptchaTimer()
       } catch (error) {
@@ -371,15 +386,14 @@ export default {
         await this.$store.dispatch('auth/onAfterLogin')
         this.$bus.$emit('after-login', { mobile: fd.mobile })
       } catch (error) {
-        // 登录失败，如果domain已存在则清除domain，主要是应对历史账号存储的domain被更改的情况。（异常情况）
-        if (this.fd.domain) {
-          this.fd.domain = ''
-        }
-        // 409 则显示 domain 选择框 并 刷新验证码
+        // 仅 domain 冲突（409）时清 domain 并切回用户名输入；普通失败保持已选账号态
         if (error.response && error.response.status === 409 && !this.hiddenDomainSelect) {
+          if (this.fd.domain) {
+            this.fd.domain = ''
+          }
           this.showDomainSelect = true
+          this.showUsernameInput = true
         }
-        this.showUsernameInput = true
         this.fetchCaptcha()
         this.submiting = false
         throw error
@@ -412,10 +426,8 @@ export default {
   }
 }
 .captcha-form-item {
-  ::v-deep {
-    .ant-input-affix-wrapper .ant-input-suffix {
-      padding-right: 0px !important;
-    }
+  :deep(.ant-input-affix-wrapper .ant-input-suffix) {
+    padding-right: 0px !important;
   }
 }
 .selected-user-wrap {
@@ -450,7 +462,7 @@ export default {
   text-align: center;
   line-height: 22px;
   border-radius: 50%;
-  background-color: #1890ff;
+  background-color: var(--ant-color-primary, #1890ff);
   font-size: 12px;
 }
 .login-domain-title {

@@ -7,7 +7,7 @@
     :group-actions="groupActions" />
 </template>
 
-<script>
+<script lang="jsx">
 import ListMixin from '@/mixins/list'
 import WindowsMixin from '@/mixins/windows'
 // import { getStatusTableColumn } from '@/utils/common/tableColumn'

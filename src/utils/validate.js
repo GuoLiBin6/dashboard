@@ -1,7 +1,7 @@
 import * as R from 'ramda'
 import { merge } from 'lodash'
+import yaml from 'js-yaml'
 import i18n from '@/locales'
-const yaml = require('js-yaml')
 
 export const REGEXP = {
   IPv4: {
@@ -387,14 +387,17 @@ export const REGEXP = {
  */
 export const isRequired = (isObj = true, valueKey = 'key') => {
   return function (rule, value, callback) {
+    const fail = () => callback(new Error(rule.message))
     if (isObj && R.is(Object, value)) {
       if (value[valueKey]) {
         callback()
       } else {
-        callback(Error)
+        fail()
       }
+    } else if (value) {
+      callback()
     } else {
-      callback(Error)
+      fail()
     }
   }
 }
@@ -564,20 +567,35 @@ export const isValidateResourceLock = (value = {}, callback) => {
 }
 
 /**
- * 检测 v-model-form
+ * 检测 v-model-form（兼容 antdv2 FormModel.validate(cb) 与 antdv4 Form.validateFields()）
  * @param {*} form this.$refs.form
  * @returns Promise
  */
 export const validateModelForm = (form) => {
-  return new Promise((resolve, reject) => {
-    form.validate((valid, err) => {
-      if (valid) {
-        resolve(valid)
-      } else {
-        reject(err)
-      }
+  if (!form) {
+    return Promise.reject(new Error('form ref is empty'))
+  }
+  // antdv4：validate / validateFields 返回 Promise，且不再支持 callback
+  if (typeof form.validateFields === 'function') {
+    const ret = form.validateFields()
+    if (ret && typeof ret.then === 'function') {
+      return ret.then(() => true)
+    }
+  }
+  if (typeof form.validate === 'function') {
+    const ret = form.validate()
+    if (ret && typeof ret.then === 'function') {
+      return ret.then(() => true)
+    }
+    // 旧版 FormModel：validate(callback)
+    return new Promise((resolve, reject) => {
+      form.validate((valid, err) => {
+        if (valid) resolve(valid)
+        else reject(err)
+      })
     })
-  })
+  }
+  return Promise.reject(new Error('form.validate is not a function'))
 }
 
 export default validateForm

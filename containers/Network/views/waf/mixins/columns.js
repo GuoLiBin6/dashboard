@@ -18,10 +18,12 @@ export default {
         onManager: this.onManager,
         hideField: true,
         edit: false,
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={() => this.handleOpenSidepage(row, '')}>{row.name}</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            props: {
+              onTrigger: () => this.handleOpenSidepage(row, ''),
+            },
+          }, row.name)
         },
       }),
       getTagTableColumn({ onManager: this.onManager, resource: 'waf_instances', columns: () => this.columns, tipName: this.$t('network.waf') }),
@@ -30,14 +32,19 @@ export default {
         field: 'type',
         title: i18n.t('network.waf.type'),
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             const ret = []
             const type = this.$getI18n(`network.waf.type.${row.type}`, row.type)
-            ret.push(<div>{type}</div>)
+            ret.push(h('div', type))
             if (row.brand === 'Qcloud') {
-              ret.push(<list-body-cell-wrap hide-field copy field="cname" row={row}>
-                <span class='text-weak'>{row.cname}</span>
-              </list-body-cell-wrap>)
+              ret.push(h('list-body-cell-wrap', {
+                props: {
+                  hideField: true,
+                  copy: true,
+                  field: 'cname',
+                  row: row,
+                },
+              }, [h('span', { class: 'text-weak' }, row.cname)]))
             }
             return ret
           },

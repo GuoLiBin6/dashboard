@@ -1,6 +1,6 @@
 <template>
   <a-alert type="warning" class="mb-2">
-    <template slot="message">
+    <template #message>
       <span>{{ before }}</span>
       <help-link :href="href">{{ hrefText }}</help-link>
       <span>{{ after }}</span>

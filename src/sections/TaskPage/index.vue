@@ -1,16 +1,14 @@
 <template>
   <div>
     <template v-if="!isSidepage">
-      <page-header :title="title" :tabs="taskStageOptions" :current-tab.sync="taskStage" />
+      <page-header :title="title" :tabs="taskStageOptions" v-model:currentTab="taskStage" />
       <page-body>
         <list :id="listId" :resource="resource" :archivedResource="archivedResource" :taskStage="taskStage" :objId="objId" :getParams="getParams" :ignoreResId="ignoreResId" />
       </page-body>
     </template>
     <template v-else>
-      <a-tabs :defaultActiveKey="taskStage" @change="callback" :animated="false">
-        <template v-for="obj of taskStageOptions">
-          <a-tab-pane :tab="obj.label" :key="obj.key" />
-        </template>
+      <a-tabs :activeKey="taskStage" @change="callback" :animated="false">
+        <a-tab-pane v-for="obj of taskStageOptions" :key="obj.key" :tab="obj.label" />
       </a-tabs>
       <list :id="listId" :resource="resource" :archivedResource="archivedResource" :taskStage="taskStage" :objId="objId" :getParams="getParams" :root="root" :ignoreResId="ignoreResId" />
     </template>

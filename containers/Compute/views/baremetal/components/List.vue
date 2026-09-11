@@ -307,7 +307,7 @@ export default {
                   })
                 },
               },
-              disableDeleteAction(Object.assign(this, { permission: 'server_update' })),
+              disableDeleteAction(this, { permission: 'server_update' }),
               {
                 label: this.$t('compute.perform_delete'),
                 permission: 'server_delete',

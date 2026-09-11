@@ -15,9 +15,9 @@ export const getDeviceModelTableColumn = () => {
       default: ({ row }, h) => {
         const text = formatDevicesDisplay(row.devices, { fallbackMemoryMb: row.vram_claim_mb })
         if (text === '-') return '-'
-        return text.split(', ').map(part => (
-          <div class={'mb-1'}><a-tag>{part}</a-tag></div>
-        ))
+        return text.split(', ').map(part => {
+          return h('div', { class: 'mb-1' }, [h('a-tag', part)])
+        })
       },
     },
     formatter: ({ row }) => {
@@ -47,7 +47,7 @@ export const getEnvsTableColumn = () => {
       default: ({ row }, h) => {
         if (row.envs?.length) {
           return row.envs.map(v => {
-            return <div class={'mb-1'}><a-tag>{v.key}={v.value}</a-tag></div>
+            return h('div', { class: 'mb-1' }, [h('a-tag', `${v.key}=${v.value}`)])
           })
         }
         return '-'
@@ -84,9 +84,24 @@ export const getImageTableColumn = ({ vm = {} } = {}) => {
     slots: {
       default: ({ row }, h) => {
         return [
-          <list-body-cell-wrap copy hideField={true} field='image' row={row} message={row.image}>
-            <side-page-trigger permission='llm_images_get' name='LlmImageSidePage' id={row.llm_image_id} vm={vm}>{row.image}</side-page-trigger>
-          </list-body-cell-wrap>,
+          h('list-body-cell-wrap', {
+            props: {
+              copy: true,
+              hideField: true,
+              field: 'image',
+              row: row,
+              message: row.image,
+            },
+          }, [
+            h('side-page-trigger', {
+              props: {
+                permission: 'llm_images_get',
+                name: 'LlmImageSidePage',
+                id: row.llm_image_id,
+                vm: vm,
+              },
+            }, row.image),
+          ]),
         ]
       },
     },
@@ -169,12 +184,12 @@ export const getLlmModelNameTableColumn = ({ vm = {} } = {}) => {
       return text || '-'
     },
     slots: {
-      default: ({ row }) => {
+      default: ({ row }, h) => {
         if (!row.mounted_model_details?.length && !getSkuModelDisplayText(row)) {
           return '-'
         }
         return [
-          vm.$createElement(LlmSkuMountedModels, {
+          (h || vm.$createElement)(LlmSkuMountedModels, {
             props: { row, vm, showLabel: false },
           }),
         ]

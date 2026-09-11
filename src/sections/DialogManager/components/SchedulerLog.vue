@@ -1,20 +1,22 @@
 <template>
   <base-dialog @cancel="cancelDialog" width="1000px">
-    <div slot="header">{{$t('common.scheduler_log')}}</div>
-    <div class="clearfix codemirror-h-100" slot="body">
+    <template #header>{{$t('common.scheduler_log')}}</template>
+    <template #body>
+      <div class="clearfix codemirror-h-100">
       <code-mirror v-model="showData" :options="cmOptions" ref="codeMirrorRef" :is-scroll="true" />
       <div
         class="float-right"
         v-clipboard:copy="params.data"
         v-clipboard:success="copySuccess"
         v-clipboard:error="copyError">
-        <a-icon class="primary-color" type="copy" />
+        <icon class="primary-color" type="copy" />
         <a-button type="link" size="small">{{$t('common.text00094')}}</a-button>
       </div>
-    </div>
-    <div slot="footer">
+      </div>
+    </template>
+    <template #footer>
       <a-button type="primary" :loading="loading" @click="cancelDialog">{{ $t('dialog.ok') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

@@ -3,8 +3,8 @@
     <div slot="header">{{this.params.title}}</div>
     <div slot="body">
       <a-alert type="warning" class="mb-4">
-        <div slot="message" v-if="showDocsLink()">{{ $t('storage.local_storage.help_alert_message') }}<help-link :href="localStorageUrl">{{ $t('storage.local_storage.help_link') }}</help-link></div>
-        <div slot="message" v-else>{{ $t('storage.local_storage.help_alert_message_1') }}</div>
+        <template #message v-if="showDocsLink()">{{ $t('storage.local_storage.help_alert_message') }}<help-link :href="localStorageUrl">{{ $t('storage.local_storage.help_link') }}</help-link></template>
+        <template #message v-else>{{ $t('storage.local_storage.help_alert_message_1') }}</template>
       </a-alert>
       <a-form :form="form.fc" v-bind="formItemLayout">
         <a-form-item :label="$t('storage.text_55', [$t('dictionary.domain')])">
@@ -30,8 +30,8 @@
         </a-form-item>
         <a-form-item :label="$t('storage.text_38')">
           <a-radio-group v-decorator="decorators.storage_type" buttonStyle="solid">
-            <template v-for="(v, k) in STORAGE_TYPES">
-              <a-radio-button v-if="storageTypes.indexOf(k) > -1" :key="k"  :value="k">{{v}}</a-radio-button>
+            <template v-for="(v, k) in STORAGE_TYPES" :key="k">
+              <a-radio-button v-if="storageTypes.indexOf(k) > -1"  :value="k">{{v}}</a-radio-button>
             </template>
           </a-radio-group>
         </a-form-item>

@@ -198,9 +198,8 @@ export default {
                   }
                 },
               },
-              disableDeleteAction(Object.assign(this, {
+              disableDeleteAction(this, {
                 permission: 'file_systems_update',
-              }), {
                 name: this.$t('dictionary.nas'),
               }),
               {

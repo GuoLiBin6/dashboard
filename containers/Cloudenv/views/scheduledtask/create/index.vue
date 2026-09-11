@@ -1,7 +1,7 @@
 <template>
   <div class="scheduletask">
     <page-header :title="$t('cloudenv.text_432')" />
-    <page-body needMarginBottom>
+    <page-body>
       <a-form :form="form.fc" v-bind="formItemLayout" hideRequiredMark>
         <a-form-item :label="$t('cloudenv.text_410', [$t('dictionary.project')])" class="mt-3" v-bind="formItemLayout">
           <domain-project :fc="form.fc" :decorators="{ project: decorators.project, domain: decorators.domain }" />
@@ -23,12 +23,12 @@
         </a-form-item>
         <a-form-item :label="$t('cloudenv.text_425')">
           <a-radio-group v-decorator="decorators.action">
-            <a-radio-button v-for="(v, k) in $t('cloudenvScheduledtaskRuleAction')" :key="k" :value="k">{{v}}</a-radio-button>
+            <a-radio-button v-for="(v, k) in $tm('cloudenvScheduledtaskRuleAction')" :key="k" :value="k">{{v}}</a-radio-button>
           </a-radio-group>
         </a-form-item>
         <a-form-item :label="$t('cloudenv.text_439')" v-show="false">
           <a-radio-group v-decorator="decorators.labelType">
-            <a-radio-button v-for="(v, k) in $t('cloudenvScheduledtaskLabelType')" :key="k" :value="k">{{v}}</a-radio-button>
+            <a-radio-button v-for="(v, k) in $tm('cloudenvScheduledtaskLabelType')" :key="k" :value="k">{{v}}</a-radio-button>
           </a-radio-group>
         </a-form-item>
         <a-form-item :label="$t('cloudenv.text_440')" v-if="form.fc.getFieldValue('labelType') === 'id'">
@@ -75,7 +75,7 @@ export default {
   data () {
     return {
       loading: false,
-      resourceTypeOpts: { ...this.$t('cloudenvScheduledtaskResourceType') },
+      resourceTypeOpts: { ...this.$tm('cloudenvScheduledtaskResourceType') },
       decorators: {
         domain: [
           'domain',

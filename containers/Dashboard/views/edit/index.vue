@@ -17,7 +17,7 @@
       <main class="edit-content flex-fill position-relative">
         <div class="edit-content-inner w-100 h-100 position-absolute d-flex flex-column flex-nowrap">
           <div class="edit-header mb-2 d-flex">
-            <a-input ref="input" v-model="dashboardName" :placeholder="$t('dashboard.text_119')" />
+            <a-input ref="input" v-model:value="dashboardName" :placeholder="$t('dashboard.text_119')" />
             <data-range v-if="(isAdminMode || isDomainMode) && $appConfig.isPrivate && !$store.getters.isSysCE" :dataRangeParams="dataRangeParams" @updateDataRange="updateDataRange" edit />
           </div>
           <grid-shadow
@@ -25,7 +25,7 @@
             ref="grid-shadow">
             <grid-layout
                 ref="grid-layout"
-                :layout.sync="layout"
+                v-model:layout="layout"
                 :col-num="colNum"
                 :row-height="rowHeight"
                 :max-rows="maxRows"
@@ -37,7 +37,7 @@
                 :vertical-compact="false"
                 :prevent-collision="true"
                 :use-css-transforms="true">
-                <template v-for="(item, index) in layout">
+                <template v-for="(item, index) in layout" :key="item.i">
                   <grid-item
                     v-if="!['Quota', 'ProjectQuota'].includes(item.component) || (['Quota', 'ProjectQuota'].includes(item.component) && globalConfig.enable_quota_check)"
                     class="edit-grid-item"
@@ -47,7 +47,6 @@
                     :h="item.h"
                     :minH="item.minH"
                     :i="item.i"
-                    :key="item.i"
                     :is-draggable="!item.isTemplate"
                     :is-resizable="!item.isTemplate"
                     :style="{ outline: item.isTemplate ? '2px dashed darkmagenta' : '' }">
@@ -78,8 +77,8 @@
 import * as R from 'ramda'
 import { mapGetters } from 'vuex'
 import interact from '@interactjs/interactjs'
-import VueGridLayout from 'vue-grid-layout'
 import debounce from 'lodash/debounce'
+import { GridLayout, GridItem } from '@/utils/vueGridLayoutCompat'
 import getExtendsComponents from '@scope/extends'
 import GridShadow from '@Dashboard/components/GridShadow'
 import ExtendGallery from '@Dashboard/sections/ExtendGallery'
@@ -93,8 +92,8 @@ const extendsComponents = R.is(Function, getExtendsComponents) ? getExtendsCompo
 export default {
   name: 'DashboardEdit',
   components: {
-    GridLayout: VueGridLayout.GridLayout,
-    GridItem: VueGridLayout.GridItem,
+    GridLayout,
+    GridItem,
     GridShadow,
     ExtendGallery,
     DataRange,
@@ -140,7 +139,7 @@ export default {
       }
     },
   },
-  destroyed () {
+  unmounted () {
     window.onbeforeunload = null
     this.pm = null
     this.debounceUpdateGridItem = null
@@ -344,8 +343,9 @@ export default {
       return { x, y }
     },
     calcColWidth () {
-      const placeholderGrid = this.$refs['grid-layout'].$children[0]
-      return (placeholderGrid.containerWidth - (this.colMargin[0] * (this.colNum + 1))) / this.colNum
+      const grid = this.$refs['grid-layout']
+      const containerWidth = grid?.width || grid?.$el?.offsetWidth || 0
+      return (containerWidth - (this.colMargin[0] * (this.colNum + 1))) / this.colNum
     },
     setCurrentOption (component) {
       this.currentOption = {

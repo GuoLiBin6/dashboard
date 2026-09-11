@@ -9,7 +9,7 @@
           <a-radio-group class="mr-3" v-decorator="decorators.time">
             <a-radio-button key="unset" value="unset">{{ $t('compute.text_138') }}</a-radio-button>
             <a-radio-button v-for="item in timeOpts" v-show="!item.hidden" :key="item.key" :value="item.key">{{ item.label }}</a-radio-button>
-            <custom-date :customTime.sync="customTime" @click="handleSelected" :time.sync="time" :startTime="moment()" :endTime="moment().add(1, 'days')" :allow-future-time="true" />
+            <custom-date v-model:customTime="customTime" @click="handleSelected" v-model:time="time" :startTime="moment()" :endTime="moment().add(1, 'days')" :allow-future-time="true" />
           </a-radio-group>
         </a-form-item>
         <a-form-item :label="$t('monitor.alerts.shield.reason')" v-bind="formItemLayout">

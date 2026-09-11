@@ -218,11 +218,18 @@ export default {
           title: this.$t('compute.source_ip'),
           field: 'source_ips',
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               const { source_ips = '' } = row
               const ips = source_ips.split(',')
               return ips.map(ip => {
-                return <list-body-cell-wrap copy field='ip' row={{ ip }} title={ip} />
+                return h('list-body-cell-wrap', {
+                  props: {
+                    copy: true,
+                    field: 'ip',
+                    row: { ip },
+                    title: ip,
+                  },
+                })
               })
             },
           },

@@ -1,7 +1,7 @@
 <template>
   <div style="margin-bottom: 20px;" v-if="skuList">
     <a-form-item :label="$t('compute.text_109')" v-bind="formItemLayout">
-      <vxe-grid
+      <table-lite-grid
         row-id="id"
         :radio-config="radioConfig"
         :columns="tableColumn"
@@ -13,7 +13,7 @@
         <div slot="empty" style="height: 100px">
           <page-list-empty :loading="loading" />
         </div>
-      </vxe-grid>
+      </table-lite-grid>
     </a-form-item>
     <a-form-item class="mt-1" :validate-status="formatSku ? 'success' : 'error'" v-bind="tailFormItemLayout">
       <p slot="help">
@@ -26,7 +26,7 @@
     </a-form-item>
   </div>
 </template>
-<script>
+<script lang="jsx">
 import { BILL_TYPES_MAP } from '@DB/views/redis/constants'
 import { sizestr } from '@/utils/utils'
 import PageListEmpty from '@/components/PageList/Loader'
@@ -131,7 +131,7 @@ export default {
           slots: {
             default: ({ row: { rate } }) => {
               if (this.rateLoading) {
-                return [<a-icon type="loading" />]
+                return [<icon type="loading" />]
               }
               const isPackage = this.form.getFieldValue('billing_type') === BILL_TYPES_MAP.prepaid.key
               if (rate) {

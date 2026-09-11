@@ -100,7 +100,7 @@ export default {
 
 <style lang="less" scoped>
 .ant-card {
-  & ::v-deep .ant-card-body {
+  & :deep(.ant-card-body) {
     padding: 12px;
   }
 }

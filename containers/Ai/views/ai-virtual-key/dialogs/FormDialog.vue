@@ -4,16 +4,16 @@
     <div slot="body">
       <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 5 }" :wrapper-col="{ span: 17 }">
         <a-form-model-item v-if="params.type !== 'edit'" :label="$t('common.name')" prop="generate_name">
-          <a-input v-model="form.generate_name" />
+          <a-input v-model:value="form.generate_name" />
         </a-form-model-item>
         <a-form-model-item v-if="params.type === 'edit'" :label="$t('aice.aiproxy.virtual_key_field')" prop="virtual_key">
-          <a-input v-model="form.virtual_key" :placeholder="$t('aice.aiproxy.optional_auto_generate')" />
+          <a-input v-model:value="form.virtual_key" :placeholder="$t('aice.aiproxy.optional_auto_generate')" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.aiproxy.max_tokens_per_request')">
-          <a-input-number v-model="form.max_tokens_per_request" :min="0" />
+          <a-input-number v-model:value="form.max_tokens_per_request" :min="0" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.aiproxy.requests_per_minute')">
-          <a-input-number v-model="form.requests_per_minute" :min="0" />
+          <a-input-number v-model:value="form.requests_per_minute" :min="0" />
         </a-form-model-item>
       </a-form-model>
     </div>

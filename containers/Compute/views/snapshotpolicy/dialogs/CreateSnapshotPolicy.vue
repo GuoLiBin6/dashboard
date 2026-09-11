@@ -3,7 +3,7 @@
     <div slot="header">{{action}}</div>
     <div slot="body">
       <a-alert class="mb-2" type="warning">
-        <div slot="message">{{$t('compute.text_1087')}}<br />{{$t('compute.text_1088')}}<br />{{$t('compute.text_1089')}}</div>
+        <template #message>{{$t('compute.text_1087')}}<br />{{$t('compute.text_1088')}}<br />{{$t('compute.text_1089')}}</template>
       </a-alert>
       <a-form :form="form.fc" hideRequiredMark>
         <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-bind="formItemLayout">
@@ -28,7 +28,7 @@
           </a-select>
         </a-form-item>
         <a-form-item :label="$t('compute.text_431')" v-bind="formItemLayout">
-          <a-checkbox-group v-decorator="decorators.repeat_weekdays">
+          <a-checkbox-group class="snapshot-policy-weekdays" v-decorator="decorators.repeat_weekdays">
             <a-checkbox
               v-for="(week, idx) of weekOptions"
               :key="idx + 1"
@@ -50,40 +50,53 @@
           </a-select>
         </a-form-item>
         <a-form-item :label="$t('compute.text_433')" v-bind="formItemLayout">
-          <a-radio-group v-decorator="decorators.alwaysReserved">
-            <div class="mb-2">
-              <a-radio value="day" :disabled="params.type === 'update' && form.fd.alwaysReserved !== 'day'">
-                <span class="mr-2">{{$t('compute.text_1092')}}</span>
-                <a-input-number
-                  size="small"
-                  v-decorator="decorators.retention_days"
-                  :step="1"
-                  :max="49"
-                  :min="1"
-                  :disabled="params.type === 'update' && form.fd.alwaysReserved !== 'day'"
-                  step-strictly />
-                <span style="color: #606266;" class="ml-2">{{$t('compute.text_1093')}}</span>
+          <div>
+            <div class="mb-2 d-flex align-items-center">
+              <a-radio
+                :checked="alwaysReserved === 'day'"
+                :disabled="isRetentionDisabled('day')"
+                @change="setAlwaysReserved('day')">
+                {{$t('compute.text_1092')}}
               </a-radio>
+              <a-input-number
+                class="ml-2"
+                size="small"
+                v-decorator="decorators.retention_days"
+                :step="1"
+                :max="49"
+                :min="1"
+                :disabled="isRetentionDisabled('day') || alwaysReserved !== 'day'"
+                step-strictly
+                @click.stop />
+              <span style="color: #606266;" class="ml-2">{{$t('compute.text_1093')}}</span>
             </div>
-            <div class="mb-2">
-              <a-radio value="count" :disabled="params.type === 'update' && form.fd.alwaysReserved !== 'count'">
-                <span class="mr-2">{{$t('compute.retention_count_prefix')}}</span>
-                <a-input-number
-                  size="small"
-                  v-decorator="decorators.retention_count"
-                  :step="1"
-                  :min="1"
-                  :disabled="params.type === 'update' && form.fd.alwaysReserved !== 'count'"
-                  step-strictly />
-                <span style="color: #606266;" class="ml-2">{{$t('compute.retention_count_suffix')}}</span>
+            <div class="mb-2 d-flex align-items-center">
+              <a-radio
+                :checked="alwaysReserved === 'count'"
+                :disabled="isRetentionDisabled('count')"
+                @change="setAlwaysReserved('count')">
+                {{$t('compute.retention_count_prefix')}}
               </a-radio>
+              <a-input-number
+                class="ml-2"
+                size="small"
+                v-decorator="decorators.retention_count"
+                :step="1"
+                :min="1"
+                :disabled="isRetentionDisabled('count') || alwaysReserved !== 'count'"
+                step-strictly
+                @click.stop />
+              <span style="color: #606266;" class="ml-2">{{$t('compute.retention_count_suffix')}}</span>
             </div>
             <div>
-              <a-radio value="always" :disabled="params.type === 'update' && form.fd.alwaysReserved !== 'always'">
+              <a-radio
+                :checked="alwaysReserved === 'always'"
+                :disabled="isRetentionDisabled('always')"
+                @change="setAlwaysReserved('always')">
                 {{$t('compute.text_1094')}}
               </a-radio>
             </div>
-          </a-radio-group>
+          </div>
         </a-form-item>
       </a-form>
     </div>
@@ -114,16 +127,19 @@ export default {
     const types = (this.params.extParams && this.params.extParams.types) || ['server', 'disk']
     const initData = this.params.type === 'update' ? this.params.data[0] : {}
     let alwaysReserved = 'day'
-    if (initData.retention_count) {
-      alwaysReserved = 'count'
-    } else if (initData.retention_days > 0) {
-      alwaysReserved = 'day'
-    } else {
-      alwaysReserved = 'always'
+    if (this.params.type === 'update') {
+      if (initData.retention_count) {
+        alwaysReserved = 'count'
+      } else if (initData.retention_days > 0) {
+        alwaysReserved = 'day'
+      } else {
+        alwaysReserved = 'always'
+      }
     }
     return {
       loading: false,
       action: this.$t('compute.text_1095'),
+      alwaysReserved,
       form: {
         fc: this.$form.createForm(this, { onValuesChange: this.onValuesChange }),
         fd: {
@@ -239,6 +255,14 @@ export default {
     this.debounceFetchSnapshotpolicies = debounce(this.fetchSnapshotpolicies, 1000)
   },
   methods: {
+    isRetentionDisabled (type) {
+      return this.params.type === 'update' && this.alwaysReserved !== type
+    },
+    setAlwaysReserved (val) {
+      if (this.isRetentionDisabled(val)) return
+      this.alwaysReserved = val
+      this.form.fd.alwaysReserved = val
+    },
     fetchSnapshotpolicies () {
       const params = {
         scope: this.$store.getters.scope,
@@ -250,10 +274,12 @@ export default {
       })
     },
     genParams () {
-      const { alwaysReserved, retention_count, retention_days, domain, project, time_points, ...rest } = this.form.fd
+      const { retention_count, retention_days, domain, project, time_points, ...rest } = this.form.fd
+      const alwaysReserved = this.alwaysReserved
       const params = {
         ...rest,
       }
+      delete params.alwaysReserved
       if (alwaysReserved === 'count') {
         params.retention_count = retention_count
         params.retention_days = -1
@@ -330,5 +356,10 @@ export default {
 }
 .select-btn.ant-btn-primary + .ant-btn:not(.ant-btn-primary):not([disabled]) {
   border-left-color: #d9d9d9 !important;
+}
+.snapshot-policy-weekdays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 0;
 }
 </style>

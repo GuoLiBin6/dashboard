@@ -17,7 +17,7 @@
             </a-radio-group>
           </a-form-item>
           <a-form-item :label="$t('compute.image.export')">
-            <a-radio-group v-model="isDownload">
+            <a-radio-group v-model:value="isDownload">
               <a-radio :value="true">
                 {{ $t('compute.image.export.file') }}
               </a-radio>

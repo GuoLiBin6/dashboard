@@ -1,14 +1,14 @@
 <template>
     <base-dialog @cancel="cancelDialog">
-      <div slot="header">{{ $t('scope.text_554') }}</div>
-      <div slot="body">
+      <template #header>{{ $t('scope.text_554') }}</template>
+      <template #body>
         <h3>{{ $t('common.saml_login_tips') }}</h3>
         <p class="mt-3">{{ $t('common.saml_login_accout') }}：{{email}}<copy :message="email" /></p>
-      </div>
-      <div slot="footer">
+      </template>
+      <template #footer>
         <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('common.copy_and_login') }}</a-button>
         <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-      </div>
+      </template>
     </base-dialog>
 </template>
 

@@ -1,7 +1,7 @@
 <template>
   <div>
     <page-header :title="this.panelId ? $t('monitor.dashboard.dialog.project.update') : $t('monitor.dashboard.dialog.project.create')" />
-    <page-body needMarginBottom v-if="initFinished">
+    <page-body v-if="initFinished">
       <a-row>
         <a-col :md="{ span: 24 }" :lg="{ span: 22 }" :xl="{ span: 16 }"  :xxl="{ span: 11 }" class="mb-5">
           <monitor-forms
@@ -23,11 +23,11 @@
                :xxl="{ span: 12, offset: 1 }">
           <monitor-header
               class="mb-4"
-              :time.sync="time"
-              :timeGroup.sync="timeGroup"
+              v-model:time="time"
+              v-model:timeGroup="timeGroup"
               :showTimegroup="true"
               :showGroupFunc="true"
-              :customTime.sync="customTime"
+              v-model:customTime="customTime"
               :showCustomTimeText="time==='custom'"
               customTimeUseTimeStamp
               @refresh="fetchAllData" />

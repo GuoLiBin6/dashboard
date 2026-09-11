@@ -1,16 +1,16 @@
 <template>
   <div>
     <page-header :title="$t('common.create') + $t('aice.aiproxy.virtual_key')" />
-    <page-body needMarginBottom>
+    <page-body>
       <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 4 }" :wrapper-col="{ span: 16 }" class="mt-4">
         <a-form-model-item :label="$t('common.name')" prop="generate_name">
-          <a-input v-model="form.generate_name" />
+          <a-input v-model:value="form.generate_name" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.aiproxy.max_tokens_per_request')">
-          <a-input-number v-model="form.max_tokens_per_request" :min="0" />
+          <a-input-number v-model:value="form.max_tokens_per_request" :min="0" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.aiproxy.requests_per_minute')">
-          <a-input-number v-model="form.requests_per_minute" :min="0" />
+          <a-input-number v-model:value="form.requests_per_minute" :min="0" />
         </a-form-model-item>
       </a-form-model>
     </page-body>

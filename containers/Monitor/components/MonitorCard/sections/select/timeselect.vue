@@ -1,7 +1,7 @@
 <template>
   <div>
     <div v-if="isRadioGroup">
-      <a-radio-group class="mr-3" v-model="selected" @change="handleChange">
+      <a-radio-group class="mr-3" v-model:value="selected" @change="handleChange">
         <a-radio-button v-for="m of options" :key="m.label" :value="m.value">
           {{ m.label }}
         </a-radio-button>

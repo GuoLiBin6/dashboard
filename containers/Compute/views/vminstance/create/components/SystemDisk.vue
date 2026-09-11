@@ -69,7 +69,8 @@ export default {
     hypervisor: {
     },
     sku: {
-      type: Object,
+      type: [Object, String],
+      default: undefined,
     },
     capabilityData: {
       type: Object,
@@ -344,15 +345,18 @@ export default {
         return this.kvmSkuSysMaxDisk
       }
       if (!this.currentDiskCapability?.max_size_gb) {
-        return this.currentTypeObj.sysMax || this.defaultSize
+        return this.currentTypeObj.sysMax || this.defaultSize || 0
       }
-      return Math.min(this.currentDiskCapability?.max_size_gb, (this.currentTypeObj.sysMax || this.defaultSize))
+      return Math.min(
+        this.currentDiskCapability.max_size_gb,
+        (this.currentTypeObj.sysMax || this.defaultSize || 0),
+      )
     },
     min () {
       if (!this.currentDiskCapability?.min_size_gb) {
         return this.currentTypeObj.sysMin || 0
       }
-      return Math.max(this.currentDiskCapability?.min_size_gb, (this.currentTypeObj.sysMin || 0))
+      return Math.max(this.currentDiskCapability.min_size_gb, (this.currentTypeObj.sysMin || 0))
     },
     storageStatusMap () {
       var statusMap = {

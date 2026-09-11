@@ -1,14 +1,14 @@
 <template>
   <div>
-    <template v-for="(group, idx) in form[ruleFormKey]">
-      <div :key="idx">
+    <template v-for="(group, idx) in form[ruleFormKey]" :key="idx">
+      <div>
         <div>
           <div v-for="(rule, idx2) in group" :key="`${idx}-${idx2}`">
             <div class="d-flex">
               <div style="flex: 0 0 40%;">
                 <!-- 字段 -->
                 <a-form-model-item class="mb-0">
-                  <a-select v-model="rule.type" :placeholder="$t('network.field')" @change="handleTypeChange(idx, idx2)">
+                  <a-select v-model:value="rule.type" :placeholder="$t('network.field')" @change="handleTypeChange(idx, idx2)">
                     <a-select-option v-for="item in rateLimitRuleTypes" :key="item.key" :value="item.key">
                       {{ item.label }}
                     </a-select-option>
@@ -18,11 +18,11 @@
               <div class="ml-2" style="flex: 1 1 auto" v-if="getRule(idx, idx2).valueType">
                 <!-- 值 -->
                 <a-form-model-item class="mb-0">
-                  <a-input v-model="rule.value" :placeholder="$t('network.value')" />
+                  <a-input v-model:value="rule.value" :placeholder="$t('network.value')" />
                 </a-form-model-item>
               </div>
               <div><a-button @click="addRule('and', idx, idx2)" class="ml-2">And</a-button></div>
-              <div v-if="allRuleLen > 1"><a-icon type="close" class="ml-2 mr-1 close-icon" @click="delRule(idx, idx2)" /></div>
+              <div v-if="allRuleLen > 1"><icon type="close-outlined" class="ml-2 mr-1 close-icon" @click="delRule(idx, idx2)" /></div>
             </div>
             <div class="split-and-container" v-if="idx2 !== group.length - 1">
               <div class="split-and">And</div>

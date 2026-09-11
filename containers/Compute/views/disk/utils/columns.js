@@ -11,8 +11,11 @@ export const getUnusedTableColumn = ({ hidden, vm = {} } = {}) => {
     sortBy: 'order_by_guest_count',
     slots: {
       default: ({ row }, h) => {
-        if (vm.isPreLoad && row.guest_count === undefined) return [<data-loading />]
-        return row.guest_count >= 1 ? [<span class="success-color">{ i18n.t('compute.text_464') }</span>] : [<span class="warning-color">{ i18n.t('compute.text_281') }</span>]
+        if (vm.isPreLoad && row.guest_count === undefined) return [h('data-loading')]
+        if (row.guest_count >= 1) {
+          return [h('span', { class: 'success-color' }, i18n.t('compute.text_464'))]
+        }
+        return [h('span', { class: 'warning-color' }, i18n.t('compute.text_281'))]
       },
     },
     formatter: ({ row }) => {

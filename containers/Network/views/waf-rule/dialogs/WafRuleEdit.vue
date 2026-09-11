@@ -1,13 +1,13 @@
 <template>
   <base-dialog :width="1000" @cancel="cancelDialog">
-    <div slot="header">{{$t('network.waf.rule_expression_edit')}}</div>
-    <div slot="body">
-      <a-textarea :rows="10" v-model="expression" />
-    </div>
-    <div slot="footer">
+    <template #header>{{$t('network.waf.rule_expression_edit')}}</template>
+    <template #body>
+      <a-textarea :rows="10" v-model:value="expression" />
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('network.text_33') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

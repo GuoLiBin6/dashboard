@@ -1,9 +1,9 @@
 <template>
   <div class="onecloud-map-wrap">
     <div class="mb-2 onecloud-map-header">
-      <a-input v-model="search" class="w-100" :placeholder="$t('common_229')">
+      <a-input v-model:value="search" class="w-100" :placeholder="$t('common_229')">
         <template v-slot:prefix>
-          <a-icon type="search" />
+          <icon type="search" />
         </template>
       </a-input>
     </div>
@@ -12,10 +12,10 @@
       <div class="mb-4 mt-4 onecloud-map-recent-wrap">
         <div class="font-weight-bold mb-2 map-recent-label">{{$t('common_230')}}</div>
         <div class="onecloud-map-recent-list">
-          <template v-for="item of recentMaps">
-            <div class="onecloud-map-recent-item" :key="item.path">
+          <template v-for="item of recentMaps" :key="item.path">
+            <div class="onecloud-map-recent-item">
               <div>
-                <router-link :to="item.path" class="recent-link text-truncate" :title="getLabel(item.meta)" @click.native="() => handleClick(item)">{{ getLabel(item.meta) }}</router-link>
+                <router-link :to="item.path" class="recent-link text-truncate" :title="getLabel(item.meta)" @click="() => handleClick(item)">{{ getLabel(item.meta) }}</router-link>
               </div>
             </div>
           </template>
@@ -25,8 +25,8 @@
     <!-- 全部菜单 -->
     <template v-if="maps && maps.length">
       <div class="onecloud-map-body">
-        <template v-for="(item, idx) of maps">
-          <div class="onecloud-map-sub-wrap mb-4" :key="idx">
+        <template v-for="(item, idx) of maps" :key="idx">
+          <div class="onecloud-map-sub-wrap mb-4">
             <sub-map
               :sub="item"
               :search="search"
@@ -47,9 +47,10 @@
 
 <script>
 import * as R from 'ramda'
-import { mapState } from 'vuex'
+import { mapState, mapGetters } from 'vuex'
 import { menusConfig } from '@/router/routes'
 import { hasPermission } from '@/utils/auth'
+import { resolveLabel } from '@/utils/i18nLabel'
 import storage from '@/utils/storage'
 import SubMap from './SubMap'
 
@@ -66,6 +67,7 @@ export default {
     }
   },
   computed: {
+    ...mapGetters(['userInfo']),
     ...mapState('common', {
       recentMenus: state => state.recentMenus,
     }),
@@ -126,13 +128,15 @@ export default {
       this.recentMaps = recentMaps
     },
     getLabel (meta) {
-      if (meta.t) {
-        return this.$t(meta.t)
+      const m = meta || {}
+      if (m.t) {
+        return this.$t(m.t)
       }
-      if (meta.labelAlias) {
-        return meta.labelAlias
+      if (m.labelAlias) {
+        return m.labelAlias
       }
-      return meta.label
+      // 兼容 A/B/D 混用：label 可能是已翻译字符串、key 或函数
+      return resolveLabel(m.label)
     },
     getSearchMatch (menu) {
       if (this.search) {

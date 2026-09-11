@@ -1,10 +1,11 @@
 <template>
   <div>
-    <a-popover trigger="click" v-model="visible" @visibleChange="handleVisibleChange" :getPopupContainer="triggerNode => triggerNode.parentNode">
+    <a-popover trigger="click" v-model:open="visible" @openChange="handleVisibleChange" :getPopupContainer="triggerNode => triggerNode.parentNode">
       <div class="trigger d-flex align-items-center justify-content-center">
         <span v-if="notifyMenuTitleUsedText">{{$t('navbar.button.system_messages')}}</span>
-        <a-tooltip :title="$t('navbar.button.system_messages')" placement="right" v-else>
-          <a-icon type="mail" style="font-size: 18px;" />
+        <a-tooltip :title="$t('navbar.button.system_messages')" placement="bottom" v-else>
+          <!-- 使用自定义 Icon 替代已移除的 a-icon mail -->
+          <icon type="navbar-notify" style="font-size: 20px;" />
         </a-tooltip>
       </div>
       <template v-slot:content>
@@ -66,7 +67,7 @@ export default {
       return this.total > 8
     },
   },
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {
@@ -94,6 +95,12 @@ export default {
       if (val) {
         this.fetchNotify()
       }
+      // 去掉 Popover/Tooltip 触发后残留的 focus 描边
+      this.$nextTick(() => {
+        if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur()
+        }
+      })
     },
     toMore () {
       this.$router.push('/notification')
@@ -109,6 +116,34 @@ export default {
   // padding: 0 20px;
   cursor: pointer;
   text-decoration: none;
+  color: inherit;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+
+  &:focus,
+  &:focus-visible,
+  &:focus-within {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  &:hover {
+    :deep(.ant-badge) {
+      color: inherit !important;
+    }
+    :deep(.ant-badge-count),
+    :deep(.ant-scroll-number) {
+      color: #fff !important;
+    }
+    :deep(.oc-icon) {
+      color: inherit !important;
+      fill: currentColor !important;
+    }
+  }
+
+  :deep(.oc-icon) {
+    color: inherit;
+  }
 }
 .notify-wrap {
   width: 350px;

@@ -21,9 +21,12 @@ export default {
         addLock: true,
         addBackup: true,
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+          const h = this.$createElement
+          return h('side-page-trigger', {
+            props: {
+              onTrigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getTagTableColumn({ onManager: this.onManager, resource: 'kafkas', columns: () => this.columns }),
@@ -39,10 +42,11 @@ export default {
         width: 100,
         slots: {
           default: ({ row }) => {
-            return [<div>
-              <div>{KAFKA_STORAGE[row.storage_type] || row.storage_type || '-'}</div>
-              <div>{i18n.t('middleware.size_gb', [row.disk_size_gb])}</div>
-            </div>]
+            const h = this.$createElement
+            return [h('div', [
+              h('div', KAFKA_STORAGE[row.storage_type] || row.storage_type || '-'),
+              h('div', i18n.t('middleware.size_gb', [row.disk_size_gb])),
+            ])]
           },
         },
         formatter: ({ row }) => {

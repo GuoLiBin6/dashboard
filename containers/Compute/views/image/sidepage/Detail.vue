@@ -49,17 +49,31 @@ export default {
         {
           field: 'project_domain',
           title: this.$t('dictionary.domain'),
-          formatter: ({ row }) => {
+          formatter: ({ row }, h) => {
             if (!row.domain_id) return '-'
-            return <side-page-trigger permission="domains_get" name="DomainSidePage" id={row.domain_id} vm={this}>{ row.project_domain }</side-page-trigger>
+            return h('side-page-trigger', {
+              props: {
+                permission: 'domains_get',
+                name: 'DomainSidePage',
+                id: row.domain_id,
+                vm: this,
+              },
+            }, row.project_domain)
           },
         },
         {
           field: 'tenant',
           title: this.$t('dictionary.project'),
-          formatter: ({ row }) => {
+          formatter: ({ row }, h) => {
             if (!row.tenant_id) return '-'
-            return <side-page-trigger permission="projects_get" name="ProjectSidePage" id={row.tenant_id} vm={this}>{ row.tenant }</side-page-trigger>
+            return h('side-page-trigger', {
+              props: {
+                permission: 'projects_get',
+                name: 'ProjectSidePage',
+                id: row.tenant_id,
+                vm: this,
+              },
+            }, row.tenant)
           },
         },
         getPublicScopeTableColumn({ vm: this, resource: 'images' }),
@@ -197,7 +211,13 @@ export default {
           slots: {
             default: ({ row }, h) => {
               return [
-                <vxe-grid class="mb-2" data={ this.imgSubformat } columns={ this.imageColumns } />,
+                h('table-lite-grid', {
+                  class: 'mb-2',
+                  props: {
+                    data: this.imgSubformat,
+                    columns: this.imageColumns,
+                  },
+                }),
               ]
             },
           },

@@ -3,7 +3,7 @@
     <page-header
       :title="$t('dictionary.filesystem')"
       :tabs="cloudEnvOptions"
-      :current-tab.sync="cloudEnv"
+      v-model:currentTab="cloudEnv"
       isShowResStatusTab
       :status-opts="statusOpts"
       :status-click-handle="statusClickHandle" />

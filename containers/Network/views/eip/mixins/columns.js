@@ -17,10 +17,12 @@ export default {
       getNameDescriptionTableColumn({
         onManager: this.onManager,
         hideField: true,
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            props: {
+              onTrigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
         hidden: () => {
           return this.$isScopedPolicyMenuHidden('eip_hidden_columns.name')
@@ -107,19 +109,29 @@ export default {
         title: i18n.t('network.text_196'),
         minWidth: 120,
         slots: {
-          default: ({ row }) => {
-            if (this.isPreLoad && !row.account) return [<data-loading />]
+          default: ({ row }, h) => {
+            if (this.isPreLoad && !row.account) return [h('data-loading')]
             const ret = []
             ret.push(
-              <list-body-cell-wrap hide-field copy field='account' row={row}>
-                <span style={{ color: '#0A1F44' }}>{ row.account }</span>
-              </list-body-cell-wrap>,
+              h('list-body-cell-wrap', {
+                props: {
+                  hideField: true,
+                  copy: true,
+                  field: 'account',
+                  row: row,
+                },
+              }, [h('span', { style: { color: 'var(--oc-color-text-heading)' } }, row.account)]),
             )
             if (row.manager) {
               ret.push(
-                <list-body-cell-wrap hide-field copy field='manager' row={row}>
-                  <span style={{ color: '#53627C' }}>{ row.manager }</span>
-                </list-body-cell-wrap>,
+                h('list-body-cell-wrap', {
+                  props: {
+                    hideField: true,
+                    copy: true,
+                    field: 'manager',
+                    row: row,
+                  },
+                }, [h('span', { style: { color: 'var(--oc-color-text-secondary)' } }, row.manager)]),
               )
             }
             return ret

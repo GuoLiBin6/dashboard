@@ -1,6 +1,6 @@
 <template>
   <div>
-    <page-header :title="$t('compute.text_105')" :tabs="cloudEnvOptions" :current-tab.sync="cloudEnv" />
+    <page-header :title="$t('compute.text_105')" :tabs="cloudEnvOptions" v-model:currentTab="cloudEnv" />
     <page-body>
       <secgroup-list :id="listId" :cloudEnv="cloudEnv" />
     </page-body>

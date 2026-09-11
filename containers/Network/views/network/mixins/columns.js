@@ -35,7 +35,10 @@ export default {
                 onManager: this.onManager,
               },
               scopedSlots: {
-                default: () => { return (<side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>) },
+                // 勿写 default:(h)=>…，slot 首参不是 createElement，会把外层 h 遮蔽导致名称不渲染
+                default: () => h('side-page-trigger', {
+                  on: { trigger: () => this.handleOpenSidepage(row) },
+                }, row.name),
               },
             }))
             ret.push(h('list-body-cell-wrap', {
@@ -84,13 +87,13 @@ export default {
         title: i18n.t('network.text_213'),
         width: 180,
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             if (!row.guest_ip_start || !row.guest_ip_end) {
               return '-'
             }
             return [
-              <div>{ this.$t('network.ip.start', [row.guest_ip_start, row.guest_ip_mask])}</div>,
-              <div>{ this.$t('network.ip.end', [row.guest_ip_end, row.guest_ip_mask])}</div>,
+              h('div', this.$t('network.ip.start', [row.guest_ip_start, row.guest_ip_mask])),
+              h('div', this.$t('network.ip.end', [row.guest_ip_end, row.guest_ip_mask])),
             ]
           },
         },
@@ -108,12 +111,13 @@ export default {
         width: 180,
         slots: {
           default: ({ row }) => {
+            const h = this.$createElement
             if (!row.guest_ip6_start || !row.guest_ip6_end) {
               return '-'
             }
             return [
-              <div>{ this.$t('network.ip.start', [row.guest_ip6_start, row.guest_ip6_mask])}</div>,
-              <div>{ this.$t('network.ip.end', [row.guest_ip6_end, row.guest_ip6_mask])}</div>,
+              h('div', this.$t('network.ip.start', [row.guest_ip6_start, row.guest_ip6_mask])),
+              h('div', this.$t('network.ip.end', [row.guest_ip6_end, row.guest_ip6_mask])),
             ]
           },
         },
@@ -131,10 +135,11 @@ export default {
         minWidth: 100,
         slots: {
           default: ({ row }) => {
-            if (this.isPreLoad && !row.ports) return [<data-loading />]
+            const h = this.$createElement
+            if (this.isPreLoad && !row.ports) return [h('data-loading')]
             return [
-              <div class='text-truncate'>{ this.$t('network.text_727', [row.ports])}</div>,
-              <div class='text-truncate'>{ this.$t('network.text_728', [(row.ports_used <= 0 ? 0 : row.ports_used) + (row.ports6_used <= 0 ? 0 : row.ports6_used)])}</div>,
+              h('div', { class: 'text-truncate' }, this.$t('network.text_727', [row.ports])),
+              h('div', { class: 'text-truncate' }, this.$t('network.text_728', [(row.ports_used <= 0 ? 0 : row.ports_used) + (row.ports6_used <= 0 ? 0 : row.ports6_used)])),
             ]
           },
         },
@@ -168,15 +173,24 @@ export default {
             const tags = _.sortBy(row.schedtags, ['default', 'name'])
             if (!tags.length) {
               return [
-                <div class='text-color-help'>{this.$t('network.text_729')}</div>,
+                this.$createElement('div', { class: 'text-color-help' }, this.$t('network.text_729')),
               ]
             }
-            const list = tags.map(tag => <a-tag class='mb-2 mr-1' color='blue'>{tag.name}</a-tag>)
-            return [<list-body-cell-popover text={this.$t('compute.text_619', [tags.length])} max-width="400px">
-              <div style="display: inline-flex; flex-wrap: wrap; max-width: 40vw;">
-                {...list}
-              </div>
-            </list-body-cell-popover>]
+            const list = tags.map(tag => this.$createElement('a-tag', { class: 'mb-2 mr-1', attrs: { color: 'blue' } }, tag.name))
+            return [this.$createElement('list-body-cell-popover', {
+              props: {
+                text: this.$t('compute.text_619', [tags.length]),
+                maxWidth: '400px',
+              },
+            }, [
+              this.$createElement('div', {
+                style: {
+                  display: 'inline-flex',
+                  flexWrap: 'wrap',
+                  maxWidth: '40vw',
+                },
+              }, list),
+            ])]
           },
         },
         formatter: ({ row }) => {

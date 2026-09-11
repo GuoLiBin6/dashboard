@@ -1,10 +1,10 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{ params.title }}</div>
-    <div slot="body">
+    <template #header>{{ params.title }}</template>
+    <template #body>
       <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
         <a-form-item :label="$t('common.text00097')" class="mb-0">
-          <a-radio-group v-decorator="decorators.type" @change="handleExportTypeChange">
+          <a-radio-group :value="currentExportType" @update:value="onExportTypeChange">
             <a-radio-button
               v-for="item of exportType"
               :key="item.key"
@@ -20,44 +20,43 @@
         </a-form-item>
         <a-form-item v-bind="{wrapperCol: { span: 24 } }">
           <a-divider />
-          <a-checkbox-group v-decorator="decorators.selected" @change="handleSelectedChange" class="w-100">
-            <a-row>
-              <draggable
-                handle=".drag-icon"
-                ghost-class="ghost"
-                v-model="exportOptionItems">
-                <transition-group type="transition" name="flip-list">
-                  <template v-for="item of exportOptionItems">
-                    <a-col
-                      v-if="item.label"
-                      :span="6"
-                      :key="item.key"
-                      class="mb-2 checkbox-item d-flex align-items-center">
-                      <a-checkbox :value="item.key" class="text-truncate checkbox-property">
-                        <span :title="item.label">{{ item.label }}</span>
-                      </a-checkbox>
-                      <a-icon type="drag" v-if="$appConfig.isPrivate || isBusinessCE" class="drag-icon pr-3" @click="iconClick" />
-                    </a-col>
-                  </template>
-                </transition-group>
-              </draggable>
+          <a-checkbox-group :value="selectedExportKeys" @update:value="onSelectedUpdate" class="w-100">
+            <a-row ref="exportSortableRoot">
+              <template v-for="item in exportOptionItems" :key="item.key">
+                <a-col
+                  v-if="item.label"
+                  :span="6"
+                  class="mb-2 checkbox-item d-flex align-items-center">
+                  <a-checkbox :value="item.key" class="text-truncate checkbox-property">
+                    <span :title="item.label">{{ item.label }}</span>
+                  </a-checkbox>
+                  <span
+                    v-if="$appConfig.isPrivate || isBusinessCE"
+                    class="drag-icon pr-3"
+                    @click="iconClick">
+                    <svg viewBox="0 0 1024 1024" width="14" height="14" fill="currentColor" aria-hidden="true">
+                      <path d="M406.4 246.4L480 176V384c0 19.2 12.8 32 32 32s32-12.8 32-32V176l73.6 73.6c6.4 3.2 12.8 6.4 22.4 6.4s16-3.2 22.4-9.6c12.8-12.8 12.8-32 0-44.8l-128-128c-3.2-3.2-6.4-6.4-9.6-6.4-6.4-3.2-16-3.2-25.6 0-3.2 3.2-6.4 3.2-9.6 6.4l-128 128c-12.8 12.8-12.8 32 0 44.8s32 12.8 44.8 0zM617.6 777.6L544 851.2V640c0-19.2-12.8-32-32-32s-32 12.8-32 32v211.2l-73.6-73.6c-12.8-12.8-32-12.8-44.8 0s-12.8 32 0 44.8l128 128c3.2 3.2 6.4 6.4 9.6 6.4 3.2 3.2 9.6 3.2 12.8 3.2s9.6 0 12.8-3.2c3.2-3.2 6.4-3.2 9.6-6.4l128-128c12.8-12.8 12.8-32 0-44.8s-32-12.8-44.8 0zM956.8 524.8c3.2-6.4 3.2-16 0-25.6-3.2-3.2-3.2-6.4-6.4-9.6l-128-128c-12.8-12.8-32-12.8-44.8 0s-12.8 32 0 44.8l73.6 73.6H640c-19.2 0-32 12.8-32 32s12.8 32 32 32h211.2l-73.6 73.6c12.8 12.8 12.8 32 0 44.8 6.4 6.4 16 9.6 22.4 9.6s16-3.2 22.4-9.6l128-128c3.2 0 6.4-6.4 6.4-9.6zM172.8 544H384c19.2 0 32-12.8 32-32s-12.8-32-32-32H172.8l73.6-73.6c12.8-12.8 12.8-32 0-44.8s-32-12.8-44.8 0l-128 128c-3.2 3.2-6.4 6.4-6.4 9.6-3.2 6.4-3.2 16 0 25.6 3.2 3.2 3.2 6.4 6.4 9.6l128 128c6.4 6.4 12.8 9.6 22.4 9.6s16-3.2 22.4-9.6c12.8-12.8 12.8-32 0-44.8L172.8 544z" />
+                    </svg>
+                  </span>
+                </a-col>
+              </template>
             </a-row>
           </a-checkbox-group>
         </a-form-item>
       </a-form>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button v-if="showOfflineExport" type="primary" @click="handleOfflineConfirm" :loading="loading">{{ $t("common.offline_export") }}</a-button>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 
 <script>
 import * as R from 'ramda'
 import XLSX from 'xlsx'
-import draggable from 'vuedraggable'
+import Sortable from 'sortablejs'
 import { download, getRequestT } from '@/utils/utils'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
@@ -67,9 +66,6 @@ import { hasPermission } from '@/utils/auth'
 
 export default {
   name: 'ExportListDataDialog',
-  components: {
-    draggable,
-  },
   mixins: [DialogMixin, WindowsMixin],
   data () {
     let exportOptionItems = [...this.params.options.items]
@@ -241,7 +237,52 @@ export default {
       return '-'
     },
   },
+  created () {
+    this.syncFormFieldValues()
+  },
+  mounted () {
+    this.initExportSortable()
+  },
+  beforeUnmount () {
+    this.destroyExportSortable()
+  },
   methods: {
+    syncFormFieldValues () {
+      this.form.fc.setFieldsValue({
+        type: this.currentExportType,
+        selected: this.selectedExportKeys,
+      })
+    },
+    initExportSortable () {
+      this.destroyExportSortable()
+      if (!this.$appConfig.isPrivate && !this.isBusinessCE) return
+      this.$nextTick(() => {
+        const inst = this.$refs.exportSortableRoot
+        const el = inst && (inst.$el || inst)
+        if (!el || !this.exportOptionItems.length) return
+        this._exportSortable = Sortable.create(el, {
+          handle: '.drag-icon',
+          animation: 150,
+          ghostClass: 'ghost',
+          onEnd: (evt) => {
+            const { oldIndex, newIndex } = evt
+            if (oldIndex == null || newIndex == null || oldIndex === newIndex) return
+            const withLabels = this.exportOptionItems.filter(it => it.label)
+            if (oldIndex < 0 || newIndex < 0 || oldIndex >= withLabels.length || newIndex >= withLabels.length) return
+            const [moved] = withLabels.splice(oldIndex, 1)
+            withLabels.splice(newIndex, 0, moved)
+            let i = 0
+            this.exportOptionItems = this.exportOptionItems.map(it => (it.label ? withLabels[i++] : it))
+          },
+        })
+      })
+    },
+    destroyExportSortable () {
+      if (this._exportSortable) {
+        this._exportSortable.destroy()
+        this._exportSortable = null
+      }
+    },
     genParams (formValues, offline) {
       // 通用参数
       let normalParams = {}
@@ -357,15 +398,8 @@ export default {
       return params
     },
     validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((errors, values) => {
-          if (errors) {
-            reject(errors)
-          } else {
-            resolve(values)
-          }
-        })
-      })
+      this.syncFormFieldValues()
+      return Promise.resolve(this.form.fc.getFieldsValue())
     },
     async handleOfflineConfirm () {
       try {
@@ -451,19 +485,20 @@ export default {
         this.loading = false
       }
     },
-    handleExportTypeChange (e) {
-      this.currentExportType = e.target.value
+    onExportTypeChange (val) {
+      this.currentExportType = val
+      this.syncFormFieldValues()
     },
-    async handleSelectedChange (val) {
+    onSelectedUpdate (val) {
+      this.selectedExportKeys = val
+      this.syncFormFieldValues()
       this.indeterminate = !!val.length && val.length < this.allExportKeys.length
       this.checkAll = val.length === this.allExportKeys.length
-      await this.$nextTick()
-      this.selectedExportKeys = this.form.fc.getFieldValue('selected')
     },
     handleCheckAllChange (e) {
-      this.form.fc.setFieldsValue({
-        selected: e.target.checked ? this.allExportKeys : [],
-      })
+      const next = e.target.checked ? this.allExportKeys : []
+      this.selectedExportKeys = next
+      this.syncFormFieldValues()
       this.checkAll = e.target.checked
       this.indeterminate = false
     },
@@ -681,32 +716,28 @@ export default {
   overflow: auto;
 }
 .checkbox-item {
-  ::v-deep {
-    .ant-checkbox-wrapper {
-      display: flex;
-      align-items: center;
-      .ant-checkbox {
-        margin-top: 3px;
-        & + span {
-          flex: 1;
-          overflow: hidden;
-          text-overflow:ellipsis;
-          white-space: nowrap;
-        }
+  :deep(.ant-checkbox-wrapper) {
+    display: flex;
+    align-items: center;
+    :deep(.ant-checkbox) {
+      margin-top: 3px;
+      & + span {
+        flex: 1;
+        overflow: hidden;
+        text-overflow:ellipsis;
+        white-space: nowrap;
       }
-    }
-    .drag-icon {
-      visibility: hidden;
-    }
-    .checkbox-property {
-      padding-right: 15px;
     }
   }
+  :deep(.drag-icon) {
+    visibility: hidden;
+  }
+  :deep(.checkbox-property) {
+    padding-right: 15px;
+  }
   &:hover {
-    ::v-deep {
-      .drag-icon {
-        visibility: visible !important;;
-      }
+    :deep(.drag-icon) {
+      visibility: visible !important;
     }
   }
 }
@@ -716,15 +747,19 @@ export default {
 .drag-icon {
   position: absolute;
   right: 0;
+  display: inline-flex;
+  align-items: center;
   cursor: move;
+  color: rgba(0, 0, 0, 0.45);
+  svg {
+    display: block;
+  }
 }
 .ghost {
   opacity: 0.7;
   background: @primary-color;
-  ::v-deep {
-    label span {
-      color: #fff;
-    }
+  :deep(label span) {
+    color: #fff;
   }
 }
 </style>

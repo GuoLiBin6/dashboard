@@ -277,7 +277,8 @@ export default {
                   }
                 },
               },
-              disableDeleteAction(Object.assign(this, { permission: 'rds_dbinstances_update' }), {
+              disableDeleteAction(this, {
+                permission: 'rds_dbinstances_update',
                 name: this.$t('dictionary.dbinstances'),
               }),
               {
@@ -347,7 +348,7 @@ export default {
       this.refresh()
     })
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.$bus.$off('RdsRefresh')
   },
   methods: {

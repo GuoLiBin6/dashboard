@@ -22,11 +22,11 @@ export default {
       return this.$store.getters.windows[this.windowId]
     },
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.destroyDialogs()
     this.destroySidePages()
   },
-  destroyed () {
+  unmounted () {
     this.destroyWindow(this.windowId)
   },
   created () {

@@ -1,5 +1,5 @@
 <template>
-  <vxe-grid :data="responseData.data || []" :columns="columns" resizable />
+  <table-lite-grid :data="responseData.data || []" :columns="columns" resizable />
 </template>
 
 <script>
@@ -23,12 +23,26 @@ export default {
           title: this.$t('helm.text_16'),
           minWidth: 100,
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               const text = row.name || '-'
               return [
-                <list-body-cell-wrap copy hideField={true} field='name' row={row} message={text}>
-                  <side-page-trigger name='VmInstanceSidePage' id={row.externalInfo.id} vm={this}>{text}</side-page-trigger>
-                </list-body-cell-wrap>,
+                h('list-body-cell-wrap', {
+                  props: {
+                    copy: true,
+                    hideField: true,
+                    field: 'name',
+                    row: row,
+                    message: text,
+                  },
+                }, [
+                  h('side-page-trigger', {
+                    props: {
+                      name: 'VmInstanceSidePage',
+                      id: row.externalInfo.id,
+                      vm: this,
+                    },
+                  }, text),
+                ]),
               ]
             },
           },
@@ -42,24 +56,36 @@ export default {
               const warning = row.reason
               let warnTooltip = null
               if (warning && row.status === 'Invalid') {
-                warnTooltip = (
-                  <a-tooltip placement="top">
-                    <template slot="title">
-                      { warning }
-                    </template>
-                    <div class='text-truncate'>
-                      <a-icon type="bulb" theme="twoTone" twoToneColor="#f5222d" class="mr-2" />
-                      <span>{ this.$t('k8s.text_402') }</span>
-                    </div>
-                  </a-tooltip>
-                )
+                warnTooltip = h('a-tooltip', {
+                  props: {
+                    placement: 'top',
+                  },
+                  scopedSlots: {
+                    title: () => [warning],
+                  },
+                }, [
+                  h('div', { class: 'text-truncate' }, [
+                    h('icon', {
+                      props: {
+                        type: 'bulb',
+                        theme: 'twoTone',
+                        twoToneColor: '#f5222d',
+                      },
+                      class: 'mr-2',
+                    }),
+                    h('span', this.$t('k8s.text_402')),
+                  ]),
+                ])
               }
               return [
-                <div class='text-truncate'>
-                  <status status={ row.status } statusModule='vmReleaseVirtualmachine'>
-                    { warnTooltip }
-                  </status>
-                </div>,
+                h('div', { class: 'text-truncate' }, [
+                  h('status', {
+                    props: {
+                      status: row.status,
+                      statusModule: 'vmReleaseVirtualmachine',
+                    },
+                  }, warnTooltip ? [warnTooltip] : []),
+                ]),
               ]
             },
           },
@@ -77,9 +103,15 @@ export default {
           title: 'IP',
           minWidth: 120,
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (!row.externalInfo || !row.externalInfo.ips) return '-'
-              return row.externalInfo.ips.map(val => <list-body-cell-wrap copy hideField={true} message={val}>{val}</list-body-cell-wrap>)
+              return row.externalInfo.ips.map(val => h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  hideField: true,
+                  message: val,
+                },
+              }, val))
             },
           },
         },
@@ -88,10 +120,16 @@ export default {
           title: this.$t('dictionary.eip'),
           minWidth: 120,
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (!row.externalInfo || !row.externalInfo.eip) return '-'
               const val = row.externalInfo.eip
-              return [<list-body-cell-wrap copy hideField={true} message={val}>{val}</list-body-cell-wrap>]
+              return [h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  hideField: true,
+                  message: val,
+                },
+              }, val)]
             },
           },
         },

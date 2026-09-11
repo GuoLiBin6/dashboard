@@ -46,10 +46,8 @@ export default {
           onManager: this.onManager,
           hideField: true,
           title: this.$t('compute.webapp.env'),
-          slotCallback: row => {
-            return (
-              <span>{ row.name }</span>
-            )
+          slotCallback: (row, h) => {
+            return h('span', row.name)
           },
         }),
       ],

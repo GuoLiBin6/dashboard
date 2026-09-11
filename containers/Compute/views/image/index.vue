@@ -6,12 +6,11 @@
       :status-opts="statusOpts"
       :status-click-handle="statusClickHandle"
       :tabs="cloudEnvOptions"
-      :current-tab.sync="cloudEnv" />
+      v-model:currentTab="cloudEnv" />
     <page-body>
       <image-list
         v-if="cloudEnv === 'onpremise'"
         id="ImageList"
-        :imageType="imageType"
         :cloud-env="cloudEnv"
         :filterParams="filterParams"
         :diskFormats="diskFormats"

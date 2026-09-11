@@ -18,10 +18,12 @@ export default {
       getNameDescriptionTableColumn({
         onManager: this.onManager,
         hideField: true,
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            props: {
+              onTrigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getStatusTableColumn({ statusModule: 'vpcPeerConnect', vm: this }),
@@ -38,9 +40,14 @@ export default {
             const domain = row.project_domain || row.domain
             if (domain) {
               ret.push(
-                <list-body-cell-wrap hide-field copy field="domain" row={{ domain }}>
-                  <span>{ domain }</span>
-                </list-body-cell-wrap>,
+                h('list-body-cell-wrap', {
+                  props: {
+                    hideField: true,
+                    copy: true,
+                    field: 'domain',
+                    row: { domain },
+                  },
+                }, [h('span', domain)]),
               )
             }
             return ret

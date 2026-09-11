@@ -2,7 +2,7 @@
   <div>
     <page-header :title="$t('system.text_167', [$t('dictionary.project')])" />
     <steps class="my-3" v-model="step" />
-    <page-body needMarginBottom>
+    <page-body>
       <component :is="stepComponent" :domainId="projectMsg.domain_id" ref="stepForm" />
     </page-body>
     <page-footer>
@@ -15,10 +15,10 @@
 </template>
 
 <script>
+import * as R from 'ramda'
 import step from '@/mixins/step'
 import AddUser from './form/AddUser'
 import CreateProject from './form/CreateProject'
-const R = require('ramda')
 
 export default {
   name: 'ProjectCreate',

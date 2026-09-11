@@ -1,16 +1,18 @@
 <template>
-  <div :class="wrapperClass" :style="wrapperStyle">
-    <a-row class="d-flex">
-      <a-form-item v-if="decorator.name">
+  <div class="ip-subnet">
+    <div v-if="decorator.name" class="ip-subnet__row ip-subnet__row--name">
+      <a-form-item class="mb-0">
         <a-input :addon-before="$t('network.text_21')" v-decorator="decorator.name" :placeholder="$t('network.text_21')" />
       </a-form-item>
-      <a-form-item :class="{'ml-2': decorator.name}">
+    </div>
+    <div class="ip-subnet__row ip-subnet__row--v4">
+      <a-form-item class="mb-0">
         <a-input :addon-before="$t('network.text_607')" v-decorator="decorator.startip" :placeholder="$t('common_161')" />
       </a-form-item>
-      <a-form-item class="ml-2">
+      <a-form-item class="mb-0">
         <a-input :addon-before="$t('network.text_608')" v-decorator="decorator.endip" :placeholder="$t('common_162')" />
       </a-form-item>
-      <a-form-item class="ml-2" style="width: 110px;">
+      <a-form-item class="mb-0 ip-subnet__mask">
         <a-select v-decorator="decorator.netmask" :placeholder="$t('network.text_595')" dropdownClassName="oc-select-dropdown">
           <a-select-option
             v-for="item of netMaskOptions"
@@ -20,35 +22,44 @@
           </a-select-option>
         </a-select>
       </a-form-item>
-      <a-form-item class="ml-2">
+      <a-form-item class="mb-0">
         <a-input :addon-before="$t('network.text_610')" v-decorator="decorator.gateway" :placeholder="$t('common_163')" />
       </a-form-item>
-      <a-form-item class="ml-2" style="width: 180px;">
+      <a-form-item class="mb-0 ip-subnet__vlan">
         <a-input addon-before="VLAN ID" v-decorator="decorator.vlan" placeholder="VLAN ID" />
       </a-form-item>
-    </a-row>
-    <a-row class="d-flex">
-      <a-form-item v-if="showV6" :class="{'ml-2': decorator.name}">
-        <a-input :addon-before="$t('network.ipv6.ip_start.label')" v-decorator="decorator.startip6" :placeholder="$t('network.ipv6.ip_start.label')" />
-      </a-form-item>
-      <a-form-item v-if="showV6" class="ml-2">
-        <a-input :addon-before="$t('network.ipv6.ip_end.label')" v-decorator="decorator.endip6" :placeholder="$t('network.ipv6.ip_end.label')" />
-      </a-form-item>
-      <a-form-item v-if="showV6" class="ml-2" style="width: 110px;">
-        <a-select v-decorator="decorator.netmask6" :placeholder="$t('network.ipv6.ip_mask.label')" dropdownClassName="oc-select-dropdown">
-          <a-select-option
-            v-for="item of net6MaskOptions"
-            :key="item.key"
-            :value="item.key">
-            <span class="text-color-secondary option-prefix">{{$t('common_600')}}: </span>{{item.label}}
-          </a-select-option>
-        </a-select>
-      </a-form-item>
-      <a-form-item v-if="showV6" class="ml-2">
-        <a-input :addon-before="$t('network.ipv6.gateway.label')" v-decorator="decorator.gateway6" :placeholder="$t('network.ipv6.gateway.label')" />
-      </a-form-item>
-      <a-button type="link" class="mt-1" @click="() => (showV6 = !showV6)" v-if="!isButtonHide">{{ showV6 ? $t('common.hide_ipv6') : $t('common.config_ipv6') }}</a-button>
-    </a-row>
+    </div>
+    <div class="ip-subnet__row ip-subnet__row--v6" v-if="showV6 || !isButtonHide">
+      <template v-if="showV6">
+        <a-form-item class="mb-0">
+          <a-input :addon-before="$t('network.ipv6.ip_start.label')" v-decorator="decorator.startip6" :placeholder="$t('network.ipv6.ip_start.label')" />
+        </a-form-item>
+        <a-form-item class="mb-0">
+          <a-input :addon-before="$t('network.ipv6.ip_end.label')" v-decorator="decorator.endip6" :placeholder="$t('network.ipv6.ip_end.label')" />
+        </a-form-item>
+        <a-form-item class="mb-0 ip-subnet__mask">
+          <a-select v-decorator="decorator.netmask6" :placeholder="$t('network.ipv6.ip_mask.label')" dropdownClassName="oc-select-dropdown">
+            <a-select-option
+              v-for="item of net6MaskOptions"
+              :key="item.key"
+              :value="item.key">
+              <span class="text-color-secondary option-prefix">{{$t('common_600')}}: </span>{{item.label}}
+            </a-select-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item class="mb-0">
+          <a-input :addon-before="$t('network.ipv6.gateway.label')" v-decorator="decorator.gateway6" :placeholder="$t('network.ipv6.gateway.label')" />
+        </a-form-item>
+        <div class="ip-subnet__vlan ip-subnet__spacer" />
+      </template>
+      <a-button
+        v-if="!isButtonHide"
+        type="link"
+        class="ip-subnet__v6-toggle"
+        @click="showV6 = !showV6">
+        {{ showV6 ? $t('common.hide_ipv6') : $t('common.config_ipv6') }}
+      </a-button>
+    </div>
   </div>
 </template>
 
@@ -106,15 +117,78 @@ export default {
       showV6: this.showIpv6,
     }
   },
-  computed: {
-    wrapperClass () {
-      return 'pt-4 pl-4 pr-5 mb-2'
-    },
-    wrapperStyle () {
-      return {
-        border: '1px solid #d9d9d9',
-      }
-    },
-  },
 }
 </script>
+
+<style lang="less" scoped>
+.ip-subnet {
+  width: 100%;
+  min-width: 0;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  border: 1px solid #d9d9d9;
+  border-radius: 2px;
+  box-sizing: border-box;
+}
+
+.ip-subnet__row {
+  display: grid;
+  gap: 8px;
+  align-items: start;
+  min-width: 0;
+
+  & + & {
+    margin-top: 8px;
+  }
+
+  :deep(.ant-form-item) {
+    margin-bottom: 0;
+    min-width: 0;
+  }
+
+  :deep(.ant-input-group-wrapper),
+  :deep(.ant-input-affix-wrapper),
+  :deep(.ant-select),
+  :deep(.ant-input) {
+    width: 100%;
+  }
+}
+
+/* 起/止/掩码/网关/VLAN — 掩码与 VLAN 定宽，其余均分，IPv4/IPv6 列对齐 */
+.ip-subnet__row--v4,
+.ip-subnet__row--v6 {
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) 108px minmax(0, 1fr) 128px;
+}
+
+.ip-subnet__row--name {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.ip-subnet__mask,
+.ip-subnet__vlan {
+  width: 100%;
+}
+
+.ip-subnet__spacer {
+  min-height: 1px;
+}
+
+.ip-subnet__v6-toggle {
+  grid-column: 1 / -1;
+  justify-self: start;
+  padding-left: 0;
+  height: auto;
+}
+
+@media (max-width: 1200px) {
+  .ip-subnet__row--v4,
+  .ip-subnet__row--v6 {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .ip-subnet__mask,
+  .ip-subnet__vlan {
+    max-width: none;
+  }
+}
+</style>

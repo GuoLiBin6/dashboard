@@ -3,7 +3,7 @@
     <!-- 策略类型 -->
     <a-form-item :label="$t('cloudenv.text_433')">
       <a-radio-group v-decorator="decorators.cycle_type">
-        <a-radio-button v-for="(v, k) in $t('cloudenvScheduledtaskGroupCycleType')" :key="k" :value="k">{{v}}</a-radio-button>
+        <a-radio-button v-for="(v, k) in $tm('cloudenvScheduledtaskGroupCycleType')" :key="k" :value="k">{{v}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
     <!-- 周期策略 -->
@@ -20,7 +20,7 @@
     <!-- 周 -->
     <a-form-item :label="$t('cloudenv.text_434')" v-if="form.fc.getFieldValue('cycleTimer.cycle_type') === 'week'">
       <a-select v-decorator="decorators.weekDays" mode="multiple">
-        <a-select-option v-for="(v, k) in $t('flexGroupSubCycleTypeWeek')" :key="k" :value="parseInt(k)">{{v}}</a-select-option>
+        <a-select-option v-for="(v, k) in $tm('flexGroupSubCycleTypeWeek')" :key="k" :value="parseInt(k)">{{v}}</a-select-option>
       </a-select>
     </a-form-item>
     <!-- 月 -->

@@ -18,7 +18,7 @@
                 <span class="text-color-secondary option-prefix">{{$t('dictionary.user')}}: </span>{{item.value}}
               </a-select-option>
             </a-select>
-            <a-icon type="sync" class="ml-2 primary-color" :spin="usersLoading" @click="refresh" />
+            <icon type="sync" class="ml-2 primary-color" :spin="usersLoading" @click="refresh" />
           </div>
         </a-form-item>
       </a-col>

@@ -4,10 +4,12 @@ Mock.setup({
   timeout: '500-800',
 })
 
-const context = require.context('./services', true, /\.mock.js$/)
+const mockModules = import.meta.glob('./services/**/*.mock.js', { eager: true })
 
-context.keys().forEach((key) => {
-  Object.keys(context(key)).forEach((paramKey) => {
-    Mock.mock(...context(key)[paramKey])
+Object.values(mockModules).forEach((mod) => {
+  if (!mod) return
+  const defs = mod.default || mod
+  Object.keys(defs || {}).forEach((paramKey) => {
+    Mock.mock(...defs[paramKey])
   })
 })

@@ -197,21 +197,23 @@ export default {
           this.fetchNetwork()
         })
       }
+      const h = this.$createElement
       const options = this.vpcList.map((item) => {
         const { id, name } = item
-        return <a-select-option key={id} value={id}>{this.vpcFormat ? this.vpcFormat(item) : name}</a-select-option>
+        return h('a-select-option', { key: id, props: { value: id } }, this.vpcFormat ? this.vpcFormat(item) : name)
       })
       const renderStatusDesc = () => {
-        return <a-select-option key="-1" value="-1" disabled>
-          <a-badge status="success" class="oc-custom-badge text-left text-wrap" text={this.$t('compute.vpc_status_desc')} />
-        </a-select-option>
+        return h('a-select-option', { key: '-1', props: { value: '-1', disabled: true } }, [
+          h('a-badge', { props: { status: 'success' }, class: 'oc-custom-badge text-left text-wrap', attrs: { text: this.$t('compute.vpc_status_desc') } }),
+        ])
       }
-      return (
-        <a-select disabled={disabled} onChange={_handleChange} showSearch placeholder={i18n.t('common_226')} loading={vpcLoading} filterOption={filterOption} >
-          {renderStatusDesc()}
-          {options}
-        </a-select>
-      )
+      return h('a-select', {
+        props: { disabled, showSearch: true, placeholder: i18n.t('common_226'), loading: vpcLoading, filterOption },
+        on: { change: _handleChange },
+      }, [
+        renderStatusDesc(),
+        ...options,
+      ])
     },
     async getNetworkParams () {
       const vpc = this.FC.getFieldValue('vpc')
@@ -273,24 +275,23 @@ export default {
         const data = this.getSelectedValue('network', networkId)
         this.$emit('networkChange', data)
       }
+      const h = this.$createElement
       const options = this.networkList.map((item) => {
         const { id, name } = item
         const text = `${name} (${item.guest_ip_start} - ${item.guest_ip_end}）`
-        return <a-select-option key={id} value={id}>
-          {this.networkFormat
-            ? this.networkFormat(item)
-            : (
-              <div class='d-flex'>
-                <span class='text-truncate flex-fill mr-2' title={text}>{text}</span>
-                <span style="color: #8492a6; font-size: 13px">{this.$t('common.available_1var', [item.ports - item.ports_used])}</span>
-              </div>
-            )
-          }
-        </a-select-option>
+        const content = this.networkFormat
+          ? this.networkFormat(item)
+          : h('div', { class: 'd-flex' }, [
+            h('span', { class: 'text-truncate flex-fill mr-2', attrs: { title: text } }, text),
+            h('span', { style: { color: '#8492a6', fontSize: '13px' } }, this.$t('common.available_1var', [item.ports - item.ports_used])),
+          ])
+        return h('a-select-option', { key: id, props: { value: id } }, content)
       })
-      return <a-select style={{ width: 'calc(100% - 22px)' }} disabled={disabled} showSearch placeholder={i18n.t('common_227')} onChange={_handleChange} loading={networkLoading} filterOption={filterOption} >
-        {options}
-      </a-select>
+      return h('a-select', {
+        style: { width: 'calc(100% - 22px)' },
+        props: { disabled, showSearch: true, placeholder: i18n.t('common_227'), loading: networkLoading, filterOption },
+        on: { change: _handleChange },
+      }, options)
     },
   },
   render () {
@@ -312,26 +313,24 @@ export default {
       }
       if (this[`Render${sn}`]) {
         const Render = this[`Render${sn}`]()
-        return (
-          <a-col span={name === 'network' ? this.colSpan - 1 : this.colSpan}>
-            <a-form-item wrapperCol={{ span: 24 }}>
-              {getFieldDecorator(name, _options)(Render)}
-              <div slot="extra" key={name}>
-                {name === 'network' ? this.$slots.helplink : null}
-              </div>
-            </a-form-item>
-          </a-col>
-        )
+        return h('a-col', { props: { span: name === 'network' ? this.colSpan - 1 : this.colSpan } }, [
+          h('a-form-item', { props: { wrapperCol: { span: 24 } } }, [
+            getFieldDecorator(name, _options)(Render),
+            h('div', { slot: 'extra', key: name }, name === 'network' ? this.$slots.helplink : null),
+          ]),
+        ])
       }
       return null
     })
-    return (
-      <a-form-item required={this.isRequired} labelCol={this.labelCol} wrapperCol={this.wrapperCol} label={this.label}>
-        <a-row gutter={8}>
-          {RenderCols}
-          <a-col span={1}><a-icon type="sync" class="ml-2 primary-color" spin={this.networkLoading} onClick={this.fetchNetwork} /></a-col>
-        </a-row>
-      </a-form-item>
-    )
+    return h('a-form-item', {
+      props: { required: this.isRequired, labelCol: this.labelCol, wrapperCol: this.wrapperCol, label: this.label },
+    }, [
+      h('a-row', { props: { gutter: 8 } }, [
+        ...RenderCols,
+        h('a-col', { props: { span: 1 } }, [
+          h('icon', { props: { type: 'sync', spin: this.networkLoading }, class: 'ml-2 primary-color', on: { click: this.fetchNetwork } }),
+        ]),
+      ]),
+    ])
   },
 }

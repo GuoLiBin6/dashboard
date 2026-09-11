@@ -1,13 +1,13 @@
 <template>
   <div>
     <div class="mb-4">
-      <a-radio-group v-model="market" @change="chooseMaket">
+      <a-radio-group v-model:value="market" @change="chooseMaket">
       <a-radio-button value="cloud">{{$t('dictionary.server')}}</a-radio-button>
       <a-radio-button value="iso">ISO</a-radio-button>
     </a-radio-group>
     </div>
     <div>
-      <a-radio-group v-model="imported" @change="chooseHandle">
+      <a-radio-group v-model:value="imported" @change="chooseHandle">
         <a-radio-button :value="false">{{$t('compute.text_677')}}</a-radio-button>
         <a-radio-button :value="true">{{$t('compute.text_678')}}</a-radio-button>
       </a-radio-group>
@@ -24,13 +24,14 @@
 <script>
 import { arrToObjByKey, sizestr } from '@/utils/utils'
 import WindowsMixin from '@/mixins/windows'
-const path = require('path')
-const imagesLogoFiles = require.context('@/assets/images/os-images', false, /.svg$/)
-const imagesLogos = []
-imagesLogoFiles.keys().forEach(key => {
-  const name = path.basename(key, '.svg') // 返回文件名 不含后缀名
-  imagesLogos.push(name)
-})
+
+const osImageModules = import.meta.glob('/src/assets/images/os-images/*.svg', { eager: true, import: 'default' })
+const imagesLogos = Object.keys(osImageModules).map((p) => p.split('/').pop().replace('.svg', ''))
+
+function getOsImage (name) {
+  const key = `/src/assets/images/os-images/${name}.svg`
+  return osImageModules[key] || ''
+}
 
 export default {
   name: 'ImageImport',
@@ -154,7 +155,8 @@ export default {
         }
         publicImages = publicImages.filter((item) => { return item.imported === this.imported.toString() })
         publicImages.forEach(item => {
-          item.os = require(`@/assets/images/os-images/${this.imagesLogos.includes(item.os) ? item.os : 'unknow'}.svg`) || ''
+          const name = this.imagesLogos.includes(item.os) ? item.os : 'unknow'
+          item.os = getOsImage(name)
         })
         this.list.data = arrToObjByKey(publicImages, 'id')
       }).catch((e) => {

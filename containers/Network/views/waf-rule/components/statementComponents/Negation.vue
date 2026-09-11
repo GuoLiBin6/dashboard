@@ -1,7 +1,7 @@
 <template>
   <div>
     <a-form-item :label="label || $t('network_waf_statement.label.compute')" v-bind="formLayout">
-      <a-radio-group v-if="isEdit" v-model="value">
+      <a-radio-group v-if="isEdit" :value="value" @change="handleChange">
         <a-radio-button v-for="item of negationOpts" :key="item.value" :value="item.value">{{item.label}}</a-radio-button>
       </a-radio-group>
       <box-show v-else :value="showValue" />
@@ -53,6 +53,13 @@ export default {
       } else {
         return this.value
       }
+    },
+  },
+  methods: {
+    handleChange (e) {
+      const val = e?.target?.value ?? e
+      this.$emit('update:value', val)
+      this.$emit('change', val)
     },
   },
 }

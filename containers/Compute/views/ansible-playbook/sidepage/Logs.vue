@@ -52,7 +52,7 @@ export default {
     this.manager = new this.$Manager('ansibleplaybooks')
     this.fetchQueryInfo()
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.unQuerys()
   },
   methods: {

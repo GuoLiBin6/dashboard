@@ -5,7 +5,7 @@
         <fixed-label-filter :label="$t('compute.ops_time')" class="mr-2 mb-2">
           <div class="d-flex align-items-center">
             <a-date-picker
-              v-model="filterForm.startValue"
+              v-model:value="filterForm.startValue"
               :disabled-date="disabledStartDate"
               show-time
               format="YYYY-MM-DD HH:mm:ss"
@@ -16,7 +16,7 @@
               style="width: 200px; margin-right: 5px;" />
             ~
             <a-date-picker
-              v-model="filterForm.endValue"
+              v-model:value="filterForm.endValue"
               :disabled-date="disabledEndDate"
               show-time
               format="YYYY-MM-DD HH:mm:ss"
@@ -29,7 +29,7 @@
         </fixed-label-filter>
         <fixed-label-filter :label="$t('compute.log_level')" class="mr-2 mb-2">
           <a-select
-            v-model="filterForm.logLevels"
+            v-model:value="filterForm.logLevels"
             mode="multiple"
             allow-clear
             style="min-width: 200px"
@@ -41,7 +41,7 @@
         </fixed-label-filter>
         <fixed-label-filter :label="$t('compute.log_info')" class="mr-2 mb-2">
           <a-input
-            v-model="filterForm.notes"
+            v-model:value="filterForm.notes"
             allow-clear
             style="width: 200px"
             @input="handleFilterInput" />
@@ -131,7 +131,7 @@ export default {
   mounted () {
     this.scrollContainer = this.$refs.scrollContainer
   },
-  beforeDestroy () {
+  beforeUnmount () {
     if (this.debounceTimer) {
       clearTimeout(this.debounceTimer)
     }

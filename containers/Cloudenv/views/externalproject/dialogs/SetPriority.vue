@@ -9,7 +9,7 @@
         :model="fd"
         :rules="rules">
         <a-form-model-item prop="priority" :label="$t('cloudenv.priority')" v-bind="formItemLayout" :extra="$t('cloudenv.priority_extra')">
-          <a-input-number v-model="fd.priority" :min="0" :precision="0" />
+          <a-input-number v-model:value="fd.priority" :min="0" :precision="0" />
         </a-form-model-item>
       </a-form-model>
     </div>
@@ -63,7 +63,7 @@ export default {
   },
   watch: {
   },
-  destroyed () {
+  unmounted () {
   },
   created () {
   },

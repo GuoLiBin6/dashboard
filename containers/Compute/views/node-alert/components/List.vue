@@ -99,7 +99,9 @@ export default {
               const levelItem = LEVEL_CN[row.level]
               if (!levelItem) return row.level || '-'
               return [
-                <a-tag color={levelItem.color}>{ levelItem.label }</a-tag>,
+                this.$createElement('a-tag', { props: { color: levelItem.color } }, {
+                  default: () => levelItem.label,
+                }),
               ]
             },
           },
@@ -196,7 +198,15 @@ export default {
     }
   },
   created () {
-    this.list.fetchData()
+    // 侧栏切 Tab 时若同步执行 fetchData + vxe 首屏渲染，易长时间占用主线程导致卡死/标签页崩溃
+    const run = () => this.list.fetchData()
+    if (this.inBaseSidePage) {
+      this.$nextTick(() => {
+        this.$nextTick(run)
+      })
+    } else {
+      run()
+    }
   },
 }
 </script>

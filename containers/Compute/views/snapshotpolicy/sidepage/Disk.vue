@@ -50,7 +50,16 @@ export default {
           title: this.$t('compute.text_228'),
           hideField: true,
           slotCallback: row => {
-            return [<side-page-trigger permission="disks_get" name="DiskSidePage" id={row.id} vm={this}>{ row.name }</side-page-trigger>]
+            return [
+              this.$createElement('side-page-trigger', {
+                props: {
+                  permission: 'disks_get',
+                  name: 'DiskSidePage',
+                  id: row.id,
+                  vm: this,
+                },
+              }, row.name),
+            ]
           },
         }),
         {
@@ -79,10 +88,15 @@ export default {
           slots: {
             default: ({ row }, h) => {
               return [
-                <div class='text-truncate'>
-                  {row.guest}
-                  {row.guest_status ? <status status={ row.guest_status } statusModule='server'/> : ''}
-                </div>,
+                h('div', { class: 'text-truncate' }, [
+                  row.guest,
+                  row.guest_status ? h('status', {
+                    props: {
+                      status: row.guest_status,
+                      statusModule: 'server',
+                    },
+                  }) : '',
+                ]),
               ]
             },
           },

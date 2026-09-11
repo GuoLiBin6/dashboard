@@ -37,7 +37,8 @@ export default {
     getCreateFormDraftScope: { default: undefined },
     canUseCreateFormFieldDraft: { default: undefined },
     registerCreateFormFieldDraftFlush: { default: undefined },
-    form: { default: undefined },
+    // 不能叫 form：子组件常有 props.form，Vue3 不允许 inject 与 prop 同名
+    injectedForm: { from: 'form', default: undefined },
   },
   data () {
     return {
@@ -52,7 +53,7 @@ export default {
       this.restoreFormFieldDraftFields()
     })
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this._unregisterFormFieldDraftFlush()
   },
   methods: {
@@ -74,7 +75,7 @@ export default {
       return null
     },
     resolveFormFc () {
-      return this.form?.fc || this.fc || null
+      return this.form?.fc || this.injectedForm?.fc || this.fc || null
     },
     readFormFieldDraft () {
       if (!this.canReadWriteFormFieldDraft()) return null

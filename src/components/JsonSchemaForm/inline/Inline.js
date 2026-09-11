@@ -4,22 +4,24 @@ const List = {
   name: 'JInline',
   mixins: [FormMixin],
   render (h) {
-    return (
-      <a-row>
-        { this.renderItems(h) }
-      </a-row>
-    )
+    return h('a-row', this.renderItems(h))
   },
   methods: {
     renderItems (h) {
       const { definition } = this
 
       return definition.items.map(item => {
-        return (
-          <a-col span={ item.col }>
-            <j-control path={ this.getPath(item.key) }></j-control>
-          </a-col>
-        )
+        return h('a-col', {
+          props: {
+            span: item.col,
+          },
+        }, [
+          h('j-control', {
+            props: {
+              path: this.getPath(item.key),
+            },
+          }),
+        ])
       })
     },
   },

@@ -1,7 +1,7 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{$t('system.text_22')}}</div>
-    <div slot="body">
+    <template #header>{{$t('system.text_22')}}</template>
+    <template #body>
       <dialog-selected-tips :count="params.data.length" :name="$t('dictionary.globalsetting')" :action="$t('system.text_188', [firstData['dialogLabel'] || firstData['label']])" />
       <a-form
         :form="form.fc">
@@ -17,11 +17,11 @@
           </component>
         </a-form-item>
       </a-form>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

@@ -1,25 +1,23 @@
 <template>
   <div>
     <div v-show="!installing">
-      <a-tooltip>
-        <template slot="title" v-if="install_failed_reason">
-          {{ install_failed_reason }}
-        </template>
-        {{ installTips }}
-        <help-link :href="peHelpLink" v-if="showPEHelpLink && showDocsLink()">PE</help-link>
+      <a-tooltip :title="install_failed_reason || undefined">
+        <span>
+          {{ installTips }}
+          <help-link :href="peHelpLink" v-if="showPEHelpLink && showDocsLink()">PE</help-link>
+        </span>
       </a-tooltip>
-      <a-tooltip>
-        <template slot="title" v-if="disableTips">
-          {{ disableTips }}
-        </template>
-        <a-button class="ml-2" type="link" @click="handleInstallAgent" :disabled="disable">
-          {{ buttonText }}
-        </a-button>
+      <a-tooltip :title="disableTips || undefined">
+        <span class="ml-2" style="display: inline-block;">
+          <a-button type="link" style="padding: 0;" @click="handleInstallAgent" :disabled="disable">
+            {{ buttonText }}
+          </a-button>
+        </span>
       </a-tooltip>
     </div>
     <div v-show="installing">
       {{ $t('compute.vminstance.monitor.install_agent.installing') }}
-      <a-icon type="loading" />
+      <icon type="loading" />
     </div>
   </div>
 </template>

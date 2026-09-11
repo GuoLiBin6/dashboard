@@ -1,19 +1,19 @@
 <template>
   <div>
     <div class="tag-list">
-      <template v-for="item of tags">
-        <a-popover trigger="click" v-model="checkedInfo[item.key].visible" :key="`${item.key}${item.value}`" destroyTooltipOnHide @visibleChange="visible => handleTagVisibleChange(item, visible)">
+      <template v-for="item of tags" :key="`${item.key}${item.value}`">
+        <a-popover trigger="click" v-model:open="checkedInfo[item.key].visible" destroyTooltipOnHide @openChange="visible => handleTagVisibleChange(item, visible)">
           <template #content>
             <div class="tag-update-wrap">
               <div class="mb-1">{{ $t('common_112') }}</div>
               <div>
-                <div><a-input size="small" v-model="checkedInfo[item.key].title" /></div>
+                <div><a-input size="small" v-model:value="checkedInfo[item.key].title" /></div>
                 <template v-if="checkedInfo[item.key].titleErrorMessage">
                   <div class="error-color mt-1">{{ checkedInfo[item.key].titleErrorMessage }}</div>
                 </template>
               </div>
               <div class="mt-2 mb-1">{{ $t('common_113') }}</div>
-              <div><a-input size="small" v-model="checkedInfo[item.key].value" /></div>
+              <div><a-input size="small" v-model:value="checkedInfo[item.key].value" /></div>
               <a-row :gutter="8" class="mt-2">
                 <a-col :span="12">
                   <a-button size="small" block @click="updateTag(item)">{{ $t('common.ok') }}</a-button>
@@ -30,7 +30,7 @@
             :style="{ backgroundColor: item.backgroundColor, color: item.color, borderColor: item.color }">
             <div class="d-flex align-items-center">
               <span class="flex-fill text-truncate">{{ item.title }}</span>
-              <a-icon class="ml-1 remove-tag flex-grow-0 flex-shrink-0" type="close" @click.stop="removeTag(item)" />
+              <icon class="ml-1 remove-tag flex-grow-0 flex-shrink-0" type="close-outlined" @click.stop="removeTag(item)" />
             </div>
           </span>
         </a-popover>

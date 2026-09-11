@@ -1,5 +1,3 @@
-import Vue from 'vue'
-
 export default {
   state: {
     sidePageIds: [],
@@ -8,14 +6,14 @@ export default {
   },
   mutations: {
     CREATE (state, payload) {
-      Vue.set(state.sidePages, payload.id, payload)
+      state.sidePages[payload.id] = payload
       state.sidePageIds.push(payload.id)
     },
     UPDATE (state, payload) {
       const keys = Object.keys(payload)
       for (let i = 0, len = keys.length; i < len; i++) {
         if (keys[i] !== 'id') {
-          Vue.set(state.sidePages[payload.id], keys[i], payload[keys[i]])
+          state.sidePages[payload.id][keys[i]] = payload[keys[i]]
         }
       }
     },
@@ -23,7 +21,7 @@ export default {
       const index = state.sidePageIds.indexOf(id)
       if (index <= -1) return
       state.sidePageIds.splice(index, 1)
-      Vue.delete(state.sidePages, id)
+      delete state.sidePages[id]
     },
     SET_SIDEPAGE_LEFT (state, payload) {
       state.sidepageLeft = payload

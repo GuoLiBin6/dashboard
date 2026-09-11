@@ -9,7 +9,7 @@
         :model="form"
         :rules="rules">
         <a-form-model-item :label="$t('iam.mobile')" prop="phone_number">
-          <a-input v-model="form.phone_number" />
+          <a-input v-model:value="form.phone_number" />
         </a-form-model-item>
       </a-form-model>
     </div>

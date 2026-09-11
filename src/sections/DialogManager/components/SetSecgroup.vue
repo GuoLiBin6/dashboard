@@ -1,16 +1,17 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{$t('compute.text_1116')}}</div>
-    <div slot="body">
+    <template #header>{{$t('compute.text_1116')}}</template>
+    <template #body>
       <a-alert class="mb-2" type="warning" :message="message" />
       <dialog-selected-tips :name="params.name" :count="params.data.length" :action="$t('compute.text_1116')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <loader loading v-if="!(bindedSecgroupsLoaded && secgroupsInitLoaded)" />
       <a-form :form="form.fc" hideRequiredMark v-show="bindedSecgroupsLoaded && secgroupsInitLoaded" v-bind="formItemLayout">
         <a-form-item :label="$t('compute.text_105')" v-if="bindedSecgroupsLoaded">
-          <div slot="extra">{{$t('compute.text_1242', [bindMaxNum])}}<!-- <help-link :href="href">{{$t('compute.text_189')}}</help-link> -->
+          <template #extra>
+            {{$t('compute.text_1242', [bindMaxNum])}}<!-- <help-link :href="href">{{$t('compute.text_189')}}</help-link> -->
             <dialog-trigger :vm="params.vm" :extParams="{ tenant, domain }" :name="$t('compute.text_189')" value="CreateSecgroupDialog" resource="secgroups" @success="successCallback" />
-          </div>
+          </template>
           <base-select
             ref="secgroupRef"
             class="w-100"
@@ -18,18 +19,18 @@
             show-sync
             v-decorator="decorators.secgroups"
             resource="secgroups"
-            :resList.sync="secgroupOptions"
+            v-model:resList="secgroupOptions"
             :mapper="mapperSecgroups"
             :params="secgroupsParams"
-            :init-loaded.sync="secgroupsInitLoaded"
+            v-model:init-loaded="secgroupsInitLoaded"
             :select-props="{ allowClear: true, placeholder: $t('compute.text_190'), mode: 'multiple' }" />
         </a-form-item>
       </a-form>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

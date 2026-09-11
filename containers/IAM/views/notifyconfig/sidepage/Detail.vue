@@ -241,7 +241,7 @@ export default {
     this.notifytemplatesManager = new this.$Manager('notifytemplates', 'v1')
     this.fetchNotifyTpl()
   },
-  destroyed () {
+  unmounted () {
     this.notifytemplatesManager = null
   },
   methods: {

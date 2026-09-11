@@ -1,7 +1,7 @@
 <template>
   <div>
-    <page-header :title="$t('network.text_723')" :tabs="cloudEnvOptions" :current-tab.sync="cloudEnv" />
-    <page-body needMarginBottom>
+    <page-header :title="$t('network.text_723')" :tabs="cloudEnvOptions" v-model:currentTab="cloudEnv" />
+    <page-body>
       <a-form
         class="mt-3"
         :form="form.fc">
@@ -18,7 +18,7 @@
           :providerParams="providerParams"
           :isRequired="true"
           :cloudregionMapper="cloudregionMapper"
-          :region.sync="regionList"
+          v-model:region="regionList"
           filterBrandResource="network_manage"
           @change="handleRegionChange" />
         <a-form-item :label="$t('network.text_21')" v-bind="formItemLayout">
@@ -53,7 +53,7 @@
               :needParams="true"
               :showSync="true"
               :select-props="{ placeholder: $t('compute.text_149') }"
-              :resList.sync="cloudproviderData"
+              v-model:resList="cloudproviderData"
               @change="handleProviderChange" />
           </a-form-item>
         </template>
@@ -75,10 +75,10 @@
       </a-form>
     </page-body>
     <page-footer>
-      <div slot="right">
+      <template #right>
         <a-button class="ml-3 float-right" @click="() => $router.back()">{{$t('common.cancel')}}</a-button>
         <a-button class="float-right" type="primary" @click="handleConfirm" :loading="loading">{{ $t('common_258') }}</a-button>
-      </div>
+      </template>
     </page-footer>
   </div>
 </template>

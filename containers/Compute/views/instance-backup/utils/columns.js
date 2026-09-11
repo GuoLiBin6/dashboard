@@ -44,7 +44,12 @@ export const getOsTypeTableColumn = () => {
           name = 'Linux'
         }
         return [
-          <SystemIcon tooltip={ tooltip } name={ name } />,
+          h(SystemIcon, {
+            props: {
+              tooltip,
+              name,
+            },
+          }),
         ]
       },
     },

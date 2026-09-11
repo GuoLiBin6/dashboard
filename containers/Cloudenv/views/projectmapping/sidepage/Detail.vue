@@ -35,9 +35,11 @@ export default {
           title: i18n.t('cloudenv.text_582'),
           filed: 'rules',
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (!row.rules) return '-'
-              return <a onClick={ () => this.$emit('tab-change', 'rule-list') }>{row.rules.length}</a>
+              return h('a', {
+                on: { click: () => this.$emit('tab-change', 'rule-list') },
+              }, row.rules.length)
             },
           },
         },

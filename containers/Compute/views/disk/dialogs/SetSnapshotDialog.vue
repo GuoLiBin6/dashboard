@@ -21,7 +21,7 @@
                 </a-select>
               </a-col>
               <a-col :span="12">
-                <a-icon type="sync" class="mr-1" @click="refresh" />
+                <icon type="sync" class="mr-1" @click="refresh" />
                 <!-- <router-link target="_blank" :to="{ path: '/snapshotpolicy' }" style="color: #409EFF;">{{$t('compute.text_429')}}</router-link> -->
                 <dialog-trigger :vm="params.vm" :extParams="{ tenant, domain, types: ['disk'] }" :name="$t('compute.text_430')" value="CreateSnapshotPolicyDialog" resource="snapshotpolicies" @success="successCallback" />
               </a-col>

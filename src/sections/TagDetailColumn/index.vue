@@ -2,10 +2,9 @@
   <div>
     <template v-if="tags && tags.length > 0">
       <div v-if="customTitle">{{customTitle}}</div>
-      <template v-for="item of tags">
+      <template v-for="item of tags" :key="`${item.key}${item.value}`">
         <span
           class="tag text-truncate d-inline-block"
-          :key="`${item.key}${item.value}`"
           :title="item.title"
           :style="{ backgroundColor: item.backgroundColor, color: item.color, borderColor: item.color }">{{ item.title }}</span>
       </template>
@@ -17,7 +16,7 @@
       <span
         class="tag edit text-truncate d-inline-block"
         key="edit-tag-btn"
-        @click="handleEdit"><a-icon class="mr-1" type="edit" style="font-size: 12px;" />{{ $t('table.action.set_tag') }}</span>
+        @click="handleEdit"><icon class="mr-1" type="edit" style="font-size: 12px;" />{{ $t('table.action.set_tag') }}</span>
     </template>
   </div>
 </template>
@@ -36,11 +35,11 @@ export default {
     showEdit: Boolean,
     row: {
       type: Object,
-      required: true,
+      default: () => ({}),
     },
     metadata: {
       type: Object,
-      required: true,
+      default: () => ({}),
     },
     ignoreKeys: Array,
     needExt: Boolean,

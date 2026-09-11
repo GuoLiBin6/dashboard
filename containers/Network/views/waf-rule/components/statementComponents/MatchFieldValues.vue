@@ -1,14 +1,14 @@
 <template>
   <div>
     <a-form-item :label="label || $t('network_waf_statement.label.match_field_values')" v-bind="formLayout">
-      <template v-for="(matchFieldValue, index) in matchFieldValues">
-        <a-select v-if="addType === 'select' && isEdit" v-model="matchFieldValues[index]" :key="index">
+      <template v-for="(matchFieldValue, index) in matchFieldValues" :key="index">
+        <a-select v-if="addType === 'select' && isEdit" v-model:value="matchFieldValues[index]">
           <a-select-option v-for="item in options" :value="item.value" :key="item.value">
             {{item.label}}
           </a-select-option>
         </a-select>
-        <a-input v-else-if="addType === 'input' && isEdit" :value="matchFieldValues[index]" :key="index" />
-        <box-show v-else :value="getShowValue(index)" :key="index" />
+        <a-input v-else-if="addType === 'input' && isEdit" v-model:value="matchFieldValues[index]" />
+        <box-show v-else :value="getShowValue(index)" />
       </template>
     </a-form-item>
   </div>

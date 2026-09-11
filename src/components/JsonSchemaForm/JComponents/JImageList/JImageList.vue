@@ -1,7 +1,7 @@
 <template>
   <div class="image-select">
     <a-row v-if="isShowComponent">
-      <a-radio-group v-model="imageType">
+      <a-radio-group v-model:value="imageType">
         <a-tooltip v-for="item in mirrorTypeOptions" :key="item.key" :title="item.tooltip" :mouseEnterDelay="0.5">
           <a-radio-button :value="item.key" :disabled="item.disabled">{{ item.label }}</a-radio-button>
         </a-tooltip>
@@ -9,7 +9,7 @@
     </a-row>
     <a-row :gutter="8" v-if="isShowComponent">
       <a-col :span="12">
-        <a-select v-model="os" :loading="loading" :placeholder="$t('compute.text_153')">
+        <a-select v-model:value="os" :loading="loading" :placeholder="$t('compute.text_153')">
           <a-select-option v-for="item in imagesInfo.osOpts" :key="item.key">
             <div :key="item.key" class="d-flex align-items-center">
               <image-icon :image="item.key" />
@@ -19,12 +19,12 @@
         </a-select>
       </a-col>
       <a-col :span="12">
-        <a-select v-model="image" @change="change" :loading="loading" :filterOption="filterOption" :showSearch="true" option-filter-prop="children" :placeholder="$t('compute.text_214')" allowClear>
+        <a-select v-model:value="image" @change="change" :loading="loading" :filterOption="filterOption" :showSearch="true" option-filter-prop="children" :placeholder="$t('compute.text_214')" allowClear>
           <a-select-option v-for="(item, index) in imageOpts" :key="index" :value="item.id">
             <div :key="`${item.name} ${item.id}`">
               <a-row>
                 <a-col :span="24">
-                  <div>{{ item.name }}<a-icon type="safety-certificate" v-if="isEncryped(item)" :title="$t('common.text.encrption_enable')" /></div>
+                  <div>{{ item.name }}<icon type="safety-certificate" v-if="isEncryped(item)" :title="$t('common.text.encrption_enable')" /></div>
                 </a-col>
               </a-row>
               <a-row>

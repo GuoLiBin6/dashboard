@@ -8,13 +8,13 @@
         v-decorator="decorators.backend_group"
         resource="loadbalancerbackendgroups"
         :params="backendgroupParams"
-        :item.sync="backendgroup"
+        v-model:item="backendgroup"
         @change="fetchBackendList"
         :select-props="{ placeholder: $t('network.text_394') }" />
         <div slot="extra">{{$t('network.text_395')}}<a @click="openBackendgroupsCreate">{{$t('network.text_26')}}</a></div>
     </a-form-item>
     <a-form-item :label="$t('network.text_140')" ::extra="backendgroup.name ? $t('network.text_396', [backendgroup.name]) : ''">
-      <vxe-grid size="mini" border :columns="backendColumns" :data="backendList" />
+      <table-lite-grid size="mini" border :columns="backendColumns" :data="backendList" />
     </a-form-item>
   </a-form>
 </template>

@@ -37,9 +37,9 @@
 import { mapGetters } from 'vuex'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
-import { typeClouds } from '@/utils/common/hypervisor'
+import { HYPERVISORS_MAP, EXTRA_HYPERVISORS } from '@/constants'
 
-const hypervisorMap = typeClouds.hypervisorMap
+const hypervisorMap = Object.assign({}, HYPERVISORS_MAP, EXTRA_HYPERVISORS)
 
 export default {
   name: 'VmAddBackupDialog',

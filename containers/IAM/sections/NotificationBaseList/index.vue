@@ -7,7 +7,7 @@
     default-search-key="topic" />
 </template>
 
-<script>
+<script lang="jsx">
 import {
   getCopyWithContentTableColumn,
   getTimeTableColumn,
@@ -103,7 +103,7 @@ export default {
             },
             content: ({ row }) => {
               return [
-                <vxe-grid
+                <table-lite-grid
                   size="mini"
                   data={ row.receive_details || [] }
                   columns={[

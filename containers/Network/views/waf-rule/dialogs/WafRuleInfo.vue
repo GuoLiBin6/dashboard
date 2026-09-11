@@ -1,7 +1,7 @@
 <template>
   <base-dialog :width="1000" @cancel="cancelDialog">
-    <div slot="header">{{title}}</div>
-    <div slot="body">
+    <template #header>{{title}}</template>
+    <template #body>
       <a-form-model
         v-bind="formLayout"
         ref="ruleInfoForm"
@@ -10,17 +10,17 @@
         :hideRequiredMark="true">
         <!-- 名称 -->
         <a-form-model-item :label="$t('network.waf.rule_name')" prop="name">
-          <a-input v-if="params.isEdit" v-model="ruleInfoForm.name" :placeholder="$t('network.waf.rule_name_placeholder')" />
+          <a-input v-if="params.isEdit" v-model:value="ruleInfoForm.name" :placeholder="$t('network.waf.rule_name_placeholder')" />
           <box-show v-else :value="ruleInfoForm.name" />
         </a-form-model-item>
         <!-- 优先级 -->
         <a-form-model-item :label="$t('network.text_81')" prop="priority">
-          <a-input v-if="params.isEdit" v-model="ruleInfoForm.priority" :placeholder="$t('network.waf.rule_priority_placeholder')" />
+          <a-input v-if="params.isEdit" v-model:value="ruleInfoForm.priority" :placeholder="$t('network.waf.rule_priority_placeholder')" />
           <box-show v-else :value="ruleInfoForm.priority" />
         </a-form-model-item>
         <!-- 匹配规则 -->
         <a-form-model-item :label="$t('network.waf.rule_match')" prop="statement_conditon">
-          <a-select v-if="params.isEdit" v-model="ruleInfoForm.statement_conditon" :placeholder="$t('network.waf.rule_match_validator')">
+          <a-select v-if="params.isEdit" v-model:value="ruleInfoForm.statement_conditon" :placeholder="$t('network.waf.rule_match_validator')">
             <a-select-option v-for="item in statementConditionOptions" :value="item.value" :key="item.value">
               {{item.label}}
             </a-select-option>
@@ -44,7 +44,7 @@
         </div> -->
         <!-- 处理动作 -->
         <a-form-model-item :label="$t('network.waf.action')" prop="action">
-          <a-select v-if="params.isEdit" v-model="ruleInfoForm.action">
+          <a-select v-if="params.isEdit" v-model:value="ruleInfoForm.action">
             <a-select-option v-for="item in wafRuleActionOptions" :value="item.value" :key="item.value">
               {{item.label}}
             </a-select-option>
@@ -52,11 +52,11 @@
           <box-show v-else :value="ruleAction" />
         </a-form-model-item>
       </a-form-model>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <!-- <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button> -->
       <a-button @click="cancelDialog">{{ $t('network.text_33') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

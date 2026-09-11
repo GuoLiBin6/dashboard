@@ -3,7 +3,7 @@
     <page-header
      :title="$t('compute.vminstance-container')"
      :tabs="cloudEnvOptions"
-     :current-tab.sync="cloudEnv"
+     v-model:currentTab="cloudEnv"
      isShowResStatusTab
      :status-opts="statusOpts"
      :status-click-handle="statusClickHandle" />
@@ -16,7 +16,6 @@
         :filterParams="filterParams"
         :tableOverviewIndexs="tableOverviewIndexs"
         statusResKey="container"
-        @updateCloudEnvOptions="updateCloudEnvOptions"
         @resStatisticsChange="resStatisticsChange" />
     </page-body>
   </div>

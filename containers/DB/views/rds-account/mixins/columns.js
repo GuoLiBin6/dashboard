@@ -11,9 +11,11 @@ export default {
         hideField: true,
         edit: false,
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{row.name}</side-page-trigger>
-          )
+          return this.$createElement('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getStatusTableColumn({ statusModule: 'rdsAccount' }),
@@ -27,8 +29,13 @@ export default {
         title: this.$t('db.text_195'),
         minWidth: 100,
         slots: {
-          default: ({ row }) => {
-            return [<PasswordFetcher serverId={row.id} resourceType='dbinstanceaccounts' />]
+          default: ({ row }, h) => {
+            return [h(PasswordFetcher, {
+              props: {
+                serverId: row.id,
+                resourceType: 'dbinstanceaccounts',
+              },
+            })]
           },
         },
       },
@@ -37,10 +44,14 @@ export default {
         minWidth: 200,
         title: this.$t('db.text_196'),
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             if (row.dbinstanceprivileges && row.dbinstanceprivileges.length > 0) {
               return row.dbinstanceprivileges.map(({ database, privileges }) => {
-                return <div>{database} <span style="color:#666;margin:0 0 0 3px">({RDS_ACCOUNT_PRIVILEGES[privileges] ? RDS_ACCOUNT_PRIVILEGES[privileges] : privileges})</span></div>
+                return h('div', [
+                  database,
+                  ' ',
+                  h('span', { style: 'color:#666;margin:0 0 0 3px' }, `(${RDS_ACCOUNT_PRIVILEGES[privileges] ? RDS_ACCOUNT_PRIVILEGES[privileges] : privileges})`),
+                ])
               })
             }
             return '-'

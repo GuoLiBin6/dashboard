@@ -76,7 +76,7 @@ export default {
       href: DOCS_MAP.mailConfig('feishu'),
     }
   },
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {

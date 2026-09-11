@@ -1,17 +1,17 @@
 <template>
   <div class="d-flex">
     <monitor-header
-      :time.sync="time"
+      v-model:time="time"
       :showTimegroup="false"
       :showGroupFunc="false"
       :loading="loading"
       :timeOpts="timeOpts"
       @refresh="refresh">
       <template v-slot:radio-button-append>
-        <custom-date :time.sync="time" :customTime.sync="customTime" />
+        <custom-date v-model:time="time" v-model:customTime="customTime" />
       </template>
     </monitor-header>
-    <a-select v-model="aggregate" style="width: 150px;">
+    <a-select v-model:value="aggregate" style="width: 150px;">
       <a-select-option v-for="item in aggregateOpts" :value="item.key" :key="item.key">{{ item.label }}</a-select-option>
     </a-select>
   </div>

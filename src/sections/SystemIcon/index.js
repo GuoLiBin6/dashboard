@@ -11,10 +11,12 @@ export default {
     },
   },
   render (h) {
-    return (
-      <span title={ this.tooltip }>
-        <image-icon image={ this.name } />
-      </span>
-    )
+    return h('span', {
+      attrs: { title: this.tooltip },
+    }, [
+      h('image-icon', {
+        props: { image: this.name },
+      }),
+    ])
   },
 }

@@ -1,10 +1,9 @@
 <template>
-  <div class="position-relative h-100 w-100 overflow-auto dashboard_box">
-    <template v-for="(item, key) of data">
+  <div class="position-relative w-100 dashboard-content-inner" :style="contentWrapStyle">
+    <template v-for="(item, key) of data" :key="key">
       <div
         v-if="!['Quota', 'ProjectQuota'].includes(item.layout.component) || (['Quota', 'ProjectQuota'].includes(item.layout.component) && globalConfig.enable_quota_check)"
         class="item"
-        :key="key"
         :style="getItemStyles(item.layout)">
         <component
           ref="children"
@@ -25,6 +24,12 @@ import getExtendsComponents from '@scope/extends'
 import { clear as clearCache } from '@Dashboard/utils/cache'
 
 const extendsComponents = R.is(Function, getExtendsComponents) ? getExtendsComponents() : getExtendsComponents
+const ROW_HEIGHT = 30
+// 卡片网格间距（与编辑态一致，勿改，避免影响内部组件布局）
+const MARGIN_Y = 15
+const MARGIN_X = 7.5
+// 仅外框内容区上下留白
+const OUTER_PAD_Y = 10
 
 export default {
   name: 'DashboardContent',
@@ -43,6 +48,22 @@ export default {
   },
   computed: {
     ...mapGetters(['globalConfig']),
+    // 绝对定位卡片不占文档流，需显式撑高；底部仅加外框留白
+    contentWrapStyle () {
+      const items = R.is(Array, this.data) ? this.data : Object.values(this.data || {})
+      let maxBottom = 0
+      items.forEach((item) => {
+        const layout = item && item.layout
+        if (!layout || layout.y == null || layout.h == null) return
+        if (['Quota', 'ProjectQuota'].includes(layout.component) && !this.globalConfig.enable_quota_check) return
+        const top = Math.round(ROW_HEIGHT * layout.y) + layout.y * MARGIN_Y + OUTER_PAD_Y
+        const height = ROW_HEIGHT * layout.h + Math.max(0, layout.h - 1) * MARGIN_Y
+        maxBottom = Math.max(maxBottom, top + height)
+      })
+      return {
+        minHeight: `${maxBottom + OUTER_PAD_Y}px`,
+      }
+    },
   },
   methods: {
     refresh () {
@@ -71,14 +92,13 @@ export default {
     },
     getItemStyles (layout) {
       const { x, y, w, h } = layout
-      const rowHeight = 30
-      const margin = [15, 7.5]
       return {
         width: `calc(${w / 80 * 100}% - 15px)`,
-        margin: `0px ${margin[1]}px`,
-        height: `calc(${rowHeight * h + Math.max(0, h - 1) * margin[0]}px)`,
+        margin: `0px ${MARGIN_X}px`,
+        height: `calc(${ROW_HEIGHT * h + Math.max(0, h - 1) * MARGIN_Y}px)`,
         left: `calc(${(x / 80 * 100)}%`,
-        top: Math.round(rowHeight * y) + (y + 1) * margin[0] + 'px',
+        // 卡片相对间距仍用 MARGIN_Y=15；仅首行相对外框用 OUTER_PAD_Y
+        top: Math.round(ROW_HEIGHT * y) + y * MARGIN_Y + OUTER_PAD_Y + 'px',
         position: 'absolute',
       }
     },
@@ -87,10 +107,6 @@ export default {
 </script>
 
 <style lang="less" scoped>
-.dashboard_box{
-  min-width: 1008px;
-  background: rgb(245, 247, 254);
-}
 .item {
   border-radius: 5px;
   &:hover{

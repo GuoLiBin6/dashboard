@@ -1,7 +1,7 @@
 <template>
   <div class="d-flex flex-wrap icon-radio">
-    <template v-for="(item, i) of options">
-      <div class="item d-flex p-2 mr-3 align-items-center" :class="{ active: value === item.key }" :key="i" @click="() => change(item)">
+    <template v-for="(item, i) of options" :key="i">
+      <div class="item d-flex p-2 mr-3 align-items-center" :class="{ active: value === item.key }" @click="() => change(item)">
         <icon style="font-size: 24px;" v-if="item.icon" v-bind="item.icon" :style="item.style || {}" />
         <img v-else :src="item.img" />
         <h5 class="flex-fill" v-if="!item.labelHidden">{{ item.label }}</h5>

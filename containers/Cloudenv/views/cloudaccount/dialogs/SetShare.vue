@@ -10,9 +10,9 @@
         :rules="rules"
         v-bind="formItemLayout">
         <a-form-model-item :label="$t('cloudenv.text_282')" prop="share_mode" :extra="extra">
-          <a-radio-group v-model="fd.share_mode">
-            <template v-for="item of shareModeOptions">
-              <a-radio-button :key="item.key" :value="item.key">{{ item.label }}</a-radio-button>
+          <a-radio-group v-model:value="fd.share_mode">
+            <template v-for="item of shareModeOptions" :key="item.key">
+              <a-radio-button :value="item.key">{{ item.label }}</a-radio-button>
             </template>
           </a-radio-group>
         </a-form-model-item>
@@ -25,8 +25,8 @@
               mode="multiple"
               @select="val => handleHasAllSelect(val, 'provider_shared_domains')"
               @deselect="val => handleDeselect(val, 'provider_shared_domains')">
-              <template v-for="item of providerDomains">
-                <a-select-option :key="item.id" :value="item.id">{{ item.name }}</a-select-option>
+              <template v-for="item of providerDomains" :key="item.id">
+                <a-select-option :value="item.id">{{ item.name }}</a-select-option>
               </template>
             </a-select>
           </template>
@@ -43,8 +43,8 @@
               mode="multiple"
               @select="val => handleHasAllSelect(val, 'system_shared_domains')"
               @deselect="val => handleDeselect(val, 'system_shared_domains')">
-              <template v-for="item of systemDomains">
-                <a-select-option :key="item.id" :value="item.id">{{ item.name }}</a-select-option>
+              <template v-for="item of systemDomains" :key="item.id">
+                <a-select-option :value="item.id">{{ item.name }}</a-select-option>
               </template>
             </a-select>
           </template>
@@ -179,7 +179,7 @@ export default {
       immediate: true,
     },
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.dm = null
   },
   created () {

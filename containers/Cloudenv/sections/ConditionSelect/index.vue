@@ -65,7 +65,7 @@ export default {
 
 <style lang="less" scoped>
 .no-line-height {
-  .custom-form-item ::v-deep .ant-form-item-control {
+  .custom-form-item :deep(.ant-form-item-control) {
     line-height: 0px;
   }
 }

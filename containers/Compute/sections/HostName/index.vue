@@ -21,7 +21,9 @@ export default {
   },
   methods: {
     handleHostNameChange (e) {
-      this.$emit('change', e.target.value)
+      const val = e.target.value
+      this.hostName = val
+      this.$emit('change', val)
     },
   },
 }

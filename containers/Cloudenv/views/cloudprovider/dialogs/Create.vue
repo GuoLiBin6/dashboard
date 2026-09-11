@@ -3,7 +3,7 @@
     <div slot="header">{{$t('cloudenv.text_340')}}</div>
     <div slot="body">
       <a-alert class="mb-3" type="warning">
-        <template slot="message">
+        <template #message>
           <div>
             {{$t('cloudenv.text_341')}}
           </div>

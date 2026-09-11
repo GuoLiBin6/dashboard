@@ -1,17 +1,17 @@
 <template>
   <a-table bordered :dataSource="quotaOptions" :columns="quotaOptionsColumns" :pagination="false">
-    <template slot="remaining" slot-scope="text" v-if="l3PermissionEnable">
+    <template #remaining="{ text }" v-if="l3PermissionEnable">
       {{ text }}
     </template>
-    <template slot="val" slot-scope="text, record">
+    <template #val="{ text, record }">
       <a-tooltip>
-        <template slot="title">
+        <template #title>
           {{ `${$t('common_235')}：${record.min || 0} ~ ${record.max === Infinity ? $t('common_216') : record.max}` }}
         </template>
         <a-input-number
           class="input-number"
           :controls="false"
-          v-model="quota[record.key]"
+          v-model:value="quota[record.key]"
           :min="record.min"
           :max="record.max"
           @change="changeHandle(quota, record.key)" />

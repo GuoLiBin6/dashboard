@@ -29,10 +29,14 @@ export default {
           field: 'guest_count',
           title: this.$t('compute.associated_instances'),
           slots: {
-            default: ({ row }) => {
-              return [(
-                <a onClick={ () => this.$emit('tab-change', 'associated-instances') }>{ row.guest_count }</a>
-              )]
+            default: ({ row }, h) => {
+              return [
+                h('a', {
+                  on: {
+                    click: () => this.$emit('tab-change', 'associated-instances'),
+                  },
+                }, row.guest_count),
+              ]
             },
           },
         },

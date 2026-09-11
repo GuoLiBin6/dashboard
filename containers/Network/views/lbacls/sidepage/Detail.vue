@@ -30,8 +30,8 @@ export default {
         {
           field: 'acl_entries',
           title: this.$t('network.text_312'),
-          formatter: ({ cellValue }) => {
-            return cellValue ? cellValue.map(item => <div>{item.cidr}</div>) : '-'
+          formatter: ({ cellValue }, h) => {
+            return cellValue ? cellValue.map(item => h('div', item.cidr)) : '-'
           },
         },
       ],

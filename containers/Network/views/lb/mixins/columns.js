@@ -23,9 +23,12 @@ export default {
         addLock: true,
         title: i18n.t('network.text_21'),
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+          const h = this.$createElement
+          return h('side-page-trigger', {
+            props: {
+              onTrigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
         hidden: () => {
           return this.$isScopedPolicyMenuHidden('slb_hidden_columns.name')
@@ -53,6 +56,7 @@ export default {
         minWidth: 150,
         slots: {
           default: ({ row }) => {
+            const h = this.$createElement
             let text = row.address || '-'
             let weakTip = ''
             if (row.eip) {
@@ -67,12 +71,17 @@ export default {
             } else {
               weakTip = row.address_type === 'intranet' ? i18n.t('network.text_306') : i18n.t('network.text_307')
             }
-            return [<div>
-              <list-body-cell-wrap hide-field copy field={row.eip ? 'eip' : 'address' } row={row}>
-                <span style={{ color: '#53627C' }}>{ text }</span>
-              </list-body-cell-wrap>
-              <span class="text-color-secondary">{ weakTip }</span>
-            </div>]
+            return [h('div', [
+              h('list-body-cell-wrap', {
+                props: {
+                  hideField: true,
+                  copy: true,
+                  field: row.eip ? 'eip' : 'address',
+                  row,
+                },
+              }, [h('span', { style: { color: 'var(--oc-color-text-secondary)' } }, text)]),
+              h('span', { class: 'text-color-secondary' }, weakTip),
+            ])]
           },
         },
         hidden: () => {
@@ -198,17 +207,28 @@ export default {
         minWidth: 120,
         slots: {
           default: ({ row }) => {
+            const h = this.$createElement
             const ret = []
             ret.push(
-              <list-body-cell-wrap hide-field copy field='account' row={row}>
-                <span style={{ color: '#0A1F44' }}>{ row.account }</span>
-              </list-body-cell-wrap>,
+              h('list-body-cell-wrap', {
+                props: {
+                  hideField: true,
+                  copy: true,
+                  field: 'account',
+                  row,
+                },
+              }, [h('span', { style: { color: 'var(--oc-color-text-heading)' } }, row.account)]),
             )
             if (row.manager) {
               ret.push(
-                <list-body-cell-wrap hide-field copy field='manager' row={row}>
-                  <span style={{ color: '#53627C' }}>{ row.manager }</span>
-                </list-body-cell-wrap>,
+                h('list-body-cell-wrap', {
+                  props: {
+                    hideField: true,
+                    copy: true,
+                    field: 'manager',
+                    row,
+                  },
+                }, [h('span', { style: { color: 'var(--oc-color-text-secondary)' } }, row.manager)]),
               )
             }
             return ret

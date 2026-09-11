@@ -7,7 +7,7 @@
     :show-searchbox="false" />
 </template>
 
-<script>
+<script lang="jsx">
 import { Manager } from '@/utils/manager'
 import { getAiproxyResourceScope } from '@Ai/constants/aiproxyResources'
 import WindowsMixin from '@/mixins/windows'

@@ -37,13 +37,31 @@ const DateTimePicker = {
     }
 
     if (type === 'time') {
-      return <a-time-picker { ...inputProps } value={ stateValue } onChange={ this.onChange } />
+      return h('a-time-picker', {
+        ...inputProps,
+        props: {
+          ...inputProps.props,
+          value: stateValue,
+        },
+        on: {
+          change: this.onChange,
+        },
+      })
     } else {
       if (type === 'date-time') {
         inputProps.props.showTime = true
       }
 
-      return <a-date-picker { ...inputProps } value={ stateValue } onChange={ this.onChange } />
+      return h('a-date-picker', {
+        ...inputProps,
+        props: {
+          ...inputProps.props,
+          value: stateValue,
+        },
+        on: {
+          change: this.onChange,
+        },
+      })
     }
   },
   methods: {

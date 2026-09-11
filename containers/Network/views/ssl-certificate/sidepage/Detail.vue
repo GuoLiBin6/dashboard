@@ -43,18 +43,12 @@ export default {
           field: 'sans',
           title: this.$t('network.ssl_certificate.sans'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (!row.sans) return '-'
               const list = row.sans.split(',').map(sans => {
-                return (
-                  <div>{sans}</div>
-                )
+                return h('div', sans)
               })
-              return [
-                <div>
-                  {...list}
-                </div>,
-              ]
+              return [h('div', list)]
             },
           },
         },

@@ -36,11 +36,16 @@ export default {
               field: 'loadbalancer',
               title: this.$t('network.text_137'),
               hideField: true,
-              slotCallback: row => {
+              slotCallback: (row, h) => {
                 if (!row.loadbalancer) return '-'
-                return [
-                  <side-page-trigger permission='lb_loadbalancers_get' name='LbSidePage' id={row.loadbalancer_id} vm={this}>{ row.loadbalancer }</side-page-trigger>,
-                ]
+                return [h('side-page-trigger', {
+                  props: {
+                    permission: 'lb_loadbalancers_get',
+                    name: 'LbSidePage',
+                    id: row.loadbalancer_id,
+                    vm: this,
+                  },
+                }, row.loadbalancer)]
               },
             }),
             {

@@ -12,13 +12,13 @@
           <a-form-item :label="$t('dictionary.keypair')" :extra="$t('aice.container_secret.env_hint') + ' ' + $t('aice.container_secret.add_pair')">
             <div v-for="(item, index) in items" :key="item.id" class="d-flex align-items-start mb-2">
               <a-input
-                v-model="item.key"
+                v-model:value="item.key"
                 :placeholder="$t('aice.container_secret.key')"
                 class="mr-2"
                 style="flex: 1; min-width: 0" />
               <span class="mr-2 mt-2">=</span>
               <a-input
-                v-model="item.value"
+                v-model:value="item.value"
                 :placeholder="$t('aice.container_secret.value')"
                 class="mr-2"
                 style="flex: 1; min-width: 0" />

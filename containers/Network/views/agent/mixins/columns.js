@@ -15,9 +15,11 @@ export default {
         title: i18n.t('network.text_21'),
         onManager: this.onManager,
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+          return this.$createElement('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getTagTableColumn({ onManager: this.onManager, resource: 'lb_loadbalanceragents', columns: () => this.columns }),

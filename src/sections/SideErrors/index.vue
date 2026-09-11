@@ -3,7 +3,7 @@
     <div v-if="showError" class="errors-wrap" v-clickoutside="closeError">
       <div class="title d-flex align-items-center">
         <div class="title-text flex-fill">{{ errorTitle }}</div>
-        <div><a-icon @click="closeError" type="close" /></div>
+        <div><icon @click="closeError" type="close" /></div>
       </div>
       <div class="divider" />
       <div class="mb-2"><span>{{ $t('compute.text_1312') }}：</span><span>{{ errors.req_count }} / {{ errors.allow_count }}</span></div>

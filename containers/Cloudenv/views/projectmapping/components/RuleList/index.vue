@@ -7,8 +7,8 @@
           class="flex-shrink-0"
           :disabled="loading"
           @click="handleRefresh">
-          <a-icon v-if="loading" type="sync" spin />
-          <a-icon v-else type="sync" />
+          <icon v-if="loading" type="sync" spin />
+          <icon v-else type="sync" />
         </a-button>
         <actions
           :group="true"
@@ -18,13 +18,12 @@
           :showSync="true"
           @clear-selected="() => $emit('clear-selected')" />
       </div>
-      <vxe-grid
+      <table-lite-grid
         v-bind="gridOptions"
         :columns="columns"
         row-key
         show-header-overflow
         highlight-hover-row
-        highlight-current-row
         class="page-list-grid sortable-tree-demo"
         ref="grid"
         :tree-config="{children: 'children'}"
@@ -227,7 +226,9 @@ export default {
     treeDrop () {
       this.$nextTick(() => {
         const xTable = this.$refs.grid
-        this.sortable2 = Sortable.create(xTable.$el.querySelector('.body--wrapper>.vxe-table--body tbody'), {
+        const el = xTable && xTable.$el && xTable.$el.querySelector && xTable.$el.querySelector('.table-lite-grid__body')
+        if (!el) return
+        this.sortable2 = Sortable.create(el, {
           handle: '.drag-btn',
           onEnd: ({ item, oldIndex }) => {
             const options = { children: 'children' }
@@ -245,7 +246,7 @@ export default {
                 // 错误的移动
                 const oldTrElem = wrapperElem.children[oldIndex]
                 wrapperElem.insertBefore(targetTrElem, oldTrElem)
-                return this.$XModal.message({ content: '不允许自己给自己拖动！', status: 'error' })
+                return this.$message.error('不允许自己给自己拖动！')
               }
               const currRow = selfNode.items.splice(selfNode.index, 1)[0]
               if (xTable.isTreeExpandByRow(prevRow)) {

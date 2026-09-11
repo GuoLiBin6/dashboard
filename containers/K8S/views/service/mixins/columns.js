@@ -10,9 +10,11 @@ export default {
         edit: false,
         showDesc: false,
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{ row.name }</side-page-trigger>
-          )
+          return this.$createElement('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       {
@@ -29,7 +31,15 @@ export default {
           default: ({ row }) => {
             if (row.clusterIP === 'None') return row.clusterIP
             return [
-              <list-body-cell-wrap copy row={ row } onManager={ this.onManager } field='clusterIP' title={ row.clusterIP } />,
+              this.$createElement('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  row: row,
+                  onManager: this.onManager,
+                  field: 'clusterIP',
+                  title: row.clusterIP,
+                },
+              }),
             ]
           },
         },
@@ -42,7 +52,7 @@ export default {
           default: ({ row }) => {
             if (row.internalEndpoint && row.internalEndpoint.ports && row.internalEndpoint.ports.length) {
               return row.internalEndpoint.ports.map(v => {
-                return <div>{ `${row.internalEndpoint.host}:${v.port} ${v.protocol}` }</div>
+                return this.$createElement('div', `${row.internalEndpoint.host}:${v.port} ${v.protocol}`)
               })
             }
             return '-'
@@ -56,7 +66,15 @@ export default {
           default: ({ row }) => {
             if (row.externalEndpoints && row.externalEndpoints.length) {
               return row.externalEndpoints.map(v => {
-                return <list-body-cell-wrap copy row={ v } onManager={ this.onManager } field='host' title={ v.host } />
+                return this.$createElement('list-body-cell-wrap', {
+                  props: {
+                    copy: true,
+                    row: v,
+                    onManager: this.onManager,
+                    field: 'host',
+                    title: v.host,
+                  },
+                })
               })
             }
             return '-'
@@ -78,7 +96,7 @@ export default {
                 if (p === 0) {
                   p = '-'
                 }
-                return <div> { `${p}` } </div>
+                return this.$createElement('div', `${p}`)
               })
             }
             return '-'

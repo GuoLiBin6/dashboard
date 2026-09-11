@@ -22,13 +22,7 @@
         </div>
       </a-form-item>
       <a-form-item>
-        <span slot="label">{{$t('cloudenv.text_239')}}<!-- <a-tooltip placement="top">
-            <a-icon type="question-circle" color="grey" />
-            <div slot="title">
-              <a class="link-color" target="_blank" :href="docs[provider.toLowerCase()]">{{$t('cloudenv.text_240', [keySecretField.text, keySecretField.label.k])}}</a>
-            </div>
-          </a-tooltip> -->
-        </span>
+        <span slot="label">{{$t('cloudenv.text_239')}}</span>
         <a-input v-decorator="decorators.directory_id" :placeholder="$t('cloudenv.text_241')" />
       </a-form-item>
       <a-form-item :label="keySecretField.label.s">
@@ -52,9 +46,6 @@
       <read-only :cloneData="cloneData" />
       <skip-duplicate-account-check :cloneData="cloneData" />
       <share-mode :fd="form.fd" :cloneData="cloneData" />
-      <!-- <a-form-item :label="$t('cloudenv.text_242')">
-        <a-input v-decorator="decorators.balanceKey" type="textarea" rows="4" />
-      </a-form-item> -->
     </a-form>
   </div>
 </template>

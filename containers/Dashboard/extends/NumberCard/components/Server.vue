@@ -3,20 +3,22 @@
     <div class="dashboard-card-wrap">
       <div class="dashboard-card-header">
         <div class="dashboard-card-header-left" @click.alt="showDebuggerInfo = !showDebuggerInfo">{{ form.fd.name || $t('dashboard.text_6') }}
-          <a-icon class="ml-2" type="loading" v-if="loading" />
-          <a-tooltip v-if="isServersAnypool"><template slot="title">{{ $t('dashboard.server_tips') }}</template><icon type="help" /></a-tooltip>
+          <icon class="ml-2" type="loading" v-if="loading" />
+          <a-tooltip v-if="isServersAnypool" :title="$t('dashboard.server_tips')">
+            <span class="dashboard-card-help ml-1"><icon type="help" /></span>
+          </a-tooltip>
         </div>
         <div class="dashboard-card-header-right">
           <span v-if="showDebuggerInfo">{{ `${$t('dashboard.text_20')}: ${form.fd.usage_key}` }}</span>
           <slot name="actions" :handle-edit="handleEdit" />
-          <a class="ml-2" :style="{ color: isResDeny ? '#ccc' : '' }" v-if="!edit && canShowEdit && !isPageDeny" @click="goPage">
+          <a class="ml-2" href="javascript:;" :style="{ color: isResDeny ? '#ccc' : '' }" v-if="!edit && canShowEdit && !isPageDeny" @click.prevent="goPage">
             <icon type="arrow-right" style="font-size:18px" />
           </a>
         </div>
       </div>
       <div class="dashboard-card-body d-flex align-items-center justify-content-center">
-        <div class="d-flex">
-          <div class="number-card-number mr-1">{{ this.usage.usage }}</div>
+        <div class="number-card-value">
+          <div class="number-card-number">{{ this.usage.usage }}</div>
           <div class="number-card-unit">{{ this.usage.unit }}</div>
         </div>
       </div>
@@ -63,7 +65,6 @@ export default {
   },
   mixins: [mixin],
   props: {
-    parmas: Object,
     edit: Boolean,
   },
   data () {
@@ -379,18 +380,25 @@ export default {
 </script>
 
 <style lang="less" scoped>
+.number-card-value {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+}
 .number-card-number {
   font-size: 60px;
-  line-height: 48px;
+  line-height: 1;
   color: #000000;
 }
 .number-card-unit {
   font-size: 14px;
+  line-height: 1;
   color: #000000;
-  margin-left: 5px;
+  margin-left: 6px;
+  padding-bottom: 6px;
 }
 .drawer-wrapper {
-  &::v-deep.ant-drawer.ant-drawer-open .ant-drawer-mask {
+  &:deep(.ant-drawer.ant-drawer-open .ant-drawer-mask) {
     animation: none;
   }
 }

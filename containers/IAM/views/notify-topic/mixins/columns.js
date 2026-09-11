@@ -15,12 +15,27 @@ export default {
         showOverflow: 'ellipsis',
         minWidth: 100,
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             const val = NOTIFY_TOPIC_NAMES_MAP[row.name] || row.name
             return [
-              <list-body-cell-wrap copy row={row} field='name' message={ val } list={this.list} hideField addLock={ false } addBackup={ false }>
-                <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ val }</side-page-trigger>
-              </list-body-cell-wrap>,
+              h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  row: row,
+                  field: 'name',
+                  message: val,
+                  list: this.list,
+                  hideField: true,
+                  addLock: false,
+                  addBackup: false,
+                },
+              }, [
+                h('side-page-trigger', {
+                  on: {
+                    trigger: () => this.handleOpenSidepage(row),
+                  },
+                }, val),
+              ]),
             ]
           },
         },

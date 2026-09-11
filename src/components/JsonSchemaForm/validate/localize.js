@@ -1,5 +1,5 @@
+import _ from 'lodash'
 import i18n from '@/locales'
-const _ = require('lodash')
 const regItems = /(\[\d+\])/g
 const regProperties = /(\.)/g
 

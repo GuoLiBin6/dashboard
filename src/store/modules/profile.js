@@ -1,5 +1,4 @@
 import * as R from 'ramda'
-import Vue from 'vue'
 import http from '@/utils/http'
 
 const PROFILE_ID = 'profile'
@@ -12,7 +11,7 @@ export default {
   },
   mutations: {
     SET_DATA (state, { name, data }) {
-      Vue.set(state, name, data)
+      state[name] = data
     },
     REST_ID (state) {
       state.id = ''
@@ -67,14 +66,27 @@ export default {
     },
     async update ({ commit, state }, payload) {
       try {
-        const newValue = { ...state.data.value, ...payload }
-        const response = await http.put(`/v1/parameters/${PROFILE_ID}`, {
+        const prev = state.data || {}
+        const newValue = { ...(prev.value || {}), ...payload }
+        // 先本地合并，避免 getter 仍读到旧 profile，导致设置「点了没效果」
+        commit('SET_DATA', {
+          name: 'data',
+          data: {
+            ...prev,
+            value: newValue,
+          },
+        })
+        const id = state.id || prev.id || PROFILE_ID
+        const response = await http.put(`/v1/parameters/${id}`, {
           value: newValue,
         })
         if (!R.isNil(response.data) && !R.isEmpty(response.data)) {
           commit('SET_DATA', {
             name: 'data',
-            data: response.data,
+            data: {
+              ...response.data,
+              value: { ...(response.data.value || {}), ...newValue },
+            },
           })
           commit('SET_DATA', {
             name: 'id',

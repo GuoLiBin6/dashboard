@@ -16,10 +16,12 @@ export default {
           { required: true, message: this.$t('compute.text_210') },
           { validator: this.$validate('imageName') },
         ],
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getStatusTableColumn({ statusModule: 'image', vm: this }),
@@ -29,25 +31,32 @@ export default {
         title: i18n.t('table.title.child_image'),
         width: 150,
         slots: {
-          default: ({ row }) => {
-            if (this.isPreLoad && !row.data_images) return [<data-loading />]
+          default: ({ row }, h) => {
+            if (this.isPreLoad && !row.data_images) return [h('data-loading')]
             const arr = [...(row.data_images || [])]
-            arr.push(row.root_image.name)
+            if (row.root_image?.name) arr.push(row.root_image.name)
             const len = arr.length
-            let list = []
+            const list = []
             if (row.data_images && row.data_images.length > 0) {
-              list = row.data_images.map(val => (
-                <a-tag class='mb-2 mr-1'>{ val.name }</a-tag>
-              ))
+              row.data_images.forEach(val => {
+                if (val?.name) list.push(h('a-tag', { class: 'mb-2 mr-1' }, val.name))
+              })
             }
-            list.push(
-              <a-tag class='mb-2 mr-1'>{ row.root_image?.name }</a-tag>,
-            )
-            return [<list-body-cell-popover text={i18n.t('compute.text_619', [len])} max-width="400px">
-              <div style="display: inline-flex; flex-wrap: wrap; max-width: 40vw;">
-                {...list}
-              </div>
-            </list-body-cell-popover>]
+            if (row.root_image?.name) {
+              list.push(h('a-tag', { class: 'mb-2 mr-1' }, row.root_image.name))
+            }
+            return [
+              h('list-body-cell-popover', {
+                props: {
+                  text: i18n.t('compute.text_619', [len]),
+                  maxWidth: '400px',
+                },
+              }, [
+                h('div', {
+                  style: 'display: inline-flex; flex-wrap: wrap; max-width: 40vw;',
+                }, list),
+              ]),
+            ]
           },
         },
         formatter: ({ row }) => {
@@ -68,8 +77,8 @@ export default {
         title: i18n.t('table.title.disk_format'),
         width: 100,
         slots: {
-          default: ({ row }) => {
-            if (!row.disk_format) return [<data-loading />]
+          default: ({ row }, h) => {
+            if (!row.disk_format) return [h('data-loading')]
             return row.disk_format.toUpperCase()
           },
         },
@@ -84,14 +93,19 @@ export default {
         width: 60,
         slots: {
           default: ({ row }) => {
-            if (this.isPreLoad && !row.properties) return [<data-loading />]
+            if (this.isPreLoad && !row.properties) return [this.$createElement('data-loading')]
             let name = row.properties?.os_distribution ? decodeURI(row.properties?.os_distribution) : row.properties?.os_type || ''
             if (name.includes('Windows') || name.includes('windows')) {
               name = 'Windows'
             }
             const tooltip = (row.properties?.os_version ? `${name} ${row.properties?.os_version}` : name) || i18n.t('compute.text_339')
             return [
-              <SystemIcon tooltip={ tooltip } name={ name } />,
+              this.$createElement(SystemIcon, {
+                props: {
+                  tooltip,
+                  name,
+                },
+              }),
             ]
           },
         },
@@ -108,8 +122,8 @@ export default {
         title: i18n.t('table.title.image_size'),
         minWidth: 100,
         slots: {
-          default: ({ row }) => {
-            if (this.isPreLoad && row.size === undefined) return [<data-loading />]
+          default: ({ row }, h) => {
+            if (this.isPreLoad && row.size === undefined) return [h('data-loading')]
             return sizestr(row.size, 'B', 1024)
           },
         },

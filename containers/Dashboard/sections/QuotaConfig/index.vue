@@ -219,7 +219,7 @@ export default {
       return this.brand === typeClouds.brandMap.OneCloud.key
     },
   },
-  destroyed () {
+  unmounted () {
     this.am = null
     this.rm = null
   },

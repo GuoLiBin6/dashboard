@@ -8,27 +8,27 @@
         ref="form"
         v-bind="formItemLayout">
         <a-form-model-item :label="$t('network.cdn.clear_method')" prop="clear_method" :extra="$t(`network.cdn.clear_method.${form.clear_method}.extra`)">
-          <a-select v-model="form.clear_method" @change="handleClearMethodChange">
+          <a-select v-model:value="form.clear_method" @change="handleClearMethodChange">
             <a-select-option v-for="item in clearMethodOptions" :key="item.key" :value="item.key">
               {{ item.label }}
             </a-select-option>
           </a-select>
         </a-form-model-item>
         <a-form-model-item v-if="form.clear_method !== 'all'" :label="clearListLabel" prop="clear_list">
-          <a-textarea v-model="form.clear_list" :rows="4" :placeholder="$t('network.cdn.clear_list_placeholder', [$t(`network.cdn.clear_method.${form.clear_method}`)])" />
+          <a-textarea v-model:value="form.clear_list" :rows="4" :placeholder="$t('network.cdn.clear_list_placeholder', [$t(`network.cdn.clear_method.${form.clear_method}`)])" />
         </a-form-model-item>
-        <a-collapse :bordered="false" v-model="collapseActive" v-if="form.clear_method === 'url'">
+        <a-collapse :bordered="false" v-model:activeKey="collapseActive" v-if="form.clear_method === 'url'">
           <a-collapse-panel :header="$t('network.cdn.clear_cache_advanced')" key="1">
             <a-alert :message="$t('network.cdn.clear_cache_advanced_description')" type="info" />
             <a-form-model-item class="mt-3" :label="$t('network.cdn.clear_cache_device_type')">
-              <a-select v-model="form.clear_cache_device_type">
+              <a-select v-model:value="form.clear_cache_device_type">
                 <a-select-option v-for="item in clearCacheDeviceTypeOptions" :key="item.key" :value="item.key">
                   {{ item.label }}
                 </a-select-option>
               </a-select>
             </a-form-model-item>
             <a-form-model-item :label="$t('network.cdn.clear_cache_country')">
-              <a-select v-model="form.clear_cache_country">
+              <a-select v-model:value="form.clear_cache_country">
                 <a-select-option v-for="item in COUNTRYS" :key="item.key" :value="item.key">
                   {{ item.label }}
                 </a-select-option>

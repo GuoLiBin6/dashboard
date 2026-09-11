@@ -104,17 +104,20 @@ export default {
           slots: {
             default: ({ row }, h) => {
               if (!row.guest || row.guests.length <= 0) return '-'
-              const guests = row.guests.map((guest, index) => {
-                return <side-page-trigger permission="server_get" name="VmInstanceSidePage" id={guest.id} vm={this}>
-                  {guest.name}
-                  <status status={ guest.status } statusModule='server'/>
-                </side-page-trigger>
+              const guests = row.guests.map((guest) => {
+                return h('side-page-trigger', {
+                  props: {
+                    permission: 'server_get',
+                    name: 'VmInstanceSidePage',
+                    id: guest.id,
+                    vm: this,
+                  },
+                }, [
+                  guest.name,
+                  h('status', { props: { status: guest.status, statusModule: 'server' } }),
+                ])
               })
-              return [
-                <div>
-                  { guests }
-                </div>,
-              ]
+              return [h('div', guests)]
             },
           },
         },
@@ -129,9 +132,24 @@ export default {
               }
               const text = row.storage || '-'
               return [
-                <list-body-cell-wrap copy hideField={true} field='storage' row={row} message={text}>
-                  <side-page-trigger permission='storages_get' name='BlockStorageSidePage' id={row.storage_id} vm={this}>{row.storage}</side-page-trigger>
-                </list-body-cell-wrap>,
+                h('list-body-cell-wrap', {
+                  props: {
+                    copy: true,
+                    hideField: true,
+                    field: 'storage',
+                    row,
+                    message: text,
+                  },
+                }, [
+                  h('side-page-trigger', {
+                    props: {
+                      permission: 'storages_get',
+                      name: 'BlockStorageSidePage',
+                      id: row.storage_id,
+                      vm: this,
+                    },
+                  }, row.storage),
+                ]),
               ]
             },
           },

@@ -2,7 +2,7 @@
   <div>
     <page-header :title="$t('k8s.text_146')" />
     <a-alert :showIcon="true" type="info" banner class="mt-2">
-      <template slot="message">
+      <template #message>
         <div>
           <p>{{$t('k8s.text_147')}}</p>
           <p>{{$t('k8s.text_148')}}</p>
@@ -11,14 +11,14 @@
       </template>
     </a-alert>
     <a-alert :showIcon="true" type="error" v-if="!preCheckResp.pass">
-      <template slot="message" v-if="showDocsLink()">
+      <template #message v-if="showDocsLink()">
         <div>
           {{$t('k8s.provider_image_not_prepared')}}
           <help-link :href="docs[provider.hypervisor]">{{$t('k8s.ref_prepare_doc')}}</help-link>
         </div>
       </template>
     </a-alert>
-    <page-body needMarginBottom>
+    <page-body>
       <a-form
         class="mt-3"
         :form="form.fc">

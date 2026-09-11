@@ -1,39 +1,25 @@
 <template>
   <a-skeleton active :loading="loading">
     <div class="table" v-show="showTable">
-        <vxe-toolbar v-if="!isTemplate">
-          <template #tools>
-            <vxe-button @click="exportData" class="icons-list" style="width: 40px;">
-              <a-icon type="download" />
-            </vxe-button>
-          </template>
-        </vxe-toolbar>
-        <vxe-grid
+        <div v-if="!isTemplate" class="d-flex justify-content-end">
+          <a-button @click="exportData" class="icons-list" style="width: 40px;">
+            <icon type="download" />
+          </a-button>
+        </div>
+        <table-lite-grid
           v-bind="gridProps"
           size="mini"
           border
           resizable
           ref="overviewTable"
           :columns="columns"
-          :scroll-x="{enabled: false}"
           :data="tableRows">
           <template v-slot:empty>
             <loader :loading="loading" :noDataText="$t('common.notData')" />
           </template>
-        </vxe-grid>
-        <div style="visibility: hidden;height:1px;overflow:hidden;">
-          <vxe-grid
-            ref="overviewTable2"
-            :columns="columns2"
-            max-height="1"
-            :data="tableRows" />
-        </div>
-        <div v-if="showTotal" class="vxe-grid--pager-wrapper">
-          <div class="vxe-pager size--mini">
-            <div class="vxe-pager--wrapper">
-              <span class="vxe-pager--total">{{ total }}</span>
-            </div>
-          </div>
+        </table-lite-grid>
+        <div v-if="showTotal" class="mt-1" style="color: #606266; font-size: 12px;">
+          <span>{{ total }}</span>
         </div>
     </div>
   </a-skeleton>
@@ -167,9 +153,25 @@ export default {
   },
   methods: {
     exportData () {
-      this.$refs.overviewTable2.exportData({
-        type: 'csv',
-      })
+      const cols = (this.columns2 || []).filter(col => col.field)
+      const rows = this.tableRows || []
+      const lines = [
+        cols.map(c => `"${String(c.title || c.field).replace(/"/g, '""')}"`).join(','),
+        ...rows.map(row => cols.map(c => {
+          let val = row[c.field]
+          if (typeof c.formatter === 'function') {
+            val = c.formatter({ row, cellValue: row[c.field] })
+          }
+          return `"${String(val ?? '').replace(/"/g, '""')}"`
+        }).join(',')),
+      ]
+      const blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8;' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'export.csv'
+      a.click()
+      URL.revokeObjectURL(url)
     },
   },
 }

@@ -80,7 +80,9 @@ export default {
           minWidth: 70,
           slots: {
             default: ({ row }, h) => {
-              return [<span style={{ color: row.ready ? '#67C23A' : '#F56C6C' }}>{ row.ready ? 'Ready' : 'UnReady' }</span>]
+              return [h('span', {
+                style: { color: row.ready ? '#67C23A' : '#F56C6C' },
+              }, row.ready ? 'Ready' : 'UnReady')]
             },
           },
         },

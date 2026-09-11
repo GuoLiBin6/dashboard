@@ -9,7 +9,7 @@
         </div>
         <div class="status-tip">
           <div v-if="error" class="error">{{ $t('auth.secret.validate') }}</div>
-          <div v-if="loading" class="loading"><a-icon type="sync" spin />{{ $t('auth.secret.loading') }}</div>
+          <div v-if="loading" class="loading"><icon type="sync" spin />{{ $t('auth.secret.loading') }}</div>
         </div>
       </div>
     </a-card>

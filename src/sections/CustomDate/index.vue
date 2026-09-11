@@ -1,12 +1,12 @@
 <template>
-  <a-popconfirm placement="bottom" overlayClassName="custom-date-time" @confirm="submit" @cancel="cancel" v-model="visible">
+  <a-popconfirm placement="bottom" overlayClassName="custom-date-time" @confirm="submit" @cancel="cancel" v-model:open="visible">
     <template v-slot:icon><i /></template>
     <template v-slot:title>
       <a-alert v-if="diffHours < 1" class="mb-2" :message="$t('common_587')" type="error" show-icon />
       <a-form-model hideRequiredMark ref="ruleForm" :model="formData" :rules="rules" v-bind="layout" style="min-width: 300px;">
         <a-form-model-item :label="$t('common.text00119')" prop="startValue">
           <a-date-picker
-            v-model="formData.startValue"
+            v-model:value="formData.startValue"
             :disabled-date="disabledStartDate"
             :disabled-time="disabledDateTime"
             :show-time="{ defaultValue: $moment('00:00:00', 'HH:mm:ss') }"
@@ -17,7 +17,7 @@
         </a-form-model-item>
         <a-form-model-item :label="$t('common.text00120')" prop="endValue">
           <a-date-picker
-            v-model="formData.endValue"
+            v-model:value="formData.endValue"
             :disabled-date="disabledEndDate"
             :disabled-time="disabledDateTime"
             :show-time="{ defaultValue: $moment('00:00:00', 'HH:mm:ss') }"

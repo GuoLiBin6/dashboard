@@ -1,8 +1,8 @@
 <template>
   <div>
     <page-header :title="$t('monitor.text_13')" />
-    <page-body needMarginBottom>
-      <alert ref="alertRef" :loading.sync="loading" />
+    <page-body>
+      <alert ref="alertRef" v-model:loading="loading" />
     </page-body>
     <page-footer>
       <div slot="right">

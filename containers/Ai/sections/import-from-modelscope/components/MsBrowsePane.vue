@@ -8,7 +8,7 @@
         <a-row :gutter="8" class="mb-2">
           <a-col :span="14">
             <a-input
-              v-model="search.q"
+              v-model:value="search.q"
               :placeholder="$t('aice.ms.search_q_placeholder')"
               allow-clear
               @pressEnter="runSearch" />

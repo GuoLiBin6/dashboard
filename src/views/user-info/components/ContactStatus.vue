@@ -1,7 +1,7 @@
 <template>
   <span>
     <a-tooltip :title="statusDictTips">
-      <a-icon
+      <icon
         :type="statusIcon[status]"
         :style="{ color: statusColor[status] }"
         @click="handleIconClick" />
@@ -9,7 +9,7 @@
     <a-modal
       :title="$t('scope.text_199')"
       width="600px"
-      :visible="mobileDialog.visible"
+      :open="mobileDialog.visible"
       @cancel="() => mobileDialog.visible = false"
       destroyOnClose>
       <template v-slot:footer>
@@ -31,7 +31,7 @@
     <a-modal
       :title="$t('scope.text_202')"
       width="600px"
-      :visible="emailDialog.visible"
+      :open="emailDialog.visible"
       @cancel="() => emailDialog.visible = false"
       :okText="$t('scope.text_203')"
       destroyOnClose>
@@ -171,7 +171,7 @@ export default {
       return this.statusDictForEdit[this.status]
     },
   },
-  destroyed () {
+  unmounted () {
     this.manager = null
     this.vm = null
     clearInterval(this.codeInt)

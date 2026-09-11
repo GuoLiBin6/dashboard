@@ -59,8 +59,12 @@ export default {
               field: 'policy.policy',
               title: this.$t('system.text_327', [this.$t('dictionary.policy')]),
               slots: {
-                default: ({ row }) => {
-                  return <PolicyViewer policy={row} />
+                default: ({ row }, h) => {
+                  return h(PolicyViewer, {
+                    props: {
+                      policy: row,
+                    },
+                  })
                 },
               },
             },

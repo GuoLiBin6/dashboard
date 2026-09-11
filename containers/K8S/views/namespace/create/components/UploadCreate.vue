@@ -7,7 +7,7 @@
       v-bind="formItemLayout">
       <cluster-select
         @input="setCluster"
-        :clusterObj.sync="clusterObj"
+        v-model:clusterObj="clusterObj"
         v-decorator="decorators.cluster"
         style="width: 140px;" />
     </a-form-item>
@@ -22,7 +22,7 @@
         v-decorator="decorators.yaml"
         @change="handleFileChange"
         accept="application/x-yaml,application/json">
-        <a-button> <a-icon type="upload" />{{$t('k8s.text_292')}}</a-button>
+        <a-button> <icon type="upload" />{{$t('k8s.text_292')}}</a-button>
       </a-upload>
     </a-form-item>
     <a-form-item :wrapper-col="{ span: 20, offset: 3 }">
@@ -80,7 +80,7 @@ export default {
     this.uploadM = new this.$Manager('appfromfiles', 'v1')
     this.form.fc.getFieldDecorator('yaml', { preserve: true, initialValue: '' })
   },
-  destroyed () {
+  unmounted () {
     this.uploadM = null
   },
   methods: {

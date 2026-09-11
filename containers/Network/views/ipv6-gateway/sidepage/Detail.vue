@@ -34,8 +34,16 @@ export default {
           hideField: true,
           slotCallback: row => {
             if (!row.region) return '-'
+            const h = this.$createElement
             return [
-              <side-page-trigger permission='vpcs_get' name='VpcSidePage' id={row.vpc_id} vm={this}>{ row.vpc }</side-page-trigger>,
+              h('side-page-trigger', {
+                props: {
+                  permission: 'vpcs_get',
+                  name: 'VpcSidePage',
+                  id: row.vpc_id,
+                  vm: this,
+                },
+              }, row.vpc),
             ]
           },
         }),

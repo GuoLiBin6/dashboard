@@ -3,9 +3,10 @@
  * author: houjiazong <houjiazong@gmail.com>
  * date: 2018/08/07
  */
-import Vue from 'vue'
 import * as R from 'ramda'
 import _ from 'lodash'
+import { nextTick } from 'vue'
+import axios from 'axios'
 import { Manager } from '@/utils/manager'
 import storage from '@/utils/storage'
 import { isUserTag } from '@/utils/common/tag'
@@ -73,7 +74,7 @@ class WaitStatusJob {
    */
   async checkStatus () {
     if (!this.data.list.manager) return
-    const params = this.data.list.params
+    const params = { ...this.data.list.params }
     if (!R.isEmpty(this.data.list.itemGetParams)) {
       for (const key in this.data.list.itemGetParams) {
         const val = this.data.list.itemGetParams[key]
@@ -101,8 +102,15 @@ class WaitStatusJob {
         })
       }
       const data = response.data || {}
-      this.data.data = { ...data, isDataShow: true }
-      const isSteadyStatus = this.data.isSteadyStatus(this.status)
+      // 替换 DataWrap，保证 vxe-table / 计算属性拿到新行引用，status 列能刷新
+      const list = this.data.list
+      const id = this.data.id
+      const index = this.data.index
+      const next = new DataWrap(list, { ...data, isDataShow: true }, list.idKey, index)
+      next.wait = this.data.wait
+      list.data[id] = next
+      this.data = next
+      const isSteadyStatus = next.isSteadyStatus(this.status)
       if (!isSteadyStatus) {
         this.start()
       } else {
@@ -264,6 +272,12 @@ class CreateList {
     this.apiVersion = apiVersion
     // 配置是否加载完成
     this.loading = false
+    // 防止 loading 期间重复 fetchData 造成 Promise.all 堆叠/请求互相 cancel，最终表现为 pending + 卡死
+    this._fetchPromise = null
+    /** 当前 in-flight 请求的分页参数，用于「仅合并完全相同分页」的去重 */
+    this._fetchPaging = null
+    /** 请求世代：换页/改每页条数时递增，丢弃旧响应避免覆盖新状态 */
+    this._fetchGen = 0
     // 获取的数据
     this.data = {}
     // 分页信息
@@ -439,6 +453,8 @@ class CreateList {
         params: p,
       })
       const data = response.data?.data || []
+      // 批量轮询更新行数据时，若同步改 this.data 会与 vxe-table / a-dropdown 同一 tick 内反复 patch，导致栈溢出
+      await nextTick()
       data.forEach(item => {
         if (this.data[item[this.idKey]]) {
           this.data[item[this.idKey]] = new DataWrap(
@@ -449,6 +465,8 @@ class CreateList {
           )
         }
       })
+      // 触发 list.data 引用变更通知（部分场景下仅替换子 key 时 vxe 行缓存不刷新）
+      this.data = { ...this.data }
       // 有数据被删除了，刷新列表重新开始轮询
       if (data.length < this.batchCheckStatusList.length) {
         this.clearBatchCheckStatusTimer()
@@ -482,7 +500,8 @@ class CreateList {
   async fetchConfig () {
     const manager = new Manager('parameters', 'v1')
     try {
-      const response = await manager.get({ id: this.id })
+      // parameters 服务偶发无响应时：使用 axios timeout 中止请求，避免 Promise.all 被卡死
+      const response = await manager.get({ id: this.id, timeout: 8000 })
       if (response.data && response.data.value) {
         // 如果没有设置过隐藏列，则设置默认的隐藏列
         if (response.data.update_version === 0) {
@@ -497,6 +516,7 @@ class CreateList {
             name: this.id,
             value: this.config,
           },
+          timeout: 8000,
         })
       }
     } finally {
@@ -554,6 +574,22 @@ class CreateList {
   }
 
   async fetchData (offset, limit, showDetails) {
+    const targetLimit = this.isTemplate ? this.templateLimit : limit
+    const no = Number(offset)
+    const nl = Number(targetLimit)
+    if (
+      this.loading &&
+      this._fetchPromise &&
+      this._fetchPaging &&
+      Number(this._fetchPaging.offset) === no &&
+      Number(this._fetchPaging.limit) === nl
+    ) {
+      return this._fetchPromise
+    }
+
+    this._fetchGen = (this._fetchGen || 0) + 1
+    const fetchGen = this._fetchGen
+    this._fetchPaging = { offset: no, limit: nl }
     this.loading = true
     // if (this.noPreLoad) {
     showDetails = !this.noListDetails
@@ -561,108 +597,185 @@ class CreateList {
     this.params = this.genParams(offset, this.isTemplate ? this.templateLimit : limit, showDetails)
     // if (!showDetails) this.isPreLoad = true
     this.isPreLoad = false
-    try {
-      const fetchList = []
-      // 如果有id并且没有获取过列表配置则获取列表配置
-      if (this.id && !this.isTemplate) {
-        if (!this.configLoaded) {
-          fetchList.push(this.fetchConfig())
+    this._fetchPromise = (async () => {
+      try {
+        const fetchList = []
+        const isSidePage = !!(this.templateContext && this.templateContext.inBaseSidePage)
+        // 如果有id并且没有获取过列表配置则获取列表配置
+        // SidePage 内与主列表 Promise.all 会串行阻塞：parameters 偶发不返回时整页 loading + 主线程被后续渲染拖住
+        // 此处先放开 configLoaded，后台拉取列配置，主列表请求单独 await
+        if (this.id && !this.isTemplate) {
+          if (!this.configLoaded) {
+            if (isSidePage) {
+              this.configLoaded = true
+              void this.fetchConfig().catch(() => {})
+            } else {
+              fetchList.push(this.fetchConfig())
+            }
+          }
+        } else {
+          this.configLoaded = true
         }
-      } else {
-        this.configLoaded = true
-      }
-      let response
-      if (this.responseData && this.responseData.data) {
-        response = { data: this.responseData }
-      } else if (R.is(String, this.resource)) {
-        fetchList.push(this.manager.list({
-          params: this.params,
-          ctx: this.ctx,
-        }))
-      } else {
-        fetchList.push(this.resource(this.params))
-      }
-      if (fetchList.length) {
-        const res = await Promise.all(fetchList)
-        if (!(this.responseData && this.responseData.data)) {
-          response = res[res.length - 1]
+        let response
+        if (this.responseData && this.responseData.data) {
+          response = { data: this.responseData }
+        } else if (R.is(String, this.resource)) {
+          // 兜底：有些“pending”并不是后端没返回，而是代理/连接层卡住导致 Promise 不 settle。
+          // axios timeout 在少数环境下可能不够可靠，因此这里额外用 CancelToken 做硬超时，确保 loading 能释放。
+          const timeout = isSidePage ? 15000 : 30000
+          const src = axios.CancelToken && axios.CancelToken.source ? axios.CancelToken.source() : null
+          let timer = null
+          if (src && timeout) {
+            timer = setTimeout(() => {
+              try { src.cancel(new Error(`[list] list timeout ${timeout}ms`)) } catch (e) {}
+            }, timeout + 1000)
+          }
+          fetchList.push(
+            this.manager.list({
+              params: this.params,
+              ctx: this.ctx,
+              ...(src ? { cancelToken: src.token } : {}),
+              ...(timeout ? { timeout } : {}),
+            }).finally(() => {
+              if (timer) clearTimeout(timer)
+            }),
+          )
+        } else {
+          fetchList.push(this.resource(this.params))
+        }
+        if (fetchList.length) {
+          const res = await Promise.all(fetchList)
+          if (!(this.responseData && this.responseData.data)) {
+            response = res[res.length - 1]
+          }
+        }
+        if (fetchGen !== this._fetchGen) {
+          return
+        }
+        if (this.templateContext?._isDestroyed) return
+        const {
+          data: {
+            data = response.data,
+            total = 0,
+            limit: responseLimit,
+            offset: responseOffset = 0,
+          },
+        } = response
+        this.clearWaitJob()
+        this.clearBatchCheckStatusTimer()
+        // 须在 wrapData / pageRender 之前执行，以便回填行字段（如 alert_data）；异步回调需 await，否则首屏不刷新
+        if (R.is(Function, this.fetchDataCb)) {
+          await Promise.resolve(this.fetchDataCb(response))
+        }
+        const rowData = Array.isArray(response.data?.data) ? response.data.data : data
+        let allData = {}
+        if (response.data.marker_order) {
+          allData = Object.assign({}, this.wrapData(rowData), this.data)
+        } else {
+          allData = this.wrapData(rowData)
+        }
+        // 分页渲染
+        this.pageRender(allData)
+        this.nextMarker = response.data.next_marker
+        this.pagerType = response.data.marker_field ? 'loadMore' : 'pager'
+        if (this.pagerType === 'loadMore') {
+          this.loadMoreSize = this.getLoadMoreLimit()
+        }
+        this.syncSelected()
+        if (!this.isTemplate) {
+          this.checkSteadyStatus()
+        }
+        this.total = total
+        if (responseLimit > 0) {
+          this.offset = responseOffset
+        } else {
+          this.offset = 0
+        }
+        if (
+          !R.isNil(this.extraDataFecther) &&
+          !R.isEmpty(this.extraDataFecther)
+        ) {
+          for (const key in this.extraDataFecther) {
+            this.extraDataFecther[key](response.data, this.params)
+              .then(extraResponse => {
+                this.extraData[key] = extraResponse.data
+              })
+              .catch(error => {
+                console.error(`get ${key} data error: ${error}`)
+              })
+          }
+        }
+        this.totals = response.data?.totals || {}
+        if (this.isTemplate) {
+          this.ctx.$emit('resTemplateTotal', this.total)
+        }
+        return response.data
+      } catch (error) {
+        if (fetchGen !== this._fetchGen) {
+          return
+        }
+        // 同 key 重复请求会被 http 拦截器 cancel，属预期，勿向外抛成 unhandledrejection
+        if (axios.isCancel && axios.isCancel(error)) {
+          return
+        }
+        throw error
+      } finally {
+        if (fetchGen === this._fetchGen) {
+          this.loaded = true
+          this.loading = false
+          this._fetchPromise = null
+          this._fetchPaging = null
         }
       }
-      if (this.templateContext._isDestroyed) return
-      const {
-        data: {
-          data = response.data,
-          total = 0,
-          limit: responseLimit,
-          offset: responseOffset = 0,
-        },
-      } = response
-      this.clearWaitJob()
-      this.clearBatchCheckStatusTimer()
-      // 须在 wrapData / pageRender 之前执行，以便回填行字段（如 alert_data）；异步回调需 await，否则首屏不刷新
-      if (R.is(Function, this.fetchDataCb)) {
-        await Promise.resolve(this.fetchDataCb(response))
-      }
-      const rowData = Array.isArray(response.data?.data) ? response.data.data : data
-      let allData = {}
-      if (response.data.marker_order) {
-        allData = Object.assign({}, this.wrapData(rowData), this.data)
-      } else {
-        allData = this.wrapData(rowData)
-      }
-      // 分页渲染
-      this.pageRender(allData)
-      this.nextMarker = response.data.next_marker
-      this.pagerType = response.data.marker_field ? 'loadMore' : 'pager'
-      if (this.pagerType === 'loadMore') {
-        this.loadMoreSize = this.getLoadMoreLimit()
-      }
-      this.syncSelected()
-      if (!this.isTemplate) {
-        this.checkSteadyStatus()
-      }
-      this.total = total
-      if (responseLimit > 0) {
-        this.offset = responseOffset
-      } else {
-        this.offset = 0
-      }
-      if (
-        !R.isNil(this.extraDataFecther) &&
-        !R.isEmpty(this.extraDataFecther)
-      ) {
-        for (const key in this.extraDataFecther) {
-          this.extraDataFecther[key](response.data, this.params)
-            .then(extraResponse => {
-              Vue.set(this.extraData, key, extraResponse.data)
-            })
-            .catch(error => {
-              console.error(`get ${key} data error: ${error}`)
-            })
-        }
-      }
-      this.totals = response.data?.totals || {}
-      if (this.isTemplate) {
-        this.ctx.$emit('resTemplateTotal', this.total)
-      }
-      // if (!showDetails && this.total > 0 && !response.data.marker_field) {
-      // setTimeout(() => {
-      // this.fetchData(offset, limit, true)
-      // }, 1)
-      // }
-      // if (showDetails) {
-      //   this.isPreLoad = false
-      // }
-      return response.data
-    } catch (error) {
-      throw error
-    } finally {
-      this.loaded = true
-      this.loading = false
+    })()
+    return this._fetchPromise
+  }
+
+  _cancelPageRender () {
+    if (this._pageRenderTimers && this._pageRenderTimers.length) {
+      this._pageRenderTimers.forEach((t) => clearTimeout(t))
     }
+    this._pageRenderTimers = []
+    if (typeof this._pageRenderIdleId === 'number' && typeof cancelIdleCallback === 'function') {
+      cancelIdleCallback(this._pageRenderIdleId)
+    }
+    this._pageRenderIdleId = null
+    if (typeof this._pageRenderRafId === 'number') {
+      cancelAnimationFrame(this._pageRenderRafId)
+    }
+    this._pageRenderRafId = null
+    if (typeof this._pageRenderTimeoutId === 'number') {
+      clearTimeout(this._pageRenderTimeoutId)
+    }
+    this._pageRenderTimeoutId = null
+    this._pageRenderGen = (this._pageRenderGen || 0) + 1
+  }
+
+  _schedulePageRender (cb) {
+    if (typeof requestIdleCallback === 'function') {
+      this._pageRenderIdleId = requestIdleCallback((deadline) => {
+        this._pageRenderIdleId = null
+        cb(deadline)
+      }, { timeout: 200 })
+      return
+    }
+    this._pageRenderRafId = requestAnimationFrame(() => {
+      this._pageRenderRafId = null
+      this._pageRenderTimeoutId = setTimeout(() => {
+        this._pageRenderTimeoutId = null
+        const deadline = { timeRemaining: () => 12 }
+        cb(deadline)
+      }, 0)
+    })
   }
 
   async pageRender (allData) {
+    // 取消上一轮分批渲染，避免换页后旧任务写脏数据
+    this._cancelPageRender()
+    this._pageRenderPaused = false
+    const gen = this._pageRenderGen
+
+    // 与 Vue2 一致：一次挂上 data，再原地打开 isDataShow（勿整行替换 wrap.data，否则会暴力 remount 单元格）
     this.data = allData
     const keys = Object.keys(allData)
     if (this.pagerType === 'loadMore' || keys.every(key => /^\d+$/.test(key))) {
@@ -670,23 +783,50 @@ class CreateList {
         return Number(b) - Number(a)
       })
     }
-    const that = this.templateContext
-    for (let i = 0; i < keys.length; i += 20) {
-      if (i === 0) {
-        keys.slice(i, i + 20).forEach(key => {
-          if (this.data[key]?.data) {
-            that.$set(this.data[key].data, 'isDataShow', true)
-          }
-        })
-      } else {
-        setTimeout(() => {
-          keys.slice(i, i + 20).forEach(key => {
-            if (this.data[key]?.data) {
-              that.$set(this.data[key].data, 'isDataShow', true)
-            }
-          })
-        }, i / 20)
+
+    const BATCH = 20
+    const markShow = (batchKeys) => {
+      batchKeys.forEach((key) => {
+        const row = this.data[key]?.data
+        if (!row) return
+        row.isDataShow = true
+      })
+    }
+
+    let i = 0
+    const pump = (deadline) => {
+      if (gen !== this._pageRenderGen) return
+      // 滚动中暂停，避免与滚动抢主线程造成卡顿
+      if (this._pageRenderPaused) {
+        this._pageRenderTimeoutId = setTimeout(() => {
+          this._pageRenderTimeoutId = null
+          pump({ timeRemaining: () => 0 })
+        }, 50)
+        return
       }
+
+      let slices = 0
+      while (i < keys.length) {
+        markShow(keys.slice(i, i + BATCH))
+        i += BATCH
+        slices += 1
+        const remain = deadline && typeof deadline.timeRemaining === 'function'
+          ? deadline.timeRemaining()
+          : 0
+        // 空闲时间不足时每轮只开 1 批，防止长任务卡滚动
+        if (slices >= 1 && remain < 10) break
+        if (slices >= 2) break
+      }
+      if (i < keys.length) {
+        this._schedulePageRender(pump)
+      }
+    }
+
+    // 首屏同步展示，其余在空闲时段推进
+    markShow(keys.slice(0, BATCH))
+    i = BATCH
+    if (i < keys.length) {
+      this._schedulePageRender(pump)
     }
   }
 
@@ -1180,11 +1320,12 @@ class CreateList {
    * @memberof CreateList
    */
   changeSelected (selection) {
+    const rows = Array.isArray(selection) ? selection : []
     const ids = []
-    for (let i = 0, len = selection.length; i < len; i++) {
-      ids.push(selection[i][this.idKey])
+    for (let i = 0, len = rows.length; i < len; i++) {
+      ids.push(rows[i][this.idKey])
     }
-    this.selectedItems = selection
+    this.selectedItems = rows
     this.selected = ids
   }
 

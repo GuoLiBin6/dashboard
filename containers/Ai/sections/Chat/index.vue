@@ -31,7 +31,7 @@
         <div class="chat-test-field">
           <div class="chat-test-field-label">{{ $t('ai.mcp.chat_test.protocol') }}</div>
           <a-select
-            v-model="chatProtocol"
+            v-model:value="chatProtocol"
             class="chat-test-protocol-select"
             @change="onChatProtocolChange">
             <a-select-option
@@ -59,7 +59,7 @@
         <div v-if="showChatModelSelect" class="chat-test-field">
           <div class="chat-test-field-label">{{ $t('aice.aiproxy.client_model_select') }}</div>
           <a-select
-            v-model="selectedChatModelId"
+            v-model:value="selectedChatModelId"
             class="chat-test-model-select"
             :loading="chatModelsLoading"
             :placeholder="$t('aice.aiproxy.client_model_select')"
@@ -127,7 +127,7 @@
 
     <div class="chat-input-area">
       <a-textarea
-        v-model="inputMessage"
+        v-model:value="inputMessage"
         :placeholder="chatTestInputPlaceholder"
         :auto-size="{ minRows: 2, maxRows: 6 }"
         @keydown.ctrl.enter="handleSend"
@@ -357,7 +357,7 @@ export default {
       }
     }
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.abortRequest()
   },
   methods: {

@@ -28,7 +28,7 @@
                 {{ $t('common.checkAll') }}
               </a-checkbox>
             </div>
-            <a-checkbox-group v-model="policyResCheckedList[item3.key].options">
+            <a-checkbox-group v-model:value="policyResCheckedList[item3.key].options">
               <ul class="policy-opts">
                 <li v-for="item4 in item3.options" :key="item4.key">
                     <a-checkbox :value="item4.key" @change="e => onCheckMenuOptionChange(e, item3.key)">{{ item4.label }}</a-checkbox>
@@ -48,14 +48,14 @@
       @change="handleCheckAllChange"
       :indeterminate="isIndeterminate"
       :disabled="checkAllDisabled">{{$t('system.text_321', [$t('dictionary.policy')])}}</a-checkbox>
-      <a-input class="ml-2" v-model="searchString" :placeholder="$t('iam.policy_search_placeholder')" style="max-width:200px" allow-clear />
+      <a-input class="ml-2" v-model:value="searchString" :placeholder="$t('iam.policy_search_placeholder')" style="max-width:200px" allow-clear />
     </div>
     <div class="mt-1">
-      <template v-for="(item, idx) of options">
+      <template v-for="(item, idx) of options" :key="idx">
         <group
           v-if="showGroup(item)"
           v-show="hasSearchString(item)"
-          :key="idx"
+
           :group="item"
           @groupCheckChange="groupCheckChange"
           :permissions="permissions"

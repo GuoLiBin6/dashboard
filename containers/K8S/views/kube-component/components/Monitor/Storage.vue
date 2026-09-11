@@ -1,11 +1,11 @@
 <template>
   <div>
     <a-form-model-item :label="$t('k8s.text_269')">
-      <a-switch v-model="formData.enabled" />
+      <a-switch v-model:value="formData.enabled" />
     </a-form-model-item>
     <template v-if="formData.enabled">
       <a-form-model-item :label="$t('k8s.text_270')">
-        <a-input-number v-model="formData.sizeMB" :min="1" /> GB
+        <a-input-number v-model:value="formData.sizeMB" :min="1" /> GB
       </a-form-model-item>
       <a-form-model-item :label="$t('k8s.text_271')" :prop="prop">
         <base-select

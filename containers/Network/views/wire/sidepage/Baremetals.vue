@@ -49,10 +49,16 @@ export default {
         getNameDescriptionTableColumn({
           edit: false,
           hideField: true,
-          slotCallback: row => {
-            return (
-              <side-page-trigger permission='hosts_get' name='PhysicalmachineSidePage' id={ row.id } list={this.list} vm={this}>{ row.name }</side-page-trigger>
-            )
+          slotCallback: (row, h) => {
+            return h('side-page-trigger', {
+              props: {
+                permission: 'hosts_get',
+                name: 'PhysicalmachineSidePage',
+                id: row.id,
+                list: this.list,
+                vm: this,
+              },
+            }, row.name)
           },
         }),
         getEnabledTableColumn(),
@@ -118,8 +124,13 @@ export default {
           field: 'id',
           title: 'IPMI',
           slots: {
-            default: ({ row }) => {
-              return [<PasswordFetcher serverId={ row.id } resourceType='baremetals' />]
+            default: ({ row }, h) => {
+              return [h(PasswordFetcher, {
+                props: {
+                  serverId: row.id,
+                  resourceType: 'baremetals',
+                },
+              })]
             },
           },
         },

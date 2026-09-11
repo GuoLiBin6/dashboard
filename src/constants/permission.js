@@ -1,15 +1,14 @@
 import _ from 'lodash'
 
-const requireComponent = require.context('@scope', true, /permission\.(js)$/)
-const keys = requireComponent.keys().filter(item => {
-  const arr = item.split('/')
-  return arr[1] === 'constants' && /\.(js)$/.test(arr[2])
+// 加载 @scope/constants 下扩展的权限配置（Vite 使用 import.meta.glob）
+const scopePermissionModules = import.meta.glob('/src/scope/constants/*.js', {
+  eager: true,
 })
+
 let extraPermissions = {}
-keys.forEach(fileName => {
-  // 获取组件配置
-  const componentConfig = requireComponent(fileName)
-  const { PERMISSION = {} } = componentConfig
+Object.values(scopePermissionModules).forEach((mod) => {
+  if (!mod) return
+  const { PERMISSION = {} } = mod
   extraPermissions = { ...extraPermissions, ...PERMISSION }
 })
 

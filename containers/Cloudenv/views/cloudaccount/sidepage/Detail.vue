@@ -97,11 +97,7 @@ export default {
           slots: {
             default: ({ row }, h) => {
               const { permissions = [] } = row
-              const ret = []
-              permissions.map(key => {
-                ret.push(<a-tag class="mb-1 mt-1">{key}</a-tag>)
-              })
-              return ret
+              return permissions.map(key => h('a-tag', { class: 'mb-1 mt-1' }, key))
             },
           },
         },
@@ -117,11 +113,18 @@ export default {
           field: 'account',
           title: this.$t('cloudenv.text_94'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               return [
-                <div class='text-truncate'>
-                  <list-body-cell-wrap copy row={ row } field='account' title={ row.account } />
-                </div>,
+                h('div', { class: 'text-truncate' }, [
+                  h('list-body-cell-wrap', {
+                    props: {
+                      copy: true,
+                      row,
+                      field: 'account',
+                      title: row.account,
+                    },
+                  }),
+                ]),
               ]
             },
           },
@@ -130,11 +133,18 @@ export default {
           field: 'account_id',
           title: this.$t('cloudenv.text_94') + 'ID',
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               return [
-                <div class='text-truncate'>
-                  <list-body-cell-wrap copy row={ row } field='account_id' title={ row.account_id } />
-                </div>,
+                h('div', { class: 'text-truncate' }, [
+                  h('list-body-cell-wrap', {
+                    props: {
+                      copy: true,
+                      row,
+                      field: 'account_id',
+                      title: row.account_id,
+                    },
+                  }),
+                ]),
               ]
             },
           },
@@ -143,13 +153,20 @@ export default {
           field: 'proxy_setting.name',
           title: this.$t('cloudenv.text_14'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (row.proxy_setting) {
                 const { id, name } = row.proxy_setting
                 return [
-                  <div class='text-truncate'>
-                    <side-page-trigger name="ProxysettingSidePage" id={id} list={this.list} vm={this}>{name}</side-page-trigger>
-                  </div>,
+                  h('div', { class: 'text-truncate' }, [
+                    h('side-page-trigger', {
+                      props: {
+                        name: 'ProxysettingSidePage',
+                        id,
+                        list: this.list,
+                        vm: this,
+                      },
+                    }, name),
+                  ]),
                 ]
               }
               return '-'
@@ -183,12 +200,16 @@ export default {
               field: 'discount',
               title: this.$t('cloudaccount.table.title.discount'),
               slots: {
-                default: () => {
+                default: (scope, h) => {
                   if (!hasMeterService()) return '-'
                   if (!this.discountLoaded) {
-                    return [<a-icon type='loading' style='font-size: 12px;' class='primary-color' />]
+                    return [h('icon', {
+                      props: { type: 'loading' },
+                      style: 'font-size: 12px;',
+                      class: 'primary-color',
+                    })]
                   }
-                  return [<span>{ (this.discount * 100).toFixed(2) }%</span>]
+                  return [h('span', (this.discount * 100).toFixed(2) + '%')]
                 },
               },
               hidden: () => findPlatform(this.data.brand.toLowerCase()) !== 'public',
@@ -210,8 +231,30 @@ export default {
               field: 'action',
               slots: {
                 default: ({ row }, h) => {
-                  return [<a-button type="link" style="height:21px;padding: 0" disabled={!this.lakeOfPermissionsData.length} loading={this.clearPermissionsLoading} onClick={this.clearPermissions.bind(this)}>{this.$t('cloudenv.clear_lake_of_permissions')}</a-button>,
-                    <a-button type="link" class="ml-3" style="height:21px;padding: 0" disabled={!this.lakeOfPermissionsData.length} onClick={this.exportPermissions.bind(this)}>{this.$t('table.action.export')}</a-button>]
+                  return [
+                    h('a-button', {
+                      props: {
+                        type: 'link',
+                        disabled: !this.lakeOfPermissionsData.length,
+                        loading: this.clearPermissionsLoading,
+                      },
+                      style: 'height:21px;padding: 0',
+                      on: {
+                        click: this.clearPermissions.bind(this),
+                      },
+                    }, this.$t('cloudenv.clear_lake_of_permissions')),
+                    h('a-button', {
+                      props: {
+                        type: 'link',
+                        disabled: !this.lakeOfPermissionsData.length,
+                      },
+                      class: 'ml-3',
+                      style: 'height:21px;padding: 0',
+                      on: {
+                        click: this.exportPermissions.bind(this),
+                      },
+                    }, this.$t('table.action.export')),
+                  ]
                 },
               },
             },
@@ -221,7 +264,13 @@ export default {
               slots: {
                 default: ({ row }, h) => {
                   return [
-                    <vxe-grid class="mb-2" data={ this.lakeOfPermissionsData } columns={ this.permissionColumns } />,
+                    h('table-lite-grid', {
+                      class: 'mb-2',
+                      props: {
+                        data: this.lakeOfPermissionsData,
+                        columns: this.permissionColumns,
+                      },
+                    }),
                   ]
                 },
               },

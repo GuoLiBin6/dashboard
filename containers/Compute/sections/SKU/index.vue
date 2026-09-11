@@ -1,7 +1,7 @@
 <template>
   <div>
     <div style="display: flex;justify-content: space-between;" class="mb-1 mt-1">
-      <a-radio-group v-model="skuType" @change="skuTypeChange">
+      <a-radio-group v-model:value="skuType" @change="skuTypeChange">
         <a-radio-button
           v-for="item of skuInfo.categoryOptions"
           :value="item.key"
@@ -9,12 +9,12 @@
           :disabled="item.disabled">{{ item.label }}</a-radio-button>
       </a-radio-group>
       <a-popover
-        v-model="columnSettingVisible"
+        v-model:open="columnSettingVisible"
         placement="bottomRight"
         trigger="click"
         overlay-class-name="sku-column-setting-popover">
-        <template slot="content">
-          <a-checkbox-group v-model="visibleColumnFields" class="sku-column-setting">
+        <template #content>
+          <a-checkbox-group v-model:value="visibleColumnFields" class="sku-column-setting">
             <div
               v-for="col in configurableColumns"
               :key="col.field"
@@ -30,11 +30,11 @@
         </a-tooltip>
       </a-popover>
     </div>
-    <vxe-grid
-      row-id="id"
+    <table-lite-grid
       ref="tableRef"
       min-height="260"
-      resizable
+      :row-config="{ keyField: 'id' }"
+      :column-config="{ resizable: true }"
       :columns="tableShowColumns"
       :data="skuResults"
       :sort-config="tableSortConfig"
@@ -45,22 +45,27 @@
       <template v-slot:empty>
         <loader :loading="skuLoading || !canSkuShow" />
       </template>
-    </vxe-grid>
+    </table-lite-grid>
     <div class="sku-pagebar">
-      <vxe-pager
-        :current-page.sync="skuPage.currentPage"
-        :page-size.sync="skuPage.pageSize"
+      <div class="sku-pagebar__tip">
+        <template v-if="selectedTip">{{$t('compute.text_171', [ selectedTip ])}}</template>
+      </div>
+      <list-pager
+        class="sku-pagebar__pager"
+        :current-page="skuPage.currentPage"
+        :page-size="skuPage.pageSize"
         :total="skuPage.totalResult"
-        :layouts="['PrevJump', 'PrevPage', 'Jump', 'PageCount', 'NextPage', 'NextJump', 'Total']"
-        @page-change="skuPageChangeHandle" />
-      <div class="mt-1" v-if="selectedTip">{{$t('compute.text_171', [ selectedTip ])}}</div>
+        :page-sizes="[10, 20, 50, 100]"
+        :selected-count="selectedSkuData?.id ? 1 : 0"
+        @change-page="onSkuPagerPage"
+        @change-size="onSkuPagerSize" />
     </div>
     <div class="mt-1" v-if="unfindTip" style="color: red;">{{$t('compute.sku_unfind_tip', [ unfindTip ])}}</div>
     <div class="mt-1" v-if="disableSkuType && !supportSkuTypes.length" style="color: red;">{{dataList.length > 1 ? $t('compute.disable_sku_type_tip_2') : $t('compute.disable_sku_type_tip')}}</div>
   </div>
 </template>
 
-<script>
+<script lang="jsx">
 import * as R from 'ramda'
 import { ALL_SKU_CATEGORY_OPT, SKU_CATEGORY_MAP } from '@Compute/constants'
 import { Manager } from '@/utils/manager'
@@ -70,8 +75,8 @@ import { sizestr } from '@/utils/utils'
 import i18n from '@/locales'
 import storage from '@/utils/storage'
 import RegionalAvailabilityPopover from '@/sections/RegionalAvailabilityPopover'
+import ListPager from '@/components/PageList/components/ListPager.vue'
 import createFormFieldDraftMixin from '@/mixins/createFormFieldDraft'
-
 const SKU_HIDDEN_COLUMNS_KEY = '__oc_sku_hidden_columns'
 const DEFAULT_HIDDEN_COLUMNS = ['cpu_model', 'nic_bandwidth', 'disk_performance']
 const SKU_FILTERABLE_FIELDS = ['cpu_arch', 'name', 'cpu_model', 'nic_bandwidth', 'disk_performance']
@@ -136,6 +141,9 @@ const units = [i18n.t('compute.text_172'), i18n.t('compute.text_173'), i18n.t('c
 
 export default {
   name: 'SKU',
+  components: {
+    ListPager,
+  },
   mixins: [createFormFieldDraftMixin],
   props: {
     formDraftKey: {
@@ -151,8 +159,8 @@ export default {
         return true
       },
     },
-    value: { // v-decorator 的props
-      required: true,
+    value: { // v-decorator 的 props；挂载后才注入，初始可为空
+      default: undefined,
     },
     priceUnit: {
       type: Object,
@@ -292,6 +300,10 @@ export default {
         this.skuDisabled,
         this.hasMeterService,
         this.priceUnit.key,
+        // 筛选值变化时重建列，刷新表头图标激活色
+        JSON.stringify(this.skuColumnFilters),
+        // 图标样式版本：改色后强制重建表头
+        'filter-icon-v4',
       ].join('|')
     },
     tableSortConfig () {
@@ -592,10 +604,15 @@ export default {
       if (!Array.isArray(regionalAvailability) || !regionalAvailability.length) {
         const ret = []
         if (type === 'region' && region) {
-          ret.push(<a onClick={e => e.preventDefault()}>{ region }</a>)
+          ret.push(this.$createElement('a', {
+            on: { click: e => e.preventDefault() },
+          }, region))
         }
         if (type === 'zone' && zone) {
-          ret.push(<a class="link-color-light" onClick={e => e.preventDefault()}>{ zone }</a>)
+          ret.push(this.$createElement('a', {
+            class: 'link-color-light',
+            on: { click: e => e.preventDefault() },
+          }, zone))
         }
         return ret.length ? ret : '-'
       }
@@ -968,9 +985,8 @@ export default {
             value={this.skuColumnFilterDraft[field] || undefined}
             allowClear
             placeholder={this.$t('common.select')}
-            style={{ width: '160px' }}
-            dropdownClassName="sku-column-filter-select-dropdown"
-            dropdownStyle={{ zIndex: 1070 }}
+            class="sku-column-filter-control"
+            popupClassName="sku-column-filter-select-dropdown"
             getPopupContainer={() => document.body}
             onChange={value => this.handleColumnFilterDraftChange(field, value || '')}>
             {this.cpuArchFilterOptions.map(opt => (
@@ -985,6 +1001,7 @@ export default {
         <a-input
           value={this.skuColumnFilterDraft[field]}
           allowClear
+          class="sku-column-filter-control"
           placeholder={this.$t('common.search')}
           onChange={e => this.handleColumnFilterDraftChange(field, e.target.value)}
           onPressEnter={e => {
@@ -996,50 +1013,61 @@ export default {
     },
     renderColumnFilterHeader (field, title, filterType = 'input') {
       const hasFilter = Boolean((this.skuColumnFilters[field] || '').trim())
+      const content = () => (
+        <div class="sku-column-filter-body">
+          { this.renderColumnFilterContent(field, filterType) }
+          <div
+            class="sku-column-filter-actions"
+            onMousedown={e => e.preventDefault()}>
+            <a-button
+              size="small"
+              onClick={e => {
+                e.stopPropagation()
+                this.resetColumnFilter(field)
+              }}>
+              {this.$t('common.reset')}
+            </a-button>
+            <a-button
+              size="small"
+              type="primary"
+              class="ml-2"
+              onClick={e => {
+                e.stopPropagation()
+                this.applyColumnFilter(field)
+              }}>
+              {this.$t('common.ok')}
+            </a-button>
+          </div>
+        </div>
+      )
       return (
         <span class="sku-column-filter-header">
           <span class="sku-column-filter-title">{ title }</span>
           <a-popover
             trigger="click"
-            placement="bottomRight"
+            placement="bottom"
             overlayClassName="sku-column-filter-popover"
             destroyTooltipOnHide
-            visible={this.skuColumnFilterVisible[field]}
+            open={this.skuColumnFilterVisible[field]}
             overlayStyle={{ zIndex: 1060 }}
             getPopupContainer={() => document.body}
-            onVisibleChange={visible => this.handleColumnFilterVisibleChange(field, visible)}>
-            <template slot="content">
-              { this.renderColumnFilterContent(field, filterType) }
-              <div
-                class="sku-column-filter-actions"
-                onMousedown={e => e.preventDefault()}>
-                <a-button
-                  size="small"
-                  onClick={e => {
-                    e.stopPropagation()
-                    this.resetColumnFilter(field)
-                  }}>
-                  {this.$t('common.reset')}
-                </a-button>
-                <a-button
-                  size="small"
-                  type="primary"
-                  class="ml-2"
-                  onClick={e => {
-                    e.stopPropagation()
-                    this.applyColumnFilter(field)
-                  }}>
-                  {this.$t('common.ok')}
-                </a-button>
-              </div>
-            </template>
+            onOpenChange={visible => this.handleColumnFilterVisibleChange(field, visible)}
+            v-slots={{ content }}>
             <span
-              class="sku-column-filter-trigger"
+              class={['sku-column-filter-trigger', hasFilter ? 'is-active' : '']}
+              style={hasFilter ? undefined : { color: '#c0c4cc' }}
               onClick={e => e.stopPropagation()}>
-              <a-icon
-                type="filter"
-                class={{ 'sku-column-filter-icon': true, 'is-active': hasFilter }}
-              />
+              <span
+                class="anticon sku-column-filter-icon"
+                style={{
+                  color: hasFilter ? 'var(--vxe-ui-font-primary-color, #409eff)' : '#c0c4cc',
+                  fontSize: '12px',
+                }}
+                role="img">
+                <svg viewBox="64 64 896 896" width="1em" height="1em" fill="currentColor" aria-hidden="true" focusable="false">
+                  <path d="M349 838c0 17.7 14.2 32 31.8 32h262.4c17.6 0 31.8-14.3 31.8-32V642H349v196zm531.1-684H143.9c-24.5 0-39.8 26.7-27.5 48l221.3 376h348.8l221.3-376c12.1-21.3-3.1-48-27.7-48z" />
+                </svg>
+              </span>
             </span>
           </a-popover>
         </span>
@@ -1048,30 +1076,30 @@ export default {
     closeOtherColumnFilterPopovers (activeField) {
       SKU_FILTERABLE_FIELDS.forEach(field => {
         if (field !== activeField && this.skuColumnFilterVisible[field]) {
-          this.$set(this.skuColumnFilterVisible, field, false)
+          this.skuColumnFilterVisible[field] = false
         }
       })
     },
     handleColumnFilterVisibleChange (field, visible) {
       if (visible) {
         this.closeOtherColumnFilterPopovers(field)
-        this.$set(this.skuColumnFilterDraft, field, this.skuColumnFilters[field] || '')
+        this.skuColumnFilterDraft[field] = this.skuColumnFilters[field] || ''
       }
-      this.$set(this.skuColumnFilterVisible, field, visible)
+      this.skuColumnFilterVisible[field] = visible
     },
     handleColumnFilterDraftChange (field, value) {
-      this.$set(this.skuColumnFilterDraft, field, value)
+      this.skuColumnFilterDraft[field] = value
     },
     applyColumnFilter (field) {
-      this.$set(this.skuColumnFilters, field, (this.skuColumnFilterDraft[field] || '').trim())
-      this.$set(this.skuColumnFilterVisible, field, false)
+      this.skuColumnFilters[field] = (this.skuColumnFilterDraft[field] || '').trim()
+      this.skuColumnFilterVisible[field] = false
       this.skuPage.currentPage = 1
       this.fetchSkuListData()
     },
     resetColumnFilter (field) {
-      this.$set(this.skuColumnFilterDraft, field, '')
-      this.$set(this.skuColumnFilters, field, '')
-      this.$set(this.skuColumnFilterVisible, field, false)
+      this.skuColumnFilterDraft[field] = ''
+      this.skuColumnFilters[field] = ''
+      this.skuColumnFilterVisible[field] = false
       this.skuPage.currentPage = 1
       this.fetchSkuListData()
     },
@@ -1112,6 +1140,18 @@ export default {
       }
       this.fetchSkuListData()
     },
+    onSkuPagerPage (currentPage) {
+      this.skuPageChangeHandle({
+        currentPage,
+        pageSize: this.skuPage.pageSize,
+      })
+    },
+    onSkuPagerSize (pageSize) {
+      this.skuPageChangeHandle({
+        currentPage: 1,
+        pageSize,
+      })
+    },
     async fetchSkuTypes () {
       try {
         const params = {
@@ -1146,9 +1186,24 @@ export default {
 <style lang="scss" scoped>
 .sku-pagebar {
   display: flex;
-  flex-direction: row-reverse;
+  flex-direction: row;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
+  margin-top: 4px;
+  width: 100%;
+  .sku-pagebar__tip {
+    flex: 1 1 auto;
+    min-width: 0;
+    color: #606266;
+    line-height: 24px;
+  }
+  .sku-pagebar__pager {
+    flex: 0 0 auto;
+    width: auto;
+    padding: 0;
+    justify-content: flex-end;
+  }
 }
 .sku-column-setting {
   max-height: 320px;
@@ -1175,18 +1230,32 @@ export default {
     margin-left: 4px;
     cursor: pointer;
     flex-shrink: 0;
-  }
-  .sku-column-filter-icon {
-    color: #bfbfbf;
-    flex-shrink: 0;
-    &.is-active {
-      color: #1890ff;
+    .sku-column-filter-icon {
+      font-size: 12px;
+      color: #c0c4cc !important;
+      svg {
+        fill: currentColor !important;
+        color: inherit !important;
+      }
+    }
+    &:hover .sku-column-filter-icon {
+      color: var(--vxe-ui-font-color, #606266) !important;
+    }
+    &.is-active .sku-column-filter-icon {
+      color: var(--vxe-ui-font-primary-color, #409eff) !important;
     }
   }
 }
 .ant-popover.sku-column-filter-popover {
   z-index: 1060 !important;
   width: 220px;
+  .sku-column-filter-body {
+    width: 100%;
+  }
+  .sku-column-filter-control {
+    width: 100% !important;
+    display: block;
+  }
   .sku-column-filter-actions {
     margin-top: 8px;
     text-align: right;

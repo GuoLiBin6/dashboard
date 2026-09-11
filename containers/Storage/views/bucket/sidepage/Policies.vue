@@ -145,8 +145,10 @@ export default {
               const principal_id = row.principal_id || []
               return principal_id.map(item => {
                 const item_arr = item.split(':')
-                if (item_arr[0] === item_arr[1]) return (<div>{this.$t('storage.text_241')}</div>)
-                return (<div>{this.$t('storage.text_242')}</div>)
+                if (item_arr[0] === item_arr[1]) {
+                  return this.$createElement('div', [this.$t('storage.text_241')])
+                }
+                return this.$createElement('div', [this.$t('storage.text_242')])
               })
             },
           },
@@ -155,14 +157,19 @@ export default {
           field: 'principal_id',
           title: this.$t('storage.text_261'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               const { principal_id = [], principal_names = {} } = row
               return principal_id.map(item => {
                 const item_arr = item.split(':')
                 const item_name = principal_names[item] || ''
-                return (<list-body-cell-wrap hideField copy title={ item_arr[1] } message={ item_arr[1] }>
-                  <span>{ item_arr[1] }{ item_name ? `(${item_name})` : ''}</span>
-                </list-body-cell-wrap>)
+                return h('list-body-cell-wrap', {
+                  props: {
+                    hideField: true,
+                    copy: true,
+                    title: item_arr[1],
+                    message: item_arr[1],
+                  },
+                }, [h('span', `${item_arr[1]}${item_name ? `(${item_name})` : ''}`)])
               })
             },
           },
@@ -174,9 +181,14 @@ export default {
             default: ({ row }) => {
               const resource_path = row.resource_path || []
               return resource_path.map(item => {
-                return (<list-body-cell-wrap hideField copy title={ item } message={ item }>
-                  <span>{ item }</span>
-                </list-body-cell-wrap>)
+                return h('list-body-cell-wrap', {
+                  props: {
+                    hideField: true,
+                    copy: true,
+                    title: item,
+                    message: item,
+                  },
+                }, [h('span', item)])
               })
             },
           },

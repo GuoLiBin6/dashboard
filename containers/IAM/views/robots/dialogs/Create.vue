@@ -6,7 +6,7 @@
         :form="form.fc"
         v-bind="formItemLayout"
         hideRequiredMark>
-        <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])" class="mb-0" v-show="!isEdit">
+          <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-show="!isEdit">
           <domain-project :fc="form.fc" :form-layout="formItemLayout" :decorators="{ project: decorators.project, domain: decorators.domain }" />
         </a-form-item>
         <a-form-item :label="$t('common.name')">

@@ -47,6 +47,7 @@
 
 <script>
 import _ from 'lodash'
+import { h } from 'vue'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import {
@@ -79,9 +80,11 @@ export default {
           onManager: this.params.onManager,
           hideField: true,
           slotCallback: row => {
-            return (
-              <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row, 'host-detail') }>{ row.name }</side-page-trigger>
-            )
+            return h('side-page-trigger', {
+              onTrigger: () => this.handleOpenSidepage(row, 'host-detail'),
+            }, {
+              default: () => row.name,
+            })
           },
         }),
         {
@@ -94,16 +97,20 @@ export default {
               const cellWrap = []
               if (row.access_ip) {
                 cellWrap.push(
-                  <div class="d-flex">
-                    <list-body-cell-wrap row={row} field="access_ip" copy><span class="text-color-help">{this.$t('compute.text_1319')}</span></list-body-cell-wrap>
-                  </div>,
+                  h('div', { class: 'd-flex' }, [
+                    h('list-body-cell-wrap', { row, field: 'access_ip', copy: true }, {
+                      default: () => [h('span', { class: 'text-color-help' }, this.$t('compute.text_1319'))],
+                    }),
+                  ]),
                 )
               }
               if (row.ipmi_ip) {
                 cellWrap.push(
-                  <div class="d-flex">
-                    <list-body-cell-wrap row={row} field="ipmi_ip" copy><span class="text-color-help">{this.$t('compute.text_1320')}</span></list-body-cell-wrap>
-                  </div>,
+                  h('div', { class: 'd-flex' }, [
+                    h('list-body-cell-wrap', { row, field: 'ipmi_ip', copy: true }, {
+                      default: () => [h('span', { class: 'text-color-help' }, this.$t('compute.text_1320'))],
+                    }),
+                  ]),
                 )
               }
               return cellWrap
@@ -117,8 +124,8 @@ export default {
           width: 60,
           sortable: true,
           slots: {
-            default: ({ row }, h) => {
-              if (this.isPreLoad && row.nonsystem_guests === undefined) return [<data-loading />]
+            default: ({ row }) => {
+              if (this.isPreLoad && row.nonsystem_guests === undefined) return [h('data-loading')]
               return `${row.nonsystem_guests}`
             },
           },

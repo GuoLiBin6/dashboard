@@ -20,13 +20,13 @@
           </a-input>
         </a-form-item>
         <a-form-item :label="$t('network.text_160')" v-bind="formItemLayout">
-          <a-radio-group @change="recordTypeChange" v-model="formMsg.recordType">
+          <a-radio-group @change="recordTypeChange" v-model:value="formMsg.recordType">
             <a-radio-button :key="n" :value="item" v-for="(item, n) in recordTypeOptions">{{item}}</a-radio-button>
           </a-radio-group>
         </a-form-item>
         <a-form-item v-bind="formItemLayout">
           <span slot="label">{{$t('network.text_152')}}<a-tooltip class="item" effect="dark" placement="top">
-                <a-icon type="info-circle" />
+                <icon type="info-circle" />
                 <div slot="title">{{$t('network.text_161')}}<br />{{$t('network.text_162')}}<br />{{$t('network.text_163')}}<br />{{$t('network.text_164')}}</div>
               </a-tooltip>
           </span>
@@ -92,7 +92,7 @@
           <span slot="label">
             TTL
               <a-tooltip class="item" effect="dark" placement="top">
-                <a-icon type="info-circle" />
+                <icon type="info-circle" />
                 <div slot="title">{{$t('network.text_171')}}</div>
               </a-tooltip>
           </span>

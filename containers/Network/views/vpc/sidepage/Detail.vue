@@ -69,9 +69,13 @@ export default {
           field: 'network_count',
           title: this.$t('network.text_682'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (!row.network_count) return '-'
-              return [<a onClick={ () => this.$emit('tab-change', 'network-list') }>{row.network_count}</a>]
+              return [h('a', {
+                on: {
+                  click: () => this.$emit('tab-change', 'network-list'),
+                },
+              }, row.network_count)]
             },
           },
         },

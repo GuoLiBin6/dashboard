@@ -18,10 +18,12 @@ export default {
           hideField: true,
           steadyStatus: this.steadyStatus,
           title: i18n.t('network.text_21'),
-          slotCallback: row => {
-            return (
-              <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-            )
+          slotCallback: (row, h) => {
+            return h('side-page-trigger', {
+              props: {
+                onTrigger: () => this.handleOpenSidepage(row),
+              },
+            }, row.name)
           },
         }),
         getStatusTableColumn({ statusModule: 'lb' }),
@@ -46,10 +48,12 @@ export default {
           title: i18n.t('network.text_139'),
           minWidth: 200,
           slots: {
-            default: ({ row }) => {
-              return [
-                <side-page-trigger onTrigger={ () => this.handleOpenLbbgSidepage(row) }>{ row.backend_group }</side-page-trigger>,
-              ]
+            default: ({ row }, h) => {
+              return [h('side-page-trigger', {
+                props: {
+                  onTrigger: () => this.handleOpenLbbgSidepage(row),
+                },
+              }, row.backend_group)]
             },
           },
         },

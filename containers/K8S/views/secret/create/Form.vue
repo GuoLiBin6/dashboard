@@ -2,7 +2,7 @@
   <div class="w-75">
     <a-form :form="form.fc" v-bind="formItemLayout">
       <a-form-item :label="$t('k8s.text_34')">
-        <a-radio-group v-model="form.fd.type">
+        <a-radio-group v-model:value="form.fd.type">
           <a-radio-button value="keypair">{{$t('k8s.text_332')}}</a-radio-button>
           <a-radio-button value="cephCSI">Ceph CSI</a-radio-button>
         </a-radio-group>
@@ -14,7 +14,7 @@
         <cluster-select v-decorator="decorators.cluster" @input="setCluster" />
       </a-form-item>
       <a-form-item :label="$t('k8s.text_23')">
-        <namespace-select v-decorator="decorators.namespace" @input="setNamespace" :cluster="cluster" :namespaceObj.sync="namespaceObj" />
+        <namespace-select v-decorator="decorators.namespace" @input="setNamespace" :cluster="cluster" v-model:namespaceObj="namespaceObj" />
       </a-form-item>
       <template v-if="form.fd.type === 'keypair'">
         <a-form-item :label="$t('k8s.text_52')">

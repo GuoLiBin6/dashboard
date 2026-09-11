@@ -48,8 +48,17 @@ export default {
           field: 'custom_certificate',
           title: this.$t('network.cdn.certificate_type_custom'),
           slots: {
-            default: ({ row }, h) => {
-              return row.ssl?.custom_certificate ? <a-textarea rows={5} value={row.ssl?.custom_certificate || '-'} /> : '-'
+            default: ({ row }) => {
+              const h = this.$createElement
+              const cert = row.ssl && row.ssl.custom_certificate
+              return cert
+                ? h('a-textarea', {
+                  props: {
+                    rows: 5,
+                    value: cert || '-',
+                  },
+                })
+                : '-'
             },
           },
         },
@@ -64,8 +73,17 @@ export default {
           field: 'private_key',
           title: this.$t('network.cdn.custom_key'),
           slots: {
-            default: ({ row }, h) => {
-              return row.ssl?.private_key ? <a-textarea rows={5} value={row.ssl?.private_key || '-'} /> : '-'
+            default: ({ row }) => {
+              const h = this.$createElement
+              const key = row.ssl && row.ssl.private_key
+              return key
+                ? h('a-textarea', {
+                  props: {
+                    rows: 5,
+                    value: key || '-',
+                  },
+                })
+                : '-'
             },
           },
         },
@@ -135,7 +153,13 @@ export default {
                     value: row.ownership_verification.value,
                   })
                 }
-                return <vxe-grid data={data} resizable columns={columns} />
+                return h('table-lite-grid', {
+                  props: {
+                    data: data,
+                    resizable: true,
+                    columns: columns,
+                  },
+                })
               },
             },
           },

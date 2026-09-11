@@ -51,22 +51,32 @@ export default {
               field: 'vpc',
               title: 'VPC',
               hideField: true,
-              slotCallback: row => {
+              slotCallback: (row, h) => {
                 if (!row.vpc) return '-'
-                return [
-                  <side-page-trigger permission='vpcs_get' name='VpcSidePage' id={row.vpc_id} vm={this}>{ row.vpc }</side-page-trigger>,
-                ]
+                return [h('side-page-trigger', {
+                  props: {
+                    permission: 'vpcs_get',
+                    name: 'VpcSidePage',
+                    id: row.vpc_id,
+                    vm: this,
+                  },
+                }, row.vpc)]
               },
             }),
             getCopyWithContentTableColumn({
               field: 'network',
               title: this.$t('network.text_551'),
               hideField: true,
-              slotCallback: row => {
+              slotCallback: (row, h) => {
                 if (!row.network) return '-'
-                return [
-                  <side-page-trigger permission='networks_get' name='NetworkSidePage' id={row.network_id} vm={this}>{ row.network }</side-page-trigger>,
-                ]
+                return [h('side-page-trigger', {
+                  props: {
+                    permission: 'networks_get',
+                    name: 'NetworkSidePage',
+                    id: row.network_id,
+                    vm: this,
+                  },
+                }, row.network)]
               },
             }),
             {

@@ -30,11 +30,19 @@ export default {
           field: 'name',
           title: this.$t('k8s.text_41'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               return [
-                <div class='text-truncate'>
-                  <list-body-cell-wrap copy row={ this.data } onManager={ this.onManager } field='name' title={ row.name } />
-                </div>,
+                h('div', { class: 'text-truncate' }, [
+                  h('list-body-cell-wrap', {
+                    props: {
+                      copy: true,
+                      row: this.data,
+                      onManager: this.onManager,
+                      field: 'name',
+                      title: row.name,
+                    },
+                  }),
+                ]),
               ]
             },
           },
@@ -58,7 +66,7 @@ export default {
                 let value = '-'
                 if (v.host && v.ports) value = `${v.host}:${v.ports}`
                 if (v.host && !v.ports) value = v.host
-                return <a-tag>{ value }</a-tag>
+                return h('a-tag', value)
               })
             },
           },

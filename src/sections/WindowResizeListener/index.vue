@@ -1,7 +1,7 @@
 <template>
   <div class="window-min-width-tips text-center mini-text" v-if="showTips">
     <div class="mt-3">
-      <a-icon type="arrows-alt" />
+      <icon type="arrows-alt" />
     </div>
     <div class="mt-1">{{$t('common_275')}}</div>
     <div class="mt-1">{{$t('common_276')}}</div>
@@ -22,11 +22,11 @@ export default {
     this.update()
     this.debounceUpdate = debounce(this.update, 300)
     window.addEventListener('resize', this.debounceUpdate, false)
-    this.$once('hook:beforeDestroy', () => {
-      window.removeEventListener(document.body, this.debounceUpdate, false)
-      this.debounceUpdate = null
-      clearTimeout(this.showTipsTimer)
-    })
+  },
+  beforeUnmount () {
+    window.removeEventListener('resize', this.debounceUpdate, false)
+    this.debounceUpdate = null
+    clearTimeout(this.showTipsTimer)
   },
   methods: {
     update () {

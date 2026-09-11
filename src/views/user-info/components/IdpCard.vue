@@ -57,7 +57,9 @@ export default {
     getIcon (idp) {
       const { template, driver } = idp
       const key = (template || driver).toLocaleLowerCase()
-      return require(`@/assets/images/idp-icons/round/${key}.png`)
+      const iconMap = import.meta.glob('/src/assets/images/idp-icons/round/*.png', { eager: true, import: 'default' })
+      const path = `/src/assets/images/idp-icons/round/${key}.png`
+      return iconMap[path] || ''
     },
     handleBind (idp) {
       const { origin } = window.location

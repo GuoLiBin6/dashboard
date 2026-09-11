@@ -11,15 +11,8 @@
     </a-form-item>
     <a-form-item :label="$t('common_599')">
       <a-checkbox-group
-        v-decorator="decorators.enabled_contact_types">
-        <a-checkbox
-          v-for="(v, index) in contactArrOpts"
-          :key="index"
-          :value="v.value"
-          :disabled="v.disabled">
-          {{ v.label }}
-        </a-checkbox>
-      </a-checkbox-group>
+        v-decorator="decorators.enabled_contact_types"
+        :options="contactArrOpts" />
     </a-form-item>
   </a-form>
 </template>

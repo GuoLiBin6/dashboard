@@ -1,7 +1,7 @@
 <template>
-  <div class="d-flex flex-column flex-fill h-100">
+  <div class="d-flex flex-column flex-fill h-100 dashboard-page">
     <template v-if="optionsLoaded">
-      <div style="padding-left: 5px;">
+      <div class="dashboard-page-header">
         <dashboard-header
           :tabs="allOptions"
           :current="currentOption"
@@ -16,7 +16,7 @@
           @refresh="refresh" />
       </div>
       <div class="flex-fill position-relative">
-        <div class="position-absolute" style="top: 0; left: 0; right: 0; bottom: 0;">
+        <div class="dashboard_box">
           <dashboard-content
             ref="content"
             :key="dashboardContentKey"
@@ -124,7 +124,7 @@ export default {
       immediate: true,
     },
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.pm = null
     removeClass(this.$appPage, this.appPageAddedClass.join(' '))
     this.$appPage = null
@@ -154,7 +154,7 @@ export default {
     addAppPageClass () {
       if (!this.$appPage) this.$appPage = document.getElementById('app-page')
       if (!this.$appPage) return
-      const toBeAddedClass = ['h-100', 'd-flex', 'flex-column', 'mb-0']
+      const toBeAddedClass = ['h-100', 'd-flex', 'flex-column', 'mb-0', 'dashboard-app-page']
       this.appPageAddedClass = []
       for (let i = 0, len = toBeAddedClass.length; i < len; i++) {
         if (!hasClass(this.$appPage, toBeAddedClass[i])) {
@@ -283,3 +283,33 @@ export default {
   },
 }
 </script>
+
+<style lang="less">
+@import url('../../styles/index.less');
+
+.dashboard-page {
+  background: #fff;
+}
+.dashboard-page-header {
+  padding-left: 5px;
+  margin-right: 15px;
+  background: #fff;
+}
+.dashboard_box {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 15px;
+  min-width: 1008px;
+  overflow: auto;
+  border-radius: 6px;
+  border: solid 1px #eee;
+  background: #f5f5f5;
+  box-sizing: border-box;
+}
+/* 收回右侧原生 padding，改由内容区 15px 白边与左侧对齐 */
+#app-page.dashboard-app-page {
+  padding-right: 0;
+}
+</style>

@@ -4,7 +4,7 @@
     <div slot="body">
       <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 4 }" :wrapper-col="{ span: 18 }">
         <a-form-model-item :label="$t('common.name')" prop="name">
-          <a-input v-model="form.name" :placeholder="$t('common.tips.input', [$t('common.name')])" />
+          <a-input v-model:value="form.name" :placeholder="$t('common.tips.input', [$t('common.name')])" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.llm_type')" prop="llm_type">
           <base-select
@@ -13,10 +13,10 @@
             :selectProps="{ placeholder: $t('common.tips.select', [$t('aice.llm_type')]) }" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.model_name')" prop="model_name">
-          <a-input v-model="form.model_name" :placeholder="$t('common.tips.input', [$t('aice.model_name')])" />
+          <a-input v-model:value="form.model_name" :placeholder="$t('common.tips.input', [$t('aice.model_name')])" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.model_tag')" prop="model_tag">
-          <a-input v-model="form.model_tag" :placeholder="$t('common.tips.input', [$t('aice.model_tag')])" />
+          <a-input v-model:value="form.model_tag" :placeholder="$t('common.tips.input', [$t('aice.model_tag')])" />
         </a-form-model-item>
       </a-form-model>
     </div>

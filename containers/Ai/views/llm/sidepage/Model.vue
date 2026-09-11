@@ -12,7 +12,7 @@
         </span>
       </a-tooltip>
     </div>
-    <vxe-grid
+    <table-lite-grid
       ref="grid"
       resizable
       row-id="id"
@@ -85,18 +85,21 @@ export default {
           field: '_action',
           title: this.$t('table.title._action'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               return [
-                <a-button type="link" size="small" onClick={ () => {
-                  this.createDialog('LlmModelSaveInstantModelDialog', {
-                    data: [row],
-                    resId: this.resId,
-                    actionText: this.$t('aice.save_as_instant_model'),
-                    success: () => {
-                      //
+                h('a-button', {
+                  props: { type: 'link', size: 'small' },
+                  on: {
+                    click: () => {
+                      this.createDialog('LlmModelSaveInstantModelDialog', {
+                        data: [row],
+                        resId: this.resId,
+                        actionText: this.$t('aice.save_as_instant_model'),
+                        success: () => {},
+                      })
                     },
-                  })
-                } }>{this.$t('aice.save_as_instant_model')}</a-button>,
+                  },
+                }, this.$t('aice.save_as_instant_model')),
               ]
             },
           },

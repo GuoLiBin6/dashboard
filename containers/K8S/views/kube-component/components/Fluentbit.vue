@@ -1,25 +1,25 @@
 <template>
   <a-form-model :model="formData" size="small" ref="formRef" class="w-75" :rules="rules" v-bind="formItemLayout">
     <a-form-model-item :label="$t('k8s.text_250')">
-      <a-switch v-model="formData.es.enabled" />
+      <a-switch v-model:value="formData.es.enabled" />
     </a-form-model-item>
     <template v-if="formData.es.enabled">
       <a-form-model-item :label="$t('k8s.text_251')" prop="es.index">
-        <a-input v-model="formData.es.index" :placeholder="$t('k8s.text_252')" />
+        <a-input v-model:value="formData.es.index" :placeholder="$t('k8s.text_252')" />
       </a-form-model-item>
       <a-form-model-item :label="$t('k8s.text_253')" prop="es.host">
-        <a-input v-model="formData.es.host" :placeholder="$t('k8s.text_254')" />
+        <a-input v-model:value="formData.es.host" :placeholder="$t('k8s.text_254')" />
       </a-form-model-item>
       <a-form-model-item :label="$t('k8s.text_255')" prop="es.port">
-        <a-input v-model="formData.es.port" />
+        <a-input v-model:value="formData.es.port" />
       </a-form-model-item>
       <a-form-model-item :label="$t('k8s.text_34')" prop="es.type">
-        <a-input v-model="formData.es.type" />
+        <a-input v-model:value="formData.es.type" />
       </a-form-model-item>
     </template>
     <a-divider />
     <a-form-model-item :label="$t('k8s.text_256')">
-      <a-switch v-model="formData.kafka.enabled" />
+      <a-switch v-model:value="formData.kafka.enabled" />
     </a-form-model-item>
     <template v-if="formData.kafka.enabled">
       <a-form-model-item :label="$t('k8s.text_257')">
@@ -31,8 +31,8 @@
             { required: true, message: $t('k8s.text_258'), trigger: 'blur' },
           ]">
           <div class="d-flex align-items-center">
-            <a-input v-model="val.value" :placeholder="$t('k8s.text_258')" />
-            <a-icon type="minus-circle" style="color: #F56C6C;" class="a-icon-remove-outline cursor-pointer ml-2" v-if="formData.kafka.brokers.length > 1" @click="decreaseBroker(val)" />
+            <a-input v-model:value="val.value" :placeholder="$t('k8s.text_258')" />
+            <icon type="minus-circle" style="color: #F56C6C;" class="a-icon-remove-outline cursor-pointer ml-2" v-if="formData.kafka.brokers.length > 1" @click="decreaseBroker(val)" />
           </div>
         </a-form-model-item>
         <a-button type="link" size="small" @click="addBroker">{{$t('k8s.text_249')}}</a-button>
@@ -46,8 +46,8 @@
             { required: true, message: $t('k8s.text_259'), trigger: 'blur' },
           ]">
           <div class="d-flex align-items-center">
-            <a-input v-model="val.value" :placeholder="$t('k8s.text_259')" />
-            <a-icon type="minus-circle" style="color: #F56C6C;" class="a-icon-remove-outline cursor-pointer ml-2" v-if="formData.kafka.topics.length > 1" @click="decreaseTopic(val)" />
+            <a-input v-model:value="val.value" :placeholder="$t('k8s.text_259')" />
+            <icon type="minus-circle" style="color: #F56C6C;" class="a-icon-remove-outline cursor-pointer ml-2" v-if="formData.kafka.topics.length > 1" @click="decreaseTopic(val)" />
           </div>
         </a-form-model-item>
         <a-button type="link" size="small" @click="addTopic">{{$t('k8s.text_249')}}</a-button>

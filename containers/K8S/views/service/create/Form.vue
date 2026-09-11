@@ -5,13 +5,13 @@
         <a-input :placeholder="$t('k8s.text_60')" v-decorator="decorators.name" />
       </a-form-item>
       <a-form-item :label="$t('k8s.text_19')">
-        <cluster-select v-decorator="decorators.cluster" @input="setCluster" :clusterObj.sync="clusterObj" />
+        <cluster-select v-decorator="decorators.cluster" @input="setCluster" v-model:clusterObj="clusterObj" />
       </a-form-item>
       <a-form-item :label="$t('k8s.text_23')">
-        <namespace-select v-decorator="decorators.namespace" @input="setNamespace" :cluster="cluster" :namespaceObj.sync="namespaceObj" />
+        <namespace-select v-decorator="decorators.namespace" @input="setNamespace" :cluster="cluster" v-model:namespaceObj="namespaceObj" />
       </a-form-item>
       <a-form-item :label="$t('k8s.text_339')" class="mb-0">
-        <a-radio-group v-model="form.fd.selectorType">
+        <a-radio-group v-model:value="form.fd.selectorType">
           <a-radio-button value="deployments">{{$t('k8s.text_4')}}</a-radio-button>
           <a-radio-button value="statefulsets">{{$t('k8s.text_5')}}</a-radio-button>
           <a-radio-button value="daemonsets">{{$t('k8s.text_6')}}</a-radio-button>
@@ -22,7 +22,7 @@
             :resource="form.fd.selectorType"
             version="v1"
             idKey="name"
-            :item.sync="selectedObj"
+            v-model:item="selectedObj"
             :need-params="true"
             :isDefaultSelect="true"
             :params="resParams"

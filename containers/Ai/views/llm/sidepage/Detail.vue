@@ -8,7 +8,7 @@
     resource="llms" />
 </template>
 
-<script>
+<script lang="jsx">
 import { parseLlmRoute } from '@Ai/utils/llmRouteContext'
 import {
   getUserTagColumn,
@@ -88,15 +88,30 @@ export default {
               field: 'volume',
               title: this.$t('aice.disk'),
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   if (!row.volume || !row.volume.size_mb) return '-'
                   const { id, size_mb, storage_type } = row.volume
                   const storageType = this.$te('common.storage.' + storage_type) ? this.$t('common.storage.' + storage_type) : storage_type
                   const volumeText = `${id} (${sizestr(size_mb, 'M', 1024)} ${storageType})`
                   return [
-                    <list-body-cell-wrap copy hideField={true} field='volume' row={row} message={id}>
-                      <side-page-trigger permission='disks_get' name='DiskSidePage' id={id} vm={this}>{volumeText}</side-page-trigger>
-                    </list-body-cell-wrap>,
+                    h('list-body-cell-wrap', {
+                      props: {
+                        copy: true,
+                        hideField: true,
+                        field: 'volume',
+                        row,
+                        message: id,
+                      },
+                    }, [
+                      h('side-page-trigger', {
+                        props: {
+                          permission: 'disks_get',
+                          name: 'DiskSidePage',
+                          id,
+                          vm: this,
+                        },
+                      }, volumeText),
+                    ]),
                   ]
                 },
               },
@@ -105,13 +120,28 @@ export default {
               field: 'cmp_id',
               title: this.$t('dictionary.server_container'),
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   if (!row.cmp_id) return '-'
                   const serverText = `${row.server} (${row.cmp_id})`
                   return [
-                    <list-body-cell-wrap copy hideField={true} field='server' row={row} message={row.cmp_id}>
-                      <side-page-trigger permission='servers_get' name='VmContainerInstanceSidePage' id={row.cmp_id} vm={this}>{serverText}</side-page-trigger>
-                    </list-body-cell-wrap>,
+                    h('list-body-cell-wrap', {
+                      props: {
+                        copy: true,
+                        hideField: true,
+                        field: 'server',
+                        row,
+                        message: row.cmp_id,
+                      },
+                    }, [
+                      h('side-page-trigger', {
+                        props: {
+                          permission: 'servers_get',
+                          name: 'VmContainerInstanceSidePage',
+                          id: row.cmp_id,
+                          vm: this,
+                        },
+                      }, serverText),
+                    ]),
                   ]
                 },
               },
@@ -123,12 +153,27 @@ export default {
               showOverflow: 'ellipsis',
               minWidth: 100,
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   const text = row.host || '-'
                   return [
-                    <list-body-cell-wrap copy hideField={true} field='host' row={row} message={text}>
-                      <side-page-trigger permission='hosts_get' name='HostSidePage' id={row.host_id} vm={this}>{row.host}</side-page-trigger>
-                    </list-body-cell-wrap>,
+                    h('list-body-cell-wrap', {
+                      props: {
+                        copy: true,
+                        hideField: true,
+                        field: 'host',
+                        row,
+                        message: text,
+                      },
+                    }, [
+                      h('side-page-trigger', {
+                        props: {
+                          permission: 'hosts_get',
+                          name: 'HostSidePage',
+                          id: row.host_id,
+                          vm: this,
+                        },
+                      }, row.host),
+                    ]),
                   ]
                 },
               },
@@ -137,13 +182,28 @@ export default {
               field: 'mounted_model_infos',
               title: this.isApplyType ? this.$t('aice.app_llm_instantapp') : this.$t('aice.llm_instantapp'),
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   const mounted_apps = row.mounted_model_infos
                   if (mounted_apps?.length) {
-                    return mounted_apps.map((item, idx) => {
-                      return <list-body-cell-wrap copy hideField={true} field='mounted_model_infos' row={item} message={item.fullname}>
-                        <side-page-trigger permission='llm_instant_models_get' name='LlmInstantModelSidePage' id={item.id} vm={this}>{item.fullname}</side-page-trigger>
-                      </list-body-cell-wrap>
+                    return mounted_apps.map((item) => {
+                      return h('list-body-cell-wrap', {
+                        props: {
+                          copy: true,
+                          hideField: true,
+                          field: 'mounted_model_infos',
+                          row: item,
+                          message: item.fullname,
+                        },
+                      }, [
+                        h('side-page-trigger', {
+                          props: {
+                            permission: 'llm_instant_models_get',
+                            name: 'LlmInstantModelSidePage',
+                            id: item.id,
+                            vm: this,
+                          },
+                        }, item.fullname),
+                      ])
                     })
                   }
                   return '-'

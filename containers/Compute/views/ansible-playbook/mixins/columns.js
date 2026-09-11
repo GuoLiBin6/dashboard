@@ -9,10 +9,11 @@ export default {
         hideField: true,
         isNameEdit: false,
         showDesc: false,
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{row.name}</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          const hFn = h || this.$createElement
+          return hFn('side-page-trigger', {
+            on: { trigger: () => this.handleOpenSidepage(row) },
+          }, row.name)
         },
       }),
       getStatusTableColumn({ statusModule: 'ansiblePlaybook', title: i18n.t('compute.text_229') }),

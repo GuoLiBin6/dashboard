@@ -1,40 +1,43 @@
 <template>
-  <div v-on="events" class="d-flex align-items-center list-body-cell-wrap" :title="message || row[field] || '-'">
+  <div
+    class="d-flex align-items-center list-body-cell-wrap"
+    :class="{ 'is-cell-active': editVisible || alwaysShowCopyBtn || alwaysShowEditBtn }"
+    :title="message || row[field] || '-'">
     <span
       v-if="!hideField"
       :class="{ 'text-weak': field.includes('description'), [titleClass]: titleClass, 'text-truncate': overflow ==='ellipsis' }">{{ l.get(row, field) || '-' }}</span>
-    <div class="text-truncate slot-wrap" v-if="$scopedSlots.default"><slot /></div>
+    <div class="text-truncate slot-wrap" v-if="$slots.default"><slot /></div>
     <template v-if="showDeleteLock">
-      <a-icon class="ml-1" type="lock" :title="$t('common.text00008')" />
+      <icon class="ml-1 cell-meta-icon" type="lock" :title="$t('common.text00008')" />
     </template>
     <template v-if="showEncryptionLock">
-      <a-icon class="ml-1" type="safety-certificate" :title="$t('common.text.encrption_enable')" />
+      <icon class="ml-1 cell-meta-icon" type="safety-certificate" :title="$t('common.text.encrption_enable')" />
     </template>
     <template v-if="addBackup && row.backup_host_id">
-      <icon type="gaokeyong" class="ml-1" :title="$t('common.text00009')" />
+      <icon type="gaokeyong" class="ml-1 cell-meta-icon" :title="$t('common.text00009')" />
     </template>
     <template v-if="addAutoReset">
-      <icon class="ml-1" type="auto-set" :title="$t('compute.shutdown_auto_reset')" />
+      <icon class="ml-1 cell-meta-icon" type="auto-set" :title="$t('compute.shutdown_auto_reset')" />
     </template>
     <slot name="append" />
-    <slot name="appendActions" v-if="showAppendActions && !inBaseDialog && inList" />
+    <span v-if="!inBaseDialog && inList" class="cell-hover-action d-inline-flex align-items-center">
+      <slot name="appendActions" />
+    </span>
     <edit
-      slot="edit"
-      class="ml-1"
+      class="ml-1 cell-hover-action"
       v-if="showEdit && isOwner.validate"
       @update="update"
       :label="labelCn"
       :inputType="inputType"
       :formRules="formRulesComputer"
-      :visible.sync="editVisible"
+      v-model:visible="editVisible"
       :defaultValue="defaultValue"
       :numberMin="numberMin"
       :showSuccessMessage="showSuccessMessage"
       :customEdit="customEdit"
       :customEditCallback="customEditCallback" />
     <copy
-      slot="copy"
-      class="ml-1"
+      class="ml-1 cell-hover-action"
       v-if="showCopy"
       :message="copyMessage" />
   </div>
@@ -136,8 +139,6 @@ export default {
   },
   data () {
     return {
-      // 是否在弹框里
-      showBtn: false,
       editVisible: false, // edit form 的显隐
       l: _,
     }
@@ -147,10 +148,11 @@ export default {
       return _.get(this.row, this.field) || ''
     },
     copyMessage () {
-      if (this.message) {
-        return this.message
+      if (this.message != null && this.message !== '') {
+        return String(this.message)
       }
-      return _.get(this.row, this.field) || '-'
+      const val = _.get(this.row, this.field)
+      return val != null && val !== '' ? String(val) : '-'
     },
     labelCn () {
       if (this.label) return this.label
@@ -164,22 +166,16 @@ export default {
       }
       return ''
     },
+    // 用 CSS :hover 显隐，避免每个单元格 mouseenter 触发 Vue 更新（表格页顿挫主因）
     showCopy () {
       if (this.alwaysShowCopyBtn) return true
-      if (this.copy && this.showBtn) return true
-      return false
+      return !!this.copy
     },
     showEdit () {
       if (this.inBaseDialog) return false
       if (this.alwaysShowEditBtn) return true
       if (this.editVisible) return true
-      if (this.edit && this.showBtn) return true
-      if (this.customEdit && this.showBtn) return true
-      return false
-    },
-    showAppendActions () {
-      if (this.showBtn) return true
-      return false
+      return !!(this.edit || this.customEdit)
     },
     formRulesComputer () {
       if (R.is(Function, this.formRules)) {
@@ -220,11 +216,6 @@ export default {
       return this.$isOwner(this.row, this.resource)
     },
   },
-  created () {
-    this.events = {}
-    this.events.mouseenter = this.handleMouseenter
-    this.events.mouseleave = this.handleMouseleave
-  },
   methods: {
     update (formData) {
       if (this.ok) {
@@ -247,16 +238,53 @@ export default {
         }
       }
     },
-    handleMouseenter (e) {
-      e.stopPropagation()
-      e.preventDefault()
-      if (!this.showBtn) this.showBtn = true
-    },
-    handleMouseleave (e) {
-      e.stopPropagation()
-      e.preventDefault()
-      if (this.showBtn) this.showBtn = false
-    },
   },
 }
 </script>
+
+<style lang="less" scoped>
+.list-body-cell-wrap {
+  min-width: 0;
+  max-width: 100%;
+  /* 名称 / 备注等多行堆叠时留出间隙 */
+  & + .list-body-cell-wrap {
+    margin-top: 6px;
+  }
+  .cell-meta-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-sizing: border-box;
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    color: rgba(0, 0, 0, 0.45);
+    line-height: 1;
+    :deep(svg),
+    :deep(.oc-icon) {
+      width: 10px;
+      height: 10px;
+      font-size: 10px;
+    }
+  }
+  .cell-hover-action {
+    flex-shrink: 0;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: scale(0.92);
+    transition-property: opacity, visibility, transform;
+    transition-duration: 0.12s;
+    transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  }
+  /* 只悬停当前这一行（名称或备注），才显示该行的 copy/edit */
+  &:hover .cell-hover-action,
+  &.is-cell-active .cell-hover-action {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: scale(1);
+  }
+}
+</style>

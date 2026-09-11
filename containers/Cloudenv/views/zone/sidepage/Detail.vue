@@ -29,9 +29,11 @@ export default {
           field: 'cloudregion',
           title: this.$t('cloudenv.text_10'),
           hideField: true,
-          slotCallback: row => {
+          slotCallback: (row, h) => {
             if (!row.cloudregion) return '-'
-            return [<side-page-trigger onTrigger={ () => this.handleOpenCloudregionDetail(row.cloudregion_id) }>{ row.cloudregion }</side-page-trigger>]
+            return [h('side-page-trigger', {
+              on: { trigger: () => this.handleOpenCloudregionDetail(row.cloudregion_id) },
+            }, row.cloudregion)]
           },
         }),
         {

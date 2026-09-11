@@ -18,9 +18,12 @@ export default {
         edit: false,
         editDesc: false,
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{row.name}</side-page-trigger>
-          )
+          const h = this.$createElement
+          return h('side-page-trigger', {
+            props: {
+              onTrigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getStatusTableColumn({ statusModule: 'ipv6_gateway', title: i18n.t('network.text_27'), vm: this }),
@@ -44,17 +47,28 @@ export default {
         minWidth: 120,
         slots: {
           default: ({ row }) => {
+            const h = this.$createElement
             const ret = []
             ret.push(
-              <list-body-cell-wrap hide-field copy field='account' row={row}>
-                <span style={{ color: '#0A1F44' }}>{row.account}</span>
-              </list-body-cell-wrap>,
+              h('list-body-cell-wrap', {
+                props: {
+                  hideField: true,
+                  copy: true,
+                  field: 'account',
+                  row,
+                },
+              }, [h('span', { style: { color: 'var(--oc-color-text-heading)' } }, row.account)]),
             )
             if (row.manager) {
               ret.push(
-                <list-body-cell-wrap hide-field copy field='manager' row={row}>
-                  <span style={{ color: '#53627C' }}>{row.manager}</span>
-                </list-body-cell-wrap>,
+                h('list-body-cell-wrap', {
+                  props: {
+                    hideField: true,
+                    copy: true,
+                    field: 'manager',
+                    row,
+                  },
+                }, [h('span', { style: { color: 'var(--oc-color-text-secondary)' } }, row.manager)]),
               )
             }
             return ret

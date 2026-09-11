@@ -1,6 +1,8 @@
 import * as R from 'ramda'
 import _ from 'lodash'
-import moment from 'moment'
+import { h as vueH, resolveDynamicComponent, getCurrentInstance } from 'vue'
+import { Tooltip as ATooltip } from 'ant-design-vue'
+import moment from '@/utils/moment'
 import BrandIcon from '@/sections/BrandIcon'
 import TagTableColumn from '@/sections/TagTableColumn'
 import IpSupplement from '@/sections/IpSupplement'
@@ -14,7 +16,185 @@ import { status as statusMap } from '@/locales/zh-CN'
 import setting from '@/config/setting'
 import SystemIcon from '@/sections/SystemIcon'
 import RegionalAvailabilityPopover from '@/sections/RegionalAvailabilityPopover'
-const brandMap = typeClouds.getBrand()
+
+// 延迟取 brandMap，避免循环依赖下模块初始化阶段访问 typeClouds 触发 TDZ
+let brandMap
+function getBrandMap () {
+  if (!brandMap) brandMap = typeClouds.getBrand()
+  return brandMap
+}
+
+// Vue2 render data 兼容层：
+// 旧代码大量使用 h(tag, { props, attrs, on, scopedSlots }, children) 形态。
+// 在 Vue3 中应使用 h(tag, props, slots/children)，这里统一转换，避免重写整份文件。
+function camelize (str) {
+  return String(str || '').replace(/-(\w)/g, (_, c) => (c ? c.toUpperCase() : ''))
+}
+
+function toHandlerKey (event) {
+  const e = String(event || '')
+  return e ? 'on' + e.charAt(0).toUpperCase() + e.slice(1) : ''
+}
+
+function normalizeLegacyData (data) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return data
+  const out = {}
+
+  // class/style 等直接透传
+  if (data.class != null) out.class = data.class
+  if (data.style != null) out.style = data.style
+  if (data.key != null) out.key = data.key
+  if (data.ref != null) out.ref = data.ref
+
+  // Vue2: attrs/props 合并到 Vue3 props
+  // 注意：render 函数里传给组件的 props 需要 camelCase，否则会落到 attrs，组件收不到（例如 hide-field -> hideField）
+  const assignCamelized = (src) => {
+    if (!src || typeof src !== 'object') return
+    Object.keys(src).forEach((k) => {
+      out[camelize(k)] = src[k]
+    })
+  }
+  assignCamelized(data.attrs)
+  assignCamelized(data.props)
+
+  // Vue2: on -> onXxx
+  if (data.on && typeof data.on === 'object') {
+    Object.keys(data.on).forEach((k) => {
+      const handlerKey = toHandlerKey(camelize(k))
+      if (handlerKey) out[handlerKey] = data.on[k]
+    })
+  }
+
+  // 允许直接传 Vue3 onXxx（不覆盖上面映射）
+  Object.keys(data).forEach((k) => {
+    if (k.startsWith('on') && out[k] == null) out[k] = data[k]
+  })
+
+  return out
+}
+
+function normalizeLegacySlots (data) {
+  if (!data || typeof data !== 'object') return null
+  const s = data.scopedSlots
+  if (!s || typeof s !== 'object') return null
+  const out = {}
+  Object.keys(s).forEach((k) => {
+    const fn = s[k]
+    if (typeof fn === 'function') out[k] = fn
+  })
+  return out
+}
+
+/**
+ * vxe-table 在表格内部调用 column slots 时，往往不在当前组件 setup/render 上下文，
+ * resolveDynamicComponent('status') 会退回字符串，导致列空白。
+ * PageList 在渲染前通过 runWithCreateElement 注入带 app 上下文的 $createElement。
+ */
+let activeCreateElement = null
+
+export function runWithCreateElement (createElement, fn) {
+  const prev = activeCreateElement
+  activeCreateElement = typeof createElement === 'function' ? createElement : null
+  try {
+    return fn()
+  } finally {
+    activeCreateElement = prev
+  }
+}
+
+/**
+ * vxe-table@4 调用 column slots 时不再注入第二参 h。
+ * 包装后统一传入 legacyH（Vue2 props/on 归一化），供 DialogTable / TableLiteGrid / SimpleTable 等场景使用。
+ */
+export function wrapVxeColumnSlots (columns, createElement) {
+  if (!Array.isArray(columns)) return []
+  const create = typeof createElement === 'function' ? createElement : null
+  const renderSlot = (fn, params) => {
+    if (!create) return fn(params)
+    return runWithCreateElement(create, () => fn(params, create))
+  }
+  return columns.map((col) => {
+    if (!col || !col.slots) return col
+    const next = { ...col }
+    const origin = { ...col.slots }
+    next.slots = { ...origin }
+    if (typeof origin.default === 'function') {
+      next.slots.default = (params) => renderSlot(origin.default, params)
+    }
+    if (typeof origin.header === 'function') {
+      next.slots.header = (params) => renderSlot(origin.header, params)
+    }
+    return next
+  })
+}
+
+function kebabToPascal (name) {
+  return String(name || '').replace(/(^|-)(\w)/g, (_, __, c) => c.toUpperCase())
+}
+
+function resolveAppComponent (type) {
+  if (typeof type !== 'string') return type
+  // 列表里 a-tooltip 必须打到 antdv 组件对象；字符串解析在 vxe slot 外不可靠且易触发 setup 异常
+  if (type === 'a-tooltip' || type === 'ATooltip') return ATooltip
+  const instance = getCurrentInstance()
+  if (instance) {
+    const resolved = resolveDynamicComponent(type)
+    if (resolved && resolved !== type) return resolved
+  }
+  const comps = (typeof window !== 'undefined' && window.app && window.app._context && window.app._context.components) || {}
+  if (comps[type]) return comps[type]
+  const pascal = kebabToPascal(type)
+  if (comps[pascal]) return comps[pascal]
+  // ant-design-vue: a-tooltip -> ATooltip
+  if (type.indexOf('-') > -1) {
+    const antdName = pascal
+    if (comps[antdName]) return comps[antdName]
+  }
+  return type
+}
+
+function wrapTooltipTrigger (children) {
+  if (children == null) return () => null
+  return () => {
+    const raw = typeof children === 'function' ? children() : children
+    const arr = (Array.isArray(raw) ? raw : [raw]).filter(v => v !== null && v !== undefined && v !== false)
+    if (!arr.length) return null
+    // antdv4：自定义组件（icon）作 trigger 时 hover 不稳定，统一包 span
+    return vueH('span', {
+      class: 'oc-tooltip-trigger',
+      style: { display: 'inline-flex', alignItems: 'center', cursor: 'help' },
+    }, arr)
+  }
+}
+
+// 兼容 Vue2 createElement 签名
+// 注意：即使注入了 activeCreateElement，也必须先做 Vue2→Vue3 归一化。
+// 否则 a-tooltip 的 scopedSlots/attrs.title 会原样进 antdv4 setup 并直接崩（刷屏卡死）。
+function h (type, data, children) {
+  const resolvedType = resolveAppComponent(type)
+  // h(type, children)
+  if (arguments.length === 2 && (Array.isArray(data) || typeof data === 'string' || typeof data === 'number' || data == null)) {
+    return vueH(resolvedType, null, data)
+  }
+  const slots = normalizeLegacySlots(data)
+  const props = normalizeLegacyData(data)
+  const isTooltip = resolvedType === ATooltip || type === 'a-tooltip' || type === 'ATooltip'
+  if (isTooltip) {
+    const slotObj = { ...(slots || {}) }
+    if (slotObj.default == null) {
+      slotObj.default = wrapTooltipTrigger(children)
+    }
+    return vueH(ATooltip, props || null, slotObj)
+  }
+  if (slots) {
+    const slotObj = { ...slots }
+    if (children != null && slotObj.default == null) {
+      slotObj.default = () => children
+    }
+    return vueH(resolvedType, props || null, slotObj)
+  }
+  return vueH(resolvedType, props || null, children)
+}
 
 export const getProjectTableColumn = ({ vm = {}, field = 'tenant', title = i18n.t('res.project'), projectsItem = 'tenant', sortable = true, hidden = false, minWidth = 100 } = {}) => {
   return {
@@ -24,24 +204,59 @@ export const getProjectTableColumn = ({ vm = {}, field = 'tenant', title = i18n.
     showOverflow: 'ellipsis',
     minWidth,
     slots: {
-      default: ({ row }, h) => {
+      default: ({ row }, _h) => {
         const ret = []
         const project = row[field]
-        if (vm.isPreLoad && !project) return [<data-loading />]
+        if (vm.isPreLoad && !project) {
+          return [h('data-loading')]
+        }
         if (R.is(Array, project)) {
           for (let i = 0, len = project.length; i < len; i++) {
-            const row = project[i]
-            ret.push(<list-body-cell-wrap copy row={row} field={projectsItem} />)
+            const pRow = project[i]
+            ret.push(
+              h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  row: pRow,
+                  field: projectsItem,
+                },
+              }),
+            )
           }
         } else {
-          ret.push(<list-body-cell-wrap copy field={field} row={{ [field]: project }} />)
+          ret.push(
+            h('list-body-cell-wrap', {
+              props: {
+                copy: true,
+                field,
+                row: { [field]: project },
+              },
+            }),
+          )
         }
         const domain = row.project_domain || row.domain
         if (domain) {
           ret.push(
-            <list-body-cell-wrap hide-field copy field="domain" row={{ domain }}>
-              <span class='text-weak'>{domain}</span>
-            </list-body-cell-wrap>,
+            h(
+              'list-body-cell-wrap',
+              {
+                props: {
+                  'hide-field': true,
+                  copy: true,
+                  field: 'domain',
+                  row: { domain },
+                },
+              },
+              [
+                h(
+                  'span',
+                  {
+                    class: 'text-weak',
+                  },
+                  domain,
+                ),
+              ],
+            ),
           )
         }
         return ret
@@ -60,27 +275,80 @@ export const getRegionTableColumn = ({ field = 'region', title = i18n.t('res.reg
     showOverflow,
     minWidth: 120,
     slots: {
-      default: ({ row }, h) => {
+      default: ({ row }, _h) => {
         const val = _.get(row, field)
-        if (vm.isPreLoad && !val) return [<data-loading />]
+        if (vm.isPreLoad && !val) {
+          return [h('data-loading')]
+        }
         const ret = []
         ret.push(
-          <list-body-cell-wrap hide-field copy field={field} row={row}>
-            <span style={{ color: '#0A1F44' }}>{val}</span>
-          </list-body-cell-wrap>,
+          h(
+            'list-body-cell-wrap',
+            {
+              props: {
+                'hide-field': true,
+                copy: true,
+                field,
+                row,
+              },
+            },
+            [
+              h(
+                'span',
+                {
+                  style: { color: 'var(--oc-color-text-heading)' },
+                },
+                val,
+              ),
+            ],
+          ),
         )
         if (row.zone) {
           ret.push(
-            <list-body-cell-wrap hide-field copy field="zone" row={row}>
-              <span style={{ color: '#53627C' }}>{row.zone}</span>
-            </list-body-cell-wrap>,
+            h(
+              'list-body-cell-wrap',
+              {
+                props: {
+                  'hide-field': true,
+                  copy: true,
+                  field: 'zone',
+                  row,
+                },
+              },
+              [
+                h(
+                  'span',
+                  {
+                    style: { color: 'var(--oc-color-text-secondary)' },
+                  },
+                  row.zone,
+                ),
+              ],
+            ),
           )
         }
         if (row.zone_1_name) {
           ret.push(
-            <list-body-cell-wrap hide-field copy field="zone_1_name" row={row}>
-              <span style={{ color: '#53627C' }}>{i18n.t('scope.text_958', [row.zone_1_name])}</span>
-            </list-body-cell-wrap>,
+            h(
+              'list-body-cell-wrap',
+              {
+                props: {
+                  'hide-field': true,
+                  copy: true,
+                  field: 'zone_1_name',
+                  row,
+                },
+              },
+              [
+                h(
+                  'span',
+                  {
+                    style: { color: 'var(--oc-color-text-secondary)' },
+                  },
+                  i18n.t('scope.text_958', [row.zone_1_name]),
+                ),
+              ],
+            ),
           )
         }
         return ret
@@ -113,16 +381,40 @@ export const getMultipleRegionTableColumn = ({ field = 'regional_availability', 
         const ret = []
         if (region) {
           ret.push(
-            <list-body-cell-wrap hide-field copy field={regionField} row={row}>
-              <a onClick={e => e.preventDefault()}>{region}</a>
-            </list-body-cell-wrap>,
+            h('list-body-cell-wrap', {
+              props: {
+                hideField: true,
+                copy: true,
+                field: regionField,
+                row,
+              },
+            }, [
+              h('a', {
+                on: {
+                  click: e => e.preventDefault(),
+                },
+              }, region),
+            ]),
           )
         }
         if (zone) {
           ret.push(
-            <list-body-cell-wrap hide-field copy field={zoneField} row={row}>
-              <a class='link-color-light' onClick={e => e.preventDefault()}>{zone}</a>
-            </list-body-cell-wrap>,
+            h('list-body-cell-wrap', {
+              props: {
+                hideField: true,
+                copy: true,
+                field: zoneField,
+                row,
+              },
+              class: 'link-color-light',
+            }, [
+              h('a', {
+                class: 'link-color-light',
+                on: {
+                  click: e => e.preventDefault(),
+                },
+              }, zone),
+            ]),
           )
         }
         return ret.length ? ret : ['-']
@@ -138,21 +430,28 @@ export const getBrandTableColumn = ({ field = 'brand', title = i18n.t('table.tit
     minWidth,
     sortable,
     slots: {
-      default: ({ row }, h) => {
+      default: ({ row }, _h) => {
         const val = _.get(row, field)
-        if (!val) return hideLoading ? '-' : [<data-loading />]
+        if (!val) {
+          return hideLoading ? '-' : [h('data-loading')]
+        }
         let customStyle = {}
-        if (row.brand === brandMap.Baidu.key) {
+        if (row.brand === getBrandMap().Baidu.key) {
           customStyle = { fontSize: '16px', marginLeft: '2px' }
         }
         return [
-          <BrandIcon name={val} customStyle={customStyle} />,
+          h(BrandIcon, {
+            props: {
+              name: val,
+              customStyle,
+            },
+          }),
         ]
       },
     },
     formatter: ({ row }) => {
       const name = _.get(row, field)
-      const ret = brandMap[name] || {}
+      const ret = getBrandMap()[name] || {}
       if (name === 'Cloudpods') {
         const { inner_copyright, inner_copyright_en } = store.state.app.companyInfo || {}
         if (setting.language === 'en' && inner_copyright_en) {
@@ -175,17 +474,48 @@ export const getBillBrandTableColumn = ({ field = 'brand', title = i18n.t('table
     field,
     title,
     slots: {
-      default: ({ row }, h) => {
+      default: ({ row }, _h) => {
         const val = _.get(row, field)
         if (!val) return emptyValue
         if (val === 'k8s' || val === 'Kubernetes') {
-          return [<span title='K8S'><icon type='k8s' style="font-size:20px;" /></span>]
+          return [
+            h(
+              'span',
+              { attrs: { title: 'K8S' } },
+              [
+                h('icon', {
+                  props: {
+                    type: 'k8s',
+                    preserveColor: true,
+                  },
+                  style: 'font-size:20px;',
+                }),
+              ],
+            ),
+          ]
         }
         if (val === 'openshift') {
-          return [<span title='OpenShift'><icon type='openshift' style="font-size:20px;" /></span>]
+          return [
+            h(
+              'span',
+              { attrs: { title: 'OpenShift' } },
+              [
+                h('icon', {
+                  attrs: {
+                    type: 'openshift',
+                    style: 'font-size:20px;',
+                  },
+                }),
+              ],
+            ),
+          ]
         }
         return [
-          <BrandIcon name={val} />,
+          h(BrandIcon, {
+            props: {
+              name: val,
+            },
+          }),
         ]
       },
     },
@@ -194,7 +524,7 @@ export const getBillBrandTableColumn = ({ field = 'brand', title = i18n.t('table
       if (!name) return emptyValue
       if (name === 'k8s' || name === 'Kubernetes') return 'K8S'
       if (name === 'openshift') return 'OpenShift'
-      const ret = brandMap[name] || {}
+      const ret = getBrandMap()[name] || {}
       if (name === 'Cloudpods') {
         const { inner_copyright, inner_copyright_en } = store.state.app.companyInfo || {}
         if (setting.language === 'en' && inner_copyright_en) {
@@ -220,23 +550,65 @@ export const getStatusTableColumn = ({ vm = {}, field = 'status', title = i18n.t
     // showOverflow: 'ellipsis',
     minWidth,
     slots: {
-      default: ({ row }, h) => {
+      default: ({ row }, _h) => {
         if (slotCallback && R.type(slotCallback) === 'Function') {
-          const slot = slotCallback(row)
+          const slot = slotCallback.length >= 2 ? slotCallback(row, h) : slotCallback(row)
           if (slot || slot === 0) return slot
         }
         if (!statusModule) return 'status module undefined'
         const val = _.get(row, field) || false
         if (R.isNil(val) || _.get(row, field) === undefined) return '-'
-        const log = <side-page-trigger class="ml-1" onTrigger={() => vm.handleOpenSidepage(row, 'event-drawer')}>{i18n.t('common.view_logs')}</side-page-trigger>
-        const isError = field === 'status' ? !hiddenLogView && vm.handleOpenSidepage && (['invalid', 'unknown'].includes(val) || /failed|fail$/.test(val)) : false
-        const help = <a-tooltip class="ml-1" title={helpTool.title}><icon type="question" /></a-tooltip>
+
+        const logNode = h(
+          'side-page-trigger',
+          {
+            class: 'ml-1',
+            on: {
+              trigger: () => vm.handleOpenSidepage(row, 'event-drawer'),
+            },
+          },
+          [i18n.t('common.view_logs')],
+        )
+        const isError =
+          field === 'status'
+            ? !hiddenLogView &&
+              vm.handleOpenSidepage &&
+              (['invalid', 'unknown'].includes(val) || /failed|fail$/.test(val))
+            : false
+
+        const helpNode = h(
+          'span',
+          {
+            class: 'ml-1',
+            attrs: {
+              title: helpTool.title,
+            },
+          },
+          [
+            h('icon', {
+              props: { type: 'question' },
+            }),
+          ],
+        )
+
         return [
-          <div class='d-flex align-items-center text-truncate'>
-            <status status={val} statusModule={statusModule} showStatusProgress={showStatusProgress} />
-            {isError ? log : null}
-            {helpTool.isOpen && helpTool.status?.includes(row.status) ? help : null}
-          </div>,
+          h(
+            'div',
+            {
+              class: 'd-flex align-items-center text-truncate',
+            },
+            [
+              h('status', {
+                props: {
+                  status: val,
+                  statusModule,
+                  showStatusProgress,
+                },
+              }),
+              isError ? logNode : null,
+              helpTool.isOpen && helpTool.status?.includes(row.status) ? helpNode : null,
+            ],
+          ),
         ]
       },
     },
@@ -293,7 +665,7 @@ export const getPublicTableColumn = ({ field = 'share_mode', title = i18n.t('com
     title,
     width: 100,
     slots: {
-      default: ({ row }, h) => {
+      default: ({ row }, _h) => {
         return shareMode[row[field]]
       },
     },
@@ -340,7 +712,7 @@ export const getNameDescriptionTableColumn = ({
     formatter,
     // fixed: 'left',
     slots: {
-      default: ({ row }, h) => {
+      default: ({ row }, _h) => {
         const text = (message && R.type(message) === 'Function') ? message(row) : (message || (row[field] && row[field].toString()) || '-')
         const _steadyStatus = steadyStatus || (expectStatus[statusModule] && Object.values(expectStatus[statusModule]).flat())
         let addAutoReset = false
@@ -367,7 +739,15 @@ export const getNameDescriptionTableColumn = ({
               label,
             },
             scopedSlots: {
-              default: () => slotCallback ? slotCallback(row, h) : null,
+              default: () => {
+                if (!slotCallback) return text
+                try {
+                  const n = slotCallback.length >= 2 ? slotCallback(row, h) : slotCallback(row)
+                  return (n === undefined || n === null || n === false) ? text : n
+                } catch (e) {
+                  return text
+                }
+              },
               ...(cellWrapSlots && R.is(Function, cellWrapSlots) ? cellWrapSlots(row) : {}),
             },
           }),
@@ -425,16 +805,33 @@ export const getCopyWithContentTableColumn = ({
     showOverflow: 'ellipsis',
     minWidth,
     slots: {
-      default: ({ row }, h) => {
-        if (vm.isPreLoad && !row[field]) return [<data-loading />]
-        const text = (message && R.type(message) === 'Function') ? message(row) : (message || (row[field] && row[field].toString()) || '-')
+      default: ({ row }, _h) => {
+        if (vm.isPreLoad && !row[field]) {
+          return [h('data-loading')]
+        }
+        const text =
+          (message && R.type(message) === 'Function')
+            ? message(row)
+            : (message || (row[field] && row[field].toString()) || '-')
         if (text === '-') {
           return '-'
         }
         return [
-          <list-body-cell-wrap copy field={field} row={row} hideField={hideField} message={text} customEdit={customEdit} customEditCallback={() => customEditCallback(row)}>
-            {slotCallback ? slotCallback(row) : null}
-          </list-body-cell-wrap>,
+          h(
+            'list-body-cell-wrap',
+            {
+              props: {
+                copy: true,
+                field,
+                row,
+                hideField,
+                message: text,
+                customEdit,
+                customEditCallback: () => customEditCallback(row),
+              },
+            },
+            [slotCallback ? (slotCallback.length >= 2 ? slotCallback(row, h) : slotCallback(row)) : null],
+          ),
         ]
       },
     },
@@ -454,7 +851,7 @@ export const getIpsTableColumn = ({ field = 'ips', title = 'IP', vm = {}, sortab
     sortBy: onlyElastic ? 'order_by_eip' : 'order_by_ip',
     sortable,
     slots: {
-      default: ({ row }, h) => {
+      default: ({ row }, _h) => {
         if (!row.eip && !row.ips && !row.vips && (!row.metadata || !row.metadata.sync_ips)) {
           if (row.hypervisor === typeClouds.hypervisorMap.esxi.key && ['ready', 'running'].includes(row.status)) {
             if (noElastic || (!onlyElastic && !noElastic)) {
@@ -471,7 +868,9 @@ export const getIpsTableColumn = ({ field = 'ips', title = 'IP', vm = {}, sortab
               return '-'
             }
           } else {
-            if (vm.isPreLoad) return [<data-loading />]
+            if (vm.isPreLoad) {
+              return [h('data-loading')]
+            }
             return []
           }
         }
@@ -479,7 +878,23 @@ export const getIpsTableColumn = ({ field = 'ips', title = 'IP', vm = {}, sortab
         if (onlyElastic) { // 只展示弹性ip
           if (row.eip && row.eip_mode === 'elastic_ip') {
             ret.push(
-              <list-body-cell-wrap row={row} field="eip" copy><span class="text-color-help">({i18n.t('common_290')})</span></list-body-cell-wrap>,
+              h(
+                'list-body-cell-wrap',
+                {
+                  props: {
+                    row,
+                    field: 'eip',
+                    copy: true,
+                  },
+                },
+                [
+                  h(
+                    'span',
+                    { class: 'text-color-help' },
+                    `(${i18n.t('common_290')})`,
+                  ),
+                ],
+              ),
             )
           }
           return ret.length ? ret : '-'
@@ -487,46 +902,178 @@ export const getIpsTableColumn = ({ field = 'ips', title = 'IP', vm = {}, sortab
         if (noElastic) {
           if (row.eip && row.eip_mode !== 'elastic_ip') {
             ret.push(
-              <list-body-cell-wrap row={row} field="eip" copy><span class="text-color-help">({i18n.t('common_291')})</span></list-body-cell-wrap>,
+              h(
+                'list-body-cell-wrap',
+                {
+                  props: {
+                    row,
+                    field: 'eip',
+                    copy: true,
+                  },
+                },
+                [
+                  h(
+                    'span',
+                    { class: 'text-color-help' },
+                    `(${i18n.t('common_291')})`,
+                  ),
+                ],
+              ),
             )
           }
         } else if (row.eip) {
           ret.push(
-            <list-body-cell-wrap row={row} field="eip" copy><span class="text-color-help">({row.eip_mode === 'elastic_ip' ? i18n.t('common_290') : i18n.t('common_291')})</span></list-body-cell-wrap>,
+            h(
+              'list-body-cell-wrap',
+              {
+                props: {
+                  row,
+                  field: 'eip',
+                  copy: true,
+                },
+              },
+              [
+                h(
+                  'span',
+                  { class: 'text-color-help' },
+                  `(${row.eip_mode === 'elastic_ip' ? i18n.t('common_290') : i18n.t('common_291')})`,
+                ),
+              ],
+            ),
           )
         }
         if (row.ips) {
           const iparr = row.ips.split(',')
-          const ips = iparr.map(ip => {
-            return <list-body-cell-wrap copy row={{ ip }} hide-field field="ip">{ip}<span class="text-color-help">({i18n.t('common_287')})</span></list-body-cell-wrap>
-          })
+          const ips = iparr.map(ip =>
+            h(
+              'list-body-cell-wrap',
+              {
+                props: {
+                  copy: true,
+                  row: { ip },
+                  'hide-field': true,
+                  field: 'ip',
+                },
+              },
+              [
+                ip,
+                h(
+                  'span',
+                  { class: 'text-color-help' },
+                  `(${i18n.t('common_287')})`,
+                ),
+              ],
+            ),
+          )
           ret = ret.concat(ips)
         }
         if (row.vips) {
-          const ips = row.vips.map(ip => {
-            return <list-body-cell-wrap copy row={{ ip }} hide-field field="ip">{ip}<span class="text-color-help">({i18n.t('common_vip')})</span></list-body-cell-wrap>
-          })
+          const ips = row.vips.map(ip =>
+            h(
+              'list-body-cell-wrap',
+              {
+                props: {
+                  copy: true,
+                  row: { ip },
+                  'hide-field': true,
+                  field: 'ip',
+                },
+              },
+              [
+                ip,
+                h(
+                  'span',
+                  { class: 'text-color-help' },
+                  `(${i18n.t('common_vip')})`,
+                ),
+              ],
+            ),
+          )
           ret = ret.concat(ips)
         }
         if (row.vip) {
           const iparr = row.vip.split(',')
-          const ips = iparr.map(ip => {
-            return <list-body-cell-wrap copy row={{ ip }} hide-field field="ip">{ip}<span class="text-color-help">({i18n.t('common_vip')})</span></list-body-cell-wrap>
-          })
+          const ips = iparr.map(ip =>
+            h(
+              'list-body-cell-wrap',
+              {
+                props: {
+                  copy: true,
+                  row: { ip },
+                  'hide-field': true,
+                  field: 'ip',
+                },
+              },
+              [
+                ip,
+                h(
+                  'span',
+                  { class: 'text-color-help' },
+                  `(${i18n.t('common_vip')})`,
+                ),
+              ],
+            ),
+          )
           ret = ret.concat(ips)
         }
         if (row.vip_eip) {
           const iparr = row.vip_eip.split(',')
-          const ips = iparr.map(ip => {
-            return <list-body-cell-wrap copy row={{ ip }} hide-field field="ip">{ip}<span class="text-color-help">({i18n.t('common_evip')})</span></list-body-cell-wrap>
-          })
+          const ips = iparr.map(ip =>
+            h(
+              'list-body-cell-wrap',
+              {
+                props: {
+                  copy: true,
+                  row: { ip },
+                  'hide-field': true,
+                  field: 'ip',
+                },
+              },
+              [
+                ip,
+                h(
+                  'span',
+                  { class: 'text-color-help' },
+                  `(${i18n.t('common_evip')})`,
+                ),
+              ],
+            ),
+          )
           ret = ret.concat(ips)
         }
         if (row.metadata && row.metadata.sync_ips) {
           const iparr = row.metadata.sync_ips.split(',')
-          const ips = iparr.map(ip => {
-            return <list-body-cell-wrap copy row={{ ip }} hide-field field="ip">{ip}<span class="text-color-help">({i18n.t('compute.esxi.sync_ips_outofrange')}<a-icon class="ml-1" style="color:red" type="warning" title={i18n.t('compute.esxi.sync_ips_outofrange_alert')} />)</span></list-body-cell-wrap>
-          })
+          const ips = iparr.map(ip =>
+            h(
+              'list-body-cell-wrap',
+              {
+                props: {
+                  copy: true,
+                  row: { ip },
+                  'hide-field': true,
+                  field: 'ip',
+                },
+              },
+              [
+                ip,
+                h(
+                  'span',
+                  { class: 'text-color-help' },
+                  [
+                    i18n.t('compute.esxi.sync_ips_outofrange'),
+                    h('icon', {
+                      class: 'ml-1',
+                      style: 'color:red',
+                      attrs: {
+                        type: 'warning',
+                        title: i18n.t('compute.esxi.sync_ips_outofrange_alert'),
+                      },
+                    }),
+                  ],
+                ),
+              ],
+            ),
+          )
           ret = ret.concat(ips)
         }
         return ret.length ? ret : '-'
@@ -593,14 +1140,24 @@ export const getSwitchTableColumn = ({ field, title, change, disabled, hidden })
     field,
     title,
     slots: {
-      default: ({ row }, h) => {
+      default: ({ row }, _h) => {
         let checked = _.get(row, field)
         if (R.is(String, checked)) {
           if (checked === 'true') checked = true
           if (checked === 'false') checked = false
         }
         return [
-          <a-switch checked={checked} disabled={disabled} checkedChildren={i18n.t('common_292')} unCheckedChildren={i18n.t('common_293')} onChange={change} />,
+          h('a-switch', {
+            props: {
+              checked,
+              disabled,
+              checkedChildren: i18n.t('common_292'),
+              unCheckedChildren: i18n.t('common_293'),
+            },
+            on: {
+              change,
+            },
+          }),
         ]
       },
     },
@@ -636,7 +1193,7 @@ export const getTagTableColumn = ({
     title,
     width,
     slots: {
-      default: ({ row }, h) => {
+      default: ({ row }, _h) => {
         let metadata = _.get(row, field) || {}
         if (field === 'project_tags' || field === 'object_tags' || field === 'domain_tags') {
           metadata = {}
@@ -772,18 +1329,24 @@ export const getTimeTableColumn = ({
     minWidth: minWidth,
     sortable,
     slots: {
-      default: ({ row }, h) => {
-        if (vm.isPreLoad && !row[field]) return [<data-loading />]
+      default: ({ row }, _h) => {
+        if (vm.isPreLoad && !row[field]) {
+          return [h('data-loading')]
+        }
         if (!row[field]) {
           return '-'
         }
         if (fromNow) {
+          const title = moment(row[field]).format()
+          const content = moment(row[field]).fromNow()
           return [
-            <a-tooltip class="ml-1" title={moment(row[field]).format()}>{moment(row[field]).fromNow()}</a-tooltip>,
+            h('span', { class: 'ml-1', attrs: { title } }, content),
           ]
         }
+        const title = moment(row[field]).fromNow()
+        const content = moment(row[field]).format(format)
         return [
-          <a-tooltip class="ml-1" title={moment(row[field]).fromNow()}>{moment(row[field]).format(format)}</a-tooltip>,
+          h('span', { class: 'ml-1', attrs: { title } }, content),
         ]
       },
     },
@@ -820,7 +1383,7 @@ export const getTimeRangeColumn = ({
     width: 320,
     sortable,
     slots: {
-      default: ({ row }, h) => {
+      default: ({ row }, _h) => {
         const start = row[start_field] ? moment(row[start_field]).format(format) : ''
         const end = row[end_field] ? moment(row[end_field]).format(format) : ''
         if (start && end) {
@@ -895,25 +1458,61 @@ export const getAccountTableColumn = ({
       return hidden
     },
     slots: {
-      default: ({ row }, h) => {
+      default: ({ row }, _h) => {
         let val = _.get(row, field)
-        if (vm.isPreLoad && !val) return [<data-loading />]
+        if (vm.isPreLoad && !val) {
+          return [h('data-loading')]
+        }
         // OneStack => oem name
         if (val === 'OneStack' && row[brandField] && row[brandField] === 'OneCloud') {
           val = setting.brand[setting.language] || setting.brand.en || val
         }
         const ret = []
         ret.push(
-          <list-body-cell-wrap hide-field copy field={field} row={{ [field]: val }}>
-            <span style={{ color: '#0A1F44' }}>{val || '-'}</span>
-          </list-body-cell-wrap>,
+          h(
+            'list-body-cell-wrap',
+            {
+              props: {
+                'hide-field': true,
+                copy: true,
+                field,
+                row: { [field]: val },
+              },
+            },
+            [
+              h(
+                'span',
+                {
+                  style: { color: 'var(--oc-color-text-heading)' },
+                },
+                val || '-',
+              ),
+            ],
+          ),
         )
         const managerVal = _.get(row, managerField)
         if (managerVal) {
           ret.push(
-            <list-body-cell-wrap hide-field copy field={managerField} row={row}>
-              <span style={{ color: '#53627C' }}>{managerVal}</span>
-            </list-body-cell-wrap>,
+            h(
+              'list-body-cell-wrap',
+              {
+                props: {
+                  'hide-field': true,
+                  copy: true,
+                  field: managerField,
+                  row,
+                },
+              },
+              [
+                h(
+                  'span',
+                  {
+                    style: { color: 'var(--oc-color-text-secondary)' },
+                  },
+                  managerVal,
+                ),
+              ],
+            ),
           )
         }
         return ret
@@ -929,7 +1528,7 @@ export const getBillingTypeTableColumn = ({ field = 'billing_type', title = i18n
     showOverflow: 'ellipsis',
     width,
     slots: {
-      default: ({ row }, h) => {
+      default: ({ row }, _h) => {
         const ret = []
         const billingText = (row) => {
           if (row.charge_type) {
@@ -962,14 +1561,30 @@ export const getBillingTypeTableColumn = ({ field = 'billing_type', title = i18n
             }
           }
         }
-        ret.push(<div style={{ color: '#0A1F44' }}>{billingText(row)}</div>)
+        ret.push(
+          h(
+            'div',
+            {
+              style: { color: 'var(--oc-color-text-heading)' },
+            },
+            billingText(row),
+          ),
+        )
         if (row.expired_at) {
           const dateArr = moment(row.expired_at).fromNow().split(' ')
           const date = dateArr.join(' ')
           const seconds = moment(row.expired_at).diff(new Date()) / 1000
-          const textColor = seconds / 24 / 60 / 60 < 7 ? '#DD2727' : '#53627C'
+          const textColor = seconds / 24 / 60 / 60 < 7 ? '#DD2727' : 'var(--oc-color-text-secondary)'
           const text = seconds < 0 ? i18n.t('common_296') : i18n.t('common_297', [date])
-          ret.push(<div style={{ color: textColor }}>{text}</div>)
+          ret.push(
+            h(
+              'div',
+              {
+                style: { color: textColor },
+              },
+              text,
+            ),
+          )
         }
         return ret
       },
@@ -1009,75 +1624,103 @@ export const getPublicScopeTableColumn = ({
       return hidden
     },
     slots: {
-      default: ({ row }, h) => {
+      default: ({ row }, _h) => {
         const i18nPrefix = store.getters.l3PermissionEnable ? 'shareDesc' : 'shareDescPrimary'
         if (row.is_public === false || row.is_public === 'false') return i18n.t(`${i18nPrefix}.none`)
         const { public_scope: publicScope, shared_projects: sharedProjects, shared_domains: sharedDomains } = row
         if (publicScope === 'project' && sharedProjects && sharedProjects.length > 0) {
           return [
-            <a onClick={() => {
-              vm.createDialog('CommonDialog', {
-                hiddenCancel: true,
-                header: i18n.t('common_101'),
-                body: () => {
-                  return [
-                    <a-alert class='mb-2' message={i18n.t('common_298', [sharedProjects.length])} />,
-                    <dialog-table
-                      vxeGridProps={{ showOverflow: 'title' }}
-                      data={sharedProjects}
-                      columns={
-                        [
-                          getCopyWithContentTableColumn({
-                            field: 'id',
-                            title: 'ID',
-                            minWidth: 140,
+            h(
+              'a',
+              {
+                on: {
+                  click: () => {
+                    vm.createDialog('CommonDialog', {
+                      hiddenCancel: true,
+                      header: i18n.t('common_101'),
+                      body: () => {
+                        return [
+                          h('a-alert', {
+                            class: 'mb-2',
+                            props: {
+                              message: i18n.t('common_298', [sharedProjects.length]),
+                            },
                           }),
-                          getCopyWithContentTableColumn({
-                            field: 'name',
-                            title: i18n.t('common_186'),
-                          }),
-                          getCopyWithContentTableColumn({
-                            field: 'domain',
-                            title: i18n.t('table.title.owner_domain'),
+                          h('dialog-table', {
+                            props: {
+                              vxeGridProps: { showOverflow: 'title' },
+                              data: sharedProjects,
+                              columns: [
+                                getCopyWithContentTableColumn({
+                                  field: 'id',
+                                  title: 'ID',
+                                  minWidth: 140,
+                                }),
+                                getCopyWithContentTableColumn({
+                                  field: 'name',
+                                  title: i18n.t('common_186'),
+                                }),
+                                getCopyWithContentTableColumn({
+                                  field: 'domain',
+                                  title: i18n.t('table.title.owner_domain'),
+                                }),
+                              ],
+                            },
                           }),
                         ]
-                      } />,
-                  ]
+                      },
+                    })
+                  },
                 },
-              })
-            }}>{i18n.t(`${i18nPrefix}.project`)}</a>,
+              },
+              [i18n.t(`${i18nPrefix}.project`)],
+            ),
           ]
         }
         if (publicScope === 'domain') {
           if (sharedDomains && sharedDomains.length > 0) {
             return [
-              <a onClick={() => {
-                vm.createDialog('CommonDialog', {
-                  hiddenCancel: true,
-                  header: i18n.t('common_101'),
-                  body: () => {
-                    return [
-                      <a-alert class='mb-2' message={i18n.t('common_300', [sharedDomains.length])} />,
-                      <dialog-table
-                        vxeGridProps={{ showOverflow: 'title' }}
-                        data={sharedDomains}
-                        columns={
-                          [
-                            getCopyWithContentTableColumn({
-                              field: 'id',
-                              title: 'ID',
-                              minWidth: 140,
+              h(
+                'a',
+                {
+                  on: {
+                    click: () => {
+                      vm.createDialog('CommonDialog', {
+                        hiddenCancel: true,
+                        header: i18n.t('common_101'),
+                        body: () => {
+                          return [
+                            h('a-alert', {
+                              class: 'mb-2',
+                              props: {
+                                message: i18n.t('common_300', [sharedDomains.length]),
+                              },
                             }),
-                            getCopyWithContentTableColumn({
-                              field: 'name',
-                              title: i18n.t('common_186'),
+                            h('dialog-table', {
+                              props: {
+                                vxeGridProps: { showOverflow: 'title' },
+                                data: sharedDomains,
+                                columns: [
+                                  getCopyWithContentTableColumn({
+                                    field: 'id',
+                                    title: 'ID',
+                                    minWidth: 140,
+                                  }),
+                                  getCopyWithContentTableColumn({
+                                    field: 'name',
+                                    title: i18n.t('common_186'),
+                                  }),
+                                ],
+                              },
                             }),
                           ]
-                        } />,
-                    ]
+                        },
+                      })
+                    },
                   },
-                })
-              }}>{i18n.t(`${i18nPrefix}.domain`)}</a>,
+                },
+                [i18n.t(`${i18nPrefix}.domain`)],
+              ),
             ]
           }
           return i18n.t(`${i18nPrefix}.projectAll`)
@@ -1132,7 +1775,7 @@ export const getApplicationScopeTableColumn = ({
       return hidden
     },
     slots: {
-      default: ({ row }, h) => {
+      default: ({ row }, _h) => {
         const i18nPrefix = 'common_application_scope_desc'
         if (row.is_public === false || row.is_public === 'false') {
           return scope === 'domain' ? i18n.t('common.apply_to_current_domain') : i18n.t('common.apply_to_current_project')
@@ -1140,69 +1783,97 @@ export const getApplicationScopeTableColumn = ({
         const { public_scope: publicScope, shared_projects: sharedProjects, shared_domains: sharedDomains } = row
         if (publicScope === 'project' && sharedProjects && sharedProjects.length > 0) {
           return [
-            <a onClick={() => {
-              vm.createDialog('CommonDialog', {
-                hiddenCancel: true,
-                header: i18n.t('common.application_scope'),
-                body: () => {
-                  return [
-                    <a-alert class='mb-2' message={i18n.t('common.rule_scope_resource', [sharedProjects.length, i18n.t('dictionary.project')])} />,
-                    <dialog-table
-                      vxeGridProps={{ showOverflow: 'title' }}
-                      data={sharedProjects}
-                      columns={
-                        [
-                          getCopyWithContentTableColumn({
-                            field: 'id',
-                            title: 'ID',
-                            minWidth: 140,
+            h(
+              'a',
+              {
+                on: {
+                  click: () => {
+                    vm.createDialog('CommonDialog', {
+                      hiddenCancel: true,
+                      header: i18n.t('common.application_scope'),
+                      body: () => {
+                        return [
+                          h('a-alert', {
+                            class: 'mb-2',
+                            props: {
+                              message: i18n.t('common.rule_scope_resource', [sharedProjects.length, i18n.t('dictionary.project')]),
+                            },
                           }),
-                          getCopyWithContentTableColumn({
-                            field: 'name',
-                            title: i18n.t('common_186'),
-                          }),
-                          getCopyWithContentTableColumn({
-                            field: 'domain',
-                            title: i18n.t('table.title.owner_domain'),
+                          h('dialog-table', {
+                            props: {
+                              vxeGridProps: { showOverflow: 'title' },
+                              data: sharedProjects,
+                              columns: [
+                                getCopyWithContentTableColumn({
+                                  field: 'id',
+                                  title: 'ID',
+                                  minWidth: 140,
+                                }),
+                                getCopyWithContentTableColumn({
+                                  field: 'name',
+                                  title: i18n.t('common_186'),
+                                }),
+                                getCopyWithContentTableColumn({
+                                  field: 'domain',
+                                  title: i18n.t('table.title.owner_domain'),
+                                }),
+                              ],
+                            },
                           }),
                         ]
-                      } />,
-                  ]
+                      },
+                    })
+                  },
                 },
-              })
-            }}>{i18n.t(`${i18nPrefix}.project`)}</a>,
+              },
+              [i18n.t(`${i18nPrefix}.project`)],
+            ),
           ]
         }
         if (publicScope === 'domain') {
           if (sharedDomains && sharedDomains.length > 0) {
             return [
-              <a onClick={() => {
-                vm.createDialog('CommonDialog', {
-                  hiddenCancel: true,
-                  header: i18n.t('common.application_scope'),
-                  body: () => {
-                    return [
-                      <a-alert class='mb-2' message={i18n.t('common.rule_scope_resource', [sharedDomains.length, i18n.t('dictionary.domain')])} />,
-                      <dialog-table
-                        vxeGridProps={{ showOverflow: 'title' }}
-                        data={sharedDomains}
-                        columns={
-                          [
-                            getCopyWithContentTableColumn({
-                              field: 'id',
-                              title: 'ID',
-                              minWidth: 140,
+              h(
+                'a',
+                {
+                  on: {
+                    click: () => {
+                      vm.createDialog('CommonDialog', {
+                        hiddenCancel: true,
+                        header: i18n.t('common.application_scope'),
+                        body: () => {
+                          return [
+                            h('a-alert', {
+                              class: 'mb-2',
+                              props: {
+                                message: i18n.t('common.rule_scope_resource', [sharedDomains.length, i18n.t('dictionary.domain')]),
+                              },
                             }),
-                            getCopyWithContentTableColumn({
-                              field: 'name',
-                              title: i18n.t('common_186'),
+                            h('dialog-table', {
+                              props: {
+                                vxeGridProps: { showOverflow: 'title' },
+                                data: sharedDomains,
+                                columns: [
+                                  getCopyWithContentTableColumn({
+                                    field: 'id',
+                                    title: 'ID',
+                                    minWidth: 140,
+                                  }),
+                                  getCopyWithContentTableColumn({
+                                    field: 'name',
+                                    title: i18n.t('common_186'),
+                                  }),
+                                ],
+                              },
                             }),
                           ]
-                        } />,
-                    ]
+                        },
+                      })
+                    },
                   },
-                })
-              }}>{i18n.t(`${i18nPrefix}.domain`)}</a>,
+                },
+                [i18n.t(`${i18nPrefix}.domain`)],
+              ),
             ]
           }
           return i18n.t(`${i18nPrefix}.projectAll`)
@@ -1252,7 +1923,7 @@ export const getBillingTableColumn = ({
     minWidth,
     showOverflow,
     slots: {
-      default: ({ row }, h) => {
+      default: ({ row }, _h) => {
         const billingType = row[field]
         const ret = []
         const openVmSetDurationDialog = () => {
@@ -1265,51 +1936,96 @@ export const getBillingTableColumn = ({
           })
         }
         if (billingType === 'postpaid') {
-          ret.push(<div style={{ color: '#0A1F44' }}>{i18n.t('billingType.postpaid')}</div>)
+          ret.push(
+            h(
+              'div',
+              {
+                style: { color: 'var(--oc-color-text-heading)' },
+              },
+              i18n.t('billingType.postpaid'),
+            ),
+          )
         } else if (billingType === 'prepaid') {
-          ret.push(<div style={{ color: '#0A1F44' }}>{i18n.t('billingType.prepaid')}</div>)
+          ret.push(
+            h(
+              'div',
+              {
+                style: { color: 'var(--oc-color-text-heading)' },
+              },
+              i18n.t('billingType.prepaid'),
+            ),
+          )
         }
         if (billingType === 'postpaid' && row.release_at) {
           const time = vm.$moment(row.release_at).format()
-          let tooltipCon = <div slot="help"></div>
           const isHiddenSetButton = R.is(Function, hiddenSetBtn) ? hiddenSetBtn() : hiddenSetBtn
-          if (hasPermission({ key: 'server_perform_cancel_expire' }) && !isHiddenSetButton) {
-            tooltipCon = <div slot="help">{i18n.t('common_301', [time])}{showSetButton ? <span class="link-color" style="cursor: pointer" onClick={openVmSetDurationDialog}>{i18n.t('common_453')}</span> : ''}</div>
-          } else {
-            tooltipCon = <div slot="help">{i18n.t('common_301', [time])}</div>
+
+          let tipText = i18n.t('common_301', [time])
+          const canCancelExpire = hasPermission({ key: 'server_perform_cancel_expire' }) && !isHiddenSetButton && showSetButton
+          if (canCancelExpire) {
+            tipText += ` ${i18n.t('common_453')}`
           }
-          const help = <a-tooltip>
-            <template slot="title">
-              {tooltipCon}
-            </template>
-            <icon type="help" />
-          </a-tooltip>
+
+          const help = h(
+            'span',
+            {
+              class: 'ml-1',
+              style: { cursor: canCancelExpire ? 'pointer' : 'help' },
+              attrs: { title: tipText },
+              on: canCancelExpire ? { click: openVmSetDurationDialog } : undefined,
+            },
+            [h('icon', { props: { type: 'help' } })],
+          )
+
           const dateArr = vm.$moment(row.release_at).fromNow().split(' ')
           const date = dateArr.join(' ')
           const seconds = vm.$moment(row.release_at).diff(new Date()) / 1000
-          const textColor = seconds / 24 / 60 / 60 < 7 ? '#DD2727' : '#53627C'
+          const textColor = seconds / 24 / 60 / 60 < 7 ? '#DD2727' : 'var(--oc-color-text-secondary)'
           const text = seconds < 0 ? i18n.t('common_296') : i18n.t('common_297', [date])
-          ret.push(<div class='text-truncate' title={text} style={{ color: textColor }}>{text} {help}</div>)
+          ret.push(
+            h(
+              'div',
+              {
+                class: 'text-truncate',
+                attrs: { title: text },
+                style: { color: textColor },
+              },
+              [text, ' ', help],
+            ),
+          )
         } else if (billingType === 'prepaid' && row.expired_at) {
           const time = vm.$moment(row.expired_at).format()
-          let tooltipCon = <div slot="help"></div>
-          if (row.auto_renew) {
-            tooltipCon = <div slot="help">{i18n.t('common_301', [time])}{i18n.t('common_451')}</div>
-          } else {
-            tooltipCon = <div slot="help">{i18n.t('common_301', [time])}{i18n.t('common_452')}</div>
-          }
-          const help = <a-tooltip>
-            <template slot="title">
-              {tooltipCon}
-            </template>
-            <icon type="help" />
-          </a-tooltip>
+
+          const tooltipText = row.auto_renew
+            ? i18n.t('common_301', [time]) + i18n.t('common_451')
+            : i18n.t('common_301', [time]) + i18n.t('common_452')
+
+          const help = h(
+            'span',
+            {
+              class: 'ml-1',
+              style: { cursor: 'help' },
+              attrs: { title: tooltipText },
+            },
+            [h('icon', { props: { type: 'help' } })],
+          )
+
           const dateArr = vm.$moment(row.expired_at).fromNow().split(' ')
           const date = dateArr.join(' ')
           const seconds = vm.$moment(row.expired_at).diff(new Date()) / 1000
-          const textColor = seconds / 24 / 60 / 60 < 7 ? '#DD2727' : '#53627C'
+          const textColor = seconds / 24 / 60 / 60 < 7 ? '#DD2727' : 'var(--oc-color-text-secondary)'
           const text = seconds < 0 ? i18n.t('common_296') : i18n.t('common_297', [date])
-          ret.push(<div class='text-truncate' title={text} style={{ color: textColor }}>{text} {help}</div>)
+          ret.push(
+            h(
+              'div',
+              {
+                class: 'text-truncate',
+                attrs: { title: text },
+                style: { color: textColor },
+              },
+              [text, ' ', help],
+            ),
+          )
         }
         return ret
       },
@@ -1340,23 +2056,55 @@ export const getZone1TableColumn = ({
     field,
     title,
     slots: {
-      default: ({ row }) => {
+      default: ({ row }, _h) => {
         if (!row[idField]) return row[field] || '-'
         const p = hasPermission({ key: 'zones_get' })
         let node
         if (p) {
-          node = (
-            <list-body-cell-wrap copy row={row} field={field} title={row[field]} hideField={true}>
-              <side-page-trigger permission='zones_get' name='ZoneSidePage' id={row[idField]} vm={vm}>{row[field]}</side-page-trigger>
-            </list-body-cell-wrap>
+          node = h(
+            'list-body-cell-wrap',
+            {
+              props: {
+                copy: true,
+                row,
+                field,
+                title: row[field],
+                hideField: true,
+              },
+            },
+            [
+              h(
+                'side-page-trigger',
+                {
+                  props: {
+                    permission: 'zones_get',
+                    name: 'ZoneSidePage',
+                    id: row[idField],
+                    vm,
+                  },
+                },
+                [row[field]],
+              ),
+            ],
           )
         } else {
-          node = (
-            <list-body-cell-wrap copy row={row} field={field} title={row[field]} />
-          )
+          node = h('list-body-cell-wrap', {
+            props: {
+              copy: true,
+              row,
+              field,
+              title: row[field],
+            },
+          })
         }
         return [
-          <div class='text-truncate'>{node}</div>,
+          h(
+            'div',
+            {
+              class: 'text-truncate',
+            },
+            [node],
+          ),
         ]
       },
     },
@@ -1431,10 +2179,15 @@ export const getOsDist = ({
           tooltip = row.metadata.os_full_name || tooltip
         }
         const ret = [
-          <SystemIcon tooltip={tooltip} name={name} />,
+          h(SystemIcon, {
+            props: {
+              tooltip,
+              name,
+            },
+          }),
         ]
         if (show_label) {
-          ret.push(<span class='text-truncate'> {tooltip}</span>)
+          ret.push(h('span', { class: 'text-truncate' }, ` ${tooltip}`))
         }
         return ret
       },
@@ -1501,7 +2254,16 @@ export const getServerMonitorAgentInstallStatus = ({
           if (row.agent_status === 'succeed' || deploy) {
             return i18n.t('compute.monitor.agent.install_status.installed')
           } else if (row.agent_status === 'applying') {
-            return (<div>{i18n.t('compute.monitor.agent.install_status.installing')}<a-icon style="margin-left:5px" type="loading" /></div>)
+            return h(
+              'div',
+              [
+                i18n.t('compute.monitor.agent.install_status.installing'),
+                h('icon', {
+                  style: 'margin-left:5px',
+                  attrs: { type: 'loading' },
+                }),
+              ],
+            )
           } else if (row.agent_status === 'failed') {
             return i18n.t('compute.monitor.agent.install_status.installfailed')
           }
@@ -1524,7 +2286,7 @@ export const getCycleTimerColumn = ({ timeFormat = 'YYYY-MM-DD HH:mm:ss', hidden
     minWidth: 200,
     showOverflow: 'title',
     slots: {
-      default: ({ row }, h) => {
+      default: ({ row }, _h) => {
         if (!row.cycle_timer) return '-'
         const hour = row.cycle_timer.hour
         const minute = row.cycle_timer.minute
@@ -1562,25 +2324,61 @@ export const getDomainColumn = ({ vm, hidden }) => {
     field: 'domain',
     title: i18n.t('common.attribution_scope'),
     slots: {
-      default: ({ row }, h) => {
+      default: ({ row }, _h) => {
         const domain = row.project_domain || row.domain
         if (!row.domain_id) return domain || '-'
         if (!domain) return '-'
         const p = hasPermission({ key: 'domains_get' })
         let node
         if (p) {
-          node = (
-            <list-body-cell-wrap copy row={vm.data} onManager={vm.onManager} field='project_domain' title={row.project_domain} message={domain} hideField={true}>
-              <side-page-trigger permission='domains_get' name='DomainSidePage' id={row.project_domain} vm={vm}>{domain}</side-page-trigger>
-            </list-body-cell-wrap>
+          node = h(
+            'list-body-cell-wrap',
+            {
+              props: {
+                copy: true,
+                row: vm.data,
+                onManager: vm.onManager,
+                field: 'project_domain',
+                title: row.project_domain,
+                message: domain,
+                hideField: true,
+              },
+            },
+            [
+              h(
+                'side-page-trigger',
+                {
+                  props: {
+                    permission: 'domains_get',
+                    name: 'DomainSidePage',
+                    id: row.project_domain,
+                    vm,
+                  },
+                },
+                [domain],
+              ),
+            ],
           )
         } else {
-          node = (
-            <list-body-cell-wrap copy row={vm.data} onManager={vm.onManager} field='project_domain' title={row.project_domain} message={domain} />
-          )
+          node = h('list-body-cell-wrap', {
+            props: {
+              copy: true,
+              row: vm.data,
+              onManager: vm.onManager,
+              field: 'project_domain',
+              title: row.project_domain,
+              message: domain,
+            },
+          })
         }
         return [
-          <div class='text-truncate'>{node}</div>,
+          h(
+            'div',
+            {
+              class: 'text-truncate',
+            },
+            [node],
+          ),
         ]
       },
     },
@@ -1610,7 +2408,7 @@ export const getTaskObjnameTableColumn = () => {
     field: 'object',
     showOverflow: 'ellipsis',
     slots: {
-      default: ({ row }, h) => {
+      default: ({ row }, _h) => {
         let objName = ''
         if (row.object) {
           objName = row.object
@@ -1622,9 +2420,19 @@ export const getTaskObjnameTableColumn = () => {
             return i18n.t('task.stages.title.multi_objects')
           } else {
             return [
-              <list-body-cell-wrap copy hideField={true} field='object' row={row} message={objName}>
-                {objName}
-              </list-body-cell-wrap>,
+              h(
+                'list-body-cell-wrap',
+                {
+                  props: {
+                    copy: true,
+                    hideField: true,
+                    field: 'object',
+                    row,
+                    message: objName,
+                  },
+                },
+                [objName],
+              ),
             ]
           }
         }
@@ -1640,15 +2448,25 @@ export const getTaskObjIdTableColumn = () => {
     field: 'obj_id',
     showOverflow: 'ellipsis',
     slots: {
-      default: ({ row }, h) => {
+      default: ({ row }, _h) => {
         if (row.obj_id) {
           if (row.obj_id === '[--MULTI_OBJECTS--]') {
             return i18n.t('task.stages.title.multi_objects')
           } else {
             return [
-              <list-body-cell-wrap copy hideField={true} field='obj_id' row={row} message={row.obj_id}>
-                {row.obj_id}
-              </list-body-cell-wrap>,
+              h(
+                'list-body-cell-wrap',
+                {
+                  props: {
+                    copy: true,
+                    hideField: true,
+                    field: 'obj_id',
+                    row,
+                    message: row.obj_id,
+                  },
+                },
+                [row.obj_id],
+              ),
             ]
           }
         }
@@ -1664,11 +2482,21 @@ export const getTaskNameTableColumn = () => {
     field: 'task_name',
     showOverflow: 'ellipsis',
     slots: {
-      default: ({ row }, h) => {
+      default: ({ row }, _h) => {
         return [
-          <list-body-cell-wrap copy hideField={true} field='task_name' row={row} message={row.task_name}>
-            {row.task_name}
-          </list-body-cell-wrap>,
+          h(
+            'list-body-cell-wrap',
+            {
+              props: {
+                copy: true,
+                hideField: true,
+                field: 'task_name',
+                row,
+                message: row.task_name,
+              },
+            },
+            [row.task_name],
+          ),
         ]
       },
     },

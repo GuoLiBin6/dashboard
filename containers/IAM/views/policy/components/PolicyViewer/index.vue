@@ -9,8 +9,8 @@
         <group :key="service" v-if="!isServiceDataEmpty" :data="getServiceData(options)" :get-tag-color="getTagColor" />
         <span v-else>{{ $t('iam.no_resource_policy') }}</span>
       </template>
-      <template v-else v-for="service of options">
-        <group :key="service.key" :data="service" :get-tag-color="getTagColor" />
+      <template v-else v-for="service of options" :key="service.key">
+        <group :data="service" :get-tag-color="getTagColor" />
       </template>
     </template>
   </div>

@@ -8,7 +8,7 @@
       <a-row :gutter="8">
         <a-col :span="10">
           <a-input-search
-            v-model="filter.search"
+            v-model:value="filter.search"
             :placeholder="$t('aice.llm_catalog.search.placeholder')"
             allow-clear
             @search="fetchList"
@@ -16,7 +16,7 @@
         </a-col>
         <a-col :span="10">
           <a-select
-            v-model="filter.category"
+            v-model:value="filter.category"
             :placeholder="$t('aice.llm_catalog.category.placeholder')"
             allow-clear
             style="width: 100%"
@@ -81,7 +81,7 @@
       <a-pagination
         v-if="total > pageSize"
         :total="total"
-        :current.sync="page"
+        v-model:current="page"
         :page-size="pageSize"
         @change="onPageChange" />
     </div>
@@ -168,7 +168,7 @@ export default {
     this.scheduleInitHeight()
     window.addEventListener('resize', this.initHeight)
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.$bus.$off('GlobalTopAlertUpdate', this.onGlobalTopAlertUpdate)
     window.removeEventListener('resize', this.initHeight)
     this.heightTimers.forEach(clearTimeout)

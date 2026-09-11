@@ -49,10 +49,16 @@ export default {
         getNameDescriptionTableColumn({
           edit: false,
           hideField: true,
-          slotCallback: row => {
-            return (
-              <side-page-trigger permission='hosts_get' name='HostSidePage' id={ row.id } list={this.list} vm={this}>{ row.name }</side-page-trigger>
-            )
+          slotCallback: (row, h) => {
+            return h('side-page-trigger', {
+              props: {
+                permission: 'hosts_get',
+                name: 'HostSidePage',
+                id: row.id,
+                list: this.list,
+                vm: this,
+              },
+            }, [row.name])
           },
         }),
         getEnabledTableColumn(),
@@ -129,11 +135,16 @@ export default {
           minWidth: 70,
           showOverflow: 'ellipsis',
           slots: {
-            default: ({ cellValue, row }) => {
+            default: ({ cellValue, row }, h) => {
               if (!row.is_baremetal) {
                 return '-'
               } else {
-                return [<PasswordFetcher serverId={ row.id } resourceType='baremetals' />]
+                return [h(PasswordFetcher, {
+                  props: {
+                    serverId: row.id,
+                    resourceType: 'baremetals',
+                  },
+                })]
               }
             },
           },
@@ -144,11 +155,16 @@ export default {
           minWidth: 70,
           showOverflow: 'ellipsis',
           slots: {
-            default: ({ cellValue, row }) => {
+            default: ({ cellValue, row }, h) => {
               if (!row.is_baremetal) {
                 return '-'
               } else {
-                return [<PasswordFetcher serverId={ row.id } resourceType='baremetals' />]
+                return [h(PasswordFetcher, {
+                  props: {
+                    serverId: row.id,
+                    resourceType: 'baremetals',
+                  },
+                })]
               }
             },
           },

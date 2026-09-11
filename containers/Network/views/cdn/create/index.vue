@@ -1,9 +1,9 @@
 <template>
   <div>
     <page-header :title="$t('common_628', [$t('dictionary.cdn_domain')])" />
-    <page-body needMarginBottom>
+    <page-body>
       <a-form :form="form.fc" class="mt-3" v-bind="formItemLayout" hideRequiredMark>
-        <a-form-item :label="$t('network.text_205', [$t('dictionary.project')])" class="mb-0">
+        <a-form-item :label="$t('network.text_205', [$t('dictionary.project')])">
           <domain-project
             :fc="form.fc"
             :form-layout="formItemLayout"

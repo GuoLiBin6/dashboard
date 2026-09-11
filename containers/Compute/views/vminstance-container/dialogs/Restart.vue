@@ -8,7 +8,7 @@
         </template>
       </a-alert>
       <dialog-selected-tips :name="$t('compute.vminstance-container')" :count="params.data.length" :action="action" />
-      <vxe-grid class="mb-2" :data="params.data" :columns="columns" />
+      <table-lite-grid class="mb-2" :data="params.data" :columns="columns" />
       <a-form :form="form.fc" hideRequiredMark>
         <a-form-item :label="$t('compute.text_1041')" v-bind="formItemLayout" v-if="isOpenWorkflow">
           <a-input v-decorator="decorators.reason" :placeholder="$t('compute.text_1105')" />

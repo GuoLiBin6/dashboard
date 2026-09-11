@@ -1,7 +1,7 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{params.title || $t('cloudenv.text_364')}}</div>
-    <div slot="body">
+    <template #header>{{params.title || $t('cloudenv.text_364')}}</template>
+    <template #body>
       <dialog-selected-tips :name="params.name" class="mt-3" :count="params.data.length" :action="params.action" />
       <dialog-table v-if="params.columns && params.columns.length" :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-form :form="form.fc" v-bind="formItemLayout">
@@ -33,11 +33,11 @@
           </a-select>
         </a-form-item>
       </a-form>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

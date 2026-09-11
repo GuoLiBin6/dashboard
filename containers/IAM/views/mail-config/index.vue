@@ -2,19 +2,19 @@
   <div>
     <page-header :title="$t('dictionary.mail_config')" />
     <page-body>
-      <template v-for="item of cards">
+      <template v-for="item of cards" :key="item.key">
         <!-- <a-card :title="item.label" :key="item.key" class="mb-4" size="small">
         </a-card> -->
-        <a-collapse :bordered="true" :key="item.key" class="collapse-wrap">
+        <a-collapse :bordered="true" class="collapse-wrap">
           <a-collapse-panel :header="item.label" :key="item.key" class="mb-4">
             <template v-slot:extra v-if="item.loading">
-              <a-icon type="loading" />
+              <icon type="loading" />
             </template>
             <component
               :is="item.key"
               :form-item-layout="formItemLayout"
               :offset-wrapper-col="offsetWrapperCol"
-              :loading.sync="item.loading" />
+              v-model:loading="item.loading" />
           </a-collapse-panel>
         </a-collapse>
       </template>
@@ -95,10 +95,8 @@ export default {
 
 <style lang="less" scoped>
 .collapse-wrap {
-  ::v-deep {
-    .ant-collapse-header {
-      color: #1A2739 !important;
-    }
+  :deep(.ant-collapse-header) {
+    color: #1A2739 !important;
   }
 }
 </style>

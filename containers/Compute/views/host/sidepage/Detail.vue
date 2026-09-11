@@ -73,13 +73,17 @@ export default {
         field: 'access_ip',
         title: 'IP',
         slots: {
-          default: ({ row, cellValue }) => {
+          default: ({ row, cellValue }, h) => {
             const ret = [
-              <list-body-cell-wrap copy row={ row } field="access_ip" title={ cellValue } />,
+              h('list-body-cell-wrap', {
+                props: { copy: true, row, field: 'access_ip', title: cellValue },
+              }),
             ]
             if (row.public_ip) {
               ret.push(
-                <list-body-cell-wrap copy row={ row } field="public_ip" title={ cellValue } />,
+                h('list-body-cell-wrap', {
+                  props: { copy: true, row, field: 'public_ip', title: cellValue },
+                }),
               )
             }
             return ret
@@ -90,9 +94,11 @@ export default {
         field: 'access_mac',
         title: this.$t('compute.text_385'),
         slots: {
-          default: ({ row, cellValue }) => {
+          default: ({ row, cellValue }, h) => {
             return [
-              <list-body-cell-wrap copy row={ row } field="access_mac" title={ cellValue } />,
+              h('list-body-cell-wrap', {
+                props: { copy: true, row, field: 'access_mac', title: cellValue },
+              }),
             ]
           },
         },
@@ -100,14 +106,24 @@ export default {
       getStatusTableColumn({ field: 'host_status', statusModule: 'host_status', title: this.$t('compute.text_502') }),
       {
         field: 'alert_data',
-        title: (h) => [
-          <span style="margin-right:5px">{this.$t('compute.alert_status')}</span>,
-          <help-tooltip name="alertDataTimeRange" />,
-        ],
+        title: (h) => {
+          const create = h || this.$createElement
+          return [
+            create('span', { style: 'margin-right:5px' }, this.$t('compute.alert_status')),
+            create('help-tooltip', { props: { name: 'alertDataTimeRange' } }),
+          ]
+        },
         slots: {
           default: () => {
             const state = this.alertData?.alert_state || 'init'
-            return [<status status={state} statusModule="monitorresources" />]
+            return [
+              this.$createElement('status', {
+                props: {
+                  status: state,
+                  statusModule: 'monitorresources',
+                },
+              }),
+            ]
           },
         },
         hidden: () => this.$isScopedPolicyMenuHidden('host_hidden_columns.alert_data'),
@@ -119,10 +135,7 @@ export default {
         slots: {
           default: ({ row }, h) => {
             if (row.nonsystem_guests <= 0) return row.nonsystem_guests
-            const ret = [
-              <a onClick={ () => this.$emit('tab-change', 'vminstance-list') }>{row.nonsystem_guests}</a>,
-            ]
-            return ret
+            return [h('a', { on: { click: () => this.$emit('tab-change', 'vminstance-list') } }, row.nonsystem_guests)]
           },
         },
       },
@@ -133,10 +146,7 @@ export default {
         slots: {
           default: ({ row }, h) => {
             if (row.nonsystem_guests <= 0) return row.nonsystem_guests
-            const ret = [
-              <a onClick={ () => this.$emit('tab-change', 'vminstance-list') }>{row.nonsystem_guests}</a>,
-            ]
-            return ret
+            return [h('a', { on: { click: () => this.$emit('tab-change', 'vminstance-list') } }, row.nonsystem_guests)]
           },
         },
       },
@@ -155,11 +165,11 @@ export default {
         field: 'version',
         title: this.$t('compute.text_585'),
         slots: {
-          default: ({ row, cellValue }) => {
+          default: ({ row, cellValue }, h) => {
             return [
-              <div class='text-truncate'>
-                <list-body-cell-wrap copy row={ row } field="version" title={ cellValue } />
-              </div>,
+              h('div', { class: 'text-truncate' }, [
+                h('list-body-cell-wrap', { props: { copy: true, row, field: 'version', title: cellValue } }),
+              ]),
             ]
           },
         },
@@ -243,9 +253,7 @@ export default {
         title: this.$t('compute.passthrough_device_count'),
         slots: {
           default: ({ row }, h) => {
-            return [
-              <a onClick={ () => this.$emit('tab-change', 'gpu-list') }>{row.isolated_device_count || 0}</a>,
-            ]
+            return [h('a', { on: { click: () => this.$emit('tab-change', 'gpu-list') } }, row.isolated_device_count || 0)]
           },
         },
       },
@@ -427,7 +435,10 @@ export default {
                 default: ({ row }, h) => {
                   if (row.cpu_commit_bound) {
                     return [
-                      <a class="mem-edit-item" onClick={this.openHostAdjustOversoldRatioDialog}>{row.cpu_commit_bound} <a class="edit-icon"><a-icon type='edit' /></a></a>,
+                      h('a', { class: 'mem-edit-item', on: { click: this.openHostAdjustOversoldRatioDialog } }, [
+                        row.cpu_commit_bound + ' ',
+                        h('a', { class: 'edit-icon' }, [h('icon', { props: { type: 'edit' } })]),
+                      ]),
                     ]
                   }
                   return '-'
@@ -460,9 +471,7 @@ export default {
                 default: ({ row }, h) => {
                   const cpu = row.reserved_resource_for_gpu && row.reserved_resource_for_gpu.reserved_cpu
                   if (cpu) {
-                    return [
-                      <a onClick={ () => this.$emit('tab-change', 'gpu-list') }>{this.$t('compute.text_120', [cpu])}</a>,
-                    ]
+                    return [h('a', { on: { click: () => this.$emit('tab-change', 'gpu-list') } }, this.$t('compute.text_120', [cpu]))]
                   }
                   return '-'
                 },
@@ -479,9 +488,9 @@ export default {
                     const cpusInfo = JSON.parse(reserved_cpus_info).cpus || ''
                     const processes_prefix = JSON.parse(reserved_cpus_info).processes_prefix || []
                     const mems = JSON.parse(reserved_cpus_info).mems || ''
-                    ret.push(<div>{this.$t('compute.text_1058')}:  {cpusInfo.split(',').sort().join('、')}</div>)
-                    ret.push(<div>Numa Node:  {mems.split(',').sort().join('、')}</div>)
-                    ret.push(<div>{this.$t('compute.executable_file_name')}:  {processes_prefix.join(', ')}</div>)
+                    ret.push(h('div', {}, this.$t('compute.text_1058') + ':  ' + cpusInfo.split(',').sort().join('、')))
+                    ret.push(h('div', {}, 'Numa Node:  ' + mems.split(',').sort().join('、')))
+                    ret.push(h('div', {}, this.$t('compute.executable_file_name') + ':  ' + processes_prefix.join(', ')))
                     return ret
                   }
                   return '-'
@@ -511,7 +520,12 @@ export default {
               title: this.$t('compute.text_594'),
               slots: {
                 default: ({ row }, h) => {
-                  if (row.mem_commit_bound) return [<a class="mem-edit-item" onClick={this.openHostAdjustOversoldRatioDialog}>{row.mem_commit_bound}<a class="edit-icon"><a-icon type='edit' /></a></a>]
+                  if (row.mem_commit_bound) {
+                    return [h('a', { class: 'mem-edit-item', on: { click: this.openHostAdjustOversoldRatioDialog } }, [
+                      row.mem_commit_bound,
+                      h('a', { class: 'edit-icon' }, [h('icon', { props: { type: 'edit' } })]),
+                    ])]
+                  }
                   return '-'
                 },
               },
@@ -534,9 +548,7 @@ export default {
                 default: ({ row }, h) => {
                   const memory = row.reserved_resource_for_gpu && row.reserved_resource_for_gpu.reserved_memory
                   if (memory) {
-                    return [
-                      <a onClick={ () => this.$emit('tab-change', 'gpu-list') }>{ sizestr(memory, 'M', 1024) }</a>,
-                    ]
+                    return [h('a', { on: { click: () => this.$emit('tab-change', 'gpu-list') } }, sizestr(memory, 'M', 1024))]
                   }
                   return '-'
                 },
@@ -606,12 +618,12 @@ export default {
             },
             {
               field: 'storage_waste',
-              title: h => {
+              title: (h) => {
                 return [
-                  <span class="mr-1">{this.$t('compute.text_599')}</span>,
-                  <a-tooltip title={ this.$t('compute.text_1376') }>
-                    <a-icon type="question-circle-o" />
-                  </a-tooltip>,
+                  h('span', { class: 'mr-1' }, this.$t('compute.text_599')),
+                  h('a-tooltip', { props: { title: this.$t('compute.text_1376') } }, [
+                    h('icon', { props: { type: 'question-circle' } }),
+                  ]),
                 ]
               },
               formatter: ({ cellValue, row }) => {
@@ -625,9 +637,7 @@ export default {
                 default: ({ row }, h) => {
                   const storage = row.reserved_resource_for_gpu && row.reserved_resource_for_gpu.reserved_storage
                   if (storage) {
-                    return [
-                      <a onClick={ () => this.$emit('tab-change', 'gpu-list') }>{ sizestr(storage, 'M', 1024) }</a>,
-                    ]
+                    return [h('a', { on: { click: () => this.$emit('tab-change', 'gpu-list') } }, sizestr(storage, 'M', 1024))]
                   }
                   return '-'
                 },
@@ -639,7 +649,10 @@ export default {
               slots: {
                 default: ({ row }, h) => {
                   return [
-                    <vxe-grid class="mb-2" data={ row.storage_info } columns={ this.storageColumns } />,
+                    h('table-lite-grid', {
+                      class: 'mb-2',
+                      props: { data: row.storage_info, columns: this.storageColumns },
+                    }),
                   ]
                 },
               },
@@ -653,7 +666,13 @@ export default {
             default: ({ row }, h) => {
               const { nic_info = [] } = row
               return [
-                <vxe-grid class="mb-2" data={ nic_info.filter(nic => !nic.mac.startsWith('ff:')) } columns={ this.hostColumns } />,
+                h('table-lite-grid', {
+                  class: 'mb-2',
+                  props: {
+                    data: nic_info.filter(nic => !nic.mac.startsWith('ff:')),
+                    columns: this.hostColumns,
+                  },
+                }),
               ]
             },
           },

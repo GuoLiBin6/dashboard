@@ -1,7 +1,7 @@
 <template>
   <div>
     <page-header :title="$t('helm.text_25')" />
-    <page-body needMarginBottom>
+    <page-body>
       <div>
         <template v-if="!chartDetail.name">
           <loading-block :layout="loadingLayout" />
@@ -40,16 +40,16 @@
                 <cluster-select v-decorator="decorators.cluster" @input="setCluster" />
               </a-form-item>
               <a-form-item :label="$t('helm.text_32')">
-                <namespace-select v-decorator="decorators.namespace"  @input="setNamespace" :cluster="cluster" :namespaceObj.sync="namespaceObj" />
+                <namespace-select v-decorator="decorators.namespace"  @input="setNamespace" :cluster="cluster" v-model:namespaceObj="namespaceObj" />
               </a-form-item>
             </template>
-            <a-collapse v-model="activeKey">
+            <a-collapse v-model:activeKey="activeKey">
               <a-collapse-panel :header="$t('helm.text_46')" key="jsonschema">
                 <json-schema-form v-if="isJsonSchema" :schema="schema" :extendFd="form.fd" :definition="definition" :hide-reset="false" :influxdbUrl="influxdbUrl" ref="formRef" />
                 <form-yaml
                   v-else
                   :decorators="decorators"
-                  :activeTab.sync="formActiveTab"
+                  v-model:activeTab="formActiveTab"
                   :localData="chartDetail.chart.values"
                   :valueSearch="valueSearch" />
               </a-collapse-panel>

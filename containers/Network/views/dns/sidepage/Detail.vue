@@ -35,7 +35,10 @@ export default {
           field: 'enabled',
           title: this.$t('network.text_27'),
           formatter: ({ cellValue }) => {
-            return <span style={{ color: cellValue ? '#67C23A' : '#F56C6C' }}>{cellValue ? this.$t('network.text_189') : this.$t('network.text_190') }</span>
+            const h = this.$createElement
+            const color = cellValue ? '#67C23A' : '#F56C6C'
+            const text = cellValue ? this.$t('network.text_189') : this.$t('network.text_190')
+            return h('span', { style: { color } }, text)
           },
         },
       ],

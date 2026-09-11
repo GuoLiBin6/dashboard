@@ -75,7 +75,7 @@
         ref="bottomBarRef"
         :loading="submiting"
         :form="form"
-        :errors.sync="errors"
+        v-model:errors="errors"
         :type="type"
         :resourceType="form.fd.resourceType"
         :dataDiskSizes="dataDiskSizes"

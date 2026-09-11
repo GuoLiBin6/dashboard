@@ -65,20 +65,23 @@ export default {
           slots: {
             default: ({ row }, h) => {
               const items = this.contactTypes.map((obj) => {
-                return (
-                  <div key={obj.contact_type} class="col-12">
-                    <div class="row">
-                      <span style="width: 100px" class="mt-2 ml-4 mb-2">{contactMap[obj.contact_type].label}</span>
-                      <span style={ { color: this.getColor(obj) } } class="mt-2 mb-2">
-                        {this.getTitle(obj, obj.contact_type)}
-                      </span>
-                    </div>
-                  </div>
-                )
+                return h('div', {
+                  key: obj.contact_type,
+                  class: 'col-12',
+                }, [
+                  h('div', { class: 'row' }, [
+                    h('span', {
+                      style: 'width: 100px',
+                      class: 'mt-2 ml-4 mb-2',
+                    }, contactMap[obj.contact_type].label),
+                    h('span', {
+                      style: { color: this.getColor(obj) },
+                      class: 'mt-2 mb-2',
+                    }, this.getTitle(obj, obj.contact_type)),
+                  ]),
+                ])
               })
-              return (
-                <div class="row"> { items } </div>
-              )
+              return h('div', { class: 'row' }, items)
             },
           },
         },

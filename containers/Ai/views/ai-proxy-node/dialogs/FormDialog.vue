@@ -4,16 +4,16 @@
     <div slot="body">
       <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 5 }" :wrapper-col="{ span: 17 }">
         <a-form-model-item :label="$t('common.name')" prop="name">
-          <a-input v-model="form.name" disabled />
+          <a-input v-model:value="form.name" disabled />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.aiproxy.address')" prop="address">
-          <a-input v-model="form.address" />
+          <a-input v-model:value="form.address" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.aiproxy.access_address')" prop="access_address">
-          <a-input v-model="form.access_address" placeholder="https://gateway.example.com:443" />
+          <a-input v-model:value="form.access_address" placeholder="https://gateway.example.com:443" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.aiproxy.hb_timeout')" prop="hb_timeout">
-          <a-input-number v-model="form.hb_timeout" :min="1" />
+          <a-input-number v-model:value="form.hb_timeout" :min="1" />
         </a-form-model-item>
       </a-form-model>
     </div>

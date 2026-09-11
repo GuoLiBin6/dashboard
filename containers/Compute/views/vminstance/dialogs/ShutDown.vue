@@ -23,7 +23,7 @@
           <help-tooltip name="shutdownStopCharging" />
         </a-form-item>
         <a-form-item v-if="isSupportForce" :label="$t('compute.force_shutdown')" v-bind="formItemLayout">
-          <a-switch v-model="form.fd.is_force" @change="isForceChange" />
+          <a-switch v-model:value="form.fd.is_force" @change="isForceChange" />
         </a-form-item>
       </a-form>
     </div>

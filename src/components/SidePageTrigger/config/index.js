@@ -1,12 +1,14 @@
 import expectStatus from '@/constants/expectStatus'
 
-// 获取自定义配置
-const requireComponent = require.context('@scope/', true, /\.(js)$/)
-const keys = requireComponent.keys().filter(name => name === './components/SidePageTrigger/config/index.js')
+// 获取自定义配置（@scope/components/SidePageTrigger/config/index.js）
+const scopeConfigModules = import.meta.glob('/src/scope/components/SidePageTrigger/config/index.js', {
+  eager: true,
+  import: 'default',
+})
+
 let extraConfig = {}
-keys.forEach(fileName => {
-  const componentConfig = requireComponent(fileName)
-  const { default: CONFIG = {} } = componentConfig
+Object.values(scopeConfigModules).forEach((CONFIG) => {
+  if (!CONFIG) return
   extraConfig = { ...CONFIG }
 })
 

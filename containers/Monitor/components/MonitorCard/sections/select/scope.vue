@@ -2,7 +2,7 @@
   <div>
     <a-row>
       <a-col :span="16">
-        <a-radio-group v-model="select.scope" @change="onChange">
+        <a-radio-group v-model:value="select.scope" @change="onChange">
           <a-radio-button v-for="o of scopeOptions" :value="o.value" :key="o.key">
             {{ o.label }}
           </a-radio-button>
@@ -12,7 +12,7 @@
     <a-row>
       <a-col :span="16">
         <a-select
-            v-model="select.id"
+            v-model:value="select.id"
             dropdownClassName="oc-select-dropdown"
             show-search
             v-if="showSelect"
@@ -20,8 +20,8 @@
             @change="handleSelectChange"
             :filterOption="false"
             :loading="loading">
-          <template v-for="option of options">
-            <a-select-option :key="option.id" :value="option.id" :label="option.label">
+          <template v-for="option of options" :key="option.id">
+            <a-select-option :value="option.id" :label="option.label">
               <scope-option :scope="select.scope" :option="option" />
             </a-select-option>
           </template>
@@ -33,6 +33,7 @@
 
 <script>
 import _ from 'lodash'
+import { h } from 'vue'
 
 export const ScopeOption = {
   name: 'ScopeSelectOption',
@@ -47,12 +48,18 @@ export const ScopeOption = {
     },
   },
   render (createElement, context) {
+    const prefix = h('span', { class: 'text-color-secondary option-prefix' }, `${this.$t(`dictionary.${this.scope}`)}: `)
     if (this.scope === 'system') {
-      return <div><span class="text-color-secondary option-prefix">{ this.$t(`dictionary.${this.scope}`) }: </span>{ this.option.name }</div>
+      return h('div', {}, [prefix, this.option.name])
     } else if (this.scope === 'domain') {
-      return <div><span class="text-color-secondary option-prefix">{ this.$t(`dictionary.${this.scope}`) }: </span>{ this.option.name }</div>
+      return h('div', {}, [prefix, this.option.name])
     } else {
-      return <div><span class="text-color-secondary option-prefix">{ this.$t(`dictionary.${this.scope}`) }: </span>{ this.option.name }<span className="ml-4 text-color-secondary"> {'(' + this.$t('monitor.text_107') + ' : '}</span>{ this.option.data.project_domain + ')'}</div>
+      return h('div', {}, [
+        prefix,
+        this.option.name,
+        h('span', { class: 'ml-4 text-color-secondary' }, `(${this.$t('monitor.text_107')} : `),
+        `${this.option.data.project_domain})`,
+      ])
     }
   },
 }

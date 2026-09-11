@@ -2,7 +2,7 @@
   <div>
     <a-form-model :model="form" layout="inline">
       <a-form-model-item :label="$t('k8s.text_1')">
-        <a-select style="min-width: 200px;" v-model="form.activeContainer">
+        <a-select style="min-width: 200px;" v-model:value="form.activeContainer">
           <a-select-option v-for="item in containers" :value="item.name" :key="item.name">{{ item.name }}</a-select-option>
         </a-select>
       </a-form-model-item>
@@ -10,7 +10,7 @@
         <a-row>
           <a-col :span="12">
             <a-form-model-item>
-              <a-select style="min-width: 240px;" v-model="form.time">
+              <a-select style="min-width: 240px;" v-model:value="form.time">
                 <a-select-option v-for="item in timeOptions" :value="item.value" :key="item.name">{{ item.name }}</a-select-option>
               </a-select>
             </a-form-model-item>

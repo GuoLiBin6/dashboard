@@ -46,11 +46,27 @@ export default {
           title: this.$t('common_389'),
           field: 'name',
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               return [
-                <list-body-cell-wrap copy row={row} field='name' title={row.name} message={row.name} hideField={true}>
-                  <side-page-trigger permission='projects_get' name='ProjectSidePage' id={row.id} vm={this}>{ row.name }</side-page-trigger>
-                </list-body-cell-wrap>,
+                h('list-body-cell-wrap', {
+                  props: {
+                    copy: true,
+                    row: row,
+                    field: 'name',
+                    title: row.name,
+                    message: row.name,
+                    hideField: true,
+                  },
+                }, [
+                  h('side-page-trigger', {
+                    props: {
+                      permission: 'projects_get',
+                      name: 'ProjectSidePage',
+                      id: row.id,
+                      vm: this,
+                    },
+                  }, row.name),
+                ]),
               ]
             },
           },
@@ -80,12 +96,28 @@ export default {
           title: this.$t('system.text_7'),
           field: 'groupName',
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (!row.groupName) return '-'
               return [
-                <list-body-cell-wrap copy row={row} field='groupName' title={row.groupName} message={row.groupName} hideField={true}>
-                  <side-page-trigger permission='groups_get' name='GroupSidePage' id={row.groupId} vm={this}>{ row.groupName }</side-page-trigger>
-                </list-body-cell-wrap>,
+                h('list-body-cell-wrap', {
+                  props: {
+                    copy: true,
+                    row: row,
+                    field: 'groupName',
+                    title: row.groupName,
+                    message: row.groupName,
+                    hideField: true,
+                  },
+                }, [
+                  h('side-page-trigger', {
+                    props: {
+                      permission: 'groups_get',
+                      name: 'GroupSidePage',
+                      id: row.groupId,
+                      vm: this,
+                    },
+                  }, row.groupName),
+                ]),
               ]
             },
           },
@@ -103,17 +135,26 @@ export default {
           title: this.$t('dictionary.policy'),
           field: 'role',
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               if (R.isNil(row.policies) || R.isEmpty(row.policies)) return '-'
               Object.values(row.policies).flat(Infinity).join(', ')
               const policies = Object.values(row.policies).flat(Infinity)
               const ret = policies.map((item, idx) => {
-                return (
-                  <div style="display: inline-block;">
-                    <side-page-trigger permission='policies_get' name='PolicySidePage' id={item} vm={this}>{ item }</side-page-trigger>
-                    { idx !== policies.length - 1 ? '、' : '' }
-                  </div>
-                )
+                return h('div', {
+                  style: {
+                    display: 'inline-block',
+                  },
+                }, [
+                  h('side-page-trigger', {
+                    props: {
+                      permission: 'policies_get',
+                      name: 'PolicySidePage',
+                      id: item,
+                      vm: this,
+                    },
+                  }, item),
+                  idx !== policies.length - 1 ? '、' : '',
+                ])
               })
               return ret
             },
@@ -135,9 +176,11 @@ export default {
                   ],
                   edit: row => row.idp_driver !== 'ldap',
                   slotCallback: row => {
-                    return (
-                      <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-                    )
+                    return this.$createElement('side-page-trigger', {
+                      on: {
+                        trigger: () => this.handleOpenSidepage(row),
+                      },
+                    }, row.name)
                   },
                 }),
                 getProjectDomainTableColumn(),

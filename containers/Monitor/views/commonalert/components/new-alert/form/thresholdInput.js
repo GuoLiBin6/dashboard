@@ -186,15 +186,24 @@ export default {
       }
       if (this.options) {
         const selectValue = option ? option.value : (unit || '')
-        return <a-select slot="addonAfter" value={selectValue} style="width: 80px" onChange={this.handleUnitChange} disabled={this.disabled}>
-          {
-            this.options.map((item) => {
-              return <a-select-option value={item.value} key={item.key}> {item.label} </a-select-option>
-            })
-          }
-        </a-select>
+        return h('a-select', {
+          slot: 'addonAfter',
+          props: {
+            value: selectValue,
+            disabled: this.disabled,
+          },
+          style: 'width: 80px',
+          on: {
+            change: this.handleUnitChange,
+          },
+        }, this.options.map((item) => h('a-select-option', {
+          key: item.key,
+          props: {
+            value: item.value,
+          },
+        }, [item.label])))
       } else if (unit !== 'NULL') {
-        return <span slot="addonAfter">{unit}</span>
+        return h('span', { slot: 'addonAfter' }, [unit])
       } else {
         return ''
       }

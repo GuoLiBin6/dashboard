@@ -103,7 +103,11 @@ export default {
           title: this.$t('k8s.text_243'),
           slots: {
             default: ({ row }, h) => {
-              const ret = [<side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.cluster }</side-page-trigger>]
+              const ret = [h('side-page-trigger', {
+                on: {
+                  trigger: () => this.handleOpenSidepage(row),
+                },
+              }, row.cluster)]
               return ret
             },
           },
@@ -116,7 +120,11 @@ export default {
               let ret = [row.resource]
               if (row.resource_keyword && RESOURCE_KEYWORD_MAP[row.resource_keyword]) {
                 const sidepageName = RESOURCE_KEYWORD_MAP[row.resource_keyword]
-                ret = [<side-page-trigger onTrigger={ () => this.handleOpenResourceSidepage(row, sidepageName) }>{ row.resource }</side-page-trigger>]
+                ret = [h('side-page-trigger', {
+                  on: {
+                    trigger: () => this.handleOpenResourceSidepage(row, sidepageName),
+                  },
+                }, row.resource)]
               }
               return ret
             },

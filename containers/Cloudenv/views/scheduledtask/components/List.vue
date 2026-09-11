@@ -3,7 +3,9 @@
     :list="list"
     :columns="filterColumns"
     :group-actions="groupActions"
-    :single-actions="!hiddenSingleActions && singleActions"
+    :single-actions="(!hiddenSingleActions && singleActions) || []"
+    :show-searchbox="!inBaseSidePage"
+    :enable-virtual-scroll="!inBaseSidePage"
     :export-data-options="exportDataOptions" />
 </template>
 
@@ -28,8 +30,8 @@ export default {
   props: {
     id: String,
     getParams: {
-      type: Function || Object,
-      default: {},
+      type: [Function, Object],
+      default: () => ({}),
     },
     hiddenColumns: {
       type: Array,
@@ -65,9 +67,9 @@ export default {
           operation: {
             label: this.$t('cloudenv.text_425'),
             dropdown: true,
-            items: Object.keys(this.$t('cloudenvScheduledtaskRuleAction')).map((k) => {
+            items: Object.keys(this.$tm('cloudenvScheduledtaskRuleAction')).map((k) => {
               return {
-                label: this.$t('cloudenvScheduledtaskRuleAction')[k],
+                label: this.$tm('cloudenvScheduledtaskRuleAction')[k],
                 key: k,
               }
             }),
@@ -172,11 +174,23 @@ export default {
     },
   },
   created () {
-    this.initSidePageTab('scheduledtask-detail')
-    this.list.fetchData()
-    this.$bus.$on('ScheduledtasksListSingleRefresh', args => {
-      this.list.singleRefresh(...args)
-    }, this)
+    // 该组件在某些场景会复用到 sidepage（例如 VmInstanceSidePage 的 scheduledtasks-list tab）。
+    // sidepage 内不应修改父级 tab key，否则会出现“子组件创建时切换 tab -> 父级重渲 -> 再创建”的循环。
+    if (!this.inBaseSidePage) {
+      this.initSidePageTab('scheduledtask-detail')
+    }
+    const run = () => this.list.fetchData()
+    // 虚拟机详情侧栏内：避免与 Tab 切换、父组件更新叠在同一同步栈里
+    if (this.inBaseSidePage) {
+      this.$nextTick(() => {
+        this.$nextTick(run)
+      })
+    } else {
+      run()
+    }
+    // this.$bus.$on('ScheduledtasksListSingleRefresh', args => {
+    //   this.list.singleRefresh(...args)
+    // }, this)
   },
   methods: {
     handleOpenSidepage (row) {

@@ -28,7 +28,7 @@ const confirm = {
       },
       types: {
         confirm: {
-          icon: <a-icon class="warning-color" type="question-circle" />,
+          iconProps: { class: 'warning-color', type: 'question-circle' },
         },
       },
     }
@@ -49,39 +49,48 @@ const confirm = {
       }
     },
   },
-  render () {
+  render (h) {
     const { title, type, okText, cancelText, content, header } = Object.assign(this.defaultParams, this.params)
-    const { icon } = this.types[type] || {}
+    const { iconProps } = this.types[type] || {}
+    const icon = iconProps ? h('icon', { class: iconProps.class, attrs: { type: iconProps.type } }) : null
     const RenderTitle = () => {
-      if (title) {
-        return <span class="heading-color" style={TITLE_STYLE}>{title}</span>
-      }
-      return null
+      if (!title) return null
+      return h('span', {
+        class: 'heading-color',
+        style: TITLE_STYLE,
+      }, [title])
     }
     const RenderContent = () => {
-      if (content) {
-        return <div class="text-color" style={CONTENT_STYLE}>{content}</div>
-      }
-      return null
+      if (!content) return null
+      return h('div', {
+        class: 'text-color',
+        style: CONTENT_STYLE,
+      }, [content])
     }
-    return (
-      <base-dialog width={420} onCancel={this.cancelDialog}>
-        <div slot="header">{header}</div>
-        <div slot="body">
-          <div class="d-flex">
-            <span style="font-size: 22px;margin-top:-5px">{icon}</span>
-            <div class="pl-2 w-100 bd-highlight">
-              <RenderTitle />
-              <RenderContent />
-            </div>
-          </div>
-        </div>
-        <div slot="footer">
-          <a-button type="primary" onClick={this.handleConfirm} loading={this.loading}>{okText}</a-button>
-          <a-button onClick={this.cancelDialog}>{cancelText}</a-button>
-        </div>
-      </base-dialog>
-    )
+    const headerNode = h('div', { slot: 'header' }, [header])
+    const bodyNode = h('div', { slot: 'body' }, [
+      h('div', { class: 'd-flex' }, [
+        h('span', { style: 'font-size: 22px;margin-top:-5px' }, [icon]),
+        h('div', { class: 'pl-2 w-100 bd-highlight' }, [
+          RenderTitle(),
+          RenderContent(),
+        ]),
+      ]),
+    ])
+    const footerNode = h('div', { slot: 'footer' }, [
+      h('a-button', {
+        attrs: { type: 'primary' },
+        on: { click: this.handleConfirm },
+        props: { loading: this.loading },
+      }, [okText]),
+      h('a-button', {
+        on: { click: this.cancelDialog },
+      }, [cancelText]),
+    ])
+    return h('base-dialog', {
+      props: { width: 420 },
+      on: { cancel: this.cancelDialog },
+    }, [headerNode, bodyNode, footerNode])
   },
 }
 

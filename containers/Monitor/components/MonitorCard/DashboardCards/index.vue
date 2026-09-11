@@ -1,13 +1,13 @@
 <template>
-  <div :class="card_style">
+  <div class="monitor-dashboard-cards" :class="card_style">
     <div v-if="!readOnly" class="d-flex align-items-center justify-content-between">
       <monitor-header
-        :time.sync="time"
-        :timeGroup.sync="timeGroup"
+        v-model:time="time"
+        v-model:timeGroup="timeGroup"
         :showTimegroup="true"
         :showGroupFunc="true"
-        :groupFunc.sync="groupFunc"
-        :customTime.sync="customTime"
+        v-model:groupFunc="groupFunc"
+        v-model:customTime="customTime"
         :showCustomTimeText="time==='custom'"
         :showAutoRefresh="!useLocalPanels"
         customTimeUseTimeStamp
@@ -19,24 +19,28 @@
           class="text-truncate"
           @click="createChart"
           placement="topLeft">
-          <a-icon type="plus-circle" />
+          <icon type="plus-circle" />
           {{ $t('monitor.dashboard.dialog.project.create') }}
-          <a-menu slot="overlay" @click="handleMenuClick">
-            <a-menu-item key="adjust_order">
-              {{ $t('monitor.adjust_chart_order') }}
-            </a-menu-item>
-          </a-menu>
-          <a-icon slot="icon" type="down" />
+          <template #overlay>
+            <a-menu @click="handleMenuClick">
+              <a-menu-item key="adjust_order">
+                {{ $t('monitor.adjust_chart_order') }}
+              </a-menu-item>
+            </a-menu>
+          </template>
+          <template #icon>
+            <icon type="pull-down" />
+          </template>
         </a-dropdown-button>
         <a-button v-else style="margin-left: 8px;" icon="plus-circle" @click="createChart">
           {{ $t('monitor.dashboard.dialog.project.create')}}
         </a-button>
       </template>
     </div>
-    <div :class="card_style" :style="readOnly && !selectable ? '' :'padding-top: 20px;'">
+    <div class="monitor-dashboard-cards__list" :class="card_style" :style="readOnly && !selectable ? '' :'padding-top: 20px;'">
       <dashboard-card ref="dashboardCard" v-if="readOnly && !selectable" :card_style="card_style" :chartHeigth="chartHeigth" @chose_panel="chose_panel" :panel="panels.length > 0 ? panels[0] : {}" :focusPanelId="focusPanelId" :selectable="selectable" :readOnly="readOnly" :dashboard_id="id" :edit-chart="handleEditChart" :updated_at="updatedAt" :extraParams="extraParams" @delete="handleDelete" />
       <template v-else>
-        <div v-for="(item, index) in panels" :key="index">
+        <div v-for="(item, index) in panels" :key="index" class="monitor-dashboard-cards__item">
           <dashboard-card
            :card_style="card_style"
            :chartHeigth="chartHeigth"
@@ -61,29 +65,6 @@
            @delete="handleDelete" />
         </div>
       </template>
-      <!-- <a-list v-else :grid="{ column: 1 }" :data-source="panels">
-        <a-list-item slot="renderItem" slot-scope="item" className="owner-item">
-          <dashboard-card
-           :card_style="card_style"
-           :chartHeigth="chartHeigth"
-           :panel="item"
-           :focusPanelId="focusPanelId"
-           :selectable="selectable"
-           :readOnly="readOnly"
-           :dashboard_id="id"
-           :edit-chart="editChart"
-           :updated_at="updatedAt"
-           :extraParams="extraParams"
-           :time="time"
-           :timeGroup="timeGroup"
-           :customTime="customTime"
-           :groupFunc="groupFunc"
-           :tablePageSize="tablePageSize"
-           @pageChange="(pager) => pageChange(item, pager)"
-           @chose_panel="chose_panel"
-           @delete="handleDelete" />
-        </a-list-item>
-      </a-list> -->
     </div>
   </div>
 </template>
@@ -93,6 +74,8 @@ import { uuid } from '@/utils/utils'
 import MonitorHeader from '@/sections/Monitor/Header'
 import MonitorTimeMixin from '@/mixins/monitorTime'
 import DashboardCard from '../DashboardCard'
+
+const noop = () => {}
 
 export default {
   name: 'DashboardCards',
@@ -108,15 +91,15 @@ export default {
     },
     createChart: {
       type: Function,
-      required: true,
+      default: noop,
     },
     adjustChartOrder: {
       type: Function,
-      required: true,
+      default: noop,
     },
     editChart: {
       type: Function,
-      required: true,
+      default: noop,
     },
     extraParams: {
       type: Object,
@@ -290,6 +273,15 @@ export default {
 </script>
 
 <style scoped>
+.monitor-dashboard-cards {
+  width: 100%;
+}
+.monitor-dashboard-cards__list {
+  width: 100%;
+}
+.monitor-dashboard-cards__item {
+  width: 100%;
+}
 .owner-item {
   margin: 0;
 }

@@ -4,10 +4,12 @@
       <div class="dashboard-card-header">
         <div class="dashboard-card-header-left">
           {{ form.fd.name }}
-          <a-icon class="ml-2" type="loading" v-if="loading" />
+          <icon class="ml-2" type="loading" v-if="loading" />
           <span v-if="isUsageKeyDeny" class="ml-2">
-            <a-tooltip class="mr-2"><template slot="title">{{ $t('dashboard.usage_key_deny_tips') }}</template><icon type="help" /></a-tooltip>
-            <a-icon class="warning-color mr-1" type="warning" />
+            <a-tooltip class="mr-2" :title="$t('dashboard.usage_key_deny_tips')">
+              <span class="dashboard-card-help"><icon type="help" /></span>
+            </a-tooltip>
+            <icon class="warning-color mr-1" type="warning" />
             {{ $t('dashboard.usage_key_deny_tips_2') }}
           </span>
         </div>
@@ -31,7 +33,7 @@
         </template>
       </div>
     </div>
-    <base-drawer :visible.sync="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit">
+    <base-drawer v-model:visible="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit">
       <a-form
         hideRequiredMark
         :form="form.fc"

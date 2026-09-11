@@ -3,7 +3,21 @@
   .ant-collapse-item {
     border: 0;
     .ant-collapse-header {
-      color: #1890ff;
+      color: var(--ant-color-primary, #1890ff);
+      align-items: center;
+
+      .ant-collapse-expand-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        .anticon {
+          transition: transform 0.24s;
+        }
+      }
+    }
+    &.ant-collapse-item-active > .ant-collapse-header .ant-collapse-expand-icon .anticon {
+      transform: rotate(90deg);
     }
   }
 }

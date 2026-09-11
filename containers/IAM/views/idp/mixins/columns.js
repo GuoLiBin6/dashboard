@@ -18,9 +18,11 @@ export default {
         onManager: this.onManager,
         hideField: true,
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+          return this.$createElement('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getStatusTableColumn({ statusModule: 'idp' }),
@@ -61,9 +63,15 @@ export default {
           default: ({ row }, h) => {
             if (!row.project_domain) return this.$t('system.text_15')
             return [
-              <list-body-cell-wrap copy field={'project_domain'} row={row} hideField={true} message={row.project_domain}>
-                {row.project_domain}
-              </list-body-cell-wrap>,
+              h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  field: 'project_domain',
+                  row: row,
+                  hideField: true,
+                  message: row.project_domain,
+                },
+              }, row.project_domain),
             ]
           },
         },

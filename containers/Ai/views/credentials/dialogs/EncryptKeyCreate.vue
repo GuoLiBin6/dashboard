@@ -60,7 +60,7 @@ export default {
       },
     }
   },
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {

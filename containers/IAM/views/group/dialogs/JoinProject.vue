@@ -9,8 +9,8 @@
         v-bind="formItemLayout">
         <a-form-item :label="$t('dictionary.domain')" v-if="isAdminMode">
           <a-radio-group v-decorator="decorators.domain" v-if="!l3PermissionEnable">
-            <template v-for="item of domainOptions">
-              <a-radio-button :value="item.key" :key="item.key">{{ item.label }}</a-radio-button>
+            <template v-for="item of domainOptions" :key="item.key">
+              <a-radio-button :value="item.key">{{ item.label }}</a-radio-button>
             </template>
           </a-radio-group>
           <base-select v-else
@@ -155,7 +155,7 @@ export default {
   //     this.form.fc.resetFields()
   //   },
   // },
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {

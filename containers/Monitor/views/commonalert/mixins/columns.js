@@ -10,9 +10,12 @@ export default {
         edit: row => row.alert_type !== 'system',
         formRules: [{ required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` }],
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{ row.name }</side-page-trigger>
-          )
+          const h = this.$createElement
+          return h('side-page-trigger', {
+            props: {
+              onTrigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getStatusTableColumn({ statusModule: 'commonalert', minWidth: 50 }),

@@ -1,19 +1,19 @@
 <template>
   <div>
     <page-header :title="$t('common.create') + $t('aice.aiproxy.api_key')" />
-    <page-body needMarginBottom>
+    <page-body>
       <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 4 }" :wrapper-col="{ span: 16 }" class="mt-4">
         <a-form-model-item :label="$t('common.name')" prop="generate_name">
-          <a-input v-model="form.generate_name" />
+          <a-input v-model:value="form.generate_name" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.aiproxy.ai_provider_id')" prop="ai_provider_id">
           <base-select v-model="form.ai_provider_id" resource="ai_providers" :params="aiproxySelectParams('ai_providers')" filterable version="v2" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.aiproxy.secret')" prop="secret">
-          <a-input-password v-model="form.secret" />
+          <a-input-password v-model:value="form.secret" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.aiproxy.weight')">
-          <a-input-number v-model="form.weight" :min="0" />
+          <a-input-number v-model:value="form.weight" :min="0" />
         </a-form-model-item>
       </a-form-model>
     </page-body>

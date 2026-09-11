@@ -47,8 +47,13 @@ export default {
           title: this.$t('db.text_195'),
           width: 100,
           slots: {
-            default: ({ row }) => {
-              return [<PasswordFetcher serverId={row.id} resourceType='elasticcacheaccounts' />]
+            default: ({ row }, h) => {
+              return [h(PasswordFetcher, {
+                props: {
+                  serverId: row.id,
+                  resourceType: 'elasticcacheaccounts',
+                },
+              })]
             },
           },
         },

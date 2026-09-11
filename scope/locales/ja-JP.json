@@ -17,7 +17,8 @@
     "qingcloud": "チンユン",
     "chinaunion": "ユニコムクラウド",
     "colcengine": "火山エンジン",
-    "rockbase": "RockBase"
+    "rockbase": "RockBase",
+    "nutanix": "ヌタニックス"
   },
   "scopeProviders": {
     "esxi": "ヴイエムウェア",

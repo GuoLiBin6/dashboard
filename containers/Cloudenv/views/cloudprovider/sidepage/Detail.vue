@@ -38,11 +38,13 @@ export default {
           field: 'account',
           title: this.$t('cloudenv.text_94'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               return [
-                <div class='text-truncate'>
-                  <list-body-cell-wrap copy row={ row } field='account' title={ row.account } />
-                </div>,
+                h('div', { class: 'text-truncate' }, [
+                  h('list-body-cell-wrap', {
+                    props: { copy: true, row, field: 'account', title: row.account },
+                  }),
+                ]),
               ]
             },
           },

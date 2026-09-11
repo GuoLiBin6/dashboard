@@ -1,8 +1,8 @@
 <template>
   <div>
     <page-header :title="$t('monitor.action.clone', [$t('dictionary.commonalert')])" />
-    <page-body needMarginBottom>
-      <alert ref="alertRef" :commonalertId="$route.params.id" :loading.sync="loading" />
+    <page-body>
+      <alert ref="alertRef" :commonalertId="$route.params.id" v-model:loading="loading" />
     </page-body>
     <page-footer>
       <div slot="right">

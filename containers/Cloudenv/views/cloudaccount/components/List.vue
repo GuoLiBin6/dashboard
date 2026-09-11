@@ -277,7 +277,10 @@ export default {
                     onManager: this.onManager,
                     content: () => {
                       if (supportBill && this.$appConfig.isPrivate && !this.$store.getters.isSysCE) {
-                        return <a-checkbox v-model={ this.batchDeleteBill }>{ this.$t('cloudenv.text_497') }</a-checkbox>
+                        return this.$createElement('a-checkbox', {
+                          props: { checked: this.batchDeleteBill },
+                          on: { change: (e) => { this.batchDeleteBill = e.target.checked } },
+                        }, this.$t('cloudenv.text_497'))
                       }
                       return null
                     },

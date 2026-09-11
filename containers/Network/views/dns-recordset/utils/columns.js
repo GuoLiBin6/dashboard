@@ -49,10 +49,10 @@ export const getTrafficPoliciesTableColumns = (isAliyunEE) => {
         }
         if (!row.policy_type) {
           trafficPolicieList.push(
-            <div>{i18n.t('common_700')}</div>,
+            h('div', {}, i18n.t('common_700')),
           )
         } else {
-          return [<a-tag color="pink">{generateContent(row)}</a-tag>]
+          return [h('a-tag', { props: { color: 'pink' } }, generateContent(row))]
         }
         return trafficPolicieList
       },

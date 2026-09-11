@@ -22,7 +22,7 @@
               remote
               :params="resourceParams"
               :mapper="mapperResources"
-              :init-loaded.sync="resourcesInitLoaded"
+              v-model:initLoaded="resourcesInitLoaded"
               :select-props="{ allowClear: true, placeholder: $t('cloudenv.text_284', [$t('cloudenv.text_454')]), mode: 'multiple' }"
               :remote-fn="q => ({ filter: `name.contains(${q})` })">
               <template v-slot:optionTemplate="{ options }">

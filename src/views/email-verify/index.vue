@@ -13,7 +13,7 @@
     <div id="error" v-show="mailVerify.error">
       <div>
         <div class="box1">
-          <a-icon type="close-circle" theme="twoTone" twoToneColor="#f5222d" />
+          <icon type="close-outlined-circle" theme="twoTone" twoToneColor="#f5222d" />
           <h4>{{$t('common_333')}}</h4>
           <div class="desc">{{$t('common_334')}}</div>
           <div class="btn-group">
@@ -26,7 +26,7 @@
     <div id="invalid" v-show="mailVerify.invalid">
       <div>
         <div class="box1">
-          <a-icon type="close-circle" theme="twoTone" twoToneColor="#f5222d" />
+          <icon type="close-outlined-circle" theme="twoTone" twoToneColor="#f5222d" />
           <h2 style="text-align: center">{{$t('common_336')}}</h2>
           <div class="desc">{{$t('common_337')}}</div>
           <div class="btn-group">
@@ -40,7 +40,7 @@
     <div id="success" v-show="mailVerify.success">
       <div>
         <div class="box1">
-          <a-icon type="check-circle" theme="twoTone" twoToneColor="#52c41a" />
+          <icon type="check-circle" theme="twoTone" twoToneColor="#52c41a" />
           <h4 style="text-align: center">{{$t('common_338')}}</h4>
           <div class="desc">{{$t('common_334')}}</div>
           <div class="btn-group">
@@ -131,7 +131,7 @@ export default {
       margin: 300px auto;
       text-align: center;
     }
-    .box1::v-deep .anticon {
+    .box1 :deep(.anticon) {
       font-size: 30px;
     }
     .desc {

@@ -23,15 +23,15 @@
               filterable
               isDefaultSelect
               :params="cloudproviderParams"
-              :item.sync="form.fi.cloudprovider" />
+              v-model:item="form.fi.cloudprovider" />
           </a-form-item>
         </template>
         <a-form-item :label="$t('cloudenv.clouduser_list_t4')" :extra="$t('common_625')">
           <user-select
             v-decorator="decorators.owner_id"
             :cloudaccount-id="params.cloudaccount.id"
-            :user.sync="form.fi.user"
-            :project.sync="form.fi.project"
+            v-model:user="form.fi.user"
+            v-model:project="form.fi.project"
             :cloudprovider-id="form.fi.cloudprovider.id"
             :defaultDomainId="params.defaultDomainId"
             :defaultProjectId="params.defaultProjectId"
@@ -55,6 +55,7 @@
 <script>
 import * as R from 'ramda'
 import { mapGetters } from 'vuex'
+import { h } from 'vue'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import NameRepeated from '@/sections/NameRepeated'
@@ -187,24 +188,25 @@ export default {
             slots: {
               default: ({ row }) => {
                 if (R.isNil(row.cloudpolicies) || R.isEmpty(row.cloudpolicies)) return this.$t('cloudenv.text_330')
-                return [<list-body-cell-popover text={this.$t('cloudenv.text_245', [(row.cloudpolicies && row.cloudpolicies.length) || 0])} min-width="600px">
-                  <vxe-grid
-                    showOverflow={false}
-                    row-config={{ isHover: true }}
-                    column-config={{ resizable: false }}
-                    data={row.cloudpolicies}
-                    columns={[
-                      {
-                        field: 'name',
-                        title: this.$t('common.name'),
-                      },
-                      {
-                        field: 'description',
-                        title: this.$t('table.title.desc'),
-                        formatter: ({ cellValue }) => cellValue || '-',
-                      },
-                    ]} />
-                </list-body-cell-popover>]
+                return [
+                  h('list-body-cell-popover', {
+                    text: this.$t('cloudenv.text_245', [(row.cloudpolicies && row.cloudpolicies.length) || 0]),
+                    'min-width': '600px',
+                  }, {
+                    default: () => [
+                      h('table-lite-grid', {
+                        showOverflow: false,
+                        rowConfig: { isHover: true },
+                        columnConfig: { resizable: false },
+                        data: row.cloudpolicies,
+                        columns: [
+                          { field: 'name', title: this.$t('common.name') },
+                          { field: 'description', title: this.$t('table.title.desc'), formatter: ({ cellValue }) => cellValue || '-' },
+                        ],
+                      }),
+                    ],
+                  }),
+                ]
               },
             },
           },

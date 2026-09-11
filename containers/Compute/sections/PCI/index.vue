@@ -1,11 +1,15 @@
 <template>
   <div>
     <a-tooltip v-if="isPciEmpty" :title="$t('compute.text_146')">
-      <span><a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" :value="pciEnable" :disabled="true" /></span>
+      <span><a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" :checked="pciEnable" :disabled="true" /></span>
     </a-tooltip>
-    <a-form-item class="mb-2" v-else>
-      <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-decorator="decorators.pciEnable" @change="change" />
-    </a-form-item>
+    <a-switch
+      v-else
+      class="mb-2"
+      :checkedChildren="$t('compute.text_115')"
+      :unCheckedChildren="$t('compute.text_116')"
+      v-decorator="decorators.pciEnable"
+      @change="change" />
     <template v-if="pciEnable">
       <div
         v-for="(k, index) in pciForm.fc.getFieldValue('keys')"

@@ -3,14 +3,12 @@ export default {
   props: {
     tooltip: {
       type: String,
-      required: true,
+      default: '',
     },
   },
   render (h) {
-    return (
-      <span title={ this.tooltip }>
-        <a-icon type="loading" />
-      </span>
-    )
+    return h('span', { attrs: { title: this.tooltip } }, [
+      h('icon', { props: { type: 'loading' }, spin: true }),
+    ])
   },
 }

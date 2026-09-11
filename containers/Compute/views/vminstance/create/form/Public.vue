@@ -195,7 +195,7 @@
           v-decorator="decorators.tag" :default-checked="tagDefaultChecked" :form-draft-key="vmDraftFields.tag" />
       </a-form-item>
       <!-- <a-divider orientation="left">{{$t('compute.text_309')}}</a-divider> -->
-      <a-collapse :bordered="false" v-model="collapseActive">
+      <a-collapse :bordered="false" v-model:activeKey="collapseActive" :expand-icon="renderCollapseExpandIcon">
         <a-collapse-panel :header="$t('compute.text_309')" key="1" :forceRender="true">
           <eip-config
             v-if="enableEip"
@@ -210,12 +210,12 @@
             :hasPublicIp="hypervisor === 'qcloud' || hypervisor === 'aliyun'"
             :formItemLayout="formItemLayout" :form-draft-key="vmDraftFields.eip" />
           <a-form-item v-if="!isServertemplate">
-            <span slot="label">
+            <template #label>
               {{ $t('common_388') }}&nbsp;
               <a-tooltip :title="hostNameTips">
-                <a-icon type="question-circle-o" />
+                <icon type="question-circle" />
               </a-tooltip>
-            </span>
+            </template>
             <host-name v-decorator="decorators.hostName" :isWindows="isWindows" />
           </a-form-item>
           <a-form-item :label="$t('compute.text_105')">
@@ -254,7 +254,7 @@
       <bottom-bar
         :loading="submiting"
         :form="form"
-        :errors.sync="errors"
+        v-model:errors="errors"
         :type="type"
         :resourceType="form.fd.resourceType"
         :dataDiskSizes="dataDiskSizes"

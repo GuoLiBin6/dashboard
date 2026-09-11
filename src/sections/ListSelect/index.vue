@@ -1,37 +1,32 @@
 <template>
-  <div class="ant-select w-100" @click="handleOpenSelect">
-    <div
-      class="ant-select-selection"
-      :class="{
-        'ant-select-selection--single': !multiple,
-        'ant-select-selection--multiple': multiple,
-      }">
-      <div class="ant-select-selection__rendered">
-        <template v-if="!showDetails">
-          <div class="ant-select-selection__placeholder">{{ placeholder || $t('common.select') }}</div>
-        </template>
-        <template v-else>
-          <template v-if="multiple">
-            <ul>
-              <template v-for="item of details">
-                <li class="ant-select-selection__choice" :key="item[idKey]">
-                  <div class="ant-select-selection__choice__content">{{ formatterLabel(item) }}</div>
-                  <span class="ant-select-selection__choice__remove" @click.stop="handleRemove(item)">
-                    <a-icon type="close" />
-                  </span>
-                </li>
-              </template>
-            </ul>
-          </template>
-          <template v-else>
-            <div class="ant-select-selection-selected-value">{{ formatterLabel(details[0]) }}</div>
-          </template>
-        </template>
-      </div>
-      <template v-if="!multiple">
-        <span class="ant-select-arrow"><a-icon type="down" /></span>
+  <div
+    class="list-select"
+    :class="{ 'is-multiple': multiple }"
+    @click="handleOpenSelect">
+    <div class="list-select__selector">
+      <template v-if="!showDetails">
+        <span class="list-select__placeholder">{{ placeholder || $t('common.select') }}</span>
+      </template>
+      <template v-else-if="multiple">
+        <div class="list-select__tags">
+          <span
+            v-for="item of details"
+            :key="item[idKey]"
+            class="list-select__tag">
+            <span class="list-select__tag-text">{{ formatterLabel(item) }}</span>
+            <span class="list-select__tag-remove" @click.stop="handleRemove(item)">
+              <icon type="close-outlined" />
+            </span>
+          </span>
+        </div>
+      </template>
+      <template v-else>
+        <span class="list-select__value" :title="formatterLabel(details[0])">{{ formatterLabel(details[0]) }}</span>
       </template>
     </div>
+    <span v-if="!multiple" class="list-select__arrow" aria-hidden="true">
+      <icon type="pull-down" />
+    </span>
   </div>
 </template>
 
@@ -89,7 +84,7 @@ export default {
     details (newVal, oldVal) {
       if (!R.equals(newVal, oldVal)) this.$emit('update:items', newVal)
     },
-    value (newVal, oldVal) {
+    value () {
       this.selected = R.isEmpty(this.value) || R.isNil(this.value) ? [] : R.is(String, this.value) ? [this.value] : this.value
       this.getDetails()
     },
@@ -135,6 +130,7 @@ export default {
       const val = this.multiple ? selected : selected[0]
       this.$emit('change', val)
       this.$emit('input', val)
+      this.$emit('update:value', val)
     },
     handleRemove (item) {
       const id = item[this.idKey]
@@ -145,6 +141,7 @@ export default {
       }
       this.$emit('change', this.selected)
       this.$emit('input', this.selected)
+      this.$emit('update:value', this.selected)
     },
     formatterLabel (row) {
       if (this.formatter) {
@@ -155,3 +152,110 @@ export default {
   },
 }
 </script>
+
+<style lang="scss" scoped>
+.list-select {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+  cursor: pointer;
+  color: rgba(0, 0, 0, 0.88);
+  font-size: 14px;
+
+  &__selector {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 32px;
+    padding: 0 30px 0 11px;
+    background: #fff;
+    border: 1px solid #d9d9d9;
+    border-radius: 6px;
+    transition: all 0.2s;
+
+    &:hover {
+      border-color: #4096ff;
+    }
+  }
+
+  &:focus-within &__selector,
+  &:hover &__selector {
+    border-color: #4096ff;
+  }
+
+  &__placeholder {
+    flex: 1;
+    overflow: hidden;
+    color: rgba(0, 0, 0, 0.25);
+    line-height: 30px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  &__value {
+    flex: 1;
+    overflow: hidden;
+    line-height: 30px;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  &__arrow {
+    position: absolute;
+    top: 50%;
+    right: 11px;
+    display: flex;
+    align-items: center;
+    color: rgba(0, 0, 0, 0.25);
+    font-size: 12px;
+    pointer-events: none;
+    transform: translateY(-50%);
+  }
+
+  &__tags {
+    display: flex;
+    flex: 1;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+    max-width: 100%;
+    padding: 3px 0;
+  }
+
+  &__tag {
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+    height: 24px;
+    margin: 0;
+    padding: 0 4px 0 8px;
+    background: rgba(0, 0, 0, 0.06);
+    border-radius: 4px;
+    line-height: 22px;
+  }
+
+  &__tag-text {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  &__tag-remove {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 4px;
+    color: rgba(0, 0, 0, 0.45);
+    font-size: 10px;
+    cursor: pointer;
+
+    &:hover {
+      color: rgba(0, 0, 0, 0.88);
+    }
+  }
+
+  &.is-multiple &__selector {
+    padding-right: 11px;
+  }
+}
+</style>

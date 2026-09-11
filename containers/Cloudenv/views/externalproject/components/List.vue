@@ -222,11 +222,16 @@ export default {
           events: { change: this.projectChange },
         }
         projectColumn.slots = {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             let project = row.project
             const filter = this.projectOpts.filter(item => item.value === project)
             if (filter[0]) project = filter[0].label
-            return [<span><span>{project} </span> <i class="vxe-icon--edit-outline"></i></span>]
+            return [
+              h('span', [
+                h('span', `${project} `),
+                h('i', { class: 'vxe-icon--edit-outline' }),
+              ]),
+            ]
           },
         }
       }

@@ -6,8 +6,10 @@ export default {
   render (h) {
     const { html } = this.definition.input
 
-    return (
-      <div domPropsInnerHTML={ html }></div>
-    )
+    return h('div', {
+      domProps: {
+        innerHTML: html,
+      },
+    })
   },
 }

@@ -1,7 +1,7 @@
 <template>
   <div class="network-schedtag">
     <div class="d-flex align-items-start mb-2" v-for="(item, i) in schedtagList" :key="item.key">
-      <a-tag color="blue" class="mr-1 mt-2">{{ isBonding ? 'bond' : $t('compute.text_193')}}{{i}}</a-tag>
+      <a-tag class="network-nic-tag mr-1">{{ isBonding ? 'bond' : $t('compute.text_193')}}{{i}}</a-tag>
       <schedtag-policy :form="form" :decorators="genDecorator(item.key)" :schedtag-params="{ ...schedtagParams, $t: `net-schedtag-${i}` }" :policyReactInSchedtag="false" />
       <template v-if="showDeviceConfig">
         <template v-if="item.deviceShow">
@@ -152,12 +152,25 @@ export default {
 </script>
 
 <style lang="less" scoped>
-@import '../../../../src/styles/less/theme';
-
 .network-schedtag {
+  .network-nic-tag.ant-tag {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    height: 32px;
+    margin-top: 0 !important;
+    padding: 0 10px;
+    line-height: 30px;
+    font-size: 14px;
+    border-radius: 6px;
+    color: var(--ant-color-primary, #1890ff);
+    background: color-mix(in srgb, var(--ant-color-primary, #1890ff) 10%, #fff);
+    border-color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 40%, #fff);
+  }
   .network-count-tips {
     .remain-num {
-      color: @primary-color;
+      color: var(--ant-color-primary, #1890ff);
     }
   }
 }

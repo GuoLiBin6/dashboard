@@ -1,6 +1,6 @@
 <template>
   <div>
-   <page-header :title="$t('dictionary.dns_zone')" :tabs="cloudEnvOptions" :current-tab.sync="cloudEnv" />
+   <page-header :title="$t('dictionary.dns_zone')" :tabs="cloudEnvOptions" v-model:currentTab="cloudEnv" />
    <page-body>
      <list :id="listId" :cloudEnv="cloudEnv" />
    </page-body>

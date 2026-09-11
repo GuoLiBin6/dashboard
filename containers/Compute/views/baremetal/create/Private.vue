@@ -9,8 +9,8 @@
         <domain-project
           :fc="form.fc"
           :decorators="{ project: decorators.project, domain: decorators.domain }"
-          :project.sync="projectId"
-          :domain.sync="domainId"
+          v-model:project="projectId"
+          v-model:domain="domainId"
           :ignoreStorage="ignoreLocalFormStorage"
           :form-draft-key="baremetalDraftFields.domainProject" />
       </a-form-item>
@@ -45,7 +45,7 @@
           :ignore-storage="ignoreLocalFormStorage"
           :form-draft-key="baremetalDraftFields.osSelect"
           @updateImageMsg="setSelectedImage"
-          :imageType.sync="osSelectImageType" />
+          v-model:imageType="osSelectImageType" />
       </a-form-item>
       <a-form-item v-bind="formItemLayout" :label="$t('compute.text_178')">
         <a-select v-decorator="decorators.specifications" :disabled="isInstallOperationSystem" @change="specificationChange">
@@ -56,25 +56,25 @@
       </a-form-item>
       <a-form-item v-bind="formItemLayout" :label="$t('compute.text_303')">
         <div class="d-flex flex-wrap">
-          <template v-for="(item, idx) of diskOptionsDate">
-            <div :key="idx" class="disk-option-item">
+          <template v-for="(item, idx) of diskOptionsDate" :key="idx">
+            <div class="disk-option-item">
               <a-card hoverable>
                 <template slot="title">
                   <icon type="res-disk" />
                   {{ item.title }}
                   <a-tooltip :title="$t('compute.text_304')">
-                    <a-icon type="check-circle" theme="twoTone" twoToneColor="#52c41a" v-show="(idx === 0 && !isShowFalseIcon) || idx !== 0" />
+                    <icon type="check-circle" theme="twoTone" twoToneColor="#52c41a" v-show="(idx === 0 && !isShowFalseIcon) || idx !== 0" />
                   </a-tooltip>
                   <a-tooltip :title="$t('compute.text_305')">
-                    <a-icon type="close-circle" theme="twoTone" twoToneColor="#eb2f96" v-show="idx === 0 && isShowFalseIcon" />
+                    <icon type="close-circle" theme="twoTone" twoToneColor="#eb2f96" v-show="idx === 0 && isShowFalseIcon" />
                   </a-tooltip>
                 </template>
                 <a href="javascript:;" slot="extra" @click="handleDiskItemRemove(idx)" v-show="idx === diskOptionsDate.length - 1">{{$t('compute.perform_delete')}}</a>
                 <div class="d-flex align-items-center">
                   <ve-pie :data="item.chartData" :settings="chartSettings" :events="chartFun(idx)" width="200px" height="200px" :legend-visible="false" />
                   <div class="flex-fill ml-2">
-                    <template v-for="k in item.diskInfo">
-                      <div :key="k">
+                    <template v-for="k in item.diskInfo" :key="k">
+                      <div>
                         <a-checkbox defaultChecked disabled>
                           {{k}}
                         </a-checkbox>
@@ -143,7 +143,7 @@
         type="baremetal"
         :isOpenWorkflow="isOpenWorkflow"
         :isOpenOrderSetWorkflow="isOpenOrderSetWorkflow"
-        :errors.sync="errors"
+        v-model:errors="errors"
         :isServertemplate="false"
         :hasMeterService="hasMeterService"
         :isInitForm="isInitForm"

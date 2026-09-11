@@ -3,7 +3,7 @@
     <div slot="header">{{$t('compute.perform_delete')}}</div>
     <div slot="body">
       <a-alert class="mb-2" type="warning">
-        <div slot="message">{{$t('compute.text_1392')}}</div>
+        <template #message>{{$t('compute.text_1392')}}</template>
       </a-alert>
       <dialog-selected-tips :name="$t('compute.vminstance-container')" :count="params.data.length" :action="this.params.title" />
       <dialog-table v-if="params.columns && params.columns.length" :data="params.data" :columns="params.columns.slice(0, 3)" />

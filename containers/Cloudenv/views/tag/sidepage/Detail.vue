@@ -31,8 +31,8 @@ export default {
           field: 'count',
           title: this.$t('cloudenv.text_474'),
           slots: {
-            default: ({ row }) => {
-              return row.count > 0 ? [<a onClick={ () => this.$emit('tab-change', 'bind-resource') }>{ `${row.count}` }</a>] : 0
+            default: ({ row }, h) => {
+              return row.count > 0 ? [h('a', { on: { click: () => this.$emit('tab-change', 'bind-resource') } }, `${row.count}`)] : 0
             },
           },
         },
@@ -40,9 +40,9 @@ export default {
           field: 'color',
           title: this.$t('cloudenv.text_475'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               const color = getTagColor(row.key, row.value)
-              return [<span style={{ display: 'inline-block', backgroundColor: color, width: '10px', height: '10px' }} />]
+              return [h('span', { style: { display: 'inline-block', backgroundColor: color, width: '10px', height: '10px' } })]
             },
           },
         },

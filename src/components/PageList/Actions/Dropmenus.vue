@@ -1,43 +1,59 @@
 <template>
   <a-dropdown
-    v-model="visible"
+    v-model:open="visible"
     :trigger="['click']"
-    @visibleChange="handleVisibleChange">
-    <action-button ref="dropdown-button" :class="{ 'ml-2': group }" :button-size="buttonSize" :row="row" :item="item" :button-type="buttonType" :button-style="buttonStyle" :button-block="buttonBlock" popover-trigger @clear-selected="clearSelected" />
-    <a-menu slot="overlay">
-      <template v-if="!isSubmenus">
-        <template v-for="item of options">
-          <a-menu-item v-if="!getHidden(item)" :key="item.label" class="sub-link-btn">
+    @openChange="handleVisibleChange">
+    <action-button
+      ref="dropdown-button"
+      :class="{ 'ml-2': group }"
+      :button-size="buttonSize"
+      :row="row"
+      :item="item"
+      :button-type="buttonType"
+      :button-style="buttonStyle"
+      :button-block="buttonBlock"
+      popover-trigger
+      @clear-selected="clearSelected" />
+    <template #overlay>
+      <a-menu :selectable="false">
+        <template v-if="!isSubmenus">
+          <a-menu-item
+            v-for="opt in flatOptions"
+            :key="opt.label"
+            class="sub-link-btn">
             <action-button
               button-size="small"
               :button-block="true"
               :button-style="{ fontSize: '12px' }"
-              :item="item"
+              :item="opt"
               :row="row"
               @hidden-popover="hiddenPopover"
               @clear-selected="clearSelected" />
           </a-menu-item>
         </template>
-      </template>
-      <template v-else>
-        <template v-for="item of options">
-          <a-sub-menu v-if="!getSubmenusHidden(item.submenus)" :key="item.label" :title="item.label" class="submenu-item">
-            <template v-for="submenu of item.submenus">
-              <a-menu-item v-if="!getHidden(submenu)" :key="submenu.label" class="submenu-item sub-link-btn">
-                <action-button
-                  :item="submenu"
-                  :row="row"
-                  button-size="small"
-                  :button-block="true"
-                  :button-style="{ fontSize: '12px' }"
-                  @hidden-popover="hiddenPopover"
-                  @clear-selected="clearSelected" />
-              </a-menu-item>
-            </template>
+        <template v-else>
+          <a-sub-menu
+            v-for="opt in groupOptions"
+            :key="opt.label"
+            class="submenu-item"
+            :title="opt.label">
+            <a-menu-item
+              v-for="sub in getVisibleSubs(opt)"
+              :key="`${opt.label}__${sub.label}`"
+              class="submenu-item sub-link-btn">
+              <action-button
+                :item="sub"
+                :row="row"
+                button-size="small"
+                :button-block="true"
+                :button-style="{ fontSize: '12px' }"
+                @hidden-popover="hiddenPopover"
+                @clear-selected="clearSelected" />
+            </a-menu-item>
           </a-sub-menu>
         </template>
-      </template>
-    </a-menu>
+      </a-menu>
+    </template>
   </a-dropdown>
 </template>
 
@@ -82,19 +98,29 @@ export default {
       isSubmenus: false,
     }
   },
+  computed: {
+    flatOptions () {
+      return this.options.filter(opt => !this.getHidden(opt))
+    },
+    groupOptions () {
+      return this.options.filter(opt => !this.getSubmenusHidden(opt.submenus))
+    },
+  },
   methods: {
+    getVisibleSubs (opt) {
+      return (opt.submenus || []).filter(sub => !this.getHidden(sub))
+    },
     genOptions () {
       if (!R.is(Function, this.item.actions)) {
         throw new Error('actions must be a function')
       }
       const options = this.item.actions(this.row)
-      if (options.every(item => item.hasOwnProperty('submenus'))) {
-        this.isSubmenus = true
-      }
+      this.isSubmenus = options.length > 0 && options.every(item => Object.prototype.hasOwnProperty.call(item, 'submenus'))
       this.options = options
     },
     handleVisibleChange (visible) {
-      if (this.$refs['dropdown-button'].disabled) {
+      const btn = this.$refs['dropdown-button']
+      if (btn && btn.disabled) {
         this.visible = false
         return
       }
@@ -112,12 +138,10 @@ export default {
       return R.is(Function, item.hidden) ? item.hidden(this.row) : item.hidden === true
     },
     getSubmenusHidden (submenus) {
-      // 默认隐藏，当遇到任意一个不隐藏的按钮，直接跳出循环返回
+      if (!submenus || !submenus.length) return true
       let hidden = true
       for (let i = 0, len = submenus.length; i < len; i++) {
-        const option = submenus[i]
-        const optionHidden = this.getHidden(option)
-        if (!optionHidden) {
+        if (!this.getHidden(submenus[i])) {
           hidden = false
           break
         }
@@ -146,10 +170,10 @@ export default {
 }
 .sub-link-btn {
   .ant-btn-link {
-    color: rgba(0, 0, 0, 0.65)
+    color: rgba(0, 0, 0, 0.65);
   }
   .ant-btn-link[disabled] {
-    color: rgba(0, 0, 0, 0.25)
+    color: rgba(0, 0, 0, 0.25);
   }
 }
 .submenu-item-label {

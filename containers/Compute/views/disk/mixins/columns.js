@@ -31,10 +31,11 @@ export default {
           { required: true, message: i18n.t('compute.text_210') },
           { validator: this.$validate('resourceCreateName') },
         ],
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          const hFn = h || this.$createElement
+          return hFn('side-page-trigger', {
+            on: { trigger: () => this.handleOpenSidepage(row) },
+          }, row.name)
         },
         hidden: () => {
           return this.$isScopedPolicyMenuHidden('disk_hidden_columns.name')
@@ -60,12 +61,12 @@ export default {
             const preallocation = PREALLOCATION_OPTION_MAP[row.preallocation]?.label
             const isVMware = row.brand === BRAND_MAP.VMware.key
 
-            return [
-              <div class={'d-flex'}>
-                <span>{ sizestr(row.disk_size, 'M', 1024) }</span>
-                { isVMware && preallocation ? <span class={'text-color-help'}>({ preallocation })</span> : null }
-              </div>,
-            ]
+            const sizeText = sizestr(row.disk_size, 'M', 1024)
+            const children = [h('span', {}, sizeText)]
+            if (isVMware && preallocation) {
+              children.push(h('span', { class: 'text-color-help' }, '(' + preallocation + ')'))
+            }
+            return [h('div', { class: 'd-flex' }, children)]
           },
         },
         formatter: ({ row }) => {
@@ -131,19 +132,14 @@ export default {
         sortBy: 'order_by_server',
         slots: {
           default: ({ row }, h) => {
-            if (this.isPreLoad && !row.guest) return [<data-loading />]
+            if (this.isPreLoad && !row.guest) return [h('data-loading')]
             if (!row.guest || row.guests.length <= 0) return '-'
-            const guests = row.guests.map((guest, index) => {
-              return <side-page-trigger permission="server_get" name="VmInstanceSidePage" id={guest.id} vm={this} tab="vm-instance-detail">
-                {guest.name}
-                <status status={ guest.status } statusModule='server'/>
-              </side-page-trigger>
+            const guests = row.guests.map((guest) => {
+              return h('side-page-trigger', {
+                props: { permission: 'server_get', name: 'VmInstanceSidePage', id: guest.id, vm: this, tab: 'vm-instance-detail' },
+              }, [guest.name, h('status', { props: { status: guest.status, statusModule: 'server' } })])
             })
-            return [
-              <div>
-                { guests }
-              </div>,
-            ]
+            return [h('div', {}, guests)]
           },
         },
         formatter: ({ row }) => {
@@ -170,7 +166,7 @@ export default {
         title: i18n.t('table.title.disk_storage'),
         hideField: true,
         slotCallback: (row) => {
-          if (this.isPreLoad && !row.storage) return [<data-loading />]
+          if (this.isPreLoad && !row.storage) return [this.$createElement('data-loading')]
           return row.storage
         },
         formatter: ({ row }) => row.storage,
@@ -223,7 +219,7 @@ export default {
         width: 70,
         slots: {
           default: ({ row }) => {
-            if (this.isPreLoad && !row.medium_type) return [<data-loading />]
+            if (this.isPreLoad && !row.medium_type) return [this.$createElement('data-loading')]
             return MEDIUM_MAP[row.medium_type]
           },
         },

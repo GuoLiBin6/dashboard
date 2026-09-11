@@ -13,7 +13,7 @@
             v-bind="uploadDraggerConfig">
             <div style="padding: 10px; min-width: 600px">
               <p class="ant-upload-drag-icon">
-              <a-icon type="inbox" />
+              <icon type="inbox" />
             </p>
              <p class="ant-upload-text">{{$t('storage.text_119')}}<a>{{$t('storage.text_120')}}</a></p>
             </div>

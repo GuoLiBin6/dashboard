@@ -1,4 +1,3 @@
-import Vue from 'vue'
 import * as R from 'ramda'
 import { GLOBAL_SETTINGS } from '@/constants'
 import { fillBillSupportFeatures } from '@/utils/auth'
@@ -21,7 +20,7 @@ export default {
   mutations: {
     UPDATE (state, payload = {}) {
       for (const key in payload) {
-        Vue.set(state, key, payload[key])
+        state[key] = payload[key]
       }
     },
   },

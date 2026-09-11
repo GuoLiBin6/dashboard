@@ -2,7 +2,7 @@
   <div>
    <page-header :title="$t('dictionary.vpc')"
     :tabs="cloudEnvOptions"
-    :current-tab.sync="cloudEnv"
+    v-model:currentTab="cloudEnv"
     isShowResStatusTab
     :status-opts="statusOpts"
     :status-click-handle="statusClickHandle" />

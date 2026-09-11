@@ -10,7 +10,7 @@
     <a-row :gutter="8" class="mb-2" type="flex" align="middle">
       <a-col :span="5">
         <a-select
-          v-model="item.provider_kind"
+          v-model:value="item.provider_kind"
           :options="providerKindOptions"
           :placeholder="$t('aice.aiproxy.routing_binding_provider_kind_placeholder')"
           style="width: 100%"
@@ -59,7 +59,7 @@
       </a-col>
       <a-col :span="3">
         <a-input-number
-          v-model="item.priority"
+          v-model:value="item.priority"
           :min="0"
           :placeholder="$t('aice.aiproxy.routing_binding_priority_placeholder')"
           style="width:100%" />

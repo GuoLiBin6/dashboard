@@ -20,7 +20,7 @@ export default {
       return enable_watermark
     },
   },
-  destroyed () {
+  unmounted () {
     this.webconsoleManager = null
   },
   created () {
@@ -144,18 +144,29 @@ export default {
                       decorators: SMART_SSH_FORM_DECORATORS,
                     })
                   }
-                  return <a-tooltip placement="left" title={!isRunning ? meta().tooltip : ''}>
-                    <span style={styleObj} class='d-flex justify-content-between align-items-center'>
-                      <span onClick={isRunning ? sshConnectHandle : () => { }}>{`SSH ${v}`}</span>
-                      {
-                        isRunning ? <span>
-                          <a-tooltip title={i18n.t('compute.custom_ssh_connect', ['SSH'])}>
-                            <a-icon class="ml-2" type="edit" onClick={isRunning ? sshSettingInfoHandle : () => { }} />
-                          </a-tooltip>
-                        </span> : null
-                      }
-                    </span>
-                  </a-tooltip>
+                  return h('a-tooltip', {
+                    props: { placement: 'left', title: !isRunning ? meta().tooltip : '' },
+                  }, [
+                    h('span', {
+                      style: styleObj,
+                      class: 'd-flex justify-content-between align-items-center',
+                    }, [
+                      h('span', {
+                        on: { click: isRunning ? sshConnectHandle : () => {} },
+                      }, `SSH ${v}`),
+                      isRunning ? h('span', [
+                        h('a-tooltip', {
+                          props: { title: i18n.t('compute.custom_ssh_connect', ['SSH']) },
+                        }, [
+                          h('icon', {
+                            class: 'ml-2',
+                            props: { type: 'edit' },
+                            on: { click: isRunning ? sshSettingInfoHandle : () => {} },
+                          }),
+                        ]),
+                      ]) : null,
+                    ]),
+                  ])
                 },
               })
               // options.push({

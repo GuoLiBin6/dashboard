@@ -1,17 +1,17 @@
 <template>
   <base-dialog :width="1000" @cancel="cancelDialog">
-    <div slot="header">{{params.title || $t('compute.perform_create')}}</div>
-    <div slot="body">
+    <template #header>{{params.title || $t('compute.perform_create')}}</template>
+    <template #body>
       <a-form-model :model="form" :rules="rules" ref="form" :label-col="{ span: 4 }" :wrapper-col="{ span: 20 }">
         <a-form-model-item :label="$t('network.waf.rule_type')" prop="rule_type" :extra="$t(`network.waf.rule_type.${form.rule_type}.extra`)">
-          <a-select v-model="form.rule_type" :placeholder="$t('network.waf.rule_type')">
+          <a-select v-model:value="form.rule_type" :placeholder="$t('network.waf.rule_type')">
             <a-select-option v-for="item in ruleTypes" :key="item" :value="item">
               {{ $t(`network.waf.rule_type.${item}`) }}
             </a-select-option>
           </a-select>
         </a-form-model-item>
         <a-form-model-item v-if="form.rule_type !== 'managed'" :label="$t('network.waf.rule_name')" prop="name">
-          <a-input v-model="form.name" :placeholder="$t('network.waf.rule_name')" />
+          <a-input v-model:value="form.name" :placeholder="$t('network.waf.rule_name')" />
         </a-form-model-item>
         <a-form-item :label="$t('network.waf.rule')" v-if="form.rule_type === 'custom' || form.rule_type === 'rate_limit'" required>
           <rule-form ref="ruleForm" :form="form" :ruleType="form.rule_type" :rules="rules" />
@@ -35,7 +35,7 @@
           <a-form-item :label="$t('network.waf.rule_limit.title')" class="mb-0" required>
             <div class="d-flex">
               <a-form-model-item class="mr-2" prop="period">
-                <a-select v-model="form.period" style="width: 150px" :placeholder="$t('network.waf.rule_limit.period')">
+                <a-select v-model:value="form.period" style="width: 150px" :placeholder="$t('network.waf.rule_limit.period')">
                   <a-select-option v-for="item in periodOptions" :key="item" :value="item">
                     {{ $t(`network.waf.rule_limit_period.${item}`) }}
                   </a-select-option>
@@ -43,7 +43,7 @@
               </a-form-model-item>
               {{ $t('network.waf.rule_limit.period_text') }}
               <a-form-model-item class="ml-2 mr-2" prop="requests_per_period">
-                <a-input-number v-model="form.requests_per_period" style="width: 100px" :placeholder="$t('network.waf.rule_limit.request_count')" />
+                <a-input-number v-model:value="form.requests_per_period" style="width: 100px" :placeholder="$t('network.waf.rule_limit.request_count')" />
               </a-form-model-item>
               {{ $t('network.waf.rule_limit.period_text_2') }}
             </div>
@@ -51,7 +51,7 @@
         </template>
         <!-- 采取措施 -->
         <a-form-model-item v-if="form.rule_type === 'custom' || form.rule_type === 'rate_limit' || form.rule_type === 'ua'" :label="$t('network.waf.rule_action.title')" :extra="ruleActionExtra" prop="rule_action">
-          <a-select v-model="form.rule_action" :placeholder="$t('network.waf.rule_action.title')">
+          <a-select v-model:value="form.rule_action" :placeholder="$t('network.waf.rule_action.title')">
             <a-select-option v-for="item in ruleActions" :key="item.key" :value="item.key">
               {{ item.label }}
             </a-select-option>
@@ -60,17 +60,17 @@
         <!-- 阻止措施 -->
         <template v-if="form.rule_type === 'custom' && form.rule_action === 'block'">
           <a-form-model-item :label="$t('network.waf.response_type')" prop="response_type">
-            <a-select v-model="form.response_type" :placeholder="$t('network.waf.response_type')">
+            <a-select v-model:value="form.response_type" :placeholder="$t('network.waf.response_type')">
               <a-select-option v-for="item in blockTypeOptions" :key="item.key" :value="item.key">
                 {{ item.label }}
               </a-select-option>
             </a-select>
           </a-form-model-item>
           <a-form-model-item v-if="form.response_type !== 'default'" :label="$t('network.waf.response_content')" prop="response_content">
-            <a-textarea v-model="form.response_content" :placeholder="$t('network.waf.response_content')" />
+            <a-textarea v-model:value="form.response_content" :placeholder="$t('network.waf.response_content')" />
           </a-form-model-item>
           <a-form-model-item :label="$t('network.waf.response_code')" prop="response_code">
-            <a-input-number :disabled="form.response_type === 'default'" v-model="form.response_code" :placeholder="$t('network.waf.response_code')" />
+            <a-input-number :disabled="form.response_type === 'default'" v-model:value="form.response_code" :placeholder="$t('network.waf.response_code')" />
           </a-form-model-item>
         </template>
         <!-- 自定义规则 -->
@@ -78,14 +78,14 @@
           <a-form-item :label="$t('network.waf.custom_index')" class="mb-0" required>
             <div>
               <a-form-model-item class="mr-2" prop="custom_index">
-                <a-select v-model="form.custom_index" :placeholder="$t('network.waf.custom_index')">
+                <a-select v-model:value="form.custom_index" :placeholder="$t('network.waf.custom_index')">
                   <a-select-option value="first">{{ $t('network.waf.custom_index.first') }}</a-select-option>
                   <a-select-option value="last">{{ $t('network.waf.custom_index.last') }}</a-select-option>
                   <a-select-option value="custom">{{ $t('network.waf.custom_index.custom') }}</a-select-option>
                 </a-select>
               </a-form-model-item>
               <a-form-model-item prop="custom_index_rule">
-                <a-select v-if="form.custom_index === 'custom'" v-model="form.custom_index_rule" :placeholder="$t('network.waf.custom_index_rule')">
+                <a-select v-if="form.custom_index === 'custom'" v-model:value="form.custom_index_rule" :placeholder="$t('network.waf.custom_index_rule')">
                   <a-select-option v-for="item in customRules" :key="item.id" :value="item.id">
                     {{ item.name }}
                   </a-select-option>
@@ -98,7 +98,7 @@
         <template v-if="form.rule_type === 'rate_limit'">
           <a-form-item :label="$t('network.waf.rule_limit_method')" class="mb-0" required>
             <a-form-model-item prop="rate_limit_method" class="mb-0" :extra="rateLimitMethodExtra">
-              <a-radio-group v-model="form.rate_limit_method">
+              <a-radio-group v-model:value="form.rate_limit_method">
                 <a-radio-button value="duration">
                   {{ $t('network.waf.rule_limit_method.time_duration', [form.rule_action ? $t(`network.waf.rule_action.${form.rule_action}`) : '']) }}
                 </a-radio-button>
@@ -108,7 +108,7 @@
               </a-radio-group>
             </a-form-model-item>
             <a-form-model-item prop="mitigation_timeout" v-if="form.rate_limit_method === 'duration'">
-              <a-select v-model="form.mitigation_timeout" :placeholder="$t('network.waf.rule_duration.title')" prop="mitigation_timeout">
+              <a-select v-model:value="form.mitigation_timeout" :placeholder="$t('network.waf.rule_duration.title')" prop="mitigation_timeout">
                 <a-select-option v-for="item in durationOptions" :key="item" :value="item">
                   {{ $t(`network.waf.rule_limit_period.${item}`) }}
                 </a-select-option>
@@ -116,7 +116,7 @@
             </a-form-model-item>
           </a-form-item>
           <a-form-model-item :label="$t('network.waf.custom_index')" prop="rate_limit_index">
-            <a-select v-model="form.rate_limit_index" :placeholder="$t('network.waf.custom_index')">
+            <a-select v-model:value="form.rate_limit_index" :placeholder="$t('network.waf.custom_index')">
               <a-select-option value="first">{{ $t('network.waf.custom_index.first') }}</a-select-option>
               <a-select-option value="last">{{ $t('network.waf.custom_index.last') }}</a-select-option>
             </a-select>
@@ -125,7 +125,7 @@
         <!-- 托管规则 -->
         <template v-if="form.rule_type === 'managed'">
           <a-form-model-item :label="$t('network.waf.rule_managed.rule_set')" prop="rule_managed_rule_set">
-            <a-select v-model="form.rule_managed_rule_set" :placeholder="$t('network.waf.rule_managed.rule_set')">
+            <a-select v-model:value="form.rule_managed_rule_set" :placeholder="$t('network.waf.rule_managed.rule_set')">
               <a-select-option v-for="item in ruleManagedRuleSetOptions" :key="item.key" :value="item.key">
                 {{ item.label }}
               </a-select-option>
@@ -135,55 +135,55 @@
         <!-- IP 访问规则 -->
         <template v-if="form.rule_type === 'access'">
           <a-form-model-item :label="$t('network.waf.ip_range')" prop="ip_range" :extra="$t('network.waf.ip_range.extra')">
-            <a-select v-model="form.ip_range" :placeholder="$t('network.waf.ip_range')">
+            <a-select v-model:value="form.ip_range" :placeholder="$t('network.waf.ip_range')">
               <a-select-option v-for="item in ipRangeOptions" :key="item.key" :value="item.key">
                 {{ item.label }}
               </a-select-option>
             </a-select>
           </a-form-model-item>
           <a-form-model-item :label="$t('network.waf.rule_action.title')" prop="rule_action">
-            <a-select v-model="form.rule_action" :placeholder="$t('network.waf.rule_action.title')">
+            <a-select v-model:value="form.rule_action" :placeholder="$t('network.waf.rule_action.title')">
               <a-select-option v-for="item in ruleActions" :key="item.key" :value="item.key">
                 {{ item.label }}
               </a-select-option>
             </a-select>
           </a-form-model-item>
           <a-form-model-item :label="$t('network.waf.ip_rule_scope')" prop="ip_rule_scope">
-            <a-select v-model="form.ip_rule_scope" :placeholder="$t('network.waf.ip_rule_scope')">
+            <a-select v-model:value="form.ip_rule_scope" :placeholder="$t('network.waf.ip_rule_scope')">
               <a-select-option v-for="item in ipRuleScopeOptions" :key="item.key" :value="item.key">
                 {{ item.label }}
               </a-select-option>
             </a-select>
           </a-form-model-item>
           <a-form-model-item :label="$t('network.waf.ip_rule_notes')">
-            <a-input v-model="form.ip_rule_notes" :placeholder="$t('network.waf.ip_rule_notes')" />
+            <a-input v-model:value="form.ip_rule_notes" :placeholder="$t('network.waf.ip_rule_notes')" />
           </a-form-model-item>
         </template>
         <!-- 区域锁定规则 -->
         <template v-if="form.rule_type === 'lockdown'">
           <a-form-model-item label="URL" prop="lockdown_url" :extra="$t('network.waf.lockdown_url.extra')">
-            <a-input v-model="form.lockdown_url" placeholder="URL" />
+            <a-input v-model:value="form.lockdown_url" placeholder="URL" />
           </a-form-model-item>
           <a-form-model-item label="IP / CIDR" prop="lockdown_ip" :extra="$t('network.waf.lockdown_ip.extra')">
-            <a-input v-model="form.lockdown_ip" placeholder="IP / CIDR" />
+            <a-input v-model:value="form.lockdown_ip" placeholder="IP / CIDR" />
           </a-form-model-item>
-          <span><span class="mr-2">{{$t('network.text_94')}}</span><a-switch v-model="form.is_show_lockdown_priority" /></span>
+          <span><span class="mr-2">{{$t('network.text_94')}}</span><a-switch v-model:value="form.is_show_lockdown_priority" /></span>
           <a-form-model-item class="mt-3" v-if="form.is_show_lockdown_priority" :label="$t('network.waf.priority')">
-            <a-input-number v-model="form.priority" :min="1" :step="1" :placeholder="$t('network.waf.priority')" />
+            <a-input-number v-model:value="form.priority" :min="1" :step="1" :placeholder="$t('network.waf.priority')" />
           </a-form-model-item>
         </template>
         <!-- 用户代理阻止 -->
         <template v-if="form.rule_type === 'ua'">
           <a-form-model-item :label="$t('network.waf.user_agent_value')" prop="ua_value" :extra="$t('network.waf.user_agent_value.extra')">
-            <a-input v-model="form.ua_value" :placeholder="$t('network.waf.user_agent_value')" />
+            <a-input v-model:value="form.ua_value" :placeholder="$t('network.waf.user_agent_value')" />
           </a-form-model-item>
         </template>
       </a-form-model>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog" v-if="params.type !== 'info'">{{ $t('network.text_33') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

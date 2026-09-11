@@ -1,9 +1,9 @@
 <template>
   <div>
     <h5>{{ $t('compute.text_600') }}</h5>
-    <vxe-grid resizable class="mb-2" :data="nicInfo" :columns="columns" />
+    <table-lite-grid resizable class="mb-2" :data="nicInfo" :columns="columns" />
     <h5>BMC{{ this.$t('compute.text_600') }}</h5>
-    <vxe-grid resizable class="mb-2" :data="ipmiList" :columns="columns" />
+    <table-lite-grid resizable class="mb-2" :data="ipmiList" :columns="columns" />
   </div>
 </template>
 
@@ -57,16 +57,28 @@ export default {
             const ret = []
             if (row.ip_addr) {
               ret.push(
-                <list-body-cell-wrap copy hideField={true} field='ip_addr' row={row} message={row.ip_addr}>
-                  {row.ip_addr}/{row.masklen}
-                </list-body-cell-wrap>,
+                h('list-body-cell-wrap', {
+                  props: {
+                    copy: true,
+                    hideField: true,
+                    field: 'ip_addr',
+                    row,
+                    message: row.ip_addr,
+                  },
+                }, row.ip_addr + '/' + row.masklen),
               )
             }
             if (row.ip6_addr) {
               ret.push(
-                <list-body-cell-wrap copy hideField={true} field='ip6_addr' row={row} message={row.ip6_addr}>
-                  {row.ip6_addr}/{row.masklen6}
-                </list-body-cell-wrap>,
+                h('list-body-cell-wrap', {
+                  props: {
+                    copy: true,
+                    hideField: true,
+                    field: 'ip6_addr',
+                    row,
+                    message: row.ip6_addr,
+                  },
+                }, row.ip6_addr + '/' + row.masklen6),
               )
             }
             return ret
@@ -77,10 +89,18 @@ export default {
         field: 'net',
         title: this.$t('compute.text_106'),
         hideField: true,
-        slotCallback: row => {
+        slotCallback: (row, h) => {
           if (!row.net) return '-'
+          const hFn = h || this.$createElement
           return [
-            <side-page-trigger permission='networks_get' name='NetworkSidePage' id={row.net_id} vm={this}>{ row.net }</side-page-trigger>,
+            hFn('side-page-trigger', {
+              props: {
+                permission: 'networks_get',
+                name: 'NetworkSidePage',
+                id: row.net_id,
+                vm: this,
+              },
+            }, row.net),
           ]
         },
       }),
@@ -88,10 +108,18 @@ export default {
         field: 'wire',
         title: this.$t('compute.text_844'),
         hideField: true,
-        slotCallback: row => {
+        slotCallback: (row, h) => {
           if (!row.wire) return '-'
+          const hFn = h || this.$createElement
           return [
-            <side-page-trigger permission='wires_get' name='WireSidePage' id={row.wire_id} vm={this}>{ row.wire }</side-page-trigger>,
+            hFn('side-page-trigger', {
+              props: {
+                permission: 'wires_get',
+                name: 'WireSidePage',
+                id: row.wire_id,
+                vm: this,
+              },
+            }, row.wire),
           ]
         },
       }),
@@ -103,11 +131,13 @@ export default {
         title: this.$t('compute.text_863'),
         slots: {
           default: ({ row }, h) => {
-            const ret = []
-            ret.push(
-              <a-button type="link" onClick = {() => this.setWire(row)} disabled={ !!row.ip_addr || !!row.ip6_addr }>{ this.$t('compute.text_843') }</a-button>,
-            )
-            return ret
+            const hFn = h || this.$createElement
+            return [
+              hFn('a-button', {
+                props: { type: 'link', disabled: !!row.ip_addr || !!row.ip6_addr },
+                on: { click: () => this.setWire(row) },
+              }, this.$t('compute.text_843')),
+            ]
           },
         },
       })

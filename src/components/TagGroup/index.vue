@@ -16,13 +16,13 @@
         type="text"
         size="small"
         :style="{ width: '100px' }"
-        v-model="inputValue"
+        v-model:value="inputValue"
         @blur="handleInputConfirm"
         @keyup.enter="handleInputConfirm" />
     </div>
     <div class="mr-1 mb-1" v-else>
       <a-tag @click="showInput" style="background: #fff; border-style: dashed;cursor: pointer;">
-        <a-icon type="plus" />{{$t('common.new')}}
+        <icon type="icon_add" />{{$t('common.new')}}
       </a-tag>
     </div>
   </div>

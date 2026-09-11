@@ -4,7 +4,7 @@
     <div slot="body">
       <a-form
         :form="form.fc">
-        <a-form-item :label="$t('network.text_205', [$t('dictionary.project')])" class="mt-3 mb-0" v-bind="formItemLayout">
+          <a-form-item :label="$t('network.text_205', [$t('dictionary.project')])" class="mt-3" v-bind="formItemLayout">
           <domain-project :fc="form.fc" :decorators="{ project: decorators.project, domain: decorators.domain }" />
         </a-form-item>
         <a-form-item :label="$t('network.text_317')" v-bind="formItemLayout">
@@ -16,7 +16,7 @@
         <a-form-item v-bind="formItemLayout">
           <span slot="label">{{$t('network.text_322')}}<a-tooltip>
               <div slot="title">{{$t('network.text_323')}}<br />{{$t('network.text_324')}}<br />{{$t('network.text_325')}}</div>
-              <a-icon type="info-circle" />
+              <icon type="info-circle" />
             </a-tooltip>
           </span>
           <a-textarea
@@ -27,7 +27,7 @@
         <a-form-item v-bind="formItemLayout">
           <span slot="label">{{$t('network.text_327')}}<a-tooltip>
               <div slot="title">{{$t('network.text_328')}}<br />{{$t('network.text_324')}}<br />{{$t('network.text_325')}}</div>
-              <a-icon type="info-circle" />
+              <icon type="info-circle" />
             </a-tooltip>
           </span>
           <a-textarea

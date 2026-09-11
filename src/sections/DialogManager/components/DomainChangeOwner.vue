@@ -1,15 +1,15 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{$t('common.text00078')}}{{ $t('dictionary.domain') }}</div>
-    <div slot="body">
+    <template #header>{{$t('common.text00078')}}{{ $t('dictionary.domain') }}</template>
+    <template #body>
       <dialog-selected-tips :count="params.data.length" :action="`${$t('common.text00078')}${$t('dictionary.domain')}`" :name="params.name || $t('common.text00006')" />
       <dialog-table :data="params.data" :columns="columns" :errors="errors" />
       <template v-if="domainLoaded">
         <a-form :form="form.fc">
           <a-form-item :label="$t('dictionary.domain')" v-bind="formItemLayout" :extra="extra">
             <a-select v-decorator="decorators.project_domain" showSearch @search="getCanUseDomains" :filterOption="false">
-              <template v-for="item of domains">
-                <a-select-option :key="item.id" :value="item.id">{{ item.name }}</a-select-option>
+              <template v-for="item of domains" :key="item.id">
+                <a-select-option :value="item.id">{{ item.name }}</a-select-option>
               </template>
             </a-select>
           </a-form-item>
@@ -20,11 +20,11 @@
           <a-spin />
         </div>
       </template>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 
@@ -91,7 +91,7 @@ export default {
       return this.$t('common.text00088')
     },
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.dm = null
     this.rm = null
   },

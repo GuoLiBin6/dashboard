@@ -53,7 +53,7 @@ export default {
       contactData: null,
     }
   },
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {

@@ -1,7 +1,7 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{ title }}</div>
-    <div slot="body">
+    <template #header>{{ title }}</template>
+    <template #body>
       <a-form :form="form.fc">
         <a-form-item :label="$t('common.text00068')">
           <quota-set-to-workflow
@@ -10,11 +10,11 @@
             :tenant="userInfo.projectId" />
         </a-form-item>
       </a-form>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

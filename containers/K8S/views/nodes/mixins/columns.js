@@ -11,10 +11,16 @@ export default {
         edit: false,
         showDesc: false,
         slotCallback: row => {
-          const ret = [<side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>]
+          const ret = [this.$createElement('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)]
           if (row.taints) {
             row.taints.forEach(taint => {
-              const effect = <div style="color: #999">{ taint.key }：{ taint.effect }</div>
+              const effect = this.$createElement('div', {
+                style: { color: '#999' },
+              }, `${taint.key}：${taint.effect}`)
               ret.push(effect)
             })
           }
@@ -30,7 +36,7 @@ export default {
             if (row.addresses) {
               const ret = []
               row.addresses.filter(val => val.type === 'InternalIP').map(item => {
-                const ip = <div>{item.address}</div>
+                const ip = h('div', item.address)
                 ret.push(ip)
               })
               return ret
@@ -45,7 +51,9 @@ export default {
         minWidth: 70,
         slots: {
           default: ({ row }, h) => {
-            return [<span style={{ color: row.ready ? '#67C23A' : '#F56C6C' }}>{ row.ready ? 'Ready' : 'UnReady' }</span>]
+            return [h('span', {
+              style: { color: row.ready ? '#67C23A' : '#F56C6C' },
+            }, row.ready ? 'Ready' : 'UnReady')]
           },
         },
       },

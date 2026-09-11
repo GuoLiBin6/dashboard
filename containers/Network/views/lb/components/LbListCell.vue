@@ -1,18 +1,18 @@
 <template>
   <div>
-    <a-icon type="loading" v-if="loading" />
+    <icon type="loading" v-if="loading" />
     <div v-else-if="content && content.length">
       <div v-for="(obj, i) in content" :key="i">
         <a-tag class="mb-1 d-block text-truncate" type="info" size="mini" :title="obj">{{ obj }}</a-tag>
       </div>
     </div>
     <div v-else-if="showUnused">
-      <a-icon type="bulb" theme="twoTone" twoToneColor="#f5222d" class="mr-1" />
+      <icon type="bulb" theme="twoTone" twoToneColor="#f5222d" class="mr-1" />
       <span>{{$t('network.text_245')}}</span>
     </div>
     <div class="error-color" v-else-if="errorText">
       <span>{{ errorText }}</span>
-      <a-icon type="sync" :spin="loading" @click="fetchData" :style="{ color: '#1890ff' }" />
+      <icon type="sync" :spin="loading" @click="fetchData" :style="{ color: '#1890ff' }" />
     </div>
     <div v-else>-</div>
   </div>

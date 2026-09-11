@@ -146,7 +146,7 @@ export default {
       this.chart && this.chart.resize()
     }
   },
-  destroyed () {
+  unmounted () {
     if (this.chart) {
       this.destroy()
     }
@@ -272,8 +272,11 @@ export default {
       }
       const formatOptions = this.formatOptions(options || this.manualOptions || this.options || {})
       chart.setOption(formatOptions, true)
-      Object.keys(this.$listeners).forEach(event => {
-        const handler = this.$listeners[event]
+      Object.entries(this.$attrs || {}).forEach(([key, handler]) => {
+        if (!key.startsWith('on') || typeof handler !== 'function') return
+        const raw = key.slice(2) // e.g. Click, Zr:click
+        if (!raw) return
+        const event = raw[0].toLowerCase() + raw.slice(1)
         if (event.indexOf('zr:') === 0) {
           chart.getZr().on(event.slice(3), handler)
         } else {

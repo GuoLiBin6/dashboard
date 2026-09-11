@@ -1,15 +1,14 @@
 <template>
   <div>
     <div class="tag-list">
-      <template v-for="(item, index) of tags">
+      <template v-for="(item, index) of tags" :key="`${item.key}${item.value}`">
         <span
           class="tag mb-1 d-inline-block"
           :title="item.title"
-          :key="`${item.key}${item.value}`"
           :style="{ backgroundColor: item.backgroundColor, color: item.color, borderColor: item.color }">
           <div class="d-flex align-items-center">
             <span class="flex-fill text-truncate">{{ item.title }}</span>
-            <a-icon class="ml-1 remove-tag flex-grow-0 flex-shrink-0" type="close" @click="removeTag(index)" />
+            <icon class="ml-1 remove-tag flex-grow-0 flex-shrink-0" type="close" @click="removeTag(index)" />
           </div>
         </span>
       </template>
@@ -21,16 +20,16 @@
             destroyTooltipOnHide
             placement="bottomLeft"
             trigger="click"
-            v-model="visible"
+            v-model:open="visible"
             overlayClassName="tag-overlay"
-            @visibleChange="handleVisibleChange">
-            <template v-if="$scopedSlots.trigger">
+            @openChange="handleVisibleChange">
+            <template v-if="$slots.trigger">
               <slot name="trigger" :loading="loading" />
             </template>
             <template v-else>
               <a-button :loading="loading">{{ $t('common_110') }}</a-button>
             </template>
-            <template slot="content">
+            <template #content>
               <div class="tag-wrap" ref="tag-wrap">
                 <tree-project isInPopover :tagConfigParams="{ tagFilterKey: 'tags',queryTreeId: 'tag-value-tree', resource: 'projects'}" @update:item="handleSelect" />
               </div>

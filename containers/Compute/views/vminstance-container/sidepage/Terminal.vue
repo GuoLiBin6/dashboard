@@ -2,7 +2,7 @@
   <div>
     <a-form-model :model="form" layout="inline">
       <a-form-model-item :label="$t('compute.container', [])">
-        <a-select style="min-width: 200px;" v-model="form.container" @change="fetchConnectUrl">
+        <a-select style="min-width: 200px;" v-model:value="form.container" @change="fetchConnectUrl">
           <a-select-option v-for="item in containers" :value="item.id" :key="item.name">{{ item.name }}</a-select-option>
         </a-select>
       </a-form-model-item>

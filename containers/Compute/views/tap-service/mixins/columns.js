@@ -17,10 +17,12 @@ export default {
           { required: true, message: i18n.t('compute.text_210') },
           { validator: validateForm('serverCreateName') },
         ],
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{row.name}</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getEnabledTableColumn(),
@@ -45,11 +47,18 @@ export default {
         title: i18n.t('compute.target_ip'),
         field: 'target_ips',
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             const { target_ips = '' } = row
             const ips = target_ips.split(',')
             return ips.map(ip => {
-              return <list-body-cell-wrap copy field='ip' row={{ ip }} title={ip} />
+              return h('list-body-cell-wrap', {
+                props: {
+                  copy: true,
+                  field: 'ip',
+                  row: { ip },
+                  title: ip,
+                },
+              })
             })
           },
         },

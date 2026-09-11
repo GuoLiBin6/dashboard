@@ -23,7 +23,7 @@
             filterable
             isDefaultSelect
             :params="cloudproviderParams"
-            :item.sync="form.fi.cloudprovider" />
+            v-model:item="form.fi.cloudprovider" />
         </a-form-item>
         <a-form-item :label="$t('common.name')">
           <a-input v-decorator="decorators.name" :placeholder="$t('validator.serverCreateName')"  @change="e => { form.fi.generate_name = e.target.value }" />
@@ -45,8 +45,8 @@
             :placeholder="$t('rules.provider')"
             :disabled="!!params.provider"
             @change="handleProviderChange">
-            <template v-for="item of providerOptions">
-              <a-select-option :key="item[0]" :value="item[1].provider">{{ item[1].label }}</a-select-option>
+            <template v-for="item of providerOptions" :key="item[0]">
+              <a-select-option :value="item[1].provider">{{ item[1].label }}</a-select-option>
             </template>
           </a-select>
         </a-form-item> -->

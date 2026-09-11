@@ -2,7 +2,7 @@
   <a-card class="mb-3" style="flex: 1 1 auto">
     <!-- 类型 -->
     <a-form-item :label="$t('network.text_249')" v-bind="formLayout">
-      <a-select v-if="isEdit" v-model="data.type">
+      <a-select v-if="isEdit" v-model:value="data.type">
         <a-select-option v-for="item in wafRuleTypeOptions" :value="item.value" :key="item.value">
           {{item.label}}
         </a-select-option>

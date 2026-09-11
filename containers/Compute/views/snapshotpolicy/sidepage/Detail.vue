@@ -30,17 +30,31 @@ export default {
           title: this.$t('compute.bind_resource_count'),
           minWidth: 120,
           slots: {
-            default: ({ row }) => {
-              if (row.binding_disk_count === undefined) return [<data-loading />]
+            default: ({ row }, h) => {
+              if (row.binding_disk_count === undefined) return [h('data-loading')]
               if (row.type === 'server') {
                 if (row.binding_resource_count <= 0) return row.binding_resource_count
                 return [
-                  <side-page-trigger name='SnapshotPolicySidePage' id={row.id} tab='snapshot-policy-server' vm={this}>{row.binding_resource_count}</side-page-trigger>,
+                  h('side-page-trigger', {
+                    props: {
+                      name: 'SnapshotPolicySidePage',
+                      id: row.id,
+                      tab: 'snapshot-policy-server',
+                      vm: this,
+                    },
+                  }, row.binding_resource_count),
                 ]
               }
               if (row.binding_disk_count <= 0) return row.binding_disk_count
               return [
-                <side-page-trigger name='SnapshotPolicySidePage' id={row.id} tab='snapshot-policy-disk' vm={this}>{row.binding_disk_count}</side-page-trigger>,
+                h('side-page-trigger', {
+                  props: {
+                    name: 'SnapshotPolicySidePage',
+                    id: row.id,
+                    tab: 'snapshot-policy-disk',
+                    vm: this,
+                  },
+                }, row.binding_disk_count),
               ]
             },
           },

@@ -8,7 +8,7 @@
         </template>
       </a-alert>
       <dialog-selected-tips :name="params.name || $t('dictionary.server')" :count="dataList.length" :action="action" />
-      <vxe-grid class="mb-2" :data="dataList" :columns="columns" />
+      <table-lite-grid class="mb-2" :data="dataList" :columns="columns" />
       <a-form :form="form.fc" hideRequiredMark>
         <a-form-item :label="$t('compute.text_1041')" v-bind="formItemLayout" v-if="isOpenWorkflow">
           <a-input v-decorator="decorators.reason" :placeholder="$t('compute.text_1105')" />

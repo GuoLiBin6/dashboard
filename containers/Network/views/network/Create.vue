@@ -1,7 +1,7 @@
 <template>
   <div>
-    <page-header :title="$t('network.text_570')" :tabs="cloudEnvOptions" :current-tab.sync="cloudEnv" />
-    <page-body need-margin-bottom>
+    <page-header :title="$t('network.text_570')" :tabs="cloudEnvOptions" v-model:currentTab="cloudEnv" />
+    <page-body>
       <a-form class="mt-3" :form="form.fc" @submit.prevent="handleSubmit" v-bind="formItemLayout" hideRequiredMark>
         <a-form-item :label="$t('network.text_205', [$t('dictionary.project')])" class="mt-3" v-bind="formItemLayout">
           <domain-project :fc="form.fc" :decorators="{ project: decorators.project, domain: decorators.domain }" @update:domain="handleDomainChange" />
@@ -31,7 +31,7 @@
             :isDefaultSelect="true"
             :needParams="true"
             @change="vpcChange"
-            :item.sync="curVpc"
+            v-model:item="curVpc"
             :labelFormat="vpcLabelFormat"
             :select-props="{ placeholder: $t('common_226') }" />
         </a-form-item>
@@ -41,7 +41,7 @@
             v-decorator="decorators.wire"
             :selectProps="{ 'placeholder': $t('network.text_572') }"
             :isDefaultSelect="true"
-            :item.sync="curWire"
+            v-model:item="curWire"
             :labelFormat="wireLabelFormat"
             :params="wireParams" />
         </a-form-item>
@@ -61,7 +61,7 @@
         </a-form-item>
         <!-- 网段 -->
         <a-form-item :label="$t('network.text_575')" v-bind="formItemLayout" required v-if="show">
-          <template slot="extra">
+          <template #extra>
             <div>{{$t('network.text_576')}}</div>
             <div>{{$t('network.text_577')}}</div>
           </template>
@@ -70,42 +70,42 @@
         </a-form-item>
         <!-- 输入 网段 -->
         <a-form-item :label="$t('network.text_575')" :extra="$t('network.prefix_in_cidr_range.prompt', [curVpcCidrText])" v-bind="formItemLayout" v-if="!show && !isGroupGuestIpPrefix">
-          <a-row :gutter="8">
-            <a-col :span="12" v-if="curVpc && curVpc.cidr_block">
-              <a-form-item class="mb-0">
+          <div class="guest-ip-prefix-list">
+            <div class="guest-ip-prefix-row">
+              <a-form-item class="mb-0" v-if="curVpc && curVpc.cidr_block">
                 <a-input v-decorator="decorators.guest_ip_prefix(0)" :placeholder="$t('network.ipv4.prefix.prompt')" />
               </a-form-item>
-            </a-col>
-            <a-col :span="12" v-if="curVpc && curVpc.cidr_block6">
-              <a-form-item class="mb-0">
+              <a-form-item class="mb-0" v-if="curVpc && curVpc.cidr_block6">
                 <a-input v-decorator="decorators.guest_ip6_prefix(0)" :placeholder="$t('network.ipv6.prefix.prompt')" />
               </a-form-item>
-            </a-col>
-          </a-row>
+            </div>
+          </div>
           <div v-if="guestIpPrefixHelp" class="error-tips">{{ guestIpPrefixHelp }}</div>
         </a-form-item>
         <a-form-item :label="$t('network.text_575')" v-bind="formItemLayout" :validate-status="guestIpPrefixValidateStatus" :help="guestIpPrefixHelp" required v-if="isGroupGuestIpPrefix">
-          <template slot="extra">
+          <template #extra>
             <div>{{$t('network.prefix_in_cidr_range.prompt', [curVpcCidrText])}}</div>
             <div>{{$t('network.text_580')}}</div>
           </template>
           <!-- 网段 -->
-          <a-row :gutter="8" v-for="(item, i) in guestIpPrefix" :key="item.key">
-            <a-col :span="11">
-              <a-form-item>
+          <div class="guest-ip-prefix-list">
+            <div class="guest-ip-prefix-row" v-for="(item, i) in guestIpPrefix" :key="item.key">
+              <a-form-item class="mb-0">
                 <a-input v-decorator="decorators.guest_ip_prefix(i)" :placeholder="$t('network.ipv4.subnet.input.prompt')" />
               </a-form-item>
-            </a-col>
-            <a-col :span="11">
-              <a-form-item>
+              <a-form-item class="mb-0">
                 <a-input v-decorator="decorators.guest_ip6_prefix(i)" :placeholder="$t('network.ipv6.subnet.input.prompt')" />
               </a-form-item>
-            </a-col>
-            <a-col :span="2">
-              <a-button shape="circle" icon="minus" size="small" v-if="guestIpPrefix.length > 1" @click="decrease(i)" class="mt-2 ml-2" />
-            </a-col>
-          </a-row>
-          <div class="d-flex align-items-center" v-if="remain > 0">
+              <a-button
+                shape="circle"
+                icon="minus"
+                size="small"
+                class="guest-ip-prefix-row__remove"
+                v-if="guestIpPrefix.length > 1"
+                @click="decrease(i)" />
+            </div>
+          </div>
+          <div class="d-flex align-items-center mt-1" v-if="remain > 0">
             <a-button type="primary" shape="circle" icon="plus" size="small" @click="addGuestIpPrefix" />
             <a-button type="link" @click="addGuestIpPrefix">{{$t('network.text_582')}}</a-button>
             <span class="count-tips">{{$t('network.text_169')}}<span class="remain-num">{{ remain }}</span>{{$t('network.text_170')}}</span>
@@ -113,7 +113,7 @@
         </a-form-item>
         <a-form-item :label="$t('common_498')" v-if="isShowIsAutoAlloc">
           <a-switch v-decorator="decorators.is_auto_alloc" />
-          <template slot="extra">{{$t('common_500')}}</template>
+          <template #extra>{{$t('common_500')}}</template>
         </a-form-item>
         <a-form-item :label="$t('common.text00012')" class="mb-0">
           <tag
@@ -123,24 +123,24 @@
           <a-collapse-panel :header="$t('network.text_94')" key="1" forceRender>
             <a-form-item :label="$t('network.text_743')" v-bind="formItemLayout" v-if="hasBgpType">
               <a-input v-decorator="decorators.bgp_type" />
-              <span slot="extra">{{$t('network.text_744')}}</span>
+              <template #extra>{{$t('network.text_744')}}</template>
             </a-form-item>
             <a-form-item v-bind="formItemLayout">
-              <span slot="label">{{$t('network.text_583')}}</span>
+              <template #label>{{$t('network.text_583')}}</template>
               <a-radio-group v-decorator="decorators.alloc_policy">
                 <a-radio-button
                   v-for="item of allocPolicyoptions"
                   :key="item.key"
                   :value="item.key">{{ item.label }}</a-radio-button>
               </a-radio-group>
-              <span slot="extra" v-if="form.fc.getFieldValue('alloc_policy') === 'none'">{{$t('network.text_584')}}</span>
+              <template #extra v-if="form.fc.getFieldValue('alloc_policy') === 'none'">{{$t('network.text_584')}}</template>
             </a-form-item>
             <a-form-item :label="$t('network.dns_server')" v-bind="formItemLayout">
               <a-input :placeholder="$t('validator.IPs')" v-decorator="decorators.guest_dns" />
             </a-form-item>
             <a-form-item v-bind="formItemLayout">
-              <span slot="label">{{$t('network.text_586')}}</span>
-              <template slot="extra">
+              <template #label>{{$t('network.text_586')}}</template>
+              <template #extra>
                 <div>{{$t('network.text_587')}}</div>
                 <div>{{$t('network.text_588')}}</div>
                 <div>{{$t('network.text_589')}}</div>
@@ -821,12 +821,15 @@ export default {
     wireLabelFormat (item) {
       if (item) {
         const { name, zone } = item
-        return (
-          <div class='d-flex'>
-            <span class='text-truncate flex-fill mr-2' title={ name }>{ name }</span>
-            <span style="color: #8492a6; font-size: 13px">可用区:{zone}</span>
-          </div>
-        )
+        return this.$createElement('div', { class: 'd-flex' }, [
+          this.$createElement('span', {
+            class: 'text-truncate flex-fill mr-2',
+            attrs: { title: name },
+          }, name),
+          this.$createElement('span', {
+            style: 'color: #8492a6; font-size: 13px',
+          }, '可用区:' + zone),
+        ])
       }
       return null
     },
@@ -888,27 +891,35 @@ export default {
       }
     },
     vpcLabelFormat (item) {
+      const h = this.$createElement
       if (this.cloudEnv === 'public' || this.regionProvider === HYPERVISORS_MAP.hcso.provider || this.regionProvider === HYPERVISORS_MAP.hcs.provider) {
         if (item.manager) {
           if (item.cidr_block || item.cidr_block6) {
-            return (<div>{ item.name }<span v-if="item.cidr_block">（{ item.cidr_block }）</span><span v-if="item.cidr_block6">（{ item.cidr_block6 }）</span><span class="ml-2 text-color-secondary">{ this.$t('common.cloudprovider_1var', [item.manager]) }</span></div>)
+            const children = [item.name]
+            if (item.cidr_block) children.push(h('span', '（' + item.cidr_block + '）'))
+            if (item.cidr_block6) children.push(h('span', '（' + item.cidr_block6 + '）'))
+            children.push(h('span', { class: 'ml-2 text-color-secondary' }, this.$t('common.cloudprovider_1var', [item.manager])))
+            return h('div', children)
           }
-          return (<div>{ item.name }<span class="ml-2 text-color-secondary">{ this.$t('common.cloudprovider_1var', [item.manager]) }</span></div>)
+          return h('div', [
+            item.name,
+            h('span', { class: 'ml-2 text-color-secondary' }, this.$t('common.cloudprovider_1var', [item.manager])),
+          ])
         }
       } else if (this.cloudEnv === 'onpremise') {
         if (item.cidr_block || item.cidr_block6) {
           const cidrs = []
-          if (item.cidr_block) {
-            cidrs.push(item.cidr_block)
-          }
-          if (item.cidr_block6) {
-            cidrs.push(item.cidr_block6)
-          }
-          return (<div>{ item.name } ({ cidrs.join(', ') })</div>)
+          if (item.cidr_block) cidrs.push(item.cidr_block)
+          if (item.cidr_block6) cidrs.push(item.cidr_block6)
+          return h('div', item.name + ' (' + cidrs.join(', ') + ')')
         }
-        if (item.id === 'default') return (<div>{ item.name }<span v-if="item.cidr_block">（{this.$t('common.text00047')}）</span></div>)
+        if (item.id === 'default') {
+          const children = [item.name]
+          if (item.cidr_block) children.push(h('span', '（' + this.$t('common.text00047') + '）'))
+          return h('div', children)
+        }
       }
-      return (<div>{ item.name }</div>)
+      return h('div', item.name)
     },
     validatePublicIpPrefix (rule, value, callback) {
       value = stripIpWhitespace(value)
@@ -1172,5 +1183,34 @@ export default {
   color: #f5222d;
   margin-bottom: 3px;
   line-height: 16px;
+}
+
+.guest-ip-prefix-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 720px;
+  min-width: 0;
+}
+
+.guest-ip-prefix-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 28px;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+
+  :deep(.ant-form-item) {
+    margin-bottom: 0;
+    min-width: 0;
+  }
+
+  :deep(.ant-input) {
+    width: 100%;
+  }
+}
+
+.guest-ip-prefix-row__remove {
+  justify-self: center;
 }
 </style>

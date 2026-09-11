@@ -1,11 +1,11 @@
 @import 'theme';
 
-// colors
+// colors — 运行时主题色走 CSS 变量，避免依赖 webpack-theme-color-replacer
 .primary-color {
-  color: @primary-color;
+  color: var(--ant-color-primary, @primary-color);
 }
 .link-color {
-  color: @link-color;
+  color: var(--ant-color-primary, @link-color);
 }
 .link-color-light {
   color: @primary-5;
@@ -38,17 +38,25 @@
   color: @box-shadow-base;
 }
 .text-color-help {
-  color: #9C9C9C;
+  color: @text-color-help;
+}
+.font-weight-strong {
+  font-weight: @font-weight-strong;
+}
+.font-weight-base {
+  font-weight: @font-weight-base;
 }
 .primary-color-hover {
   &:hover {
-    color: @primary-color !important;
+    color: var(--ant-color-primary, @primary-color) !important;
   }
 }
 
 // vxe table
 .vxe-table {
   font-size: 14px !important;
+  color: @text-color;
+  font-weight: @font-weight-base;
   .list-body-cell-wrap a {
     color: @link-color;
     &:hover {
@@ -56,13 +64,131 @@
     }
   }
 }
-.vxe-table .vxe-cell--checkbox:not(.is--disabled):hover .vxe-checkbox--icon:before {
-  border-color: @primary-color !important;
+.vxe-table .vxe-header--column {
+  color: @heading-color !important;
+  font-weight: @font-weight-strong !important;
 }
 
-.vxe-table .is--checked.vxe-cell--checkbox .vxe-checkbox--icon:before {
-  border-color: @primary-color !important;
-  background-color: @primary-7 !important;
+// vxe-table 复选框：对齐 ant-design-vue Checkbox（方框 + 圆角 + 主色 + 半选横条）
+@vxe-checkbox-ant-size: 16px;
+@vxe-checkbox-ant-radius: 2px;
+
+.vxe-table--render-default .vxe-cell--checkbox {
+  .vxe-checkbox--icon {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: @vxe-checkbox-ant-size;
+    height: @vxe-checkbox-ant-size;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    color: transparent !important;
+    vertical-align: middle;
+
+    &::before {
+      content: '' !important;
+      box-sizing: border-box;
+      display: block;
+      width: @vxe-checkbox-ant-size;
+      height: @vxe-checkbox-ant-size;
+      border: 1px solid @border-color-base;
+      border-radius: @vxe-checkbox-ant-radius;
+      background-color: #fff;
+      transition: border-color 0.2s ease, background-color 0.2s ease;
+    }
+
+    &::after {
+      content: '';
+      position: absolute;
+      box-sizing: border-box;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+  }
+
+  &:not(.is--disabled):hover .vxe-checkbox--icon::before {
+    border-color: @primary-color !important;
+  }
+
+  &.is--checked .vxe-checkbox--icon {
+    &::before {
+      background-color: @primary-color !important;
+      border-color: @primary-color !important;
+    }
+
+    // 对勾（近似 ant .ant-checkbox-inner:after，16px 内框）
+    &::after {
+      top: 50%;
+      left: 50%;
+      width: 5px;
+      height: 8px;
+      margin-top: -6px;
+      margin-left: -2.5px;
+      border: 2px solid #fff;
+      border-top: 0;
+      border-left: 0;
+      transform: rotate(45deg);
+      opacity: 1;
+    }
+  }
+
+  // 半选：白底边框 + 中间主色短横（对齐 ant indeterminate）
+  &.is--indeterminate .vxe-checkbox--icon {
+    &::before {
+      background-color: #fff !important;
+      border-color: @border-color-base !important;
+    }
+
+    &::after {
+      top: 7px;
+      left: 50%;
+      width: 8px;
+      height: 1px;
+      margin: 0;
+      border: none;
+      border-radius: 1px;
+      background-color: @primary-color;
+      transform: translateX(-50%);
+      opacity: 1;
+    }
+  }
+
+  &.is--checked.is--indeterminate .vxe-checkbox--icon {
+    &::before {
+      background-color: @primary-color !important;
+      border-color: @primary-color !important;
+    }
+
+    &::after {
+      top: 7px;
+      left: 50%;
+      width: 8px;
+      height: 1px;
+      margin: 0;
+      border: none;
+      border-radius: 1px;
+      background-color: #fff;
+      transform: translateX(-50%);
+      opacity: 1;
+    }
+  }
+
+  &.is--disabled .vxe-checkbox--icon::before {
+    cursor: not-allowed;
+    background-color: rgba(0, 0, 0, 0.04) !important;
+    border-color: @border-color-base !important;
+  }
+
+  &.is--disabled.is--checked .vxe-checkbox--icon::before {
+    background-color: rgba(0, 0, 0, 0.15) !important;
+    border-color: transparent !important;
+  }
+
+  &.is--disabled.is--checked .vxe-checkbox--icon::after {
+    border-color: rgba(255, 255, 255, 0.65);
+  }
 }
 
 .vxe-pager .vxe-pager--jump .vxe-pager--goto:focus {
@@ -80,16 +206,6 @@
   color: @primary-color !important;
 }
 
-.vxe-table .is--indeterminate.vxe-cell--checkbox {
-  color: @primary-color !important;
-}
-
-.vxe-table .is--indeterminate.vxe-cell--checkbox .vxe-checkbox--icon:before {
-  color: @primary-color !important;
-  background-color: @primary-color !important;
-  border-color: @primary-color !important;
-}
-
 .vxe-table .is--checked.vxe-cell--radio .vxe-radio--checked-icon:before {
   background-color: @primary-color !important;
   border-color: @primary-color !important;
@@ -101,12 +217,12 @@
 
 // background
 .primary-color-bg {
-  background-color: @primary-color !important;
+  background-color: var(--ant-color-primary, @primary-color) !important;
 }
 
 // border
 .primary-color-border {
-  border-color: @primary-color !important;
+  border-color: var(--ant-color-primary, @primary-color) !important;
 }
 
 .text-weak {
@@ -118,7 +234,22 @@
   .ant-collapse-item {
     border: 0;
     .ant-collapse-header {
-      color: @primary-color;
+      color: var(--ant-color-primary, @primary-color);
+      align-items: center;
+
+      // 只旋转内部图标，避免旋转整个 expand-icon 导致与标题错行
+      .ant-collapse-expand-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        .anticon {
+          transition: transform 0.24s;
+        }
+      }
+    }
+    &.ant-collapse-item-active > .ant-collapse-header .ant-collapse-expand-icon .anticon {
+      transform: rotate(90deg);
     }
   }
 }
@@ -144,14 +275,407 @@
 }
 
 // global
+html {
+  font-size: 14px;
+  height: 100%;
+}
 body {
   width: 100% !important;
-  color: #606266;
+  height: 100%;
+  color: @text-color;
+  font-weight: @font-weight-base;
   font-family: arial, 'Source Han Sans CN', 'PingFang SC', 'Microsoft Yahei', sans-serif;
+  background-color: #fff;
+}
+
+// 标题层级默认字重，避免各处 bold/#000 参差
+h1, h2, h3, h4, h5, h6 {
+  color: @heading-color;
+  font-weight: @font-weight-strong;
 }
 
 #app, .app-container {
   height: 100%;
+}
+
+// Modal：header / footer 分割线与内容同宽，并保留线上下间距
+.ant-modal {
+  .ant-modal-header {
+    position: relative;
+    margin-bottom: 16px !important;
+    padding-bottom: 12px !important;
+    border-bottom: none !important;
+    box-shadow: none !important;
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 1px;
+      background: #f0f0f0;
+    }
+  }
+  .ant-modal-footer {
+    position: relative;
+    margin-top: 16px !important;
+    padding-top: 12px !important;
+    border-top: none !important;
+    box-shadow: none !important;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 1px;
+      background: #f0f0f0;
+    }
+  }
+}
+
+// 底栏让位改由 PageFooter 根节点 .page-footer-space 在文档流内占位（74px），
+// 不再依赖 :has(.page-footer) 给 .app-page-content 垫 padding（flex + height:100% 下不可靠）
+
+// 全局圆角样式（由 setting.globalRounded 控制，关闭时保持现有样式）
+#app.app-global-rounded {
+  --oc-page-inset: 5px; // 距 app 边距（左右必须一致）
+  --oc-page-gap: 8px; // 元素彼此间距
+  --oc-navbar-height: 60px;
+  --oc-l2-width: 160px;
+  --oc-page-padding: 15px; // 与原 app-page padding 一致
+  // 滚动条宽度 = 右侧 padding，整段占满右侧，不再「padding + 滚动条」叠加变宽
+  --oc-scrollbar-size: var(--oc-page-padding);
+  --oc-global-bg-rgb: 222, 225, 230;
+  --oc-global-bg-alpha: 1;
+  box-sizing: border-box;
+  // 首屏淡入；半透明叠在白底上，颜色更透不压屏
+  background-color: rgba(var(--oc-global-bg-rgb), var(--oc-global-bg-alpha));
+  animation: oc-global-rounded-bg-in 4s ease;
+  padding: var(--oc-page-inset);
+
+  // fixed 元素与 app 四边保持相同 inset
+  .navbar-wrap {
+    border-radius: 6px;
+    top: var(--oc-page-inset);
+    left: var(--oc-page-inset);
+    right: var(--oc-page-inset);
+    margin: 0;
+    box-shadow: none;
+    // 用户/更多等下拉挂在 navbar 内，需可见溢出
+    overflow: visible;
+  }
+
+  .level-2-wrap {
+    left: var(--oc-page-inset);
+    top: calc(var(--oc-page-inset) + var(--oc-navbar-height) + var(--oc-page-gap));
+    border-radius: 6px;
+  }
+
+  .app-page-shell {
+    position: relative;
+    z-index: 6;
+    flex: 1 1 0%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    transition: margin-left .2s ease;
+
+    &.l2-menu-show {
+      margin-left: calc(var(--oc-l2-width) + var(--oc-page-gap)) !important;
+    }
+  }
+
+  .app-container {
+    min-height: 0;
+    flex: 1 1 0%;
+    display: flex;
+    flex-direction: column;
+    height: auto !important;
+    max-height: 100%;
+  }
+
+  .app-content {
+    flex: 1 1 0%;
+    min-height: 0;
+    height: auto !important;
+    overflow: hidden;
+  }
+
+  .app-page {
+    position: relative;
+    background-color: #fff;
+    border-radius: 6px;
+    margin: var(--oc-page-gap) 0 0;
+    flex: 1 1 0%;
+    min-height: 0;
+    height: auto;
+    width: auto;
+    max-width: none;
+    padding: 0 !important;
+    overflow: hidden !important;
+
+    // margin 已改到 app-page-shell，这里不再跟 l2
+    &.l2-menu-show {
+      margin-left: 0 !important;
+    }
+  }
+
+  // 左 padding 15px；右不做 padding，改由 15px 宽滚动条占位 → 视觉左右同宽
+  // 滑块仅滚动时显示，停止后隐藏（轨道始终占位）
+  // 有 page-footer 时的底栏让位见上方 .app-page-content 统一规则
+  .app-page-scroll {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: auto !important; // 覆盖可能残留的 height:100% 内联样式
+    box-sizing: border-box;
+    width: auto;
+    padding: var(--oc-page-padding) 0 0 var(--oc-page-padding);
+    // 底栏让位改由 .app-page-content padding-bottom（见上方统一规则），此处不再重复
+    overflow-x: hidden;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: transparent #fff;
+
+    &::-webkit-scrollbar {
+      width: var(--oc-scrollbar-size) !important;
+    }
+    &::-webkit-scrollbar-track {
+      background: #fff;
+    }
+    // 滑块在 15px 轨道内缩进，看起来居中、细一些；默认透明
+    &::-webkit-scrollbar-thumb {
+      background-color: transparent;
+      border: 4px solid transparent;
+      border-radius: 8px;
+    }
+
+    &.is-scrolling {
+      scrollbar-color: rgba(144, 147, 153, 0.45) #fff;
+
+      &::-webkit-scrollbar-thumb {
+        background-color: rgba(144, 147, 153, 0.45);
+        border-color: #fff;
+      }
+      &::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(144, 147, 153, 0.65);
+      }
+    }
+  }
+
+  // CloudShell：与上方内容 / 最大化时与 navbar 间距均为 --oc-page-inset
+  .cloudshell-box {
+    margin-top: var(--oc-page-inset);
+  }
+
+  .cloudshell-wrapper {
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .cloudshell-header {
+    background-color: rgb(56, 56, 56) !important;
+    color: #fff !important;
+    border-radius: 6px 6px 0 0;
+
+    .cloudshell-header-title {
+      color: rgba(255, 255, 255, 0.92) !important;
+    }
+
+    .cloudshell-action {
+      color: rgba(255, 255, 255, 0.75) !important;
+
+      &:hover {
+        color: #fff !important;
+        background: rgba(255, 255, 255, 0.12) !important;
+      }
+    }
+  }
+
+  // 左侧一级菜单 Drawer：top 72px / left 5px / bottom 5px，6px 圆角；深色底去掉白边
+  // antdv4 下 id 无法挂到 Drawer 根节点，改用 rootClassName=.sidebar-wrap-drawer
+  // 注意：.sidebar-wrap-drawer 用于 EE（左深右白双栏），勿强制 #001529；CE 单栏深色仍走 #sidebar-wrap / 内联 style
+  .sidebar-wrap-drawer.ant-drawer .ant-drawer-content-wrapper,
+  .ant-drawer.sidebar-wrap-drawer .ant-drawer-content-wrapper,
+  #sidebar-wrap.ant-drawer .ant-drawer-content-wrapper,
+  .ant-drawer#sidebar-wrap .ant-drawer-content-wrapper,
+  [id="sidebar-wrap"].ant-drawer .ant-drawer-content-wrapper,
+  .ant-drawer[id="sidebar-wrap"] .ant-drawer-content-wrapper,
+  #sidebar-wrap .ant-drawer-content-wrapper {
+    top: 72px !important;
+    left: 5px !important;
+    bottom: 5px !important;
+    height: auto !important;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  #sidebar-wrap.ant-drawer .ant-drawer-content-wrapper,
+  .ant-drawer#sidebar-wrap .ant-drawer-content-wrapper,
+  [id="sidebar-wrap"].ant-drawer .ant-drawer-content-wrapper,
+  .ant-drawer[id="sidebar-wrap"] .ant-drawer-content-wrapper,
+  #sidebar-wrap .ant-drawer-content-wrapper {
+    background: #001529 !important;
+  }
+
+  .sidebar-wrap-drawer.ant-drawer .ant-drawer-content,
+  .ant-drawer.sidebar-wrap-drawer .ant-drawer-content {
+    border-radius: 6px;
+    background: transparent !important;
+  }
+
+  #sidebar-wrap.ant-drawer .ant-drawer-content,
+  .ant-drawer#sidebar-wrap .ant-drawer-content,
+  [id="sidebar-wrap"].ant-drawer .ant-drawer-content,
+  .ant-drawer[id="sidebar-wrap"] .ant-drawer-content,
+  #sidebar-wrap .ant-drawer-content {
+    border-radius: 6px;
+    background: #001529 !important;
+  }
+
+  .sidebar-wrap-drawer.ant-drawer .ant-drawer-body,
+  .ant-drawer.sidebar-wrap-drawer .ant-drawer-body {
+    background: transparent !important;
+  }
+
+  #sidebar-wrap.ant-drawer .ant-drawer-body,
+  .ant-drawer#sidebar-wrap .ant-drawer-body,
+  [id="sidebar-wrap"].ant-drawer .ant-drawer-body,
+  .ant-drawer[id="sidebar-wrap"] .ant-drawer-body,
+  #sidebar-wrap .ant-drawer-body {
+    background: #001529 !important;
+  }
+
+  &.oc-theme-light {
+    #sidebar-wrap.ant-drawer .ant-drawer-content-wrapper,
+    .ant-drawer#sidebar-wrap .ant-drawer-content-wrapper,
+    [id="sidebar-wrap"].ant-drawer .ant-drawer-content-wrapper,
+    .ant-drawer[id="sidebar-wrap"] .ant-drawer-content-wrapper,
+    #sidebar-wrap .ant-drawer-content-wrapper,
+    #sidebar-wrap.ant-drawer .ant-drawer-content,
+    .ant-drawer#sidebar-wrap .ant-drawer-content,
+    [id="sidebar-wrap"].ant-drawer .ant-drawer-content,
+    .ant-drawer[id="sidebar-wrap"] .ant-drawer-content,
+    #sidebar-wrap .ant-drawer-content,
+    #sidebar-wrap.ant-drawer .ant-drawer-body,
+    .ant-drawer#sidebar-wrap .ant-drawer-body,
+    [id="sidebar-wrap"].ant-drawer .ant-drawer-body,
+    .ant-drawer[id="sidebar-wrap"] .ant-drawer-body,
+    #sidebar-wrap .ant-drawer-body {
+      background: @sidebar-light-bg-color !important;
+    }
+  }
+
+  .sidebar-wrap-drawer.ant-drawer .ant-drawer-mask,
+  .ant-drawer.sidebar-wrap-drawer .ant-drawer-mask,
+  #sidebar-wrap.ant-drawer .ant-drawer-mask,
+  .ant-drawer#sidebar-wrap .ant-drawer-mask,
+  [id="sidebar-wrap"].ant-drawer .ant-drawer-mask,
+  .ant-drawer[id="sidebar-wrap"] .ant-drawer-mask {
+    top: 72px !important;
+    left: 5px !important;
+    right: 5px !important;
+    bottom: 5px !important;
+    border-radius: 6px;
+  }
+
+  // 二级菜单 popover：与一级拉开间距 + 圆角
+  .l2-menus-popover {
+    .ant-popover-inner {
+      border-radius: 6px;
+      overflow: hidden;
+    }
+  }
+
+  // 登录/认证全屏页：白底圆角卡片贴合安全边界，外露全局背景色
+  > .app-container {
+    height: 100% !important;
+    min-height: 0 !important;
+    max-height: 100%;
+  }
+
+  .auth-layout,
+  .auth-login-normal,
+  .auth-login-fullscreen {
+    position: relative;
+    height: 100%;
+    min-height: 0;
+    border-radius: 6px;
+    overflow: hidden;
+    background-color: #fff;
+    box-sizing: border-box;
+  }
+
+  /* Showcase：SVG 浅蓝波浪底 */
+  .auth-login-showcase {
+    position: relative;
+    height: 100%;
+    min-height: 0;
+    border-radius: 6px;
+    overflow: hidden;
+    background-color: transparent;
+    box-sizing: border-box;
+  }
+
+  .auth-layout .header,
+  .auth-login-normal .header,
+  .auth-login-fullscreen .header,
+  .auth-layout .footer,
+  .auth-login-normal .footer,
+  .auth-login-fullscreen .footer,
+  .auth-layout .auth-top-alert,
+  .auth-login-normal .auth-top-alert,
+  .auth-login-fullscreen .auth-top-alert {
+    // 相对认证卡片定位，避免 .position-fixed 贴视口盖住安全边距
+    position: absolute !important;
+    left: 0;
+    right: 0;
+    width: 100%;
+  }
+
+  .auth-layout .header,
+  .auth-login-normal .header,
+  .auth-login-fullscreen .header {
+    top: 0;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+  }
+
+  .auth-layout .footer,
+  .auth-login-normal .footer,
+  .auth-login-fullscreen .footer {
+    bottom: 0;
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+  }
+
+  /* Showcase 无 fixed 头尾，避免被上方 absolute 规则误伤 */
+  .auth-login-showcase .showcase-top,
+  .auth-login-showcase .showcase-footer {
+    position: relative;
+  }
+}
+
+@keyframes oc-global-rounded-bg-in {
+  from {
+    background-color: rgba(var(--oc-global-bg-rgb), 0);
+  }
+  to {
+    background-color: rgba(var(--oc-global-bg-rgb), var(--oc-global-bg-alpha));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #app.app-global-rounded {
+    animation: none;
+    background-color: rgba(var(--oc-global-bg-rgb), var(--oc-global-bg-alpha));
+  }
 }
 
 .oc-icon {
@@ -161,12 +685,66 @@ body {
   text-align: center;
   text-transform: none;
   line-height: 0;
-  text-rendering: optimizeLegibility;
+  text-rendering: geometricPrecision;
+  shape-rendering: geometricPrecision;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overflow: visible;
+  // 跟随父级 color（如 a-button hover），避免 path 默认黑色导致比文字浅
+  fill: currentColor;
   svg {
     display: inline-block;
   }
+  // 通过 <img> 渲染的 svg 图标，尺寸跟随字体大小，保持与 iconfont 一致
+  img {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+  }
+}
+
+/* 用户面板：贴 navbar 外框底边与右缘（覆盖 antd 相对触发器的定位） */
+.navbar-wrap .navbar-user-dropdown.ant-dropdown {
+  position: absolute !important;
+  top: 100% !important;
+  right: 0 !important;
+  left: auto !important;
+  bottom: auto !important;
+  margin: 0 !important;
+  transform: none !important;
+  overflow: visible;
+}
+
+/* CE a-menu 用户面板阴影；EE 自定义面板见 .account-info-wrapper */
+.navbar-wrap .navbar-user-dropdown .ant-dropdown-menu.navbar-user-menu,
+.navbar-wrap .navbar-user-dropdown .navbar-user-menu {
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.08),
+    0 3px 6px -4px rgba(0, 0, 0, 0.12),
+    0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+}
+
+// 多色图标：取消 currentColor，保留 path 原始 fill（如 k8s 蓝底白图案）
+.oc-icon.oc-icon--colorful {
+  fill: none;
+}
+
+.ant-btn .oc-icon {
+  color: inherit;
+  fill: currentColor;
+}
+
+// 兼容原 a-icon spin / anticon-spin：列表 loading、status 中间态、刷新按钮等
+@keyframes oc-icon-spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+.oc-icon-spin,
+.anticon-spin {
+  display: inline-block;
+  animation: oc-icon-spin 1s infinite linear;
 }
 
 .error-notification {
@@ -225,15 +803,17 @@ body {
 
 .bill-kind-tabs-title {
   font-size: 20px;
-  color: #000;
+  color: @heading-color;
   word-break: break-word;
   margin-top: 20px;
 }
 
 .bill-kind-tabs-subtitle {
   font-size: 12px;
-  color: #ccc;
-  font-weight: 500;
+  color: rgba(0, 0, 0, 0.45);
+  font-weight: normal;
+  margin-top: 8px;
+  line-height: 20px;
 }
 
 // 组合 input 和 select，详见 /k8s-deployment/create 的服务表单项
@@ -259,8 +839,85 @@ body {
   cursor: pointer;
 }
 
+.custom-date-time.ant-popover {
+  z-index: 1050;
+}
 .custom-date-time.ant-popover .ant-popover-message-title {
   padding-left: 0;
+}
+.custom-date-time .ant-popover-inner,
+.custom-date-time .ant-popover-inner-content {
+  overflow: visible;
+}
+.custom-date-time .ant-picker-dropdown {
+  z-index: 1100 !important;
+}
+
+// 角色权限列 Popover：原生表一次绘出，避免 vxe 表头晚于表体
+.role-policy-popover {
+  .ant-popover-inner,
+  .ant-popover-inner-content {
+    padding: 0 !important;
+    overflow: hidden;
+  }
+  .role-policy-popover-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.85);
+    th,
+    td {
+      padding: 8px 12px;
+      border: 1px solid #e8e8e8;
+      text-align: left;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    th {
+      background: #fafafa;
+      font-weight: 500;
+    }
+    tbody tr:hover td {
+      background: #f5f5f5;
+    }
+  }
+}
+
+// a-alert：用 flex gap 拉开图标与文案（antdv4 CSS-in-JS 会盖掉仅写在 icon 上的 margin）
+.ant-alert:not(.ant-alert-no-icon) {
+  gap: 12px !important;
+  .ant-alert-icon {
+    flex-shrink: 0;
+    margin-inline-end: 0 !important;
+    margin-right: 0 !important;
+  }
+}
+
+// a-alert info：跟随主题色（背景/边框；图标色另由 antdGlobalConfig 内联 + 运行时 style 兜底）
+.ant-alert.ant-alert-info {
+  background: color-mix(in srgb, var(--ant-color-primary, #1890ff) 8%, #fff) !important;
+  border-color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 28%, #fff) !important;
+}
+
+// 监控面板操作下拉：收紧图标与文字间距
+.monitor-action-dropdown {
+  .ant-dropdown-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0;
+  }
+  .ant-dropdown-menu-item-icon {
+    margin-inline-end: 6px !important;
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    min-width: 14px !important;
+  }
+  .ant-dropdown-menu-title-content {
+    flex: none;
+  }
 }
 
 // reset ant-form 中的codemirror行高
@@ -298,18 +955,14 @@ body {
   }
 }
 
-.ant-select-selection-selected-value {
-  .oc-selected-display-none {
-    display: none;
-  }
-}
-.ant-select-selection--multiple {
+/* antdv4：选中态在 .ant-select-selection-item，下拉里是 .ant-select-item-option */
+.ant-select-selection-item {
   .oc-selected-display-none {
     display: none;
   }
 }
 
-.ant-select-dropdown-menu-item {
+.ant-select-item-option {
   .oc-dropdown-display-none {
     display: none;
   }
@@ -333,10 +986,12 @@ input[type=number] {
 
 .ant-tooltip {
   max-width: 500px;
+  // 名称仅展示，不拦截鼠标，避免挡住相邻可点击元素
+  pointer-events: none;
 }
 
 .ant-tooltip-inner {
-  color: #000;
+  color: @heading-color;
   background-color: #fff;
   border: 1px solid #9C9C9C;
 }
@@ -360,6 +1015,7 @@ input[type=number] {
   }
 }
 .dashboard-number-card {
+  height: 100%;
   .ant-spin-container {
     height: 100%;
   }
@@ -368,6 +1024,7 @@ input[type=number] {
 .scroll-dialog-body {
   min-height: 100px;
   max-height: calc(100vh - 280px);
+  overflow-x: hidden;
   overflow-y: auto;
 }
 
@@ -385,10 +1042,12 @@ input[type=number] {
 }
 
 .vxe-table {
+  // vxe@4 在 show-overflow=ellipsis 时会给 .vxe-cell 写死 height，多行内容（如 UsedPercent）会被裁切
   .vxe-body--column.table--td-auto-height {
     height: auto !important;
     padding: 12px 0 !important;
     .vxe-cell {
+      height: auto !important;
       max-height: none !important;
     }
   }
@@ -695,6 +1354,39 @@ input[type=number] {
 
 .w-e-select-list ul .selected {
   background-color: var(--w-e-toolbar-active-bg-color)
+}
+
+// --- Sidebar Drawer 层级修正（避免 antd dev-only 样式把 Drawer 提到 1000）---
+// antd-vue v4 在开发态会注入类似：
+// :where(.css-dev-only-do-not-override-xxxx).ant-drawer { z-index: 1000; }
+// 这会导致 Drawer mask 盖住 navbar（navbar 固定 z-index: 99）。
+// 这里只针对侧边菜单 Drawer（.sidebar-wrap-drawer / #sidebar-wrap）做 override，不影响其它 Dialog/Drawer。
+// antdv4：id 无法落到 Drawer 根节点，优先用 rootClassName=.sidebar-wrap-drawer
+.sidebar-wrap-drawer,
+.ant-drawer.sidebar-wrap-drawer,
+#sidebar-wrap,
+.ant-drawer#sidebar-wrap,
+[id="sidebar-wrap"],
+.ant-drawer[id="sidebar-wrap"] {
+  z-index: 98 !important;
+}
+
+.sidebar-wrap-drawer .ant-drawer-mask,
+.ant-drawer.sidebar-wrap-drawer .ant-drawer-mask,
+#sidebar-wrap .ant-drawer-mask,
+.ant-drawer#sidebar-wrap .ant-drawer-mask,
+[id="sidebar-wrap"] .ant-drawer-mask,
+.ant-drawer[id="sidebar-wrap"] .ant-drawer-mask {
+  z-index: 97 !important;
+}
+
+.sidebar-wrap-drawer .ant-drawer-content-wrapper,
+.ant-drawer.sidebar-wrap-drawer .ant-drawer-content-wrapper,
+#sidebar-wrap .ant-drawer-content-wrapper,
+.ant-drawer#sidebar-wrap .ant-drawer-content-wrapper,
+[id="sidebar-wrap"] .ant-drawer-content-wrapper,
+.ant-drawer[id="sidebar-wrap"] .ant-drawer-content-wrapper {
+  z-index: 98 !important;
 }
 
 .w-e-select-list ul li {
@@ -1192,5 +1884,6 @@ body .w-e-modal * {
 #vxe-table {
   .vxe-pager .vxe-pager--wrapper {
     flex-grow: 0 !important;
+    font-size: 12px;
   }
 }

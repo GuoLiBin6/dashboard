@@ -69,9 +69,18 @@ export default {
           field: 'info',
           title: this.$t('compute.source_data'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               const yamlInfo = jsYaml.safeDump(row)
-              return [<div class="pod-container-yaml"><code-mirror value={yamlInfo} options={this.cmOptions} /></div>]
+              return [
+                h('div', { class: 'pod-container-yaml' }, [
+                  h('code-mirror', {
+                    props: {
+                      value: yamlInfo,
+                      options: this.cmOptions,
+                    },
+                  }),
+                ]),
+              ]
             },
           },
         },

@@ -38,7 +38,14 @@ export const getLlmIpColumn = () => {
         if (!row.llm_ip) return '-'
         const ip = row.llm_ip
         return [
-          <list-body-cell-wrap copy row={{ ip }} hide-field field="ip">{ip}</list-body-cell-wrap>,
+          h('list-body-cell-wrap', {
+            props: {
+              copy: true,
+              row: { ip },
+              hideField: true,
+              field: 'ip',
+            },
+          }, ip),
         ]
       },
     },
@@ -56,10 +63,18 @@ export const getLlmSkuColumn = ({ vm = {}, isApplyType = false, isDesktopType = 
     slots: {
       default: ({ row }, h) => {
         const text = row.llm_sku || '-'
+        const trigger = h('side-page-trigger', {
+          props: {
+            permission: 'llm_skus_get',
+            name: 'LlmSkuSidePage',
+            id: row.llm_sku_id,
+            vm,
+          },
+        }, text)
         return [
-          <list-body-cell-wrap copy hideField={true} field='llm_sku' row={row} message={text}>
-            <side-page-trigger permission='llm_skus_get' name='LlmSkuSidePage' id={row.llm_sku_id} vm={vm}>{text}</side-page-trigger>
-          </list-body-cell-wrap>,
+          h('list-body-cell-wrap', {
+            props: { copy: true, hideField: true, field: 'llm_sku', row, message: text },
+          }, [trigger]),
         ]
       },
     },
@@ -88,10 +103,18 @@ export const getLlmImageColumn = ({ vm = {} } = {}) => {
     slots: {
       default: ({ row }, h) => {
         const text = row.llm_image || '-'
+        const trigger = h('side-page-trigger', {
+          props: {
+            permission: 'llm_images_get',
+            name: 'LlmImageSidePage',
+            id: row.llm_image_id,
+            vm,
+          },
+        }, text)
         return [
-          <list-body-cell-wrap copy hideField={true} field='llm_image' row={row} message={text}>
-            <side-page-trigger permission='llm_images_get' name='LlmImageSidePage' id={row.llm_image_id} vm={vm}>{text}</side-page-trigger>
-          </list-body-cell-wrap>,
+          h('list-body-cell-wrap', {
+            props: { copy: true, hideField: true, field: 'llm_image', row, message: text },
+          }, [trigger]),
         ]
       },
     },
@@ -165,8 +188,16 @@ export const getHostTableColumn = (vm) => {
     width: 120,
     slots: {
       default: ({ row }, h) => {
+        const hFn = h || this.$createElement
         return [
-          <side-page-trigger permission='hosts_get' name='HostSidePage' id={row.host_id} vm={vm}>{row.host}</side-page-trigger>,
+          hFn('side-page-trigger', {
+            props: {
+              permission: 'hosts_get',
+              name: 'HostSidePage',
+              id: row.host_id,
+              vm,
+            },
+          }, row.host),
         ]
       },
     },
@@ -237,8 +268,11 @@ export const getPortsColumn = (ports) => {
             field: 'desktop_ip',
             slots: {
               default: ({ row }, h) => {
+                const hFn = h || (() => {})
                 return [
-                  <list-body-cell-wrap copy row={{ row }} hide-field field="desktop_ip">{row.desktop_ip}</list-body-cell-wrap>,
+                  hFn('list-body-cell-wrap', {
+                    props: { copy: true, row: { row }, hideField: true, field: 'desktop_ip' },
+                  }, row.desktop_ip),
                 ]
               },
             },
@@ -252,9 +286,14 @@ export const getPortsColumn = (ports) => {
             field: 'server_ip',
             slots: {
               default: ({ row }, h) => {
+                const hFn = h || (() => {})
                 return [
-                  <list-body-cell-wrap copy row={{ row }} hide-field field="server_ip">{row.server_ip}</list-body-cell-wrap>,
-                  <list-body-cell-wrap copy row={{ row }} hide-field field="public_ip">{row.public_ip}</list-body-cell-wrap>,
+                  hFn('list-body-cell-wrap', {
+                    props: { copy: true, row: { row }, hideField: true, field: 'server_ip' },
+                  }, row.server_ip),
+                  hFn('list-body-cell-wrap', {
+                    props: { copy: true, row: { row }, hideField: true, field: 'public_ip' },
+                  }, row.public_ip),
                 ]
               },
             },
@@ -271,7 +310,8 @@ export const getPortsColumn = (ports) => {
             },
           },
         ]
-        return <vxe-grid data={ports || []} columns={cls}></vxe-grid>
+        const hFn = h || (() => {})
+        return [hFn('table-lite-grid', { props: { data: ports || [], columns: cls } })]
       },
     },
   }

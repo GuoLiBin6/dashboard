@@ -1,10 +1,10 @@
 <template>
   <div v-on="events" tabindex="1" class="d-flex align-items-center list-body-cell-wrap" :title="message || row[field] || '-'">
-    <span v-if="showType === 'text'" class="text-truncate">{{time || '-'}} <a-icon v-if="edit" type="edit" class="primary-color" /></span>
+    <span v-if="showType === 'text'" class="text-truncate">{{time || '-'}} <icon v-if="edit" type="edit" class="primary-color" /></span>
     <a-date-picker
       style="width: 100%"
       v-if="showType === 'select'"
-      v-model="time"
+      v-model:value="time"
       show-time
       :format="format"
       :valueFormat="format"

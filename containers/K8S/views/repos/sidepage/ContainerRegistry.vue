@@ -48,15 +48,24 @@ export default {
           minWidth: 220,
           slots: {
             default: ({ row }) => {
-              if (this.isPreLoad && !row.tags) return [<data-loading />]
+              if (this.isPreLoad && !row.tags) return [h('data-loading')]
               const len = (row.tags && row.tags.length) || 0
               if (len === 0) return this.$t('k8s.repo.image.tag_empty')
-              const list = row.tags.map(v => <a-tag class='mr-1'>{ v }</a-tag>)
-              return [<list-body-cell-popover text={this.$t('compute.text_619', [len])} max-width="400px">
-                <div style="display: inline-flex; flex-wrap: wrap; max-width: 40vw;">
-                  {...list}
-                </div>
-              </list-body-cell-popover>]
+              const list = row.tags.map(v => h('a-tag', { class: 'mr-1' }, v))
+              return [h('list-body-cell-popover', {
+                props: {
+                  text: this.$t('compute.text_619', [len]),
+                  maxWidth: '400px',
+                },
+              }, [
+                h('div', {
+                  style: {
+                    display: 'inline-flex',
+                    flexWrap: 'wrap',
+                    maxWidth: '40vw',
+                  },
+                }, list),
+              ])]
             },
           },
         },

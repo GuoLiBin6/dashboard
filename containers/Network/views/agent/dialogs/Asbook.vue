@@ -1,7 +1,7 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{params.title}}</div>
-    <div slot="body">
+    <template #header>{{params.title}}</template>
+    <template #body>
       <a-descriptions bordered size="small">
         <a-descriptions-item :label="$t('network.text_21')">
           {{ansibleplaybookData.name}}
@@ -13,8 +13,8 @@
       <div class="mt-3">
         <code-mirror :value="ansibleplaybookData.output " :options="cmOptions" />
       </div>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button class="ml-2 mr-2" @click="handleRun" :disabled="this.isRunning">{{$t('network.text_28')}}</a-button>
        <a-popconfirm
           class=""
@@ -26,7 +26,7 @@
         <a-button class="" :disabled="!this.isRunning">{{$t('network.text_32')}}</a-button>
       </a-popconfirm>
       <a-button class="ml-2" @click="cancelDialog">{{$t('network.text_33')}}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 
@@ -85,7 +85,7 @@ export default {
               slots: {
                 default: ({ row }, h) => {
                   return [
-                    <code-mirror value={ row.output } options={ this.cmOptions } />,
+                    h('code-mirror', { value: row.output, options: this.cmOptions }),
                   ]
                 },
               },
@@ -152,10 +152,8 @@ export default {
 
 <style lang="less" scoped>
 .ansible-playbook {
-  ::v-deep {
-    .CodeMirror {
-      height: 700px !important;
-    }
+  :deep(.CodeMirror) {
+    height: 700px !important;
   }
 }
 </style>

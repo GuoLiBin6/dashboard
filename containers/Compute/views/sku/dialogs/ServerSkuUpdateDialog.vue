@@ -6,13 +6,13 @@
       <dialog-table :data="params.data" :columns="columns" />
       <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
         <a-form-item :label="$t('compute.sku.postpaid_status')">
-          <a-radio-group v-model="postpaid">
+          <a-radio-group v-model:value="postpaid">
             <a-radio :value="available">{{ $t('status.sku.available') }}</a-radio>
             <a-radio :value="soldout">{{ $t('status.sku.soldout') }}</a-radio>
           </a-radio-group>
         </a-form-item>
         <a-form-item :label="$t('compute.sku.prepaid_status')">
-          <a-radio-group v-model="prepaid">
+          <a-radio-group v-model:value="prepaid">
             <a-radio :value="available">{{ $t('status.sku.available') }}</a-radio>
             <a-radio :value="soldout">{{ $t('status.sku.soldout') }}</a-radio>
           </a-radio-group>

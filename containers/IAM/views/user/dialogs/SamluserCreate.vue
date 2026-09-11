@@ -12,7 +12,7 @@
           <base-select
             v-decorator="decorators.project_id"
             filterable
-            :item.sync="form.fi.project"
+            v-model:item="form.fi.project"
             :options="projects">
             <template #optionTemplate="{ options }">
               <a-select-option v-for="item in options" :key="item.id" :value="item.id">
@@ -24,9 +24,9 @@
         <a-form-item :label="$t('dictionary.cloudaccount')">
           <a-row :gutter="8">
             <a-col :span="12">
-              <a-select v-model="form.fi.provider">
-                <template v-for="item of providerOptions">
-                  <a-select-option :key="item[0]" :value="item[1].provider">
+              <a-select v-model:value="form.fi.provider">
+                <template v-for="item of providerOptions" :key="item[0]">
+                  <a-select-option :value="item[1].provider">
                     <span class="text-color-secondary">{{ $t('common.brand') }}: </span>{{ item[1].label }}
                   </a-select-option>
                 </template>
@@ -37,7 +37,7 @@
                 v-decorator="decorators.cloudaccount_id"
                 resource="cloudaccounts"
                 filterable
-                :item.sync="form.fi.cloudaccount"
+                v-model:item="form.fi.cloudaccount"
                 :params="cloudaccountParams"
                 :mapper="cloudaccountMapper">
                 <template #optionTemplate="{ options }">
@@ -78,6 +78,7 @@
 <script>
 import get from 'lodash/get'
 import * as R from 'ramda'
+import { h } from 'vue'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import ListSelect from '@/sections/ListSelect'
@@ -187,20 +188,14 @@ export default {
               content: ({ row }) => {
                 if (R.isNil(row.cloudpolicies) || R.isEmpty(row.cloudpolicies)) return this.$t('cloudenv.text_330')
                 return [
-                  <vxe-grid
-                    showOverflow='title'
-                    data={ row.cloudpolicies }
-                    columns={[
-                      {
-                        field: 'name',
-                        title: this.$t('common.name'),
-                      },
-                      {
-                        field: 'description',
-                        title: this.$t('table.title.desc'),
-                        formatter: ({ cellValue }) => cellValue || '-',
-                      },
-                    ]} />,
+                  h('table-lite-grid', {
+                    showOverflow: 'title',
+                    data: row.cloudpolicies,
+                    columns: [
+                      { field: 'name', title: this.$t('common.name') },
+                      { field: 'description', title: this.$t('table.title.desc'), formatter: ({ cellValue }) => cellValue || '-' },
+                    ],
+                  }),
                 ]
               },
             },
@@ -272,7 +267,7 @@ export default {
       this.form.fc.resetFields(['cloudgroup_id', 'cloudprovider_id'])
     },
   },
-  destroyed () {
+  unmounted () {
     this.um = null
   },
   created () {

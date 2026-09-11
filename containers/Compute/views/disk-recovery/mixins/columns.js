@@ -30,10 +30,11 @@ export default {
           edit: false,
           editDesc: false,
           hideField: true,
-          slotCallback: row => {
-            return (
-              <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{row.name}</side-page-trigger>
-            )
+          slotCallback: (row, h) => {
+            const hFn = h || this.$createElement
+            return hFn('side-page-trigger', {
+              on: { trigger: () => this.handleOpenSidepage(row) },
+            }, row.name)
           },
         }),
         getStatusTableColumn({ statusModule: 'disk', hiddenLogView: true }),
@@ -50,7 +51,7 @@ export default {
           title: i18n.t('compute.text_99'),
           hideField: true,
           slotCallback: (row) => {
-            if (!row.storage) return [<data-loading />]
+            if (!row.storage) return [this.$createElement('data-loading')]
             return row.storage
           },
         }),
@@ -59,7 +60,7 @@ export default {
           title: this.$t('dictionary.server'),
           hideField: true,
           slotCallback: (row) => {
-            if (this.isPreLoad && !row.guest) return [<data-loading />]
+            if (this.isPreLoad && !row.guest) return [this.$createElement('data-loading')]
             return row.guest
           },
         }),

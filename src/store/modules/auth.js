@@ -28,6 +28,19 @@ import router from '@/router'
 import { removeKeyIgnoreCase, getKeyIgnoreCase, redirectAfterAuth } from '@/utils/utils'
 import storage from '@/utils/storage'
 import { aesEncryptWithCustomKey } from '@/utils/crypto'
+
+// 后端 502/不可达时短期不再重复请求，避免刷接口导致页面卡死
+const BACKEND_UNREACHABLE_TTL = 30000
+let backendUnreachableUntil = 0
+
+function isBackendUnreachable (error) {
+  const status = error?.response?.status
+  const noResponse = !error?.response
+  const is502 = status === 502
+  const isNetwork = noResponse || error?.code === 'ECONNREFUSED' || error?.message?.includes('Network')
+  return is502 || isNetwork
+}
+
 const initialState = {
   scope: getScopeFromCookie() || 'project',
   tenant: getTenantFromCookie(),
@@ -59,6 +72,18 @@ const initialState = {
   loginFormData: {},
   canRenderDefaultLayout: false,
   noActionLogoutSeconds: 0,
+}
+
+function normalizeTenant (val) {
+  if (!val || typeof val !== 'string') return ''
+  const v = val.trim()
+  // 兼容将租户写成 "id/<uuid>" 或 "id/<uuid>/<something>"
+  if (v.startsWith('id/')) {
+    const rest = v.slice(3)
+    const segs = rest.split('/').filter(Boolean)
+    return segs[0] || ''
+  }
+  return v
 }
 
 export default {
@@ -154,7 +179,11 @@ export default {
       if (payload.action === 'delete') {
         removeKeyIgnoreCase(newVal, payload.key)
       } else {
-        const key = payload.key || (state.info.name.toLowerCase() + '@' + state.info.domain.name.toLowerCase())
+        const info = state.info || {}
+        const name = typeof info.name === 'string' ? info.name.toLowerCase() : ''
+        const domainName = info.domain && typeof info.domain.name === 'string' ? info.domain.name.toLowerCase() : ''
+        const fallbackKey = name && domainName ? `${name}@${domainName}` : ''
+        const key = payload.key || fallbackKey || ''
         const oldVal = getKeyIgnoreCase(newVal, key)
         removeKeyIgnoreCase(newVal, key)
         const data = {
@@ -177,7 +206,9 @@ export default {
         if (payload.action === 'unset') {
           _.unset(data, payload.path)
         }
-        newVal[key] = data
+        if (key) {
+          newVal[key] = data
+        }
       }
       setLoggedUsersInStorage(newVal)
       state.loggedUsers = newVal
@@ -264,7 +295,11 @@ export default {
       return ret
     },
     currentLoggedUserKey (state) {
-      return `${state.info.name.toLowerCase()}@${state.info.domain.name.toLowerCase()}`
+      const info = state.info || {}
+      const name = typeof info.name === 'string' ? info.name.toLowerCase() : ''
+      const domainName = info.domain && typeof info.domain.name === 'string' ? info.domain.name.toLowerCase() : ''
+      if (!name || !domainName) return ''
+      return `${name}@${domainName}`
     },
     currentHistoryUserKey (state) {
       return state.auth.user || state.loginFormData.username
@@ -283,11 +318,10 @@ export default {
           }
         }
         if (matchedUser) {
-          if (matchedUser.tenant) {
-            _data.username = `${matchedUser.tenant}/${_data.username}`
-          }
-          if (matchedUser.tenant) {
-            await commit('SET_TENANT', matchedUser.tenant)
+          const tenant = normalizeTenant(matchedUser.tenant)
+          if (tenant) {
+            _data.username = `${tenant}/${_data.username}`
+            await commit('SET_TENANT', tenant)
           }
           if (matchedUser.scope) {
             await commit('SET_SCOPE', matchedUser.scope)
@@ -322,6 +356,7 @@ export default {
     },
     async logout ({ commit, state }, data) {
       try {
+        // http 实例已默认 baseURL='/api'，这里不要重复加 '/api' 前缀
         const response = await http.post('/v1/auth/logout', data)
         await commit('LOGOUT')
         await commit('RESET_COOKIE')
@@ -347,7 +382,7 @@ export default {
      */
     async getInfo ({ commit, state, getters, dispatch }) {
       try {
-        // 检查本地用户
+        if (Date.now() < backendUnreachableUntil) return {}
         const isSessionUser = checkSessionUser()
         if (!isSessionUser) {
           await dispatch('logout')
@@ -357,42 +392,70 @@ export default {
           return {}
         }
         const response = await http.get('/v1/auth/user')
-        if (!response.data) {
-          throw new Error('Verification failed, please Login again.')
+        backendUnreachableUntil = 0
+        // 兼容不同后端返回结构：{ data: user } 或 { data: { data: user } }
+        const user = response?.data?.data?.data || response?.data?.data
+        if (!user) {
+          await dispatch('logout')
+          router.push({
+            path: '/auth/login',
+          })
+          return {}
         }
-        await commit('SET_INFO', response.data.data)
+        await commit('SET_INFO', user)
+        const info = state.info || {}
         await commit('UPDATE_LOGGED_USERS', {
           key: getters.currentLoggedUserKey,
           value: {
-            displayname: state.info.displayname,
-            projectName: state.info.projectName,
-            projectDomain: state.info.projectDomain,
-            domain: state.info.domain || {},
+            displayname: info.displayname,
+            projectName: info.projectName,
+            projectDomain: info.projectDomain,
+            domain: info.domain || {},
             scope: getScopeFromCookie(),
             tenant: getTenantFromCookie(),
-            name: state.info.name,
+            name: info.name,
             isSSO: state.auth.is_sso,
             idpId: state.auth.is_sso ? getSsoIdpIdFromCookie() : null,
           },
         })
         // 设置本地登录用户
-        storage.session.set(SESSION_LOGIN_USER_KEY, aesEncryptWithCustomKey(response.data.data.id, 'cloudpods'))
-        return response.data.data
+        if (user && user.id) {
+          storage.session.set(SESSION_LOGIN_USER_KEY, aesEncryptWithCustomKey(user.id, 'cloudpods'))
+        }
+        return user
       } catch (error) {
-        throw error
+        if (isBackendUnreachable(error)) backendUnreachableUntil = Date.now() + BACKEND_UNREACHABLE_TTL
+        const status = error?.response?.status
+        if (status === 401 || status === 403) {
+          try {
+            await dispatch('logout')
+          } catch (e) {
+            // ignore logout error
+          }
+          router.push({
+            path: '/auth/login',
+          })
+        }
+        return {}
       }
     },
     async getCapabilities ({ commit, state }) {
       try {
+        if (Date.now() < backendUnreachableUntil) {
+          await commit('SET_CAPABILITY', {})
+          return {}
+        }
         const response = await http.get('/v2/capabilities', {
           params: {
             scope: state.scope,
           },
         })
+        backendUnreachableUntil = 0
         const data = (response.data.data && response.data.data[0]) || {}
         await commit('SET_CAPABILITY', data)
         return response.data
       } catch (error) {
+        if (isBackendUnreachable(error)) backendUnreachableUntil = Date.now() + BACKEND_UNREACHABLE_TTL
         throw error
       }
     },
@@ -480,7 +543,7 @@ export default {
             router.replace({
               path: '/auth/bindsecret',
               query: {
-                rf: router.currentRoute.query.rf,
+                rf: router.currentRoute.value.query.rf,
               },
             })
           }
@@ -489,7 +552,7 @@ export default {
             router.replace({
               path: '/auth/setsecretquestion',
               query: {
-                rf: router.currentRoute.query.rf,
+                rf: router.currentRoute.value.query.rf,
               },
             })
           }
@@ -505,7 +568,7 @@ export default {
         router.replace({
           path: '/auth/secretverify',
           query: {
-            rf: router.currentRoute.query.rf,
+            rf: router.currentRoute.value.query.rf,
           },
         })
       } else if (
@@ -518,11 +581,11 @@ export default {
         router.replace({
           path: '/auth/bindsecret',
           query: {
-            rf: router.currentRoute.query.rf,
+            rf: router.currentRoute.value.query.rf,
           },
         })
       } else {
-        const { rf, pathAuthPage, pathAuth, path, pathQuery } = router.currentRoute.query
+        const { rf, pathAuthPage, pathAuth, path, pathQuery } = router.currentRoute.value.query
         if (rf) {
           document.location.href = rf
           return

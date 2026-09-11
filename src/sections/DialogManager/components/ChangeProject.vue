@@ -1,7 +1,7 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{title}}</div>
-    <div slot="body">
+    <template #header>{{title}}</template>
+    <template #body>
       <dialog-selected-tips :count="params.data.length" :action="title" :name="name" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-form
@@ -17,11 +17,11 @@
             :filterable="true" />
         </a-form-item>
       </a-form>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

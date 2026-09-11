@@ -13,10 +13,12 @@ export default {
         resource: this.list.resource,
         onManager: this.onManager,
         hideField: true,
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
       }),
       getPublicScopeTableColumn({
@@ -35,7 +37,7 @@ export default {
         width: 120,
         slots: {
           default: ({ row }, h) => {
-            if (this.isPreLoad && row.linked_guest_count === undefined) return [<data-loading />]
+            if (this.isPreLoad && row.linked_guest_count === undefined) return [h('data-loading')]
             return `${row.linked_guest_count}`
           },
         },

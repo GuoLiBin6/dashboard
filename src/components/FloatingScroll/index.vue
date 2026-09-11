@@ -89,12 +89,19 @@ export default {
       const instance = this
       if (!instance.$refs.scrollBody) {
         const onScroll = () => instance.checkVisibility()
-        const onResize = () => instance.update()
+        const onResize = () => {
+          if (instance._resizeRaf) return
+          instance._resizeRaf = requestAnimationFrame(() => {
+            instance._resizeRaf = 0
+            instance.update()
+          })
+        }
         window.addEventListener('scroll', onScroll, false)
-        window.addEventListener('resize', onResize, false)
+        window.addEventListener('resize', onResize, { passive: true })
         instance.$once('hook:beforeDestroy', () => {
           window.removeEventListener('scroll', onScroll, false)
-          window.removeEventListener('resize', onResize, false)
+          window.removeEventListener('resize', onResize)
+          if (instance._resizeRaf) cancelAnimationFrame(instance._resizeRaf)
         })
       }
       this.$bus.$on('FloatingScrollUpdate', ({ sourceElement } = {}) => {

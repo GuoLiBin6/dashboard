@@ -51,7 +51,7 @@ export default {
       data: {},
     }
   },
-  destroyed () {
+  unmounted () {
     this.manager = null
   },
   created () {

@@ -130,10 +130,10 @@
           :step="1"
           :precision="0" /> MB
       </a-form-item>
-      <template v-for="field in currentTypeFields">
+      <template v-for="field in currentTypeFields" :key="field.fieldKey">
         <a-form-item
           v-if="field.component === 'base-select'"
-          :key="field.fieldKey"
+
           :label="$t(field.label)">
           <base-select
             v-decorator="decorators[field.fieldKey]"

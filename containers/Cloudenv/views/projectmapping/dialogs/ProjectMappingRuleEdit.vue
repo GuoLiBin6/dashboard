@@ -5,16 +5,16 @@
       <a-form-model ref="ruleForm" :model="formData" :rules="rules" v-bind="layout">
         <!-- 条件 -->
         <a-form-model-item :label="$t('cloudenv.text_22')" v-bind="layout" :rules="rules.condition" prop="condition">
-          <a-select v-model="formData.condition">
-            <a-select-option v-for="item in resourceAndTagOptions" :value="item.value" :key="item.value" :disabled="item.value === 'and_copy' && isSecAndcopy()">
-              {{item.name}}
+          <a-select v-model:value="formData.condition" @change="onConditionChange">
+            <a-select-option v-for="opt in resourceAndTagOptions" :value="opt.value" :key="opt.value" :disabled="opt.value === 'and_copy' && isSecAndcopy()">
+              {{opt.name}}
             </a-select-option>
           </a-select>
         </a-form-model-item>
         <!-- 标签key -->
         <template v-if="formData.condition === 'and_copy'">
           <a-form-model-item :label="$t('cloudenv.tag_key')" v-bind="layout" :rules="rules.tag_key" prop="tag_key">
-            <a-input v-model="formData.tag_key" />
+            <a-input v-model:value="formData.tag_key" />
           </a-form-model-item>
         </template>
         <template v-else>
@@ -25,7 +25,7 @@
           <!-- 项目 -->
           <a-form-model-item :label="$t('cloudenv.belong_type')" :extra="formData.belong_type === 'project_id' ? $t('cloudenv.text_592') : $t('cloudenv.belong_project_name_tip')" v-bind="layout" :rules="rules.belong_type" prop="belong_type">
               <a-form-model-item class="mb-0">
-                <a-radio-group v-model="formData.belong_type" @change="validateBt">
+                <a-radio-group v-model:value="formData.belong_type" class="mb-2" @change="validateBt">
                   <a-radio-button value="project_id">{{ $t('cloudenv.target_project') }}</a-radio-button>
                   <a-radio-button value="project">{{ $t('cloudenv.target_name') }}</a-radio-button>
                 </a-radio-group>
@@ -37,7 +37,7 @@
                   v-model="formData.project_id"
                   :select-props="{placeholder: $t('common.tips.select', [$t('dictionary.project')])}"
                   @change="validateBt" />
-                <a-input v-else type="text" v-model="formData.project" :placeholder="$t('common.tips.select', [$t('dictionary.project')])" @change="validateBt" />
+                <a-input v-else type="text" v-model:value="formData.project" :placeholder="$t('common.tips.select', [$t('dictionary.project')])" @change="validateBt" />
               </a-form-model-item>
           </a-form-model-item>
         </template>
@@ -152,6 +152,12 @@ export default {
   methods: {
     validateBt () {
       this.$refs.ruleForm.validateField('belong_type')
+    },
+    onConditionChange () {
+      this.$nextTick(() => {
+        this.$refs.ruleForm?.clearValidate?.(['condition'])
+        this.$refs.ruleForm?.validateField?.('condition')
+      })
     },
     validateBelongType (rule, value, callback) {
       if (value === 'project_id' && !this.formData[value]) {

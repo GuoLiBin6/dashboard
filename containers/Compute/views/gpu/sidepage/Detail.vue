@@ -53,9 +53,16 @@ export default {
           field: 'host',
           title: this.$t('compute.text_484'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               return [
-                <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) } id={row.host_id}>{ row.host }</side-page-trigger>,
+                h('side-page-trigger', {
+                  props: {
+                    id: row.host_id,
+                  },
+                  on: {
+                    trigger: () => this.handleOpenSidepage(row),
+                  },
+                }, row.host),
               ]
             },
           },

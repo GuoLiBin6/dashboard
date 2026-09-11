@@ -1,15 +1,27 @@
 import Cookies from 'js-cookie'
 
 export function setLanguage (val) {
-  return Cookies.set('lang', val, { expires: 365 })
+  return Cookies.set('lang', normalizeLanguage(val), { expires: 365 })
 }
 
 export function getLanguage () {
   let lang = Cookies.get('lang')
-  if (lang) return lang
-  lang = navigator.language
-  setLanguage(lang)
-  return lang
+  if (!lang) {
+    lang = navigator.language || 'zh-CN'
+    setLanguage(normalizeLanguage(lang))
+  }
+  return normalizeLanguage(lang)
+}
+
+/** 浏览器可能返回 zh / zh-CN / en-US；消息表只有 en、zh-CN、ja-JP */
+export function normalizeLanguage (lang) {
+  const raw = String(lang || 'zh-CN')
+  const lower = raw.toLowerCase()
+  if (lower === 'zh' || lower.startsWith('zh-')) return 'zh-CN'
+  if (lower === 'ja' || lower.startsWith('ja-')) return 'ja-JP'
+  if (lower === 'en' || lower.startsWith('en-')) return 'en'
+  if (raw === 'zh-CN' || raw === 'ja-JP' || raw === 'en') return raw
+  return 'en'
 }
 
 export function setLoginDomain (val) {

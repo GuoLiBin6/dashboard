@@ -5,7 +5,7 @@
 <template>
   <div>
     <page-header :title="headerTitle" />
-    <page-body needMarginBottom>
+    <page-body>
       <hf-browse-pane
         ref="browse"
         :action-button-label="$t('aice.import')"
@@ -14,7 +14,7 @@
 
     <a-drawer
       wrap-class-name="catalog-drawer-wrap"
-      :visible="drawerVisible"
+      :open="drawerVisible"
       :width="'50%'"
       destroy-on-close
       placement="right"
@@ -109,4 +109,6 @@ export default {
 }
 </script>
 
-<style lang="less" src="@Ai/sections/catalog-model-sets/catalog-drawer.less"></style>
+<style lang="less">
+@import "@Ai/sections/catalog-model-sets/catalog-drawer.less";
+</style>

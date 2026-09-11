@@ -14,10 +14,16 @@ export default {
       getNameDescriptionTableColumn({
         onManager: this.onManager,
         hideField: true,
-        slotCallback: row => {
-          return (
-            <side-page-trigger vm={this} name='InstanceGroupSidePage' id={row.id} list={this.list} tab='instance-group-detail'>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            props: {
+              vm: this,
+              name: 'InstanceGroupSidePage',
+              id: row.id,
+              list: this.list,
+              tab: 'instance-group-detail',
+            },
+          }, row.name)
         },
       }),
       getStatusTableColumn({ statusModule: 'instanceGroup', vm: this }),
@@ -42,9 +48,19 @@ export default {
         title: i18n.t('compute.associated_instances'),
         minWidth: 120,
         slots: {
-          default: ({ row }) => {
-            if (this.isPreLoad && row.guest_count === undefined) return [<data-loading />]
-            return [<side-page-trigger vm={this} name='InstanceGroupSidePage' id={row.id} list={this.list} tab='associated-instances'>{ row.guest_count }</side-page-trigger>]
+          default: ({ row }, h) => {
+            if (this.isPreLoad && row.guest_count === undefined) return [h('data-loading')]
+            return [
+              h('side-page-trigger', {
+                props: {
+                  vm: this,
+                  name: 'InstanceGroupSidePage',
+                  id: row.id,
+                  list: this.list,
+                  tab: 'associated-instances',
+                },
+              }, row.guest_count),
+            ]
           },
         },
       },

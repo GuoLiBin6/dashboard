@@ -49,8 +49,8 @@ export default {
   install: (Vue, option) => {
     Vue.prototype.$bus = new EventBus(Vue)
     Vue.mixin({
-      beforeDestroy () {
-        this.$bus.$offVmEvent(this._uid) // 拦截beforeDestroy钩子自动销毁自身所有订阅的事件
+      beforeUnmount () {
+        if (this.$bus) this.$bus.$offVmEvent(this._uid) // 拦截beforeDestroy钩子自动销毁自身所有订阅的事件
       },
     })
   },

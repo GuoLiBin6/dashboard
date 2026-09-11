@@ -8,7 +8,7 @@
   <data-empty v-else />
 </template>
 
-<script>
+<script lang="jsx">
 import mixin from './mixin'
 import { colors } from './constants'
 

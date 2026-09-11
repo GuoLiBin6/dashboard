@@ -1,6 +1,6 @@
 <template>
   <div>
-    <page-header :title="$t('cloudenv.price_list')" :tabs="cloudEnvOptions" :current-tab.sync="cloudEnv" />
+    <page-header :title="$t('cloudenv.price_list')" :tabs="cloudEnvOptions" v-model:currentTab="cloudEnv" />
     <page-body>
       <price-vm-instance-list
         :id="listId"

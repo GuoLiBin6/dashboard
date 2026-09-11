@@ -1,15 +1,14 @@
 <template>
   <div>
     <div class="tag-list">
-      <template v-for="item of tags">
+      <template v-for="item of tags" :key="`${item.key}${item.value}`">
         <span
           class="tag mb-1 d-inline-block"
           :title="item.title"
-          :key="`${item.key}${item.value}`"
           :style="{ backgroundColor: item.backgroundColor, color: item.color, borderColor: item.color }">
           <div class="d-flex align-items-center">
             <span class="flex-fill text-truncate">{{ item.title }}</span>
-            <a-icon v-if="showRemove(item)" class="ml-1 remove-tag flex-grow-0 flex-shrink-0" type="close" @click="removeTag(item)" />
+            <icon v-if="showRemove(item)" class="ml-1 remove-tag flex-grow-0 flex-shrink-0" type="close-outlined" @click="removeTag(item)" />
           </div>
         </span>
       </template>

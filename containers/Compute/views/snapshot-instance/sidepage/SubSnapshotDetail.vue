@@ -1,5 +1,5 @@
 <template>
-  <vxe-grid class="mb-2" :data="data.snapshots" :columns="columns" :resizable="true" />
+  <table-lite-grid class="mb-2" :data="data.snapshots" :columns="columns" :resizable="true" />
 </template>
 
 <script>
@@ -25,10 +25,12 @@ export default {
           onManager: this.onManager,
           hideField: true,
           addEncrypt: true,
-          slotCallback: row => {
-            return (
-              <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-            )
+          slotCallback: (row, h) => {
+            return h('side-page-trigger', {
+              on: {
+                trigger: () => this.handleOpenSidepage(row),
+              },
+            }, row.name)
           },
         }),
         {

@@ -5,7 +5,7 @@
         v-if="!isUpdate || (loaded && !loading)"
         ref="alertFormRef"
         :alertData="alertData"
-        :threshold.sync="threshold"
+        v-model:threshold="threshold"
         :timeRangeParams="timeRangeParams"
         :isUpdate="isUpdate"
         @refresh="refresh"
@@ -17,12 +17,12 @@
       <monitor-header
         class="mb-4"
         :timeOpts="timeOpts"
-        :time.sync="time"
+        v-model:time="time"
         :showTimegroup="false"
         :showGroupFunc="false"
         @refresh="fetchData">
         <template v-slot:radio-button-append>
-          <custom-date :time.sync="time" :customTime.sync="customTime" :showCustomTimeText="time==='custom'" />
+          <custom-date v-model:time="time" v-model:customTime="customTime" :showCustomTimeText="time==='custom'" />
         </template>
       </monitor-header>
       <div>

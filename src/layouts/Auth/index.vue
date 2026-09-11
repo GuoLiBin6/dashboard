@@ -1,33 +1,48 @@
 <template>
-  <div class="h-100 w-100">
+  <div class="h-100 w-100 auth-layout">
     <!-- auth layout header -->
     <div class="w-100 position-fixed border-bottom primary-color-border header">
       <div class="container">
         <div class="auth-header d-flex align-items-center">
           <div class="auth-header-left flex-shrink-0 flex-grow-0">
-            <img class="auth-header-logo" :src="loginLogo" />
+            <img v-if="safeLoginLogo" class="auth-header-logo" :src="safeLoginLogo" />
           </div>
           <!-- 多语言切换按钮 -->
           <div v-if="!languages.length || languages.length > 1" class="auth-header-right flex-fill d-flex justify-content-end">
-            <a-dropdown :trigger="['click']">
-              <div class="oc-pointer">
-                <a-icon type="global" />
+            <a-dropdown :trigger="['click']" overlayClassName="auth-lang-dropdown">
+              <div class="auth-lang-trigger oc-pointer">
+                <icon type="global" class="auth-lang-trigger-icon" />
                 <span class="ml-2">{{ languageText }}</span>
               </div>
-              <a-menu slot="overlay" @click="handleChangeLanguage">
-                <a-menu-item v-if="!languages.length || languages.includes('zh-CN')" key="zh-CN">
-                  <span class="mr-2">简体中文</span><a-icon v-show="language === 'zh-CN'" type="check-circle" theme="twoTone" twoToneColor="#52c41a" />
-                </a-menu-item>
-                <a-menu-item v-if="!languages.length || languages.includes('en')" key="en">
-                  <span class="mr-2">English</span><a-icon v-show="language === 'en'" type="check-circle" theme="twoTone" twoToneColor="#52c41a" />
-                </a-menu-item>
-                <a-menu-item v-if="!languages.length || languages.includes('ja-JP')" key="ja-JP">
-                  <span class="mr-2">日本語</span><a-icon v-show="language === 'ja-JP'" type="check-circle" theme="twoTone" twoToneColor="#52c41a" />
-                </a-menu-item>
-              </a-menu>
+              <template #overlay>
+                <a-menu @click="handleChangeLanguage" class="auth-lang-menu">
+                  <a-menu-item v-if="!languages.length || languages.includes('zh-CN')" key="zh-CN">
+                    <div class="lang-item">
+                      <span class="lang-item__label">简体中文</span>
+                      <icon v-show="language === 'zh-CN'" type="check-circle" class="lang-item__check" />
+                    </div>
+                  </a-menu-item>
+                  <a-menu-item v-if="!languages.length || languages.includes('en')" key="en">
+                    <div class="lang-item">
+                      <span class="lang-item__label">English</span>
+                      <icon v-show="language === 'en'" type="check-circle" class="lang-item__check" />
+                    </div>
+                  </a-menu-item>
+                  <a-menu-item v-if="!languages.length || languages.includes('ja-JP')" key="ja-JP">
+                    <div class="lang-item">
+                      <span class="lang-item__label">日本語</span>
+                      <icon v-show="language === 'ja-JP'" type="check-circle" class="lang-item__check" />
+                    </div>
+                  </a-menu-item>
+                </a-menu>
+              </template>
             </a-dropdown>
           </div>
         </div>
+      </div>
+    </div>
+    <div class="w-100 position-fixed auth-top-alert">
+      <div class="container">
         <top-alert />
       </div>
     </div>
@@ -70,13 +85,19 @@ export default {
   },
   data () {
     return {
-      statusLoaded: false,
+      // 兼容 Vite/开发环境：默认视为已加载，直接展示登录页
+      statusLoaded: true,
       ticketLogging: false,
       languages: [],
     }
   },
   computed: {
     ...mapGetters(['copyright', 'loginLogo', 'setting']),
+    safeLoginLogo () {
+      if (!this.loginLogo) return ''
+      if (this.loginLogo === 'undefined') return ''
+      return this.loginLogo
+    },
     isChrome () {
       return isChrome()
     },
@@ -99,17 +120,22 @@ export default {
     // } else {
     //   this.checkRegistersStatus()
     // }
-    if (this.$route.query.result === 'success') {
-      await this.$store.dispatch('auth/onAfterLogin')
-      this.statusLoaded = true
-    } else {
-      if (this.$appConfig.isPrivate) {
-        this.checkRegistersStatus()
-      } else {
-        this.statusLoaded = true
+    try {
+      if (this.$route.query.result === 'success') {
+        await this.$store.dispatch('auth/onAfterLogin')
+      } else if (this.$appConfig.isPrivate) {
+        // 私有部署下，注册状态异常时只打印错误，不打断登录页展示
+        try {
+          await this.checkRegistersStatus()
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.error('[auth] checkRegistersStatus failed', e)
+        }
       }
+    } finally {
+      this.statusLoaded = true
+      this.initSupportLanguages()
     }
-    this.initSupportLanguages()
   },
   methods: {
     // 检查是否已注册
@@ -156,6 +182,9 @@ export default {
 </script>
 
 <style lang="less" scoped>
+.auth-layout {
+  background-color: #fff;
+}
 .header {
   height: 70px;
   top: 0;
@@ -169,9 +198,15 @@ export default {
     height: 39px;
   }
 }
+.auth-top-alert {
+  top: 70px;
+  left: 0;
+  z-index: 3;
+}
 .content {
   padding: 70px 0;
   box-sizing: border-box;
+  background-color: #fff;
   .container-wrap {
     background-image: url(/img/bg.eee05042.png);
     background-repeat: no-repeat;
@@ -184,5 +219,55 @@ export default {
   bottom: 0;
   left: 0;
   background-color: #fff;
+}
+
+.lang-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 96px;
+}
+
+.lang-item__label {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.lang-item__check {
+  flex-shrink: 0;
+  margin-left: 8px;
+  font-size: 14px;
+  color: #52c41a;
+  line-height: 1;
+}
+.auth-lang-trigger {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1;
+  box-sizing: border-box;
+  color: #6b7280;
+  transition: color 0.15s ease, background-color 0.15s ease;
+
+  &:hover {
+    color: #111827;
+    background: #f3f4f6;
+  }
+}
+.auth-lang-trigger-icon {
+  font-size: 14px;
+  vertical-align: -0.125em;
+}
+</style>
+
+<style lang="less">
+.auth-lang-dropdown {
+  .ant-dropdown-menu {
+    min-width: 118px !important;
+  }
 }
 </style>

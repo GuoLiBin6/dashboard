@@ -67,17 +67,31 @@ export default {
           field: 'project_domain',
           hiddenField: 'tenant',
           title: this.$t('dictionary.domain'),
-          formatter: ({ row }) => {
+          formatter: ({ row }, h) => {
             if (!row.domain_id) return '-'
-            return <side-page-trigger permission="domains_get" name="DomainSidePage" id={row.domain_id} vm={this}>{row.project_domain}</side-page-trigger>
+            return h('side-page-trigger', {
+              props: {
+                permission: 'domains_get',
+                name: 'DomainSidePage',
+                id: row.domain_id,
+                vm: this,
+              },
+            }, row.project_domain)
           },
         },
         {
           field: 'tenant',
           title: this.$t('dictionary.project'),
-          formatter: ({ row }) => {
+          formatter: ({ row }, h) => {
             if (!row.tenant_id) return '-'
-            return <side-page-trigger permission="projects_get" name="ProjectSidePage" id={row.tenant_id} vm={this}>{row.tenant}</side-page-trigger>
+            return h('side-page-trigger', {
+              props: {
+                permission: 'projects_get',
+                name: 'ProjectSidePage',
+                id: row.tenant_id,
+                vm: this,
+              },
+            }, row.tenant)
           },
         },
         getNameDescriptionTableColumn({
@@ -102,14 +116,24 @@ export default {
         getServerMonitorAgentInstallStatus(),
         {
           field: 'alert_data',
-          title: (h) => [
-            <span style="margin-right:5px">{this.$t('compute.alert_status')}</span>,
-            <help-tooltip name="alertDataTimeRange" />,
-          ],
+          title: (h) => {
+            const create = h || this.$createElement
+            return [
+              create('span', { style: 'margin-right:5px' }, this.$t('compute.alert_status')),
+              create('help-tooltip', { props: { name: 'alertDataTimeRange' } }),
+            ]
+          },
           slots: {
             default: () => {
               const state = this.alertData?.alert_state || 'init'
-              return [<status status={state} statusModule="monitorresources" />]
+              return [
+                this.$createElement('status', {
+                  props: {
+                    status: state,
+                    statusModule: 'monitorresources',
+                  },
+                }),
+              ]
             },
           },
           hidden: () => this.$isScopedPolicyMenuHidden('server_hidden_columns.alert_data'),
@@ -128,17 +152,17 @@ export default {
             default: ({ row }, h) => {
               const ret = []
               if (row.billing_type === 'postpaid') {
-                ret.push(<div style={{ color: '#0A1F44' }}>{this.$t('billingType.postpaid')}</div>)
+                ret.push(h('div', { style: { color: 'var(--oc-color-text-heading)' } }, this.$t('billingType.postpaid')))
               } else if (row.billing_type === 'prepaid') {
-                ret.push(<div style={{ color: '#0A1F44' }}>{this.$t('billingType.prepaid')}（{row.auto_renew ? this.$t('compute.text_1233') : this.$t('compute.manual_renewal')}）</div>)
+                ret.push(h('div', { style: { color: 'var(--oc-color-text-heading)' } }, `${this.$t('billingType.prepaid')}（${row.auto_renew ? this.$t('compute.text_1233') : this.$t('compute.manual_renewal')}）`))
               }
               if (row.expired_at) {
                 const dateArr = this.$moment(row.expired_at).fromNow().split(' ')
                 const date = dateArr.join(' ')
                 const seconds = this.$moment(row.expired_at).diff(new Date()) / 1000
-                const textColor = seconds / 24 / 60 / 60 < 7 ? '#DD2727' : '#53627C'
+                const textColor = seconds / 24 / 60 / 60 < 7 ? '#DD2727' : 'var(--oc-color-text-secondary)'
                 const text = seconds < 0 ? this.$t('common_296') : this.$t('common_297', [date])
-                ret.push(<div style={{ color: textColor }}>{text}</div>)
+                ret.push(h('div', { style: { color: textColor } }, text))
               }
               return ret
             },
@@ -149,8 +173,16 @@ export default {
           title: this.$t('table.title.init_keypair'),
           minWidth: 50,
           slots: {
-            default: ({ row }) => {
-              return [<PasswordFetcher serverId={row.id} resourceType='servers' />]
+            default: ({ row }, h) => {
+              // 同列表列：用组件引用，避免 Vue3 下字符串名解析失败
+              return [
+                h(PasswordFetcher, {
+                  props: {
+                    serverId: row.id,
+                    resourceType: 'servers',
+                  },
+                }),
+              ]
             },
           },
         },
@@ -242,7 +274,14 @@ export default {
                 default: ({ row }) => {
                   if (!row.backup_host_name) return '-'
                   return [
-                    <side-page-trigger permission='hosts_get' name='HostSidePage' id={row.backup_host_id} vm={this}>{row.backup_host_name}</side-page-trigger>,
+                    h('side-page-trigger', {
+                      props: {
+                        permission: 'hosts_get',
+                        name: 'HostSidePage',
+                        id: row.backup_host_id,
+                        vm: this,
+                      },
+                    }, row.backup_host_name),
                   ]
                 },
               },
@@ -258,16 +297,28 @@ export default {
               field: 'backup_guest_status',
               title: this.$t('compute.backup_status'),
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   return [
-                    <div class='d-flex'>
-                      <div class='text-truncate'>
-                        <status status={row.backup_guest_status} statusModule={'server'} />
-                      </div>
-                      <div>
-                        <a-button type='link' style="height: 14px" disabled={row.backup_guest_status !== 'ready'} onClick={this.startBackup}><icon type='start' style="transform:translateX(4px)" />{this.$t('compute.start_backup')}</a-button>
-                      </div>
-                    </div>,
+                    h('div', { class: 'd-flex' }, [
+                      h('div', { class: 'text-truncate' }, [
+                        h('status', {
+                          props: {
+                            status: row.backup_guest_status,
+                            statusModule: 'server',
+                          },
+                        }),
+                      ]),
+                      h('div', [
+                        h('a-button', {
+                          props: { type: 'link', disabled: row.backup_guest_status !== 'ready' },
+                          style: 'height: 14px',
+                          on: { click: this.startBackup },
+                        }, [
+                          h('icon', { props: { type: 'start' }, style: 'transform:translateX(4px)' }),
+                          this.$t('compute.start_backup'),
+                        ]),
+                      ]),
+                    ]),
                   ]
                 },
               },
@@ -276,16 +327,28 @@ export default {
               field: 'backup_sync_status',
               title: this.$t('compute.backup_sync_status'),
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   return [
-                    <div class='d-flex'>
-                      <div class='text-truncate'>
-                        <status status={row.backup_guest_sync_status} statusModule={'backup_sync'} />
-                      </div>
-                      <div>
-                        <a-button type='link' style="height: 14px" disabled={row.backup_guest_sync_status !== 'ready'} onClick={this.switchBackup}><icon type='switch' style="transform:translateX(4px)" />{this.$t('compute.switch_backup')}</a-button>
-                      </div>
-                    </div>,
+                    h('div', { class: 'd-flex' }, [
+                      h('div', { class: 'text-truncate' }, [
+                        h('status', {
+                          props: {
+                            status: row.backup_guest_sync_status,
+                            statusModule: 'backup_sync',
+                          },
+                        }),
+                      ]),
+                      h('div', [
+                        h('a-button', {
+                          props: { type: 'link', disabled: row.backup_guest_sync_status !== 'ready' },
+                          style: 'height: 14px',
+                          on: { click: this.switchBackup },
+                        }, [
+                          h('icon', { props: { type: 'switch' }, style: 'transform:translateX(4px)' }),
+                          this.$t('compute.switch_backup'),
+                        ]),
+                      ]),
+                    ]),
                   ]
                 },
               },
@@ -314,7 +377,13 @@ export default {
                   }
                   const ret = []
                   for (var i = 0; i < row.sub_ips.length; i++) {
-                    ret.push(<list-body-cell-wrap copy field='ip' row={{ ip: row.sub_ips[i] }} />)
+                    ret.push(h('list-body-cell-wrap', {
+                      props: {
+                        copy: true,
+                        field: 'ip',
+                        row: { ip: row.sub_ips[i] },
+                      },
+                    }))
                   }
                   return ret
                 },
@@ -343,11 +412,18 @@ export default {
                   onManager: this.onManager,
                 })
               },
-              slotCallback: (row) => {
+              slotCallback: (row, h) => {
                 if (!this.diskInfos.image || this.diskInfos.image === '-') return '-'
                 if (!this.imageExist) return this.diskInfos.image
                 return [
-                  <side-page-trigger permission='images_get' name='SystemImageSidePage' id={this.diskInfos.imageId} vm={this}>{this.diskInfos.image}</side-page-trigger>,
+                  h('side-page-trigger', {
+                    props: {
+                      permission: 'images_get',
+                      name: 'SystemImageSidePage',
+                      id: this.diskInfos.imageId,
+                      vm: this,
+                    },
+                  }, this.diskInfos.image),
                 ]
               },
             }),
@@ -358,15 +434,30 @@ export default {
               showOverflow: 'ellipsis',
               minWidth: 100,
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   if (findPlatform(row.hypervisor, 'hypervisor') === SERVER_TYPE.public || row.hypervisor === HYPERVISORS_MAP.hcso.hypervisor || row.hypervisor === HYPERVISORS_MAP.hcs.hypervisor) {
                     return '-'
                   }
                   const text = row.host || '-'
                   return [
-                    <list-body-cell-wrap copy hideField={true} field='host' row={row} message={text}>
-                      <side-page-trigger permission='hosts_get' name='HostSidePage' id={row.host_id} vm={this}>{row.host}</side-page-trigger>
-                    </list-body-cell-wrap>,
+                    h('list-body-cell-wrap', {
+                      props: {
+                        copy: true,
+                        hideField: true,
+                        field: 'host',
+                        row,
+                        message: text,
+                      },
+                    }, [
+                      h('side-page-trigger', {
+                        props: {
+                          permission: 'hosts_get',
+                          name: 'HostSidePage',
+                          id: row.host_id,
+                          vm: this,
+                        },
+                      }, row.host),
+                    ]),
                   ]
                 },
               },
@@ -376,16 +467,31 @@ export default {
               field: 'secgroups',
               title: this.$t('compute.text_105'),
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   const networkTags = getNetworkTags(row)
                   if (networkTags.length) {
                     return renderNetworkTagNodes(networkTags)
                   }
                   if (!row.secgroups?.length) return '-'
                   return row.secgroups.map((item) => {
-                    return <list-body-cell-wrap copy hideField={true} field='name' row={item} message={item.name}>
-                      <side-page-trigger permission='secgroups_get' name='SecGroupSidePage' id={item.id} vm={this}>{item.name}</side-page-trigger>
-                    </list-body-cell-wrap>
+                    return h('list-body-cell-wrap', {
+                      props: {
+                        copy: true,
+                        hideField: true,
+                        field: 'name',
+                        row: item,
+                        message: item.name,
+                      },
+                    }, [
+                      h('side-page-trigger', {
+                        props: {
+                          permission: 'secgroups_get',
+                          name: 'SecGroupSidePage',
+                          id: item.id,
+                          vm: this,
+                        },
+                      }, item.name),
+                    ])
                   })
                 },
               },
@@ -396,7 +502,7 @@ export default {
               field: 'network_secgroups',
               title: this.$t('compute.nic_secgroups'),
               slots: {
-                default: ({ row }) => {
+                default: ({ row }, h) => {
                   if (!row.network_secgroups) return '-'
                   const secgroups = []
                   row.network_secgroups.forEach((item) => {
@@ -405,10 +511,25 @@ export default {
                     })
                   })
                   return secgroups.map((item) => {
-                    return <list-body-cell-wrap copy hideField={true} field='name' row={item} message={item.name}>
-                      {this.$t('compute.text_375')} {item.network_index}:
-                      <side-page-trigger permission='secgroups_get' name='SecGroupSidePage' id={item.id} vm={this}>{item.name}</side-page-trigger>
-                    </list-body-cell-wrap>
+                    return h('list-body-cell-wrap', {
+                      props: {
+                        copy: true,
+                        hideField: true,
+                        field: 'name',
+                        row: item,
+                        message: item.name,
+                      },
+                    }, [
+                      this.$t('compute.text_375') + ' ' + item.network_index + ': ',
+                      h('side-page-trigger', {
+                        props: {
+                          permission: 'secgroups_get',
+                          name: 'SecGroupSidePage',
+                          id: item.id,
+                          vm: this,
+                        },
+                      }, item.name),
+                    ])
                   })
                 },
               },
@@ -418,10 +539,17 @@ export default {
               field: 'vpc',
               title: 'VPC',
               hideField: true,
-              slotCallback: row => {
+              slotCallback: (row, h) => {
                 if (!row.vpc) return '-'
                 return [
-                  <side-page-trigger permission='vpcs_get' name='VpcSidePage' id={row.vpc_id} vm={this}>{row.vpc}</side-page-trigger>,
+                  h('side-page-trigger', {
+                    props: {
+                      permission: 'vpcs_get',
+                      name: 'VpcSidePage',
+                      id: row.vpc_id,
+                      vm: this,
+                    },
+                  }, row.vpc),
                 ]
               },
               hidden: () => this.$store.getters.isProjectMode || this.$isScopedPolicyMenuHidden('server_hidden_columns.vpc'),
@@ -455,18 +583,26 @@ export default {
             {
               field: 'sysDisk',
               title: this.$t('compute.text_49'),
-              formatter: ({ row }) => {
+              formatter: ({ row }, h) => {
                 if (!this.diskInfos.sysDisk) return '-'
-                return <a onClick={() => this.$emit('tab-change', 'disk-list-for-vm-instance-sidepage')}>{this.diskInfos.sysDisk}</a>
+                return h('a', {
+                  on: {
+                    click: () => this.$emit('tab-change', 'disk-list-for-vm-instance-sidepage'),
+                  },
+                }, this.diskInfos.sysDisk)
               },
               hidden: () => this.$isScopedPolicyMenuHidden('server_hidden_columns.disk'),
             },
             {
               field: 'dataDisk',
               title: this.$t('compute.text_50'),
-              formatter: ({ row }) => {
+              formatter: ({ row }, h) => {
                 if (!this.diskInfos.dataDisk) return '-'
-                return <a onClick={() => this.$emit('tab-change', 'disk-list-for-vm-instance-sidepage')}>{this.diskInfos.dataDisk}</a>
+                return h('a', {
+                  on: {
+                    click: () => this.$emit('tab-change', 'disk-list-for-vm-instance-sidepage'),
+                  },
+                }, this.diskInfos.dataDisk)
               },
               hidden: () => this.$isScopedPolicyMenuHidden('server_hidden_columns.disk'),
             },
@@ -485,7 +621,7 @@ export default {
                 title: 'ISO',
                 hideField: true,
                 message: getCdromInfo,
-                slotCallback: row => {
+                slotCallback: (row, h) => {
                   if (!row.cdrom) return '-'
                   let cdrom = `${row.cdrom}`
                   if (Array.isArray(row.cdrom) && row.cdrom.length > 0) {
@@ -494,7 +630,14 @@ export default {
                   const idx = cdrom.indexOf('(')
                   const id = cdrom.substring(idx + 1, cdrom.indexOf('/'))
                   return [
-                    <side-page-trigger permission='images_get' name='SystemImageSidePage' id={id} vm={this}>{cdrom.substring(0, idx) || '-'}</side-page-trigger>,
+                    h('side-page-trigger', {
+                      props: {
+                        permission: 'images_get',
+                        name: 'SystemImageSidePage',
+                        id,
+                        vm: this,
+                      },
+                    }, cdrom.substring(0, idx) || '-'),
                   ]
                 },
               })
@@ -529,7 +672,12 @@ export default {
               title: () => {
                 return [
                   this.$t('compute.text_494'),
-                  <help-tooltip class="ml-1" text={this.$t('compute.daemon.tooltip')} />,
+                  this.$createElement('help-tooltip', {
+                    class: 'ml-1',
+                    props: {
+                      text: this.$t('compute.daemon.tooltip'),
+                    },
+                  }),
                 ]
               },
               formatter: ({ row }) => {
@@ -636,8 +784,21 @@ export default {
           slots: {
             default: ({ row }, h) => {
               return [
-                <a-button type="link" class="mb-2" style="height: 21px;padding:0" onclick={this.viewCmdline}>{this.showCmdline ? this.$t('table.title.off') : this.$t('compute.text_958')}</a-button>,
-                <code-mirror style={this.showCmdline ? {} : { visibility: 'hidden', height: '0px' }} value={this.cmdline} view-height="300px" options={this.cmOptions} />]
+                h('a-button', {
+                  props: { type: 'link' },
+                  class: 'mb-2',
+                  style: 'height: 21px;padding:0',
+                  on: { click: this.viewCmdline },
+                }, this.showCmdline ? this.$t('table.title.off') : this.$t('compute.text_958')),
+                h('code-mirror', {
+                  style: this.showCmdline ? {} : { visibility: 'hidden', height: '0px' },
+                  props: {
+                    value: this.cmdline,
+                    viewHeight: '300px',
+                    options: this.cmOptions,
+                  },
+                }),
+              ]
             },
           },
         })
@@ -686,7 +847,7 @@ export default {
       const deviceList = Array.isArray(devices) ? devices.slice() : []
       return [
         this.$createElement('div', [
-          this.$createElement('vxe-grid', {
+          this.$createElement('table-lite-grid', {
             class: 'mb-2',
             props: {
               data: deviceList,

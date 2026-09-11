@@ -22,10 +22,12 @@ export default {
         onManager: this.onManager,
         hideField: true,
         addEncrypt: true,
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name)
         },
         hidden: () => {
           return this.$isScopedPolicyMenuHidden('snapshot_hidden_columns.name')
@@ -78,7 +80,7 @@ export default {
         title: i18n.t('res.disk'),
         hideField: true,
         slotCallback: (row) => {
-          if (this.isPreLoad && !row.disk_name) return [<data-loading />]
+          if (this.isPreLoad && !row.disk_name) return [this.$createElement('data-loading')]
           return row.disk_name
         },
         formatter: ({ row }) => {
@@ -101,12 +103,27 @@ export default {
         showOverflow: 'ellipsis',
         slots: {
           default: ({ row }, h) => {
-            if (this.isPreLoad && !row.guest) return [<data-loading />]
+            if (this.isPreLoad && !row.guest) return [h('data-loading')]
             return [
-              <div class='text-truncate'>
-                {row.guest ? <list-body-cell-wrap copy field='guest' row={row} /> : '-'}
-                {row.guest_status ? <status status={ row.guest_status } statusModule='server'/> : ''}
-              </div>,
+              h('div', { class: 'text-truncate' }, [
+                row.guest
+                  ? h('list-body-cell-wrap', {
+                    props: {
+                      copy: true,
+                      field: 'guest',
+                      row,
+                    },
+                  })
+                  : '-',
+                row.guest_status
+                  ? h('status', {
+                    props: {
+                      status: row.guest_status,
+                      statusModule: 'server',
+                    },
+                  })
+                  : '',
+              ]),
             ]
           },
         },

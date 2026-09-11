@@ -67,12 +67,12 @@
           :form-draft-key="vmDraftFields.osArch" />
       </a-form-item>
       <a-form-item v-if="form.fd.hypervisor === 'kvm'">
-        <span slot="label">
+        <template #label>
           {{ $t('compute.text_1152') }}&nbsp;
           <a-tooltip :title="$t('compute.vgpu_check.tooltip')">
-            <a-icon type="question-circle-o" />
+            <icon type="question-circle" />
           </a-tooltip>
-        </span>
+        </template>
         <pci :decorators="decorators.pci" :pciDevTypeOptions="pciDevTypeOptions" :form="form" :pci-options="pciOptions" :form-draft-key="vmDraftFields.pci" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_1058')" class="mb-0">
@@ -88,9 +88,9 @@
           :sku-params="skuParam"
           :hypervisor="form.fd.hypervisor"
           :form-draft-key="vmDraftFields.sku" />
-        <div slot="extra" v-if="showSkuCreateTip">
+        <template v-if="showSkuCreateTip" #extra>
           {{ $t('compute.text_196') }}<help-link href="/sku">{{ $t('compute.perform_create') }}</help-link>
-        </div>
+        </template>
       </a-form-item>
       <a-form-item :label="$t('compute.text_267')" :extra="extra">
         <os-select
@@ -108,16 +108,18 @@
           @updateImageMsg="updateFi" />
       </a-form-item>
       <a-form-item v-if="isKvm && form.fd.imageType === 'iso'" class="mb-0">
-        <span slot="label">
+        <template #label>
           {{ $t('compute.kickstart') }}&nbsp;
           <a-tooltip :title="$t('compute.kickstart.tooltip')">
-            <a-icon type="question-circle-o" />
+            <icon type="question-circle" />
           </a-tooltip>
-        </span>
+        </template>
         <kickstart :decorator="decorators.kickstart" :form="form" :form-draft-key="vmDraftFields.kickstart" />
       </a-form-item>
       <a-form-item v-if="isShowAgent" :label="$t('compute.agent.label')" :extra="$t('compute.agent.extra')">
-        <a-checkbox v-decorator="decorators.deploy_telegraf">{{ $t('compute.agent.install.plugin') }}</a-checkbox>
+        <a-checkbox
+          :checked="!!form.fd.deploy_telegraf"
+          @change="e => form.fc.setFieldsValue({ deploy_telegraf: e.target.checked })">{{ $t('compute.agent.install.plugin') }}</a-checkbox>
       </a-form-item>
       <a-form-item :label="$t('compute.text_49')" class="mb-0">
         <system-disk
@@ -166,7 +168,9 @@
           :isInitForm="isFormBackfill"
           @storageHostChange="storageHostChange"
           :form-draft-key="vmDraftFields.dataDisk" />
-        <div slot="extra" class="warning-color" v-if="isStorageShow && form.fi.imageType !== 'backup' && form.fi.imageType !== 'snapshot'">{{ $t('compute.select_storage_no_schetag') }}</div>
+        <template v-if="isStorageShow && form.fi.imageType !== 'backup' && form.fi.imageType !== 'snapshot'" #extra>
+          <span class="warning-color">{{ $t('compute.select_storage_no_schetag') }}</span>
+        </template>
       </a-form-item>
       <a-form-item :label="$t('compute.text_1372')" v-if="showServerAccount">
         <server-account :form="form" :hypervisor="form.fd.hypervisor" :instance_capabilities="form.fi.capability.instance_capabilities" :osType="osType" />
@@ -200,7 +204,7 @@
           v-decorator="decorators.tag" :default-checked="tagDefaultChecked" :form-draft-key="vmDraftFields.tag" />
       </a-form-item>
       <!-- <a-divider orientation="left" v-if="showAdvanceConfig">{{$t('compute.text_309')}}</a-divider> -->
-      <a-collapse :bordered="false" v-model="collapseActive">
+      <a-collapse :bordered="false" v-model:activeKey="collapseActive" :expand-icon="renderCollapseExpandIcon">
         <a-collapse-panel :header="$t('compute.text_309')" key="1" :forceRender="true">
           <eip-config
             ref="eipConfigRef"
@@ -218,12 +222,12 @@
             v-if="!isServertemplate"
             :validate-status="hostNameValidate.validateStatus"
             :help="hostNameValidate.errorMsg">
-            <span slot="label">
+            <template #label>
               {{ $t('common_388') }}&nbsp;
               <a-tooltip :title="hostNameTips">
-                <a-icon type="question-circle-o" />
+                <icon type="question-circle" />
               </a-tooltip>
-            </span>
+            </template>
             <host-name v-decorator="decorators.hostName" :isWindows="isWindows" @change="handleHostNameChange" />
           </a-form-item>
           <a-form-item :label="$t('compute.text_105')" v-if="isKvm">
@@ -280,9 +284,10 @@
           </a-form-item>
           <a-form-item v-if="isKvm" :label="$t('compute.text_494')" :extra="$t('compute.daemon.tooltip')">
             <a-switch
-              v-decorator="decorators.is_daemon"
+              :checked="!!form.fd.is_daemon"
               :checkedChildren="$t('compute.text_115')"
-              :unCheckedChildren="$t('compute.text_116')" />
+              :unCheckedChildren="$t('compute.text_116')"
+              @change="val => form.fc.setFieldsValue({ is_daemon: val })" />
           </a-form-item>
           <a-form-item v-show="!isServertemplate" v-if="isKvm" :label="$t('dictionary.instancegroup')" :extra="$t('compute.text_1158')">
             <instance-groups
@@ -309,7 +314,7 @@
         :isOpenWorkflow="isOpenWorkflow"
         :isOpenOrderSetWorkflow="isOpenOrderSetWorkflow"
         :isModifyWorkflow="isModifyWorkflow"
-        :errors.sync="errors"
+        v-model:errors="errors"
         :isServertemplate="isServertemplate"
         :hasMeterService="hasMeterService"
         @add-cart="addShopCart"
@@ -883,7 +888,7 @@ export default {
     //   this.init()
     // })
   },
-  destroyed () {
+  unmounted () {
     this.timer = null
   },
   methods: {

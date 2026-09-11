@@ -6,27 +6,27 @@
       ref="stepRef"
       :is="currentComponent"
       :prepareNetData="prepareNetData"
-      :current-item.sync="currentItem"
+      v-model:currentItem="currentItem"
       :account="newAccountInfo"
       :provider="currentItem.provider"
       :create-form-data="createCloudaccountFormData"
       :cloneData="cloneData" /><!-- provider 是为了 VmNetwork 的 prop 不报错 -->
     <page-footer isForm>
-      <div slot="left">
+      <template #left>
         <div class="d-flex align-items-center">
           <div class="mr-2">{{$t('cloudenv.text_272')}}</div>
-          <div class="item d-flex p-1 mb-0 align-items-center active">
-            <img :src="currentItem.logo" :style="currentItem.logoStyle" />
-            <h5 class="ml-2" v-if="showName(currentItem)">{{ currentItem.name }}</h5>
+          <div class="cloudaccount-selected" :class="{ 'is-logo-only': !showName(currentItem) }">
+            <img :src="currentItem.logo" :alt="currentItem.name" :style="selectedLogoStyle" />
+            <span class="cloudaccount-selected__name" v-if="showName(currentItem)">{{ currentItem.name }}</span>
           </div>
         </div>
-      </div>
-      <div slot="right">
+      </template>
+      <template #right>
         <a-button class="mr-3" @click="perv" v-if="!isFirstStep && !isScheduledSetting">{{$t('cloudenv.text_273')}}</a-button>
         <a-button :disabled="nextDisabled" class="mr-3" type="primary"  @click="next" :loading="loading">{{ nextStepTitle }}</a-button>
         <test-button v-if="['create-cloudaccount', 'bill-form', 'bill-file-index'].includes(currentComponent)" class="mr-3" :post="testPost" :isSuccessAlert="!['bill-form', 'bill-file-index'].includes(currentComponent)" />
         <a-button @click="cancel">{{['select-region', 'bill-form', 'bill-file-index', 'scheduled-settings'].includes(currentComponent) ? $t('cloudenv.text_274'): $t('cloudenv.text_170')}}</a-button>
-      </div>
+      </template>
     </page-footer>
   </div>
 </template>
@@ -117,6 +117,23 @@ export default {
     },
     isScheduledSetting () {
       return this.step.currentStep === this.step.steps.length - 1
+    },
+    selectedLogoStyle () {
+      // 与选择卡片一致：只用宽高，忽略 position/top 偏移以保证居中
+      const style = this.currentItem.logoStyle || {}
+      if (!this.showName(this.currentItem)) {
+        return {
+          display: 'block',
+          width: style.width || '100px',
+          height: style.height || '24px',
+        }
+      }
+      return {
+        display: 'block',
+        height: style.height || '24px',
+        width: style.width || 'auto',
+        maxHeight: '24px',
+      }
     },
   },
   watch: {
@@ -559,35 +576,35 @@ export default {
 
 <style lang="less">
 .cloudaccount-create {
-  .item {
-    width: 120px;
-    cursor: pointer;
-    display: block;
-    font-size: 14px;
-    margin-bottom: 10px;
-    border: 1px solid #eee;
-    text-align: center;
-    border-radius: 3px;
+  .cloudaccount-selected {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-width: 120px;
+    min-height: 40px;
+    padding: 8px 10px;
+    border: 1px solid var(--antd-wave-shadow-color, #1677ff);
+    border-radius: 6px;
+    background: #fff;
     box-sizing: border-box;
-    &.active {
-      border-color:#4DA1FF;
-      h5{
-        color:#4DA1FF;
-      }
+
+    &.is-logo-only {
+      min-width: 120px;
+      max-width: 160px;
+      padding: 8px 12px;
     }
-    &:hover {
-      border-color:#4DA1FF;
-      h5{
-        color:#4DA1FF;
-      }
-    }
-    h5 {
-      margin: 0;
-      font-size: 13px;
-      font-weight: 400;
-    }
+
     img {
-      height: 24px;
+      display: block;
+      flex-shrink: 0;
+    }
+
+    &__name {
+      color: var(--antd-wave-shadow-color, #1677ff);
+      font-size: 13px;
+      line-height: 18px;
+      white-space: nowrap;
     }
   }
 }

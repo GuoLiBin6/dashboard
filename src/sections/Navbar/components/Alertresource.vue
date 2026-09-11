@@ -1,25 +1,26 @@
 <template>
-  <div class="position-relative">
+  <div class="position-relative navbar-alert-resource">
     <div class="trigger d-flex align-items-center justify-content-center" @click="toggle">
-      <a-badge v-if="total" :count="total" :overflowCount="99">
-        <icon type="res-commonalerts" class="alertresource-icon" />
-      </a-badge>
-      <a-tooltip v-else :title="$t('common.resource_alert')" placement="right">
-        <icon type="res-commonalerts" class="alertresource-icon" />
+      <a-tooltip :title="$t('common.resource_alert')" placement="bottom">
+        <a-badge :count="total" :overflowCount="99">
+          <icon type="res-commonalerts" class="alertresource-icon" />
+        </a-badge>
       </a-tooltip>
     </div>
     <a-alert type="info" v-if="visible" class="alertresource-error">
-      <div slot="message" v-if="total > 0">
-        <div v-if="res_total > 0">
-          {{$t('common_719', [res_total])}}<a-button type="link" size="small" @click="routerRes">{{$t('common.view')}}</a-button>
-        </div>
-        <div v-if="alert_total > 0">
-          {{$t('common_alert_tips', [alert_total])}}<a-button type="link" size="small" @click="routerAlert">{{$t('common.view')}}</a-button>
-        </div>
-      </div>
-      <div slot="message" v-else>
-        {{$t('common_720')}}
-      </div>
+      <template #message>
+        <template v-if="total > 0">
+          <div v-if="res_total > 0">
+            {{$t('common_719', [res_total])}}<a-button type="link" size="small" @click="routerRes">{{$t('common.view')}}</a-button>
+          </div>
+          <div v-if="alert_total > 0">
+            {{$t('common_alert_tips', [alert_total])}}<a-button type="link" size="small" @click="routerAlert">{{$t('common.view')}}</a-button>
+          </div>
+        </template>
+        <template v-else>
+          {{$t('common_720')}}
+        </template>
+      </template>
     </a-alert>
   </div>
 </template>
@@ -68,11 +69,28 @@ export default {
 </script>
 
 <style lang="less" scoped>
-@import "~ant-design-vue/lib/style/themes/default";
+@import "../../../styles/less/theme";
 
-@keyframes glint {
-  50% {
-    color: red;
+.navbar-alert-resource {
+  width: 100%;
+  height: 100%;
+  color: inherit;
+
+  &:hover {
+    color: var(--ant-color-primary, #1890ff);
+
+    :deep(.ant-badge) {
+      color: inherit !important;
+    }
+    :deep(.ant-badge-count),
+    :deep(.ant-scroll-number) {
+      color: #fff !important;
+    }
+    .alertresource-icon,
+    :deep(.oc-icon) {
+      color: inherit !important;
+      fill: currentColor !important;
+    }
   }
 }
 
@@ -80,32 +98,59 @@ export default {
   height: 100%;
   cursor: pointer;
   text-decoration: none;
+  color: inherit;
 }
+
 .alertresource-icon {
-  font-size: 22px;
-  // animation: glint 1.5s infinite; // !打开动画之后 Renderer CPU 会在13%～15%左右
+  font-size: 20px;
+  color: inherit;
 }
+
 .alertresource-error {
-  color: rgba(0,0,0,.65);
+  color: #374151;
   width: max-content;
+  max-width: 360px;
   position: absolute;
-  top: 0;
-  right:40px;
+  top: 50%;
+  right: 44px;
   z-index: 10;
+  transform: translateY(-50%);
+  border-radius: 8px !important;
+  border: 0 !important;
+  background: #fff !important;
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.06),
+    0 8px 24px rgba(0, 0, 0, 0.08) !important;
+  padding: 8px 12px !important;
+
+  :deep(.ant-alert-message) {
+    color: #374151;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  :deep(.ant-btn-link) {
+    padding: 0 0 0 4px;
+    height: auto;
+    font-size: 14px;
+    color: var(--ant-color-primary, #1890ff);
+
+    &:hover,
+    &:focus {
+      color: var(--ant-color-primary, #1890ff);
+    }
+  }
+
   &::after {
-    display: block;
     content: "";
-    width: 8px;
-    height: 8px;
-    transform: translateX(-50%) rotate(45deg);
-    border: 1px solid @primary-color;
-    z-index: 10;
     position: absolute;
-    background: @alert-info-bg-color;
-    border-left-color: transparent !important;
-    border-bottom-color: transparent !important;
-    top: 14px;
-    right: -9px;
+    top: 50%;
+    right: -5px;
+    width: 10px;
+    height: 10px;
+    background: #fff;
+    transform: translateY(-50%) rotate(45deg);
+    box-shadow: 2px -2px 4px rgba(0, 0, 0, 0.04);
   }
 }
 </style>

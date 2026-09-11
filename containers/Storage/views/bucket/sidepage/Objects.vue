@@ -12,17 +12,19 @@
       :single-actions="singleActions"
       default-search-key="prefix"
       :placeholder="$t('storage.bucket_object_search_placeholder')">
-      <div slot="table-prepend" class="d-flex align-items-center pt-2 pb-2">
-        <span><a-icon type="folder-open" theme="filled" style="color: rgb(245,200, 61);font-size:15px" />{{$t('storage.text_150')}}</span>
-        <a-breadcrumb>
-          <a-breadcrumb-item>
-            <a-button style="padding:0" type="link" @click="nextPage('')">{{data.name}}</a-button>
-          </a-breadcrumb-item>
-          <a-breadcrumb-item v-for="(value, key) in breadcrumbs" :key="key">
-            <a-button style="padding:0" type="link" @click="nextPage(key)">{{value}}</a-button>
-          </a-breadcrumb-item>
-        </a-breadcrumb>
-      </div>
+      <template #table-prepend>
+        <div class="d-flex align-items-center pt-2 pb-2">
+          <span><icon type="folder-open" theme="filled" style="color: rgb(245,200, 61);font-size:15px" />{{$t('storage.text_150')}}</span>
+          <a-breadcrumb>
+            <a-breadcrumb-item>
+              <a-button style="padding:0" type="link" @click="nextPage('')">{{data.name}}</a-button>
+            </a-breadcrumb-item>
+            <a-breadcrumb-item v-for="(value, key) in breadcrumbs" :key="key">
+              <a-button style="padding:0" type="link" @click="nextPage(key)">{{value}}</a-button>
+            </a-breadcrumb-item>
+          </a-breadcrumb>
+        </div>
+      </template>
     </page-list>
   </div>
 </template>
@@ -87,26 +89,29 @@ export default {
             default: ({ row }) => {
               const { key } = row
               if (this.nextFetchListLoading && this.prefix === key) {
-                return [<a-icon type="loading" />]
+                return [this.$createElement('icon', { attrs: { type: 'loading' } })]
               }
               const rkey = key.replace(this.prefix, '')
               if (this.isDir(key)) {
                 return [
-                  <div class="d-flex align-items-center">
-                    <a-icon type="folder" theme="filled" style="color: rgb(245,200, 61)" />
-                    <a class="text-truncate" style="margin-right: 3px" onClick={() => this.nextPage(key)} title={rkey}>{ rkey }</a>
-                    <copy message={rkey} />
-                  </div>,
+                  h('div', { class: 'd-flex align-items-center' }, [
+                    h('icon', { attrs: { type: 'folder', theme: 'filled' }, style: 'color: rgb(245,200, 61)' }),
+                    h('a', {
+                      class: 'text-truncate',
+                      style: 'margin-right: 3px',
+                      attrs: { title: rkey },
+                      on: { click: () => this.nextPage(key) },
+                    }, rkey),
+                    h('copy', { props: { message: rkey } }),
+                  ]),
                 ]
               }
               return [
-                <div class="d-flex align-items-center">
-                  <a-icon theme="filled" type="file" />
-                  <span class="text-truncate" title={rkey}>
-                    {rkey}
-                  </span>
-                  <copy message={rkey} />
-                </div>,
+                h('div', { class: 'd-flex align-items-center' }, [
+                  h('icon', { attrs: { theme: 'filled', type: 'file' } }),
+                  h('span', { class: 'text-truncate', attrs: { title: rkey } }, rkey),
+                  h('copy', { props: { message: rkey } }),
+                ]),
               ]
             },
           },
@@ -199,15 +204,13 @@ export default {
                 {
                   label: this.$t('storage.text_161'),
                   placeholder: this.$t('storage.text_162'),
-                  extra: () => {
-                    return (
-                      <div>
-                        <div>{ this.$t('storage.text_173') }</div>
-                        <div class='mt-1'>{ this.$t('storage.text_174') }</div>
-                        <div class='mt-1'>{ this.$t('storage.text_175') }</div>
-                        <div class='mt-1'>{ this.$t('storage.text_176') }</div>
-                      </div>
-                    )
+                  extra: (h) => {
+                    return h('div', [
+                      h('div', this.$t('storage.text_173')),
+                      h('div', { class: 'mt-1' }, this.$t('storage.text_174')),
+                      h('div', { class: 'mt-1' }, this.$t('storage.text_175')),
+                      h('div', { class: 'mt-1' }, this.$t('storage.text_176')),
+                    ])
                   },
                 },
                 ],

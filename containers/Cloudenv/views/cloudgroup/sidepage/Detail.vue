@@ -36,9 +36,11 @@ export default {
           field: 'cloudpolicy_count',
           title: this.$t('cloudenv.coludgroup_text005'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               return [
-                <a onClick={ () => this.$emit('tab-change', 'cloudpolicy-list-for-cloudgroup-sidepage') }>{row.cloudpolicy_count}</a>,
+                h('a', {
+                  on: { click: () => this.$emit('tab-change', 'cloudpolicy-list-for-cloudgroup-sidepage') },
+                }, row.cloudpolicy_count),
               ]
             },
           },
@@ -47,9 +49,11 @@ export default {
           field: 'clouduser_count',
           title: this.$t('cloudenv.coludgroup_text006'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               return [
-                <a onClick={ () => this.$emit('tab-change', 'clouduser-list-for-cloudgroup-sidepage') }>{row.clouduser_count}</a>,
+                h('a', {
+                  on: { click: () => this.$emit('tab-change', 'clouduser-list-for-cloudgroup-sidepage') },
+                }, row.clouduser_count),
               ]
             },
           },

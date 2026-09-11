@@ -1,8 +1,10 @@
 <template>
   <a-popover trigger="hover">
-    <div slot="content" class="list-body-cell-popover-container" :style="containerStyle">
-      <slot />
-    </div>
+    <template #content>
+      <div class="list-body-cell-popover-container" :style="containerStyle">
+        <slot />
+      </div>
+    </template>
     <span class="list-body-cell-popover-text">{{ text }}</span>
   </a-popover>
 </template>

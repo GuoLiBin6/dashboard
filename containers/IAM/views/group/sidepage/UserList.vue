@@ -62,9 +62,25 @@ export default {
           slots: {
             default: ({ row }, h) => {
               return [
-                <list-body-cell-wrap copy row={row} field='name' title={row.name} message={row.name} hideField={true}>
-                  <side-page-trigger permission='users_get' name='UserSidePage' id={row.id} vm={this}>{ row.name }</side-page-trigger>
-                </list-body-cell-wrap>,
+                h('list-body-cell-wrap', {
+                  props: {
+                    copy: true,
+                    row: row,
+                    field: 'name',
+                    title: row.name,
+                    message: row.name,
+                    hideField: true,
+                  },
+                }, [
+                  h('side-page-trigger', {
+                    props: {
+                      permission: 'users_get',
+                      name: 'UserSidePage',
+                      id: row.id,
+                      vm: this,
+                    },
+                  }, row.name),
+                ]),
               ]
             },
           },
@@ -84,9 +100,11 @@ export default {
                   onManager: this.onManager,
                   hideField: true,
                   slotCallback: row => {
-                    return (
-                      <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name }</side-page-trigger>
-                    )
+                    return this.$createElement('side-page-trigger', {
+                      on: {
+                        trigger: () => this.handleOpenSidepage(row),
+                      },
+                    }, row.name)
                   },
                   formRules: [{
                     required: true,

@@ -31,7 +31,7 @@
           :params="policycloudproviderParams"
           :disabledItems="disabledCloudproviders"
           :label-format="cloudproviderLabel"
-          :resList.sync="allCloudproviders"
+          v-model:resList="allCloudproviders"
           :need-params="true"
           :filterable="true"
           :showSync="true"
@@ -662,7 +662,7 @@ export default {
 
 <style lang="less" scoped>
 .vm-sched-policy {
-  .host-form-item ::v-deep .ant-form-item-control {
+  .host-form-item :deep(.ant-form-item-control) {
     width: 100%;
   }
 }

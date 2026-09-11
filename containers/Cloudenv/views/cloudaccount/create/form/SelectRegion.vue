@@ -1,7 +1,7 @@
 <template>
   <div class="cloudaccount pt-2">
     <a-alert type="info" show-icon class="mt-2 mb-2" v-if="$store.getters.isAdminMode">
-      <template slot="message">{{ $t('cloudenv.select_region_tips') }}</template>
+      <template #message>{{ $t('cloudenv.select_region_tips') }}</template>
     </a-alert>
     <page-list
       :showSync="false"
@@ -53,9 +53,9 @@ export default {
           onManager: this.onManager,
           hideField: true,
           slotCallback: row => {
-            return (
-              <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{ row.name }</side-page-trigger>
-            )
+            return this.$createElement('side-page-trigger', {
+              on: { trigger: () => this.handleOpenSidepage(row) },
+            }, row.name)
           },
         }),
         {
@@ -64,7 +64,7 @@ export default {
           slots: {
             default: ({ row }) => {
               return [
-                <status status={ row.status } statusModule='region' />,
+                this.$createElement('status', { props: { status: row.status, statusModule: 'region' } }),
               ]
             },
           },

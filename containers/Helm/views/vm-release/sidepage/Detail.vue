@@ -32,11 +32,19 @@ export default {
           field: 'name',
           title: this.$t('helm.text_16'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               return [
-                <div class='text-truncate'>
-                  <list-body-cell-wrap copy row={ this.data } onManager={ this.onManager } field='name' title={ row.name } />
-                </div>,
+                h('div', { class: 'text-truncate' }, [
+                  h('list-body-cell-wrap', {
+                    props: {
+                      copy: true,
+                      row: this.data,
+                      onManager: this.onManager,
+                      field: 'name',
+                      title: row.name,
+                    },
+                  }),
+                ]),
               ]
             },
           },

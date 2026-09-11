@@ -1,7 +1,7 @@
 <template>
   <div class="image-select">
-    <a-form-item class="mb-0">
-      <a-radio-group v-decorator="decorator.imageType" @change="change">
+    <a-form-item class="mb-2">
+      <a-radio-group :value="imageTypeValue" v-decorator="decorator.imageType" @change="change">
         <a-tooltip v-for="item in mirrorTypeOptions" :key="item.key" :title="item.tooltip" :mouseEnterDelay="0.5">
           <a-radio-button :value="item.key" :disabled="item.disabled">{{ item.label }}</a-radio-button>
         </a-tooltip>
@@ -147,6 +147,10 @@ export default {
       if (!draft || typeof draft !== 'object') return null
       return draft
     },
+    imageTypeValue () {
+      const name = this.decorator.imageType[0]
+      return (name && this.form?.fd?.[name]) || this.imageType
+    },
     mirrorTypeOptions () {
       let ret = [IMAGES_TYPE_MAP.standard, IMAGES_TYPE_MAP.customize]
       if (this.isIDC && this.hypervisor === HYPERVISORS_MAP.kvm.key) {
@@ -249,8 +253,13 @@ export default {
     },
     change (e) {
       this.isFirstLoad = false
-      this.imageType = e.target.value
-      this.$emit('update:imageType', e.target.value)
+      const val = e && e.target ? e.target.value : e
+      this.imageType = val
+      // 显式写回，驱动受控 Radio 选中态
+      this.form.fc.setFieldsValue({
+        [this.decorator.imageType[0]]: val,
+      })
+      this.$emit('update:imageType', val)
       this.$nextTick(() => this.persistFormFieldDraftSnapshot())
     },
     updateImageMsg (...ret) {

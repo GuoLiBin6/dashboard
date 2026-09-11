@@ -33,11 +33,19 @@ export default {
           field: 'name',
           title: this.$t('k8s.text_41'),
           slots: {
-            default: ({ row }) => {
+            default: ({ row }, h) => {
               return [
-                <div class='text-truncate'>
-                  <list-body-cell-wrap copy row={ this.data } onManager={ this.onManager } field='name' title={ row.name } />
-                </div>,
+                h('div', { class: 'text-truncate' }, [
+                  h('list-body-cell-wrap', {
+                    props: {
+                      copy: true,
+                      row: this.data,
+                      onManager: this.onManager,
+                      field: 'name',
+                      title: row.name,
+                    },
+                  }),
+                ]),
               ]
             },
           },
@@ -70,7 +78,11 @@ export default {
               }
               if (!row.mountedBy || !row.mountedBy.length) return '-'
               return row.mountedBy.map(val => {
-                return (<side-page-trigger onTrigger={() => handleOpenSidepage(val)}>{ val }</side-page-trigger>)
+                return h('side-page-trigger', {
+                  on: {
+                    trigger: () => handleOpenSidepage(val),
+                  },
+                }, val)
               })
             },
           },
@@ -117,7 +129,7 @@ export default {
                 text = this.$t('k8s.text_302')
                 className = 'error-color'
               }
-              return [<div class={className}>{text}</div>]
+              return [h('div', { class: className }, text)]
             },
           },
         },

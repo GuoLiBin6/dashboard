@@ -1,7 +1,7 @@
 import http from '@/utils/http'
 import { getRequestT } from '@/utils/utils'
-const logo = require('@scope/images/cloudpod_logo.png')
-const loginLogo = require('@scope/images/cloudpod_login_logo.png')
+import logo from '@scope/images/cloudpod_logo.png'
+import loginLogo from '@scope/images/cloudpod_login_logo.png'
 
 export default {
   state: {

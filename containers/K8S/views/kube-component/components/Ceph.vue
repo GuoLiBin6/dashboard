@@ -14,7 +14,7 @@
           :rules="[
             { required: true, message: $t('k8s.text_244'), trigger: 'blur' },
           ]">
-          <a-input v-model="item.clusterId" :placeholder="$t('k8s.text_245')" />
+          <a-input v-model:value="item.clusterId" :placeholder="$t('k8s.text_245')" />
         </a-form-model-item>
         <a-form-model-item label="Mon Hosts">
           <a-form-model-item
@@ -25,8 +25,8 @@
               { required: true, message: $t('k8s.text_246'), trigger: 'blur' },
             ]">
             <div class="d-flex align-items-center">
-              <a-input v-model="val.monitor" :placeholder="$t('k8s.text_247')" />
-              <a-icon type="minus-circle" style="color: #F56C6C;" class="cursor-pointer ml-2" v-if="item.monitors.length > 1" @click="decreaseMonitor(item, k)" />
+              <a-input v-model:value="val.monitor" :placeholder="$t('k8s.text_247')" />
+              <icon type="minus-circle" style="color: #F56C6C;" class="cursor-pointer ml-2" v-if="item.monitors.length > 1" @click="decreaseMonitor(item, k)" />
               <!-- <i style="color: #F56C6C;" class="cursor-pointer ml-2" v-if="item.monitors.length > 1" @click="decreaseMonitor(item, k)" /> -->
             </div>
           </a-form-model-item>

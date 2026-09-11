@@ -7,7 +7,7 @@
       </template>
       <dialog-table :data="params.data" :columns="columns" />
     </a-card>
-    <page-body needMarginBottom>
+    <page-body>
       <div class="form-wrapper">
         <a-form
           v-bind="formItemLayout"
@@ -66,6 +66,7 @@
 </template>
 
 <script>
+import { h } from 'vue'
 import { mapGetters } from 'vuex'
 import * as R from 'ramda'
 import _ from 'lodash'
@@ -284,9 +285,7 @@ export default {
           edit: false,
           editDesc: false,
           slotCallback: row => {
-            return (
-              <side-page-trigger>{row.name}</side-page-trigger>
-            )
+            return h('side-page-trigger', null, { default: () => row.name })
           },
         }),
         getIpsTableColumn({ field: 'ip', title: 'IP' }),
@@ -300,10 +299,10 @@ export default {
             default: ({ row }) => {
               const ret = []
               if (row.instance_type) {
-                ret.push(<div class='text-truncate' style={{ color: '#0A1F44' }}>{row.instance_type}</div>)
+                ret.push(h('div', { class: 'text-truncate', style: { color: 'var(--oc-color-text-heading)' } }, row.instance_type))
               }
               const config = row.vcpu_count + 'C' + sizestr(row.vmem_size, 'M', 1024) + (row.disk ? sizestr(row.disk, 'M', 1024) : '')
-              return ret.concat(<div class='text-truncate' style={{ color: '#53627C' }}>{config}</div>)
+              return ret.concat(h('div', { class: 'text-truncate', style: { color: 'var(--oc-color-text-secondary)' } }, config))
             },
           },
         },
@@ -335,7 +334,7 @@ export default {
     this.loadData(this.params.data)
     this.fetchInstanceSpecs()
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.serversManager = null
     this.zonesM2 = null
     this.serverskusM = null

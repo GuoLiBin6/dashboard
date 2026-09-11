@@ -11,9 +11,11 @@ export default {
         onManager: this.onManager,
         hideField: true,
         slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{row.name || '-'}</side-page-trigger>
-          )
+          return this.$createElement('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, row.name || '-')
         },
       }),
       {

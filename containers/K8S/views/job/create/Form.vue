@@ -8,7 +8,7 @@
         <cluster-select v-decorator="decorators.cluster" @input="setCluster" />
       </a-form-item>
       <a-form-item :label="$t('k8s.text_23')">
-        <namespace-select v-decorator="decorators.namespace" @input="setNamespace" :cluster="cluster" :namespaceObj.sync="namespaceObj" />
+        <namespace-select v-decorator="decorators.namespace" @input="setNamespace" :cluster="cluster" v-model:namespaceObj="namespaceObj" />
       </a-form-item>
       <a-form-item :label="$t('k8s.text_220')">
         <image-secret
@@ -34,7 +34,7 @@
       </a-collapse>
       <spec-container
         :form="form"
-        :panes.sync="containerPanes"
+        v-model:panes="containerPanes"
         :errPanes="errPanes"
         :decorators="decorators.containers"
         :namespace="namespaceObj.name"

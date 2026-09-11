@@ -14,7 +14,7 @@
           <template v-else>
             <user-select
               v-decorator="decorators.user_id"
-              :project.sync="form.fi.project"
+              v-model:project="form.fi.project"
               :cloudaccount-id="params.cloudaccount.id"
               :default-domain-id="userInfo.projectDomainId"
               :default-user-id="userInfo.id"
@@ -82,7 +82,7 @@ export default {
       return columns
     },
   },
-  destroyed () {
+  unmounted () {
     this.um = null
   },
   created () {

@@ -16,6 +16,7 @@
 </template>
 
 <script>
+import { h } from 'vue'
 import ReserveResource from '@Compute/sections/ReserveResource'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
@@ -78,9 +79,11 @@ export default {
           onManager: this.params.onManager,
           hideField: true,
           slotCallback: row => {
-            return (
-              <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row, 'gpu-detail') }>{ row.name }</side-page-trigger>
-            )
+            return h('side-page-trigger', {
+              onTrigger: () => this.handleOpenSidepage(row, 'gpu-detail'),
+            }, {
+              default: () => row.name,
+            })
           },
         }),
         {
@@ -89,16 +92,16 @@ export default {
           minWidth: 120,
           showOverflow: 'ellipsis',
           slots: {
-            default: ({ row }, h) => {
+            default: ({ row }) => {
               const device = row.vendor_device_id.split(':')[0]
               if (!device) {
                 return row.model
               }
               return [
-                <div class='d-flex'>
-                  <span class='text-truncate'>{ row.model }</span>
-                  <icon class="ml-1" style="line-height: 24px" type={ DEVICE_MAP[device] } />
-                </div>,
+                h('div', { class: 'd-flex' }, [
+                  h('span', { class: 'text-truncate' }, row.model),
+                  h('icon', { class: 'ml-1', style: 'line-height: 24px', type: DEVICE_MAP[device] }),
+                ]),
               ]
             },
           },

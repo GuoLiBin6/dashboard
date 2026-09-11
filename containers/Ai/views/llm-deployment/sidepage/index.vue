@@ -83,7 +83,7 @@ export default {
   mounted () {
     this.$bus.$on('llmDeploymentOpenChatTest', this.handleOpenChatTest)
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.$bus.$off('llmDeploymentOpenChatTest', this.handleOpenChatTest)
   },
   methods: {

@@ -61,8 +61,9 @@ export default {
       })
     },
     afterEnter (element) {
+      // 清除过渡时写入的内联 height，交还给 CSS（勿设 auto，否则会盖掉固定高度）
       // eslint-disable-next-line no-param-reassign
-      element.style.height = 'auto'
+      element.style.height = ''
     },
   },
 }

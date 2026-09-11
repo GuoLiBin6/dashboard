@@ -25,7 +25,7 @@
         resource="projects"
         v-decorator="decorators.project"
         :params="projectParams"
-        :item.sync="project"
+        v-model:item="project"
         filterable
         remote
         version="v1"
@@ -43,7 +43,7 @@
   </div>
 </template>
 
-<script>
+<script lang="jsx">
 import _ from 'lodash'
 import { mapGetters } from 'vuex'
 import i18n from '@/locales'

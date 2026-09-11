@@ -3,7 +3,9 @@
     <div>
       <a-empty :description="noDataText">
         <slot />
-        <icon slot="image" type="data-empty" class="data-empty" />
+        <template #image>
+          <icon type="data-empty" class="data-empty" />
+        </template>
       </a-empty>
     </div>
   </div>

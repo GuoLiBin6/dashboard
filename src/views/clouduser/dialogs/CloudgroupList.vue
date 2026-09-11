@@ -1,15 +1,15 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{$t('common_322')}}</div>
-    <div slot="body">
+    <template #header>{{$t('common_322')}}</template>
+    <template #body>
       <page-list
         :list="list"
         :columns="columns"
         :enableVirtualScroll="false" />
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="cancelDialog">{{ $t('dialog.ok') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 
@@ -59,21 +59,29 @@ export default {
                 },
               ]
               const hasData = row.feCloudpolicies && row.feCloudpolicies.length > 0
-              return [<a-popover trigger="hover" onVisibleChange={handleVisibleChange} key={`popover-${row.id}-${row.feCloudpolicies ? row.feCloudpolicies.length : 0}`}>
-                <div slot="content" style={hasData ? { minWidth: '600px' } : {}}>
-                  {hasData ? (
-                    <vxe-grid
-                      showOverflow={false}
-                      row-config={{ isHover: true }}
-                      column-config={{ resizable: false }}
-                      data={ row.feCloudpolicies }
-                      columns={ columns } />
-                  ) : (
-                    <data-loading />
-                  )}
-                </div>
-                <span style="color: var(--antd-wave-shadow-color)">{this.$t('common_323', [row.cloudpolicies.length])}</span>
-              </a-popover>]
+              const content = hasData
+                ? h('table-lite-grid', {
+                  props: {
+                    showOverflow: false,
+                    rowConfig: { isHover: true },
+                    columnConfig: { resizable: false },
+                    data: row.feCloudpolicies,
+                    columns,
+                  },
+                })
+                : h('data-loading')
+              const contentWrapper = h('div', {
+                slot: 'content',
+                style: hasData ? { minWidth: '600px' } : {},
+              }, [content])
+              const text = h('span', {
+                style: { color: 'var(--antd-wave-shadow-color)' },
+              }, [this.$t('common_323', [row.cloudpolicies.length])])
+              return [h('a-popover', {
+                props: { trigger: 'hover' },
+                on: { openChange: handleVisibleChange },
+                key: `popover-${row.id}-${row.feCloudpolicies ? row.feCloudpolicies.length : 0}`,
+              }, [contentWrapper, text])]
             },
           },
         },

@@ -30,23 +30,27 @@
   &-title {
     border-bottom: 1px solid #5e6978;
     padding-bottom: 8px;
-    color: #1a2736;
+    color: var(--oc-color-text-heading, rgba(0, 0, 0, 0.88));
     font-size: 16px;
+    font-weight: var(--oc-font-weight-strong, 600);
     // margin-right: 60px;
     margin-bottom: 5px;
   }
   &-item {
     min-height: 21px;
+    font-weight: var(--oc-font-weight-base, 400);
     &-title {
       width: 140px;
-      color: #5e6978;
+      color: var(--oc-color-text-secondary, rgba(0, 0, 0, 0.55));
+      font-weight: var(--oc-font-weight-base, 400);
       position: absolute;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
     &-value {
-      color: #1a2736;
+      color: var(--oc-color-text, rgba(0, 0, 0, 0.75));
+      font-weight: var(--oc-font-weight-base, 400);
       margin-left: 140px;
       word-break: break-all;
     }

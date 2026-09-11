@@ -1,9 +1,8 @@
 <template>
-  <a-radio-group :defaultValue="value" @change="handleChange">
-    <template v-for="item of scopesMap">
+  <a-radio-group :value="value" @change="handleChange">
+    <template v-for="item of scopesMap" :key="item.key">
       <a-radio-button
         v-if="showScope(item)"
-        :key="item.key"
         :value="item.key">{{ $t(`policyScopeLabel.${item.key}`) }}</a-radio-button>
     </template>
   </a-radio-group>
@@ -30,7 +29,9 @@ export default {
   },
   methods: {
     handleChange (e) {
-      this.$emit('input', e.target.value)
+      const next = e?.target?.value
+      this.$emit('input', next)
+      this.$emit('update:value', next)
     },
     showScope (item) {
       if (item.key === this.scopesMap.system.key) {

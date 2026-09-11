@@ -161,9 +161,8 @@ export default {
                   })
                 },
               },
-              disableDeleteAction(Object.assign(this, {
+              disableDeleteAction(this, {
                 permission: 'cdn_domains_update',
-              }), {
                 name: this.$t('dictionary.cdn_domain'),
                 meta: () => {
                   if (!isOwner) {

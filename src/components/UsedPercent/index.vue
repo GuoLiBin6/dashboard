@@ -3,10 +3,10 @@
     <div class="title" v-if="!hiddenUsed">{{ usedKey }}: {{ usedValue }}</div>
     <div class="title" v-if="!hiddenTotal">{{ totalKey }}: {{ totalValue }}</div>
     <div class="custom-progress-bar d-flex align-items-center mt-1" style="height:12px;line-height: 12px;">
-      <div class="ant-progress-outer" style="background: #d9d9d9;border-radius: 3px;overflow:hidden">
+      <div class="ant-progress-outer" style="background: #d9d9d9;border-radius: 3px;overflow:hidden;height:6px;">
         <div class="ant-progress-bg" :style="{width: `${percent}%`, height: '6px', background: strokeColor, borderRadius: '100px'}" />
       </div>
-      <span class="ant-progress-text" style="font-size:12px">{{percent}}%</span>
+      <span class="ant-progress-text" style="font-size:12px;line-height:1">{{percent}}%</span>
     </div>
   </div>
 </template>
@@ -97,6 +97,17 @@ export default {
     width: 100%;
     font-size: 12px;
     line-height: 16px;
+  }
+  .custom-progress-bar {
+    min-height: 14px;
+    .ant-progress-outer {
+      flex: 1;
+      min-width: 0;
+    }
+    .ant-progress-text {
+      flex-shrink: 0;
+      margin-left: 4px;
+    }
   }
 }
 </style>

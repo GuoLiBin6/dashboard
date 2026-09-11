@@ -13,10 +13,12 @@ export default {
           { required: true, message: i18n.t('storage.text_56') },
           { validator: this.$validate('bucketName') },
         ],
-        slotCallback: row => {
-          return (
-            <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row) }>{ row.name_cn ? `${row.name}(${row.name_cn})` : row.name }</side-page-trigger>
-          )
+        slotCallback: (row, h) => {
+          return h('side-page-trigger', {
+            on: {
+              trigger: () => this.handleOpenSidepage(row),
+            },
+          }, [row.name_cn ? `${row.name}(${row.name_cn})` : row.name])
         },
         hidden: () => {
           return this.$isScopedPolicyMenuHidden('oss_hidden_columns.name')

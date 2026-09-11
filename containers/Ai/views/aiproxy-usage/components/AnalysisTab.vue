@@ -23,7 +23,7 @@
         <div class="title-wrapper">
           <div class="title">{{ $t('aice.aiproxy.usage.heatmap') }}</div>
         </div>
-        <a-select v-model="heatmapMetric" size="small" class="metric-select">
+        <a-select v-model:value="heatmapMetric" size="small" class="metric-select">
           <a-select-option v-for="item in heatmapMetricOptions" :key="item.key" :value="item.key">
             {{ item.label }}
           </a-select-option>
@@ -38,7 +38,7 @@
         <div class="title-wrapper">
           <div class="title">{{ $t('aice.aiproxy.usage.composition') }}</div>
         </div>
-        <a-select v-model="compositionMetric" size="small" class="metric-select">
+        <a-select v-model:value="compositionMetric" size="small" class="metric-select">
           <a-select-option v-for="item in compositionMetricOptions" :key="item.key" :value="item.key">
             {{ item.label }}
           </a-select-option>
@@ -68,28 +68,25 @@
         </div>
       </div>
       <a-spin :spinning="loading" class="table-loading-wrap">
-        <vxe-grid
+        <table-lite-grid
           ref="grid"
           :data="currentPageData"
           :columns="vxeEfficiencyColumns"
-          show-header-overflow
           show-overflow
-          highlight-hover-row
           resizable
-          size="small">
+          size="mini">
           <template v-slot:empty>
             <loader :loading="false" :noDataText="$t('common.notData')" />
           </template>
-          <template v-slot:pager>
-            <vxe-pager
-              :current-page="page.currentPage"
-              :page-size="page.pageSize"
-              :page-sizes="[10, 20, 50, 100]"
-              :total="page.total"
-              :layouts="['PrevJump', 'PrevPage', 'Number', 'NextPage', 'NextJump', 'Sizes', 'Total']"
-              @page-change="handlePageChange" />
-          </template>
-        </vxe-grid>
+        </table-lite-grid>
+        <list-pager
+          class="mt-2"
+          :current-page="page.currentPage"
+          :page-size="page.pageSize"
+          :total="page.total"
+          :page-sizes="[10, 20, 50, 100]"
+          @change-page="onPagerPage"
+          @change-size="onPagerSize" />
       </a-spin>
     </div>
   </div>
@@ -97,6 +94,7 @@
 
 <script>
 import OverviewRing from '@Monitor/components/MonitorCard/sections/chart/ring'
+import ListPager from '@/components/PageList/components/ListPager.vue'
 import HeatmapChart from './HeatmapChart'
 import { compositionToRingChart } from '../utils/transformChart'
 
@@ -113,7 +111,7 @@ const COMPOSITION_METRIC_KEYS = [
 
 export default {
   name: 'AiproxyUsageAnalysisTab',
-  components: { OverviewRing, HeatmapChart },
+  components: { OverviewRing, HeatmapChart, ListPager },
   props: {
     loading: {
       type: Boolean,
@@ -222,14 +220,12 @@ export default {
     },
   },
   methods: {
-    handlePageChange ({ type, currentPage, pageSize }) {
-      if (type === 'current' && currentPage) {
-        this.page.currentPage = currentPage
-      }
-      if (type === 'size' && pageSize) {
-        this.page.pageSize = pageSize
-        this.page.currentPage = 1
-      }
+    onPagerPage (currentPage) {
+      this.page.currentPage = currentPage
+    },
+    onPagerSize (pageSize) {
+      this.page.pageSize = pageSize
+      this.page.currentPage = 1
     },
     formatDuration (ms) {
       if (ms == null) return '-'

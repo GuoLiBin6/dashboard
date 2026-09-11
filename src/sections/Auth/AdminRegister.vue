@@ -7,33 +7,33 @@
       :rules="rules"
       @submit.prevent.stop="handleRegister">
       <a-form-model-item prop="account_name">
-        <a-input v-model="fd.account_name" :placeholder="$t('auth.register.account_name.placeholder')">
-          <a-icon slot="prefix" type="user" style="color: rgba(0, 0, 0, .25)" />
+        <a-input v-model:value="fd.account_name" :placeholder="$t('auth.register.account_name.placeholder')">
+          <icon slot="prefix" type="user" style="color: rgba(0, 0, 0, .25)" />
         </a-input>
       </a-form-model-item>
       <a-form-model-item prop="account_password">
-        <a-input-password v-model="fd.account_password" :placeholder="$t('auth.register.account_password.placeholder')">
-          <a-icon slot="prefix" type="lock" style="color: rgba(0, 0, 0, .25)" />
+        <a-input-password v-model:value="fd.account_password" :placeholder="$t('auth.register.account_password.placeholder')">
+          <icon slot="prefix" type="lock" style="color: rgba(0, 0, 0, .25)" />
         </a-input-password>
       </a-form-model-item>
       <a-form-model-item prop="confirm_account_password">
-        <a-input-password v-model="fd.confirm_account_password" :placeholder="$t('auth.register.confirm_account_password.placeholder')">
-          <a-icon slot="prefix" type="lock" style="color: rgba(0, 0, 0, .25)" />
+        <a-input-password v-model:value="fd.confirm_account_password" :placeholder="$t('auth.register.confirm_account_password.placeholder')">
+          <icon slot="prefix" type="lock" style="color: rgba(0, 0, 0, .25)" />
         </a-input-password>
       </a-form-model-item>
       <!-- <a-form-model-item prop="company">
-        <a-input v-model="fd.company" :placeholder="$t('auth.register.company.placeholder')">
-          <a-icon slot="prefix" type="home" style="color: rgba(0, 0, 0, .25)" />
+        <a-input v-model:value="fd.company" :placeholder="$t('auth.register.company.placeholder')">
+          <icon slot="prefix" type="home" style="color: rgba(0, 0, 0, .25)" />
         </a-input>
       </a-form-model-item> -->
       <!-- <a-form-model-item prop="email">
-        <a-input v-model="fd.email" :placeholder="$t('auth.register.email.placeholder ')">
-          <a-icon slot="prefix" type="mail" style="color: rgba(0, 0, 0, .25)" />
+        <a-input v-model:value="fd.email" :placeholder="$t('auth.register.email.placeholder ')">
+          <icon slot="prefix" type="mail" style="color: rgba(0, 0, 0, .25)" />
         </a-input>
       </a-form-model-item> -->
       <!-- <a-form-model-item prop="mobile">
-        <a-input v-model="fd.mobile" :placeholder="$t('auth.register.mobile.placeholder')">
-          <a-icon slot="prefix" type="phone" style="color: rgba(0, 0, 0, .25)" />
+        <a-input v-model:value="fd.mobile" :placeholder="$t('auth.register.mobile.placeholder')">
+          <icon slot="prefix" type="phone" style="color: rgba(0, 0, 0, .25)" />
         </a-input>
       </a-form-model-item> -->
       <a-form-model-item>

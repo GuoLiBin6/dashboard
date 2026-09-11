@@ -1,5 +1,5 @@
 <template>
-  <vxe-grid :data="resourceData" :columns="columns" :resizable="true" />
+  <table-lite-grid :data="resourceData" :columns="columns" :resizable="true" />
 </template>
 
 <script>
@@ -34,9 +34,10 @@ export default {
           addLock: true,
           addEncrypt: true,
           slotCallback: (row, h) => {
-            return (
-              <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{ row.name }</side-page-trigger>
-            )
+            const hFn = h || this.$createElement
+            return hFn('side-page-trigger', {
+              on: { trigger: () => this.handleOpenSidepage(row) },
+            }, row.name)
           },
           formRules: [
             { required: true, message: this.$t('compute.text_210') },

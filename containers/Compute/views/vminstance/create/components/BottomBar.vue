@@ -40,7 +40,6 @@
           <a-dropdown-button
             v-if="!isServertemplate && $appConfig.isPrivate && !$store.getters.isSysCE && hasCartPermission && !isModifyWorkflow"
             :title="confirmText"
-            class="text-truncate"
             type="primary"
             native-type="submit"
             html-type="submit"
@@ -48,12 +47,16 @@
             placement="topLeft"
             :disabled="disabled || !!errors.length">
             {{ confirmText }}
-            <a-menu slot="overlay" @click="handleMenuClick">
-              <a-menu-item key="add">
-                {{ $t('scope.shopcart.add') }}
-              </a-menu-item>
-            </a-menu>
-            <a-icon slot="icon" type="down" />
+            <template #overlay>
+              <a-menu @click="handleMenuClick">
+                <a-menu-item key="add">
+                  {{ $t('scope.shopcart.add') }}
+                </a-menu-item>
+              </a-menu>
+            </template>
+            <template #icon>
+              <icon type="pull-down" />
+            </template>
           </a-dropdown-button>
           <a-button
             v-else

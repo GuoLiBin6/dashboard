@@ -5,7 +5,7 @@
       <dialog-selected-tips :name="$t('aice.llm_deployment')" :count="params.data.length" :action="$t('aice.llm_deployment.scale')" />
       <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 6 }" :wrapper-col="{ span: 16 }">
         <a-form-model-item :label="$t('aice.llm_deployment.replicas')" prop="replicas">
-          <a-input-number v-model="form.replicas" :min="0" :max="100" />
+          <a-input-number v-model:value="form.replicas" :min="0" :max="100" />
           <div class="text-color-help">
             {{ $t('aice.llm_deployment.scale.help', [params.data[0].ready_replicas || 0, params.data[0].replicas || 0]) }}
           </div>

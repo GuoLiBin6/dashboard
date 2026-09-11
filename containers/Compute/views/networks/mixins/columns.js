@@ -32,23 +32,45 @@ export default {
           default: ({ row }, h) => {
             if (row.ip_addr) {
               const addrs = [
-                <div>{i18n.t('compute.text_386')}: {row.ip_addr}/{row.guest_ip_mask}</div>,
-                <div>{i18n.t('network.ipv4.gateway')}: {row.guest_gateway}</div>,
+                h(
+                  'div',
+                  `${i18n.t('compute.text_386')}: ${row.ip_addr}/${row.guest_ip_mask}`,
+                ),
+                h(
+                  'div',
+                  `${i18n.t('network.ipv4.gateway')}: ${row.guest_gateway}`,
+                ),
               ]
               if (row.mapped_ip_addr) {
-                addrs.push(<div>{i18n.t('compute.vpc.mapped_addr')}: {row.mapped_ip_addr}</div>)
+                addrs.push(
+                  h(
+                    'div',
+                    `${i18n.t('compute.vpc.mapped_addr')}: ${row.mapped_ip_addr}`,
+                  ),
+                )
               }
-              const ret = [
-                <a-popover>
-                  <template slot="content">
-                    {addrs}
-                  </template>
-                  <list-body-cell-wrap copy row={row} field="ip_addr" hideField={true}>
-                    {row.ip_addr}/{row.guest_ip_mask}
-                  </list-body-cell-wrap>
-                </a-popover>,
-              ]
-              return ret
+              const popover = h(
+                'a-popover',
+                {
+                  scopedSlots: {
+                    content: () => addrs,
+                  },
+                },
+                [
+                  h('list-body-cell-wrap', {
+                    props: {
+                      copy: true,
+                      row,
+                      field: 'ip_addr',
+                      hideField: true,
+                    },
+                    scopedSlots: {
+                      default: () => `${row.ip_addr}/${row.guest_ip_mask}`,
+                    },
+                  }),
+                ],
+              )
+              return [popover]
             }
             return '-'
           },
@@ -64,23 +86,45 @@ export default {
           default: ({ row }, h) => {
             if (row.ip6_addr) {
               const addrs = [
-                <div>{i18n.t('compute.ipv6.address')}: {row.ip6_addr}/{row.guest_ip6_mask}</div>,
-                <div>{i18n.t('network.ipv6.gateway')}: {row.guest_gateway6}</div>,
+                h(
+                  'div',
+                  `${i18n.t('compute.ipv6.address')}: ${row.ip6_addr}/${row.guest_ip6_mask}`,
+                ),
+                h(
+                  'div',
+                  `${i18n.t('network.ipv6.gateway')}: ${row.guest_gateway6}`,
+                ),
               ]
               if (row.mapped_ip6_addr) {
-                addrs.push(<div>{i18n.t('compute.vpc.mapped_addr')}: {row.mapped_ip6_addr}</div>)
+                addrs.push(
+                  h(
+                    'div',
+                    `${i18n.t('compute.vpc.mapped_addr')}: ${row.mapped_ip6_addr}`,
+                  ),
+                )
               }
-              const ret = [
-                <a-popover>
-                  <template slot="content">
-                    {addrs}
-                  </template>
-                  <list-body-cell-wrap copy row={row} field="ip6_addr" hideField={true}>
-                    {row.ip6_addr}/{row.guest_ip6_mask}
-                  </list-body-cell-wrap>
-                </a-popover>,
-              ]
-              return ret
+              const popover = h(
+                'a-popover',
+                {
+                  scopedSlots: {
+                    content: () => addrs,
+                  },
+                },
+                [
+                  h('list-body-cell-wrap', {
+                    props: {
+                      copy: true,
+                      row,
+                      field: 'ip6_addr',
+                      hideField: true,
+                    },
+                    scopedSlots: {
+                      default: () => `${row.ip6_addr}/${row.guest_ip6_mask}`,
+                    },
+                  }),
+                ],
+              )
+              return [popover]
             }
             return '-'
           },
@@ -96,12 +140,29 @@ export default {
         minWidth: 100,
         slots: {
           default: ({ row }, h) => {
-            const ret = [
-              <list-body-cell-wrap copy row={row} field="network" hideField={true}>
-                <side-page-trigger onTrigger={() => this.handleOpenNetworkDetail(row.network_id)}>{row.network}</side-page-trigger>
-              </list-body-cell-wrap>,
-            ]
-            return ret
+            const node = h(
+              'list-body-cell-wrap',
+              {
+                props: {
+                  copy: true,
+                  row,
+                  field: 'network',
+                  hideField: true,
+                },
+              },
+              [
+                h(
+                  'side-page-trigger',
+                  {
+                    on: {
+                      trigger: () => this.handleOpenNetworkDetail(row.network_id),
+                    },
+                  },
+                  [row.network],
+                ),
+              ],
+            )
+            return [node]
           },
         },
       },
@@ -120,14 +181,27 @@ export default {
         },
         slots: {
           default: ({ row }, h) => {
+            const create = h || this.$createElement
             const ret = []
             if (row.rx_bw_limit && row.tx_bw_limit) {
-              ret.push(<div> <a-icon type="arrow-up" /> {row.tx_bw_limit} Mbps</div>)
-              ret.push(<div> <a-icon type="arrow-down" /> {row.rx_bw_limit} Mbps</div>)
+              ret.push(create('div', [
+                ' ',
+                create('a-icon', { props: { type: 'arrow-up' } }),
+                ` ${row.tx_bw_limit} Mbps`,
+              ]))
+              ret.push(create('div', [
+                ' ',
+                create('a-icon', { props: { type: 'arrow-down' } }),
+                ` ${row.rx_bw_limit} Mbps`,
+              ]))
             } else if (+row.bw_limit) {
-              ret.push(<div> <a-icon type="swap" /> {row.bw_limit}Mbps </div>)
+              ret.push(create('div', [
+                ' ',
+                create('a-icon', { props: { type: 'swap' } }),
+                ` ${row.bw_limit}Mbps `,
+              ]))
             } else {
-              ret.push(<div>0({this.$t('common.not_limited')})</div>)
+              ret.push(create('div', `0(${this.$t('common.not_limited')})`))
             }
             return ret
           },
@@ -153,12 +227,25 @@ export default {
         field: 'network_addresses',
         title: i18n.t('compute.sub_ips.title'),
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             const { network_addresses = [] } = row
             const ret = []
             network_addresses.map(item => {
               if (item.type === 'sub_ip') {
-                ret.push(<list-body-cell-wrap copy row={{ ip: item.ip_addr }} field="ip" hideField={true}>{item.ip_addr}</list-body-cell-wrap>)
+                ret.push(
+                  h(
+                    'list-body-cell-wrap',
+                    {
+                      props: {
+                        copy: true,
+                        row: { ip: item.ip_addr },
+                        field: 'ip',
+                        hideField: true,
+                      },
+                    },
+                    [item.ip_addr],
+                  ),
+                )
               }
             })
             return ret.length ? ret : '-'
@@ -169,10 +256,25 @@ export default {
         field: 'port_mappings',
         title: i18n.t('compute.port_mappings.title', 'port'),
         slots: {
-          default: ({ row }) => {
+          default: ({ row }, h) => {
             return [
               this.$t('compute.text_619', [row.port_mappings ? row.port_mappings.length : 0]),
-              <a-button type="link" class={'pl-1'} onClick={() => this.viewContentDialog(row.port_mappings, this.$t('compute.port_mappings.title'), 'port')}>{this.$t('common.view')}</a-button>,
+              h(
+                'a-button',
+                {
+                  class: 'pl-1',
+                  attrs: { type: 'link' },
+                  on: {
+                    click: () =>
+                      this.viewContentDialog(
+                        row.port_mappings,
+                        this.$t('compute.port_mappings.title'),
+                        'port',
+                      ),
+                  },
+                },
+                [this.$t('common.view')],
+              ),
             ]
           },
         },
@@ -182,14 +284,42 @@ export default {
         field: 'secgroups',
         title: i18n.t('compute.text_105'),
         slots: {
-          default: ({ row }) => {
-            const target = (this.data.network_secgroups || []).filter(item => item.mac === row.mac_addr)
+          default: ({ row }, h) => {
+            const target = (this.data.network_secgroups || []).filter(
+              item => item.mac === row.mac_addr,
+            )
             console.log(target)
-            return target.length ? target[0].secgroups.map(item => {
-              return <list-body-cell-wrap copy hideField={true} field='name' row={item} message={item.name}>
-                <side-page-trigger permission='secgroups_get' name='SecGroupSidePage' id={item.id} vm={this} tab='secgroup-detail'>{ item.name }</side-page-trigger>
-              </list-body-cell-wrap>
-            }) : '-'
+            return target.length
+              ? target[0].secgroups.map(item =>
+                h(
+                  'list-body-cell-wrap',
+                  {
+                    props: {
+                      copy: true,
+                      hideField: true,
+                      field: 'name',
+                      row: item,
+                      message: item.name,
+                    },
+                  },
+                  [
+                    h(
+                      'side-page-trigger',
+                      {
+                        props: {
+                          permission: 'secgroups_get',
+                          name: 'SecGroupSidePage',
+                          id: item.id,
+                          vm: this,
+                          tab: 'secgroup-detail',
+                        },
+                      },
+                      [item.name],
+                    ),
+                  ],
+                ),
+              )
+              : '-'
           },
         },
         formatter: ({ row }) => {

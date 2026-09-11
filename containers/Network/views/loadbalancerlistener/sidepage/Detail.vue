@@ -45,23 +45,32 @@ export default {
               field: 'loadbalancer',
               title: this.$t('network.text_137'),
               hideField: true,
-              slotCallback: row => {
+              slotCallback: (row, h) => {
                 if (!row.loadbalancer) return '-'
-                return [
-                  <side-page-trigger permission='lb_loadbalancers_get' name='LbSidePage' id={row.loadbalancer_id} vm={this}>{ row.loadbalancer }</side-page-trigger>,
-                ]
+                return [h('side-page-trigger', {
+                  props: {
+                    permission: 'lb_loadbalancers_get',
+                    name: 'LbSidePage',
+                    id: row.loadbalancer_id,
+                    vm: this,
+                  },
+                }, row.loadbalancer)]
               },
             }),
             getCopyWithContentTableColumn({
               field: 'backend_group',
               title: this.$t('network.text_139'),
               hideField: true,
-              slotCallback: row => {
+              slotCallback: (row, h) => {
                 if (this.isRedirect) return '-'
                 if (!row.backend_group) return '-'
-                return [
-                  <side-page-trigger name='LoadbalancerbackendgroupSidePage' id={row.backend_group_id} vm={this}>{ row.backend_group }</side-page-trigger>,
-                ]
+                return [h('side-page-trigger', {
+                  props: {
+                    name: 'LoadbalancerbackendgroupSidePage',
+                    id: row.backend_group_id,
+                    vm: this,
+                  },
+                }, row.backend_group)]
               },
             }),
             getCopyWithContentTableColumn({
@@ -72,7 +81,13 @@ export default {
                 if (this.isRedirect) return '-'
                 if (!row.certificate) return '-'
                 return [
-                  <side-page-trigger name='LbcertSidePage' id={row.certificate_id} vm={this}>{ row.certificate }</side-page-trigger>,
+                  this.$createElement('side-page-trigger', {
+                    props: {
+                      name: 'LbcertSidePage',
+                      id: row.certificate_id,
+                      vm: this,
+                    },
+                  }, row.certificate),
                 ]
               },
             }),
@@ -129,7 +144,18 @@ export default {
               formatter: ({ row }) => {
                 if (row.acl_status === 'on') {
                   return [
-                    <div>{row.acl_type === 'white' ? this.$t('network.text_482') : this.$t('network.text_483')} （<side-page-trigger permission='lb_loadbalanceracls_get' name='LbaclSidePage' id={row.acl_id} vm={this}>{ row.acl }</side-page-trigger>）</div>,
+                    h('div', [
+                      `${row.acl_type === 'white' ? this.$t('network.text_482') : this.$t('network.text_483')} （`,
+                      h('side-page-trigger', {
+                        props: {
+                          permission: 'lb_loadbalanceracls_get',
+                          name: 'LbaclSidePage',
+                          id: row.acl_id,
+                          vm: this,
+                        },
+                      }, row.acl),
+                      '）',
+                    ]),
                   ]
                 }
                 return this.$t('network.text_480')
@@ -371,7 +397,7 @@ export default {
 </script>
 
 <style lang="less" scoped>
-::v-deep .detail-item {
+:deep(.detail-item) {
   .detail-item-title {
     width: 200px !important;
   }

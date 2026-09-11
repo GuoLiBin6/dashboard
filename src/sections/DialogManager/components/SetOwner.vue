@@ -1,14 +1,14 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{params.action || $t('common.text00104')}}</div>
-    <div slot="body">
+    <template #header>{{params.action || $t('common.text00104')}}</template>
+    <template #body>
       <dialog-selected-tips :count="params.data.length" :action="params.action || $t('common.text00104')" :name="params.tipName || ''" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-form
         :form="form.fc"
         v-bind="formItemLayout">
         <a-form-item :label="$t('common.text00105')" :extra="$t(`shareScopeDesc.${formScope}`)">
-          <a-radio-group v-model="formScope">
+          <a-radio-group v-model:value="formScope">
             <a-radio-button
               v-for="item in scopeOptions"
               :value="item.key"
@@ -35,11 +35,11 @@
             :select-props="{ placeholder: `${$t('common.text00106')}${$t('dictionary.project')}` }" />
         </a-form-item>
       </a-form>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

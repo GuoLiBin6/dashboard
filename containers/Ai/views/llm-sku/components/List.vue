@@ -212,7 +212,7 @@ export default {
     this.scheduleInitHeight()
     window.addEventListener('resize', this.initHeight)
   },
-  beforeDestroy () {
+  beforeUnmount () {
     this.$bus.$off('GlobalTopAlertUpdate', this.onGlobalTopAlertUpdate)
     window.removeEventListener('resize', this.initHeight)
     this.heightTimers.forEach(clearTimeout)

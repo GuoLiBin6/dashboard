@@ -38,7 +38,13 @@ export const operatingSystemColumn = () => {
       default: ({ row }, h) => {
         const data = row.labels ? Object.entries(row.labels).map(val => ({ key: val[0], label: val[1] })).filter(val => !val.key.toLowerCase().includes('id')) : []
         return [
-          <vxe-grid class="mb-2" data={ data } columns={ commonColumns } />,
+          h('table-lite-grid', {
+            class: 'mb-2',
+            props: {
+              data,
+              columns: commonColumns,
+            },
+          }),
         ]
       },
     },
@@ -53,7 +59,13 @@ export const annotateColumn = () => {
       default: ({ row }, h) => {
         const data = row.annotations ? Object.entries(row.annotations).map(val => ({ key: val[0], label: val[1] })) : []
         return [
-          <vxe-grid class="mb-2" data={ data } columns={ commonColumns } />,
+          h('table-lite-grid', {
+            class: 'mb-2',
+            props: {
+              data,
+              columns: commonColumns,
+            },
+          }),
         ]
       },
     },
@@ -68,7 +80,13 @@ export const tagColumn = () => {
       default: ({ row }, h) => {
         const data = row.labels ? Object.entries(row.labels).map(val => ({ key: val[0], label: val[1] })) : []
         return [
-          <vxe-grid class="mb-2" data={ data } columns={ commonColumns } />,
+          h('table-lite-grid', {
+            class: 'mb-2',
+            props: {
+              data,
+              columns: commonColumns,
+            },
+          }),
         ]
       },
     },
@@ -83,7 +101,13 @@ export const taintColumn = () => {
       default: ({ row }, h) => {
         const data = row.taints || []
         return [
-          <vxe-grid class="mb-2" data={ data } columns={ taintsColumns } />,
+          h('table-lite-grid', {
+            class: 'mb-2',
+            props: {
+              data,
+              columns: taintsColumns,
+            },
+          }),
         ]
       },
     },
@@ -99,12 +123,10 @@ export const roleRefColumn = (path = 'roleRef') => {
         const roleRef = _.get(row, path)
         if (!R.is(Object, roleRef)) return '-'
         const items = Object.keys(roleRef).map(key => {
-          return (
-            <div class="d-flex">
-              <div style={{ width: '80px' }}>{ key }：</div>
-              <div>{ roleRef[key] }</div>
-            </div>
-          )
+          return h('div', { class: 'd-flex' }, [
+            h('div', { style: { width: '80px' } }, key + '：'),
+            h('div', {}, roleRef[key]),
+          ])
         })
         return items
       },
@@ -121,7 +143,7 @@ export const subjectsColumn = (path = 'subjects') => {
         const subjects = _.get(row, path)
         if (!subjects) return '-'
         const columns = Object.keys(subjects[0]).filter(key => key !== '_XID').map(key => ({ field: key, title: key }))
-        return <vxe-grid data={ subjects } columns={ columns } size="mini" />
+        return h('table-lite-grid', { props: { data: subjects, columns, size: 'mini' } })
       },
     },
   }

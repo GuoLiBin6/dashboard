@@ -15,7 +15,6 @@
         :cluster="cluster"
         :support-all-namespace="true"
         :namespaceMap="namespaceMap"
-        size="small"
         style="width: 140px;" />
     </div>
   </div>

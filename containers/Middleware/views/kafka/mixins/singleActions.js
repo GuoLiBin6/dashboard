@@ -24,9 +24,8 @@ export default {
         label: i18n.t('middleware.more'),
         actions: (obj) => {
           return [
-            disableDeleteAction(Object.assign(this, {
+            disableDeleteAction(this, {
               permission: 'kafkas_update',
-            }), {
               name: this.$t('dictionary.kafka'),
             }),
             {

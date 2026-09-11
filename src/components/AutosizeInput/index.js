@@ -26,7 +26,26 @@ const generateId = () => {
 }
 
 const getListeners = context => {
-  return (context.$vnode ? context.$vnode.componentOptions.listeners : context.$listeners) || {}
+  // Vue 2 / @vue/compat：listeners 在 vnode 上
+  const vnode = context && context.$vnode
+  if (vnode && vnode.componentOptions && vnode.componentOptions.listeners) {
+    return vnode.componentOptions.listeners
+  }
+  if (context.$listeners && Object.keys(context.$listeners).length) {
+    return context.$listeners
+  }
+  // Vue 3：事件在 $attrs 里为 onXxx（可为函数或函数数组）
+  const attrs = (context && context.$attrs) || {}
+  const listeners = {}
+  Object.keys(attrs).forEach((key) => {
+    if (!key.startsWith('on') || key.length < 3) return
+    const handler = attrs[key]
+    if (handler == null) return
+    const raw = key.slice(2)
+    const event = raw.charAt(0).toLowerCase() + raw.slice(1)
+    listeners[event] = handler
+  })
+  return listeners
 }
 
 export default {

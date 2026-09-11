@@ -7,7 +7,7 @@
     statusModule="lb" />
 </template>
 
-<script>
+<script lang="jsx">
 import { getCopyWithContentTableColumn, getBrandTableColumn, getProjectDomainTableColumn } from '@/utils/common/tableColumn'
 import WindowsMixin from '@/mixins/windows'
 import { REGIONS, COUNTRYS } from '../constants'
@@ -45,11 +45,16 @@ export default {
               field: 'loadbalancer',
               title: this.$t('network.text_137'),
               hideField: true,
-              slotCallback: row => {
+              slotCallback: (row, h) => {
                 if (!row.loadbalancer) return '-'
-                return [
-                  <side-page-trigger permission='lb_loadbalancers_get' name='LbSidePage' id={row.loadbalancer_id} vm={this}>{ row.loadbalancer }</side-page-trigger>,
-                ]
+                return [h('side-page-trigger', {
+                  props: {
+                    permission: 'lb_loadbalancers_get',
+                    name: 'LbSidePage',
+                    id: row.loadbalancer_id,
+                    vm: this,
+                  },
+                }, row.loadbalancer)]
               },
             }),
             {
@@ -121,12 +126,16 @@ export default {
               field: 'backend_group',
               title: this.$t('network.default_backend_server_group'),
               hideField: true,
-              slotCallback: row => {
+              slotCallback: (row, h) => {
                 if (this.isRedirect) return '-'
                 if (!row.backend_group) return '-'
-                return [
-                  <side-page-trigger name='LoadbalancerbackendgroupSidePage' id={row.backend_group_id} vm={this}>{ row.backend_group }</side-page-trigger>,
-                ]
+                return [h('side-page-trigger', {
+                  props: {
+                    name: 'LoadbalancerbackendgroupSidePage',
+                    id: row.backend_group_id,
+                    vm: this,
+                  },
+                }, row.backend_group)]
               },
             }),
             // {
@@ -152,7 +161,15 @@ export default {
           formatter: ({ row }) => {
             if (!row.backend_groups) return '-'
             return row.backend_groups.map(item => {
-              return <side-page-trigger class="mr-2" name='LoadbalancerbackendgroupSidePage' id={item.id} vm={this}>{ item.name }</side-page-trigger>
+              const h = this.$createElement
+              return h('side-page-trigger', {
+                class: 'mr-2',
+                props: {
+                  name: 'LoadbalancerbackendgroupSidePage',
+                  id: item.id,
+                  vm: this,
+                },
+              }, item.name)
             })
           },
         })
@@ -188,7 +205,15 @@ export default {
                     default: ({ row }) => {
                       if (!row.backend_groups) return '-'
                       const list = row.backend_groups.map(item => {
-                        return <side-page-trigger class="mr-2" name='LoadbalancerbackendgroupSidePage' id={item.id} vm={this}>{ item.name }</side-page-trigger>
+                        const h = this.$createElement
+                        return h('side-page-trigger', {
+                          class: 'mr-2',
+                          props: {
+                            name: 'LoadbalancerbackendgroupSidePage',
+                            id: item.id,
+                            vm: this,
+                          },
+                        }, item.name)
                       })
                       return list
                     },
@@ -196,7 +221,13 @@ export default {
                 },
               ]
               return [
-                <vxe-grid class="mb-2" data={ data } columns={ columns } />,
+                h('table-lite-grid', {
+                  class: 'mb-2',
+                  props: {
+                    data: data,
+                    columns: columns,
+                  },
+                }),
               ]
             },
           },

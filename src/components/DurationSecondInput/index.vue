@@ -1,8 +1,10 @@
 <template>
   <a-input :value="num" type="number" @change="inputChange">
-    <a-select slot="addonAfter" :value="time" @change="change" style="min-width: 70px;">
-      <a-select-option v-for="item in durationOptions" :key="item.key" :value="item.key">{{ item.label }}</a-select-option>
-    </a-select>
+    <template #addonAfter>
+      <a-select :value="time" @change="change" style="min-width: 70px;">
+        <a-select-option v-for="item in durationOptions" :key="item.key" :value="item.key">{{ item.label }}</a-select-option>
+      </a-select>
+    </template>
   </a-input>
 </template>
 
