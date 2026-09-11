@@ -1885,7 +1885,7 @@ export default {
   min-width: 0;
   width: 100%;
 }
-.llm-sku-create-form ::v-deep .profilter-wrapper .ant-select,
+.llm-sku-create-form :deep .profilter-wrapper .ant-select,
 .llm-sku-create-form :deep(.profilter-wrapper .ant-input) {
   flex: 1;
   min-width: 0;
