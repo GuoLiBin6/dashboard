@@ -1293,7 +1293,7 @@ export default {
       pointer-events: none;
     }
 
-    ::v-deep svg {
+    :deep(svg) {
       display: block;
       width: 18px;
       height: 18px;
@@ -1332,7 +1332,7 @@ export default {
     pointer-events: none;
     overflow: visible;
 
-    ::v-deep svg {
+    :deep(svg) {
       display: block;
       width: 100%;
       height: 100%;
@@ -1396,7 +1396,7 @@ export default {
   }
 }
 
-::v-deep .echart-world-map__popover-input.ant-input-number {
+:deep(.echart-world-map__popover-input.ant-input-number) {
   width: 80px;
 }
 </style>
