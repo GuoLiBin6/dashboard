@@ -174,12 +174,12 @@ export default {
   padding: 8px 12px;
 }
 
-.provider-model-list ::v-deep .ant-checkbox-wrapper {
+.provider-model-list :deep(.ant-checkbox-wrapper) {
   display: block;
   margin-left: 0;
 }
 
-.provider-model-list ::v-deep .ant-checkbox-wrapper + .ant-checkbox-wrapper {
+.provider-model-list :deep(.ant-checkbox-wrapper + .ant-checkbox-wrapper) {
   margin-left: 0;
 }
 </style>
