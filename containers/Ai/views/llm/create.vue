@@ -203,10 +203,12 @@
               v-for="item in providerTabList"
               :key="item.key"
               :forceRender="true">
-              <span slot="tab" class="openclaw-tab-with-close">
-                {{ $t(item.labelKey) }}{{ item.required ? ' *' : '' }}
-                <a-icon type="close" class="openclaw-tab-close" @click.prevent.stop="closeProviderTab(item.key)" />
-              </span>
+              <template #tab>
+                <span class="openclaw-tab-with-close">
+                  {{ $t(item.labelKey) }}{{ item.required ? ' *' : '' }}
+                  <a-icon type="close" class="openclaw-tab-close" @click.prevent.stop="closeProviderTab(item.key)" />
+                </span>
+              </template>
 
               <a-form-item :label="$t('aice.openclaw.credential_mode.label')">
                 <a-radio-group
@@ -334,10 +336,12 @@
                 v-for="section in filteredChannelSections"
                 :key="section.sectionKey"
                 :forceRender="true">
-                <span slot="tab" class="openclaw-tab-with-close">
-                  {{ $t(section.sectionLabelKey) }}
-                  <a-icon type="close" class="openclaw-tab-close" @click.prevent.stop="closeChannelTab(section.sectionKey)" />
-                </span>
+                <template #tab>
+                  <span class="openclaw-tab-with-close">
+                    {{ $t(section.sectionLabelKey) }}
+                    <a-icon type="close" class="openclaw-tab-close" @click.prevent.stop="closeChannelTab(section.sectionKey)" />
+                  </span>
+                </template>
                 <a-form-item :label="$t('aice.openclaw.credential_mode.label')">
                   <a-radio-group
                     :value="openclawChannelCredentialMode[section.sectionKey] || 'new'"
@@ -1687,17 +1691,17 @@ export default {
 </script>
 
 <style scoped>
-.llm-type-picker ::v-deep .ant-radio-button-wrapper {
+.llm-type-picker :deep(.ant-radio-button-wrapper) {
   height: 36px;
   line-height: 34px;
   border-radius: 4px;
   margin-right: 8px;
   margin-bottom: 8px;
 }
-.llm-type-picker ::v-deep .ant-radio-button-wrapper:first-child {
+.llm-type-picker :deep(.ant-radio-button-wrapper:first-child) {
   border-radius: 4px;
 }
-.llm-type-picker ::v-deep .ant-radio-button-wrapper:last-child {
+.llm-type-picker :deep(.ant-radio-button-wrapper:last-child) {
   border-radius: 4px;
 }
 .openclaw-channel-tabs { margin-top: 8px; }
@@ -1707,6 +1711,6 @@ export default {
 .openclaw-tab-close { font-size: 12px; cursor: pointer; opacity: 0.6; }
 .openclaw-tab-close:hover { opacity: 1; }
 .openclaw-new-blob-section { margin-top: 8px; }
-.openclaw-new-blob-row ::v-deep .ant-form-item-label { padding-bottom: 4px; }
+.openclaw-new-blob-row :deep(.ant-form-item-label) { padding-bottom: 4px; }
 .openclaw-filter-empty { padding: 12px 0; font-size: 13px; }
 </style>

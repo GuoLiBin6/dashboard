@@ -1811,15 +1811,15 @@ export default {
   gap: 8px;
 }
 .openclaw-channel-tabs { margin-top: 8px; }
-.llm-type-picker ::v-deep .ant-radio-button-wrapper {
+.llm-type-picker :deep(.ant-radio-button-wrapper) {
   height: 36px;
   line-height: 34px;
   border-radius: 4px;
   margin-right: 8px;
   margin-bottom: 8px;
 }
-.llm-type-picker ::v-deep .ant-radio-button-wrapper:first-child { border-radius: 4px; }
-.llm-type-picker ::v-deep .ant-radio-button-wrapper:last-child { border-radius: 4px; }
+.llm-type-picker :deep(.ant-radio-button-wrapper:first-child) { border-radius: 4px; }
+.llm-type-picker :deep(.ant-radio-button-wrapper:last-child) { border-radius: 4px; }
 .openclaw-template-item { margin-bottom: 12px; }
 .openclaw-template-title { font-weight: 500; margin-bottom: 6px; }
 .openclaw-section-divider { margin-top: 20px; }
@@ -1827,7 +1827,7 @@ export default {
 .openclaw-credential-mode { margin-bottom: 0; }
 .openclaw-configured-providers { font-weight: 500; }
 .openclaw-new-blob-section-title { font-weight: 600; margin-bottom: 8px; font-size: 13px; }
-.openclaw-new-blob-row ::v-deep .ant-form-item-label { padding-bottom: 4px; }
+.openclaw-new-blob-row :deep(.ant-form-item-label) { padding-bottom: 4px; }
 .openclaw-filter-empty { padding: 12px 0; font-size: 13px; }
 .openclaw-tab-with-close { display: inline-flex; align-items: center; gap: 6px; }
 .openclaw-tab-close { font-size: 12px; cursor: pointer; opacity: 0.6; }
