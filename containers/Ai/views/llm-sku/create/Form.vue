@@ -715,7 +715,7 @@ export default {
         fc: this.$form.createForm(this, {
           onValuesChange: (props, values) => {
             Object.keys(values).forEach((key) => {
-              this.$set(this.form.fd, key, values[key])
+              this.form.fd[key] = values[key]
             })
           },
         }),
@@ -1314,7 +1314,7 @@ export default {
           llm_image_id: undefined,
           name: defaultNameFromSpec(this.catalogSpec, this.catalogSet, val),
         })
-        this.$set(this.form.fd, 'llm_image_id', undefined)
+        this.form.fd.llm_image_id = undefined
       }
     },
   },
@@ -1359,7 +1359,7 @@ export default {
         cpu: defaults.cpu,
         memory: defaults.memory / 1024,
       })
-      this.$set(this.form.fd, 'llm_type', llmType)
+      this.form.fd.llm_type = llmType
     },
     applyCatalogSpec () {
       if (!this.catalogSpec || !this.form?.fc) return
@@ -1755,7 +1755,7 @@ export default {
     onLlmTypeChange (e) {
       const val = e?.target?.value ?? e
       if (val) {
-        this.$set(this.form.fd, 'llm_type', val)
+        this.form.fd.llm_type = val
       }
       if (!this.isEditMode && this.form.fc && val) {
         const enable = !['vllm', 'sglang', 'ollama'].includes(val)
@@ -1767,7 +1767,7 @@ export default {
     },
     onLocalPathInputChange (e) {
       const path = String(e?.target?.value ?? e ?? '').trim()
-      this.$set(this.form.fd, 'local_path', path)
+      this.form.fd.local_path = path
       if (!this.localPathAdvancedHostPaths) return
       this.syncLocalPathHostPathRows(path)
     },
@@ -1833,7 +1833,7 @@ export default {
       if (idx >= 0) this.hostPathRows.splice(idx, 1)
     },
     addHostPathContainer (hp) {
-      if (!hp.containerRows) this.$set(hp, 'containerRows', [])
+      if (!hp.containerRows) hp.containerRows = []
       hp.containerRows.push({ key: uuid() })
     },
     delHostPathContainer (hp, c) {
