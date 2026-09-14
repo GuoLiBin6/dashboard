@@ -398,7 +398,7 @@ export default {
   font-size: 18px;
   font-weight: 600;
   line-height: 26px;
-  color: var(--oc-color-text-heading, rgba(0, 0, 0, 0.88));
+  color: var(--oc-color-text-heading, #303133);
 }
 
 .side-page-refresh {

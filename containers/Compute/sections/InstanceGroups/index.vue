@@ -1,7 +1,11 @@
 <template>
   <div>
     <a-form-item class="mb-0">
-      <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-decorator="decorators.groupsEnable" @change="change" />
+      <a-switch
+        :checked="showGroups"
+        :checkedChildren="$t('compute.text_115')"
+        :unCheckedChildren="$t('compute.text_116')"
+        @change="change" />
     </a-form-item>
     <a-form-item v-if="showGroups">
       <base-select
@@ -19,6 +23,7 @@ import * as R from 'ramda'
 
 export default {
   name: 'InstanceGroups',
+  inject: { form: { default: undefined } },
   props: {
     decorators: {
       type: Object,
@@ -37,7 +42,8 @@ export default {
   },
   methods: {
     change (val) {
-      this.showGroups = val
+      this.showGroups = !!val
+      this.form?.fc?.setFieldsValue({ [this.decorators.groupsEnable[0]]: !!val })
     },
   },
 }

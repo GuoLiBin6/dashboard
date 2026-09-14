@@ -131,7 +131,7 @@ export default {
       return resList
     },
     getI18NValue (key, originVal) {
-      if (this.$te(key)) {
+      if (typeof this.$te === 'function' && this.$te(key)) {
         return this.$t(key)
       }
       return originVal

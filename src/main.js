@@ -160,6 +160,20 @@ app.use(store)
 app.use(router)
 // 安装 vue-i18n 插件（legacy: true），让 $t/$te 等在组件里可用
 app.use(i18nPlugin)
+// legacy mixin 会在 beforeCreate 往实例挂 $t/$te；卸载时会 delete。
+// 异步回调 / 计算属性在边界时机可能读到空值，这里用 globalProperties 兜底。
+;[
+  ['$t', (...args) => i18n.t(...args)],
+  ['$te', (key, locale) => i18n.te(key, locale)],
+  ['$tm', (key) => i18n.tm(key)],
+  ['$d', (...args) => i18n.d(...args)],
+  ['$n', (...args) => i18n.n(...args)],
+  ['$rt', (...args) => i18n.rt(...args)],
+].forEach(([key, fn]) => {
+  if (typeof app.config.globalProperties[key] !== 'function') {
+    app.config.globalProperties[key] = fn
+  }
+})
 app.use(Antd)
 app.use(VxeUIBase, { i18n: vxeTableI18n })
 app.use(antdFormLegacyCompat)

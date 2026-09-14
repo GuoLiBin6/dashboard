@@ -32,7 +32,7 @@
   </div>
 </template>
 
-<script>
+<script lang="jsx">
 import WindowsMixin from '@/mixins/windows'
 import { isUsageVirtualKeyId } from '../utils/virtualKeyLink'
 

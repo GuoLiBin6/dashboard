@@ -723,7 +723,7 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 600;
-  color: rgba(0, 0, 0, 0.85);
+  color: var(--oc-color-text, #606266);
 }
 .page-list-lite__loadmore {
   position: relative;

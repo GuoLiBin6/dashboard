@@ -772,10 +772,7 @@ export default {
       return data.provider ? PROVIDER_MAP[data.provider].label : PROVIDER_MAP.OneCloud.label
     },
     getI18NValue (key, originVal) {
-      if (this.$te(key)) {
-        return this.$t(key)
-      }
-      return originVal
+      return i18n.getI18n(key, originVal)
     },
     getSkuParamsSnapshot (params = this.skuParams) {
       if (!params || R.isEmpty(params)) return ''

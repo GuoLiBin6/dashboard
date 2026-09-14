@@ -18,15 +18,15 @@
 @font-size-base: 14px;
 @box-shadow-base: 0 3px 6px -4px rgba(0,0,0,.12),0 6px 16px 0 rgba(0,0,0,.08),0 9px 28px 8px rgba(0,0,0,.05);
 
-// ---------- 文本色阶（全局统一，勿再散落 #000 / #0A1F44 等）----------
-// 标题：页面标题、表格主信息行（略深，看起来更扎实）
-@heading-color: rgba(0, 0, 0, 0.88);
-// 主文本：正文、表格单元格、表单项
-@text-color: rgba(0, 0, 0, 0.75);
+// ---------- 文本色阶（全局统一；对齐原 Element 系柔和灰，勿用纯黑）----------
+// 标题：略深于正文，但仍非纯黑
+@heading-color: #303133;
+// 主文本：正文、表格单元格、表单项（原整体观感 rgb(96, 98, 102)）
+@text-color: #606266;
 // 次级：辅助说明、统计条、副行文案
-@text-color-secondary: rgba(0, 0, 0, 0.55);
+@text-color-secondary: #909399;
 // 弱提示：placeholder / help
-@text-color-help: rgba(0, 0, 0, 0.35);
+@text-color-help: #c0c4cc;
 // 字重：正文略加重，标题与强调 600
 @font-weight-base: 400;
 @font-weight-strong: 600;
@@ -74,5 +74,12 @@
   --oc-font-weight-strong: @font-weight-strong;
   // 暗色侧栏 / 展开菜单：同主题色系但更亮，保证深底可读（勿过浅泛白）
   --oc-sidebar-accent-color: color-mix(in srgb, var(--ant-color-primary, @primary-color) 68%, #fff);
+  // antd / vxe 未注入 token 时的兜底，避免回落到纯黑
+  --ant-color-text: @text-color;
+  --ant-color-text-heading: @heading-color;
+  --ant-color-text-secondary: @text-color-secondary;
+  --ant-color-text-tertiary: @text-color-secondary;
+  --ant-color-text-quaternary: @text-color-help;
+  --vxe-ui-font-color: @text-color;
 }
 

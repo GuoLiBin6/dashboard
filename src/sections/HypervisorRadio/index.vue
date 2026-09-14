@@ -2,8 +2,8 @@
   <a-form-item class="mb-0">
     <span v-if="isEmpty">{{$t('compute.hypervisor_empty_tips')}}</span>
     <a-radio-group v-else v-decorator="decorator" @change="changeHandle">
-      <template v-for="item in hypervisorOpts">
-        <a-tooltip :title="disabledHypervisorMap[item.key]" :key="item.key">
+      <template v-for="item in hypervisorOpts" :key="item.key">
+        <a-tooltip :title="disabledHypervisorMap[item.key]">
           <a-radio-button
             :value="item.key"
             :disabled="disabledHypervisorMap[item.key]">

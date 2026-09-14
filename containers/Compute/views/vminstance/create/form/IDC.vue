@@ -67,12 +67,12 @@
           :form-draft-key="vmDraftFields.osArch" />
       </a-form-item>
       <a-form-item v-if="form.fd.hypervisor === 'kvm'">
-        <span slot="label">
+        <template #label>
           {{ $t('compute.text_1152') }}&nbsp;
           <a-tooltip :title="$t('compute.vgpu_check.tooltip')">
             <a-icon type="question-circle-o" />
           </a-tooltip>
-        </span>
+        </template>
         <pci :decorators="decorators.pci" :pciDevTypeOptions="pciDevTypeOptions" :form="form" :pci-options="pciOptions" :form-draft-key="vmDraftFields.pci" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_1058')" class="mb-0">
@@ -108,16 +108,18 @@
           @updateImageMsg="updateFi" />
       </a-form-item>
       <a-form-item v-if="isKvm && form.fd.imageType === 'iso'" class="mb-0">
-        <span slot="label">
+        <template #label>
           {{ $t('compute.kickstart') }}&nbsp;
           <a-tooltip :title="$t('compute.kickstart.tooltip')">
             <a-icon type="question-circle-o" />
           </a-tooltip>
-        </span>
+        </template>
         <kickstart :decorator="decorators.kickstart" :form="form" />
       </a-form-item>
       <a-form-item v-if="isShowAgent" :label="$t('compute.agent.label')" :extra="$t('compute.agent.extra')">
-        <a-checkbox v-decorator="decorators.deploy_telegraf">{{ $t('compute.agent.install.plugin') }}</a-checkbox>
+        <a-checkbox
+          :checked="!!form.fd.deploy_telegraf"
+          @change="e => form.fc.setFieldsValue({ deploy_telegraf: e.target.checked })">{{ $t('compute.agent.install.plugin') }}</a-checkbox>
       </a-form-item>
       <a-form-item :label="$t('compute.text_49')" class="mb-0">
         <system-disk
@@ -216,12 +218,12 @@
           v-if="!isServertemplate"
           :validate-status="hostNameValidate.validateStatus"
           :help="hostNameValidate.errorMsg">
-          <span slot="label">
+          <template #label>
             {{ $t('common_388') }}&nbsp;
             <a-tooltip :title="hostNameTips">
               <a-icon type="question-circle-o" />
             </a-tooltip>
-          </span>
+          </template>
           <host-name v-decorator="decorators.hostName" :isWindows="isWindows" @change="handleHostNameChange" />
         </a-form-item>
         <a-form-item :label="$t('compute.text_105')" v-if="isKvm">
@@ -301,9 +303,10 @@
         </a-form-item>
         <a-form-item v-if="isKvm" :label="$t('compute.text_494')" :extra="$t('compute.daemon.tooltip')">
           <a-switch
-            v-decorator="decorators.is_daemon"
+            :checked="!!form.fd.is_daemon"
             :checkedChildren="$t('compute.text_115')"
-            :unCheckedChildren="$t('compute.text_116')" />
+            :unCheckedChildren="$t('compute.text_116')"
+            @change="val => form.fc.setFieldsValue({ is_daemon: val })" />
         </a-form-item>
         <a-form-item v-show="!isServertemplate" v-if="isKvm" :label="$t('dictionary.instancegroup')" :extra="$t('compute.text_1158')">
           <instance-groups

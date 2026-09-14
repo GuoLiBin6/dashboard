@@ -1104,35 +1104,35 @@
     cssnano-preset-default "^4.0.0"
     postcss "^7.0.0"
 
-"@intlify/core-base@11.3.2":
-  version "11.3.2"
-  resolved "https://registry.npmmirror.com/@intlify/core-base/-/core-base-11.3.2.tgz"
-  integrity sha512-cgsUaV/dyD6aS49UPgerIblrWeXAZHNaDWqm4LujOGC7IafSyhghGXEiSVvuDYaDPiQTP+tSFSTM1HIu7Yp1nA==
+"@intlify/core-base@11.4.10":
+  version "11.4.10"
+  resolved "https://registry.npmmirror.com/@intlify/core-base/-/core-base-11.4.10.tgz#22bc22db585363720c31a46baf430aaabb809782"
+  integrity sha512-+yJ74JRWVJokdgG9zYNMyTSzeNV3O9T4vVxk8PvLFHmI+R/BYA//cITh7vhRK37hWLZ4/kTcKcUz1dlWOpypIg==
   dependencies:
-    "@intlify/devtools-types" "11.3.2"
-    "@intlify/message-compiler" "11.3.2"
-    "@intlify/shared" "11.3.2"
+    "@intlify/devtools-types" "11.4.10"
+    "@intlify/message-compiler" "11.4.10"
+    "@intlify/shared" "11.4.10"
 
-"@intlify/devtools-types@11.3.2":
-  version "11.3.2"
-  resolved "https://registry.npmmirror.com/@intlify/devtools-types/-/devtools-types-11.3.2.tgz"
-  integrity sha512-q96G2ZZw0FNoXzejbjIf9dbfgz1xyYBZu6ZT4b5TE/55j8d1O9X5jv0k+U+L3fVe7uebPcqRQFD0ffm30i5mJA==
+"@intlify/devtools-types@11.4.10":
+  version "11.4.10"
+  resolved "https://registry.npmmirror.com/@intlify/devtools-types/-/devtools-types-11.4.10.tgz#987285b6fc1b31f8e4011c069bcfdf5610fcbaab"
+  integrity sha512-xZxzZsAuu6/0zoLRVQWdpXWe5Kjl0LnWpjlQA3r9u9FbLYMhapqt7IwkgQyn0Tm2GUNAqhj9eZiUmYOrB024BQ==
   dependencies:
-    "@intlify/core-base" "11.3.2"
-    "@intlify/shared" "11.3.2"
+    "@intlify/core-base" "11.4.10"
+    "@intlify/shared" "11.4.10"
 
-"@intlify/message-compiler@11.3.2":
-  version "11.3.2"
-  resolved "https://registry.npmmirror.com/@intlify/message-compiler/-/message-compiler-11.3.2.tgz"
-  integrity sha512-d/awyHUkNSaGPxBxT/qlUpfRizxHX9dt55CnW03xx5p1KmMyfYHKupCnvzINX+Na8JR8LAR7y32lPKjoeQGmzA==
+"@intlify/message-compiler@11.4.10":
+  version "11.4.10"
+  resolved "https://registry.npmmirror.com/@intlify/message-compiler/-/message-compiler-11.4.10.tgz#be3dbcadafba9f310aab286f93a1ae15c5409f3f"
+  integrity sha512-oUB/scz2EJENXDiUJ7JjZffOrH8UIZ1BuZeHvonbi5fWLavLt04aivuk2OIByOZA0tsci1bkeeQRmwhb5M8Imw==
   dependencies:
-    "@intlify/shared" "11.3.2"
+    "@intlify/shared" "11.4.10"
     source-map-js "^1.0.2"
 
-"@intlify/shared@11.3.2":
-  version "11.3.2"
-  resolved "https://registry.npmmirror.com/@intlify/shared/-/shared-11.3.2.tgz"
-  integrity sha512-x66fjdH6i+lNYPae5URSQGTjBL68Av6hi09jvC5Ci96iTkwfqrPhCj46aylQZmgMaG89rOZCIKqS7ApC8ZDVjg==
+"@intlify/shared@11.4.10":
+  version "11.4.10"
+  resolved "https://registry.npmmirror.com/@intlify/shared/-/shared-11.4.10.tgz#2ab2d85709e66259462ca2efd7ee8b2ad45fc0a1"
+  integrity sha512-FeImVdPeoSHTm3NBFFZHv0eRP9gQ3F4lj2puDBX5Kw7iiM1uJW6JTf39ian0K/17pbXCI3ef5i9RVsRrALqI6Q==
 
 "@jest/console@^24.7.1", "@jest/console@^24.9.0":
   version "24.9.0"
@@ -12946,14 +12946,14 @@ vue-hot-reload-api@^2.3.0:
   resolved "https://registry.npmjs.org/vue-hot-reload-api/-/vue-hot-reload-api-2.3.4.tgz"
   integrity sha512-BXq3jwIagosjgNVae6tkHzzIk6a8MHFtzAdwhnV5VlvPTFxDCvIttgSiHWjdGoTJvXtmRu5HacExfdarRcFhog==
 
-vue-i18n@^11.0.0:
-  version "11.3.2"
-  resolved "https://registry.npmmirror.com/vue-i18n/-/vue-i18n-11.3.2.tgz"
-  integrity sha512-gmFrvM+iuf2AH4ygligw/pC7PRJ63AdRNE68E0GPlQ83Mzfyck6g6cRQC3KzkYXr+ZidR91wq+5YBmAMpkgE1A==
+vue-i18n@11.4.10:
+  version "11.4.10"
+  resolved "https://registry.npmmirror.com/vue-i18n/-/vue-i18n-11.4.10.tgz#8c05cd32c72968c1d1fd72ef146fdca001e1e6f7"
+  integrity sha512-Lp+BjOxqzOY87DS6Z8KrQrpiTr9IN/Lt4kZEilwyXG2Wrx+AcU6IVsAW92HNXtVcn1HFFPV6ty41p9e/qDpyvg==
   dependencies:
-    "@intlify/core-base" "11.3.2"
-    "@intlify/devtools-types" "11.3.2"
-    "@intlify/shared" "11.3.2"
+    "@intlify/core-base" "11.4.10"
+    "@intlify/devtools-types" "11.4.10"
+    "@intlify/shared" "11.4.10"
     "@vue/devtools-api" "^6.5.0"
 
 vue-jest@^3.0.5:

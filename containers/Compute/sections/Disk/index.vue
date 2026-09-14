@@ -52,8 +52,8 @@
         <storage style="min-width: 480px; max-width: 500px;" :diskKey="diskKey" :decorators="decorator" :storageParams="storageParams" v-if="showStorage" :form="form" :storageHostParams="storageHostParams" @storageHostChange="(val) => $emit('storageHostChange', val)" />
         <a-button v-if="!disabled" type="link" @click="storageShowClick">{{ showStorage ? $t('compute.text_135') : $t('compute.text_1350') }}</a-button>
       </template>
-      <!-- 关机重置 -->
-      <a-form-item v-if="isAutoResetShow">
+      <!-- 关机重置：checkbox+文案作为整体，空间不足时整块换行，禁止字内折行 -->
+      <a-form-item v-if="isAutoResetShow" class="disk-auto-reset-item mx-1">
         <a-checkbox v-decorator="decorator.auto_reset">{{ $t('compute.shutdown_auto_reset') }}</a-checkbox>
       </a-form-item>
       <template v-if="isVMware && imageType !== 'backup' && imageType !== 'snapshot'">
@@ -560,6 +560,7 @@ export default {
 .disk-wrapper {
   // 顶对齐：校验错误撑高某一项时，其它控件 / 操作按钮不跟着垂直居中错位
   align-items: flex-start;
+  flex-wrap: wrap;
   // 行内 form-item 去底边距；行间距改由 wrapper / 外层 row 承担
   margin-bottom: 24px;
   :deep(.ant-form-item) {
@@ -571,6 +572,23 @@ export default {
     height: 32px;
     display: inline-flex;
     align-items: center;
+  }
+  // 关机自动重置：整块不收缩，文案不拆字；不够宽时随 flex-wrap 整组换行
+  .disk-auto-reset-item {
+    flex: 0 0 auto;
+    max-width: none;
+    :deep(.ant-form-item-row),
+    :deep(.ant-form-item-control),
+    :deep(.ant-form-item-control-input),
+    :deep(.ant-form-item-control-input-content) {
+      flex: 0 0 auto !important;
+      width: auto !important;
+      max-width: none !important;
+      min-width: auto !important;
+    }
+    :deep(.ant-checkbox-wrapper) {
+      white-space: nowrap;
+    }
   }
   .disk-type-tag.ant-tag {
     display: inline-flex;

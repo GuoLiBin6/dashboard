@@ -192,7 +192,7 @@ export default {
 </script>
 
 <style lang="less" scoped>
-@import "~@/styles/less/theme";
+@import "@/styles/less/theme";
 
 .wrap {
   width: 710px;

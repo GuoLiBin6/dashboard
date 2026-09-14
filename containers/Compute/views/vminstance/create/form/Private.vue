@@ -68,12 +68,12 @@
         <a-input-number v-decorator="decorators.count" @blur="countBlur" :min="1" :max="100" />
       </a-form-item>
       <a-form-item v-if="form.fd.hypervisor === 'zettakit' || form.fd.hypervisor === 'kvm'">
-        <span slot="label">
+        <template #label>
           {{ $t('compute.text_1152') }}&nbsp;
           <a-tooltip :title="$t('compute.vgpu_check.tooltip')">
             <a-icon type="question-circle-o" />
           </a-tooltip>
-        </span>
+        </template>
         <pci :decorators="decorators.pci" :pciDevTypeOptions="pciDevTypeOptions" :form="form" :pci-options="pciOptions" :form-draft-key="vmDraftFields.pci" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_1058')" class="mb-0">
@@ -160,12 +160,12 @@
       </a-form-item>
       <advance-config-block ref="advanceConfigBlock" collapsible>
         <a-form-item v-if="!isServertemplate">
-          <span slot="label">
+          <template #label>
             {{ $t('common_388') }}&nbsp;
             <a-tooltip :title="hostNameTips">
               <a-icon type="question-circle-o" />
             </a-tooltip>
-          </span>
+          </template>
           <host-name v-decorator="decorators.hostName" :isWindows="isWindows" />
         </a-form-item>
         <a-form-item :label="$t('compute.text_105')" v-if="showSecgroup">

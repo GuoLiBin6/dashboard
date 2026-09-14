@@ -1,7 +1,12 @@
 <template>
   <div>
     <a-form-item class="mb-0">
-      <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-decorator="decorator.backupEnable" @change="change" :disabled="switchDisabled" />
+      <a-switch
+        :checked="backupEnable"
+        :checkedChildren="$t('compute.text_115')"
+        :unCheckedChildren="$t('compute.text_116')"
+        :disabled="switchDisabled"
+        @change="change" />
     </a-form-item>
     <a-form-item class="mt-2" v-if="backupEnable && !isProjectMode">
       <base-select
@@ -147,6 +152,7 @@ export default {
     },
     change (val) {
       this.backupEnable = val
+      this.applyFormFieldValues({ [this.decorator.backupEnable[0]]: val })
       if (!val) {
         const backupField = this.decorator.backup[0]
         this.applyFormFieldValues({ [backupField]: undefined })

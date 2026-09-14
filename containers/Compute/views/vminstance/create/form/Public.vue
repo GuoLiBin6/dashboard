@@ -54,16 +54,27 @@
         <a-input-number v-decorator="decorators.count" @blur="countBlur" :min="1" :max="100" />
       </a-form-item>
       <a-form-item :label="$t('regionMap.enable_world_map')">
-        <a-switch v-decorator="decorators.enableWorldMap" @change="onWorldMapModeChange" />
+        <a-switch
+          :checked="worldMapEnabled"
+          :checkedChildren="$t('compute.text_115')"
+          :unCheckedChildren="$t('compute.text_116')"
+          @change="onEnableWorldMapChange" />
       </a-form-item>
-      <a-form-item v-if="form.fd.enableWorldMap" :label="$t('compute.region_map')">
-        <region-map
-          :region-filter-params="regionMapParams"
-          filter-brand-resource="compute_engine"
-          :region-mapper="filterMapCloudregionList"
-          split-key="provider"
-          @select="onRegionSelect"
-          @params-change="onRegionMapParamsChange" />
+      <a-form-item
+        v-if="worldMapEnabled || worldMapMounted"
+        v-show="worldMapEnabled"
+        :label="$t('compute.region_map')">
+        <div class="region-map-shell">
+          <a-spin v-if="!worldMapMounted" class="region-map-shell__spin" />
+          <region-map
+            v-if="worldMapMounted"
+            :region-filter-params="regionMapParams"
+            filter-brand-resource="compute_engine"
+            :region-mapper="filterMapCloudregionList"
+            split-key="provider"
+            @select="onRegionSelect"
+            @params-change="onRegionMapParamsChange" />
+        </div>
       </a-form-item>
       <area-selects
         class="mb-0"
@@ -207,12 +218,12 @@
           :hasPublicIp="hypervisor === 'qcloud' || hypervisor === 'aliyun'"
           :formItemLayout="formItemLayout" :form-draft-key="vmDraftFields.eip" />
         <a-form-item v-if="!isServertemplate">
-          <span slot="label">
+          <template #label>
             {{ $t('common_388') }}&nbsp;
             <a-tooltip :title="hostNameTips">
               <a-icon type="question-circle-o" />
             </a-tooltip>
-          </span>
+          </template>
           <host-name v-decorator="decorators.hostName" :isWindows="isWindows" />
         </a-form-item>
         <a-form-item :label="$t('compute.text_105')">
@@ -293,6 +304,10 @@ export default {
   data () {
     return {
       cloudaccountId: '',
+      /** 本地驱动开关，避免同帧 setFieldsValue 卡死滑动动画 */
+      worldMapEnabled: false,
+      /** 地图延后挂载 */
+      worldMapMounted: false,
     }
   },
   computed: {
@@ -623,6 +638,23 @@ export default {
     },
   },
   watch: {
+    'form.fd.enableWorldMap': {
+      immediate: true,
+      handler (val) {
+        // 用户点击延后写 fd 期间，不要反向覆盖本地开关态
+        if (this._worldMapDeferring) return
+        const on = !!val
+        this.worldMapEnabled = on
+        // 关闭只隐藏，不卸载地图（再次打开复用实例）
+        if (on && !this.worldMapMounted) {
+          this.$nextTick(() => {
+            if (this.worldMapEnabled && !!this.form?.fd?.enableWorldMap) {
+              this.worldMapMounted = true
+            }
+          })
+        }
+      },
+    },
     'form.fd.billType' (val, oldVal) {
       // form.fd 兄弟字段 $set 会误触发本 watch，同值直接跳过
       if (R.equals(val, oldVal)) return
@@ -660,7 +692,31 @@ export default {
     this.baywatch(['form.fd.sku', 'form.fd.zone'], this.withFetchCapbilites)
     this.baywatch(['form.fd.sku'], this.onResolvedSkuChange)
   },
+  beforeUnmount () {
+    if (this._worldMapDeferTimer) {
+      clearTimeout(this._worldMapDeferTimer)
+      this._worldMapDeferTimer = null
+    }
+  },
   methods: {
+    onEnableWorldMapChange (val) {
+      const on = !!val
+      // 开关 + 壳子立刻响应；首次冷启动延后挂地图，之后只显隐复用
+      this.worldMapEnabled = on
+
+      if (this._worldMapDeferTimer) clearTimeout(this._worldMapDeferTimer)
+      this._worldMapDeferring = true
+      const needColdStart = on && !this.worldMapMounted
+      this._worldMapDeferTimer = setTimeout(() => {
+        this._worldMapDeferTimer = null
+        this.form.fc.setFieldsValue({ enableWorldMap: on })
+        this.onWorldMapModeChange(on)
+        this._worldMapDeferring = false
+        if (on && this.worldMapEnabled) {
+          this.worldMapMounted = true
+        }
+      }, needColdStart ? 200 : 0)
+    },
     onResolvedSkuChange (val, oldVal) {
       if (R.equals(val, oldVal)) return
       if (this.hasMultipleAreaSelection && R.is(Object, val)) {
@@ -1057,3 +1113,20 @@ export default {
   },
 }
 </script>
+
+<style lang="less" scoped>
+.region-map-shell {
+  position: relative;
+  height: 300px;
+  background: #000839;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.region-map-shell__spin {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+</style>

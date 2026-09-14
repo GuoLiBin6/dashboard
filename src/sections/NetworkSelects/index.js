@@ -312,6 +312,7 @@ export default {
     },
   },
   render () {
+    const h = this.$createElement
     const { getFieldDecorator } = this.FC
     const RenderCols = this.types.map(name => {
       const sn = this.firstName(name)

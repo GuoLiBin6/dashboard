@@ -3,6 +3,9 @@
  * 覆盖 antd labelCol span 百分比。
  * 退出：class="oc-layout-form-off"，或 layout="inline" / "vertical"。
  * 也可手动包 <div class="oc-layout-form">（多个 form 仍各自计算）。
+ *
+ * 稳定宽度：同一 form 根节点只增不减。v-if 切换（如虚拟机平台 ↔ 远程终端协议）
+ * 时，隐藏项离开 DOM 前会先记入历史 max，避免整表 label 列抖动。
  */
 const ROOT_CLASS = 'oc-layout-form'
 const ROOT_SELECTOR = '.oc-layout-form:not(.oc-layout-form-off), .ant-form.ant-form-horizontal:not(.oc-layout-form-off)'
@@ -13,6 +16,8 @@ const DEFAULT_GAP = 50
 let started = false
 let timer = 0
 let measureHost = null
+/** @type {WeakMap<Element, number>} 每个表单根节点历史最大 label 文字宽（不含 gap） */
+const maxLabelByRoot = new WeakMap()
 
 function isElem (node) {
   return node && node.nodeType === 1
@@ -34,6 +39,12 @@ function getRoots () {
   return roots
 }
 
+function findRootFor (el) {
+  if (!isElem(el)) return null
+  const hit = el.closest(ROOT_SELECTOR)
+  return hit && isLayoutRoot(hit) ? hit : null
+}
+
 function gapOf (root) {
   const raw = getComputedStyle(root).getPropertyValue(GAP_VAR)
   const n = parseFloat(raw)
@@ -45,6 +56,7 @@ function isNestedFormItem (item) {
 }
 
 function collectLabels (root) {
+  // querySelectorAll 含 display:none / v-show=false，不含已 v-if 销毁的节点
   const nodes = root.querySelectorAll('.ant-form-item-label > label')
   const labels = []
   const rootIsForm = root.classList.contains('ant-form')
@@ -64,6 +76,25 @@ function collectLabels (root) {
   return labels
 }
 
+function collectLabelsFromNode (node) {
+  if (!isElem(node)) return []
+  const labels = []
+  if (node.matches && node.matches('.ant-form-item-label > label')) {
+    labels.push(node)
+  } else if (node.classList && node.classList.contains('ant-form-item-label')) {
+    const label = node.querySelector(':scope > label')
+    if (label) labels.push(label)
+  } else {
+    const nodes = node.querySelectorAll ? node.querySelectorAll('.ant-form-item-label > label') : []
+    for (let i = 0; i < nodes.length; i++) labels.push(nodes[i])
+  }
+  return labels.filter((label) => {
+    const item = label.closest('.ant-form-item')
+    if (!item || isNestedFormItem(item)) return false
+    return !!(label.textContent || '').trim()
+  })
+}
+
 function getMeasureHost () {
   if (measureHost && measureHost.isConnected) return measureHost
   measureHost = document.createElement('div')
@@ -74,10 +105,17 @@ function getMeasureHost () {
   return measureHost
 }
 
-/** 一律离屏克隆，折叠未展开的 label 也能量到真实文字宽 */
-function measureMax (labels) {
+/** 一律离屏克隆：display:none / 折叠未展开的 label 也能量到真实文字宽 */
+function measureMax (labels, fontSource) {
   if (!labels.length) return 0
   const host = getMeasureHost()
+  if (fontSource && isElem(fontSource)) {
+    const cs = getComputedStyle(fontSource)
+    host.style.fontSize = cs.fontSize
+    host.style.fontFamily = cs.fontFamily
+    host.style.fontWeight = cs.fontWeight
+    host.style.letterSpacing = cs.letterSpacing
+  }
   const clones = []
   for (let i = 0; i < labels.length; i++) {
     const col = document.createElement('div')
@@ -96,10 +134,15 @@ function measureMax (labels) {
   return max
 }
 
-function syncRoot (root) {
-  const max = measureMax(collectLabels(root))
-  if (max <= 0) return
-  const next = `${max + gapOf(root)}px`
+function rememberMax (root, width) {
+  if (!root || !(width > 0)) return
+  const prev = maxLabelByRoot.get(root) || 0
+  if (width > prev) maxLabelByRoot.set(root, width)
+}
+
+function applyWidth (root, labelWidth) {
+  if (!(labelWidth > 0)) return
+  const next = `${labelWidth + gapOf(root)}px`
   if (root.style.getPropertyValue(WIDTH_VAR) !== next) {
     root.style.setProperty(WIDTH_VAR, next)
   }
@@ -109,6 +152,14 @@ function syncRoot (root) {
       collapses[i].style.setProperty(WIDTH_VAR, next)
     }
   }
+}
+
+function syncRoot (root) {
+  if (!root.isConnected) return
+  const labels = collectLabels(root)
+  const measured = measureMax(labels, labels[0] || root)
+  rememberMax(root, measured)
+  applyWidth(root, maxLabelByRoot.get(root) || measured)
 }
 
 function syncAll () {
@@ -153,6 +204,25 @@ function isCollapseToggle (el) {
     el.classList.contains('ant-collapse-content')
 }
 
+/** v-if 卸载前，removedNodes 仍可量宽，写入历史 max，避免随后 sync 变窄 */
+function rememberRemovedLabels (mutations) {
+  for (let i = 0; i < mutations.length; i++) {
+    const m = mutations[i]
+    if (m.type !== 'childList' || !m.removedNodes.length) continue
+    const root = findRootFor(m.target) || (isLayoutRoot(m.target) ? m.target : null)
+    if (!root) continue
+    const labels = []
+    for (let j = 0; j < m.removedNodes.length; j++) {
+      const node = m.removedNodes[j]
+      if (!hasItemLabel(node)) continue
+      const found = collectLabelsFromNode(node)
+      for (let k = 0; k < found.length; k++) labels.push(found[k])
+    }
+    if (!labels.length) continue
+    rememberMax(root, measureMax(labels, root))
+  }
+}
+
 function mutationRelevant (mutations) {
   const hasRoot = document.querySelector(ROOT_SELECTOR)
   let addedRoot = false
@@ -175,6 +245,10 @@ function mutationRelevant (mutations) {
     if (!hasRoot) continue
     if (m.type === 'attributes') {
       if (isCollapseToggle(m.target)) innerChange = true
+      // v-show 改 style.display；class 切换也可能影响可见性
+      else if (m.attributeName === 'style' || m.attributeName === 'class') {
+        if (m.target.closest && m.target.closest('.ant-form-item')) innerChange = true
+      }
       continue
     }
     if (m.type === 'characterData') {
@@ -192,6 +266,7 @@ function start () {
   started = true
   syncAll()
   const mo = new MutationObserver((mutations) => {
+    rememberRemovedLabels(mutations)
     const kind = mutationRelevant(mutations)
     if (kind === 'immediate') schedule(true)
     else if (kind) schedule()
@@ -201,7 +276,7 @@ function start () {
     subtree: true,
     characterData: true,
     attributes: true,
-    attributeFilter: ['class'],
+    attributeFilter: ['class', 'style'],
   })
 }
 

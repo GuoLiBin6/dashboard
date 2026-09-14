@@ -2,7 +2,7 @@
   <detail :onManager="onManager" :data="data" :base-info="baseInfo" resource="ai_keys" />
 </template>
 
-<script>
+<script lang="jsx">
 import AiproxyProviderLinkDetailMixin from '@Ai/mixins/aiproxyProviderLinkDetailMixin'
 import { getAiProviderDetailField } from '@Ai/utils/aiproxyLlmLinkColumns'
 import { getEnabledTableColumn, getProjectTableColumn, getTimeTableColumn } from '@/utils/common/tableColumn'

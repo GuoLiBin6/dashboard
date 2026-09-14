@@ -1108,7 +1108,7 @@ export default {
   padding: 0;
   font-weight: 600;
   font-size: 18px;
-  color: var(--oc-color-text-heading, rgba(0, 0, 0, 0.85));
+  color: var(--oc-color-text-heading, #303133);
 }
 .products-label {
   max-width: 150px;

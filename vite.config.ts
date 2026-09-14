@@ -458,6 +458,7 @@ export default function useMergeProps (props) {
   ],
   optimizeDeps: {
     entries: [resolve('./index.html')],
+    // 懒路由首次 import 会触发 rediscover → full page reload；把高频包预声明，启动时一次打完
     include: [
       'objectpath',
       // dayjs 插件为 UMD，无 ESM default 导出，预打包后由 esbuild 做 CJS 互操作
@@ -472,6 +473,37 @@ export default function useMergeProps (props) {
       // 预打包 icons 相关，避免深层 import（无 .js 扩展）在某些 compat/legacy 路径下出现 undefined
       '@ant-design/icons-vue',
       '@ant-design/icons-svg',
+      // 开发期曾触发 “optimized dependencies changed. reloading” 的懒依赖
+      'xlsx',
+      'ipaddr.js',
+      'uplot',
+      'resize-detector',
+      'xterm',
+      'dompurify',
+      'marked',
+      'codemirror',
+      'codemirror/addon/edit/matchbrackets',
+      'codemirror/mode/yaml/yaml.js',
+      'codemirror/mode/javascript/javascript.js',
+      'codemirror/mode/htmlmixed/htmlmixed.js',
+      'codemirror/mode/xml/xml.js',
+      'codemirror/mode/shell/shell',
+      'codemirror/addon/scroll/annotatescrollbar.js',
+      'codemirror/addon/search/matchesonscrollbar.js',
+      'codemirror/addon/search/match-highlighter.js',
+      'codemirror/addon/search/jump-to-line.js',
+      'codemirror/addon/dialog/dialog.js',
+      'codemirror/addon/search/searchcursor.js',
+      'codemirror/addon/search/search.js',
+      'echarts/lib/echarts',
+      'echarts/lib/chart/heatmap',
+      'echarts/lib/chart/scatter',
+      'echarts/lib/component/grid',
+      'echarts/lib/component/title',
+      'echarts/lib/component/tooltip',
+      'echarts/lib/component/geo',
+      'echarts/lib/component/toolbox',
+      'echarts/lib/component/legend',
     ],
     exclude: [
       '@interactjs/core',
@@ -655,6 +687,10 @@ export default function useMergeProps (props) {
   },
   define: {
     'process.env': process.env,
+    // vue-i18n esm-bundler 特性开关：保持 legacy API（$t/$te）可用
+    __VUE_I18N_FULL_INSTALL__: true,
+    __VUE_I18N_LEGACY_API__: true,
+    __INTLIFY_PROD_DEVTOOLS__: false,
   },
   }
 })

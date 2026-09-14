@@ -296,6 +296,7 @@ h1, h2, h3, h4, h5, h6 {
 
 #app, .app-container {
   height: 100%;
+  color: @text-color;
 }
 
 // Modal：header / footer 分割线与内容同宽，并保留线上下间距
@@ -725,6 +726,28 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 8px;
 }
 
+/* 用户面板：贴 navbar 外框底边与右缘（覆盖 antd 相对触发器的定位） */
+.navbar-wrap .navbar-user-dropdown.ant-dropdown {
+  position: absolute !important;
+  top: 100% !important;
+  right: 0 !important;
+  left: auto !important;
+  bottom: auto !important;
+  margin: 0 !important;
+  transform: none !important;
+  overflow: visible;
+}
+
+/* CE a-menu 用户面板阴影；EE 自定义面板见 .account-info-wrapper */
+.navbar-wrap .navbar-user-dropdown .ant-dropdown-menu.navbar-user-menu,
+.navbar-wrap .navbar-user-dropdown .navbar-user-menu {
+  box-shadow:
+    0 6px 16px rgba(0, 0, 0, 0.08),
+    0 3px 6px -4px rgba(0, 0, 0, 0.12),
+    0 9px 28px 8px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+}
+
 // 多色图标：取消 currentColor，保留 path 原始 fill（如 k8s 蓝底白图案）
 .oc-icon.oc-icon--colorful {
   fill: none;
@@ -865,7 +888,7 @@ h1, h2, h3, h4, h5, h6 {
     table-layout: fixed;
     border-collapse: collapse;
     font-size: 12px;
-    color: rgba(0, 0, 0, 0.85);
+    color: var(--oc-color-text, #606266);
     th,
     td {
       padding: 8px 12px;

@@ -100,8 +100,30 @@ function ensureAlertInfoThemeStyle () {
 }
 ensureAlertInfoThemeStyle()
 
-/**
- * a-form-model-item 旧写法用 prop，antdv4 Form.Item 已改为 name 并会 warning。
+/** 表单 extra/explain 字重与正文一致，避免 cssinjs 后注入导致看起来偏粗 */
+function ensureFormExtraFontStyle () {
+  if (typeof document === 'undefined') return
+  const id = 'oc-form-extra-font'
+  let el = document.getElementById(id)
+  if (!el) {
+    el = document.createElement('style')
+    el.id = id
+    document.head.appendChild(el)
+  }
+  el.textContent = `
+.ant-form-item .ant-form-item-extra,
+.ant-form-item .ant-form-item-explain,
+div.ant-form-item-extra,
+div.ant-form-item-explain {
+  font-weight: 400 !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+`
+}
+ensureFormExtraFontStyle()
+
+/** a-form-model-item 旧写法用 prop，antdv4 Form.Item 已改为 name 并会 warning。
  * 显式声明 prop/name，映射后只把 name 传给 Form.Item，避免 prop 落入 attrs 触发弃用 warning/异常。
  */
 function createFormModelItem (RawFormItem) {
@@ -348,6 +370,7 @@ export default {
     app.component('AButton', createLegacyButton(Button))
     // a-alert info 图标跟随主题色
     ensureAlertInfoThemeStyle()
+    ensureFormExtraFontStyle()
     app.component('AAlert', createThemedAlert(Alert))
     // Input：兼容 v-decorator initialValue，避免 focus 后清空
     app.component('AInput', createLegacyInput(Input))

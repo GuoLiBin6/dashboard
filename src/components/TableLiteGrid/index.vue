@@ -1256,7 +1256,7 @@ export default {
 .table-lite-grid__th-title {
   overflow: hidden;
   text-overflow: ellipsis;
-  color: rgba(0, 0, 0, 0.85);
+  color: var(--oc-color-text, #606266);
 }
 .table-lite-grid__th.is-sortable {
   cursor: pointer;
