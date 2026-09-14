@@ -3,10 +3,15 @@ import * as R from 'ramda'
 import Vue from 'vue'
 import ERROR_INFO, { DETAIL_ERRMSG } from '@/constants/error'
 import i18n from '@/locales'
-import store from '@/store'
+import { getStore } from '@/store/accessor'
 import windowsMixin from '@/mixins/windows'
 import { hasPermission } from '@/utils/auth'
 import { maskSensitiveData, maskSensitiveUrlQuery } from '@/utils/maskSensitive'
+
+// 勿顶层 import @/store：http → error → store → modules 会 TDZ
+const store = {
+  get getters () { return getStore().getters },
+}
 
 const WindowVue = Vue.extend({
   mixins: [windowsMixin],

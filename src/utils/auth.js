@@ -2,7 +2,6 @@ import * as R from 'ramda'
 // import moment from 'moment'
 import Cookies from 'js-cookie'
 import { Base64 } from 'js-base64'
-import store from '@/store'
 import storage from '@/utils/storage'
 import * as Features from '@/constants/feature'
 import setting from '@/config/setting'
@@ -10,6 +9,14 @@ import i18n from '@/locales'
 import { aesDecryptWithCustomKey } from '@/utils/crypto'
 import { HYPERVISORS, HYPERVISORS_MAP, EXTRA_HYPERVISORS } from '@/constants/index'
 import { GROUP_VALIDATION_GROUPS } from '@/constants/feature'
+import { getStore } from '@/store/accessor'
+
+// 勿顶层 import @/store：store/modules/* → auth/http → store 会 TDZ。
+// 仅通过 accessor 在运行时取实例（模块顶层不要访问 store）。
+const store = {
+  get state () { return getStore().state },
+  get getters () { return getStore().getters },
+}
 
 // 不从 hypervisor 引 typeClouds：hypervisor 依赖本文件 hasSetupKey，会形成循环初始化 TDZ
 const hypervisorEnvSource = Object.assign({}, HYPERVISORS_MAP, EXTRA_HYPERVISORS)

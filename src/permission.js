@@ -70,7 +70,7 @@ router.beforeEach(async (to, from, next) => {
   // 如果是登录页面，则直接跳转
   // 不需要认证的页面直接next
   if (to.path.includes('/auth/login')) {
-    const authInfo = store.getters.auth.auth
+    const authInfo = store.getters.auth?.auth || {}
     if (
       authInfo.totp_on &&
       authInfo.system_totp_on &&
@@ -116,18 +116,19 @@ router.beforeEach(async (to, from, next) => {
   if (!hasToken) {
     return toLogin(to, from, next)
   }
-  const hasRoles = !R.isEmpty(store.getters.userInfo.roles) && !R.isNil(store.getters.userInfo.roles)
+  const hasRoles = !R.isEmpty(store.getters.userInfo?.roles) && !R.isNil(store.getters.userInfo?.roles)
   const hasPermission = !R.isEmpty(store.getters.permission) && !R.isNil(store.getters.permission)
   const hasScopeResource = !R.isEmpty(store.getters.scopeResource) && !R.isNil(store.getters.scopeResource)
   const hasCapability = !R.isEmpty(store.getters.capability) && !R.isNil(store.getters.capability)
-  const hasGlobalSettings = !R.isEmpty(store.state.globalSetting.id) && !R.isNil(store.state.globalSetting.id)
-  const hasProfile = !R.isEmpty(store.state.profile.id) && !R.isNil(store.state.profile.id)
+  const hasGlobalSettings = !R.isEmpty(store.state.globalSetting?.id) && !R.isNil(store.state.globalSetting?.id)
+  const hasProfile = !R.isEmpty(store.state.profile?.id) && !R.isNil(store.state.profile?.id)
   const hasStats = !R.isEmpty(store.getters.stats) && !R.isNil(store.getters.stats)
-  const hasScopePolicy = !R.isEmpty(store.getters.scopedPolicy) && !R.isNil(store.getters.scopedPolicy) && !R.isEmpty(store.getters.scopedPolicy.sub_hidden_menus) && !R.isNil(store.getters.scopedPolicy.sub_hidden_menus)
-  const hasGlobalConfig = !R.isEmpty(store.state.common.globalConfig) && !R.isNil(store.state.common.globalConfig)
-  // const hasGlobalServices = !R.isEmpty(store.state.common.globalServices) && !R.isNil(store.state.common.globalServices)
-  const hasMonitorResourceAlerts = !R.isNil(store.state.monitor.monitorResourceAlerts)
+  const scopedPolicy = store.getters.scopedPolicy
+  const hasScopePolicy = !R.isEmpty(scopedPolicy) && !R.isNil(scopedPolicy) && !R.isEmpty(scopedPolicy.sub_hidden_menus) && !R.isNil(scopedPolicy.sub_hidden_menus)
+  const hasGlobalConfig = !R.isEmpty(store.state.common?.globalConfig) && !R.isNil(store.state.common?.globalConfig)
+  const hasMonitorResourceAlerts = !R.isNil(store.state.monitor?.monitorResourceAlerts)
   const hasLicense = !isCE() && !R.isEmpty(store.state.app?.license?.compute) && !R.isNil(store.state.app?.license?.compute)
+  const hasFetchLicense = typeof store._actions?.['app/fetchLicense'] !== 'undefined'
 
   try {
     // getInfo 需先完成（后续 permission/scope 依赖用户上下文）
@@ -138,7 +139,7 @@ router.beforeEach(async (to, from, next) => {
     if (!hasCapability) tasks.push(store.dispatch('auth/getCapabilities'))
     if (!hasPermission) tasks.push(store.dispatch('auth/getPermission'))
     if (!hasScopeResource) tasks.push(store.dispatch('auth/getScopeResource'))
-    if (!isCE() && !isSAAS() && !hasLicense) tasks.push(store.dispatch('app/fetchLicense'))
+    if (!isCE() && !isSAAS() && !hasLicense && hasFetchLicense) tasks.push(store.dispatch('app/fetchLicense'))
     if (!hasGlobalSettings) tasks.push(store.dispatch('globalSetting/getFetchGlobalSetting'))
     if (!hasProfile) tasks.push(store.dispatch('profile/get'))
     if (!hasStats) tasks.push(store.dispatch('auth/getStats'))
@@ -173,16 +174,14 @@ router.beforeEach(async (to, from, next) => {
       await Promise.all(tasks)
     }
   } catch (error) {
-    // 统一兜底：接口异常时不要让路由守卫抛错导致白屏
+    // 已有 token：接口失败不踢回登录。catch+finally 双 next 会导致 URL 已是 /dashboard 但视图仍停在登录页
     console.error(error)
-    return toLogin(to, from, next)
-  } finally {
-    const { canRenderDefaultLayout = true } = to.meta
-    if (canRenderDefaultLayout) {
-      store.commit('auth/SET_CAN_RENDER_DEFAULT_LAYOUT', true)
-    }
-    next()
   }
+  const { canRenderDefaultLayout = true } = to.meta
+  if (canRenderDefaultLayout) {
+    store.commit('auth/SET_CAN_RENDER_DEFAULT_LAYOUT', true)
+  }
+  return next()
 })
 
 scopeBeforeEach && router.beforeEach(scopeBeforeEach)

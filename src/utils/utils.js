@@ -693,16 +693,79 @@ export const redirectAfterAuth = (router, { path, pathQuery } = {}, corsHosts = 
   return true
 }
 
-export const genReferRouteQuery = (route) => {
-  const query = {
-    pathAuthPage: route.meta.authPage,
-    pathAuth: route.meta.auth || true,
-    path: getAuthRedirectPath(route),
+const AUTH_REDIRECT_KEY = '__oc_auth_redirect__'
+
+const isEmptyQueryFlag = (v) => {
+  return v === false || v === 'false' || v == null || v === '' || v === 'undefined' || v === 'null'
+}
+
+const isAuthShellPath = (path) => {
+  if (!path || typeof path !== 'string') return true
+  return path.startsWith('/auth')
+}
+
+/** 退出/401 时记下回跳目标，避免 chooser 丢掉 query 或硬跳转读不到 */
+export const saveAuthRedirect = ({ path, query } = {}) => {
+  if (isAuthShellPath(path)) return
+  try {
+    sessionStorage.setItem(AUTH_REDIRECT_KEY, JSON.stringify({
+      path,
+      query: query && typeof query === 'object' ? query : {},
+    }))
+  } catch (e) { /* ignore */ }
+}
+
+export const consumeAuthRedirect = () => {
+  try {
+    const raw = sessionStorage.getItem(AUTH_REDIRECT_KEY)
+    sessionStorage.removeItem(AUTH_REDIRECT_KEY)
+    if (!raw) return null
+    const data = JSON.parse(raw)
+    if (isAuthShellPath(data?.path)) return null
+    return data
+  } catch (e) {
+    return null
   }
+}
+
+/** 登录后回跳：URL query 优先，否则用退出时写入的 sessionStorage */
+export const resolveAfterLoginTarget = (routeQuery = {}) => {
+  const pathAuthPage = routeQuery.pathAuthPage
+  const path = routeQuery.path
+  const pathQuery = routeQuery.pathQuery
+  const queryHasTarget = isEmptyQueryFlag(pathAuthPage) && path && !isAuthShellPath(path)
+  if (queryHasTarget) {
+    consumeAuthRedirect()
+    let query = {}
+    if (pathQuery) {
+      try {
+        query = typeof pathQuery === 'string' ? JSON.parse(pathQuery) : pathQuery
+      } catch (e) {
+        query = {}
+      }
+    }
+    return { path: normalizeAuthRedirectPath(path), query }
+  }
+  const saved = consumeAuthRedirect()
+  if (saved?.path) {
+    return { path: normalizeAuthRedirectPath(saved.path), query: saved.query || {} }
+  }
+  return null
+}
+
+export const genReferRouteQuery = (route) => {
+  const path = getAuthRedirectPath(route)
   const pathQuery = getAuthRedirectPathQuery(route.query)
+  // 不要写入 pathAuthPage: undefined，否则 URL 会变成 "undefined" 导致回跳条件失败
+  const query = {
+    pathAuth: route.meta.auth || true,
+    path,
+  }
+  if (route.meta?.authPage) query.pathAuthPage = true
   if (pathQuery) {
     query.pathQuery = JSON.stringify(pathQuery)
   }
+  saveAuthRedirect({ path, query: pathQuery || {} })
   return query
 }
 

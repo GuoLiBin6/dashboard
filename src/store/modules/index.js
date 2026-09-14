@@ -12,7 +12,14 @@ function registerModules (mods) {
   Object.keys(mods).forEach((path) => {
     if (path.endsWith('/index.js')) return
     const moduleName = path.replace(/^.*\//, '').replace(/\.js$/, '')
-    const data = mods[path].default || mods[path]
+    let data
+    try {
+      data = mods[path].default || mods[path]
+    } catch (e) {
+      // 循环依赖未断干净时 default 会落在 TDZ；跳过避免整站白屏，便于定位
+      console.error(`[store/modules] failed to register "${moduleName}"`, e)
+      return
+    }
     if (!data) return
     data.namespaced = true
     modules[moduleName] = data

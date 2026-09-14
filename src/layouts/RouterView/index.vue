@@ -1,8 +1,9 @@
 <template>
   <router-view v-slot="{ Component }">
-    <keep-alive :include="cachedComponentNames">
-      <component :is="Component" />
+    <keep-alive v-if="cachedComponentNames.length" :include="cachedComponentNames">
+      <component :is="Component" :key="$route.fullPath" />
     </keep-alive>
+    <component v-else :is="Component" :key="$route.fullPath" />
   </router-view>
 </template>
 

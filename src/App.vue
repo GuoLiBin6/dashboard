@@ -6,7 +6,7 @@
         :class="{ 'app-global-rounded': showGlobalRounded, 'oc-theme-light': theme === 'light' }"
         :style="appGlobalBgStyle"
         @click="handleAppAction">
-      <component :is="layout">
+      <component :is="layout" :key="layout">
         <router-view style="height: 100%;" />
       </component>
       <oc-term />

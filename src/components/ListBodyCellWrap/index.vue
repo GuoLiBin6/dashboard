@@ -250,6 +250,13 @@ export default {
   & + .list-body-cell-wrap {
     margin-top: 6px;
   }
+  /* 名称按内容宽度跟在左侧，可收缩省略；常驻图标紧贴名称后，不挤到最右 */
+  > .text-truncate,
+  > .slot-wrap {
+    min-width: 0;
+    flex: 0 1 auto;
+    overflow: hidden;
+  }
   .cell-meta-icon {
     display: inline-flex;
     align-items: center;
@@ -270,21 +277,50 @@ export default {
   }
   .cell-hover-action {
     flex-shrink: 0;
+    box-sizing: border-box;
+    max-width: 0;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    overflow: hidden;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
+    white-space: nowrap;
     transform: scale(0.92);
-    transition-property: opacity, visibility, transform;
+    transition-property: opacity, visibility, transform, max-width, margin;
     transition-duration: 0.12s;
     transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
   }
-  /* 只悬停当前这一行（名称或备注），才显示该行的 copy/edit */
+  /* 悬停才占位；单图标收窄，彼此 2px 间距 */
   &:hover .cell-hover-action,
   &.is-cell-active .cell-hover-action {
+    max-width: 24px;
+    margin-left: 2px !important;
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
     transform: scale(1);
+  }
+  /* appendActions 可能多个按钮，略放宽并靠 gap 收紧 */
+  &:hover > span.cell-hover-action,
+  &.is-cell-active > span.cell-hover-action {
+    max-width: 72px;
+    gap: 2px;
+  }
+  :deep(.cell-hover-action .copy-trigger),
+  :deep(.cell-hover-action .edit-trigger) {
+    width: 18px;
+    height: 18px;
+  }
+  :deep(.cell-hover-action .copy-trigger__icon),
+  :deep(.cell-hover-action .copy-trigger .oc-icon),
+  :deep(.cell-hover-action .edit-trigger__icon),
+  :deep(.cell-hover-action .edit-trigger .oc-icon) {
+    width: 12px;
+    height: 12px;
+    font-size: 12px;
   }
 }
 </style>

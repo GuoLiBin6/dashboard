@@ -1,4 +1,12 @@
-import scopeApp from '@scope/store/modules/app'
-
-// 将 scope 下的 app store 模块挂到全局的 app 命名空间，兼容老代码里对 state.app / app/* 的访问
-export default scopeApp
+/**
+ * 勿在此 import @scope/store/modules/app。
+ * 链路 scope app → @/utils/auth → @/store → modules/app 会形成循环初始化 TDZ：
+ * Cannot access 'scopeApp' before initialization。
+ *
+ * 真实 app 模块由 ./index.js 的 scope glob（/scope/store/modules/*.js）注册并覆盖同名模块。
+ */
+export default {
+  state: {},
+  mutations: {},
+  actions: {},
+}

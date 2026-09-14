@@ -1,5 +1,5 @@
-import './config/compat'
-import './config/vue.config'
+import '@/config/compat'
+import '@/config/vue.config'
 import { Buffer } from 'buffer'
 import Vue, { createApp, defineAsyncComponent } from 'vue'
 // dayjs locale 须在 ant-design-vue 之前加载，保证 DatePicker 与业务共用同一实例语言包
@@ -15,8 +15,8 @@ import 'vxe-pc-ui/lib/style.css'
 import 'vxe-table/lib/style.css'
 import 'vxe-table-plugin-antd/dist/style.css'
 
-import './styles/less/index.less'
-import './styles/scss/index.scss'
+import '@/styles/less/index.less'
+import '@/styles/scss/index.scss'
 
 import { uuid } from '@/utils/utils'
 import { openWebConsole } from '@/utils/webconsole'
@@ -24,18 +24,18 @@ import '@/utils/polyfill'
 import '@/config/appBuryPoint'
 import setting from '@/config/setting'
 
-import store from './store'
-import router from './router'
-import i18n, { i18nPlugin } from './locales'
-import App from './App.vue'
-import antdGlobalConfig from './plugins/antdGlobalConfig'
-import antdFormLegacyCompat, { decoratorDirective } from './plugins/antdFormLegacyCompat'
+import store from '@/store'
+import router from '@/router'
+import i18n, { i18nPlugin } from '@/locales'
+import App from '@/App.vue'
+import antdGlobalConfig from '@/plugins/antdGlobalConfig'
+import antdFormLegacyCompat, { decoratorDirective } from '@/plugins/antdFormLegacyCompat'
 
-import componentsPlugin from './components'
-import './directives'
-import './plugins'
-import './permission'
-import './filters'
+import componentsPlugin from '@/components'
+import '@/directives'
+import '@/plugins'
+import '@/permission'
+import '@/filters'
 
 window.addEventListener('unhandledrejection', (event) => {
   const reason = event.reason

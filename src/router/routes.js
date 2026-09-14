@@ -1,5 +1,5 @@
 import i18n from '@/locales'
-import store from '@/store'
+import { getStore } from '@/store/accessor'
 import NotFoundPage from '@/views/exception/404'
 import NoPermission from '@/views/exception/403'
 import EmailVerify from '@/views/email-verify'
@@ -11,13 +11,9 @@ import Icons from '@/components/Icon/Icons'
 // 这里保持同一个数组引用，通过 splice 原地更新，保证引用 menusConfig 的组件能自动感知变更。
 export const menusConfig = []
 
-/** 循环依赖时 store 可能仍在 TDZ，直接读会抛 ReferenceError */
+/** store 经 accessor 延迟绑定；未就绪时返回 null */
 function getStoreSafe () {
-  try {
-    return store
-  } catch (e) {
-    return null
-  }
+  return getStore()
 }
 
 function refreshMenusConfig () {

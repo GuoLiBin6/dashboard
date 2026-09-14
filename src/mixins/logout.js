@@ -102,11 +102,13 @@ export default {
       this.$bus.$emit('app-action', e)
     },
     logout () {
+      const route = router.currentRoute.value
+      const refer = genReferRouteQuery(route)
       store.dispatch('auth/logout').then(() => {
-        if (!router.currentRoute.value.meta.authPage) {
+        if (!route.meta.authPage) {
           router.push({
             path: '/auth/login',
-            query: genReferRouteQuery(router.currentRoute.value),
+            query: refer,
           })
           // 登出后将记录检测时间的config置空，便于重新登录后重新获取新的config
           store.commit('common/SET_GLOBAL_CONFIG', {})

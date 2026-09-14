@@ -13090,9 +13090,9 @@ vxe-table-plugin-antd@^4:
   resolved "https://registry.npmmirror.com/vxe-table-plugin-antd/-/vxe-table-plugin-antd-4.0.8.tgz"
   integrity sha512-/ZGw8Iz0R6YfDnf7FL3A0VZpQnxEjRnfE0DW4dQTuLnFCP6UmQqQuKVWU9Vj7vPGM3x3p8rwAVHtU8YtMCXZqQ==
 
-vxe-table@^4:
+vxe-table@4.18.12:
   version "4.18.12"
-  resolved "https://registry.npmmirror.com/vxe-table/-/vxe-table-4.18.12.tgz"
+  resolved "https://registry.npmmirror.com/vxe-table/-/vxe-table-4.18.12.tgz#fc28560fe5d03769230b6eabc1107c5b4108a7ae"
   integrity sha512-FjcM/YWV5ytStY8lUR+wTQ26rtvuEugf1om8qyApVVyVVIaEixYwM7ufrcK0s4nUKiDcUVRE06OTDt0dz4kGXA==
   dependencies:
     vxe-pc-ui "^4.13.0"

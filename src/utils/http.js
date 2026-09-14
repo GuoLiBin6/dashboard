@@ -9,7 +9,7 @@ import * as R from 'ramda'
 import axios from 'axios'
 import qs from 'qs'
 import { h } from 'vue'
-import store from '@/store'
+import { getStore } from '@/store/accessor'
 import router from '@/router'
 import {
   getHttpErrorMessage,
@@ -24,6 +24,12 @@ import {
 import { uuid, genReferRouteQuery, isBlob, blobToJson } from '@/utils/utils'
 import { SHOW_SYSTEM_RESOURCE } from '@/constants'
 import i18n from '@/locales'
+
+// 勿顶层 import @/store，避免 store/modules → http → store 循环 TDZ
+const store = {
+  get getters () { return getStore().getters },
+  dispatch (...args) { return getStore().dispatch(...args) },
+}
 
 const http = axios.create({
   // Vite dev 下如果未配置 VUE_APP_BASE_API，默认走 /api 以命中 dev server proxy
