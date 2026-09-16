@@ -30,6 +30,10 @@ export default {
             on: { trigger: () => this.handleOpenSidepage(row) },
           }, row.name)
         },
+        formRules: [
+          { required: true, message: this.$t('compute.text_210') },
+          { validator: this.$validate('imageName') },
+        ],
       }),
       getImageNameTableColumn(),
       getImageLabelTableColumn(),
