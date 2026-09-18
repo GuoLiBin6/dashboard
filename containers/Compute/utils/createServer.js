@@ -1118,7 +1118,8 @@ export const createVmDecorators = (type, initData = {}) => {
       bastion_host_id: [
         'bastion_host_id',
         {
-          initialValue: initData.bastion_server?.bastion_host_id || '',
+          // 勿用 ''：Select 有空字符串时不展示 placeholder
+          initialValue: initData.bastion_server?.bastion_host_id || undefined,
           rules: [
             { required: true, message: i18n.t('compute.bastionHost.bastion_host.placeholder') },
           ],
@@ -1127,7 +1128,7 @@ export const createVmDecorators = (type, initData = {}) => {
       bastion_org_id: [
         'bastion_org_id',
         {
-          initialValue: initData.bastion_server?.bastion_org_id || '',
+          initialValue: initData.bastion_server?.bastion_org_id || undefined,
           rules: [
             { required: true, message: i18n.t('compute.bastionHost.bastion_org.placeholder') },
           ],
@@ -1170,7 +1171,8 @@ export const createVmDecorators = (type, initData = {}) => {
       bastion_domain_id: [
         'bastion_domain_id',
         {
-          initialValue: initData.bastion_server?.bastion_domain_id || '',
+          // 勿用 ''：Select 有空字符串时不展示 placeholder
+          initialValue: initData.bastion_server?.bastion_domain_id || undefined,
         },
       ],
     },
