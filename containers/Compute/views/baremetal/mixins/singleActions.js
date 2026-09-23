@@ -7,6 +7,7 @@ import i18n from '@/locales'
 import { commonUnabled, cloudEnabled, cloudUnabledTip } from '../../vminstance/utils'
 import { solWebConsole, jnlpConsole } from '../../../utils/webconsole'
 import { hostServerActions } from '../../../utils/hostActions'
+import { getRenewAction } from '../utils/renewActions'
 // import { Base64 } from 'js-base64'
 export default {
   computed: {
@@ -169,57 +170,6 @@ export default {
                   ])
                 },
               })
-              // options.push({
-              //   label: i18n.t('compute.text_345', [v]),
-              //   action: () => {
-              //     this.createDialog('SmartFormDialog', {
-              //       title: i18n.t('compute.text_346'),
-              //       data: [obj],
-              //       callback: async (data) => {
-              //         const success = () => {
-              //           const params = {
-              //             action: v,
-              //             data,
-              //             id: 'ssh',
-              //           }
-              //           openWebConsole(params)
-              //         }
-              //         if (this.enableMFA) {
-              //           this.createDialog('SecretVertifyDialog', {
-              //             success,
-              //           })
-              //         } else {
-              //           success()
-              //         }
-              //       },
-              //       decorators: {
-              //         port: [
-              //           'port',
-              //           {
-              //             validateFirst: true,
-              //             rules: [
-              //               { required: true, message: i18n.t('compute.text_347') },
-              //               {
-              //                 validator: (rule, value, _callback) => {
-              //                   const num = parseFloat(value)
-              //                   if (!/^\d+$/.test(value) || !num || num > 65535) {
-              //                     _callback(i18n.t('compute.text_348'))
-              //                   }
-              //                   _callback()
-              //                 },
-              //               },
-              //             ],
-              //           },
-              //           {
-              //             label: i18n.t('compute.text_349'),
-              //             placeholder: i18n.t('compute.text_350'),
-              //           },
-              //         ],
-              //       },
-              //     })
-              //   },
-              //   meta,
-              // })
             })
             return options
           }
@@ -239,6 +189,7 @@ export default {
           ret = this.$isValidateResourceLock(obj)
           return ret
         },
+        hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_web_console'),
       },
       {
         label: i18n.t('compute.text_352'),
@@ -281,6 +232,7 @@ export default {
                     ret.tooltip = cloudUnabledTip('rebuildRoot', { ...obj, brand: 'baremetal' })
                     return ret
                   },
+                  hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_rebuild_root'),
                 },
                 {
                   label: i18n.t('compute.perform_sync_status'),
@@ -294,6 +246,7 @@ export default {
                       },
                     })
                   },
+                  hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_syncstatus'),
                 },
                 {
                   label: this.$t('compute.perform_change_owner', [this.$t('dictionary.project')]),
@@ -315,6 +268,7 @@ export default {
                     ret.validate = true
                     return ret
                   },
+                  hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_change_owner'),
                 },
                 {
                   label: i18n.t('compute.text_359'),
@@ -339,7 +293,10 @@ export default {
                     }
                     return ret
                   },
+                  hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_create_same_config'),
                 },
+                // 续费
+                getRenewAction(this, obj),
               ],
             },
             {
@@ -375,6 +332,7 @@ export default {
                     ret.tooltip = cloudUnabledTip('resetPassword', { ...obj, brand: 'baremetal' })
                     return ret
                   },
+                  hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_reset_password'),
                 },
                 {
                   label: i18n.t('compute.text_361'),
@@ -411,6 +369,7 @@ export default {
                     ret.tooltip = cloudUnabledTip('bindKeyPair', obj)
                     return ret
                   },
+                  hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_bind_key'),
                 },
                 {
                   label: i18n.t('compute.text_364'),
@@ -447,6 +406,7 @@ export default {
                     ret.tooltip = cloudUnabledTip('unBindKeyPair', obj)
                     return ret
                   },
+                  hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_unbind_key'),
                 },
               ],
             },
@@ -469,13 +429,16 @@ export default {
                       validate: !!obj.cdrom_support,
                     }
                   },
+                  hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_mount_iso'),
                 },
               ],
             },
             {
               label: i18n.t('compute.perform_delete'),
               submenus: [
-                disableDeleteAction(this),
+                disableDeleteAction(this, {
+                  hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_set_delete_protection'),
+                }),
                 {
                   label: i18n.t('compute.perform_delete'),
                   permission: 'server_delete',
@@ -507,6 +470,7 @@ export default {
                     ret.validate = true
                     return ret
                   },
+                  hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_delete'),
                 },
               ],
             },
