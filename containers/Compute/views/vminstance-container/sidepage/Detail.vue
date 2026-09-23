@@ -321,7 +321,11 @@ export default {
               title: this.$t('compute.text_49'),
               formatter: ({ row }) => {
                 if (!this.diskInfos.sysDisk) return '-'
-                return <a onClick={() => this.$emit('tab-change', 'disk-list')}>{this.diskInfos.sysDisk}</a>
+                return this.$createElement('a', {
+                  on: {
+                    click: () => this.$emit('tab-change', 'disk-list'),
+                  },
+                }, this.diskInfos.sysDisk)
               },
               hidden: () => this.$isScopedPolicyMenuHidden('server_hidden_columns.disk'),
             },

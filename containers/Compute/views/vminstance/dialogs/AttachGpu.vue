@@ -184,6 +184,7 @@
 </template>
 
 <script>
+import { h } from 'vue'
 import * as R from 'ramda'
 import {
   getDeviceGpuType,
@@ -333,16 +334,17 @@ export default {
                 row.isolated_devices.map(item => {
                   if (!this.isDisplayIsolatedDevice(item)) return
                   const tagClass = this.isUsbDevice(item) ? 'device-category-tag--usb' : 'device-category-tag--pci'
+                  const text = `${item.addr || ''} ${item.model || ''}`
                   ret.push(
-                    <div class="d-flex align-items-center isolated-device-cell__item">
-                      <span class={['device-category-tag', tagClass]}>{ this.getDeviceCategoryShortLabel(item) }</span>
-                      <span class="text-truncate" title={`${item.addr || ''} ${item.model || ''}`}>{`${item.addr || ''} ${item.model || ''}`}</span>
-                    </div>,
+                    h('div', { class: 'd-flex align-items-center isolated-device-cell__item' }, [
+                      h('span', { class: ['device-category-tag', tagClass] }, this.getDeviceCategoryShortLabel(item)),
+                      h('span', { class: 'text-truncate', title: text }, text),
+                    ]),
                   )
                 })
               }
               if (!ret.length) return '-'
-              return [<div class="isolated-device-cell">{ret}</div>]
+              return [h('div', { class: 'isolated-device-cell' }, ret)]
             },
           },
         },

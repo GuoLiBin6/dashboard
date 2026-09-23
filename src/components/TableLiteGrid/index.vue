@@ -398,20 +398,39 @@ export default {
     isColFillMode () {
       return this.viewportWidth > 0 && this.colBaseSum > 0 && this.colBaseSum < this.viewportWidth
     },
-    /** 实际用于渲染的列宽（填充分摊或原样） */
+    /** 实际用于渲染的列宽（填充分摊或原样；checkbox/radio 等固定列不参与分摊） */
     colDisplayWidths () {
+      const cols = this.bodyColumns
       const bases = this.colBaseWidths
       const sum = this.colBaseSum
       const vw = this.viewportWidth
       if (!bases.length) return []
       if (!vw || sum <= 0 || sum >= vw) return bases.slice()
-      const raw = bases.map(b => (b / sum) * vw)
+
+      const fixedFlags = cols.map(col => this.isFillFixedCol(col))
+      let fixedSum = 0
+      let flexSum = 0
+      bases.forEach((b, i) => {
+        if (fixedFlags[i]) fixedSum += b
+        else flexSum += b
+      })
+      // 没有可伸缩列时，保持固定宽，不把剩余宽度摊到 checkbox 上
+      if (flexSum <= 0) return bases.slice()
+
+      const flexBudget = Math.max(vw - fixedSum, flexSum)
+      const raw = bases.map((b, i) => (fixedFlags[i] ? b : (b / flexSum) * flexBudget))
       const floors = raw.map(v => Math.floor(v))
-      const rest = vw - floors.reduce((a, b) => a + b, 0)
+      const used = floors.reduce((a, b) => a + b, 0)
+      let rest = vw - used
+      // 余数只补给可伸缩列，避免 checkbox 被 +1 变宽
       const order = raw
-        .map((v, i) => ({ i, f: v - floors[i] }))
+        .map((v, i) => ({ i, f: v - floors[i], fixed: fixedFlags[i] }))
+        .filter(x => !x.fixed)
         .sort((a, b) => b.f - a.f)
       const result = floors.slice()
+      if (!order.length) return result
+      // 若 floor 后超过视口（极端），不再加；不足则补齐
+      if (rest < 0) rest = 0
       for (let k = 0; k < rest; k++) {
         result[order[k % order.length].i] += 1
       }
@@ -544,6 +563,10 @@ export default {
       const w = Number(col.width) || Number(col.minWidth) || 100
       return Math.max(w, COL_MIN_WIDTH)
     },
+    // 铺满模式下不参与剩余宽度分摊的列（勾选等）
+    isFillFixedCol (col) {
+      return ['checkbox', 'radio', 'expand', 'seq'].includes(col.type)
+    },
     resolveColDisplayWidth (col) {
       const key = this.colKey(col)
       const mapped = this.colDisplayWidthMap[key]
@@ -552,7 +575,11 @@ export default {
     },
     colGroupStyle (col) {
       const w = this.resolveColDisplayWidth(col)
-      return { width: `${w}px`, minWidth: `${w}px` }
+      const style = { width: `${w}px`, minWidth: `${w}px` }
+      if (this.isFillFixedCol(col)) {
+        style.maxWidth = `${this.resolveColMinWidth(col)}px`
+      }
+      return style
     },
     thStyle (col) {
       return this.colGroupStyle(col)
@@ -856,7 +883,13 @@ export default {
       const sumBase = this.colBaseSum
       const viewportW = this.viewportWidth || scroll.clientWidth
       const fillMode = viewportW > 0 && sumBase < viewportW
-      const restBase = Math.max(0, sumBase - startBase)
+      const fixedSum = this.bodyColumns.reduce((acc, c) => (
+        this.isFillFixedCol(c) ? acc + this.resolveColMinWidth(c) : acc
+      ), 0)
+      // 可伸缩列基准合计（不含 checkbox 等固定列）
+      const flexSum = Math.max(0, sumBase - fixedSum)
+      const restBase = Math.max(0, flexSum - startBase)
+      const flexBudget = Math.max(0, viewportW - fixedSum)
       const line = document.createElement('div')
       line.className = 'table-lite-grid__resize-line'
       line.style.height = `${scroll.clientHeight}px`
@@ -873,7 +906,7 @@ export default {
         scrollRectLeft: scrollRect.left,
         line,
         fillMode,
-        viewportW,
+        viewportW: flexBudget,
         restBase,
         pendingWidth: startBase,
         pendingVisual: startVisual,
