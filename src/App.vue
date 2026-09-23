@@ -162,15 +162,18 @@ export default {
     themeColor: {
       handler (val) {
         const primary = val || process.env.THEME_COLOR || '#1890ff'
-        // 换新 token 引用，确保 ConfigProvider / cssinjs 重新衍生 colorInfo*
-        this.antdTheme.token = {
-          ...this.antdTheme.token,
-          colorPrimary: primary,
-          colorInfo: primary,
-          colorLink: primary,
-          // link 按钮 hover/active 默认衍生自 colorInfo，不跟 colorLink，需显式同步为主题色
-          colorLinkHover: primary,
-          colorLinkActive: primary,
+        // 换整份 theme 引用，确保 ConfigProvider / cssinjs 重新衍生
+        this.antdTheme = {
+          ...this.antdTheme,
+          token: {
+            ...this.antdTheme.token,
+            colorPrimary: primary,
+            colorInfo: primary,
+            colorLink: primary,
+            // link 按钮 hover/active 默认衍生自 colorInfo，不跟 colorLink，需显式同步为主题色
+            colorLinkHover: primary,
+            colorLinkActive: primary,
+          },
         }
         document.documentElement.style.setProperty('--antd-wave-shadow-color', primary)
         document.documentElement.style.setProperty('--ant-color-primary', primary)

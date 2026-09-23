@@ -924,6 +924,16 @@ h1, h2, h3, h4, h5, h6 {
   border-color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 28%, #fff) !important;
 }
 
+// TopAlert（控制台地址等）内链接跟随主题色
+.global-top-alert.ant-alert .ant-alert-message a,
+.global-top-alert-link {
+  color: var(--ant-color-primary, #1890ff) !important;
+}
+.global-top-alert.ant-alert .ant-alert-message a:hover,
+.global-top-alert-link:hover {
+  color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 85%, #000) !important;
+}
+
 // 监控面板操作下拉：收紧图标与文字间距
 .monitor-action-dropdown {
   .ant-dropdown-menu-item {

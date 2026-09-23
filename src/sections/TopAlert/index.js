@@ -55,6 +55,7 @@ export default {
           message: () => {
             const settingApiServerLink = [
               'a', {
+                class: 'global-top-alert-link',
                 style: {
                   marginLeft: '10px',
                 },

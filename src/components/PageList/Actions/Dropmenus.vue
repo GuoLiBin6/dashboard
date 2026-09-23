@@ -159,6 +159,18 @@ export default {
     padding-right: 5px !important;
   }
 }
+/* overlay 挂到 body，需非 scoped；启用/禁用菜单项统一居中 */
+.ant-dropdown-menu-item.sub-link-btn,
+.ant-dropdown-menu-item.submenu-item {
+  text-align: center;
+  .ant-btn {
+    text-align: center;
+  }
+  .ant-btn[disabled],
+  .ant-btn:disabled {
+    text-align: center;
+  }
+}
 </style>
 
 <style lang="less" scoped>
@@ -171,9 +183,11 @@ export default {
 .sub-link-btn {
   .ant-btn-link {
     color: rgba(0, 0, 0, 0.65);
+    text-align: center;
   }
   .ant-btn-link[disabled] {
     color: rgba(0, 0, 0, 0.25);
+    text-align: center;
   }
 }
 .submenu-item-label {
@@ -183,5 +197,6 @@ export default {
 }
 .ant-dropdown-menu-item, .ant-dropdown-menu-submenu-title {
   padding: 5px 0 !important;
+  text-align: center;
 }
 </style>

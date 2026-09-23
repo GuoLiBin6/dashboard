@@ -1,5 +1,6 @@
 <script>
 import * as R from 'ramda'
+import { Tooltip as ATooltip } from 'ant-design-vue'
 import { hasPermission } from '@/utils/auth'
 
 export default {
@@ -87,9 +88,10 @@ export default {
     tooltip () {
       return this.meta.tooltip || this.extraMeta.tooltip
     },
-    tooltipTitle () {
-      // 用于原生 title 属性，必须是字符串（.vue script 无 jsx）
-      return this.tooltip || null
+    // 有有效提示内容才包 Tooltip（空串/false 不算）
+    hasTooltip () {
+      const t = this.tooltip
+      return !(t == null || t === false || t === '')
     },
   },
   methods: {
@@ -103,6 +105,10 @@ export default {
     handlePopoverClick (e) {
       e.stopPropagation()
       this.$emit('click', e)
+    },
+    // 挂到菜单项内，避免 portal 到 body 抢走 hover、弄坏二级菜单
+    getTooltipPopupContainer (node) {
+      return (node && node.parentElement) || document.body
     },
   },
   render (h) {
@@ -141,11 +147,28 @@ export default {
       })
     }
 
-    if (this.tooltip) {
-      action = h('span', {
-        title: this.tooltipTitle || this.tooltip,
-        style: { display: 'inline-block' },
+    // 下拉触发器不要包 Tooltip，否则会弄坏 a-dropdown
+    // 菜单项：Tooltip + 拉满宽度，禁用态也可居中；popup 挂父节点，二级菜单可正常 hover
+    if (!this.popoverTrigger && this.hasTooltip) {
+      const trigger = h('span', {
+        class: 'page-list-action-tooltip-trigger',
+        style: { display: 'block', width: '100%', textAlign: 'center' },
       }, [action])
+      const tip = this.tooltip
+      const tooltipProps = {
+        placement: 'left',
+        destroyTooltipOnHide: true,
+        getPopupContainer: this.getTooltipPopupContainer,
+      }
+      if (typeof tip === 'string') {
+        tooltipProps.title = tip
+        action = h(ATooltip, tooltipProps, { default: () => [trigger] })
+      } else {
+        action = h(ATooltip, tooltipProps, {
+          title: () => tip,
+          default: () => [trigger],
+        })
+      }
     }
 
     if (this.item.render) {

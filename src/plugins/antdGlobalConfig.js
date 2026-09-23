@@ -100,6 +100,93 @@ function ensureAlertInfoThemeStyle () {
 }
 ensureAlertInfoThemeStyle()
 
+/**
+ * primary / ghost / link / default hover，以及 Input hover/focus 跟随 --ant-color-primary。
+ * ConfigProvider token 在兼容场景下常未落到 cssinjs（登录按钮/用户名框会变成 antd 默认蓝，
+ * 而头像等业务样式已用 CSS 变量），造成登录页主题色不一致。
+ */
+function ensurePrimaryButtonThemeStyle () {
+  if (typeof document === 'undefined') return
+  const id = 'oc-btn-primary-theme'
+  let el = document.getElementById(id)
+  if (!el) {
+    el = document.createElement('style')
+    el.id = id
+  }
+  // 始终挂到 head 末尾，压过后续注入的 antd cssinjs
+  document.head.appendChild(el)
+  el.textContent = `
+.ant-btn-primary:not(:disabled):not(.ant-btn-disabled):not(.ant-btn-dangerous):not(.ant-btn-background-ghost) {
+  background-color: var(--ant-color-primary, #1890ff) !important;
+  border-color: var(--ant-color-primary, #1890ff) !important;
+  color: #fff !important;
+}
+.ant-btn-primary:not(:disabled):not(.ant-btn-disabled):not(.ant-btn-dangerous):not(.ant-btn-background-ghost):hover {
+  background-color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 85%, #000) !important;
+  border-color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 85%, #000) !important;
+}
+.ant-btn-primary:not(:disabled):not(.ant-btn-disabled):not(.ant-btn-dangerous):not(.ant-btn-background-ghost):active {
+  background-color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 75%, #000) !important;
+  border-color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 75%, #000) !important;
+}
+.ant-btn-primary.ant-btn-background-ghost:not(:disabled):not(.ant-btn-disabled):not(.ant-btn-dangerous) {
+  color: var(--ant-color-primary, #1890ff) !important;
+  border-color: var(--ant-color-primary, #1890ff) !important;
+  background: transparent !important;
+}
+.ant-btn-primary.ant-btn-background-ghost:not(:disabled):not(.ant-btn-disabled):not(.ant-btn-dangerous):hover {
+  color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 85%, #000) !important;
+  border-color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 85%, #000) !important;
+}
+.ant-btn.ant-btn-link:not(:disabled):not(.ant-btn-disabled):not(.ant-btn-dangerous) {
+  color: var(--ant-color-primary, #1890ff) !important;
+}
+.ant-btn.ant-btn-link:not(:disabled):not(.ant-btn-disabled):not(.ant-btn-dangerous):hover {
+  color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 85%, #000) !important;
+}
+.ant-btn.ant-btn-default:not(:disabled):not(.ant-btn-disabled):not(.ant-btn-dangerous):hover,
+.ant-btn.ant-btn-default:not(:disabled):not(.ant-btn-disabled):not(.ant-btn-dangerous):focus,
+.ant-btn.ant-btn-default:not(:disabled):not(.ant-btn-disabled):not(.ant-btn-dangerous):active {
+  color: var(--ant-color-primary, #1890ff) !important;
+  border-color: var(--ant-color-primary, #1890ff) !important;
+}
+/* Input / Password：hover、focus 边框与光晕跟随主题色（登录用户名框等） */
+.ant-input:not(.ant-input-disabled):not(.ant-input-borderless):hover,
+.ant-input-affix-wrapper:not(.ant-input-affix-wrapper-disabled):not(.ant-input-affix-wrapper-borderless):hover {
+  border-color: var(--ant-color-primary, #1890ff) !important;
+}
+.ant-input:not(.ant-input-disabled):focus,
+.ant-input-focused,
+.ant-input-affix-wrapper:not(.ant-input-affix-wrapper-disabled):focus,
+.ant-input-affix-wrapper-focused {
+  border-color: var(--ant-color-primary, #1890ff) !important;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ant-color-primary, #1890ff) 20%, transparent) !important;
+}
+.ant-input-status-error:not(.ant-input-disabled):not(.ant-input-borderless).ant-input,
+.ant-input-affix-wrapper-status-error:not(.ant-input-affix-wrapper-disabled):not(.ant-input-affix-wrapper-borderless).ant-input-affix-wrapper,
+.ant-input-status-error:not(.ant-input-disabled):not(.ant-input-borderless).ant-input:hover,
+.ant-input-affix-wrapper-status-error:not(.ant-input-affix-wrapper-disabled):not(.ant-input-affix-wrapper-borderless).ant-input-affix-wrapper:hover,
+.ant-input-status-error:not(.ant-input-disabled):not(.ant-input-borderless).ant-input:focus,
+.ant-input-affix-wrapper-status-error:not(.ant-input-affix-wrapper-disabled):not(.ant-input-affix-wrapper-borderless).ant-input-affix-wrapper-focused {
+  border-color: #ff4d4f !important;
+}
+.ant-input-status-error:not(.ant-input-disabled):not(.ant-input-borderless).ant-input:focus,
+.ant-input-affix-wrapper-status-error:not(.ant-input-affix-wrapper-disabled):not(.ant-input-affix-wrapper-borderless).ant-input-affix-wrapper-focused {
+  box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2) !important;
+}
+/* TopAlert 内链接（控制台地址 / 设置）跟随主题色 */
+.global-top-alert.ant-alert .ant-alert-message a,
+.global-top-alert-link {
+  color: var(--ant-color-primary, #1890ff) !important;
+}
+.global-top-alert.ant-alert .ant-alert-message a:hover,
+.global-top-alert-link:hover {
+  color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 85%, #000) !important;
+}
+`
+}
+ensurePrimaryButtonThemeStyle()
+
 /** 表单 extra/explain 字重与正文一致，避免 cssinjs 后注入导致看起来偏粗 */
 function ensureFormExtraFontStyle () {
   if (typeof document === 'undefined') return
@@ -368,8 +455,9 @@ export default {
 
     // 始终包装原始 ant Button，避免 HMR / 重复 install 套娃
     app.component('AButton', createLegacyButton(Button))
-    // a-alert info 图标跟随主题色
+    // a-alert info 图标 / primary·link·default 按钮跟随主题色
     ensureAlertInfoThemeStyle()
+    ensurePrimaryButtonThemeStyle()
     ensureFormExtraFontStyle()
     app.component('AAlert', createThemedAlert(Alert))
     // Input：兼容 v-decorator initialValue，避免 focus 后清空
