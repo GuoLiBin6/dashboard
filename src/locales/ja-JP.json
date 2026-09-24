@@ -2871,7 +2871,8 @@
     "dingtalk_oauth2": "ディントーク",
     "qywechat_oauth2": "エンタープライズ微信",
     "wechat_oauth2": "微信",
-    "alipay_oauth2": "アリペイ"
+    "alipay_oauth2": "アリペイ",
+    "sql": "ローカルSQL"
   },
   "idpAzureCloudEnv": {
     "china": "アズールチャイナ",

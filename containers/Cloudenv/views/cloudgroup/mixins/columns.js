@@ -8,7 +8,7 @@ import {
   getAccountTableColumn,
   getTimeTableColumn,
 } from '@/utils/common/tableColumn'
-import { getNameDescPopoverColumns, LIST_BODY_CELL_POPOVER_STYLE } from '@/utils/common/listBodyCellPopover'
+import { getNameDescPopoverColumns, LIST_BODY_CELL_POPOVER_STYLE, resolveListBodyCellPopoverLayout, getListBodyCellPopoverContentStyle } from '@/utils/common/listBodyCellPopover'
 import i18n from '@/locales'
 
 export default {
@@ -65,20 +65,36 @@ export default {
                 },
               })
               : h('data-loading')
+            const hasData = row.feCloudpolicies && row.feCloudpolicies.length > 0
             return [h('a-popover', {
-              props: { trigger: 'hover' },
+              props: {
+                trigger: 'hover',
+                placement: row._listPopoverPlacement || 'bottom',
+                autoAdjustOverflow: true,
+              },
               on: { openChange: handleVisibleChange },
               key: `popover-${row.id}-${row.feCloudpolicies ? row.feCloudpolicies.length : 0}`,
               scopedSlots: {
                 content: () => h('div', {
                   class: 'list-body-cell-popover-container',
-                  style: row.feCloudpolicies && row.feCloudpolicies.length > 0
-                    ? LIST_BODY_CELL_POPOVER_STYLE
+                  style: hasData
+                    ? getListBodyCellPopoverContentStyle({
+                      maxHeight: row._listPopoverMaxHeight || LIST_BODY_CELL_POPOVER_STYLE.maxHeight,
+                    })
                     : {},
                 }, [contentVnode]),
               },
             }, [
-              h('span', { style: 'color: var(--antd-wave-shadow-color)' }, i18n.t('cloudenv.text_245', [row.cloudpolicies.length])),
+              h('span', {
+                style: 'color: var(--antd-wave-shadow-color)',
+                on: {
+                  mouseenter: (e) => {
+                    const layout = resolveListBodyCellPopoverLayout(e.currentTarget)
+                    this.$set(row, '_listPopoverPlacement', layout.placement)
+                    this.$set(row, '_listPopoverMaxHeight', layout.maxHeight)
+                  },
+                },
+              }, i18n.t('cloudenv.text_245', [row.cloudpolicies.length])),
             ])]
           },
         },

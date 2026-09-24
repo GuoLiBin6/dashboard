@@ -6,6 +6,39 @@ export const LIST_BODY_CELL_POPOVER_STYLE = {
   overflow: 'auto',
 }
 
+/**
+ * 按触发点上下可用空间决定 placement，并把 maxHeight 限制在可视区内，避免贴边时撑出页面。
+ * @param {HTMLElement} triggerEl
+ * @param {{ gap?: number, minHeight?: number, maxHeightRatio?: number }} [options]
+ * @returns {{ placement: 'top'|'bottom', maxHeight: string }}
+ */
+export function resolveListBodyCellPopoverLayout (triggerEl, options = {}) {
+  const gap = options.gap != null ? options.gap : 12
+  const minH = options.minHeight != null ? options.minHeight : 160
+  const maxHeightRatio = options.maxHeightRatio != null ? options.maxHeightRatio : 0.6
+  const rect = triggerEl && typeof triggerEl.getBoundingClientRect === 'function'
+    ? triggerEl.getBoundingClientRect()
+    : { top: 0, bottom: 0 }
+  const spaceBelow = Math.max(0, window.innerHeight - rect.bottom - gap)
+  const spaceAbove = Math.max(0, rect.top - gap)
+  const placement = spaceBelow >= spaceAbove ? 'bottom' : 'top'
+  const available = placement === 'bottom' ? spaceBelow : spaceAbove
+  const maxHeight = Math.max(minH, Math.min(window.innerHeight * maxHeightRatio, available))
+  return {
+    placement,
+    maxHeight: `${Math.floor(maxHeight)}px`,
+  }
+}
+
+/** 合并基础样式与布局计算结果（手写 a-popover 可直接用） */
+export function getListBodyCellPopoverContentStyle (layout, extra = {}) {
+  return {
+    ...LIST_BODY_CELL_POPOVER_STYLE,
+    ...(layout && layout.maxHeight ? { maxHeight: layout.maxHeight } : null),
+    ...extra,
+  }
+}
+
 export function estimatePopoverTextWidth (text, padding = 28) {
   const s = String(text || '')
   let w = 0

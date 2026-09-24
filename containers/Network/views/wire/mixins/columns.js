@@ -10,6 +10,7 @@ import {
   getTimeTableColumn,
 } from '@/utils/common/tableColumn'
 import i18n from '@/locales'
+import { LIST_BODY_CELL_POPOVER_STYLE, resolveListBodyCellPopoverLayout, getListBodyCellPopoverContentStyle } from '@/utils/common/listBodyCellPopover'
 import { getBandwidthTableColumn, getMTUTableColumn } from '../utils/columns'
 
 export default {
@@ -87,7 +88,9 @@ export default {
             const hosts = Array.isArray(row.wireHosts) ? row.wireHosts : null
             const hasLoadedContent = (networks && networks.length > 0) || (hosts && hosts.length > 0)
             const contentStyle = hasLoadedContent
-              ? { width: 'fit-content', maxWidth: '80vw', maxHeight: '60vh', overflow: 'auto' }
+              ? getListBodyCellPopoverContentStyle({
+                maxHeight: row._listPopoverMaxHeight || LIST_BODY_CELL_POPOVER_STYLE.maxHeight,
+              })
               : {}
             const keySuffix = `${networks ? networks.length : 'n'}-${hosts ? hosts.length : 'h'}`
             const content = networks || hosts
@@ -103,6 +106,8 @@ export default {
               props: {
                 trigger: 'hover',
                 destroyTooltipOnHide: true,
+                placement: row._listPopoverPlacement || 'bottom',
+                autoAdjustOverflow: true,
               },
               key: `wire-network-${row.id}-${keySuffix}`,
               on: {
@@ -115,7 +120,12 @@ export default {
               h('span', {
                 style: 'color: var(--antd-wave-shadow-color)',
                 on: {
-                  mouseenter: () => handleVisibleChange(true),
+                  mouseenter: (e) => {
+                    const layout = resolveListBodyCellPopoverLayout(e.currentTarget)
+                    this.$set(row, '_listPopoverPlacement', layout.placement)
+                    this.$set(row, '_listPopoverMaxHeight', layout.maxHeight)
+                    handleVisibleChange(true)
+                  },
                 },
               }, i18n.t('compute.text_619', [row.networks])),
             ])]

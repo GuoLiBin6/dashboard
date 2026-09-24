@@ -45,6 +45,9 @@ export default {
     }
   },
   computed: {
+    getParams () {
+      return null
+    },
     listId () {
       switch (this.params.windowData.currentTab) {
         case 'event-drawer':

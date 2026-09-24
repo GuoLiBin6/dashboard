@@ -4,7 +4,7 @@
       name="files"
       :fileList="fileList"
       :multiple="true"
-      :remove="handleRemove"
+      @remove="handleRemove"
       :beforeUpload="beforeUpload">
       <a-button> <icon type="upload" />{{$t('compute.text_245')}}</a-button>
     </a-upload>

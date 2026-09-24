@@ -1,16 +1,24 @@
 <template>
-  <a-popover trigger="hover">
+  <a-popover
+    trigger="hover"
+    :placement="placement"
+    :auto-adjust-overflow="true">
     <template #content>
       <div class="list-body-cell-popover-container" :style="containerStyle">
         <slot />
       </div>
     </template>
-    <span class="list-body-cell-popover-text">{{ text }}</span>
+    <span
+      class="list-body-cell-popover-text"
+      @mouseenter="handleTriggerEnter">{{ text }}</span>
   </a-popover>
 </template>
 
 <script>
-import { LIST_BODY_CELL_POPOVER_STYLE } from '@/utils/common/listBodyCellPopover'
+import {
+  LIST_BODY_CELL_POPOVER_STYLE,
+  resolveListBodyCellPopoverLayout,
+} from '@/utils/common/listBodyCellPopover'
 
 export default {
   name: 'ListBodyCellPopover',
@@ -27,22 +35,36 @@ export default {
       type: String,
       default: '80vw',
     },
+    /** 高度上限兜底；实际会按触发点可用空间再收窄 */
     maxHeight: {
       type: String,
       default: '60vh',
     },
+  },
+  data () {
+    return {
+      placement: 'bottom',
+      fittedMaxHeight: '',
+    }
   },
   computed: {
     containerStyle () {
       const ret = {
         ...LIST_BODY_CELL_POPOVER_STYLE,
         maxWidth: this.maxWidth || LIST_BODY_CELL_POPOVER_STYLE.maxWidth,
-        maxHeight: this.maxHeight || LIST_BODY_CELL_POPOVER_STYLE.maxHeight,
+        maxHeight: this.fittedMaxHeight || this.maxHeight || LIST_BODY_CELL_POPOVER_STYLE.maxHeight,
       }
       if (this.minWidth) {
         ret.minWidth = this.minWidth
       }
       return ret
+    },
+  },
+  methods: {
+    handleTriggerEnter (e) {
+      const layout = resolveListBodyCellPopoverLayout(e.currentTarget)
+      this.placement = layout.placement
+      this.fittedMaxHeight = layout.maxHeight
     },
   },
 }
@@ -56,6 +78,8 @@ export default {
   max-height: 60vh;
   overflow: auto;
   box-sizing: border-box;
+  /* 防止内部表格把容器撑到无限高 */
+  overscroll-behavior: contain;
 
   // 表格铺满容器（吃满 minWidth）；列用 auto 按内容分配
   .table-lite-grid,
@@ -63,6 +87,7 @@ export default {
     width: 100% !important;
     min-width: 100%;
     max-width: 100%;
+    max-height: none;
     box-sizing: border-box;
   }
   .table-lite-grid__table {

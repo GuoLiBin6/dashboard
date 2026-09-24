@@ -33,9 +33,21 @@
             :select-props="{ mode: 'default' }" />
         </a-form-item>
         <a-form-item :label="$t('iam.role_policy_valid_time_range')">
-          <a-date-picker :disabled-date="dateDisabledStart" v-decorator="decorators.valid_since" @change="startChange" format="YYYY-MM-DD hh:mm" :showTime="{ format: 'HH:mm' }" />
+          <a-date-picker
+            v-decorator="decorators.valid_since"
+            :disabled-date="dateDisabledStart"
+            format="YYYY-MM-DD HH:mm"
+            value-format="YYYY-MM-DD HH:mm:ss"
+            :show-time="{ format: 'HH:mm' }"
+            @change="onValidSinceChange" />
           <span class="ml-2 mr-2">~</span>
-          <a-date-picker :disabled-date="dateDisabledEnd" v-decorator="decorators.valid_until" @change="endChange" format="YYYY-MM-DD hh:mm" :showTime="{ format: 'HH:mm' }" />
+          <a-date-picker
+            v-decorator="decorators.valid_until"
+            :disabled-date="dateDisabledEnd"
+            format="YYYY-MM-DD HH:mm"
+            value-format="YYYY-MM-DD HH:mm:ss"
+            :show-time="{ format: 'HH:mm' }"
+            @change="onValidUntilChange" />
         </a-form-item>
       </a-collapse-panel>
     </a-collapse>
@@ -184,10 +196,10 @@ export default {
               item.project_id = values.project
             }
             if (values.valid_since) {
-              item.valid_since = values.valid_since
+              item.valid_since = this.formatValidTime(values.valid_since)
             }
             if (values.valid_until) {
-              item.valid_until = values.valid_until
+              item.valid_until = this.formatValidTime(values.valid_until)
             }
             policies.push(item)
           }
@@ -205,27 +217,34 @@ export default {
         throw error
       }
     },
-    startChange (value) {
-      this.form.fc.setFieldsValue({
-        valid_since: value,
-      })
+    formatValidTime (value) {
+      if (!value) return value
+      if (typeof value === 'string') return value
+      if (typeof value.format === 'function') return value.format('YYYY-MM-DD HH:mm:ss')
+      return this.$moment(value).format('YYYY-MM-DD HH:mm:ss')
     },
-    endChange (value) {
-      this.form.fc.setFieldsValue({
-        valid_until: value > this.$moment() ? this.$moment() : value,
-      })
+    toTs (value) {
+      if (!value) return null
+      if (typeof value.valueOf === 'function') return value.valueOf()
+      return this.$moment(value).valueOf()
     },
-    dateDisabledStart (value) {
-      const dateEnd = this.form.fc.getFieldValue('valid_until')
-      if (dateEnd && value > dateEnd) return true
-      if (value < this.$moment()) return true
-      return false
+    onValidSinceChange (value) {
+      this.form.fc.setFieldsValue({ valid_since: value })
     },
-    dateDisabledEnd (value) {
-      const dateStart = this.form.fc.getFieldValue('valid_since')
-      if (dateStart && value < dateStart) return true
-      if (value < this.$moment().endOf('day')) return true
-      return false
+    onValidUntilChange (value) {
+      this.form.fc.setFieldsValue({ valid_until: value })
+    },
+    dateDisabledStart (current) {
+      if (!current) return false
+      const endTs = this.toTs(this.form.fc.getFieldValue('valid_until'))
+      if (endTs && current.valueOf() > endTs) return true
+      return current.valueOf() < this.$moment().startOf('day').valueOf()
+    },
+    dateDisabledEnd (current) {
+      if (!current) return false
+      const startTs = this.toTs(this.form.fc.getFieldValue('valid_since'))
+      if (startTs && current.valueOf() < startTs) return true
+      return current.valueOf() < this.$moment().startOf('day').valueOf()
     },
   },
 }

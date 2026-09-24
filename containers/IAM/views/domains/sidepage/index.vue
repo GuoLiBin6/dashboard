@@ -24,7 +24,7 @@
       :getParams="getParams"
       :on-manager="onManager"
       :is-allow-create="isAllowCreate"
-      :columns="columns"
+      v-bind="tabExtraProps"
       @refresh="refresh"
       @tab-change="handleTabChange" />
   </base-side-page>
@@ -68,6 +68,14 @@ export default {
   },
   computed: {
     ...mapGetters(['l3PermissionEnable', 'globalConfig']),
+    // 仅详情需要父级 columns；透传给子 List 会覆盖其自身列（Vue3 fallthrough），
+    // 导致 side-page-trigger 闭包里的 this 没有 handleOpenSidepage
+    tabExtraProps () {
+      if (this.params.windowData.currentTab === 'detail') {
+        return { columns: this.columns }
+      }
+      return {}
+    },
     getParams () {
       const obj = {}
       if (this.params.windowData.currentTab === 'role-list') {
@@ -109,6 +117,11 @@ export default {
         this.handleTabChange(this.detailTabs[0].key)
       }
     }
+  },
+  methods: {
+    handleOpenSidepage (row, tab) {
+      if (tab) this.handleTabChange(tab)
+    },
   },
 }
 </script>

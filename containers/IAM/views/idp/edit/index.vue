@@ -67,8 +67,8 @@
           </template>
         </template>
         <component
-          :is="form.fd.template"
-          :decorators="decorators[form.fd.template]"
+          v-if="currentTemplateComponent"
+          :is="currentTemplateComponent"
           :fd="form.fd"
           :offset-wrapper-col="offsetWrapperCol"
           :fc="form.fc" />
@@ -102,20 +102,25 @@
 import * as R from 'ramda'
 import jumper from '@/mixins/jumper'
 import { resolveValueChangeField } from '@/utils/common/ant'
+import { docs, idpDrivers } from '../constants'
+import IDPDetailTable from '../components/DetailTable'
 import MSADMulti from './MSADMulti'
 import MSADOne from './MSADOne'
 import OpenLdapOne from './OpenLdapOne'
 import Advanced from './Advanced'
 import LdapAdvanced from './LdapAdvanced'
-import { docs, idpDrivers } from '../constants'
-import IDPDetailTable from '../components/DetailTable'
+
+const TEMPLATE_COMPONENTS = {
+  msad_one_domain: MSADOne,
+  msad_multi_domain: MSADMulti,
+  openldap_one_domain: OpenLdapOne,
+}
+
 export default {
   name: 'IDPEdit',
   components: {
     Advanced,
-    msad_one_domain: MSADOne,
-    msad_multi_domain: MSADMulti,
-    openldap_one_domain: OpenLdapOne,
+    ...TEMPLATE_COMPONENTS,
     'idp-detail-table': IDPDetailTable,
     LdapAdvanced,
   },
@@ -137,7 +142,7 @@ export default {
             this.$nextTick(() => {
               const newField = resolveValueChangeField(values)
               R.forEachObjIndexed((item, key) => {
-                this.$set(this.form.fd, key, item)
+                this.form.fd[key] = item
               }, newField)
             })
           },
@@ -217,7 +222,7 @@ export default {
       return !!this.id
     },
     isLdap () {
-      return this.form.fd.driver === 'LDAP'
+      return (this.form.fd.driver || '').toLowerCase() === 'ldap'
     },
     title () {
       if (this.isUpdate) return this.$t('system.text_563')
@@ -225,12 +230,13 @@ export default {
     },
     templateData () {
       const { driver, template } = this.form.fd
-      if (this.templateOptions && this.templateOptions[driver]) {
-        return this.templateOptions[driver].find(({ key }) => key === template)
-      }
-      return {}
+      if (!driver || !this.templateOptions) return {}
+      const driverKey = Object.keys(this.templateOptions).find(
+        key => key.toLowerCase() === String(driver).toLowerCase(),
+      )
+      if (!driverKey) return {}
+      return this.templateOptions[driverKey].find(({ key }) => key === template) || {}
     },
-    // 是否为通用模版
     isCommon () {
       const { template } = this.form.fd
       return ['oidc', 'saml', 'cas'].indexOf(template) > -1
@@ -255,6 +261,10 @@ export default {
     },
     docLink () {
       return this.templateData && docs(this.$store.getters.scope)[this.templateData.key]
+    },
+    currentTemplateComponent () {
+      const key = this.form.fd.template
+      return (key && TEMPLATE_COMPONENTS[key]) || null
     },
   },
   watch: {
@@ -292,6 +302,16 @@ export default {
       }
       return f ? '' : []
     },
+    /**
+     * 更新页用 template 动态加载表单。
+     * 接口常只有 driver: ldap、无 template，不能把 ldap 当组件名。
+     */
+    resolveTemplateKey (data = {}) {
+      const ldapTemplates = idpDrivers.LDAP || []
+      const template = data.template
+      if (template && ldapTemplates.includes(template)) return template
+      return ldapTemplates[0] || 'msad_one_domain'
+    },
     async fetchDetail () {
       try {
         const { data } = await this.manager.get({
@@ -301,10 +321,6 @@ export default {
           },
         })
         this.detailData = data
-        this.form.fc.getFieldDecorator('template', { preserve: true })
-        this.form.fc.setFieldsValue({
-          template: data.template || data.driver,
-        })
       } catch (err) {
         throw err
       }
@@ -316,25 +332,17 @@ export default {
           spec: 'config',
         })
         const { config = {} } = data
-        await this.$nextTick()
         const key = Object.keys(config)[0]
         const params = {
-          ...config[key],
+          ...(config[key] || {}),
         }
         if (params.scopes) {
           params.scopes = this.scopesFormat(params.scopes, true)
         }
-        if (params.template === 'qywechat_oauth2') {
-          const [corp_id, agent_id] = params.app_id.split('/')
-          params.corp_id = corp_id
-          params.agent_id = agent_id
-          delete params.app_id
-        }
-        this.form.fc.getFieldDecorator('driver', { preserve: true })
-        this.form.fc.setFieldsValue({
-          driver: key,
+        return {
+          driver: key || 'ldap',
           ...params,
-        })
+        }
       } catch (err) {
         throw err
       }
@@ -343,7 +351,29 @@ export default {
       this.loading = true
       try {
         await this.fetchDetail()
-        await this.fetchConfig()
+        const configValues = await this.fetchConfig()
+        // detail.template 优先；否则用 config 里的 template；都没有则默认 msad_one_domain
+        const template = this.resolveTemplateKey({
+          ...this.detailData,
+          template: this.detailData.template || configValues.template,
+        })
+        // 表单字段不要用 config 里的 template/driver 覆盖解析结果（driver 常为 ldap）
+        const { template: _t, driver: _d, ...configFields } = configValues
+        const formValues = {
+          ...configFields,
+          template,
+          driver: configValues.driver || this.detailData.driver || 'ldap',
+        }
+        this.form.fc.getFieldDecorator('template', { preserve: true })
+        this.form.fc.getFieldDecorator('driver', { preserve: true })
+        // 先写 fd，保证动态表单能挂上
+        Object.keys(formValues).forEach((key) => {
+          this.form.fd[key] = formValues[key]
+        })
+        this.form.fc.setFieldsValue(formValues)
+        this.loading = false
+        await this.$nextTick()
+        this.form.fc.setFieldsValue(formValues)
       } catch (err) {
         throw err
       } finally {
@@ -363,7 +393,6 @@ export default {
           [driver.toLowerCase()]: rest,
         },
       }
-      // 如果是cas类型，则不传递template参数
       if (!this.isCommon) {
         data.template = template
       }
@@ -371,13 +400,14 @@ export default {
     },
     doUpdate (values) {
       const { driver, ...rest } = values
+      const driverKey = (driver || this.detailData.driver || 'ldap').toLowerCase()
       return this.manager.performAction({
         id: this.id,
         action: 'config',
         data: {
           action: 'update',
           config: {
-            [driver]: {
+            [driverKey]: {
               ...rest,
             },
           },
@@ -387,13 +417,6 @@ export default {
     async getValues () {
       try {
         const values = await this.form.fc.validateFields()
-        const { template } = values
-        if (template === 'qywechat_oauth2') {
-          const { corp_id, agent_id } = values
-          values.app_id = `${corp_id}/${agent_id}`
-          delete values.corp_id
-          delete values.agent_id
-        }
         return values
       } catch (err) {
         throw err

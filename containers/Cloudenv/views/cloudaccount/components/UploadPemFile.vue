@@ -10,7 +10,7 @@
     <a-upload-dragger
       v-bind="uploadDraggerConfig"
       :beforeUpload="handleBeforeUpload"
-      :remove="hanldeRemoveFile"
+      @remove="hanldeRemoveFile"
       :fileList="fileList">
       <div style="padding: 10px;">
         <p class="ant-upload-drag-icon">

@@ -1040,7 +1040,7 @@
   "iam.checksum_error_notify": "整合性チェック失敗通知",
   "iam.action_log_exceed_count": "操作ログ容量アラート通知",
   "iam.security_info": "セキュリティ メッセージ",
-  "iam.manage_res": "admin{0)",
+  "iam.manage_res": "admin{0}",
   "iam.reset_mfa_tips": "リセット後、ユーザーはログインページをリセットする必要があり、以前の情報は無効になります。",
   "iam.project_tag": "プロジェクトラベル",
   "iam.object_tag": "リソースタグ",

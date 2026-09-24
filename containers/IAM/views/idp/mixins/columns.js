@@ -8,6 +8,17 @@ import {
 import i18n from '@/locales'
 
 export default {
+  methods: {
+    getIdpTemplateLabel (row = {}) {
+      const v = row.template || row.driver
+      if (!v) return '-'
+      const key = `idpTmplTitles.${v}`
+      if (this.$te(key)) return this.$t(key)
+      const lowerKey = `idpTmplTitles.${String(v).toLowerCase()}`
+      if (lowerKey !== key && this.$te(lowerKey)) return this.$t(lowerKey)
+      return v
+    },
+  },
   created () {
     const driverOptions = Object.keys(this.$t('idpDrivers')).reduce((prev, current) => {
       prev[current.toLowerCase()] = current
@@ -46,14 +57,8 @@ export default {
         field: 'template',
         title: i18n.t('common_550'),
         hideField: true,
-        message: (row) => {
-          const v = row.template || row.driver
-          return this.$t('idpTmplTitles')[v] ? this.$t(`idpTmplTitles.${v}`) : v || '-'
-        },
-        slotCallback: (row) => {
-          const v = row.template || row.driver
-          return this.$t('idpTmplTitles')[v] ? this.$t(`idpTmplTitles.${v}`) : v || '-'
-        },
+        message: (row) => this.getIdpTemplateLabel(row),
+        slotCallback: (row) => this.getIdpTemplateLabel(row),
       }),
       {
         minWidth: 120,

@@ -27,7 +27,7 @@
             :headers="headers"
             :beforeUpload="beforeUpload"
             :fileList="fileList"
-            :remove="hanldeRemoveFile"
+            @remove="hanldeRemoveFile"
             action="/api/v1/licenses">
             <p class="ant-upload-drag-icon">
               <icon type="cloud-upload" />

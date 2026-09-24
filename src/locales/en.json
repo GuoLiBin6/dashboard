@@ -2858,7 +2858,8 @@
     "dingtalk_oauth2": "DingTalk",
     "qywechat_oauth2": "WeCom",
     "wechat_oauth2": "WeChat",
-    "alipay_oauth2": "Alipay"
+    "alipay_oauth2": "Alipay",
+    "sql": "Local SQL"
   },
   "idpAzureCloudEnv": {
     "china": "Azure China",

@@ -20,9 +20,11 @@
               :beforeUpload="beforeUpload"
               :fileList="fileList"
               :accept="accept"
-              :remove="handleRemove">
+              @remove="handleRemove">
               <div class="pt-3 pb-3">
-                <p class="ant-upload-drag-icon"><icon type="inbox" /></p>
+                <p class="ant-upload-drag-icon">
+                  <icon type="inbox" style="font-size: 48px; color: var(--ant-color-primary, #1890ff);" />
+                </p>
                 <p class="ant-upload-text">{{$t('system.text_505')}}</p>
                 <p class="ant-upload-hint">{{$t('system.text_506')}}</p>
               </div>

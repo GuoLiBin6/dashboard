@@ -17,7 +17,7 @@
 import * as R from 'ramda'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
-import { getNameDescPopoverColumns, LIST_BODY_CELL_POPOVER_STYLE } from '@/utils/common/listBodyCellPopover'
+import { getNameDescPopoverColumns, LIST_BODY_CELL_POPOVER_STYLE, resolveListBodyCellPopoverLayout, getListBodyCellPopoverContentStyle } from '@/utils/common/listBodyCellPopover'
 
 export default {
   name: 'CloudgroupListForClouduserForUserDialog',
@@ -67,18 +67,33 @@ export default {
                 })
                 : h('data-loading')
               return [h('a-popover', {
-                props: { trigger: 'hover' },
+                props: {
+                  trigger: 'hover',
+                  placement: row._listPopoverPlacement || 'bottom',
+                  autoAdjustOverflow: true,
+                },
                 on: { openChange: handleVisibleChange },
                 key: `popover-${row.id}-${row.feCloudpolicies ? row.feCloudpolicies.length : 0}`,
                 scopedSlots: {
                   content: () => h('div', {
                     class: 'list-body-cell-popover-container',
-                    style: hasData ? LIST_BODY_CELL_POPOVER_STYLE : {},
+                    style: hasData
+                      ? getListBodyCellPopoverContentStyle({
+                        maxHeight: row._listPopoverMaxHeight || LIST_BODY_CELL_POPOVER_STYLE.maxHeight,
+                      })
+                      : {},
                   }, [content]),
                 },
               }, [
                 h('span', {
                   style: { color: 'var(--antd-wave-shadow-color)' },
+                  on: {
+                    mouseenter: (e) => {
+                      const layout = resolveListBodyCellPopoverLayout(e.currentTarget)
+                      this.$set(row, '_listPopoverPlacement', layout.placement)
+                      this.$set(row, '_listPopoverMaxHeight', layout.maxHeight)
+                    },
+                  },
                 }, this.$t('common_323', [row.cloudpolicies.length])),
               ])]
             },

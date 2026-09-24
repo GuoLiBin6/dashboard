@@ -4,20 +4,21 @@ import {
   getPublicScopeTableColumn,
   getTimeTableColumn,
 } from '@/utils/common/tableColumn'
+import { resolveListBodyCellPopoverLayout } from '@/utils/common/listBodyCellPopover'
 import h from '@/utils/legacyCreateElement'
 
 const POLICY_POPOVER_STYLE = {
   width: '464px',
   maxWidth: '100%',
+  maxHeight: '60vh',
   padding: '8px',
-  overflow: 'hidden',
+  overflow: 'auto',
   boxSizing: 'border-box',
 }
 
 // 去掉 antd 默认 content padding，避免列宽 + 双边距把表格撑出白底
 const POLICY_POPOVER_OVERLAY_STYLE = {
   padding: 0,
-  overflow: 'hidden',
 }
 
 const POLICY_COLUMNS = (vm) => ([
@@ -69,6 +70,11 @@ export default {
             if (!row.match_policies || row.match_policies.length === 0) return this.$t('common.notData')
             const policies = row._policies
             const hasData = Array.isArray(policies) && policies.length > 0
+            const updateLayout = (triggerEl) => {
+              const layout = resolveListBodyCellPopoverLayout(triggerEl)
+              this.$set(row, '_policiesPopoverPlacement', layout.placement)
+              this.$set(row, '_policiesPopoverMaxHeight', layout.maxHeight)
+            }
             const handleOpenChange = async (visible) => {
               if (!visible) {
                 row._policiesHovering = false
@@ -76,7 +82,7 @@ export default {
                 return
               }
               row._policiesHovering = true
-              // 先拉完数据再打开，避免 loading→表格 过程中宽高变化触发左右翻转
+              // 先拉完数据再打开，避免 loading→表格 过程中宽高变化触发翻转抖动
               if (!hasData) {
                 await this.fetchPolicies({ row })
               }
@@ -99,8 +105,9 @@ export default {
               key: `role-policies-${row.id}`,
               props: {
                 trigger: 'hover',
-                placement: 'bottom',
-                autoAdjustOverflow: false,
+                placement: row._policiesPopoverPlacement || 'bottom',
+                // 垂直方向已按可用空间算过；保留自适应兜底边缘裁切
+                autoAdjustOverflow: true,
                 mouseEnterDelay: 0.1,
                 destroyTooltipOnHide: false,
                 open: !!row._policiesPopoverOpen,
@@ -112,7 +119,10 @@ export default {
               },
               scopedSlots: {
                 content: () => h('div', {
-                  style: POLICY_POPOVER_STYLE,
+                  style: {
+                    ...POLICY_POPOVER_STYLE,
+                    maxHeight: row._policiesPopoverMaxHeight || POLICY_POPOVER_STYLE.maxHeight,
+                  },
                 }, [content]),
               },
             }, [
@@ -120,6 +130,9 @@ export default {
                 style: {
                   color: 'var(--antd-wave-shadow-color)',
                   cursor: 'pointer',
+                },
+                on: {
+                  mouseenter: (e) => updateLayout(e.currentTarget),
                 },
               }, this.$t('common_701', [row.match_policies.length])),
             ])]

@@ -13,7 +13,7 @@
         v-if="form.fd.custom_data_type === 'file'"
         list-type="text"
         :beforeUpload="beforeUpload"
-        :remove="handleRemove"
+        @remove="handleRemove"
         :fileList="fileList"
         :accept="accept">
         <div class="pt-3 pb-3">
