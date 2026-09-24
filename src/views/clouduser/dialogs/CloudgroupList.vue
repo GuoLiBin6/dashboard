@@ -72,6 +72,7 @@ export default {
                 key: `popover-${row.id}-${row.feCloudpolicies ? row.feCloudpolicies.length : 0}`,
                 scopedSlots: {
                   content: () => h('div', {
+                    class: 'list-body-cell-popover-container',
                     style: hasData ? LIST_BODY_CELL_POPOVER_STYLE : {},
                   }, [content]),
                 },

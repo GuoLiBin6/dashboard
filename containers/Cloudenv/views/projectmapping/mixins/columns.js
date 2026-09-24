@@ -61,7 +61,7 @@ export default {
                       const strRgb = rgb.join(',')
                       const text = getTagTitle('user:' + item.key, item.value)
                       return hFn('span', {
-                        class: 'tag mb-1 text-truncate d-inline-block',
+                        class: 'tag mb-1 d-inline-block',
                         attrs: { title: getTagTitle(item.key, item.value) },
                         key: `${item.key}${item.value}`,
                         style: { backgroundColor: `rgba(${strRgb},.1)`, boxSizing: 'border-box', color: `rgb(${strRgb})`, border: `solid 1px rgb(${strRgb})`, borderRadius: '5px', padding: '2px 6px', lineHeight: '20px', marginRight: '10px' },
@@ -94,12 +94,13 @@ export default {
             return [hFn('list-body-cell-popover', {
               props: {
                 text: this.$t('common_701', [row.rules ? row.rules.length : 0]),
+                minWidth: '600px',
               },
             }, [hFn('table-lite-grid', {
               props: {
                 size: 'mini',
                 border: true,
-                showOverflow: 'title',
+                showOverflow: false,
                 rowConfig: { isHover: true },
                 columnConfig: { resizable: false },
                 columns,

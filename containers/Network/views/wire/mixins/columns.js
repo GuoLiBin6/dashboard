@@ -109,7 +109,7 @@ export default {
                 openChange: handleVisibleChange,
               },
               scopedSlots: {
-                content: () => h('div', { style: contentStyle }, [content]),
+                content: () => h('div', { class: 'list-body-cell-popover-container', style: contentStyle }, [content]),
               },
             }, [
               h('span', {
