@@ -135,6 +135,11 @@ function replaceI18nPlaceholders (str, localeRoot) {
   if (cur.indexOf('@') !== -1) {
     cur = cur.replace(/@/g, "{'@'}")
   }
+  // 文案里字面量 |（如 http|https|socks5）会被当成复数分隔符，只显示其中一段
+  // 跳过已转义的 {'|'}，避免二次转义
+  if (cur.indexOf('|') !== -1) {
+    cur = cur.replace(/(\{'\|'\})|\|/g, (m, escaped) => escaped || "{'|'}")
+  }
   // 文案里字面量 {}（如特殊字符列表）会被当成 Empty placeholder
   if (cur.indexOf('{}') !== -1) {
     cur = cur.replace(/\{\}/g, "{'{'}{'}'}")

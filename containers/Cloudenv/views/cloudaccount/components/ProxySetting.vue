@@ -3,8 +3,8 @@
     <a-switch
       :checkedChildren="$t('cloudenv.text_84')"
       :unCheckedChildren="$t('cloudenv.text_85')"
-      v-model:value="isOpenProxy" />
-    <div v-if="isOpenProxy" class="d-flex align-items-center w-50">
+      v-model:checked="isOpenProxy" />
+    <div v-if="isOpenProxy" class="d-flex align-items-center w-50 mt-3">
       <a-select class="base-select" :loading="loading" showSearch :filterOption="filterOption" v-decorator="decorator">
         <a-select-option v-for="item of proxyOpts" :key="item.id" :value="item.id">
           {{item.name}} {{item.id === 'DIRECT' ? $t('cloudenv.text_110') :  null}}

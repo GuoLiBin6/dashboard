@@ -4,7 +4,7 @@
       <a-switch
         :checkedChildren="$t('cloudenv.text_84')"
         :unCheckedChildren="$t('cloudenv.text_85')"
-        v-decorator="decorators.isOpenBlockedResources"
+        v-model:checked="isOpenBlockedResources"
         @change="blockedResourcesChangeHandle" />
     </a-form-item>
     <a-form-item :label="$t('cloudenv.block_resources_type')" v-if="isOpenBlockedResources">
@@ -34,9 +34,29 @@ export default {
       isOpenBlockedResources: this.decorators.isOpenBlockedResources[1]?.initialValue || false,
     }
   },
+  mounted () {
+    this.syncOpenToForm(this.isOpenBlockedResources)
+  },
   methods: {
+    getFormFc () {
+      let cur = this.$parent
+      while (cur) {
+        if (cur.form && cur.form.fc) return cur.form.fc
+        cur = cur.$parent
+      }
+      return null
+    },
+    syncOpenToForm (v) {
+      const fc = this.getFormFc()
+      const deco = this.decorators && this.decorators.isOpenBlockedResources
+      if (!fc || !deco) return
+      const [name, opts] = deco
+      if (typeof fc.__registerField === 'function') fc.__registerField(name, opts || {})
+      fc.setFieldsValue({ [name]: v })
+    },
     blockedResourcesChangeHandle (v) {
       this.isOpenBlockedResources = v
+      this.syncOpenToForm(v)
     },
   },
 }

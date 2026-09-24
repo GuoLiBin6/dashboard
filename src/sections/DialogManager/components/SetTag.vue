@@ -97,8 +97,8 @@
         </div>
         <div class="text-color-help mt-2">{{$t('common_109')}}</div>
       </div>
-      <div class="mt-2 d-flex">
-        <div style="line-height: 40px;">
+      <div class="mt-2 d-flex align-items-start flex-wrap">
+        <div class="tag-action-btns d-flex align-items-center flex-shrink-0">
           <tag-select
             global
             :button-text="$t('common_110')"
@@ -121,14 +121,14 @@
             v-if="!showForm"
             @click="() => showForm = true">{{$t('common_111')}}</a-button>
         </div>
-        <a-form class="ml-2" layout="inline" :form="form.fc" v-if="showForm">
-          <a-form-item>
+        <a-form class="ml-2 tag-create-form" layout="inline" :form="form.fc" v-if="showForm">
+          <a-form-item class="mb-0">
             <a-input v-decorator="decorators.key" :placeholder="$t('common_112')" />
           </a-form-item>
-          <a-form-item>
+          <a-form-item class="mb-0">
             <a-input v-decorator="decorators.value" :placeholder="$t('common_113')" />
           </a-form-item>
-          <a-form-item>
+          <a-form-item class="mb-0">
             <a-button @click="addTag">{{$t('common_114')}}</a-button>
             <a-button @click="() => showForm = false" class="ml-2">{{$t('common_115')}}</a-button>
           </a-form-item>
@@ -431,6 +431,7 @@ export default {
   font-size: 12px;
   border-style: solid;
   border-width: 1px;
+  border-radius: 5px;
 }
 .tag-list {
   min-height: 96px;
@@ -453,4 +454,31 @@ export default {
 .tag-update-wrap {
   width: 200px;
 }
+.tag-create-form {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: flex-start;
+  flex: 1 1 auto;
+  min-width: 0;
+  :deep(.ant-form-item) {
+    margin-bottom: 0;
+    margin-right: 8px;
+    vertical-align: top;
+  }
+  :deep(.ant-form-item:last-child) {
+    margin-right: 0;
+  }
+  :deep(.ant-form-item-row) {
+    align-items: flex-start;
+  }
+  :deep(.ant-form-item-control-input) {
+    min-height: 32px;
+  }
+}
+.tag-action-btns {
+  gap: 0;
+  // 与右侧输入框顶部对齐（按钮默认高 32px）
+  min-height: 32px;
+}
+
 </style>

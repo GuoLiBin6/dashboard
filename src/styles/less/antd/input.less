@@ -1,0 +1,35 @@
+// 浏览器自动填充会给账号/密码框加黄/粉底，全局压回表单背景色
+input.ant-input:-webkit-autofill,
+input.ant-input:-webkit-autofill:hover,
+input.ant-input:-webkit-autofill:focus,
+input.ant-input:-webkit-autofill:active,
+.ant-input-affix-wrapper > input.ant-input:-webkit-autofill,
+.ant-input-affix-wrapper > input.ant-input:-webkit-autofill:hover,
+.ant-input-affix-wrapper > input.ant-input:-webkit-autofill:focus,
+.ant-input-affix-wrapper > input.ant-input:-webkit-autofill:active,
+.ant-input-affix-wrapper-status-error > input.ant-input:-webkit-autofill,
+.ant-input-affix-wrapper-status-error > input.ant-input:-webkit-autofill:hover,
+.ant-input-affix-wrapper-status-error > input.ant-input:-webkit-autofill:focus,
+.ant-input-affix-wrapper-status-error > input.ant-input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px var(--ant-color-bg-container, #fff) inset !important;
+  box-shadow: 0 0 0 1000px var(--ant-color-bg-container, #fff) inset !important;
+  -webkit-text-fill-color: var(--ant-color-text, rgba(0, 0, 0, 0.88)) !important;
+  caret-color: var(--ant-color-text, rgba(0, 0, 0, 0.88));
+  transition: background-color 99999s ease-out 0s;
+  background-color: var(--ant-color-bg-container, #fff) !important;
+}
+
+// Password 外层 affix（含 error 态）在部分浏览器也会被染色
+.ant-input-affix-wrapper:has(> input.ant-input:-webkit-autofill),
+.ant-input-affix-wrapper-status-error:has(> input.ant-input:-webkit-autofill),
+.ant-input-password:has(input:-webkit-autofill) {
+  background-color: var(--ant-color-bg-container, #fff) !important;
+}
+
+// affix 内层 input 误加 status-error 时会出现粉红内框，强制去掉
+.ant-input-affix-wrapper > input.ant-input.ant-input-status-error,
+.ant-input-password > input.ant-input.ant-input-status-error {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}

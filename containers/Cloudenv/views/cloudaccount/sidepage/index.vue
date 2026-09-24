@@ -23,7 +23,7 @@
       resource="cloudaccounts"
       :cloudaccount-list-refresh="params.options.refresh"
       :getParams="getParams"
-      :columns="columns"
+      v-bind="tabExtraProps"
       taskResource="compute-tasks" />
   </base-side-page>
 </template>
@@ -62,6 +62,14 @@ export default {
   },
   mixins: [SidePageMixin, WindowsMixin, ColumnsMixin, SingleActionsMixin],
   computed: {
+    // 仅详情页需要父级 columns；透传给子 List 会覆盖其自身列（Vue3 fallthrough merge），
+    // 导致 side-page-trigger 闭包里的 this 没有 handleOpenSidepage
+    tabExtraProps () {
+      if (this.params.windowData.currentTab === 'cloudaccount-detail') {
+        return { columns: this.columns }
+      }
+      return {}
+    },
     detailTabs () {
       const data = this.detailData
       let platform = 'idc'

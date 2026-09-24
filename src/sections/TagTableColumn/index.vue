@@ -187,6 +187,7 @@ export default {
   font-size: 12px;
   border-style: solid;
   border-width: 1px;
+  border-radius: 5px;
 }
 .tag-table-column-trigger {
   display: inline-flex;

@@ -1,30 +1,26 @@
 <template>
   <div class="usage-ring" :class="{ 'is-template': isTemplate }">
-    <div class="dashboard-card-wrap">
-      <div class="dashboard-card-header">
-        <div class="dashboard-card-header-left">{{title}}<icon class="ml-2" type="loading" v-if="loading" /></div>
-      </div>
-      <div class="dashboard-card-body align-items-center">
-        <a-progress type="circle" :percent="percent" :strokeWidth="12" :status="status" :strokeColor="percentColor">
-          <template v-slot:format><span class="percent-tips" :style="{ color: percentColor }">{{ percentTips }}</span></template>
-        </a-progress>
-        <div class="flex-fill ml-4">
-          <div class="d-flex">
-            <div class="flex-shrink-0 flex-grow-0">{{ useLabel }}</div>
-            <div class="ml-2 flex-fill text-right">{{ use }}</div>
-          </div>
-          <div class="d-flex">
-            <div class="flex-shrink-0 flex-grow-0">
-              {{ unuseLabel }}
-            </div>
-            <div class="ml-2 flex-fill text-right">{{ unuse }}</div>
-          </div>
-          <div class="d-flex">
-            <div class="flex-shrink-0 flex-grow-0">
-              {{ sumLabel }}
-            </div>
-            <div class="ml-2 flex-fill text-right">{{ sum }}</div>
-          </div>
+    <div class="usage-ring__header">
+      <span class="usage-ring__title">{{ title }}</span>
+    </div>
+    <div class="usage-ring__body">
+      <a-progress type="circle" :percent="percent" :width="100" :strokeWidth="10" :status="status" :strokeColor="percentColor">
+        <template v-slot:format>
+          <span class="usage-ring__percent" :style="{ color: percentColor }">{{ percentTips }}</span>
+        </template>
+      </a-progress>
+      <div class="usage-ring__legend">
+        <div class="usage-ring__row">
+          <span class="usage-ring__label">{{ useLabel }}</span>
+          <span class="usage-ring__num">{{ use }}</span>
+        </div>
+        <div class="usage-ring__row">
+          <span class="usage-ring__label">{{ unuseLabel }}</span>
+          <span class="usage-ring__num">{{ unuse }}</span>
+        </div>
+        <div class="usage-ring__row">
+          <span class="usage-ring__label">{{ sumLabel }}</span>
+          <span class="usage-ring__num">{{ sum }}</span>
         </div>
       </div>
     </div>
@@ -45,7 +41,7 @@ export default {
     },
     options: {
       type: Object,
-      default: () => {},
+      default: () => ({}),
     },
     isTemplate: {
       type: Boolean,
@@ -70,7 +66,7 @@ export default {
       return 0
     },
     percentTips () {
-      return `${this.percent} %`
+      return `${this.percent}%`
     },
     percentColor () {
       const isReverse = COLORS.COLORS_SCHEME_REVERSE_FIELDS.find(v => this.field.endsWith(v))
@@ -101,18 +97,110 @@ export default {
       return ret
     },
   },
+  watch: {
+    options: {
+      deep: true,
+      handler (val) {
+        this.sumLabel = val?.label?.sum
+        this.sum = val?.value?.sum
+        this.useLabel = val?.label?.use
+        this.use = val?.value?.use
+        this.unuseLabel = val?.label?.unuse
+        this.unuse = val?.value?.unuse
+      },
+    },
+  },
 }
 </script>
+
 <style lang="scss" scoped>
 .usage-ring {
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  height:197px;
+  min-height: 180px;
   margin-bottom: 16px;
+  padding: 16px 18px;
   box-sizing: border-box;
-  box-shadow: 1px 1px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  background: var(--oc-color-bg-container, #fff);
+  border: 1px solid var(--oc-color-border-secondary, #e8e8e8);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.2s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.2s cubic-bezier(0.2, 0, 0, 1);
+
+  &:hover {
+    border-color: var(--oc-color-border, #d9d9d9);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  &__title {
+    font-size: 14px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: var(--oc-color-text-heading, rgba(0, 0, 0, 0.85));
+    -webkit-font-smoothing: antialiased;
+  }
+
+  &__body {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    min-width: 0;
+  }
+
+  &__percent {
+    font-size: 16px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  &__legend {
+    flex: 1;
+    min-width: 0;
+    margin-left: 20px;
+  }
+
+  &__row {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    line-height: 1.5;
+
+    & + & {
+      margin-top: 8px;
+    }
+  }
+
+  &__label {
+    flex-shrink: 0;
+    font-size: 13px;
+    color: var(--oc-color-text-secondary, rgba(0, 0, 0, 0.55));
+  }
+
+  &__num {
+    flex: 1;
+    text-align: right;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--oc-color-text, rgba(0, 0, 0, 0.75));
+    font-variant-numeric: tabular-nums;
+  }
+
   &.is-template {
     box-shadow: none;
     border: 1px solid #e5e6eb;
+
+    &:hover {
+      box-shadow: none;
+      border-color: #e5e6eb;
+    }
   }
 }
 </style>

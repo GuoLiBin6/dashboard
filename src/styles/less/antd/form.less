@@ -10,6 +10,15 @@
 .ant-form-item {
   margin-bottom: 24px;
 }
+// inline 表单项不能吃 margin-bottom，否则「已有标签 + 输入框 + 添加」会折行/错位
+// error 文案增高时保持顶部对齐，避免后续按钮被垂直居中拉下去
+.ant-form-inline {
+  align-items: flex-start;
+}
+.ant-form-inline .ant-form-item {
+  margin-bottom: 0;
+  vertical-align: top;
+}
 // 勿全局清零嵌套 Form.Item（同步策略规则等卡片内嵌套项会丢间距）；
 // DomainProject 等需要去间距的场景请显式加 mb-0
 .ant-form-item.mb-0 {
@@ -24,6 +33,25 @@ div.ant-form-item-explain {
   font-weight: 400 !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+// Vue2 遗留 slot="extra"：Vue3 不会进入 Form.Item extra 插槽，作为默认内容用正文色渲染
+// 与 ant-form-item-extra 共用 colorTextDescription；统一与上方 5px 空隙
+// （antd 自带 extra 有 minHeight≈24px，会比 slot extra 更疏，这里去掉再统一 margin）
+.ant-form-item .ant-form-item-extra,
+.ant-form-item [slot="extra"] {
+  color: var(--ant-color-text-description, var(--ant-color-text-secondary, @text-color-secondary));
+  margin-top: 5px;
+}
+.ant-form-item .ant-form-item-extra {
+  // 覆盖 antd cssinjs 的 minHeight(controlHeightSM)，避免比 slot extra 多出一截空白
+  min-height: 0 !important;
+}
+.ant-form-item [slot="extra"] {
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  clear: both;
 }
 
 // 横向表单按内容统一 label 宽：max(label) + --oc-form-label-gap（默认 50px）

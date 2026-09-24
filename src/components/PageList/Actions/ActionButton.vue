@@ -148,11 +148,13 @@ export default {
     }
 
     // 下拉触发器不要包 Tooltip，否则会弄坏 a-dropdown
-    // 菜单项：Tooltip + 拉满宽度，禁用态也可居中；popup 挂父节点，二级菜单可正常 hover
+    // 菜单项（buttonBlock）拉满并居中；操作列仅包一层以便禁用态可 hover，保持左对齐
     if (!this.popoverTrigger && this.hasTooltip) {
       const trigger = h('span', {
         class: 'page-list-action-tooltip-trigger',
-        style: { display: 'block', width: '100%', textAlign: 'center' },
+        style: this.buttonBlock
+          ? { display: 'block', width: '100%', textAlign: 'center' }
+          : { display: 'inline-block' },
       }, [action])
       const tip = this.tooltip
       const tooltipProps = {

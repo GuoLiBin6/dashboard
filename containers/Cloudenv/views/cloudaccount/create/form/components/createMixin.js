@@ -61,6 +61,7 @@ export default {
         },
       },
       domainProjectShow: false,
+      samlAuthChecked: false,
       decorators: {
         project: [
           'project',
@@ -112,8 +113,29 @@ export default {
     this.form.fc.resetFields()
   },
   created () {
+    const saml = this.decorators && this.decorators.saml_auth
+    if (saml) {
+      this.samlAuthChecked = !!(saml[1] && saml[1].initialValue)
+    }
+  },
+  mounted () {
+    if (this.decorators && this.decorators.saml_auth) {
+      this.syncSamlAuthToForm(this.samlAuthChecked)
+    }
   },
   methods: {
+    syncSamlAuthToForm (v) {
+      const fc = this.form && this.form.fc
+      const deco = this.decorators && this.decorators.saml_auth
+      if (!fc || !deco) return
+      const [name, opts] = deco
+      if (typeof fc.__registerField === 'function') fc.__registerField(name, opts || {})
+      fc.setFieldsValue({ [name]: v })
+    },
+    onSamlAuthChange (v) {
+      this.samlAuthChecked = v
+      this.syncSamlAuthToForm(v)
+    },
     transformParams (params) {
       // 处理屏蔽同步资源
       if (params.isOpenBlockedResources) {

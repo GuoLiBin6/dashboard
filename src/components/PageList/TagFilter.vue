@@ -1,5 +1,5 @@
 <template>
-  <div :class="`d-flex tag-filter-wrap ml-2 ${flexFill ? 'flex-fill' : ''}`">
+  <div :class="`d-flex tag-filter-wrap ${flexFill ? 'flex-fill' : ''}`">
     <tag-select
       multiple
       :params="params"

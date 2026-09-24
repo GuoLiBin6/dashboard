@@ -5,7 +5,6 @@
     @openChange="handleVisibleChange">
     <action-button
       ref="dropdown-button"
-      :class="{ 'ml-2': group }"
       :button-size="buttonSize"
       :row="row"
       :item="item"

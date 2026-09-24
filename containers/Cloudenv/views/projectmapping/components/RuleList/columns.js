@@ -35,14 +35,16 @@ const getResourceRuleTableColumn = ({
               boxSizing: 'border-box',
               color: `rgb(${strRgb})`,
               border: `solid 1px rgb(${strRgb})`,
-              padding: '0 5px',
+              borderRadius: '5px',
+              padding: '2px 6px',
+              lineHeight: '20px',
               marginRight: '10px',
             },
           }, getTagTitle('user:' + item.key, item.value))
         })
         return [
           hFn('div', {}, getRuleCondition(row)),
-          hFn('div', {}, tags),
+          hFn('div', { class: 'mt-2' }, tags),
         ]
       },
       header: ({ column }, h) => {
@@ -119,11 +121,13 @@ export default {
         },
       ],
       dragColumn: {
-        width: 1,
+        field: '_drag',
+        width: 60,
+        minWidth: 60,
+        resizable: false,
         slots: {
           default: (params, h) => {
             const hFn = h || this.$createElement
-            if (!this.canSort) return []
             return [
               hFn('span', { class: 'drag-btn' }, [
                 hFn('a-icon', { props: { type: 'menu' } }),
@@ -132,7 +136,6 @@ export default {
           },
           header: (params, h) => {
             const hFn = h || this.$createElement
-            if (!this.canSort) return []
             return [
               hFn('a-tooltip', {
                 props: {
@@ -212,13 +215,12 @@ export default {
     ]
   },
   computed: {
-    columns: function () {
+    columns () {
+      // 非排序不插入拖拽列：width:1 仍会被抬成 minWidth 并参与铺满分摊，把 checkbox 右侧撑得很宽
       if (this.canSort) {
-        this.dragColumn.width = 60
-      } else {
-        this.dragColumn.width = 1
+        return [this.checkColumn, this.dragColumn, ...this.normalColmns]
       }
-      return [this.checkColumn, this.dragColumn, ...this.normalColmns]
+      return [this.checkColumn, ...this.normalColmns]
     },
   },
   methods: {

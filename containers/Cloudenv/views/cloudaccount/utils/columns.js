@@ -14,13 +14,14 @@ export const getAccessUrlTableColumn = () => {
       default: ({ row }, h) => {
         if (!row.access_url || row.brand === 'Huawei') return '-'
         let txt
-        Object.keys(i18n.t('cloudAccountAccessType')).forEach(k => {
+        const accessTypeMap = i18n.tm('cloudAccountAccessType') || {}
+        Object.keys(accessTypeMap).forEach(k => {
           if (row.access_url.indexOf(k) > -1) {
             let _k = k
             if (row.brand !== 'Aliyun' && k === 'InternationalCloud') {
               _k = 'Internation'
             }
-            txt = i18n.t('cloudAccountAccessType')[_k]
+            txt = accessTypeMap[_k]
           }
         })
         if (txt) return txt
@@ -29,7 +30,10 @@ export const getAccessUrlTableColumn = () => {
         return [
           h('a', {
             class: 'link-color',
-            attrs: { target: '_blank', href: row.access_url },
+            style: { textDecoration: 'none' },
+            href: row.access_url,
+            target: '_blank',
+            rel: 'noopener noreferrer',
           }, row.access_url),
         ]
       },

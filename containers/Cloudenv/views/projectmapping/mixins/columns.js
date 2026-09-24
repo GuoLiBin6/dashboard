@@ -64,10 +64,10 @@ export default {
                         class: 'tag mb-1 text-truncate d-inline-block',
                         attrs: { title: getTagTitle(item.key, item.value) },
                         key: `${item.key}${item.value}`,
-                        style: { backgroundColor: `rgba(${strRgb},.1)`, boxSizing: 'border-box', color: `rgb(${strRgb})`, border: `solid 1px rgb(${strRgb})`, padding: '0 5px', marginRight: '10px' },
+                        style: { backgroundColor: `rgba(${strRgb},.1)`, boxSizing: 'border-box', color: `rgb(${strRgb})`, border: `solid 1px rgb(${strRgb})`, borderRadius: '5px', padding: '2px 6px', lineHeight: '20px', marginRight: '10px' },
                       }, text)
                     })
-                    return [conditionDiv, hFn('div', {}, tagSpans)]
+                    return [conditionDiv, hFn('div', { class: 'mt-2' }, tagSpans)]
                   },
                 },
               },

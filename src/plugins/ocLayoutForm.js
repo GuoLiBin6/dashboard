@@ -6,11 +6,16 @@
  *
  * 稳定宽度：同一 form 根节点只增不减。v-if 切换（如虚拟机平台 ↔ 远程终端协议）
  * 时，隐藏项离开 DOM 前会先记入历史 max，避免整表 label 列抖动。
+ *
+ * 可选配置下限：data-oc-label-min-text="已翻译最长文案"
+ * 多条用 | 或换行分隔。最终宽 = max(配置量宽, DOM 检测, 历史 max)；后续检测更宽仍可上涨。
+ * 例：<a-form :data-oc-label-min-text="$t('cloudenv.xxx')">
  */
 const ROOT_CLASS = 'oc-layout-form'
 const ROOT_SELECTOR = '.oc-layout-form:not(.oc-layout-form-off), .ant-form.ant-form-horizontal:not(.oc-layout-form-off)'
 const WIDTH_VAR = '--oc-form-label-width'
 const GAP_VAR = '--oc-form-label-gap'
+const MIN_TEXT_ATTR = 'data-oc-label-min-text'
 const DEFAULT_GAP = 50
 
 let started = false
@@ -105,17 +110,20 @@ function getMeasureHost () {
   return measureHost
 }
 
+function applyMeasureFont (host, fontSource) {
+  if (!fontSource || !isElem(fontSource)) return
+  const cs = getComputedStyle(fontSource)
+  host.style.fontSize = cs.fontSize
+  host.style.fontFamily = cs.fontFamily
+  host.style.fontWeight = cs.fontWeight
+  host.style.letterSpacing = cs.letterSpacing
+}
+
 /** 一律离屏克隆：display:none / 折叠未展开的 label 也能量到真实文字宽 */
 function measureMax (labels, fontSource) {
   if (!labels.length) return 0
   const host = getMeasureHost()
-  if (fontSource && isElem(fontSource)) {
-    const cs = getComputedStyle(fontSource)
-    host.style.fontSize = cs.fontSize
-    host.style.fontFamily = cs.fontFamily
-    host.style.fontWeight = cs.fontWeight
-    host.style.letterSpacing = cs.letterSpacing
-  }
+  applyMeasureFont(host, fontSource)
   const clones = []
   for (let i = 0; i < labels.length; i++) {
     const col = document.createElement('div')
@@ -132,6 +140,44 @@ function measureMax (labels, fontSource) {
   }
   host.textContent = ''
   return max
+}
+
+/** 离屏量配置文案宽（与 measureMax 口径一致：不含 gap） */
+function measureTextList (texts, fontSource) {
+  const list = []
+  for (let i = 0; i < (texts || []).length; i++) {
+    const t = String(texts[i] || '').trim()
+    if (t) list.push(t)
+  }
+  if (!list.length) return 0
+  const host = getMeasureHost()
+  applyMeasureFont(host, fontSource)
+  const clones = []
+  for (let i = 0; i < list.length; i++) {
+    const col = document.createElement('div')
+    col.className = 'ant-form-item-label'
+    const label = document.createElement('label')
+    label.textContent = list[i]
+    label.style.cssText = 'white-space:nowrap;width:auto;max-width:none;display:inline-flex;'
+    col.appendChild(label)
+    host.appendChild(col)
+    clones.push(label)
+  }
+  let max = 0
+  for (let i = 0; i < clones.length; i++) {
+    max = Math.max(max, Math.ceil(clones[i].scrollWidth || clones[i].offsetWidth || 0))
+  }
+  host.textContent = ''
+  return max
+}
+
+/** data-oc-label-min-text：已翻译文案；多条用 | 或换行分隔 */
+function configuredMinLabelWidth (root) {
+  if (!root || typeof root.getAttribute !== 'function') return 0
+  const raw = root.getAttribute(MIN_TEXT_ATTR)
+  if (!raw || !String(raw).trim()) return 0
+  const texts = String(raw).split(/[|\n]/)
+  return measureTextList(texts, root)
 }
 
 function rememberMax (root, width) {
@@ -158,8 +204,11 @@ function syncRoot (root) {
   if (!root.isConnected) return
   const labels = collectLabels(root)
   const measured = measureMax(labels, labels[0] || root)
-  rememberMax(root, measured)
-  applyWidth(root, maxLabelByRoot.get(root) || measured)
+  const configured = configuredMinLabelWidth(root)
+  // 配置作下限；DOM 检测更宽仍可上涨；历史 max 只增不减
+  const width = Math.max(measured, configured)
+  rememberMax(root, width)
+  applyWidth(root, maxLabelByRoot.get(root) || width)
 }
 
 function syncAll () {
@@ -245,8 +294,11 @@ function mutationRelevant (mutations) {
     if (!hasRoot) continue
     if (m.type === 'attributes') {
       if (isCollapseToggle(m.target)) innerChange = true
-      // v-show 改 style.display；class 切换也可能影响可见性
-      else if (m.attributeName === 'style' || m.attributeName === 'class') {
+      else if (m.attributeName === MIN_TEXT_ATTR) {
+        // 动态改 data-oc-label-min-text 时重算
+        if (isLayoutRoot(m.target) || findRootFor(m.target)) innerChange = true
+      } else if (m.attributeName === 'style' || m.attributeName === 'class') {
+        // v-show 改 style.display；class 切换也可能影响可见性
         if (m.target.closest && m.target.closest('.ant-form-item')) innerChange = true
       }
       continue
@@ -276,7 +328,7 @@ function start () {
     subtree: true,
     characterData: true,
     attributes: true,
-    attributeFilter: ['class', 'style'],
+    attributeFilter: ['class', 'style', MIN_TEXT_ATTR],
   })
 }
 

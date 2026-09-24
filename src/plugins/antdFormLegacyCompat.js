@@ -235,23 +235,29 @@ function sanitizeDecoratorVNode (binding, vnode) {
  * v-decorator 在组件上会 fallthrough 到根 DOM。
  * 从 DOM 所属组件向上找「声明了 value/modelValue」的最外层业务组件。
  * Switch/Checkbox 优先取最内层，避免外层 value 落到 attrs。
+ * InputPassword/InputSearch 等包装组件自身不 emit value，须取最内层真正发 update:value 的 Input。
  */
 function findDecoratedComponent (el) {
   let comp = el && el.__vueParentComponent
   let found = null
   let checkedFound = null
+  let textInputFound = null
   while (comp) {
     const name = comp.type && (comp.type.name || comp.type.__name)
     if (name === 'AForm' || name === 'AFormItem' || name === 'AFormItemRest') break
     if (isCheckedControlComponent(comp) && !checkedFound) {
       checkedFound = comp
     }
+    // 最内层文本输入（AInput / VCInput）；勿用外层 AInputPassword（只转发 attrs，不走 emit）
+    if (isTextInputComponent(comp) && !textInputFound) {
+      textInputFound = comp
+    }
     if (componentHasValueProp(comp)) {
       found = comp
     }
     comp = comp.parent
   }
-  return checkedFound || found || (el && el.__vueParentComponent) || null
+  return checkedFound || textInputFound || found || (el && el.__vueParentComponent) || null
 }
 
 /**
@@ -351,19 +357,27 @@ function getTextInputDecoratorSync (comp) {
 
 /**
  * 同步 Switch initialValue / setFieldsValue（含 false）。
- * 优先依赖 props.checked 桥接（fd 真源）；此处再写 vnode/props 并 forceUpdate 兜底。
+ * antdv4 Switch：setChecked 只 emit，UI 靠 watch(props.checked) 写内部 ref。
+ * v-decorator 会 fallthrough 到按钮根节点，sanitize 改不到组件 props；
+ * 直接写 instance.props.checked（shallowReactive）可触发该 watch。
+ * 父级同 tick 重渲染可能清掉 checked，微任务再写一次。
  */
 function applySwitchValue (comp, value) {
   if (!comp || value === undefined) return
-  try {
-    if (comp.props) comp.props.checked = value
-  } catch (e) { /* ignore */ }
-  if (comp.vnode) {
-    const next = { ...(comp.vnode.props || {}), checked: value }
-    delete next.value
-    comp.vnode.props = next
+  const write = () => {
+    try {
+      if (comp.props && comp.props.checked !== value) {
+        comp.props.checked = value
+      }
+    } catch (e) { /* props may be readonly */ }
+    if (comp.vnode) {
+      const next = { ...(comp.vnode.props || {}), checked: value }
+      delete next.value
+      comp.vnode.props = next
+    }
   }
-  scheduleCompUpdate(comp)
+  write()
+  queueMicrotask(write)
 }
 
 /**
@@ -503,10 +517,10 @@ function patchComponentValueBridge (comp, fieldName, fc, options = {}) {
   comp.__decoratorValuePatched = true
   comp.__decoratorValuePropName = propKey
 
-  // Radio / 文本输入 / InputNumber：不做 props 桥接
-  // Switch 必须桥接 checked：antdv4 setup 返回渲染函数，setupState 无 checked ref，
-  // 点选只 emit 不改内部状态；无 props 受控时 UI 卡在 off，但 fd 已更新（地图等 v-if 仍显示）
-  if (isRadioGroupComponent(comp) || isTextInputComponent(comp) || isInputNumberComponent(comp)) {
+  // Radio / 文本输入 / InputNumber / Switch：不做 props 桥接
+  // Switch 必须跳过 defineProperty：会打断 antdv4 watch(props.checked)；
+  // 改由 applySwitchValue 直接写 instance.props.checked。
+  if (isRadioGroupComponent(comp) || isTextInputComponent(comp) || isInputNumberComponent(comp) || isSwitchComponent(comp)) {
     comp.__decoratorSkipValueBridge = true
     if (isTextInputComponent(comp)) ensureTextInputUncontrolled(comp)
     if (isInputNumberComponent(comp)) comp.__decoratorIsInputNumber = true
@@ -576,23 +590,64 @@ function scheduleCompUpdate (comp) {
   })
 }
 
+/** 给控件打上 / 清除 antdv4 校验状态 class（勿给 affix 内层 input 加边框 class） */
+function setControlStatusError (node, on) {
+  if (!node || !node.classList) return
+  // Password / Search：边框在 affix-wrapper 上；内层 input 再加 status-error 会出现粉红内框
+  const insideAffix = !!(
+    (node.matches?.('input.ant-input, textarea.ant-input') || node.tagName === 'INPUT' || node.tagName === 'TEXTAREA') &&
+    node.closest?.('.ant-input-affix-wrapper')
+  )
+  if (insideAffix) {
+    // 只清历史误加的 class，不新增
+    if (!on) {
+      node.classList.remove('ant-input-status-error')
+      node.classList.remove('ant-input-affix-wrapper-status-error')
+      node.classList.remove('ant-select-status-error')
+    }
+    return
+  }
+  const isAffix = node.classList.contains('ant-input-affix-wrapper')
+  const isSelect = node.classList.contains('ant-select')
+  const isInputNumber = node.classList.contains('ant-input-number')
+  if (on) {
+    if (isAffix) node.classList.add('ant-input-affix-wrapper-status-error')
+    else if (isSelect) node.classList.add('ant-select-status-error')
+    else if (isInputNumber) node.classList.add('ant-input-number-status-error')
+    else node.classList.add('ant-input-status-error')
+  } else {
+    node.classList.remove('ant-input-affix-wrapper-status-error')
+    node.classList.remove('ant-input-status-error')
+    node.classList.remove('ant-select-status-error')
+    node.classList.remove('ant-input-number-status-error')
+  }
+}
+
 /** 在 Form.Item 上展示/清除 decorator 校验错误（antdv4 无 name 时需手动） */
 function setFormItemError (el, message) {
   if (!el || typeof el.closest !== 'function') return
   const item = el.closest('.ant-form-item')
   if (!item) return
+  const affix = (el.classList?.contains('ant-input-affix-wrapper') ? el : null) ||
+    el.closest?.('.ant-input-affix-wrapper') ||
+    item.querySelector?.('.ant-input-affix-wrapper')
   const statusTargets = [
-    el,
-    el.querySelector?.('input, textarea'),
-    item.querySelector?.('.ant-input, .ant-input-affix-wrapper, .ant-input-number, .ant-select'),
+    affix,
+    !affix && (el.matches?.('input, textarea') ? el : null),
+    !affix && el.querySelector?.('input.ant-input, textarea.ant-input, input, textarea'),
+    item.querySelector?.('.ant-input-number'),
+    item.querySelector?.('.ant-select'),
   ].filter(Boolean)
+  // 去重
+  const uniq = [...new Set(statusTargets)]
   let explain = item.querySelector('[data-legacy-decorator-error]')
   if (message) {
     item.classList.add('ant-form-item-has-error')
-    statusTargets.forEach((node) => {
-      node.classList.add('ant-input-status-error')
-      node.classList.add('ant-select-status-error')
+    // 清掉内层 input 上历史误加的 status-error，避免粉红内框
+    item.querySelectorAll('.ant-input-affix-wrapper input.ant-input-status-error').forEach((node) => {
+      node.classList.remove('ant-input-status-error')
     })
+    uniq.forEach((node) => setControlStatusError(node, true))
     if (!explain) {
       explain = document.createElement('div')
       explain.setAttribute('data-legacy-decorator-error', '1')
@@ -608,9 +663,10 @@ function setFormItemError (el, message) {
     errNode.textContent = typeof message === 'string' ? message : (message.message || String(message))
   } else {
     item.classList.remove('ant-form-item-has-error')
-    statusTargets.forEach((node) => {
-      node.classList.remove('ant-input-status-error')
-      node.classList.remove('ant-select-status-error')
+    uniq.forEach((node) => setControlStatusError(node, false))
+    // 清掉历史误加在内层 input 上的 status-error
+    item.querySelectorAll('.ant-input-status-error, .ant-input-affix-wrapper-status-error').forEach((node) => {
+      setControlStatusError(node, false)
     })
     if (explain) explain.remove()
   }
@@ -1025,6 +1081,10 @@ function bindDecorator (el, binding) {
       fc.setFieldsValue({ [meta.name]: val })
       if (fc.__markTouched) fc.__markTouched(meta.name)
     }
+    // Switch：emit 后立刻写 props.checked，避免等 notifyViews / 父级重渲染把 UI 卡住
+    if (isSwitchComponent(comp)) {
+      applySwitchValue(comp, val)
+    }
     // change 触发校验（若 validateTrigger 含 change）
     const triggers = [].concat((meta.options && meta.options.validateTrigger) || 'change')
     if (triggers.includes('change') && typeof fc.__validateField === 'function') {
@@ -1108,6 +1168,7 @@ function bindDecorator (el, binding) {
   }
   // 文本 / Radio / InputNumber / Switch 靠组件 emit 写 fd；不要再挂 DOM 捕获
   // 复合控件（DiskSizeInput / MobileInput 等内部另有 input）也勿挂，否则会把内部字符串盖掉表单值
+  // Password：浏览器自动填充常不触发 Vue emit，需 DOM 兜底，否则有内容却校验失败
   const wrapsNativeInput = !!(
     comp &&
     el &&
@@ -1115,7 +1176,14 @@ function bindDecorator (el, binding) {
     !isInputNumberComponent(comp) &&
     el.querySelector?.('input, textarea, select')
   )
-  const skipDomListener = isTextInputComponent(comp) || isRadioGroupComponent(comp) || isInputNumberComponent(comp) || isSwitchComponent(comp) || wrapsNativeInput
+  const isPasswordField = !!(
+    el && (
+      el.classList?.contains('ant-input-password') ||
+      el.matches?.('input[type="password"]') ||
+      el.querySelector?.('input[type="password"]')
+    )
+  )
+  const skipDomListener = (isTextInputComponent(comp) && !isPasswordField) || isRadioGroupComponent(comp) || isInputNumberComponent(comp) || isSwitchComponent(comp) || wrapsNativeInput
   if (!skipDomListener) {
     el.addEventListener('input', onDomInput, true)
     el.addEventListener('change', onDomInput, true)
@@ -1240,8 +1308,11 @@ export const decoratorDirective = {
         } else if (isTextInputComponent(comp) && value !== undefined && value !== null) {
           // focus 导致 Form.Item 重渲染时，从 fd 回写，避免名字被清空
           applyTextInputValue(comp, el, value)
+        } else if (isSwitchComponent(comp) && value !== undefined) {
+          // 父级重渲染会清掉 checked；从 fd 写回以触发 Switch 内部 watch
+          applySwitchValue(comp, value)
         }
-        // Switch / InputNumber：勿在 updated 里反复同步，避免 forceUpdate 死循环卡死
+        // InputNumber：勿在 updated 里反复同步，避免 forceUpdate 死循环卡死
       }
       return
     }

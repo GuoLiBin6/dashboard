@@ -437,7 +437,8 @@ export default {
 .page-list-header-actions__main {
   flex: 1 1 auto;
   flex-wrap: wrap;
-  gap: 8px 5px;
+  // 与按钮 ml-2（8px）一致
+  gap: 8px;
   min-width: 0;
   > * {
     flex-shrink: 0;
@@ -457,7 +458,7 @@ export default {
   white-space: nowrap;
 }
 .page-list-header-actions__tools {
-  gap: 5px;
+  gap: 8px;
 }
 .page-list-header-actions__stats {
   white-space: nowrap;

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <a-form :form="form.fc" v-if="decorators" v-bind="formLayout">
+    <a-form :form="form.fc" v-if="decorators" v-bind="formLayout" :data-oc-label-min-text="$t('cloudenv.project_mapping_effective_scope')">
       <a-form-item :label="$t('cloudenv.text_95')">
         <a-input v-decorator="decorators.name" :placeholder="$t('cloudenv.text_190')" />
       </a-form-item>
@@ -30,7 +30,7 @@
       <blocked-resources :decorators="{ isOpenBlockedResources: decorators.isOpenBlockedResources, blockedResources: decorators.blockedResources }" />
       <proxy-setting :fc="form.fc" :fd="form.fd" ref="proxySetting" />
       <a-form-item :label="$t('cloudaccount.create_form.saml_user_label')" v-if="provider==='Aliyun'">
-        <a-switch :checkedChildren="$t('cloudenv.text_84')" :unCheckedChildren="$t('cloudenv.text_85')" v-decorator="decorators.saml_auth" />
+        <a-switch :checkedChildren="$t('cloudenv.text_84')" :unCheckedChildren="$t('cloudenv.text_85')" v-model:checked="samlAuthChecked" @change="onSamlAuthChange" />
         <div slot="extra">
           <i18n path="cloudaccount.create_form.saml_user_extra" v-if="showDocsLink()">
             <template #link>

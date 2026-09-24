@@ -1,6 +1,6 @@
 <template>
   <div>
-    <a-form :form="form.fc" v-bind="formLayout">
+    <a-form :form="form.fc" v-bind="formLayout" :data-oc-label-min-text="$t('cloudenv.project_mapping_effective_scope')">
       <a-form-item :label="$t('cloudenv.text_95')">
         <a-input v-decorator="decorators.name" :placeholder="$t('cloudenv.text_190')" />
       </a-form-item>

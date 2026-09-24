@@ -1,8 +1,10 @@
 .help-link {
   color: var(--ant-color-primary, #1890ff);
+  text-decoration: none;
   &:hover,
   &:focus,
   &:active {
     color: var(--ant-color-primary, #1890ff);
+    text-decoration: none;
   }
 }

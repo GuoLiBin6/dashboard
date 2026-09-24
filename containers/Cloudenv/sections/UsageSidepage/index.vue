@@ -1,24 +1,31 @@
 <template>
-  <div>
-    <a-button v-if="!isTemplate" @click="handleRefresh" class="action-btn">
-      <icon type="refresh" />
-    </a-button>
+  <div class="usage-sidepage">
+    <div class="usage-sidepage__toolbar" v-if="!isTemplate">
+      <a-button class="usage-sidepage__refresh" @click="handleRefresh">
+        <icon type="refresh" />
+      </a-button>
+    </div>
     <loading-block v-if="loading && !isTemplate" />
-    <!-- <detail
-      v-else
-      :data="data"
-      :base-info="baseInfo"
-      :on-manager="onManager"
-      :showDesc="false"
-      :hiddenKeys="['id', 'name', 'status', 'project_domain', 'tenant', 'created_at', 'updated_at']" /> -->
     <template v-else>
-      <a-row :gutter="16">
-        <a-col :span="isTemplate ? 8 : undefined" :md="isTemplate ? undefined : 12" :xl="isTemplate ? undefined : 8" :xxl="isTemplate ? undefined : 6" v-for="obj in baseInfo" :key="obj.field">
+      <a-row :gutter="[16, 0]">
+        <a-col
+          :span="isTemplate ? 8 : undefined"
+          :md="isTemplate ? undefined : 12"
+          :xl="isTemplate ? undefined : 8"
+          :xxl="isTemplate ? undefined : 6"
+          v-for="obj in baseInfo"
+          :key="obj.field">
           <usage-quota :title="obj.title" :value="obj.value()" :is-template="isTemplate" />
         </a-col>
       </a-row>
-      <a-row :gutter="16">
-        <a-col :span="isTemplate ? 12 : undefined" :md="isTemplate ? undefined : 12" :xl="isTemplate ? undefined : 8" :xxl="isTemplate ? undefined : 6" v-for="obj in ringInfo" :key="obj.field">
+      <a-row class="usage-sidepage__rings" :gutter="[16, 0]">
+        <a-col
+          :span="isTemplate ? 12 : undefined"
+          :md="isTemplate ? undefined : 12"
+          :xl="isTemplate ? undefined : 8"
+          :xxl="isTemplate ? undefined : 6"
+          v-for="obj in ringInfo"
+          :key="obj.field">
           <usage-ring :title="obj.title" :field="obj.field" :options="obj.options" :is-template="isTemplate" />
         </a-col>
       </a-row>
@@ -162,19 +169,21 @@ export default {
 </script>
 
 <style lang="less" scoped>
-:deep(.detail-item) {
-  .detail-item-title {
-    width: 220px !important;
+.usage-sidepage {
+  &__toolbar {
+    margin-bottom: 12px;
   }
-  .detail-item-value {
-    margin-left: 220px;
+
+  &__refresh {
+    color: var(--oc-color-text-secondary, rgba(0, 0, 0, 0.55));
+
+    &:hover {
+      color: var(--ant-color-primary, #1890ff);
+    }
   }
-}
-.action-btn {
-  margin-bottom: 10px;
-  color: rgba(0, 0, 0, 0.65);
-  &:hover {
-    color: #40a9ff;
+
+  &__rings {
+    margin-top: 8px;
   }
 }
 </style>

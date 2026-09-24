@@ -301,9 +301,10 @@ export default {
                     if (!isSupportSAMLAuth) tooltip = this.$t('cloudaccount.tooltip.not_support_sso', [BRAND_MAP[obj.brand]?.label || obj.brand])
                     if (obj.brand === 'Azure' && obj.access_url !== 'AzurePublicCloud') {
                       let txt
-                      Object.keys(i18n.t('cloudAccountAccessType')).forEach(k => {
+                      const accessTypeMap = i18n.tm('cloudAccountAccessType') || {}
+                      Object.keys(accessTypeMap).forEach(k => {
                         if (obj.access_url.indexOf(k) > -1) {
-                          txt = i18n.t('cloudAccountAccessType')[k]
+                          txt = accessTypeMap[k]
                         }
                       })
                       tooltip = this.$t('cloudaccount.tooltip.not_support_sso', [`${BRAND_MAP[obj.brand]?.label || obj.brand} ${txt}`])

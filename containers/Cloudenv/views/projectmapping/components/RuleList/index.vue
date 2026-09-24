@@ -1,7 +1,7 @@
 <template>
     <div>
       <a-alert class="mb-2" :message="$t('cloudenv.project_mapping_rule_priority')" />
-      <div class="d-flex flex-fill mb-2">
+      <div class="d-flex flex-fill mb-2 align-items-center">
         <!-- 刷新 -->
         <a-button
           class="flex-shrink-0"
@@ -12,7 +12,7 @@
         </a-button>
         <actions
           :group="true"
-          class="flex-shrink-0"
+          class="flex-shrink-0 ml-2"
           :options="groupActions"
           button-type="default"
           :showSync="true"

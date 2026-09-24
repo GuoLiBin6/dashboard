@@ -1,35 +1,41 @@
 <template>
-  <div v-if="beforeShowMenuLoaded" style="display:flex;flex-wrap:wrap;gap:5px;">
+  <div v-if="beforeShowMenuLoaded" class="d-flex flex-wrap page-list-actions">
     <template v-for="(item,index) of options" :key="item.label">
       <!-- 一组操作，下拉形式展示 -->
       <template v-if="item.actions">
-        <dropmenus
+        <span
           v-if="!getDeepHidden(item)"
-
-          :group="group"
-          :item="item"
-          :row="row"
-          :button-type="buttonType"
-          :button-size="buttonSize"
-          :button-style="buttonStyle"
-          :button-block="buttonBlock"
-          @clear-selected="clearSelected" />
+          class="d-inline-flex"
+          :class="{ 'ml-2': group && index > 0 }">
+          <dropmenus
+            :group="group"
+            :item="item"
+            :row="row"
+            :button-type="buttonType"
+            :button-size="buttonSize"
+            :button-style="buttonStyle"
+            :button-block="buttonBlock"
+            @clear-selected="clearSelected" />
+        </span>
       </template>
       <!-- 单个操作 -->
       <template v-else>
-        <action-button
+        <span
           v-if="!getHidden(item)"
-          :key="item.label"
-          :item="item"
-          :row="row"
-          :rows="rows"
-          :button-type="buttonType"
-          :button-size="buttonSize"
-          :button-block="buttonBlock"
-          :button-style="buttonStyle"
-          @clear-selected="clearSelected" />
+          class="d-inline-flex"
+          :class="{ 'ml-2': group && index > 0 }">
+          <action-button
+            :item="item"
+            :row="row"
+            :rows="rows"
+            :button-type="buttonType"
+            :button-size="buttonSize"
+            :button-block="buttonBlock"
+            :button-style="buttonStyle"
+            @clear-selected="clearSelected" />
+        </span>
       </template>
-      <br v-if="fixed" :key="index" />
+      <br v-if="fixed" :key="`${index}-br`" />
     </template>
   </div>
 </template>

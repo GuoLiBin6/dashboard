@@ -42,7 +42,7 @@
           <a-switch
             :checkedChildren="$t('cloudenv.text_84')"
             :unCheckedChildren="$t('cloudenv.text_85')"
-            v-model:value="fd.isOpenBlockedResources" />
+            v-model:checked="fd.isOpenBlockedResources" />
         </a-form-item>
         <a-form-item :label="$t('cloudenv.block_resources_type')" v-if="!ignoreBlockedResources && fd.isOpenBlockedResources">
           <base-select

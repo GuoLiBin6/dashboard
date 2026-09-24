@@ -9,7 +9,7 @@
     <a-form class="mt-3" :form="form.fc">
       <a-divider orientation="left">{{$t('cloudenv.text_227')}}</a-divider>
       <a-form-item :label="$t('cloudenv.text_228')" v-bind="formLayout">
-        <a-switch :checkedChildren="$t('cloudenv.text_84')" :unCheckedChildren="$t('cloudenv.text_85')" v-model:value="configNetwork" />
+        <a-switch :checkedChildren="$t('cloudenv.text_84')" :unCheckedChildren="$t('cloudenv.text_85')" v-model:checked="configNetwork" />
       </a-form-item>
       <template v-if="configNetwork">
         <a-form-item :label="$t('cloudenv.text_184')" v-bind="formLayout">
