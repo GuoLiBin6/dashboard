@@ -4,8 +4,7 @@
     :columns="columns"
     :single-actions="singleActions"
     :group-actions="groupActions"
-    :export-data-options="exportDataOptions"
-    :expand-config="{ lazy: true, loadMethod: loadPolicy }" />
+    :export-data-options="exportDataOptions" />
 </template>
 
 <script>

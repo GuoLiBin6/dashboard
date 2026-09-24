@@ -86,7 +86,9 @@ export default {
             const networks = Array.isArray(row.wireNetworks) ? row.wireNetworks : null
             const hosts = Array.isArray(row.wireHosts) ? row.wireHosts : null
             const hasLoadedContent = (networks && networks.length > 0) || (hosts && hosts.length > 0)
-            const contentStyle = hasLoadedContent ? { minWidth: '640px', maxWidth: '80vw' } : {}
+            const contentStyle = hasLoadedContent
+              ? { width: 'fit-content', maxWidth: '80vw', maxHeight: '60vh', overflow: 'auto' }
+              : {}
             const keySuffix = `${networks ? networks.length : 'n'}-${hosts ? hosts.length : 'h'}`
             const content = networks || hosts
               ? h('div', [

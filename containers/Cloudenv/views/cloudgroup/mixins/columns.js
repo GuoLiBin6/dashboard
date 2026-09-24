@@ -8,6 +8,7 @@ import {
   getAccountTableColumn,
   getTimeTableColumn,
 } from '@/utils/common/tableColumn'
+import { getNameDescPopoverColumns, LIST_BODY_CELL_POPOVER_STYLE } from '@/utils/common/listBodyCellPopover'
 import i18n from '@/locales'
 
 export default {
@@ -46,22 +47,17 @@ export default {
             if (R.isNil(row.cloudpolicies) || R.isEmpty(row.cloudpolicies)) {
               return i18n.t('cloudenv.text_330')
             }
-            const columns = [
-              {
-                field: 'name',
-                title: this.$t('common.name'),
-              },
-              {
-                field: 'description',
-                title: this.$t('table.title.desc'),
-                formatter: ({ cellValue }) => cellValue || '-',
-              },
-            ]
+            const policies = row.feCloudpolicies || []
+            const columns = getNameDescPopoverColumns({
+              nameTitle: this.$t('common.name'),
+              descTitle: this.$t('table.title.desc'),
+              rows: policies,
+            })
             const h = this.$createElement
             const contentVnode = row.feCloudpolicies && row.feCloudpolicies.length > 0
               ? h('table-lite-grid', {
                 props: {
-                  showOverflow: false,
+                  showOverflow: 'title',
                   rowConfig: { isHover: true },
                   columnConfig: { resizable: false },
                   data: row.feCloudpolicies,
@@ -75,7 +71,9 @@ export default {
               key: `popover-${row.id}-${row.feCloudpolicies ? row.feCloudpolicies.length : 0}`,
               scopedSlots: {
                 content: () => h('div', {
-                  style: row.feCloudpolicies && row.feCloudpolicies.length > 0 ? { minWidth: '600px' } : {},
+                  style: row.feCloudpolicies && row.feCloudpolicies.length > 0
+                    ? LIST_BODY_CELL_POPOVER_STYLE
+                    : {},
                 }, [contentVnode]),
               },
             }, [

@@ -10,6 +10,8 @@
 </template>
 
 <script>
+import { LIST_BODY_CELL_POPOVER_STYLE } from '@/utils/common/listBodyCellPopover'
+
 export default {
   name: 'ListBodyCellPopover',
   props: {
@@ -17,21 +19,28 @@ export default {
       type: String,
       required: true,
     },
+    /** 可选下限；勿用大 minWidth 强撑，内容少时会显得过宽 */
     minWidth: {
       type: String,
     },
     maxWidth: {
       type: String,
+      default: '80vw',
+    },
+    maxHeight: {
+      type: String,
+      default: '60vh',
     },
   },
   computed: {
     containerStyle () {
-      const ret = {}
+      const ret = {
+        ...LIST_BODY_CELL_POPOVER_STYLE,
+        maxWidth: this.maxWidth || LIST_BODY_CELL_POPOVER_STYLE.maxWidth,
+        maxHeight: this.maxHeight || LIST_BODY_CELL_POPOVER_STYLE.maxHeight,
+      }
       if (this.minWidth) {
         ret.minWidth = this.minWidth
-      }
-      if (this.maxWidth) {
-        ret.maxWidth = this.maxWidth
       }
       return ret
     },
@@ -40,17 +49,11 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.sharing-rules-popover {
+.list-body-cell-popover-container {
+  width: fit-content;
   max-width: 80vw;
-  min-width: 400px;
-  display: block;
-  :deep(.vxe-body--column) {
-    white-space: normal !important;
-    word-break: break-word;
-  }
-  .vxe-grid {
-    width: 100%;
-  }
+  max-height: 60vh;
+  overflow: auto;
 }
 .list-body-cell-popover-text {
   color: var(--antd-wave-shadow-color);

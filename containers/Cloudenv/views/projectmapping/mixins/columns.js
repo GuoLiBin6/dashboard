@@ -94,13 +94,12 @@ export default {
             return [hFn('list-body-cell-popover', {
               props: {
                 text: this.$t('common_701', [row.rules ? row.rules.length : 0]),
-                minWidth: '600px',
               },
             }, [hFn('table-lite-grid', {
               props: {
                 size: 'mini',
                 border: true,
-                showOverflow: false,
+                showOverflow: 'title',
                 rowConfig: { isHover: true },
                 columnConfig: { resizable: false },
                 columns,

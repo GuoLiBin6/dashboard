@@ -66,12 +66,11 @@ export const getEnvTableColumn = () => {
           hFn('list-body-cell-popover', {
             props: {
               text: i18n.t('cloudenv.text_245', [(row.spec.envs && row.spec.envs.length) || 0]),
-              minWidth: '500px',
             },
           }, [
             hFn('table-lite-grid', {
               props: {
-                showOverflow: false,
+                showOverflow: 'title',
                 rowConfig: { isHover: true },
                 columnConfig: { resizable: false },
                 data: row.spec.envs,

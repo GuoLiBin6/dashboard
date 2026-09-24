@@ -51,6 +51,7 @@ import { h } from 'vue'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import { getNameFilter } from '@/utils/common/tableFilter'
+import { getNameDescPopoverColumns } from '@/utils/common/listBodyCellPopover'
 import ListSelect from '@/sections/ListSelect'
 import UserSelect from '../components/UserSelect'
 
@@ -145,25 +146,18 @@ export default {
                 return [
                   h('list-body-cell-popover', {
                     text: this.$t('cloudenv.text_245', [(row.cloudpolicies && row.cloudpolicies.length) || 0]),
-                    'min-width': '600px',
                   }, {
                     default: () => [
                       h('table-lite-grid', {
-                        showOverflow: false,
-                        'row-config': { isHover: true },
-                        'column-config': { resizable: false },
+                        showOverflow: 'title',
+                        rowConfig: { isHover: true },
+                        columnConfig: { resizable: false },
                         data: row.cloudpolicies,
-                        columns: [
-                          {
-                            field: 'name',
-                            title: this.$t('common.name'),
-                          },
-                          {
-                            field: 'description',
-                            title: this.$t('table.title.desc'),
-                            formatter: ({ cellValue }) => cellValue || '-',
-                          },
-                        ],
+                        columns: getNameDescPopoverColumns({
+                          nameTitle: this.$t('common.name'),
+                          descTitle: this.$t('table.title.desc'),
+                          rows: row.cloudpolicies,
+                        }),
                       }),
                     ],
                   }),

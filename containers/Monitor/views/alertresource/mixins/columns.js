@@ -6,10 +6,6 @@ export default {
   data () {
     return {
       extandData: {},
-      expandConfig: {
-        loadMethod: this.loadMethod,
-        lazy: true,
-      },
     }
   },
   created () {
@@ -102,7 +98,6 @@ export default {
             return [this.$createElement('list-body-cell-popover', {
               props: {
                 text: this.$t('common_701', [row.count || 0]),
-                minWidth: '700px',
               },
             }, [
               this.$createElement('table-lite-grid', {
@@ -110,7 +105,7 @@ export default {
                   size: 'mini',
                   resizable: true,
                   border: true,
-                  showOverflow: false,
+                  showOverflow: 'title',
                   rowConfig: { isHover: true },
                   columnConfig: { resizable: false },
                   columns: columns,

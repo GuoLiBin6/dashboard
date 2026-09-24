@@ -61,6 +61,7 @@ import WindowsMixin from '@/mixins/windows'
 import NameRepeated from '@/sections/NameRepeated'
 // import ListSelect from '@/sections/ListSelect'
 import { getNameFilter } from '@/utils/common/tableFilter'
+import { getNameDescPopoverColumns } from '@/utils/common/listBodyCellPopover'
 import UserSelect from '../components/UserSelect'
 
 export default {
@@ -191,18 +192,18 @@ export default {
                 return [
                   h('list-body-cell-popover', {
                     text: this.$t('cloudenv.text_245', [(row.cloudpolicies && row.cloudpolicies.length) || 0]),
-                    'min-width': '600px',
                   }, {
                     default: () => [
                       h('table-lite-grid', {
-                        showOverflow: false,
+                        showOverflow: 'title',
                         rowConfig: { isHover: true },
                         columnConfig: { resizable: false },
                         data: row.cloudpolicies,
-                        columns: [
-                          { field: 'name', title: this.$t('common.name') },
-                          { field: 'description', title: this.$t('table.title.desc'), formatter: ({ cellValue }) => cellValue || '-' },
-                        ],
+                        columns: getNameDescPopoverColumns({
+                          nameTitle: this.$t('common.name'),
+                          descTitle: this.$t('table.title.desc'),
+                          rows: row.cloudpolicies,
+                        }),
                       }),
                     ],
                   }),

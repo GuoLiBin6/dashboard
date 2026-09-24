@@ -300,11 +300,11 @@ export default {
                     }, this.$t('common.notData')),
                   ])]
                 }
-                return [<list-body-cell-popover key={dataKey} text={this.$t('common_701', [row.res_num || 0])} min-width="700px">
+                return [<list-body-cell-popover key={dataKey} text={this.$t('common_701', [row.res_num || 0])}>
                   <table-lite-grid
                     size="mini"
                     border
-                    showOverflow={false}
+                    showOverflow="title"
                     row-config={{ isHover: true }}
                     column-config={{ resizable: false, minWidth: 120 }}
                     columns={columns}

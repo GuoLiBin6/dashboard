@@ -360,7 +360,17 @@ export default {
       return buildHeaderRows(this.normalizedColumns)
     },
     headerMatrix () {
-      return this.headerStructure.headerRows
+      const rows = this.headerStructure.headerRows
+      const leading = this.injectedLeadingColumns
+      if (!leading.length || !rows.length) return rows
+      // 与 bodyColumns 一致：自动注入的 expand/checkbox/radio 也要占表头，否则数据列整体右移
+      const depth = rows.length
+      const leadingCells = leading.map(col => ({
+        col: withColumnProperty(col),
+        rowspan: depth,
+        colspan: 1,
+      }))
+      return rows.map((row, idx) => (idx === 0 ? [...leadingCells, ...row] : row))
     },
     leafColumns () {
       return this.headerStructure.leafColumns
@@ -374,18 +384,22 @@ export default {
       if (this.hasColumnType.has('radio') || this.radioConfig) return this.hasColumnType.has('radio') ? null : 'radio'
       return null
     },
-    bodyColumns () {
-      let cols = [...this.leafColumns]
+    /** body/header 共用的前置注入列（顺序：selection → expand） */
+    injectedLeadingColumns () {
+      const cols = []
       if (this.expandConfig && !this.hasColumnType.has('expand')) {
-        cols = [{ type: 'expand', width: EXPAND_COL_WIDTH, resizable: false }, ...cols]
+        cols.push({ type: 'expand', width: EXPAND_COL_WIDTH, resizable: false })
       }
       const sel = this.resolvedSelectionType
       if (sel === 'checkbox' && !this.hasColumnType.has('checkbox')) {
-        cols = [{ type: 'checkbox', width: SELECT_COL_WIDTH, resizable: false }, ...cols]
+        cols.unshift({ type: 'checkbox', width: SELECT_COL_WIDTH, resizable: false })
       } else if (sel === 'radio' && !this.hasColumnType.has('radio')) {
-        cols = [{ type: 'radio', width: SELECT_COL_WIDTH, resizable: false }, ...cols]
+        cols.unshift({ type: 'radio', width: SELECT_COL_WIDTH, resizable: false })
       }
-      return cols.map(withColumnProperty)
+      return cols
+    },
+    bodyColumns () {
+      return [...this.injectedLeadingColumns, ...this.leafColumns].map(withColumnProperty)
     },
     /** 各列声明/拖拽后的基准宽度 */
     colBaseWidths () {

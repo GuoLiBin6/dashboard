@@ -17,6 +17,7 @@
 import * as R from 'ramda'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
+import { getNameDescPopoverColumns, LIST_BODY_CELL_POPOVER_STYLE } from '@/utils/common/listBodyCellPopover'
 
 export default {
   name: 'CloudgroupListForClouduserForUserDialog',
@@ -47,22 +48,17 @@ export default {
                 }
               }
               if (R.isNil(row.cloudpolicies) || R.isEmpty(row.cloudpolicies)) return this.$t('common_324')
-              const columns = [
-                {
-                  field: 'name',
-                  title: this.$t('common.name'),
-                },
-                {
-                  field: 'description',
-                  title: this.$t('table.title.desc'),
-                  formatter: ({ cellValue }) => cellValue || '-',
-                },
-              ]
               const hasData = row.feCloudpolicies && row.feCloudpolicies.length > 0
+              const columns = getNameDescPopoverColumns({
+                nameTitle: this.$t('common.name'),
+                descTitle: this.$t('table.title.desc'),
+                rows: row.feCloudpolicies || [],
+              })
+              const h = this.$createElement
               const content = hasData
                 ? h('table-lite-grid', {
                   props: {
-                    showOverflow: false,
+                    showOverflow: 'title',
                     rowConfig: { isHover: true },
                     columnConfig: { resizable: false },
                     data: row.feCloudpolicies,
@@ -70,18 +66,20 @@ export default {
                   },
                 })
                 : h('data-loading')
-              const contentWrapper = h('div', {
-                slot: 'content',
-                style: hasData ? { minWidth: '600px' } : {},
-              }, [content])
-              const text = h('span', {
-                style: { color: 'var(--antd-wave-shadow-color)' },
-              }, [this.$t('common_323', [row.cloudpolicies.length])])
               return [h('a-popover', {
                 props: { trigger: 'hover' },
                 on: { openChange: handleVisibleChange },
                 key: `popover-${row.id}-${row.feCloudpolicies ? row.feCloudpolicies.length : 0}`,
-              }, [contentWrapper, text])]
+                scopedSlots: {
+                  content: () => h('div', {
+                    style: hasData ? LIST_BODY_CELL_POPOVER_STYLE : {},
+                  }, [content]),
+                },
+              }, [
+                h('span', {
+                  style: { color: 'var(--antd-wave-shadow-color)' },
+                }, this.$t('common_323', [row.cloudpolicies.length])),
+              ])]
             },
           },
         },
@@ -101,7 +99,7 @@ export default {
             scope: this.$store.getters.scope,
           },
         })
-        row.feCloudpolicies = response.data.data || []
+        this.$set(row, 'feCloudpolicies', response.data.data || [])
         return response
       } catch (error) {
         throw error
