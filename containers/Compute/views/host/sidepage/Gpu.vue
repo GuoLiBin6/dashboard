@@ -44,6 +44,11 @@ export default {
           title: this.$t('compute.text_481'),
         },
         {
+          field: 'vendor',
+          title: this.$t('compute.isolated_devices.vendor.title'),
+          formatter: ({ row }) => row.vendor || '-',
+        },
+        {
           field: 'model',
           title: this.$t('compute.text_482'),
           slots: {
