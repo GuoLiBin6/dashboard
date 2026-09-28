@@ -20,7 +20,7 @@
           </a-form-item>
           <a-button type="link" class="mt-1" @click="triggerShowDevice(item)">{{$t('compute.text_135')}}</a-button>
         </template>
-        <a-button v-else type="link" class="mr-1 mt-1" @click="triggerShowDevice(item)">{{ $t('compute.config_sriov_net') }}</a-button>
+        <a-button v-else type="link" class="mt-1" @click="triggerShowDevice(item)">{{ $t('compute.config_sriov_net') }}</a-button>
       </template>
       <a-button shape="circle" icon="minus" size="small" @click="decrease(item.key, i)" class="mt-2" />
     </div>

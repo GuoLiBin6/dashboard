@@ -47,7 +47,6 @@ import validateForm from '@/utils/validate'
 import { diskSupportTypeMedium } from '@/utils/common/hypervisor'
 import { hasSetupKey, isLicense2 } from '@/utils/auth'
 import createFormDraftMixin from '@/mixins/createFormDraft'
-import Labels from '@Compute/sections/Labels'
 import Tag from '../components/Tag'
 import SystemDisk from '../components/SystemDisk'
 import Servertemplate from '../components/Servertemplate'
@@ -97,7 +96,6 @@ export default {
     pci,
     CustomData,
     BastionHost,
-    Labels,
   },
   mixins: [workflowMixin, createFormDraftMixin],
   props: {
@@ -408,20 +406,10 @@ export default {
       return []
     },
     /** 仅工单：端口映射 */
-    workflowInitPortMappings () {
-      if (!this.isFormBackfill) return []
-      return resolveDraftPortMappings(this.effectiveInitFormData)
-    },
     /** 端口映射：仅 kvm / pod 支持（普通创建页的可选 hypervisor 已过滤 pod） */
     showPortMapping () {
       const hypervisor = this.form.fd.hypervisor
       return hypervisor === HYPERVISORS_MAP.kvm.key || hypervisor === HYPERVISORS_MAP.pod.key
-    },
-    portMappingDisableConf () {
-      return {
-        tooltip: '',
-        disabled: false,
-      }
     },
     /** 有网络控件草稿时禁止 capability 刷新拆掉 NetworkConfig */
     ignoreAutoNetworkTypeForDraft () {
@@ -1391,18 +1379,6 @@ export default {
       if (initData.bastion_server && this.$refs.bastionHostRef) {
         this.$refs.bastionHostRef.initData(initData.bastion_server)
       }
-
-      // 端口映射（Labels）：优先靠 init-pairs；再兜底调 initData
-      const portMappings = resolveDraftPortMappings(initData)
-      if (portMappings.length) {
-        const applyPortMappings = () => {
-          const ref = this.$refs.labelRef
-          if (ref?.initData) ref.initData(portMappings)
-        }
-        applyPortMappings()
-        setTimeout(applyPortMappings, 500)
-        setTimeout(applyPortMappings, 1500)
-      }
     },
     /**
      * 回填指定 IP 子网 / 调度标签网络
@@ -1432,20 +1408,42 @@ export default {
       networkRef.change({ target: { value: initNetworkType }, name: 'default' })
       await this.$nextTick()
       if (initNetworkType === NETWORK_OPTIONS_MAP.manual.key) {
-        const nets = this.normalizeExtraNetsForInit(initData.extraData && initData.extraData.nets)
-        let configRef = networkRef.$refs && networkRef.$refs.networkConfigRef
-        if (!configRef) {
-          await new Promise(resolve => setTimeout(resolve, 400))
-          configRef = this.$refs.networkRef && this.$refs.networkRef.$refs && this.$refs.networkRef.$refs.networkConfigRef
+        const mergeNetsWithPortMappings = () => {
+          const netsFromExtra = this.normalizeExtraNetsForInit(initData.extraData && initData.extraData.nets)
+          const netsFromMain = initData.nets || []
+          const baseNets = netsFromExtra.length ? netsFromExtra : this.normalizeExtraNetsForInit(netsFromMain)
+          // 仅旧稿（各网卡都无 port_mappings）才把聚合映射兜底到网卡 0
+          const legacyFallback = resolveDraftPortMappings(initData)
+          return baseNets.map((n, i) => {
+            const fromMain = netsFromMain[i]
+            const own = (Array.isArray(n.port_mappings) && n.port_mappings.length)
+              ? n.port_mappings
+              : (Array.isArray(fromMain?.port_mappings) && fromMain.port_mappings.length ? fromMain.port_mappings : null)
+            const port_mappings = own || (i === 0 && legacyFallback.length ? legacyFallback : null)
+            const next = { ...(n || {}) }
+            if (port_mappings?.length) {
+              next.port_mappings = port_mappings
+            } else {
+              delete next.port_mappings
+            }
+            return next
+          })
         }
-        if (configRef && configRef.initData && nets.length) {
-          configRef.initData(nets)
-          // 区域/sku 刚就绪时子网列表可能仍在飞，再补一次
-          setTimeout(() => {
-            const ref = this.$refs.networkRef && this.$refs.networkRef.$refs && this.$refs.networkRef.$refs.networkConfigRef
-            if (ref && ref.initData && nets.length) ref.initData(nets)
-          }, 2500)
+        const applyManualNets = () => {
+          const ref = this.$refs.networkRef?.$refs?.networkConfigRef
+          const nets = mergeNetsWithPortMappings()
+          if (ref?.initData && nets.length) {
+            ref.initData(nets)
+            // Labels 反填在双 nextTick 后写 fc，再同步到 fd
+            this.$nextTick(() => {
+              this.$nextTick(() => this.syncPortMappingFieldsToFd())
+            })
+          }
         }
+        applyManualNets()
+        // 区域/sku 刚就绪时子网列表可能仍在飞，再补几次
+        setTimeout(applyManualNets, 500)
+        setTimeout(applyManualNets, 2500)
       } else if (initNetworkType === NETWORK_OPTIONS_MAP.schedtag.key) {
         await this.$nextTick()
         const schedRef = networkRef.$refs && networkRef.$refs.networkSchedtagRef
@@ -1658,11 +1656,31 @@ export default {
       if (this.type !== 'public' || !this.form.fd.enableWorldMap) return
       this.onRegionSelect({ nearbyRegions: [] })
     },
+    syncPortMappingFieldsToFd (formValue) {
+      if (!this.form?.fd) return
+      const values = formValue || this.form.fd
+      ;['networkContainerPorts', 'networkHostPorts', 'networkPortProtocols', 'containerPorts', 'hostPorts', 'portProtocols'].forEach((k) => {
+        if (values[k] != null) {
+          this.$set(this.form.fd, k, values[k])
+        }
+      })
+    },
+    /** 提交前兜底：端口映射字段已在 form.fd，合并进提交快照 */
+    ensurePortMappingOnFormData (formData) {
+      if (!formData || !this.form?.fd) return formData
+      ;['networkContainerPorts', 'networkHostPorts', 'networkPortProtocols', 'containerPorts', 'hostPorts', 'portProtocols'].forEach((k) => {
+        if (this.form.fd[k] != null) {
+          formData[k] = this.form.fd[k]
+        }
+      })
+      return formData
+    },
     submit (e) {
       e.preventDefault()
       // 提交只收集数据，不写回盘字段（避免触发 typesMap/defaultType 清盘）
       this.validateForm()
         .then(async formData => {
+          this.ensurePortMappingOnFormData(formData)
           this.flushCreateFormFieldDrafts()
           this.submiting = true
           const genCreteData = new GenCreateData(formData, this.form.fi)
@@ -2224,6 +2242,7 @@ export default {
       // 加购只收集数据，不写回盘字段；校验通过后立刻 flush，避免 API 过程中 UI 被清盘后落空草稿
       this.validateForm()
         .then(async formData => {
+          this.ensurePortMappingOnFormData(formData)
           this.flushCreateFormFieldDrafts()
           this.submiting = true
           try {

@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div class="base-select-wrap">
     <a-select
       class="base-select"
       :disabled="disabled"
@@ -777,7 +777,21 @@ export default {
     white-space: inherit;
   }
 }
-.base-select-sync {
-  cursor: pointer;
+.base-select-wrap {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  width: 100%;
+  min-width: 0;
+
+  .base-select {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .base-select-sync {
+    flex: 0 0 auto;
+    cursor: pointer;
+  }
 }
 </style>

@@ -149,6 +149,29 @@
               </template>
               <a-button v-else type="link" @click="triggerShowIpv6(item)">{{$t('compute.ipv6_config')}}</a-button>
             </template>
+            <template v-if="showPortMapping">
+              <template v-if="item.portMappingShow">
+                <div class="network-port-mapping">
+                  <div class="network-port-mapping__title">{{ $t('compute.repo.port_mapping') }}</div>
+                  <labels
+                    class="network-port-mapping__labels"
+                    :ref="'portMappingRef_' + item.key"
+                    :model="model"
+                    :fields="getPortMappingFields(item.key)"
+                    :init-pairs="item.port_mappings || []"
+                    :title="$t('compute.repo.port_mapping')"
+                    :keyLabel="$t('compute.repo.container_port')"
+                    :valueLabel="$t('compute.repo.host_port')"
+                    :keyPlaceholder="$t('compute.repo.example', ['443'])"
+                    :valuePlaceholder="$t('compute.repo.example', ['443'])"
+                    :valueTooltip="$t('compute.port_mappings.host_port_tip', [20000, 25000])"
+                    show-protocol
+                    @label-change="list => onPortMappingLabelChange(item, list)" />
+                </div>
+                <a-button type="link" @click="triggerShowPortMapping(item)">{{$t('compute.text_135')}}</a-button>
+              </template>
+              <a-button v-else type="link" class="mr-1" @click="triggerShowPortMapping(item)">{{ $t('compute.port_mappings.set') }}</a-button>
+            </template>
           </template>
         </template>
         <a-button type="link" @click="toggleAdvanced">{{ showAdvanced ? $t('compute.hide_advanced') : $t('compute.advanced') }}</a-button>
@@ -168,6 +191,8 @@
 <script>
 import * as R from 'ramda'
 import ipaddr from 'ipaddr.js'
+import Labels from '@Compute/sections/Labels'
+import { buildNetworkPortMappingFields } from '@Compute/sections/Labels/fields'
 import { uuid } from '@/utils/utils'
 import { checkIpInSegment, checkIpV6 } from '@Compute/utils/createServer'
 import validateForm from '@/utils/validate'
@@ -178,13 +203,15 @@ import nicModelMixin, { parseNicFieldName } from './nicModelMixin'
 const NIC_MAP_ROOTS = [
   'vpcs', 'networks', 'networkIps', 'networkMacs', 'networkIPv6s',
   'networkIPv6Modes', 'networkIpsAddress6', 'networkDevices',
-  'networkSecgroups', 'networkExits',
+  'networkSecgroups', 'networkExits', 'networkContainerPorts',
+  'networkHostPorts', 'networkPortProtocols',
 ]
 
 export default {
   name: 'NetworkConfig',
   components: {
     IpSelect,
+    Labels,
   },
   mixins: [nicModelMixin],
   props: {
@@ -257,6 +284,10 @@ export default {
       default: false,
     },
     showSecgroupConfig: {
+      type: Boolean,
+      default: false,
+    },
+    showPortMapping: {
       type: Boolean,
       default: false,
     },
@@ -407,8 +438,16 @@ export default {
           const secgroups = this.nicField('networkSecgroups', key)
           await this.runFieldRule({ required: true, message: this.$t('compute.secgroup_tips') }, secgroups)
         }
+        if (this.showPortMapping && item.portMappingShow) {
+          const ref = this.$refs[`portMappingRef_${key}`]
+          const labelRef = Array.isArray(ref) ? ref[0] : ref
+          if (labelRef?.validate) await labelRef.validate()
+        }
       }
       return true
+    },
+    getPortMappingFields (netKey) {
+      return buildNetworkPortMappingFields(netKey)
     },
 
     initData (data) {
@@ -436,6 +475,8 @@ export default {
           macShow: false,
           deviceShow: false,
           secgroupShow: false,
+          portMappingShow: false,
+          port_mappings: [],
           ip: item.address,
         }
         if (item.address) {
@@ -464,6 +505,11 @@ export default {
         }
         if (item.secgroups && item.secgroups.length > 0) {
           obj.secgroupShow = true
+          this.showAdvanced = true
+        }
+        if (this.showPortMapping && Array.isArray(item.port_mappings) && item.port_mappings.length > 0) {
+          obj.portMappingShow = true
+          obj.port_mappings = item.port_mappings
           this.showAdvanced = true
         }
         return obj
@@ -577,6 +623,8 @@ export default {
         key: uid,
         ip: '',
         secgroupShow: false,
+        portMappingShow: false,
+        port_mappings: [],
       }
       if (this.vpcObj) {
         data.vpc = this.vpcObj
@@ -615,6 +663,39 @@ export default {
       item.secgroupShow = !item.secgroupShow
       this.$emit('optionalChange', { flag: 'secgroup', key: item.key, show: item.secgroupShow })
     },
+    clearPortMappingForNetKey (netKey) {
+      if (!netKey || !this.model) return
+      ;['networkContainerPorts', 'networkHostPorts', 'networkPortProtocols'].forEach((root) => {
+        if (this.model[root] && Object.prototype.hasOwnProperty.call(this.model[root], netKey)) {
+          this.$delete(this.model[root], netKey)
+        }
+      })
+    },
+    triggerShowPortMapping (item) {
+      item.portMappingShow = !item.portMappingShow
+      if (!item.portMappingShow) {
+        item.port_mappings = []
+        this.clearPortMappingForNetKey(item.key)
+        const ref = this.$refs[`portMappingRef_${item.key}`]
+        const labelRef = Array.isArray(ref) ? ref[0] : ref
+        if (labelRef?.reset) labelRef.reset()
+        return
+      }
+      this.$nextTick(() => {
+        const ref = this.$refs[`portMappingRef_${item.key}`]
+        const labelRef = Array.isArray(ref) ? ref[0] : ref
+        if (labelRef && (!labelRef.labelList || !labelRef.labelList.length) && labelRef.add) {
+          labelRef.add()
+        }
+      })
+    },
+    onPortMappingLabelChange (item, list) {
+      if (!list || !list.length) {
+        item.portMappingShow = false
+        item.port_mappings = []
+        this.clearPortMappingForNetKey(item.key)
+      }
+    },
     decrease (uid, index) {
       this.clearNicMapsForKey(uid)
       this.networkList.splice(index, 1)
@@ -631,6 +712,8 @@ export default {
       this.networkList[0].macShow = false
       this.networkList[0].deviceShow = false
       this.networkList[0].secgroupShow = false
+      this.networkList[0].portMappingShow = false
+      this.networkList[0].port_mappings = []
       this.ipsDisabled = ipsDisabled
     },
     networkChange (val, item, i) {
@@ -939,6 +1022,15 @@ export default {
     flex: 0 0 auto;
     height: 32px !important;
     line-height: 32px !important;
+  }
+  .network-port-mapping {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    &__title {
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
   }
 }
 </style>

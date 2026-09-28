@@ -1,6 +1,17 @@
 <template>
   <div>
     <div class="d-flex" v-for="(item) in labelList" :key="item.key">
+      <a-form-item v-if="showProtocol && resolvedFields.protocol" :wrapperCol="{ span: 24 }" class="labels-protocol mb-0">
+        <a-select
+          :value="fieldVal(fieldName(item.key, 'protocol'))"
+          @change="v => fieldSet(fieldName(item.key, 'protocol'), v)"
+          :disabled="isLocked(item)"
+          style="width: 88px">
+          <a-select-option v-for="opt in protocolOptions" :key="opt.id" :value="opt.id">
+            {{ opt.name }}
+          </a-select-option>
+        </a-select>
+      </a-form-item>
       <a-form-item :wrapperCol="{ span: 24 }">
         <a-input-group compact v-if="keyBaseSelectProps">
           <div class="d-flex">
@@ -12,7 +23,10 @@
       </a-form-item>
       <div class="mx-3"> = </div>
       <a-form-item :wrapperCol="{ span: 24 }">
-        <a-input :addonBefore="valueLabel" :value="fieldVal(fieldName(item.key, 'value'))" @change="e => fieldSet(fieldName(item.key, 'value'), e.target.value)" :placeholder="valuePlaceholder" :disabled="isLocked(item)" />
+        <a-tooltip v-if="valueTooltip" :title="valueTooltip" placement="top">
+          <a-input :addonBefore="valueLabel" :value="fieldVal(fieldName(item.key, 'value'))" @change="e => fieldSet(fieldName(item.key, 'value'), e.target.value)" :placeholder="valuePlaceholder" :disabled="isLocked(item)" />
+        </a-tooltip>
+        <a-input v-else :addonBefore="valueLabel" :value="fieldVal(fieldName(item.key, 'value'))" @change="e => fieldSet(fieldName(item.key, 'value'), e.target.value)" :placeholder="valuePlaceholder" :disabled="isLocked(item)" />
       </a-form-item>
       <a-button v-if="(firstCanDelete || labelList.length > 1) && !isLocked(item)" shape="circle" icon="minus" size="small" @click="del(item)" class="mt-2 ml-2" />
     </div>
@@ -30,6 +44,11 @@ import * as R from 'ramda'
 import { uuid } from '@/utils/utils'
 import i18n from '@/locales'
 import { PORT_MAPPING_FIELD_FACTORIES } from './fields'
+
+const DEFAULT_PROTOCOL_OPTIONS = [
+  { id: 'tcp', name: 'TCP' },
+  { id: 'udp', name: 'UDP' },
+]
 
 /** `containerPorts[uuid]` / `containerEnvNames[0][uuid]` → nested model paths */
 export function parseLabelFieldName (name) {
@@ -85,6 +104,10 @@ export default {
       type: String,
       default: '',
     },
+    valueTooltip: {
+      type: String,
+      default: '',
+    },
     keyBaseSelectProps: {
       type: Object,
     },
@@ -111,6 +134,14 @@ export default {
     model: {
       type: Object,
       required: true,
+    },
+    showProtocol: {
+      type: Boolean,
+      default: false,
+    },
+    protocolOptions: {
+      type: Array,
+      default: () => DEFAULT_PROTOCOL_OPTIONS,
     },
   },
   data () {
@@ -226,7 +257,7 @@ export default {
       }
     },
     clearRowFields (rowKey) {
-      ;['key', 'value'].forEach((type) => {
+      ;['key', 'value', 'protocol'].forEach((type) => {
         const name = this.fieldName(rowKey, type)
         if (name) this.fieldSet(name, undefined)
       })
@@ -256,7 +287,8 @@ export default {
         const key = pair.key != null ? pair.key : pair.port
         const value = pair.value != null ? pair.value : pair.host_port
         if (key == null || key === '') return null
-        return { key, value }
+        const protocol = (pair.protocol || 'tcp').toLowerCase()
+        return { key, value, protocol }
       }).filter(Boolean)
     },
     filterPairsByKeyOptions (pairs = []) {
@@ -316,6 +348,9 @@ export default {
         if (pair.value != null && pair.value !== '') {
           this.fieldSet(this.fieldName(rowKey, 'value'), pair.value)
         }
+        if (this.showProtocol && this.resolvedFields.protocol) {
+          this.fieldSet(this.fieldName(rowKey, 'protocol'), pair.protocol || 'tcp')
+        }
       })
     },
     getBindProps (key, item) {
@@ -368,8 +403,10 @@ export default {
       })
     },
     async validate () {
+      const types = ['key', 'value']
+      if (this.showProtocol && this.resolvedFields.protocol) types.push('protocol')
       for (const row of this.labelList) {
-        for (const type of ['key', 'value']) {
+        for (const type of types) {
           const name = this.fieldName(row.key, type)
           const rules = this.rowRules(type, row.key)
           for (const rule of rules) {
@@ -382,3 +419,9 @@ export default {
   },
 }
 </script>
+
+<style lang="less" scoped>
+.labels-protocol {
+  margin-right: 8px;
+}
+</style>

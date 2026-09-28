@@ -342,11 +342,6 @@ export default {
       if (init.extraData?.schedtags?.length) return init.extraData.schedtags
       return []
     },
-    /** 仅工单：端口映射 */
-    workflowInitPortMappings () {
-      if (!this.isFormBackfill) return []
-      return resolveDraftPortMappings(this.effectiveInitFormData)
-    },
     /** 高级区内调度等 init 保护：工单回填或控件草稿开启时 */
     preserveAdvanceInitProps () {
       return this.isFormBackfill || this.canUseCreateFormDraft
@@ -746,10 +741,37 @@ export default {
           this.form.fd.networkType = initNetworkType
           this.$refs.networkRef.change({ target: { value: initNetworkType }, name: 'default' })
           if (initNetworkType === NETWORK_OPTIONS_MAP.manual.key) {
-            const nets = initData.extraData?.nets || []
+            const mergeNetsWithPortMappings = () => {
+              const netsFromExtra = initData.extraData?.nets || []
+              const netsFromMain = initData.nets || []
+              const baseNets = netsFromExtra.length ? netsFromExtra : netsFromMain
+              // 仅旧稿（各网卡都无 port_mappings）才把聚合映射兜底到网卡 0
+              const legacyFallback = resolveDraftPortMappings(initData)
+              return baseNets.map((n, i) => {
+                const fromMain = netsFromMain[i]
+                const own = (Array.isArray(n.port_mappings) && n.port_mappings.length)
+                  ? n.port_mappings
+                  : (Array.isArray(fromMain?.port_mappings) && fromMain.port_mappings.length ? fromMain.port_mappings : null)
+                const port_mappings = own || (i === 0 && legacyFallback.length ? legacyFallback : null)
+                const next = { ...(n || {}) }
+                if (port_mappings?.length) {
+                  next.port_mappings = port_mappings
+                } else {
+                  delete next.port_mappings
+                }
+                return next
+              })
+            }
             const applyManualNets = () => {
               const ref = this.$refs.networkRef?.$refs?.networkConfigRef
-              if (ref?.initData && nets.length) ref.initData(nets)
+              const nets = mergeNetsWithPortMappings()
+              if (ref?.initData && nets.length) {
+                ref.initData(nets)
+                // Labels 反填在双 nextTick 后写 fc，再同步到 fd
+                this.$nextTick(() => {
+                  this.$nextTick(() => this.syncPortMappingFieldsToFd())
+                })
+              }
             }
             this.$nextTick(() => {
               applyManualNets()
@@ -758,8 +780,12 @@ export default {
               const timer = setInterval(() => {
                 tries += 1
                 const ref = this.$refs.networkRef?.$refs?.networkConfigRef
+                const nets = mergeNetsWithPortMappings()
                 if (ref?.initData && nets.length) {
                   ref.initData(nets)
+                  this.$nextTick(() => {
+                    this.$nextTick(() => this.syncPortMappingFieldsToFd())
+                  })
                   clearInterval(timer)
                   return
                 }
@@ -812,17 +838,6 @@ export default {
               this.form.fd.groupsEnable = true
               this.form.fd.groups = initData.groups
             }
-            // 端口映射（Labels）：优先靠 init-pairs；再兜底调 initData
-            const portMappings = resolveDraftPortMappings(initData)
-            if (portMappings.length) {
-              const applyPortMappings = () => {
-                const ref = this.$refs.labelRef
-                if (ref?.initData) ref.initData(portMappings)
-              }
-              applyPortMappings()
-              setTimeout(applyPortMappings, 500)
-              setTimeout(applyPortMappings, 1500)
-            }
           })
         }
         // 标签
@@ -842,10 +857,29 @@ export default {
         }
       })
     },
+    syncPortMappingFieldsToFd (formValue) {
+      if (!this.form?.fd) return
+      const values = formValue || this.form.fd
+      ;['networkContainerPorts', 'networkHostPorts', 'networkPortProtocols', 'containerPorts', 'hostPorts', 'portProtocols'].forEach((k) => {
+        if (values[k] != null) {
+          this.$set(this.form.fd, k, values[k])
+        }
+      })
+    },
+    ensurePortMappingOnFormData (formData) {
+      if (!formData || !this.form?.fd) return formData
+      ;['networkContainerPorts', 'networkHostPorts', 'networkPortProtocols', 'containerPorts', 'hostPorts', 'portProtocols'].forEach((k) => {
+        if (this.form.fd[k] != null) {
+          formData[k] = this.form.fd[k]
+        }
+      })
+      return formData
+    },
     submit (e) {
       e.preventDefault()
       this.validateForm()
         .then(async formData => {
+          this.ensurePortMappingOnFormData(formData)
           this.submiting = true
           const genCreteData = new GenCreateData(formData, this.form.fi)
           const data = genCreteData.all()
@@ -1245,6 +1279,7 @@ export default {
     addShopCart () {
       this.validateForm()
         .then(async formData => {
+          this.ensurePortMappingOnFormData(formData)
           this.submiting = true
           try {
             const genCreateData = new GenCreateData(formData, this.form.fi)

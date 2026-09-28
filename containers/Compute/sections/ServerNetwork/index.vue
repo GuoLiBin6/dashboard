@@ -31,6 +31,7 @@
         :showMacConfig="showMacConfig"
         :showDeviceConfig="showDeviceConfig"
         :showSecgroupConfig="showSecgroupConfig"
+        :showPortMapping="showPortMapping"
         :secgroupParams="secgroupParams"
         :hiddenAdd="hiddenAdd"
         @advancedChange="onNetworkAdvancedChange"
@@ -164,6 +165,10 @@ export default {
       default: false,
     },
     showSecgroupConfig: {
+      type: Boolean,
+      default: false,
+    },
+    showPortMapping: {
       type: Boolean,
       default: false,
     },
@@ -412,6 +417,27 @@ export default {
             if (item.deviceShow) {
               const deviceModel = item.device || this.readNicModelField('networkDevices', item.key)
               if (deviceModel) net.sriov_device = { model: deviceModel }
+            }
+            if (this.showPortMapping) {
+              const containerPorts = this.model?.networkContainerPorts || {}
+              const hostPorts = this.model?.networkHostPorts || {}
+              const protocols = this.model?.networkPortProtocols || {}
+              const portsObj = containerPorts[item.key] || {}
+              const hostObj = hostPorts[item.key] || {}
+              const protocolObj = protocols[item.key] || {}
+              const pms = []
+              Object.keys(portsObj).forEach((rowKey) => {
+                if (portsObj[rowKey] == null || portsObj[rowKey] === '') return
+                const pm = {
+                  port: portsObj[rowKey],
+                  protocol: (protocolObj[rowKey] || 'tcp').toLowerCase(),
+                }
+                if (hostObj[rowKey] != null && hostObj[rowKey] !== '') {
+                  pm.host_port = hostObj[rowKey]
+                }
+                pms.push(pm)
+              })
+              if (pms.length) net.port_mappings = pms
             }
             // 安全组多选：不写入草稿、不回填
             return net

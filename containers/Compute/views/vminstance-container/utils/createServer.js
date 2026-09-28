@@ -190,13 +190,41 @@ export class GenCreateData {
    * @returns { Array }
    * @memberof GenCreateData
    */
+  getPortMappingsByNetworkKey (netKey) {
+    const port_mappings = []
+    const ports = this.fd.networkContainerPorts && this.fd.networkContainerPorts[netKey]
+    if (!ports) return port_mappings
+    const hostPorts = (this.fd.networkHostPorts && this.fd.networkHostPorts[netKey]) || {}
+    const protocols = (this.fd.networkPortProtocols && this.fd.networkPortProtocols[netKey]) || {}
+    for (const k in ports) {
+      const port = ports[k]
+      if (port == null || port === '') continue
+      const pm = {
+        port,
+        protocol: (protocols[k] || 'tcp').toLowerCase(),
+      }
+      if (hostPorts[k] != null && hostPorts[k] !== '') {
+        pm.host_port = hostPorts[k]
+      }
+      port_mappings.push(pm)
+    }
+    return port_mappings
+  }
+
   getPortMappings () {
     const port_mappings = []
-    if (this.fd.containerPorts) {
+    const portsByNet = this.fd.networkContainerPorts || {}
+    Object.keys(portsByNet).forEach((netKey) => {
+      port_mappings.push(...this.getPortMappingsByNetworkKey(netKey))
+    })
+    if (!port_mappings.length && this.fd.containerPorts) {
       for (const k in this.fd.containerPorts) {
         const port = this.fd.containerPorts[k]
         if (port == null || port === '') continue
-        const pm = { port }
+        const pm = {
+          port,
+          protocol: ((this.fd.portProtocols && this.fd.portProtocols[k]) || 'tcp').toLowerCase(),
+        }
         if (this.fd.hostPorts && this.fd.hostPorts[k] != null && this.fd.hostPorts[k] !== '') {
           pm.host_port = this.fd.hostPorts[k]
         }
@@ -208,7 +236,7 @@ export class GenCreateData {
 
   genNetworks () {
     let ret = [{ exit: false }]
-    const portMappings = this.getPortMappings()
+    const legacyPortMappings = this.getPortMappings()
     // 指定 IP 子网
     if (this.fd.networkType === NETWORK_OPTIONS_MAP.manual.key) {
       ret = []
@@ -260,6 +288,7 @@ export class GenCreateData {
             obj.sriov_device = { model: device }
           }
         }
+        const portMappings = this.getPortMappingsByNetworkKey(key)
         if (portMappings.length > 0) {
           obj.port_mappings = portMappings
         }
@@ -282,18 +311,13 @@ export class GenCreateData {
             obj.sriov_device = { model: device }
           }
         }
-        const netObj = {
+        ret.push({
           schedtags: [obj],
-        }
-        // 端口映射挂在第一块网卡上（与手动网络一致，便于草稿/工单反填）
-        if (!ret.length && portMappings.length > 0) {
-          netObj.port_mappings = portMappings
-        }
-        ret.push(netObj)
+        })
       }, this.fd.networkSchedtags)
-    } else if (portMappings.length > 0) {
+    } else if (legacyPortMappings.length > 0) {
       // 自动调度：默认 nets 也要带上端口映射，否则草稿丢失
-      ret[0].port_mappings = portMappings
+      ret[0].port_mappings = legacyPortMappings
     }
     return ret
   }

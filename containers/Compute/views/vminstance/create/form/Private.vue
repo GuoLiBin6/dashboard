@@ -160,6 +160,7 @@
           :key="serverNetwork"
           :networkResourceMapper="networkResourceMapper"
           :showMacConfig="form.fd.hypervisor === 'kvm'"
+          :showPortMapping="showPortMapping"
           :ignore-auto-network-type="ignoreAutoNetworkTypeForDraft"
           :form-draft-key="vmDraftFields.serverNetwork" />
       </a-form-model-item>
@@ -210,15 +211,15 @@
           <labels
             ref="labelRef"
             :model="form.fd"
-            :create-form="form"
-
             :disableConf="portMappingDisableConf"
             :init-pairs="workflowInitPortMappings"
             :title="$t('compute.repo.port_mapping')"
             :keyLabel="$t('compute.repo.container_port')"
             :valueLabel="$t('compute.repo.host_port')"
             :keyPlaceholder="$t('compute.repo.example', ['443'])"
-            :valuePlaceholder="$t('compute.repo.example', ['443'])" />
+            :valuePlaceholder="$t('compute.repo.example', ['443'])"
+            :valueTooltip="$t('compute.port_mappings.host_port_tip', [20000, 25000])"
+            show-protocol />
         </a-form-model-item>
         <custom-data v-if="showCustomData" ref="customData" :model="form.fd" :form="form" />
         <bastion-host ref="bastionHostRef" v-if="!isOpenSourceVersion && hasBastionService" :form="form" :model="form.fd" :form-draft-key="vmDraftFields.bastionHost" />

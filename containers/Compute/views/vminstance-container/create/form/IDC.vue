@@ -122,6 +122,7 @@
           :networkResourceMapper="networkResourceMapper"
           :showMacConfig="true"
           :showDeviceConfig="true"
+          :showPortMapping="true"
           :ignore-auto-network-type="isFormBackfill"
           :form-draft-key="containerDraftFields.serverNetwork" />
       </a-form-model-item>
@@ -205,15 +206,15 @@
             <labels
               ref="labelRef"
               :model="form.fd"
-              :create-form="form"
-
               :disableConf="portMappingDisableConf"
               :init-pairs="workflowInitPortMappings"
               :title="$t('compute.repo.port_mapping')"
               :keyLabel="$t('compute.repo.container_port')"
               :valueLabel="$t('compute.repo.host_port')"
               :keyPlaceholder="$t('compute.repo.example', ['443'])"
-              :valuePlaceholder="$t('compute.repo.example', ['443'])" />
+              :valuePlaceholder="$t('compute.repo.example', ['443'])"
+              :valueTooltip="$t('compute.port_mappings.host_port_tip', [20000, 25000])"
+              show-protocol />
           </a-form-model-item>
       </advance-config-block>
       <bottom-bar
@@ -253,10 +254,10 @@ export default {
   components: {
     SecgroupConfig,
     EipConfig,
+    Labels,
     OsArch,
     ContainerTitle,
     SpecContainer,
-    Labels,
   },
   mixins: [mixin],
   data () {
@@ -547,15 +548,6 @@ export default {
     },
     enableEncryption () {
       return this.$appConfig.isPrivate
-    },
-    isMultiServer () {
-      return this.form.fd.count > 1
-    },
-    portMappingDisableConf () {
-      return {
-        tooltip: '', // this.isMultiServer ? this.$t('compute.container.port_mapping.tooltip') : '',
-        disabled: false, // this.isMultiServer,
-      }
     },
     containerInitList () {
       // 修改工单 / 草稿回填：优先 props，其次草稿，再次路由 params

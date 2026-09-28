@@ -1,12 +1,22 @@
 <template>
   <div>
     <div class="d-flex" v-for="(item) in rows" :key="item._id">
+      <a-form-model-item v-if="showProtocol" :wrapperCol="{ span: 24 }" class="labels-protocol mb-0">
+        <a-select v-model:value="item.protocol" style="width: 88px" :disabled="isLocked(item)" @change="emitChange">
+          <a-select-option v-for="opt in protocolOptions" :key="opt.id" :value="opt.id">
+            {{ opt.name }}
+          </a-select-option>
+        </a-select>
+      </a-form-model-item>
       <a-form-model-item :wrapperCol="{ span: 24 }">
         <a-input :addonBefore="keyLabel" v-model:value="item.key" :placeholder="keyPlaceholder" :disabled="isLocked(item)" @change="emitChange" />
       </a-form-model-item>
       <div class="mx-3"> = </div>
       <a-form-model-item :wrapperCol="{ span: 24 }">
-        <a-input :addonBefore="valueLabel" v-model:value="item.value" :placeholder="valuePlaceholder" :disabled="isLocked(item)" @change="emitChange" />
+        <a-tooltip v-if="valueTooltip" :title="valueTooltip" placement="top">
+          <a-input :addonBefore="valueLabel" v-model:value="item.value" :placeholder="valuePlaceholder" :disabled="isLocked(item)" @change="emitChange" />
+        </a-tooltip>
+        <a-input v-else :addonBefore="valueLabel" v-model:value="item.value" :placeholder="valuePlaceholder" :disabled="isLocked(item)" @change="emitChange" />
       </a-form-model-item>
       <a-button v-if="(firstCanDelete || rows.length > 1) && !isLocked(item)" shape="circle" icon="minus" size="small" @click="del(item)" class="mt-2 ml-2" />
     </div>
@@ -45,6 +55,21 @@ export default {
     valuePlaceholder: {
       type: String,
       default: '',
+    },
+    valueTooltip: {
+      type: String,
+      default: '',
+    },
+    showProtocol: {
+      type: Boolean,
+      default: false,
+    },
+    protocolOptions: {
+      type: Array,
+      default: () => ([
+        { id: 'tcp', name: 'TCP' },
+        { id: 'udp', name: 'UDP' },
+      ]),
     },
     firstCanDelete: {
       type: Boolean,
@@ -93,7 +118,7 @@ export default {
   },
   methods: {
     add () {
-      this.rows.push({ _id: uuid(), key: '', value: '' })
+      this.rows.push({ _id: uuid(), key: '', value: '', protocol: 'tcp' })
       this.emitChange()
     },
     del (item) {
@@ -111,7 +136,8 @@ export default {
         const key = pair.key != null ? pair.key : pair.port
         const value = pair.value != null ? pair.value : pair.host_port
         if (key == null || key === '') return null
-        return { key, value }
+        const protocol = (pair.protocol || 'tcp').toLowerCase()
+        return { key, value, protocol }
       }).filter(Boolean)
     },
     initData (pairs = []) {
@@ -120,6 +146,7 @@ export default {
         _id: uuid(),
         key: pair.key,
         value: pair.value != null ? pair.value : '',
+        protocol: pair.protocol || 'tcp',
       }))
       this.emitChange()
     },
@@ -129,7 +156,11 @@ export default {
     },
     getPairs () {
       return this.rows
-        .map(({ key, value }) => ({ key: (key || '').trim(), value }))
+        .map(({ key, value, protocol }) => ({
+          key: (key || '').trim(),
+          value,
+          protocol: (protocol || 'tcp').toLowerCase(),
+        }))
         .filter(row => row.key)
     },
     emitChange () {
@@ -139,3 +170,9 @@ export default {
   },
 }
 </script>
+
+<style lang="less" scoped>
+.labels-protocol {
+  margin-right: 8px;
+}
+</style>

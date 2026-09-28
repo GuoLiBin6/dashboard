@@ -13,7 +13,9 @@
             :keyLabel="$t('compute.repo.container_port')"
             :valueLabel="$t('compute.repo.host_port')"
             :keyPlaceholder="$t('compute.repo.example', ['443'])"
-            :valuePlaceholder="$t('compute.repo.example', ['443'])" />
+            :valuePlaceholder="$t('compute.repo.example', ['443'])"
+            :valueTooltip="$t('compute.port_mappings.host_port_tip', [20000, 25000])"
+            show-protocol />
         </a-form-model-item>
       </a-form-model>
     </div>
@@ -69,6 +71,7 @@ export default {
         this.$refs.labelRef?.initData(existing.map(pm => ({
           key: pm.port,
           value: pm.host_port != null ? pm.host_port : '',
+          protocol: pm.protocol,
         })))
       })
     } else {
@@ -89,7 +92,7 @@ export default {
     validatePortMappings (rule, value, callback) {
       const pairs = this.$refs.labelRef?.getPairs?.() || value || []
       for (let i = 0; i < pairs.length; i++) {
-        const { key, value: hostPort } = pairs[i]
+        const { key, value: hostPort, protocol } = pairs[i]
         if (key === undefined || key === null || key === '') {
           return callback(new Error(this.$t('common.tips.input', [this.$t('compute.repo.container_port')])))
         }
@@ -97,6 +100,9 @@ export default {
         if (containerErr) return callback(new Error(containerErr))
         const hostErr = this.validatePort(20000, 25000, 'compute.port_mappings.invalid_host_port', hostPort)
         if (hostErr) return callback(new Error(hostErr))
+        if (!protocol) {
+          return callback(new Error(this.$t('common.tips.select', [this.$t('compute.port_mappings.protocol')])))
+        }
       }
       return callback()
     },
@@ -120,12 +126,13 @@ export default {
     genPortMappings (pairs) {
       const usedIndexes = {}
       const ret = []
-      ;(pairs || []).forEach(({ key, value }) => {
+      ;(pairs || []).forEach(({ key, value, protocol }) => {
         const port = this.toNumber(key)
         if (port === null) return
         const existing = this.matchExistingPortMapping(usedIndexes, port)
         const pm = existing ? { ...existing } : {}
         pm.port = port
+        pm.protocol = (protocol || pm.protocol || 'tcp').toLowerCase()
         const hostPort = this.toNumber(value)
         if (hostPort === null) {
           // 留空表示由宿主机自动分配
