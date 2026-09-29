@@ -3,7 +3,8 @@
     :list="list"
     :columns="columns"
     :group-actions="groupActions"
-    :single-actions="singleActions" />
+    :single-actions="singleActions"
+    :hide-rowselect="$store.getters.isProjectMode" />
 </template>
 
 <script>
@@ -193,6 +194,7 @@ export default {
             }
             return ret
           },
+          hidden: () => this.$store.getters.isProjectMode,
         },
       ],
       singleActions: [
@@ -262,6 +264,7 @@ export default {
             ret.tooltip = cloudUnabledTip('acttachGpu', obj)
             return ret
           },
+          hidden: () => this.$store.getters.isProjectMode,
         },
       ],
     }
