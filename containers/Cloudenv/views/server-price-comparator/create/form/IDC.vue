@@ -99,7 +99,6 @@
           :storageParams="dataDiskStorageParams"
           :storageHostParams="storageHostParams"
           @storageHostChange="storageHostChange" />
-        <div slot="extra" class="warning-color" v-if="isStorageShow">{{ $t('compute.select_storage_no_schetag') }}</div>
       </a-form-model-item>
       <bottom-bar
         ref="bottomBarRef"

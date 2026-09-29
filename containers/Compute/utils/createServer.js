@@ -89,8 +89,9 @@ export function validateHostPortRange (min = 20000, max = 25000) {
 }
 
 export function diskValidator (rule, value) {
+  // 空值由 required 规则提示「请填写挂载点」，此处只校验路径格式
   if (R.isNil(value) || R.isEmpty(value)) {
-    return Promise.reject(new Error(i18n.t('compute.text_206')))
+    return Promise.resolve()
   }
   if (!value.startsWith('/')) {
     return Promise.reject(new Error(i18n.t('compute.text_207')))
@@ -326,7 +327,7 @@ function createVmFieldMap (type, initData = {}) {
       policy: i => ({ name: `dataDiskPolicys[${i}]`, initialValue: '' }),
       snapshot: i => ({ name: `dataDiskSnapshots[${i}]` }),
       filetype: i => ({ name: `dataDiskFiletypes[${i}]` }),
-      mountPath: i => ({ name: `dataDiskMountPaths[${i}]` }),
+      mountPath: i => ({ name: `dataDiskMountPaths[${i}]`, validateFirst: true }),
       storage: i => ({ name: `dataDiskStorages[${i}]` }),
       iops: i => ({ name: `dataDiskIops[${i}]` }),
       throughput: i => ({ name: `dataDiskThroughputs[${i}]` }),
