@@ -733,6 +733,8 @@ export default {
           // 容器主机固定 pod，避免被 kvm 等平台覆盖导致套餐列表异常
           this.form.fd.hypervisor = HYPERVISORS_MAP.pod.key
           this.init()
+          // 区域是 setFields 写入的，onValuesChange 不一定带 cloudregion，这里补拉规格
+          this.$nextTick(this.fetchInstanceSpecs)
         })
     },
     fetchInstanceSpecs () {
