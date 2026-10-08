@@ -367,7 +367,8 @@ export default {
   watch: {
     getParams (val) {
       if (!R.is(Function, this.getParams)) {
-        this.list.reset()
+        // marker 分页会与旧 data 合并，切 tab/改参数时必须先清空
+        this.list.reset(true)
         this.list.fetchData()
       }
     },
@@ -413,7 +414,7 @@ export default {
     },
     refresh (clearSelected) {
       clearSelected()
-      this.list.reset()
+      this.list.reset(true)
       this.list.fetchData()
     },
   },
