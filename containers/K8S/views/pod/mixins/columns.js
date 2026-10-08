@@ -24,6 +24,11 @@ export default {
         minWidth: '100px',
       },
       {
+        field: 'nodeName',
+        title: i18n.t('k8s.text_21'),
+        minWidth: '120px',
+      },
+      {
         field: 'namespace',
         title: i18n.t('k8s.text_23'),
         width: 120,
