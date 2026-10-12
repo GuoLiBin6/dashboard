@@ -39,7 +39,7 @@
       <a-form-model-item :label="$t('compute.text_294')" v-bind="formItemLayout" prop="count">
         <a-input-number v-model:value="form.fd.count" :min="1" :max="100" :disabled="isInstallOperationSystem" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('scope.server_package.fake_create_from_bm_import')" v-bind="formItemLayout" v-if="!isInstallOperationSystem">
+      <a-form-model-item :label="$t('compute.server_package.fake_create_from_bm_import')" v-bind="formItemLayout" v-if="!isInstallOperationSystem">
         <a-switch
           v-model:checked="fakeCreateFromBmImport"
           :disabled="isInitForm"
