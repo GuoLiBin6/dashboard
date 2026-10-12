@@ -1,13 +1,13 @@
 <template>
   <div class="w-75">
     <a-form-model ref="formRef" :model="form.fd" :rules="rules" v-bind="formItemLayout">
-      <a-form-model-item :label="$t('k8s.text_41')" prop="name">
+      <a-form-model-item :label="$t('k8s.text_41')" prop="name" :extra="$t('k8s.vc_queue_name_hint')">
         <a-input :disabled="isUpdate" v-model:value="form.fd.name" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.text_19')" prop="cluster">
+      <a-form-model-item :label="$t('k8s.text_19')" prop="cluster" :extra="$t('k8s.vc_queue_cluster_hint')">
         <cluster-select :disabled="isUpdate" v-model:value="form.fd.cluster" @input="onClusterInput" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.vc_parent')" prop="parent">
+      <a-form-model-item :label="$t('k8s.vc_parent')" prop="parent" :extra="$t('k8s.vc_parent_hint')">
         <base-select
           v-model:value="form.fd.parent"
           resource="vcqueues"
@@ -18,13 +18,13 @@
           :mapper="parentQueueMapper"
           :select-props="{ placeholder: $t('k8s.vc_parent') }" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.vc_weight')" prop="weight">
+      <a-form-model-item :label="$t('k8s.vc_weight')" prop="weight" :extra="$t('k8s.vc_weight_hint')">
         <a-input-number v-model:value="form.fd.weight" :min="1" style="width: 200px" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.vc_priority')" prop="priority">
+      <a-form-model-item :label="$t('k8s.vc_priority')" prop="priority" :extra="$t('k8s.vc_priority_hint')">
         <a-input-number v-model:value="form.fd.priority" style="width: 200px" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.vc_reclaimable')" prop="reclaimable">
+      <a-form-model-item :label="$t('k8s.vc_reclaimable')" prop="reclaimable" :extra="$t('k8s.vc_reclaimable_hint')">
         <a-switch v-model:checked="form.fd.reclaimable" />
       </a-form-model-item>
       <a-form-model-item :label="$t('k8s.vc_guarantee')" :extra="$t('k8s.vc_guarantee_hint')">

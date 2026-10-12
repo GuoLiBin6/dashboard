@@ -1,16 +1,16 @@
 <template>
   <div class="w-75">
     <a-form-model ref="formRef" :model="form.fd" :rules="rules" v-bind="formItemLayout">
-      <a-form-model-item :label="$t('k8s.text_41')" prop="name">
+      <a-form-model-item :label="$t('k8s.text_41')" prop="name" :extra="$t('k8s.vc_job_name_hint')">
         <a-input v-model:value="form.fd.name" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.text_19')" prop="cluster">
+      <a-form-model-item :label="$t('k8s.text_19')" prop="cluster" :extra="$t('k8s.vc_job_cluster_hint')">
         <cluster-select v-model:value="form.fd.cluster" @input="onClusterInput" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.text_23')" prop="namespace">
+      <a-form-model-item :label="$t('k8s.text_23')" prop="namespace" :extra="$t('k8s.vc_job_namespace_hint')">
         <namespace-select v-model:value="form.fd.namespace" @input="onNamespaceInput" :cluster="cluster" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.vc_queue_field')" prop="queue">
+      <a-form-model-item :label="$t('k8s.vc_queue_field')" prop="queue" :extra="$t('k8s.vc_job_queue_hint')">
         <base-select
           v-model:value="form.fd.queue"
           resource="vcqueues"
@@ -20,36 +20,32 @@
           :params="clusterListParams"
           :select-props="{ placeholder: $t('k8s.vc_queue_field') }" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.vc_min_available')" prop="minAvailable">
+      <a-form-model-item :label="$t('k8s.vc_min_available')" prop="minAvailable" :extra="$t('k8s.vc_min_available_hint')">
         <a-input-number v-model:value="form.fd.minAvailable" :min="1" style="width: 200px" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.vc_scheduler')" prop="schedulerName">
-        <a-select v-model:value="form.fd.schedulerName">
-          <a-select-option value="volcano">volcano</a-select-option>
-          <a-select-option value="default-scheduler">default-scheduler</a-select-option>
-        </a-select>
-      </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.vc_priority_class')" prop="priorityClassName">
+      <a-form-model-item :label="$t('k8s.vc_priority_class')" prop="priorityClassName" :extra="priorityClassExtra">
         <base-select
           v-model:value="form.fd.priorityClassName"
           resource="priorityclasses"
           version="v1"
           id-key="name"
+          option-label-prop="label"
+          :label-format="priorityLabel"
           :need-params="true"
           :params="clusterListParams"
           :select-props="{ allowClear: true, placeholder: $t('k8s.vc_priority_class') }" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.vc_restart_on_evict')" prop="restartOnEvict">
+      <a-form-model-item :label="$t('k8s.vc_restart_on_evict')" prop="restartOnEvict" :extra="$t('k8s.vc_restart_on_evict_hint')">
         <a-switch v-model:checked="form.fd.restartOnEvict" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.vc_network_topology')" prop="networkTopologyMode">
+      <a-form-model-item :label="$t('k8s.vc_network_topology')" prop="networkTopologyMode" :extra="$t('k8s.vc_network_topology_hint')">
         <a-select v-model:value="form.fd.networkTopologyMode" @change="setTopologyMode">
           <a-select-option value="none">{{ $t('k8s.vc_topology_none') }}</a-select-option>
-          <a-select-option value="hard">hard</a-select-option>
-          <a-select-option value="soft">soft</a-select-option>
+          <a-select-option value="hard">{{ $t('k8s.vc_topology_hard') }}</a-select-option>
+          <a-select-option value="soft">{{ $t('k8s.vc_topology_soft') }}</a-select-option>
         </a-select>
       </a-form-model-item>
-      <a-form-model-item v-if="topologyMode" :label="$t('k8s.vc_highest_tier')" prop="highestTierAllowed">
+      <a-form-model-item v-if="topologyMode" :label="$t('k8s.vc_highest_tier')" prop="highestTierAllowed" :extra="$t('k8s.vc_highest_tier_hint')">
         <a-input-number v-model:value="form.fd.highestTierAllowed" :min="1" style="width: 200px" />
       </a-form-model-item>
       <a-form-model-item :label="$t('k8s.vc_task')">
@@ -58,13 +54,13 @@
             <template v-if="tasks.length > 1" #extra>
               <a-button type="link" @click="removeTask(taskIndex)">{{ $t('k8s.vc_remove') }}</a-button>
             </template>
-            <a-form-model-item :label="$t('k8s.text_41')" v-bind="nestedLayout">
+            <a-form-model-item :label="$t('k8s.text_41')" :extra="$t('k8s.vc_task_name_hint')" v-bind="nestedLayout">
               <a-input v-model:value="task.name" />
             </a-form-model-item>
-            <a-form-model-item :label="$t('k8s.vc_replicas')" v-bind="nestedLayout">
+            <a-form-model-item :label="$t('k8s.vc_replicas')" :extra="$t('k8s.vc_replicas_hint')" v-bind="nestedLayout">
               <a-input-number v-model:value="task.replicas" :min="1" style="width: 200px" />
             </a-form-model-item>
-            <a-form-model-item :label="$t('k8s.vc_restart_policy')" v-bind="nestedLayout">
+            <a-form-model-item :label="$t('k8s.vc_restart_policy')" :extra="$t('k8s.vc_restart_policy_hint')" v-bind="nestedLayout">
               <a-select v-model:value="task.restartPolicy">
                 <a-select-option value="OnFailure">OnFailure</a-select-option>
                 <a-select-option value="Never">Never</a-select-option>
@@ -77,32 +73,32 @@
                   <template v-if="task.containers.length > 1" #extra>
                     <a-button type="link" @click="removeContainer(taskIndex, containerIndex)">{{ $t('k8s.vc_remove') }}</a-button>
                   </template>
-                  <a-form-model-item :label="$t('k8s.text_41')" v-bind="nestedLayout">
+                  <a-form-model-item :label="$t('k8s.text_41')" :extra="$t('k8s.vc_container_name_hint')" v-bind="nestedLayout">
                     <a-input v-model:value="container.name" />
                   </a-form-model-item>
-                  <a-form-model-item :label="$t('k8s.vc_image')" v-bind="nestedLayout">
+                  <a-form-model-item :label="$t('k8s.vc_image')" :extra="$t('k8s.vc_image_hint')" v-bind="nestedLayout">
                     <a-input v-model:value="container.image" placeholder="nginx" />
                   </a-form-model-item>
-                  <a-form-model-item :label="$t('k8s.vc_image_pull_policy')" v-bind="nestedLayout">
+                  <a-form-model-item :label="$t('k8s.vc_image_pull_policy')" :extra="$t('k8s.vc_image_pull_policy_hint')" v-bind="nestedLayout">
                     <a-select v-model:value="container.imagePullPolicy">
                       <a-select-option value="IfNotPresent">IfNotPresent</a-select-option>
                       <a-select-option value="Always">Always</a-select-option>
                       <a-select-option value="Never">Never</a-select-option>
                     </a-select>
                   </a-form-model-item>
-                  <a-form-model-item :label="$t('k8s.vc_command')" v-bind="nestedLayout">
+                  <a-form-model-item :label="$t('k8s.vc_command')" :extra="$t('k8s.vc_command_hint')" v-bind="nestedLayout">
                     <a-input v-model:value="container.command" placeholder="sleep 3600" />
                   </a-form-model-item>
-                  <a-form-model-item :label="$t('k8s.vc_cpu_request')" v-bind="nestedLayout">
+                  <a-form-model-item :label="$t('k8s.vc_cpu_request')" :extra="$t('k8s.vc_cpu_request_hint')" v-bind="nestedLayout">
                     <a-input v-model:value="container.cpu" placeholder="1" />
                   </a-form-model-item>
-                  <a-form-model-item :label="$t('k8s.vc_cpu_limit')" v-bind="nestedLayout">
+                  <a-form-model-item :label="$t('k8s.vc_cpu_limit')" :extra="$t('k8s.vc_cpu_limit_hint')" v-bind="nestedLayout">
                     <a-input v-model:value="container.cpuLimit" :placeholder="$t('k8s.vc_limit_same_as_request')" />
                   </a-form-model-item>
-                  <a-form-model-item :label="$t('k8s.vc_memory_request')" v-bind="nestedLayout">
+                  <a-form-model-item :label="$t('k8s.vc_memory_request')" :extra="$t('k8s.vc_memory_request_hint')" v-bind="nestedLayout">
                     <a-input v-model:value="container.memory" type="number" addonAfter="G" placeholder="1" :min="0" />
                   </a-form-model-item>
-                  <a-form-model-item :label="$t('k8s.vc_memory_limit')" v-bind="nestedLayout">
+                  <a-form-model-item :label="$t('k8s.vc_memory_limit')" :extra="$t('k8s.vc_memory_limit_hint')" v-bind="nestedLayout">
                     <a-input v-model:value="container.memoryLimit" type="number" addonAfter="G" :placeholder="$t('k8s.vc_limit_same_as_request')" :min="0" />
                   </a-form-model-item>
                 </a-card>
@@ -167,7 +163,6 @@ export default {
           namespace: this.$store.state.common.k8s.namespace,
           queue: 'default',
           minAvailable: 1,
-          schedulerName: 'volcano',
           priorityClassName: '',
           restartOnEvict: false,
           networkTopologyMode: 'none',
@@ -214,9 +209,6 @@ export default {
         minAvailable: [
           { required: true, message: this.$t('k8s.vc_min_available_invalid') },
         ],
-        schedulerName: [
-          { required: true, message: this.$t('k8s.vc_required') },
-        ],
       },
     }
   },
@@ -228,6 +220,11 @@ export default {
         limit: 0,
       }
     },
+    priorityClassExtra () {
+      const hint = this.$t('k8s.vc_priority_class_hint')
+      if (!this.topologyMode) return hint
+      return `${hint} ${this.$t('k8s.vc_priority_no_preempt_hint')}`
+    },
   },
   methods: {
     onClusterInput (v) {
@@ -237,6 +234,12 @@ export default {
     onNamespaceInput (v) {
       this.form.fd.namespace = v
       this.setNamespace(v)
+    },
+    priorityLabel (item) {
+      if (!item) return ''
+      const name = item.name || ''
+      if (item.value === undefined || item.value === null || item.value === '') return name
+      return `${name} (${item.value})`
     },
     setTopologyMode (value) {
       this.topologyMode = value && value !== 'none' ? value : ''
@@ -313,7 +316,7 @@ export default {
         namespace: values.namespace,
         queue: values.queue.trim(),
         minAvailable,
-        schedulerName: (values.schedulerName || 'volcano').trim() || 'volcano',
+        schedulerName: 'volcano',
         priorityClassName: (values.priorityClassName || '').trim(),
         restartOnEvict: values.restartOnEvict === true,
         tasks: this.tasks.map(task => ({
@@ -332,10 +335,13 @@ export default {
           })),
         })),
       }
-      if (topologyMode && topologyMode !== 'none') {
+      if (topologyMode === 'hard' || topologyMode === 'soft') {
         const tier = Number(values.highestTierAllowed)
+        if (!Number.isInteger(tier) || tier < 1) {
+          throw this.fail('k8s.vc_tier_invalid')
+        }
         payload.networkTopologyMode = topologyMode
-        payload.highestTierAllowed = Number.isInteger(tier) && tier >= 1 ? tier : 1
+        payload.highestTierAllowed = tier
       }
       return payload
     },

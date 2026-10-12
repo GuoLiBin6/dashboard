@@ -1,19 +1,19 @@
 <template>
   <div class="w-75">
     <a-form-model ref="formRef" :model="form.fd" :rules="rules" v-bind="formItemLayout">
-      <a-form-model-item :label="$t('k8s.text_41')" prop="name">
+      <a-form-model-item :label="$t('k8s.text_41')" prop="name" :extra="$t('k8s.vc_priorityclass_name_hint')">
         <a-input v-model:value="form.fd.name" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.text_19')" prop="cluster">
+      <a-form-model-item :label="$t('k8s.text_19')" prop="cluster" :extra="$t('k8s.vc_priorityclass_cluster_hint')">
         <cluster-select v-model:value="form.fd.cluster" @input="onClusterInput" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.vc_priority_value')" prop="value">
+      <a-form-model-item :label="$t('k8s.vc_priority_value')" prop="value" :extra="$t('k8s.vc_priority_value_hint')">
         <a-input-number v-model:value="form.fd.value" style="width: 200px" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.vc_global_default')" prop="globalDefault">
+      <a-form-model-item :label="$t('k8s.vc_global_default')" prop="globalDefault" :extra="$t('k8s.vc_global_default_hint')">
         <a-switch v-model:checked="form.fd.globalDefault" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.vc_description')" prop="description">
+      <a-form-model-item :label="$t('k8s.vc_description')" prop="description" :extra="$t('k8s.vc_description_hint')">
         <a-input v-model:value="form.fd.description" />
       </a-form-model-item>
     </a-form-model>
