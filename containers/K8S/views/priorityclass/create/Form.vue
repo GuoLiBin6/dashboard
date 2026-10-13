@@ -1,5 +1,6 @@
 <template>
   <div class="w-75">
+    <a-alert class="mb-3" type="info" show-icon :message="$t('k8s.vc_priorityclass_scenario_hint')" />
     <a-form-model ref="formRef" :model="form.fd" :rules="rules" v-bind="formItemLayout">
       <a-form-model-item :label="$t('k8s.text_41')" prop="name" :extra="$t('k8s.vc_priorityclass_name_hint')">
         <a-input v-model:value="form.fd.name" />

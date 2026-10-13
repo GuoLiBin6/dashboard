@@ -1,6 +1,13 @@
 <template>
   <div class="w-75">
     <a-form-model ref="formRef" :model="form.fd" :rules="rules" v-bind="formItemLayout">
+      <a-form-model-item v-if="!isUpdate" :label="$t('k8s.vc_queue_scenario')" :extra="queueScenarioExtra">
+        <a-select v-model:value="queueScenario" @change="setQueueScenario">
+          <a-select-option value="online">{{ $t('k8s.vc_queue_online') }}</a-select-option>
+          <a-select-option value="offline">{{ $t('k8s.vc_queue_offline') }}</a-select-option>
+          <a-select-option value="custom">{{ $t('k8s.vc_queue_custom') }}</a-select-option>
+        </a-select>
+      </a-form-model-item>
       <a-form-model-item :label="$t('k8s.text_41')" prop="name" :extra="$t('k8s.vc_queue_name_hint')">
         <a-input :disabled="isUpdate" v-model:value="form.fd.name" />
       </a-form-model-item>
@@ -18,27 +25,32 @@
           :mapper="parentQueueMapper"
           :select-props="{ placeholder: $t('k8s.vc_parent') }" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.vc_weight')" prop="weight" :extra="$t('k8s.vc_weight_hint')">
-        <a-input-number v-model:value="form.fd.weight" :min="1" style="width: 200px" />
+      <a-form-model-item v-if="queuePreset" :label="$t('k8s.vc_deserved')" :extra="$t('k8s.vc_queue_deserved_cpu_hint')">
+        <a-input v-model:value="form.fd.deservedCpu" :addonBefore="$t('k8s.vc_cpu')" placeholder="2" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.vc_priority')" prop="priority" :extra="$t('k8s.vc_priority_hint')">
-        <a-input-number v-model:value="form.fd.priority" style="width: 200px" />
-      </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.vc_reclaimable')" prop="reclaimable" :extra="$t('k8s.vc_reclaimable_hint')">
-        <a-switch v-model:checked="form.fd.reclaimable" />
-      </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.vc_guarantee')" :extra="$t('k8s.vc_guarantee_hint')">
-        <a-input v-model:value="form.fd.guaranteeCpu" :addonBefore="$t('k8s.vc_cpu')" class="mb-2" placeholder="2" />
-        <a-input v-model:value="form.fd.guaranteeMemory" :addonBefore="$t('k8s.vc_memory')" placeholder="4Gi" />
-      </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.vc_deserved')" :extra="$t('k8s.vc_deserved_hint')">
-        <a-input v-model:value="form.fd.deservedCpu" :addonBefore="$t('k8s.vc_cpu')" class="mb-2" placeholder="2" />
-        <a-input v-model:value="form.fd.deservedMemory" :addonBefore="$t('k8s.vc_memory')" placeholder="4Gi" />
-      </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.vc_capability')" :extra="$t('k8s.vc_capability_hint')">
-        <a-input v-model:value="form.fd.capabilityCpu" :addonBefore="$t('k8s.vc_cpu')" class="mb-2" placeholder="4" />
-        <a-input v-model:value="form.fd.capabilityMemory" :addonBefore="$t('k8s.vc_memory')" placeholder="8Gi" />
-      </a-form-model-item>
+      <template v-if="showAdvanced">
+        <a-form-model-item :label="$t('k8s.vc_weight')" prop="weight" :extra="$t('k8s.vc_weight_hint')">
+          <a-input-number v-model:value="form.fd.weight" :min="1" style="width: 200px" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('k8s.vc_priority')" prop="priority" :extra="$t('k8s.vc_priority_hint')">
+          <a-input-number v-model:value="form.fd.priority" style="width: 200px" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('k8s.vc_reclaimable')" prop="reclaimable" :extra="$t('k8s.vc_reclaimable_hint')">
+          <a-switch v-model:checked="form.fd.reclaimable" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('k8s.vc_guarantee')" :extra="$t('k8s.vc_guarantee_hint')">
+          <a-input v-model:value="form.fd.guaranteeCpu" :addonBefore="$t('k8s.vc_cpu')" class="mb-2" placeholder="2" />
+          <a-input v-model:value="form.fd.guaranteeMemory" :addonBefore="$t('k8s.vc_memory')" placeholder="4Gi" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('k8s.vc_deserved')" :extra="$t('k8s.vc_deserved_hint')">
+          <a-input v-model:value="form.fd.deservedCpu" :addonBefore="$t('k8s.vc_cpu')" class="mb-2" placeholder="2" />
+          <a-input v-model:value="form.fd.deservedMemory" :addonBefore="$t('k8s.vc_memory')" placeholder="4Gi" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('k8s.vc_capability')" :extra="$t('k8s.vc_capability_hint')">
+          <a-input v-model:value="form.fd.capabilityCpu" :addonBefore="$t('k8s.vc_cpu')" class="mb-2" placeholder="4" />
+          <a-input v-model:value="form.fd.capabilityMemory" :addonBefore="$t('k8s.vc_memory')" placeholder="8Gi" />
+        </a-form-model-item>
+      </template>
     </a-form-model>
   </div>
 </template>
@@ -96,6 +108,7 @@ export default {
         labelCol: { span: 4 },
         wrapperCol: { span: 20 },
       },
+      queueScenario: 'custom',
       rules: {
         name: [
           { required: !this.isUpdate, message: this.$t('k8s.vc_required') },
@@ -117,6 +130,17 @@ export default {
         limit: 0,
       }
     },
+    queuePreset () {
+      return !this.isUpdate && this.queueScenario !== 'custom'
+    },
+    showAdvanced () {
+      return !this.queuePreset
+    },
+    queueScenarioExtra () {
+      if (this.queueScenario === 'online') return this.$t('k8s.vc_queue_online_hint')
+      if (this.queueScenario === 'offline') return this.$t('k8s.vc_queue_offline_hint')
+      return this.$t('k8s.vc_queue_custom_hint')
+    },
   },
   watch: {
     initial: {
@@ -130,6 +154,9 @@ export default {
     onClusterInput (v) {
       this.form.fd.cluster = v
       this.setCluster(v)
+    },
+    setQueueScenario (value) {
+      this.queueScenario = value
     },
     parentQueueMapper (list) {
       const selfName = this.isUpdate && this.initial ? this.initial.name : ''
@@ -160,6 +187,26 @@ export default {
       return this.form.fd
     },
     buildPayload (values) {
+      if (this.queuePreset) {
+        const deservedCpu = (values.deservedCpu || '').trim()
+        if (!deservedCpu) {
+          const error = new Error('deserved_cpu_required')
+          this.$message.error(this.$t('k8s.vc_queue_deserved_cpu_required'))
+          throw error
+        }
+        values = {
+          ...values,
+          weight: 1,
+          priority: 100,
+          reclaimable: true,
+          guaranteeCpu: '',
+          guaranteeMemory: '',
+          deservedCpu,
+          deservedMemory: '',
+          capabilityCpu: '',
+          capabilityMemory: '',
+        }
+      }
       const weight = Number(values.weight)
       const priority = values.priority == null || values.priority === '' ? 100 : Number(values.priority)
       if (!Number.isInteger(weight) || weight < 1) {
