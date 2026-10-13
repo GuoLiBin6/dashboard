@@ -1,15 +1,17 @@
 <template>
   <div class="page-list-lite">
-    <div class="page-list-lite__body" :class="{ 'has-tree': showTagConfig && treeToggleOpen }">
+    <div
+      class="page-list-lite__body"
+      :class="{ 'has-tree': showTagConfig && !isTemplate && treeToggleOpen }">
       <tree-project
-        v-if="showTagConfig"
+        v-if="showTagConfig && !isTemplate"
         ref="projectTag"
         v-show="treeToggleOpen"
         class="page-list-lite__tree"
         :treeToggleOpen="treeToggleOpen"
         :tag-config-params="{ config, ...tagConfigParams }"
         @select="onProjectTagSelect"
-        @treeProjectConfig="() => {}" />
+        @treeProjectConfig="handleTreeProjectConfig" />
       <div class="page-list-lite__main">
         <table-lite-grid
           ref="grid"
@@ -90,6 +92,7 @@ import Deny from '@/components/PageList/components/Deny.vue'
 import Loader from '@/components/PageList/Loader.vue'
 import MultipleSort from '@/components/PageList/components/MultipleSort.vue'
 import TreeProject from '@/sections/TreeProject'
+import WindowsMixin from '@/mixins/windows'
 
 const SELECT_COL_WIDTH = 35
 const COL_MIN_WIDTH = 50
@@ -105,6 +108,7 @@ export default {
     Loader,
     TreeProject,
   },
+  mixins: [WindowsMixin],
   props: {
     id: String,
     idKey: {
@@ -177,7 +181,10 @@ export default {
     tree: Boolean,
     treeToggleOpen: Boolean,
     showTagConfig: Boolean,
-    tagConfigParams: Object,
+    tagConfigParams: {
+      type: Object,
+      default: () => ({}),
+    },
     updateConfig: {
       type: Function,
       required: true,
@@ -272,6 +279,9 @@ export default {
     },
     lockHeight () {
       return !!(this.enableVirtualScroll || this.inBaseSidePage || this.loadMoreShow)
+    },
+    isTemplate () {
+      return !!(this.list && this.list.isTemplate)
     },
   },
   watch: {
@@ -764,6 +774,15 @@ export default {
     onProjectTagSelect (payload) {
       this.$emit('project-tag-filter-change', payload)
     },
+    handleTreeProjectConfig () {
+      const mode = this.tagConfigParams && this.tagConfigParams.treeMode
+      if (!mode || mode === 'organization') return
+      this.createDialog('TreeConfigDialog', {
+        title: this.$t('common.text00011'),
+        resource: this.resource,
+        ...this.tagConfigParams,
+      })
+    },
   },
 }
 </script>
@@ -778,6 +797,9 @@ export default {
   align-items: stretch;
   min-width: 0;
   width: 100%;
+  &.has-tree {
+    overflow: hidden;
+  }
 }
 .page-list-lite__tree {
   flex: 0 0 auto;

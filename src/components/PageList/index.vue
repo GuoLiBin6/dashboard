@@ -159,6 +159,8 @@
 import * as R from 'ramda'
 import { mapGetters } from 'vuex'
 import PageListTable from '@/components/PageListLite/components/Table.vue'
+import { isCE } from '@/utils/utils'
+import { hasPermission } from '@/utils/auth'
 import PageListHeader from './components/Header'
 // 表格层统一走 PageListLite（原生 table），业务侧仍用 <page-list>
 
@@ -311,6 +313,7 @@ export default {
     },
     tagConfigParams: {
       type: Object,
+      default: () => ({}),
     },
     editConfig: Object,
     tableOverviewIndexs: {
@@ -467,9 +470,14 @@ export default {
       return this.list.loadMoreSize
     },
     showTagConfigCheck () {
-      return this.showTagConfig && this.projectTags.enableOrganization
+      // 仅商业版 + 开启组织架构 + 有组织权限时展示侧栏
+      return this.showTagConfig &&
+        this.projectTags.enableOrganization &&
+        !isCE() &&
+        !this.isSysCE &&
+        hasPermission({ key: 'organizations_list' })
     },
-    ...mapGetters(['isSidepageOpen', 'projectTags']),
+    ...mapGetters(['isSidepageOpen', 'projectTags', 'isSysCE']),
   },
   beforeUnmount () {
     this.list.clearWaitJob()
