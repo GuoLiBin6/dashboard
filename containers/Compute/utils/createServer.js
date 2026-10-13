@@ -486,11 +486,15 @@ function createVmFieldMap (type, initData = {}) {
       valuePropName: 'checked',
       initialValue: initData.is_daemon || false,
     },
+    qemu_version: {
+      name: 'qemu_version',
+      initialValue: initData.qemu_version || '',
+    },
   }
 }
 
 const fieldMapGroup = {
-  idc: ['domain', 'project', 'cloudregionZone', 'name', 'description', 'reason', 'count', 'imageOS', 'loginConfig', 'hypervisor', 'gpu', 'vcpu', 'vmem', 'sku', 'kickstart', 'systemDisk', 'dataDisk', 'network', 'secgroup', 'schedPolicy', 'bios', 'vdi', 'vga', 'machine', 'backup', 'duration', 'groups', 'tag', 'servertemplate', 'eip', 'os_arch', 'hostName', 'portMapping', 'encrypt_keys', 'custom_data_type', 'deploy_telegraf', 'pci', 'bastion_host', 'is_daemon'],
+  idc: ['domain', 'project', 'cloudregionZone', 'name', 'description', 'reason', 'count', 'imageOS', 'loginConfig', 'hypervisor', 'gpu', 'vcpu', 'vmem', 'sku', 'kickstart', 'systemDisk', 'dataDisk', 'network', 'secgroup', 'schedPolicy', 'bios', 'vdi', 'vga', 'machine', 'backup', 'duration', 'groups', 'tag', 'servertemplate', 'eip', 'os_arch', 'hostName', 'portMapping', 'encrypt_keys', 'custom_data_type', 'deploy_telegraf', 'pci', 'bastion_host', 'is_daemon', 'qemu_version'],
   public: ['domain', 'project', 'name', 'description', 'count', 'enableWorldMap', 'imageOS', 'reason', 'loginConfig', 'vcpu', 'vmem', 'sku', 'systemDisk', 'dataDisk', 'network', 'schedPolicy', 'bill', 'eip', 'secgroup', 'resourceType', 'tag', 'servertemplate', 'duration', 'cloudprovider', 'hostName', 'custom_data_type', 'bastion_host'],
   private: ['domain', 'project', 'cloudregionZone', 'name', 'description', 'reason', 'count', 'imageOS', 'loginConfig', 'hypervisor', 'vcpu', 'vmem', 'sku', 'systemDisk', 'dataDisk', 'network', 'secgroup', 'schedPolicy', 'duration', 'tag', 'servertemplate', 'cloudprovider', 'hostName', 'portMapping', 'custom_data_type', 'bastion_host', 'pci'],
 }
@@ -1364,6 +1368,9 @@ export class GenCreateData {
     if (this.fd.hypervisor === HYPERVISORS_MAP.kvm.key) {
       if (this.fd.is_daemon) {
         data.is_daemon = this.fd.is_daemon
+      }
+      if (this.fd.qemu_version) {
+        data.qemu_version = this.fd.qemu_version
       }
     }
     if (this.fi.showCpuSockets) {
