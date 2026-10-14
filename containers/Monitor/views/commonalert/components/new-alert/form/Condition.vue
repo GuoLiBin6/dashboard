@@ -4,34 +4,34 @@
       <a-col :span="4">
         <a-form-item>
           <base-select
-            v-decorator="decorators.metric_key(item.key)"
+            :value="fieldVal(resolvedFieldMap.metric_key(item.key))"
             :options="metricKeyOpts"
             filterable
             :disabled="disabled"
             :select-props="{ placeholder: $t('monitor.text_112'), loading }"
-            @change="(v) => metricKeyChange(v, item)" />
+            @change="(v) => { fieldSet(resolvedFieldMap.metric_key(item.key), v); metricKeyChange(v, item) }" />
         </a-form-item>
       </a-col>
       <a-col :span="4">
         <a-form-item>
           <base-select
             filterable
-            v-decorator="decorators.metric_value(item.key)"
+            :value="fieldVal(resolvedFieldMap.metric_value(item.key))"
             :options="metricOptsMap[item.key]"
             :labelFormat="metricValueLabelFormat"
             :disabled="disabled"
-            @change="(v) => metricValueChange(v, item)"
+            @change="(v) => { fieldSet(resolvedFieldMap.metric_value(item.key), v); metricValueChange(v, item) }"
             :select-props="{ placeholder: $t('monitor.text_113'), allowClear: true, loading }" />
         </a-form-item>
       </a-col>
       <a-col :span="4">
         <a-form-item>
-          <base-select v-decorator="decorators.reduce(item.key)" :options="reduceOpts" :disabled="disabled" minWidth="70px" />
+          <base-select :value="fieldVal(resolvedFieldMap.reduce(item.key))" @change="v => fieldSet(resolvedFieldMap.reduce(item.key), v)" :options="reduceOpts" :disabled="disabled" minWidth="70px" />
         </a-form-item>
       </a-col>
       <a-col :span="3">
         <a-form-item>
-          <base-select v-decorator="decorators.comparator(item.key)"  :options="comparatorOpts" minWidth="70px" :disabled="disabled" @change="(v) => onComparatorChange(v, item)" />
+          <base-select :value="fieldVal(resolvedFieldMap.comparator(item.key))" @change="v => { fieldSet(resolvedFieldMap.comparator(item.key), v); onComparatorChange(v, item) }" :options="comparatorOpts" minWidth="70px" :disabled="disabled" />
         </a-form-item>
       </a-col>
       <template v-if="showThresholdMap[item.key]">
@@ -40,13 +40,13 @@
             <div class="d-flex" style="gap: 8px; align-items: flex-start;">
               <div style="flex: 1;">
                 <a-form-item style="margin-bottom: 0;">
-                  <threshold-input v-decorator="decorators.threshold_start(item.key)" :unit="unitMap[item.key]" :disabled="disabled" @change="() => handleRangeValueChange(item.key, 'end')" />
+                  <threshold-input :value="fieldVal(resolvedFieldMap.threshold_start(item.key))" @change="v => { fieldSet(resolvedFieldMap.threshold_start(item.key), v); handleRangeValueChange(item.key, 'end') }" :unit="unitMap[item.key]" :disabled="disabled" />
                 </a-form-item>
               </div>
               <span style="flex-shrink: 0; padding: 0 4px; display: flex; align-items: center; height: 32px; line-height: 32px; margin-top: 4px;">~</span>
               <div style="flex: 1;">
                 <a-form-item style="margin-bottom: 0;">
-                  <threshold-input v-decorator="decorators.threshold_end(item.key)" :unit="unitMap[item.key]" :disabled="disabled" @change="() => handleRangeValueChange(item.key, 'start')" />
+                  <threshold-input :value="fieldVal(resolvedFieldMap.threshold_end(item.key))" @change="v => { fieldSet(resolvedFieldMap.threshold_end(item.key), v); handleRangeValueChange(item.key, 'start') }" :unit="unitMap[item.key]" :disabled="disabled" />
                 </a-form-item>
               </div>
             </div>
@@ -54,7 +54,7 @@
         </template>
         <a-col v-else :span="8">
           <a-form-item>
-            <threshold-input v-decorator="decorators.threshold(item.key)" :unit="unitMap[item.key]" :disabled="disabled" />
+            <threshold-input :value="fieldVal(resolvedFieldMap.threshold(item.key))" @change="v => fieldSet(resolvedFieldMap.threshold(item.key), v)" :unit="unitMap[item.key]" :disabled="disabled" />
           </a-form-item>
         </a-col>
       </template>
@@ -73,6 +73,8 @@
 import _ from 'lodash'
 import { metric_zh } from '@Monitor/constants'
 import { uuid } from '@/utils/utils'
+import { buildConditionFieldMap } from '@Monitor/sections/fields'
+import { resolveFieldMeta } from '@/utils/common/ant'
 import thresholdInput from './thresholdInput'
 export default {
   name: 'AlertCondition',
@@ -80,9 +82,14 @@ export default {
     thresholdInput,
   },
   props: {
-    decorators: {
+    fieldMap: {
       type: Object,
-      required: true,
+      default: null,
+    },
+    /** a-form-model：与 field 字段名对齐（通常为 form.fd）；支持 bracket 嵌套 */
+    model: {
+      type: Object,
+      default: null,
     },
     disabled: {
       type: Boolean,
@@ -124,8 +131,18 @@ export default {
     }
   },
   computed: {
+    resolvedFieldMap () {
+      return this.fieldMap || buildConditionFieldMap({
+        getFd: () => this.fdModel,
+        t: key => this.$t(key),
+      })
+    },
+    fdModel () {
+      return this.model
+    },
     hasDeltaCondition () {
-      return this.conditionList.some(item => this.form.fd.reduce && this.form.fd.reduce[item.key] === 'delta')
+      const reduce = this.fdModel?.reduce
+      return this.conditionList.some(item => reduce && reduce[item.key] === 'delta')
     },
     metricKeyOpts () {
       return (this.res_type_measurements[this.metric_res_type] || []).map(val => {
@@ -150,12 +167,142 @@ export default {
       },
       immediate: true,
     },
+    conditionList: {
+      handler () {
+        this.$nextTick(() => this.registerAllConditionFields())
+      },
+      deep: true,
+    },
   },
   methods: {
+
+    parseBracketName (name) {
+      const m = typeof name === 'string' && name.match(/^(\w+)\[([^\]]+)\]$/)
+      if (!m) return null
+      return { root: m[1], key: m[2] }
+    },
+    fieldVal (fieldTuple) {
+      const meta = resolveFieldMeta(fieldTuple)
+      if (!meta) return undefined
+      const { name, ...opts } = meta
+      const target = this.fdModel
+      if (target) {
+        const nested = this.parseBracketName(name)
+        let v
+        if (nested && target[nested.root] && typeof target[nested.root] === 'object') {
+          v = target[nested.root][nested.key]
+        } else if (Object.prototype.hasOwnProperty.call(target, name)) {
+          v = target[name]
+        }
+        if (v !== undefined) return v
+        if (opts.initialValue !== undefined) return opts.initialValue
+      }
+      return undefined
+    },
+    fieldSet (fieldTuple, value) {
+      const meta = resolveFieldMeta(fieldTuple)
+      if (!meta) return
+      const { name } = meta
+      const target = this.fdModel
+      if (!target) return
+      const nested = this.parseBracketName(name)
+      if (nested) {
+        if (!target[nested.root] || typeof target[nested.root] !== 'object') {
+          this.$set(target, nested.root, {})
+        }
+        this.$set(target[nested.root], nested.key, value)
+      } else {
+        this.$set(target, name, value)
+      }
+    },
+    runFieldRule (rule, value) {
+      return new Promise((resolve, reject) => {
+        if (rule.required) {
+          const empty = value === undefined || value === null || value === '' ||
+            (Array.isArray(value) && !value.length)
+          if (empty) {
+            reject(new Error(rule.message || 'required'))
+            return
+          }
+        }
+        if (typeof rule.validator === 'function') {
+          rule.validator(rule, value, (err) => {
+            if (err) reject(err instanceof Error ? err : new Error(String(err)))
+            else resolve()
+          })
+          return
+        }
+        resolve()
+      })
+    },
+    async runFieldMapRules (fieldTuple, value) {
+      const meta = resolveFieldMeta(fieldTuple)
+      if (!meta) return
+      const rules = meta.rules || []
+      for (const rule of rules) {
+        await this.runFieldRule(rule, value)
+      }
+    },
+    async validate () {
+      if (!this.fdModel) return true
+      for (const item of this.conditionList) {
+        const keys = ['metric_key', 'metric_value', 'reduce', 'comparator']
+        if (this.showThresholdMap[item.key] !== false) {
+          const comparator = this.fieldVal(this.resolvedFieldMap.comparator(item.key))
+          if (comparator === 'within_range' || comparator === 'outside_range') {
+            keys.push('threshold_start', 'threshold_end')
+          } else {
+            keys.push('threshold')
+          }
+        }
+        for (const f of keys) {
+          const fn = this.resolvedFieldMap[f]
+          if (typeof fn !== 'function') continue
+          const fieldDef = fn(item.key)
+          await this.runFieldMapRules(fieldDef, this.fieldVal(fieldDef))
+        }
+      }
+      return true
+    },
+    /** 批量写入 flat bracket keys → model 嵌套 */
+    writeFields (values) {
+      if (!values || typeof values !== 'object') return
+      Object.keys(values).forEach((name) => {
+        this.fieldSet({ name: name }, values[name])
+      })
+    },
+    registerAllConditionFields () {
+      this.conditionList.forEach(item => {
+        this.registerConditionFields(item.key)
+      })
+    },
+    registerConditionFields (itemKey) {
+      ;['metric_key', 'metric_value', 'reduce', 'comparator', 'threshold', 'threshold_start', 'threshold_end'].forEach(f => {
+        const fn = this.resolvedFieldMap[f]
+        if (typeof fn === 'function') {
+          const fieldDef = fn(itemKey)
+          if (this.fdModel && Array.isArray(fieldDef)) {
+            const [, opts = {}] = fieldDef
+            if (opts.initialValue !== undefined) {
+              const nested = this.parseBracketName(fieldDef[0])
+              if (nested) {
+                const root = this.fdModel[nested.root]
+                if (!root || root[nested.key] === undefined) {
+                  this.fieldSet(fieldDef, opts.initialValue)
+                }
+              } else if (this.fdModel[fieldDef[0]] === undefined) {
+                this.fieldSet(fieldDef, opts.initialValue)
+              }
+            }
+          }
+        }
+      })
+    },
     add (params = {}) {
       const key = uuid()
       this.conditionList.push({ key })
       this.showThresholdMap[key] = params.comparator !== 'nodata'
+      this.$nextTick(() => this.registerConditionFields(key))
     },
     del (item) {
       const index = this.conditionList.findIndex(val => val.key === item.key)
@@ -185,30 +332,26 @@ export default {
         this.showThresholdMap[item.key] = false
       } else {
         this.showThresholdMap[item.key] = true
-        // 处理 threshold 格式转换
         const thresholdKey = `threshold[${item.key}]`
-        const currentThreshold = this.form.fc.getFieldValue(thresholdKey)
+        const currentThreshold = this.fieldVal({ name: thresholdKey })
         const isRange = v === 'within_range' || v === 'outside_range'
         if (isRange) {
-          // 切换到范围类型：将单个值转换为数组
           let thresholdArray = []
           if (currentThreshold !== undefined && currentThreshold !== null && !Array.isArray(currentThreshold)) {
             thresholdArray = [currentThreshold, currentThreshold]
           } else if (Array.isArray(currentThreshold) && currentThreshold.length >= 2) {
             thresholdArray = currentThreshold
           } else {
-            // 如果没有值，设置默认数组
             thresholdArray = [1, 2]
           }
-          this.form.fc.setFieldsValue({
+          this.writeFields({
             [thresholdKey]: thresholdArray,
             [`threshold_start[${item.key}]`]: thresholdArray[0],
             [`threshold_end[${item.key}]`]: thresholdArray[1],
           })
         } else {
-          // 切换到非范围类型：将数组转换为单个值（取第一个值）
           if (Array.isArray(currentThreshold) && currentThreshold.length > 0) {
-            this.form.fc.setFieldsValue({
+            this.writeFields({
               [thresholdKey]: currentThreshold[0],
             })
           }
@@ -216,7 +359,7 @@ export default {
       }
     },
     isRangeType (key) {
-      const comparator = this.form.fc.getFieldValue(`comparator[${key}]`)
+      const comparator = this.fieldVal([`comparator[${key}]`, {}])
       return comparator === 'within_range' || comparator === 'outside_range'
     },
     metricValueLabelFormat (item) {
@@ -234,7 +377,7 @@ export default {
     },
     metricValueChange (val, item) {
       if (val) {
-        const metricKey = this.form.fc.getFieldValue(`metric_key[${item.key}]`)
+        const metricKey = this.fieldVal([`metric_key[${item.key}]`, {}])
         const metricOpts = this.getMetricOpts(metricKey)
         const metricValueItem = metricOpts.find((opt) => { return opt.key === val })
         const metricKeyItem = this.metricKeyItemMap[item.key]
@@ -268,23 +411,18 @@ export default {
       }
     },
     handleRangeValueChange (key, targetField) {
-      // 使用防抖避免频繁触发
       const timerKey = `${key}_${targetField}`
       if (this.rangeValidateTimers[timerKey]) {
         clearTimeout(this.rangeValidateTimers[timerKey])
       }
       this.rangeValidateTimers[timerKey] = setTimeout(() => {
-        const fieldName = targetField === 'start' ? `threshold_start[${key}]` : `threshold_end[${key}]`
-        // 同步更新 threshold 数组
-        const startValue = this.form.fc.getFieldValue(`threshold_start[${key}]`)
-        const endValue = this.form.fc.getFieldValue(`threshold_end[${key}]`)
+        const startValue = this.fieldVal([`threshold_start[${key}]`, {}])
+        const endValue = this.fieldVal([`threshold_end[${key}]`, {}])
         if (startValue !== undefined && startValue !== null && endValue !== undefined && endValue !== null) {
-          this.form.fc.setFieldsValue({
+          this.writeFields({
             [`threshold[${key}]`]: [startValue, endValue],
           })
         }
-        // 触发校验
-        this.form.fc.validateFields([fieldName], { force: true }, () => {})
         delete this.rangeValidateTimers[timerKey]
       }, 300)
     },

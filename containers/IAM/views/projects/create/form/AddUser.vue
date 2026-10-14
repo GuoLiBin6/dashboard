@@ -1,16 +1,16 @@
 <template>
-  <a-form :form="form.fc" v-bind="formItemLayout">
-    <a-form-item :label="$t('dictionary.user')">
+  <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+    <a-form-model-item :label="$t('dictionary.user')">
       <domain-user-select
           :labelInValue="false"
           :form="form"
-          :decorators="decorators"
+          :initial-domain-id="domainId"
           :projectDomainId="projectDomainId"
           @domainChange="domainChange" />
-    </a-form-item>
-    <a-form-item :label="`${$t('dictionary.role')}`">
+    </a-form-model-item>
+    <a-form-model-item :label="`${$t('dictionary.role')}`" prop="roles">
       <base-select
-        v-decorator="decorators.roles"
+        v-model="form.roles"
         version="v1"
         resource="roles"
         :params="roleParams"
@@ -18,8 +18,8 @@
         :showSync="true"
         :select-props="{ mode: 'multiple', placeholder: $t('rules.role') }" />
       <div slot="extra">{{$t('system.text_441', [$t('dictionary.role')])}}<help-link :href="roleLink">{{$t('system.text_440')}}</help-link></div>
-    </a-form-item>
-  </a-form>
+    </a-form-model-item>
+  </a-form-model>
 </template>
 
 <script>
@@ -42,7 +42,20 @@ export default {
     return {
       projectDomainId: this.domainId,
       form: {
-        fc: this.$form.createForm(this),
+        domain: this.domainId,
+        users: undefined,
+        roles: undefined,
+      },
+      rules: {
+        users: [
+          { required: true, message: this.$t('rules.user') },
+        ],
+        roles: [
+          { required: true, message: this.$t('rules.role') },
+        ],
+        domain: [
+          { required: true, message: this.$t('rules.domain') },
+        ],
       },
       formItemLayout: {
         wrapperCol: {
@@ -57,30 +70,6 @@ export default {
             span: 2,
           },
         },
-      },
-      decorators: {
-        domain: [
-          'domain',
-          {
-            initialValue: this.domainId,
-          },
-        ],
-        users: [
-          'users',
-          {
-            rules: [
-              { required: true, message: this.$t('rules.user') },
-            ],
-          },
-        ],
-        roles: [
-          'roles',
-          {
-            rules: [
-              { required: true, message: this.$t('rules.role') },
-            ],
-          },
-        ],
       },
     }
   },
@@ -105,8 +94,9 @@ export default {
     },
   },
   methods: {
-    validateForm () {
-      return this.form.fc.validateFields()
+    async validateForm () {
+      await this.$refs.formRef.validate()
+      return { ...this.form }
     },
     domainChange (val) {
       this.projectDomainId = val

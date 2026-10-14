@@ -14,14 +14,16 @@
             :description="chartDetail.chart.metadata.description">
             <div class="mt-1" style="font-size: 12px; color: #555; font-weight: 500;">{{ isVm ? $t('helm.text_26') : $t('helm.text_27') }}</div>
           </page-card-detail>
-          <a-form
-            v-bind="formItemLayout"
-            :form="form.fc">
-            <a-form-item :label="$t('helm.text_16')">
-              <a-input v-decorator="decorators.release_name" :placeholder="$t('helm.text_28')" />
-            </a-form-item>
-            <a-form-item :label="$t('helm.text_29')">
-              <a-select v-decorator="decorators.version" :placeholder="$t('helm.text_30')">
+          <a-form-model
+            ref="shellFormRef"
+            :model="shellForm"
+            :rules="shellRules"
+            v-bind="formItemLayout">
+            <a-form-model-item :label="$t('helm.text_16')" prop="release_name">
+              <a-input v-model:value="shellForm.release_name" :placeholder="$t('helm.text_28')" />
+            </a-form-model-item>
+            <a-form-model-item :label="$t('helm.text_29')" prop="version">
+              <a-select v-model:value="shellForm.version" :placeholder="$t('helm.text_30')">
                 <a-select-option
                   v-for="item in versions"
                   :key="item.key"
@@ -29,26 +31,27 @@
                   {{ item.label }}
                 </a-select-option>
               </a-select>
-            </a-form-item>
+            </a-form-model-item>
             <template v-if="isVm">
-              <a-form-item :label="$t('scope.text_573', [$t('dictionary.project')])">
-                <domain-project :fc="form.fc" :decorators="{ project: decorators.project, domain: decorators.domain }" />
-              </a-form-item>
+              <a-form-model-item :label="$t('scope.text_573', [$t('dictionary.project')])">
+                <domain-project :form="shellForm" />
+              </a-form-model-item>
             </template>
             <template v-else>
-              <a-form-item :label="$t('helm.text_31')">
-                <cluster-select v-decorator="decorators.cluster" @input="setCluster" />
-              </a-form-item>
-              <a-form-item :label="$t('helm.text_32')">
-                <namespace-select v-decorator="decorators.namespace"  @input="setNamespace" :cluster="cluster" v-model:namespaceObj="namespaceObj" />
-              </a-form-item>
+              <a-form-model-item :label="$t('helm.text_31')" prop="cluster">
+                <cluster-select v-model:value="shellForm.cluster" @input="setCluster" />
+              </a-form-model-item>
+              <a-form-model-item :label="$t('helm.text_32')" prop="namespace">
+                <namespace-select v-model:value="shellForm.namespace" @input="setNamespace" :cluster="cluster" v-model:namespaceObj="namespaceObj" />
+              </a-form-model-item>
             </template>
             <a-collapse v-model:activeKey="activeKey">
               <a-collapse-panel :header="$t('helm.text_46')" key="jsonschema">
                 <json-schema-form v-if="isJsonSchema" :schema="schema" :extendFd="form.fd" :definition="definition" :hide-reset="false" :influxdbUrl="influxdbUrl" ref="formRef" />
                 <form-yaml
                   v-else
-                  :decorators="decorators"
+                  ref="formYamlRef"
+                  :model="form.fd"
                   v-model:activeTab="formActiveTab"
                   :localData="chartDetail.chart.values"
                   :valueSearch="valueSearch" />
@@ -60,7 +63,7 @@
                 <template-preview :previewFiles="previewFiles" />
               </a-collapse-panel>
             </a-collapse>
-          </a-form>
+          </a-form-model>
         </template>
       </div>
     </page-body>
@@ -84,8 +87,8 @@ import NamespaceSelect from '@K8S/sections/NamespaceSelect'
 import TemplatePreview from '@K8S/sections/TemplatePreview'
 import k8sCreateMixin from '@K8S/mixins/create'
 import FormYaml from '@Helm/views/chart/create/FormYaml'
-import DomainProject from '@/sections/DomainProject'
-import { validateYaml, isRequired } from '@/utils/validate'
+import DomainProject from '@/sections/DomainProject/model'
+import { isRequired } from '@/utils/validate'
 import { HYPERVISORS_MAP } from '@/constants'
 import { compactObj } from '@/utils/utils'
 
@@ -100,15 +103,6 @@ export default {
   },
   mixins: [k8sCreateMixin],
   data () {
-    const validator = (rule, value, _callback) => {
-      validateYaml(value)
-        .then(() => {
-          return _callback()
-        })
-        .catch(() => {
-          return _callback(this.$t('helm.text_37'))
-        })
-    }
     return {
       activeKey: ['jsonschema', 'desc', 'yaml'],
       formActiveTab: 'form',
@@ -136,100 +130,45 @@ export default {
         [8, 6, 8],
         [13, 9],
       ],
-      form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.$set(this.form.fd, key, values[key])
-            })
-          },
-        }),
-        fd: {},
+      shellForm: {
+        release_name: undefined,
+        version: undefined,
+        domain: undefined,
+        project: undefined,
+        cluster: this.$store.state.common.k8s.cluster,
+        namespace: this.$store.state.common.k8s.namespace,
       },
-      schema: {},
-      decorators: {
+      shellRules: {
         release_name: [
-          'release_name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('helm.text_28') },
-              { min: 2, max: 24, message: this.$t('helm.text_38'), trigger: 'blur' },
-              { validator: this.$validate('k8sName') },
-            ],
-          },
+          { required: true, message: this.$t('helm.text_28') },
+          { min: 2, max: 24, message: this.$t('helm.text_38'), trigger: 'blur' },
+          { validator: this.$validate('k8sName') },
         ],
         version: [
-          'version',
-          {
-            rules: [
-              { required: true, message: this.$t('helm.text_30'), trigger: 'blur' },
-            ],
-          },
+          { required: true, message: this.$t('helm.text_30'), trigger: 'blur' },
         ],
         domain: [
-          'domain',
-          {
-            rules: [
-              { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
-            ],
-          },
+          { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
         ],
         project: [
-          'project',
-          {
-            rules: [
-              { validator: isRequired(), message: this.$t('rules.project'), trigger: 'change' },
-            ],
-          },
+          { validator: isRequired(), message: this.$t('rules.project'), trigger: 'change' },
         ],
         cluster: [
-          'cluster',
-          {
-            initialValue: this.$store.state.common.k8s.cluster,
-            rules: [
-              { required: true, message: this.$t('helm.text_39'), trigger: 'blur' },
-            ],
-          },
+          { required: true, message: this.$t('helm.text_39'), trigger: 'blur' },
         ],
         namespace: [
-          'namespace',
-          {
-            initialValue: this.$store.state.common.k8s.namespace,
-            rules: [
-              { required: true, message: this.$t('helm.text_40'), trigger: 'blur' },
-            ],
-          },
-        ],
-        config: {
-          key: i => [
-            `keys[${i}]`,
-            {
-              rules: [
-                { required: true, message: this.$t('helm.text_41') },
-              ],
-            },
-          ],
-          value: i => [
-            `values[${i}]`,
-            {
-              rules: [
-                { required: true, message: this.$t('helm.text_42') },
-              ],
-            },
-          ],
-        },
-        yaml: [
-          'yaml',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('helm.text_43') },
-              { validator },
-            ],
-          },
+          { required: true, message: this.$t('helm.text_40'), trigger: 'blur' },
         ],
       },
+      // FormYaml + LabelsComplete：:model="form.fd"（keys/values 嵌套 + yaml 字符串）
+      form: {
+        fd: {
+          keys: {},
+          values: {},
+          yaml: '',
+        },
+      },
+      schema: {},
       definition: [
         // 'hypervisor',
         // 'preferRegion',
@@ -265,7 +204,7 @@ export default {
     ...mapGetters(['isAdminMode', 'isProjectMode', 'scope', 'isDomainMode', 'userInfo', 'l3PermissionEnable']),
   },
   watch: {
-    'form.fd.domain.key' () {
+    'shellForm.domain' () {
       this.getCapability()
     },
   },
@@ -278,7 +217,9 @@ export default {
   methods: {
     async getCapability () {
       if (!this.definition || !this.definition.length) return
-      const params = { project_domain: _.get(this.form.fd, 'domain.key') }
+      const domain = this.shellForm.domain
+      const domainKey = domain && typeof domain === 'object' ? domain.key : domain
+      const params = { project_domain: domainKey }
       try {
         const { data: { data } } = await new this.$Manager('capabilities', 'v2').list({ params })
 
@@ -301,7 +242,7 @@ export default {
             type: 'a-select',
             options: hypervisorOpts,
           })
-          this.$refs.formRef.form.fc.setFieldsValue({
+          this.$refs.formRef.setValues({
             hypervisor: hypervisorOpts[0] ? hypervisorOpts[0].value : undefined,
           })
         }
@@ -434,10 +375,7 @@ export default {
           key: `${v.repo} - ${v.version}`,
         }
       })
-      this.form.fc.getFieldDecorator(this.decorators.version[0], this.decorators.version[1])
-      this.form.fc.setFieldsValue({
-        [this.decorators.version[0]]: this.versions[0].key,
-      })
+      this.shellForm.version = this.versions[0].key
       return data[0].version
     },
     async doCreate (values, valuesJson) {
@@ -489,12 +427,16 @@ export default {
     },
     async confirm () {
       this.loading = true
-      const jobs = [this.form.fc.validateFields()]
-      if (this.isJsonSchema) {
-        jobs.push(this.validateForm())
-      }
       try {
-        const [values, valuesJson] = await Promise.all(jobs)
+        await this.$refs.shellFormRef.validate()
+        const values = { ...this.shellForm }
+        let valuesJson
+        if (this.isJsonSchema) {
+          valuesJson = await this.validateForm()
+        } else {
+          const yamlValues = await this.$refs.formYamlRef.validate()
+          Object.assign(values, yamlValues)
+        }
         await this.doCreate(values, valuesJson)
         this.$message.success(this.$t('helm.text_45'))
         this.loading = false

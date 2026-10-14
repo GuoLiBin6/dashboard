@@ -2,48 +2,52 @@
   <div>
     <page-header :title="$t('aice.llm_deployment_create')" />
     <page-body>
-      <a-form
-        :form="form.fc"
+      <a-form-model
+        ref="formRef"
+        :model="form.fd"
+        :rules="rules"
         :label-col="{ span: 4 }"
         :wrapper-col="{ span: 16 }"
         class="mt-4">
-        <a-form-item :label="$t('common.name')">
-          <a-input v-decorator="decorators.name" :placeholder="$t('validator.resourceName')" />
+        <a-form-model-item :label="$t('common.name')" prop="name">
+          <a-input v-model:value="form.fd.name" :placeholder="$t('validator.resourceName')" />
           <template v-slot:extra>
             <name-repeated res="llm_deployments" :name="form.fd.name" />
           </template>
-        </a-form-item>
+        </a-form-model-item>
 
-        <a-form-item :label="$t('aice.llm_sku')">
+        <a-form-model-item :label="$t('aice.llm_sku')" prop="llm_sku_id">
           <llm-sku-select
-            v-decorator="decorators.llm_sku_id"
+            v-model:value="form.fd.llm_sku_id"
             :params="skuParams"
             :select-props="{
               placeholder: $t('common.tips.select', [$t('aice.llm_sku')]),
             }"
             @change="handleSkuChange" />
-        </a-form-item>
+        </a-form-model-item>
 
-        <a-form-item
+        <a-form-model-item
           v-if="showPreferHosts"
           :label="$t('aice.local_path_import.prefer_hosts')"
+          prop="prefer_hosts"
           :extra="$t('aice.local_path_import.prefer_hosts_deploy_hint')">
           <base-select
-            v-decorator="decorators.prefer_hosts"
+            v-model:value="form.fd.prefer_hosts"
             resource="hosts"
             :params="localPathHostParams"
             :select-props="{
               mode: 'multiple',
               placeholder: $t('common.tips.select', [$t('dictionary.host')]),
             }" />
-        </a-form-item>
+        </a-form-model-item>
 
         <a-divider orientation="left">{{ $t('aice.llm_deployment.create.deployment') }}</a-divider>
 
-        <a-form-item :label="$t('compute.text_104')" class="mb-0">
+        <a-form-model-item :label="$t('compute.text_104')" class="mb-0">
           <server-network
+            ref="networkRef"
+            :model="form.fd"
             :form="form"
-            :decorator="decorators.network"
             :network-list-params="networkParams"
             :schedtag-params="resourcesParams.schedtag"
             :network-resource-mapper="networkResourceMapper"
@@ -51,8 +55,8 @@
             defaultNetworkType="default"
             :hiddenAdd="true"
             :isDialog="true" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </page-body>
     <page-footer>
       <template v-slot:right>
@@ -77,8 +81,6 @@ import { checkSkuSchedulable, getSchedulableCheckErrors } from '@Ai/utils/skuSch
 import NameRepeated from '@/sections/NameRepeated'
 import SideErrors from '@/sections/SideErrors'
 import { Manager } from '@/utils/manager'
-import { uuid } from '@/utils/utils'
-import validateForm from '@/utils/validate'
 
 export default {
   name: 'LlmDeploymentCreate',
@@ -94,86 +96,40 @@ export default {
       selectedSkuDetail: null,
       errors: {},
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.$set(this.form.fd, key, values[key])
-            })
-          },
-        }),
-        fd: {},
+        fd: {
+          name: '',
+          llm_sku_id: undefined,
+          prefer_hosts: [],
+        },
         fi: {
           networkList: [],
           capability: { max_nic_count: 8 },
         },
       },
-      decorators: {
-        name: ['name', {
-          validateTrigger: 'blur',
-          validateFirst: true,
-          rules: [
-            { required: true, message: this.$t('common.tips.input', [this.$t('common.name')]) },
-            { validator: this.$validate('resourceName') },
-          ],
-        }],
-        llm_sku_id: ['llm_sku_id', {
-          rules: [{ required: true, message: this.$t('common.tips.select', [this.$t('aice.llm_sku')]) }],
-        }],
+      rules: {
+        name: [
+          { required: true, message: this.$t('common.tips.input', [this.$t('common.name')]) },
+          { validator: this.$validate('resourceName') },
+        ],
+        llm_sku_id: [
+          { required: true, message: this.$t('common.tips.select', [this.$t('aice.llm_sku')]) },
+        ],
         prefer_hosts: [
-          'prefer_hosts',
           {
-            initialValue: [],
-            rules: [
-              {
-                validator: (rule, value, callback) => {
-                  if (!this.showPreferHosts) {
-                    callback()
-                    return
-                  }
-                  const hosts = normalizePreferHosts(value)
-                  if (hosts.length === 0) {
-                    callback(this.$t('aice.local_path_import.prefer_hosts_required'))
-                    return
-                  }
-                  callback()
-                },
-              },
-            ],
+            validator: (rule, value, callback) => {
+              if (!this.showPreferHosts) {
+                callback()
+                return
+              }
+              const hosts = normalizePreferHosts(value)
+              if (hosts.length === 0) {
+                callback(this.$t('aice.local_path_import.prefer_hosts_required'))
+                return
+              }
+              callback()
+            },
           },
         ],
-        network: {
-          networkType: ['networkType', { initialValue: NETWORK_OPTIONS_MAP.default.key }],
-          networkConfig: {
-            vpcs: i => [`vpcs[${i}]`, {
-              validateTrigger: ['change', 'blur'],
-              rules: [{ required: true, message: this.$t('compute.text_194') }],
-            }],
-            networks: i => [`networks[${i}]`, {
-              validateTrigger: ['change', 'blur'],
-              rules: [{ required: true, message: this.$t('compute.text_217') }],
-            }],
-            ips: () => [`networkIps[${uuid()}]`, {
-              validateFirst: true,
-              validateTrigger: ['blur', 'change'],
-              rules: [{ validator: validateForm('IPv4') }],
-            }],
-            macs: () => [`networkMacs[${uuid()}]`, {
-              validateFirst: true,
-              validateTrigger: ['blur', 'change'],
-              rules: [{ validator: validateForm('mac') }],
-            }],
-          },
-          networkSchedtag: {
-            schedtags: i => [`networkSchedtags[${i}]`, {
-              validateTrigger: ['change', 'blur'],
-              rules: [{ required: true, message: this.$t('compute.text_123') }],
-            }],
-            policys: i => [`networkPolicys[${i}]`, {
-              validateTrigger: ['blur', 'change'],
-              rules: [{ required: true, message: this.$t('common_256') }],
-            }],
-          },
-        },
       },
       manager: new Manager('llm_deployments'),
       skuManager: new Manager('llm_skus'),
@@ -230,7 +186,7 @@ export default {
     async loadSkuDetail (skuId) {
       if (!skuId) {
         this.selectedSkuDetail = null
-        this.form.fc.setFieldsValue({ prefer_hosts: [] })
+        this.form.fd.prefer_hosts = []
         return
       }
       try {
@@ -239,10 +195,10 @@ export default {
         if (data?.source === 'local_path') {
           const hosts = normalizePreferHosts(data.prefer_hosts)
           this.$nextTick(() => {
-            this.form.fc.setFieldsValue({ prefer_hosts: hosts })
+            this.form.fd.prefer_hosts = hosts
           })
         } else {
-          this.form.fc.setFieldsValue({ prefer_hosts: [] })
+          this.form.fd.prefer_hosts = []
         }
       } catch (error) {
         this.selectedSkuDetail = null
@@ -255,7 +211,7 @@ export default {
     },
     applyFromSku (skuId) {
       this.$nextTick(() => {
-        this.form.fc.setFieldsValue({ llm_sku_id: skuId })
+        this.form.fd.llm_sku_id = skuId
         this.loadSkuDetail(skuId)
       })
     },
@@ -306,7 +262,11 @@ export default {
     },
     async handleSubmit () {
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        if (typeof this.$refs.networkRef?.validate === 'function') {
+          await this.$refs.networkRef.validate()
+        }
+        const values = { ...this.form.fd }
         this.loading = true
         this.errors = {}
         const { data: check } = await checkSkuSchedulable(this.skuManager, values.llm_sku_id)

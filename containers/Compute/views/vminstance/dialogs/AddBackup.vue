@@ -4,27 +4,28 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_1162')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
-        <a-form-item
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-bind="formItemLayout">
+        <a-form-model-item
           :label="$t('compute.text_1163')"
           :validate-status="hostValidateStatus"
-          :help="hostValidateMsg">
+          :help="hostValidateMsg"
+          prop="prefer_host_id">
           <base-select
             class="w-100"
-            v-decorator="decorators.prefer_host_id"
+            v-model:value="form.prefer_host_id"
             :options="hostsOptions"
             :params="selectParams"
             :disabled-items="disabledItems"
             :select-props="{ placeholder: $t('compute.text_314') }" />
-        </a-form-item>
+        </a-form-model-item>
         <!-- 自动启动 -->
-        <a-form-item :label="$t('compute.text_494')" :extra="$t('compute.text_495')">
+        <a-form-model-item :label="$t('compute.text_494')" :extra="$t('compute.text_495')" prop="auto_start">
           <a-switch
+            v-model:checked="form.auto_start"
             :checkedChildren="$t('compute.text_115')"
-            :unCheckedChildren="$t('compute.text_116')"
-            v-decorator="decorators.auto_start" />
-        </a-form-item>
-      </a-form>
+            :unCheckedChildren="$t('compute.text_116')" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading" :disabled="handleConfirmDisabled">{{ $t('dialog.ok') }}</a-button>
@@ -48,25 +49,14 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        prefer_host_id: undefined,
+        auto_start: false,
       },
       forcastData: null,
       hosts: [],
-      decorators: {
+      rules: {
         prefer_host_id: [
-          'prefer_host_id',
-          {
-            rules: [
-              { required: false, message: this.$t('compute.text_1165'), trigger: 'blur' },
-            ],
-          },
-        ],
-        auto_start: [
-          'auto_start',
-          {
-            initialValue: false,
-            valuePropName: 'checked',
-          },
+          { required: false, message: this.$t('compute.text_1165'), trigger: 'blur' },
         ],
       },
       formItemLayout: {
@@ -144,14 +134,14 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         const ids = this.params.data.map(item => item.id)
         await this.params.onManager('batchPerformAction', {
           id: ids,
           steadyStatus: ['running', 'ready'],
           managerArgs: {
             action: 'create-backup',
-            data: values,
+            data: this.form,
           },
         })
         this.cancelDialog()

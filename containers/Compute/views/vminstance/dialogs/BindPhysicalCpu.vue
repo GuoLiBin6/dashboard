@@ -5,16 +5,16 @@
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
       <a-spin :spinning="cpuCoresInfoLoading">
-        <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
-          <a-form-item :label="$t('compute.bind_physical_cpu')">
+        <a-form-model ref="formRef" :model="form" hideRequiredMark v-bind="formItemLayout">
+          <a-form-model-item :label="$t('compute.bind_physical_cpu')" prop="bindCpuCores">
             <a-switch
-              v-decorator="decorators.bindCpuCores"
+              v-model:checked="form.bindCpuCores"
               :checkedChildren="$t('compute.text_115')"
               :unCheckedChildren="$t('compute.text_116')" />
-          </a-form-item>
-          <a-form-item :label="$t('compute.text_1058')" v-show="form.fd.bindCpuCores">
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.text_1058')" v-show="form.bindCpuCores" prop="cpuCores">
             <a-checkbox-group
-              v-decorator="decorators.cpuCores"
+              v-model:value="form.cpuCores"
               style="width: 100%; margin-top: 10px;">
               <a-row v-for="v in hostCores" :key="v">
                 <a-col :span="4" v-for="c in v" :key="c">
@@ -28,8 +28,8 @@
                 </a-col>
               </a-row>
             </a-checkbox-group>
-          </a-form-item>
-        </a-form>
+          </a-form-model-item>
+        </a-form-model>
       </a-spin>
     </div>
     <div slot="footer">
@@ -54,22 +54,8 @@ export default {
       cpuCoresInfo: {},
       cpuCoresInfoLoading: false,
       form: {
-        fc: this.$form.createForm(this, { onValuesChange: this.onValuesChange }),
-        fd: {
-          bindCpuCores: false,
-        },
-      },
-      decorators: {
-        bindCpuCores: [
-          'bindCpuCores',
-          {
-            valuePropName: 'checked',
-            initialValue: false,
-          },
-        ],
-        cpuCores: [
-          'cpuCores',
-        ],
+        bindCpuCores: false,
+        cpuCores: undefined,
       },
       formItemLayout: {
         wrapperCol: {
@@ -108,18 +94,16 @@ export default {
         this.cpuCoresInfoLoading = true
         const { data } = await manager.getSpecific({ id, spec: 'cpuset-cores' })
         this.cpuCoresInfo = data
-        this.form.fc.setFieldsValue({
-          cpuCores: data.pinned_cores,
-          bindCpuCores: data.pinned_cores?.length > 0,
-        })
+        this.form.cpuCores = data.pinned_cores
+        this.form.bindCpuCores = data.pinned_cores?.length > 0
       } catch (error) {
         throw error
       } finally {
         this.cpuCoresInfoLoading = false
       }
     },
-    doBindPhysicalSubmit (values) {
-      const { bindCpuCores, cpuCores } = values
+    doBindPhysicalSubmit () {
+      const { bindCpuCores, cpuCores } = this.form
       const ids = this.params.data.map(item => item.id)
       const params = { cpus: cpuCores }
       if (bindCpuCores) {
@@ -145,8 +129,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        await this.doBindPhysicalSubmit(values)
+        await this.$refs.formRef.validate()
+        await this.doBindPhysicalSubmit()
         this.params.refresh && this.params.refresh()
         this.cancelDialog()
       } catch (error) {
@@ -154,11 +138,6 @@ export default {
       } finally {
         this.loading = false
       }
-    },
-    onValuesChange (props, values) {
-      Object.keys(values).forEach((key) => {
-        this.form.fd[key] = values[key]
-      })
     },
   },
 }

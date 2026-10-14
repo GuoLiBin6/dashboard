@@ -1,27 +1,30 @@
 <template>
-  <a-form
-    :form="form.fc">
-    <a-form-item :label="$t('cloudenv.text_95')" v-bind="formItemLayout" v-if="!updateValue">
-      <a-input v-decorator="decorators.name" :placeholder="$t('validator.resourceName')" />
-    </a-form-item>
-    <a-form-item :label="$t('common.description')" v-bind="formItemLayout" v-if="!updateValue">
-      <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-    </a-form-item>
-    <a-form-item required :label="$t('cloudenv.text_413')" v-bind="formItemLayout">
+  <a-form-model
+    ref="formRef"
+    :model="form.fd"
+    :rules="rules"
+    v-bind="formItemLayout">
+    <a-form-model-item :label="$t('cloudenv.text_95')" prop="name" v-if="!updateValue">
+      <a-input v-model:value="form.fd.name" :placeholder="$t('validator.resourceName')" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('common.description')" prop="description" v-if="!updateValue">
+      <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.fd.description" :placeholder="$t('common_367')" />
+    </a-form-model-item>
+    <a-form-model-item required :label="$t('cloudenv.text_413')" prop="strategy">
       <strategy-radio
-       :isNone="false"
-      :decorator="decorators.strategy" />
-    </a-form-item>
-    <a-form-item :label="$t('cloudenv.text_18')" v-bind="formItemLayout">
+        :isNone="false"
+        v-model:value="form.fd.strategy" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('cloudenv.text_18')" prop="schedtag">
       <base-select
-        v-decorator="decorators.schedtag"
+        v-model:value="form.fd.schedtag"
         resource="schedtags"
         :params="schedtagParams"
         :select-props="{ placeholder: $t('cloudenv.text_378') }"
         :autoLoadDefaultSelect="false" />
-    </a-form-item>
-    <condition-select @conditionValsChange="conditionValsChange" :decorators="decorators" :formItemLayout="formItemLayout" />
-  </a-form>
+    </a-form-model-item>
+    <condition-select @conditionValsChange="conditionValsChange" :formItemLayout="formItemLayout" />
+  </a-form-model>
 </template>
 
 <script>
@@ -33,6 +36,11 @@ export default {
   components: {
     StrategyRadio,
     ConditionSelect,
+  },
+  provide () {
+    return {
+      form: this.form,
+    }
   },
   props: {
     updateValue: Object,
@@ -61,50 +69,26 @@ export default {
     return {
       scope: this.$store.getters.scope,
       form: {
-        fc: this.$form.createForm(this),
-        fd: {},
+        fd: {
+          name: '',
+          description: '',
+          strategy: initValue.strategy,
+          schedtag: initValue.schedtag,
+          conditionKey: 'projects',
+          conditionVals: initValue.conditionVals,
+          condition: '',
+        },
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('common.text00042') },
-              { validator: this.$validate('resourceName') },
-            ],
-          },
+          { required: true, message: this.$t('common.text00042') },
+          { validator: this.$validate('resourceName') },
         ],
-        description: ['description'],
         strategy: [
-          'strategy',
-          {
-            initialValue: initValue.strategy,
-            rules: [
-              { required: true, message: this.$t('common_620') },
-            ],
-          },
-        ],
-        schedtag: [
-          'schedtag',
-          {
-            initialValue: initValue.schedtag,
-          },
-        ],
-        conditionKey: [
-          'conditionKey',
-          {
-            initialValue: 'projects',
-          },
+          { required: true, message: this.$t('common_620') },
         ],
         conditionVals: [
-          'conditionVals',
-          {
-            initialValue: initValue.conditionVals,
-            rules: [
-              { required: true, message: this.$t('common_621') },
-            ],
-          },
+          { required: true, message: this.$t('common_621') },
         ],
       },
       formItemLayout: {
@@ -139,11 +123,11 @@ export default {
     },
     validateForm () {
       return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve({ ...values, condition: this.form.fd.condition })
+        this.$refs.formRef.validate(valid => {
+          if (valid) {
+            resolve({ ...this.form.fd })
           } else {
-            reject(err)
+            reject(new Error('validate failed'))
           }
         })
       })

@@ -1,62 +1,62 @@
 <template>
   <div class="vm-sched-policy">
-    <a-form-item>
-      <a-radio-group v-decorator="decorators.schedPolicyType" @change="change">
+    <a-form-model-item prop="schedPolicyType">
+      <a-radio-group
+        v-model:value="model[typeField]"
+        @change="change">
         <a-radio-button v-for="(item, key) of schedPolicyOptionsMap" :value="key" :key="key">{{ item.t ? $t(item.t) : item.label }}</a-radio-button>
       </a-radio-group>
-    </a-form-item>
-    <a-form-item v-if="schedPolicyComponent === 'host'" class="host-form-item">
+    </a-form-model-item>
+    <a-form-model-item v-if="schedPolicyComponent === 'host'" class="host-form-item" prop="schedPolicyHost">
       <template v-if="serverType === 'baremetal'">
         <base-select
           class="w-50"
           ref="preferHostSelect"
           :options="hostData"
           :disabled-items="disabledHost"
-          v-decorator="decorators.schedPolicyHost"
+          :value="hostSelectValue"
+          @change="onHostSelectChange"
           :params="policyHostParams"
           :label-format="labelFormat"
           :need-params="true"
           :filterable="true"
           :showSync="true"
-          @change="hostChange"
           @update:initLoaded="onHostInitLoaded"
           :select-props="{ placeholder: lodash.get(schedPolicyOptionsMap, 'host.label') || ''  }" />
       </template>
-      <template v-else>
+      <template v-else-if="!showCloudproviderSelect">
         <base-select
-          v-if="!showCloudproviderSelect"
           ref="preferHostSelect"
           class="w-50"
           resource="hosts"
           :disabled-items="disabledHost"
-          v-decorator="decorators.schedPolicyHost"
+          :value="hostSelectValue"
+          @change="onHostSelectChange"
           :params="policyHostParams"
           :label-format="labelFormat"
           :need-params="true"
           :filterable="true"
           :showSync="true"
-          @change="hostChange"
           @update:initLoaded="onHostInitLoaded"
           :select-props="{ placeholder: lodash.get(schedPolicyOptionsMap, 'host.label') || '' }" />
       </template>
-    </a-form-item>
-    <a-form-item v-if="schedPolicyComponent === 'schedtag'">
+    </a-form-model-item>
+    <a-form-model-item v-if="schedPolicyComponent === 'schedtag'">
       <policy-schedtag
         ref="policySchedtagRef"
-        :form="form"
-        :decorators="decorators.policySchedtag"
+        :model="model"
         :schedtag-params="policySchedtagParams" />
-    </a-form-item>
-    <a-form-item v-if="schedPolicyComponent === 'cloudprovider'">
+    </a-form-model-item>
+    <a-form-model-item v-if="schedPolicyComponent === 'cloudprovider'" prop="cloudprovider">
       <base-select
         class="w-50"
-        v-decorator="decorators.cloudprovider"
+        v-model:value="model[cloudproviderField]"
         resource="cloudproviders"
         :params="cloudproviderParams"
         :isDefaultSelect="true"
         :showSync="true"
         :select-props="{ placeholder: $t('compute.text_149') }" />
-    </a-form-item>
+    </a-form-model-item>
   </div>
 </template>
 
@@ -84,10 +84,17 @@ export default {
       type: String,
       default: 'selection',
     },
-    decorators: {
-      type: Object,
-      required: true,
-      validator: val => val.schedPolicyType && val.schedPolicyHost && val.policySchedtag,
+    typeField: {
+      type: String,
+      default: 'schedPolicyType',
+    },
+    hostField: {
+      type: String,
+      default: 'schedPolicyHost',
+    },
+    cloudproviderField: {
+      type: String,
+      default: 'cloudprovider',
     },
     serverType: {
       type: String,
@@ -112,7 +119,12 @@ export default {
     },
     form: {
       type: Object,
-      validator: val => !val || val.fc,
+      validator: val => !val || typeof val === 'object',
+    },
+    /** a-form-model：与字段名对齐的受控对象 */
+    model: {
+      type: Object,
+      default: null,
     },
     hideCloudaccountSched: {
       type: Boolean,
@@ -160,6 +172,9 @@ export default {
     }
   },
   computed: {
+    hostSelectValue () {
+      return this.model[this.hostField]
+    },
     schedPolicyOptionsMap () {
       const { default: _default, host, ...rest } = SCHED_POLICY_OPTIONS_MAP
       let ret = {}
@@ -201,9 +216,8 @@ export default {
       return params
     },
     showCloudproviderSelect () {
-      if (this.form && this.serverType === SERVER_TYPE.public) {
-        const schedPolicyType = this.form.fc.getFieldsValue([this.decorators.schedPolicyType[0]])[this.decorators.schedPolicyType[0]]
-        if (schedPolicyType === 'host') {
+      if (this.serverType === SERVER_TYPE.public) {
+        if (this.model[this.typeField] === 'host') {
           return true
         }
       }
@@ -271,6 +285,12 @@ export default {
     },
   },
   created () {
+    if (!this.model.policySchedtagSchedtags || typeof this.model.policySchedtagSchedtags !== 'object') {
+      this.$set(this.model, 'policySchedtagSchedtags', {})
+    }
+    if (!this.model.policySchedtagPolicys || typeof this.model.policySchedtagPolicys !== 'object') {
+      this.$set(this.model, 'policySchedtagPolicys', {})
+    }
     this.cloudproviderM = new this.$Manager('cloudproviders')
     this.fetchUsagebleCloudprovider()
     this._draftApplying = false
@@ -287,6 +307,44 @@ export default {
     })
   },
   methods: {
+    modelGet (name) {
+      if (!name) return undefined
+      return this.model[name]
+    },
+    modelSet (name, value) {
+      if (!name) return
+      if (value === undefined) {
+        if (Object.prototype.hasOwnProperty.call(this.model, name)) this.$delete(this.model, name)
+        return
+      }
+      this.$set(this.model, name, value)
+    },
+    getFieldValue (name) {
+      return this.modelGet(name)
+    },
+    setFieldsValue (vals) {
+      if (!vals || typeof vals !== 'object') return
+      Object.keys(vals).forEach((key) => this.modelSet(key, vals[key]))
+    },
+    onHostSelectChange (v) {
+      this.$set(this.model, this.hostField, v)
+      this.hostChange(v)
+    },
+    async validate () {
+      const type = this.model[this.typeField]
+      if (type === 'host') {
+        const host = this.model[this.hostField]
+        if (host === undefined || host === null || host === '') {
+          throw new Error(this.$t('compute.text_219'))
+        }
+      } else if (type === 'schedtag') {
+        const ref = this.$refs.policySchedtagRef
+        if (ref && typeof ref.validate === 'function') {
+          await ref.validate()
+        }
+      }
+      return true
+    },
     normalizePreferHost (val) {
       if (!val) return ''
       if (typeof val === 'object') return val.key || val.id || val.value || ''
@@ -319,12 +377,15 @@ export default {
       this.ensureDefaultSchedPolicyType()
       return false
     },
+    hasBindTarget () {
+      return !!this.model
+    },
     /** 无草稿偏好时落到第一项 */
     ensureDefaultSchedPolicyType () {
-      if (!this.form?.fc || this._userTouched || this._draftApplying) return
+      if (!this.hasBindTarget() || this._userTouched || this._draftApplying) return
       if (this.pendingPreferHost || this.initPreferHost || this.readDraftPreferHost()) return
-      const field = this.decorators.schedPolicyType[0]
-      const current = this.form.fc.getFieldValue(field)
+      const field = this.typeField
+      const current = this.getFieldValue(field)
       if (current && this.schedPolicyOptionsMap[current]) {
         this.setSchedPolicyComponent(current)
         return
@@ -332,7 +393,7 @@ export default {
       const keys = Object.keys(this.schedPolicyOptionsMap || {})
       if (!keys.length) return
       const schedPolicyType = this.schedPolicyOptionsMap[keys[0]].key
-      this.form.fc.setFieldsValue({ [field]: schedPolicyType })
+      this.setFieldsValue({ [field]: schedPolicyType })
       this.setSchedPolicyComponent(schedPolicyType)
     },
     setSchedPolicyComponent (schedPolicyType) {
@@ -358,17 +419,15 @@ export default {
       }
     },
     getCreateFormFieldDraftSnapshot () {
-      const f = this.form && this.form.fc
-      if (!f) return undefined
-      const typeField = this.decorators.schedPolicyType[0]
-      let type = f.getFieldValue(typeField) || (this.form.fd && this.form.fd[typeField])
+      if (!this.hasBindTarget()) return undefined
+      const typeField = this.typeField
+      let type = this.getFieldValue(typeField)
       if (!type && this.schedPolicyComponent) type = this.schedPolicyComponent
       if (!type && this.pendingPreferHost) type = 'host'
       const ret = { schedPolicyType: type || 'default' }
-      if (type === 'host' && this.decorators.schedPolicyHost) {
-        const hostField = this.decorators.schedPolicyHost[0]
+      if (type === 'host') {
         const preferHost = this.normalizePreferHost(
-          f.getFieldValue(hostField) || (this.form.fd && this.form.fd[hostField]) || this.pendingPreferHost,
+          this.getFieldValue(this.hostField) || this.pendingPreferHost,
         )
         if (preferHost) ret.prefer_host = preferHost
       }
@@ -377,21 +436,25 @@ export default {
         let schedtags = []
         if (Array.isArray(list) && list.length) {
           schedtags = list.map((item) => {
-            const id = item.schedtag || f.getFieldValue(this.decorators.policySchedtag.schedtags(item.key)[0])
-            const strategy = item.policy || f.getFieldValue(this.decorators.policySchedtag.policys(item.key)[0])
+            const id = item.schedtag || this.readPolicySchedtagField('schedtags', item.key)
+            const strategy = item.policy || this.readPolicySchedtagField('policys', item.key)
             return { id, strategy }
           }).filter(t => t.id)
         }
         ret.schedtags = schedtags
       }
-      if (type === 'cloudprovider' && this.decorators.cloudprovider) {
-        const cp = f.getFieldValue(this.decorators.cloudprovider[0])
+      if (type === 'cloudprovider') {
+        const cp = this.getFieldValue(this.cloudproviderField)
         if (cp) ret.cloudprovider = cp
       }
       return ret
     },
+    readPolicySchedtagField (kind, key) {
+      const root = kind === 'schedtags' ? 'policySchedtagSchedtags' : 'policySchedtagPolicys'
+      return this.model[root]?.[key]
+    },
     applyCreateFormFieldDraft (draft) {
-      if (!draft || !this.form?.fc) return
+      if (!draft || !this.hasBindTarget()) return
       // 跨 tab：不改类型；用户切到对应类型后再回填选择值
       if (this.isFormFieldDraftFromLocal()) {
         this._localDeferredDraft = draft
@@ -406,13 +469,12 @@ export default {
      */
     tryApplyPendingDraft () {
       const draft = this._pendingDraft
-      if (!draft || !this.form?.fc) return true
+      if (!draft || !this.hasBindTarget()) return true
       // 跨 tab 仅 local：跳过 session 式 pending；工单 initPreferHost 必须照写，勿被 fromLocal 挡住
       if (this.isFormFieldDraftFromLocal() && !this.preserveInitPreferHost) return true
 
       this._draftApplying = true
       try {
-        const typeField = this.decorators.schedPolicyType[0]
         const preferHost = this.normalizePreferHost(draft.prefer_host)
         let targetType = draft.schedPolicyType
         if (preferHost) {
@@ -423,13 +485,12 @@ export default {
         }
 
         if (targetType && this.schedPolicyOptionsMap[targetType]) {
-          this.form.fc.setFieldsValue({ [typeField]: targetType })
-          if (this.form.fd) this.form.fd[typeField] = targetType
+          this.setFieldsValue({ [this.typeField]: targetType })
           this.setSchedPolicyComponent(targetType)
         }
 
         let complete = true
-        if (targetType === 'host' && preferHost && this.decorators.schedPolicyHost) {
+        if (targetType === 'host' && preferHost) {
           const status = this.writePreferHostIfReady(preferHost)
           if (status === 'wait') complete = false
         } else if (
@@ -442,15 +503,13 @@ export default {
           } else {
             complete = false
           }
-        } else if (targetType === 'cloudprovider' && draft.cloudprovider && this.decorators.cloudprovider) {
+        } else if (targetType === 'cloudprovider' && draft.cloudprovider) {
           const list = Array.isArray(this.allCloudproviders) ? this.allCloudproviders : []
           if (!list.length) {
             complete = false
           } else if (list.some(item => (item.id || item.key) === draft.cloudprovider)) {
             this.setSchedPolicyComponent('cloudprovider')
-            this.form.fc.setFieldsValue({
-              [this.decorators.cloudprovider[0]]: draft.cloudprovider,
-            })
+            this.setFieldsValue({ [this.cloudproviderField]: draft.cloudprovider })
           }
         }
 
@@ -483,7 +542,7 @@ export default {
      */
     writePreferHostIfReady (hostId) {
       const id = this.normalizePreferHost(hostId) || this.pendingPreferHost
-      if (!id || !this.form?.fc) return 'drop'
+      if (!id || !this.hasBindTarget()) return 'drop'
       if (this._userTouched && !this._draftApplying && !this.preserveInitPreferHost) return 'drop'
       if (!this.isPreferHostParamsReady()) return 'wait'
       const hostList = this.resolvePreferHostList()
@@ -507,33 +566,18 @@ export default {
       return 'ok'
     },
     clearPreferHostFormValue () {
-      if (!this.form?.fc || !this.decorators.schedPolicyHost) return
-      const hostField = this.decorators.schedPolicyHost[0]
-      this.form.fc.setFieldsValue({ [hostField]: undefined })
-      if (this.form.fd && Object.prototype.hasOwnProperty.call(this.form.fd, hostField)) {
-        this.$delete(this.form.fd, hostField)
-      }
+      if (!this.hasBindTarget()) return
+      this.setFieldsValue({ [this.hostField]: undefined })
     },
     applyPreferHostToForm (hostId) {
-      if (!hostId || !this.form?.fc) return
+      if (!hostId || !this.hasBindTarget()) return
       if (this.schedPolicyComponent !== 'host') {
         this.setSchedPolicyComponent('host')
       }
-      const typeField = this.decorators.schedPolicyType[0]
-      const hostField = this.decorators.schedPolicyHost[0]
-      const hostDecoratorOpts = (this.decorators.schedPolicyHost && this.decorators.schedPolicyHost[1]) || {}
-      this.form.fc.getFieldDecorator(hostField, {
-        ...hostDecoratorOpts,
-        initialValue: hostId,
+      this.setFieldsValue({
+        [this.typeField]: 'host',
+        [this.hostField]: hostId,
       })
-      this.form.fc.setFieldsValue({
-        [typeField]: 'host',
-        [hostField]: hostId,
-      })
-      if (this.form.fd) {
-        this.form.fd[typeField] = 'host'
-        this.form.fd[hostField] = hostId
-      }
     },
     /** 跨 tab：用户切换类型后回填选择值 */
     applySelectionFromDeferred (schedPolicyType) {
@@ -543,7 +587,7 @@ export default {
       try {
         if (schedPolicyType === 'host') {
           const preferHost = this.normalizePreferHost(draft.prefer_host)
-          if (!preferHost || !this.decorators.schedPolicyHost) return
+          if (!preferHost) return
           this.setPendingPreferHost(preferHost)
           this._pendingDraft = { schedPolicyType: 'host', prefer_host: preferHost }
           const status = this.writePreferHostIfReady(preferHost)
@@ -559,14 +603,12 @@ export default {
             ref.initData(draft.schedtags.slice(0, 1))
             this._localDeferredApplied = true
           }
-        } else if (schedPolicyType === 'cloudprovider' && draft.cloudprovider && this.decorators.cloudprovider) {
+        } else if (schedPolicyType === 'cloudprovider' && draft.cloudprovider) {
           const list = Array.isArray(this.allCloudproviders) ? this.allCloudproviders : []
           if (!list.length) return
           this._localDeferredApplied = true
           if (!list.some(item => (item.id || item.key) === draft.cloudprovider)) return
-          this.form.fc.setFieldsValue({
-            [this.decorators.cloudprovider[0]]: draft.cloudprovider,
-          })
+          this.setFieldsValue({ [this.cloudproviderField]: draft.cloudprovider })
         }
       } finally {
         this.$nextTick(() => {
@@ -609,10 +651,8 @@ export default {
       if (!hostId) return
       this._pendingDraft = { schedPolicyType: 'host', prefer_host: hostId }
       this.setPendingPreferHost(hostId)
-      const typeField = this.decorators.schedPolicyType[0]
-      if (this.form?.fc) {
-        this.form.fc.setFieldsValue({ [typeField]: 'host' })
-        if (this.form.fd) this.form.fd[typeField] = 'host'
+      if (this.hasBindTarget()) {
+        this.setFieldsValue({ [this.typeField]: 'host' })
       }
       this.setSchedPolicyComponent('host')
       this.tryApplyPendingDraft()
@@ -625,9 +665,7 @@ export default {
         this._localDeferredDraft &&
         !this._localDeferredApplied
       ) {
-        const typeField = this.decorators.schedPolicyType[0]
-        const type = this.form?.fc?.getFieldValue(typeField)
-        this.applySelectionFromDeferred(type)
+        this.applySelectionFromDeferred(this.getFieldValue(this.typeField))
       }
     },
     change (e) {

@@ -2,22 +2,25 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{params.title}}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('network.text_291')" v-bind="formItemLayout" v-if="params.type === 'create'">
-          <a-input v-decorator="decorators.name" :placeholder="$t('network.text_44')" />
-        </a-form-item>
-        <a-form-item v-bind="formItemLayout">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules">
+        <a-form-model-item :label="$t('network.text_291')" v-bind="formItemLayout" v-if="params.type === 'create'" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('network.text_44')" />
+        </a-form-model-item>
+        <a-form-model-item v-bind="formItemLayout" prop="acl_entries">
           <span slot="label">{{$t('network.text_292')}}<a-tooltip>
               <div slot="title">{{$t('network.text_293')}}<br />{{$t('network.text_294')}}<br />{{$t('network.text_295')}}<br />{{$t('network.text_296')}}<br />{{$t('network.text_297')}}</div>
               <icon type="info-circle" />
             </a-tooltip>
           </span>
-          <a-textarea v-decorator="decorators.acl_entries"
+          <a-textarea v-model:value="form.acl_entries"
             :placeholder="$t('network.text_298')"
-            rows="8" />
-        </a-form-item>
-      </a-form>
+            rows="8"
+            @change="onAclEntriesChange" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -73,47 +76,30 @@ export default {
   name: 'LbaclsCreateDialog',
   mixins: [DialogMixin, WindowsMixin],
   data () {
+    let aclEntriesInitial
+    if (this.params.type === 'update') {
+      aclEntriesInitial = this.params.data[0].acl_entries.map(v => {
+        if (v.comment) {
+          return `${v.cidr}|${v.comment}`
+        }
+        return v.cidr
+      }).join(`
+`)
+    }
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            if (values.acl_entries) {
-              const str = values.acl_entries
-              const cidrs = str.split(/[\s\n]/).filter(v => !!v)
-              this.aclEntries = cidrs.map(str => {
-                const [cidr, comment = ''] = str.split('|')
-                return {
-                  cidr,
-                  comment,
-                }
-              })
-            }
-          },
-        }),
+        name: undefined,
+        acl_entries: aclEntriesInitial,
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            validateFirst: true,
-            validateTrigger: ['blur'],
-            rules: [
-              { required: true, message: this.$t('network.text_116') },
-              { validator: this.$validate('serverName') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_116') },
+          { validator: this.$validate('serverName') },
         ],
         acl_entries: [
-          'acl_entries',
-          {
-            validateFirst: true,
-            validateTrigger: ['blur'],
-            rules: [
-              { required: true, message: this.$t('network.text_302') },
-              { validator: ipsValidate },
-            ],
-          },
+          { required: true, message: this.$t('network.text_302') },
+          { validator: ipsValidate },
         ],
       },
       formItemLayout: {
@@ -128,18 +114,22 @@ export default {
     }
   },
   created () {
-    if (this.params.type === 'update') {
-      const initialValue = this.params.data[0].acl_entries.map(v => {
-        if (v.comment) {
-          return `${v.cidr}|${v.comment}`
-        }
-        return v.cidr
-      }).join(`
-`)
-      this.form.fc.getFieldDecorator('acl_entries', { preserve: true, initialValue })
+    if (this.form.acl_entries) {
+      this.onAclEntriesChange({ target: { value: this.form.acl_entries } })
     }
   },
   methods: {
+    onAclEntriesChange (e) {
+      const str = (e && e.target) ? e.target.value : (e || this.form.acl_entries || '')
+      const cidrs = str.split(/[\s\n]/).filter(v => !!v)
+      this.aclEntries = cidrs.map(s => {
+        const [cidr, comment = ''] = s.split('|')
+        return {
+          cidr,
+          comment,
+        }
+      })
+    },
     doCreate (data) {
       return this.params.onManager('create', {
         managerArgs: {
@@ -164,11 +154,12 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        this.onAclEntriesChange(this.form.acl_entries)
         if (this.params.type === 'create') {
-          await this.doCreate(values)
+          await this.doCreate(this.form)
         } else {
-          await this.doUpdate(values)
+          await this.doUpdate(this.form)
         }
         this.loading = false
         this.cancelDialog()

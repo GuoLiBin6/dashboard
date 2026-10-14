@@ -4,28 +4,30 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.v2vtransfer.label')" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.v2vtransfer.type')">
-          <a-radio v-decorator="decorators.type">{{ $t('compute.v2vtransfer.kvm') }} <help-tooltip name="v2vTransferType" /></a-radio>
-        </a-form-item>
-        <a-form-item :label="$t('dictionary.project')">
+      <a-form-model ref="formRef" :model="form.fd" :rules="modelRules" hideRequiredMark v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.v2vtransfer.type')">
+          <a-radio v-model:checked="form.fd.type">{{ $t('compute.v2vtransfer.kvm') }} <help-tooltip name="v2vTransferType" /></a-radio>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('dictionary.project')">
           <domain-project
-            :decorators="decorators.projectDomain"
-            :fc="form.fc"
+            ref="domainProjectRef"
+            :form="form.fd"
             :labelInValue="false" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_177')" class="mb-0">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_177')" class="mb-0" prop="zone">
           <cloudregion-zone
+            ref="cloudregionZoneRef"
+            :model="form.fd"
             :zone-params="zoneParams"
             :cloudregion-params="cloudregionParams"
-            :decorator="decorators.cloudregionZone"
             :disabledRegion="true"
             filterBrandResource="compute_engine" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_49')" v-show="showSystemDisk">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_49')" v-show="showSystemDisk">
           <system-disk
             v-if="showSystemDisk"
-            :decorator="decorators.systemDisk"
+            ref="systemDiskRef"
+            :model="form.fd"
             :type="type"
             :hypervisor="hypervisor"
             :form="form"
@@ -38,12 +40,12 @@
             :forceElements="['storage', 'schedtag']"
             :hideSize="!isSingle"
             sizeDisabled />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_50')" v-show="showDataDisk">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_50')" v-show="showDataDisk">
           <data-disk
             v-if="showDataDisk"
             ref="dataDiskRef"
-            :decorator="decorators.dataDisk"
+            :model="form.fd"
             :type="type"
             :form="form"
             :hypervisor="hypervisor"
@@ -58,16 +60,16 @@
             sizeDisabled />
           <div v-if="showDataDiskSingleTip" class="text-color-help mt-1">{{ $t('compute.v2vtransfer.data_disk_first_tip') }}</div>
           <div v-if="showDataDiskMultiTip" class="text-color-help mt-1">{{ $t('compute.v2vtransfer.data_disk_multi_tip') }}</div>
-        </a-form-item>
-        <a-form-item :label="$t('compute.network_mode')">
-          <a-radio-group v-decorator="decorators.network_mode" @change="networkModeHandle">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.network_mode')">
+          <a-radio-group v-model:value="form.fd.network_mode" @change="networkModeHandle">
             <a-radio-button value="old">{{$t('compute.network_mode.old')}}<help-tooltip class="ml-1" :text="$t('compute.network_mode.old_tips')" /></a-radio-button>
             <a-tooltip :title="networkModeTooltips">
               <a-radio-button value="new" :disabled="networkModeTooltips">{{$t('compute.network_mode.new')}}</a-radio-button>
             </a-tooltip>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item v-if="!isNetworkModeNew" :label="$t('compute.network_check_result')">
+        </a-form-model-item>
+        <a-form-model-item v-if="!isNetworkModeNew" :label="$t('compute.network_check_result')">
           <a-spin v-if="networkCheckLoading">
             <icon slot="indicator" type="loading" spin />
           </a-spin>
@@ -79,11 +81,12 @@
               <help-link :href="href">{{$t('compute.network_check_result.new_create')}}</help-link>
             </span>
           </span>
-        </a-form-item>
-        <a-form-item v-if="isNetworkModeNew" :label="$t('compute.text_104')" class="mb-0">
+        </a-form-model-item>
+        <a-form-model-item v-if="isNetworkModeNew" :label="$t('compute.text_104')" class="mb-0">
           <server-network
+            ref="networkRef"
+            :model="form.fd"
             :form="form"
-            :decorator="decorators.network"
             :network-resource-mapper="networkResourceMapper"
             :network-list-params="networkParams"
             :schedtag-params="resourcesParams.schedtag"
@@ -95,21 +98,21 @@
             :hiddenNetworkOptions="['default', 'schedtag']"
             defaultNetworkType="manual"
             :hiddenAdd="true" />
-        </a-form-item>
-        <a-form-item
+        </a-form-model-item>
+        <a-form-model-item
           :label="$t('compute.text_111')"
           :validate-status="message ? 'warning' : hostValidateStatus"
           :help="message || hostValidateMsg">
           <list-select
-            v-decorator="decorators.host"
+            v-model:value="form.fd.host"
             :list-props="resourceProps"
             :formatter="v => v.name"
             :multiple="false"
             :placeholder="$t('compute.text_314')"
             :dialog-params="{ title: $t('compute.text_111'), width: 1060 }"
             @change="hostChangeHandle" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-tooltip :title="handleConfirmDisabledTooltip">
@@ -124,8 +127,9 @@
 import _ from 'lodash'
 import * as R from 'ramda'
 import { mapGetters } from 'vuex'
-import { checkIpV6, getIpv6Start } from '@Compute/utils/createServer'
+import { getIpv6Start } from '@Compute/utils/createServer'
 import DataDisk from '@Compute/sections/DataDisk'
+import { SYSTEM_DISK_FIELDS } from '@Compute/sections/Disk/fields'
 import SystemDisk from '@Compute/views/vminstance/create/components/SystemDisk'
 import { NETWORK_OPTIONS_MAP, MEDIUM_MAP } from '@Compute/constants'
 import ServerNetwork from '@Compute/sections/ServerNetwork'
@@ -133,9 +137,9 @@ import { typeClouds, diskSupportTypeMedium, findPlatform, getOriginDiskKey } fro
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import ListSelect from '@/sections/ListSelect'
-import DomainProject from '@/sections/DomainProject'
-import CloudregionZone from '@/sections/CloudregionZone'
-import validateForm, { isRequired, isWithinRange } from '@/utils/validate'
+import DomainProject from '@/sections/DomainProject/model'
+import CloudregionZone from '@/sections/CloudregionZone/model'
+import { isRequired } from '@/utils/validate'
 import { STORAGE_TYPES } from '@/constants/compute'
 import ResourceProps from '../mixins/resourceProps'
 // import { HYPERVISORS_MAP } from '@/constants'
@@ -158,411 +162,33 @@ export default {
   data () {
     const firstData = this.params.data[0]
 
-    const checkIpInSegment = (i, networkData) => {
-      return (rule, value, cb) => {
-        const isIn = isWithinRange(value, networkData.guest_ip_start, networkData.guest_ip_end)
-        if (isIn) {
-          cb()
-        } else {
-          cb(new Error(this.$t('compute.text_205')))
-        }
-      }
-    }
-
-    function diskValidator (rule, value, callback) {
-      if (R.isNil(value) || R.isEmpty(value)) {
-        return callback(new Error(this.$t('compute.text_206')))
-      }
-      if (!value.startsWith('/')) {
-        return callback(new Error(this.$t('compute.text_207')))
-      }
-      if (value === '/') {
-        return callback(new Error(this.$t('compute.text_208')))
-      }
-      callback()
-    }
-
     return {
       loading: false,
       networkCheckLoading: false,
       spinLoading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-          },
-        }),
         fd: {
           defaultType: null,
+          type: true,
+          domain: firstData.domain_id,
+          project: firstData.tenant_id,
+          network_mode: 'old',
+          networkType: NETWORK_OPTIONS_MAP.manual.key,
+          host: undefined,
+          cloudregion: { key: firstData.cloudregion_id || '', label: firstData.cloudregion || '' },
+          zone: { key: firstData.zone_id || '', label: firstData.zone || '' },
         },
         fi: {
           capability: {},
         },
       },
-      hosts: [],
-      message: '',
-      decorators: {
-        type: [
-          'type',
-          {
-            initialValue: true,
-            valuePropName: 'checked',
-          },
-        ],
-        projectDomain: {
-          domain: [
-            'domain',
-            {
-              initialValue: firstData.domain_id,
-            },
-          ],
-          project: [
-            'project',
-            {
-              initialValue: firstData.tenant_id,
-            },
-          ],
-        },
-        cloudregionZone: {
-          cloudregion: [
-            'cloudregion',
-            {
-              initialValue: { key: '', label: '' },
-              rules: [
-                { validator: isRequired(), message: this.$t('compute.text_212') },
-              ],
-            },
-          ],
-          zone: [
-            'zone',
-            {
-              initialValue: { key: '', label: '' },
-              rules: [
-                { validator: isRequired(), message: this.$t('compute.text_213') },
-              ],
-            },
-          ],
-        },
-        host: [
-          'host',
-          {
-            rules: [
-              { required: false, message: this.$t('compute.text_314'), trigger: 'change' },
-            ],
-          },
-        ],
-        systemDisk: {
-          type: [
-            'systemDiskType',
-            {
-              rules: [
-                { validator: isRequired(), message: this.$t('compute.text_121') },
-              ],
-            },
-          ],
-          size: [
-            'systemDiskSize',
-            {
-              rules: [
-                { required: true, message: this.$t('compute.text_122') },
-              ],
-            },
-          ],
-          schedtag: [
-            'systemDiskSchedtag',
-            {
-              validateTrigger: ['change', 'blur'],
-              rules: [{
-                required: true,
-                message: this.$t('compute.text_123'),
-              }],
-            },
-          ],
-          policy: [
-            'systemDiskPolicy',
-            {
-              validateTrigger: ['blur', 'change'],
-              rules: [{
-                required: true,
-                message: this.$t('compute.text_123'),
-              }],
-            },
-          ],
-          storage: [
-            'systemDiskStorage',
-            {
-              rules: [{
-                required: true,
-                message: this.$t('compute.text_1351'),
-              }],
-            },
-          ],
-        },
-        dataDisk: {
-          type: i => [
-            `dataDiskTypes[${i}]`,
-            {
-              rules: [
-                { validator: isRequired(), message: this.$t('compute.text_121') },
-              ],
-            },
-          ],
-          size: i => [
-            `dataDiskSizes[${i}]`,
-            {
-              rules: [
-                { required: true, message: this.$t('compute.text_122') },
-              ],
-            },
-          ],
-          schedtag: i => [
-            `dataDiskSchedtags[${i}]`,
-            {
-              validateTrigger: ['change', 'blur'],
-              rules: [{
-                required: true,
-                message: this.$t('compute.text_123'),
-              }],
-            },
-          ],
-          policy: i => [
-            `dataDiskPolicys[${i}]`,
-            {
-              validateTrigger: ['blur', 'change'],
-              rules: [{
-                required: true,
-                message: this.$t('compute.text_123'),
-              }],
-            },
-          ],
-          snapshot: i => [
-            `dataDiskSnapshots[${i}]`,
-            {
-              validateTrigger: ['blur', 'change'],
-              rules: [{
-                required: true,
-                message: this.$t('compute.text_124'),
-              }],
-            },
-          ],
-          filetype: i => [
-            `dataDiskFiletypes[${i}]`,
-            {
-              validateTrigger: ['blur', 'change'],
-              rules: [{
-                required: true,
-                message: this.$t('compute.text_125'),
-              }],
-            },
-          ],
-          mountPath: i => [
-            `dataDiskMountPaths[${i}]`,
-            {
-              validateTrigger: ['blur', 'change'],
-              rules: [{
-                required: true,
-                message: this.$t('compute.text_126'),
-              }, {
-                validator: diskValidator,
-              }],
-            },
-          ],
-          storage: i => [
-            `dataDiskStorages[${i}]`,
-            {
-              rules: [{
-                required: true,
-                message: this.$t('compute.text_1351'),
-              }],
-            },
-          ],
-          preallocation: i => [
-            `dataDiskPreallocation[${i}]`,
-          ],
-        },
-        network: {
-          networkType: [
-            'networkType',
-            {
-              initialValue: NETWORK_OPTIONS_MAP.default.key,
-            },
-          ],
-          networkConfig: {
-            vpcs: i => [
-              `vpcs[${i}]`,
-              {
-                validateTrigger: ['change', 'blur'],
-                rules: [{
-                  required: true,
-                  message: this.$t('compute.text_194'),
-                }],
-              },
-            ],
-            networks: i => [
-              `networks[${i}]`,
-              {
-                validateTrigger: ['change', 'blur'],
-                rules: [{
-                  required: true,
-                  message: this.$t('compute.text_217'),
-                }],
-              },
-            ],
-            ips: (i, networkData) => [
-              `networkIps[${i}]`,
-              {
-                validateFirst: true,
-                validateTrigger: ['blur', 'change'],
-                rules: [
-                  {
-                    required: true,
-                    message: this.$t('compute.text_218'),
-                  },
-                  {
-                    validator: validateForm('IPv4'),
-                  },
-                  {
-                    validator: checkIpInSegment(i, networkData),
-                  },
-                ],
-              },
-            ],
-            ips6: (i, networkData) => [
-              `networkIpsAddress6[${i}]`,
-              {
-                validateFirst: true,
-                validateTrigger: ['blur', 'change'],
-                rules: [
-                  {
-                    required: true,
-                    message: this.$t('compute.complete_ipv6_address'),
-                  },
-                  {
-                    validator: checkIpV6(i, networkData),
-                  },
-                ],
-              },
-            ],
-            macs: (i, networkData) => [
-              `networkMacs[${i}]`,
-              {
-                validateFirst: true,
-                validateTrigger: ['blur', 'change'],
-                rules: [
-                  {
-                    required: true,
-                    message: this.$t('compute.text_806'),
-                  },
-                  {
-                    validator: validateForm('mac'),
-                  },
-                ],
-              },
-            ],
-            ipv6s: (i, networkData) => [
-              `networkIPv6s[${i}]`,
-              {
-                validateFirst: true,
-                validateTrigger: ['blur', 'change'],
-              },
-            ],
-            ipv6_mode: (i, networkData) => [
-              `networkIPv6Modes[${i}]`,
-              {
-                validateTrigger: ['change', 'blur'],
-              },
-            ],
-            devices: i => [
-              `networkDevices[${i}]`,
-              {
-                validateTrigger: ['change', 'blur'],
-                rules: [{
-                  required: true,
-                  message: this.$t('compute.sriov_device_tips'),
-                }],
-              },
-            ],
-          },
-          networkSchedtag: {
-            schedtags: i => [
-              `networkSchedtags[${i}]`,
-              {
-                validateTrigger: ['change', 'blur'],
-                rules: [{
-                  required: true,
-                  message: this.$t('compute.text_123'),
-                }],
-              },
-            ],
-            policys: (i, networkData) => [
-              `networkPolicys[${i}]`,
-              {
-                validateTrigger: ['blur', 'change'],
-                rules: [{
-                  required: true,
-                  message: this.$t('common_256'),
-                }],
-              },
-            ],
-            devices: i => [
-              `networkDevices[${i}]`,
-              {
-                validateTrigger: ['change', 'blur'],
-                rules: [{
-                  required: true,
-                  message: this.$t('compute.sriov_device_tips'),
-                }],
-              },
-            ],
-          },
-        },
-        schedPolicy: {
-          schedPolicyType: [
-            'schedPolicyType',
-            {
-              initialValue: 'default',
-            },
-          ],
-          schedPolicyHost: [
-            'schedPolicyHost',
-            {
-              rules: [
-                { required: true, message: this.$t('compute.text_219') },
-              ],
-            },
-          ],
-          policySchedtag: {
-            schedtags: i => [
-              `policySchedtagSchedtags[${i}]`,
-              {
-                validateTrigger: ['change', 'blur'],
-                rules: [{
-                  required: true,
-                  message: this.$t('compute.text_123'),
-                }],
-              },
-            ],
-            policys: (i, networkData) => [
-              `policySchedtagPolicys[${i}]`,
-              {
-                validateTrigger: ['blur', 'change'],
-                rules: [{
-                  required: true,
-                  message: this.$t('common_256'),
-                }],
-              },
-            ],
-          },
-        },
-        network_mode: [
-          'network_mode',
-          {
-            initialValue: 'old',
-          },
+      modelRules: {
+        zone: [
+          { validator: isRequired(), message: this.$t('compute.text_213'), trigger: 'change' },
         ],
       },
+      hosts: [],
+      message: '',
       formItemLayout: {
         wrapperCol: {
           span: 20,
@@ -820,12 +446,9 @@ export default {
   },
   methods: {
     networkModeHandle (e) {
-      if (e.target.value === 'new') {
-        this.$nextTick(() => {
-          this.form.fc.setFieldsValue({
-            networkType: NETWORK_OPTIONS_MAP.manual.key,
-          })
-        })
+      const val = (e && e.target) ? e.target.value : e
+      if (val === 'new') {
+        this.form.fd.networkType = NETWORK_OPTIONS_MAP.manual.key
       }
     },
     networkCheckHandle () {
@@ -917,7 +540,7 @@ export default {
           }
 
           this.form.fd.defaultType = {
-            [this.decorators.systemDisk.type[0]]: { key: diskKey, label: diskLabel },
+            [SYSTEM_DISK_FIELDS.type]: { key: diskKey, label: diskLabel },
           }
         }
 
@@ -978,10 +601,10 @@ export default {
    */
     async genNetworks (values) {
       let ret = [{ exit: false }]
+      const { networkIPv6s, networkIpsAddress6, networkIPv6Modes } = values
       // 指定 IP 子网
       if (this.form.fd.networkType === NETWORK_OPTIONS_MAP.manual.key) {
         ret = []
-        const { networkIPv6s, networkIpsAddress6, networkIPv6Modes } = await this.form.fc.validateFields()
         R.forEachObjIndexed((value, key) => {
           const obj = {
             network: value,
@@ -1001,7 +624,7 @@ export default {
           if (networkIPv6s && networkIPv6s[key]) {
             obj.require_ipv6 = true
           }
-          const target = this.form.fi.networkList.filter(item => item.key === key)
+          const target = (this.form.fi.networkList || []).filter(item => item.key === key)
           if (networkIpsAddress6 && networkIpsAddress6[key]) {
             const ipv6Last = networkIpsAddress6[key]
             const ipv6First = getIpv6Start(target[0]?.network?.guest_ip6_start)
@@ -1072,10 +695,29 @@ export default {
         },
       })
     },
+    async validateForm () {
+      await this.$refs.formRef.validate()
+      if (typeof this.$refs.domainProjectRef?.validate === 'function') {
+        await this.$refs.domainProjectRef.validate()
+      }
+      if (typeof this.$refs.cloudregionZoneRef?.validate === 'function') {
+        await this.$refs.cloudregionZoneRef.validate()
+      }
+      if (this.showSystemDisk && typeof this.$refs.systemDiskRef?.validate === 'function') {
+        await this.$refs.systemDiskRef.validate()
+      }
+      if (this.showDataDisk && typeof this.$refs.dataDiskRef?.validate === 'function') {
+        await this.$refs.dataDiskRef.validate()
+      }
+      if (this.isNetworkModeNew && typeof this.$refs.networkRef?.validate === 'function') {
+        await this.$refs.networkRef.validate()
+      }
+      return { ...this.form.fd }
+    },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        const values = await this.validateForm()
         const ids = this.params.data.map(item => item.id)
         await this.doTransfer(ids, values)
         this.$message.success(this.$t('common.success'))

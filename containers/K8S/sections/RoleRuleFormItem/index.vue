@@ -1,32 +1,31 @@
 <template>
   <div>
-    <a-form :form="form.fc" v-bind="formItemLayout" layout="vertical">
+    <a-form-model ref="formRef" :model="formModel" :rules="rules" layout="vertical">
       <div class="d-flex" v-for="(item, i) in resourceList" :key="item.key">
-        <a-form-item class="mr-2" :label="i > 0 ? '' : $t('k8s.text_64')">
+        <a-form-model-item class="mr-2" :label="i > 0 ? '' : $t('k8s.text_64')" :prop="`resource_${item.key}`">
           <base-select
             style="width: 300px"
-            v-decorator="decorators.resources(item.key)"
+            v-model:value="formModel[`resource_${item.key}`]"
             :options="resourceOpts"
             filterable
             @update:item="val => syncItem(val, item)"
             :select-props="{ placeholder: $t('k8s.text_380') }" />
-        </a-form-item>
-        <a-form-item :labelCol="{ span: 24 }" style="min-width: 200px;" :label="i > 0 ? '' : $t('k8s.text_381')" class="verbs-item">
+        </a-form-model-item>
+        <a-form-model-item :labelCol="{ span: 24 }" style="min-width: 200px;" :label="i > 0 ? '' : $t('k8s.text_381')" class="verbs-item" :prop="`verbs_${item.key}`">
           <div v-if="!item.verbs.length" class="no-verbs-tip">{{$t('k8s.text_382')}}</div>
-          <a-checkbox-group v-else v-decorator="decorators.verbs(item.key)" name="checkboxgroup" :options="item.verbs" />
-        </a-form-item>
+          <a-checkbox-group v-else v-model:value="formModel[`verbs_${item.key}`]" name="checkboxgroup" :options="item.verbs" />
+        </a-form-model-item>
         <a-button shape="circle" icon="minus" size="small" @click="decrease(i)" :class="i === 0 ? 'mt-4_5': ''" />
       </div>
       <div class="d-flex align-items-center">
         <a-button type="primary" shape="circle" icon="plus" size="small" @click="add" />
         <a-button type="link" @click="add">{{$t('k8s.text_383')}}</a-button>
       </div>
-    </a-form>
+    </a-form-model>
   </div>
 </template>
 
 <script>
-import * as R from 'ramda'
 import { uuid } from '@/utils/utils'
 
 export default {
@@ -45,9 +44,8 @@ export default {
   },
   data () {
     return {
-      form: {
-        fc: this.$form.createForm(this, { name: 'time_related_controls' }),
-      },
+      formModel: {},
+      rules: {},
       resourceList: [],
       formItemLayout: {
         labelCol: {
@@ -58,34 +56,6 @@ export default {
           xs: { span: 24 },
           sm: { span: 16 },
         },
-      },
-      decorators: {
-        resources: i => [
-          `resources[${i}]`,
-          {
-            rules: [
-              { required: true, message: this.$t('k8s.text_380') },
-            ],
-          },
-        ],
-        apiGroups: i => [
-          `apiGroups[${i}]`,
-          {
-            initialValue: '*',
-            normalize: value => {
-              if (!value) return ''
-              return value
-            },
-          },
-        ],
-        verbs: i => [
-          `verbs[${i}]`,
-          {
-            rules: [
-              { required: true, message: this.$t('k8s.text_384') },
-            ],
-          },
-        ],
       },
       resourceOpts: [],
     }
@@ -103,8 +73,30 @@ export default {
     }
   },
   methods: {
+    fieldRules (itemKey) {
+      return {
+        [`resource_${itemKey}`]: [
+          { required: true, message: this.$t('k8s.text_380') },
+        ],
+        [`verbs_${itemKey}`]: [
+          { required: true, message: this.$t('k8s.text_384'), type: 'array' },
+        ],
+      }
+    },
+    registerItem (itemKey) {
+      this.formModel[`resource_${itemKey}`] = undefined
+      this.formModel[`verbs_${itemKey}`] = []
+      Object.assign(this.rules, this.fieldRules(itemKey))
+    },
+    unregisterItem (itemKey) {
+      delete this.formModel[`resource_${itemKey}`]
+      delete this.formModel[`verbs_${itemKey}`]
+      delete this.rules[`resource_${itemKey}`]
+      delete this.rules[`verbs_${itemKey}`]
+    },
     syncItem (val, item) {
       item.verbs = val.verbs
+      this.formModel[`verbs_${item.key}`] = []
     },
     async fetchFederatedData () {
       try {
@@ -138,31 +130,36 @@ export default {
     },
     async validateForm () {
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         const data = {
           rules: [],
         }
-        R.forEachObjIndexed((value, key) => {
+        this.resourceList.forEach(item => {
+          const value = this.formModel[`resource_${item.key}`]
           const [apiGroup, resouce] = value.split(' / ')
           data.rules.push({
             apiGroups: [apiGroup],
             resources: [resouce],
-            verbs: values.verbs[key],
+            verbs: this.formModel[`verbs_${item.key}`],
           })
-        }, values.resources)
+        })
         return data
       } catch (error) {
         throw error
       }
     },
     decrease (i) {
+      const item = this.resourceList[i]
+      this.unregisterItem(item.key)
       this.resourceList.splice(i, 1)
     },
     add () {
+      const key = uuid()
       this.resourceList.push({
-        key: uuid(),
+        key,
         verbs: [],
       })
+      this.registerItem(key)
     },
   },
 }

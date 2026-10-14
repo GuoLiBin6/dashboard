@@ -4,13 +4,11 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form
-        :form="form.fc"
-        v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.text_1257')" :help="$t('compute.text_1258')">
-          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-decorator="decorators.open" />
-        </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.text_1257')" :help="$t('compute.text_1258')" prop="open">
+          <a-switch v-model:checked="form.open" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -32,16 +30,7 @@ export default {
       loading: false,
       action: this.$t('compute.text_1124'),
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        open: [
-          'open',
-          {
-            initialValue: !isAllClose,
-            valuePropName: 'checked',
-          },
-        ],
+        open: !isAllClose,
       },
       formItemLayout: {
         wrapperCol: {
@@ -62,8 +51,7 @@ export default {
   methods: {
     async doSubmit () {
       const ids = this.params.data.map(item => item.id)
-      const values = await this.form.fc.validateFields()
-      const open = values.open ? 'on' : 'off'
+      const open = this.form.open ? 'on' : 'off'
       const params = { src_ip_check: open, src_mac_check: open }
       return this.params.onManager('batchPerformAction', {
         id: ids,
@@ -78,9 +66,10 @@ export default {
       this.loading = true
       try {
         await this.doSubmit()
-        this.loading = false
         this.cancelDialog()
       } catch (error) {
+        // submit failed
+      } finally {
         this.loading = false
       }
     },

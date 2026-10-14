@@ -1,7 +1,7 @@
 <template>
   <a-form-model :model="formData" size="small" ref="formRef" class="w-75" :rules="rules" v-bind="formItemLayout">
     <a-form-model-item :label="$t('k8s.text_250')">
-      <a-switch v-model:value="formData.es.enabled" />
+      <a-switch v-model:checked="formData.es.enabled" />
     </a-form-model-item>
     <template v-if="formData.es.enabled">
       <a-form-model-item :label="$t('k8s.text_251')" prop="es.index">
@@ -19,7 +19,7 @@
     </template>
     <a-divider />
     <a-form-model-item :label="$t('k8s.text_256')">
-      <a-switch v-model:value="formData.kafka.enabled" />
+      <a-switch v-model:checked="formData.kafka.enabled" />
     </a-form-model-item>
     <template v-if="formData.kafka.enabled">
       <a-form-model-item :label="$t('k8s.text_257')">
@@ -142,28 +142,27 @@ export default {
     addTopic () {
       this.formData.kafka.topics.push({ key: +new Date(), value: '' })
     },
-    submitForm (formName) {
+    async submitForm (formName) {
       if (!this.formData.es.enabled && !this.formData.kafka.enabled) {
         this.$message.warning(this.$t('k8s.text_264'))
         return
       }
-      this.$refs[formName].validate((valid) => {
-        if (valid) {
-          const brokers = this.formData.kafka.brokers.map(val => val.value)
-          const topics = this.formData.kafka.topics.map(val => val.value)
-          const data = {
-            backend: {
-              es: this.formData.es,
-              kafka: {
-                ...this.formData.kafka,
-                topics,
-                brokers,
-              },
+      try {
+        await this.$refs[formName].validate()
+        const brokers = this.formData.kafka.brokers.map(val => val.value)
+        const topics = this.formData.kafka.topics.map(val => val.value)
+        const data = {
+          backend: {
+            es: this.formData.es,
+            kafka: {
+              ...this.formData.kafka,
+              topics,
+              brokers,
             },
-          }
-          this.$emit('submit', data)
+          },
         }
-      })
+        this.$emit('submit', data)
+      } catch (e) { /* invalid */ }
     },
     cancel () {
       this.$router.push('/k8s-kubecomponent')

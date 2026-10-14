@@ -2,34 +2,32 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('storage.text_238')}}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('storage.text_239')" v-bind="formItemLayout">
-          <a-radio-group v-decorator="decorators.Effect">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('storage.text_239')" prop="Effect">
+          <a-radio-group v-model:value="form.Effect">
             <a-radio-button value="Allow">{{$t('storage.text_217')}}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('storage.text_240')" v-bind="formItemLayout" required>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('storage.text_240')" required>
           <a-row>
             <a-col :span="11" class="mr-1">
-              <a-form-item class="mb-0">
-                <a-select v-decorator="decorators.PrincipalType" @change="handleTypeChange">
+              <a-form-model-item class="mb-0" prop="PrincipalType">
+                <a-select v-model:value="form.PrincipalType" @change="handleTypeChange">
                   <a-select-option value="root">{{$t('storage.text_241')}}</a-select-option>
                   <a-select-option value="child">{{$t('storage.text_242')}}</a-select-option>
                 </a-select>
-              </a-form-item>
+              </a-form-model-item>
             </a-col>
             <a-col :span="12">
-              <a-form-item class="mb-0">
-                <a-input v-if="isRoot" v-decorator="[
-                  'PrincipalId',
-                  {
-                    rules: [{ required: true, message: $t('storage.text_243_1') }, { validator: this.validateRootId }]
-                  },
-                ]" :placeholder="$t('storage.text_243_1')" />
+              <a-form-model-item class="mb-0" prop="PrincipalId">
+                <a-input v-if="isRoot" v-model:value="form.PrincipalId" :placeholder="$t('storage.text_243_1')" />
                 <base-select
                   v-else
-                  v-decorator="decorators.PrincipalId"
+                  v-model:value="form.PrincipalId"
                   class="w-100"
                   :remote="true"
                   needParams
@@ -38,34 +36,34 @@
                   idKey="external_id"
                   :params="principalParams"
                   :select-props="{ placeholder: $t('storage.text_243'), allowClear: true,  mode: 'multiple' }" />
-              </a-form-item>
+              </a-form-model-item>
             </a-col>
           </a-row>
-        </a-form-item>
-        <a-form-item :label="$t('storage.text_244')" v-bind="formItemLayout">
-          <a-radio-group v-decorator="decorators.resource" @change="handleResourceTypeChange">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('storage.text_244')" prop="resource">
+          <a-radio-group v-model:value="form.resource" @change="handleResourceTypeChange">
             <a-radio value="entirebucket">{{$t('storage.text_245')}}</a-radio>
             <a-radio value="designatedResource">{{$t('storage.text_246')}}</a-radio>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('storage.text_247')" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('storage.text_247')" prop="ResourcePath">
           <div class="d-flex">
             <div>
               {{ params.bucketData.name }}/
             </div>
             <div class="flex-grow-1">
-              <a-textarea :disabled="isEntirebucket" v-decorator="decorators.ResourcePath" :placeholder="$t('storage.text_250')" :auto-size="{ minRows: 3, maxRows: 5 }" />
+              <a-textarea :disabled="isEntirebucket" v-model:value="form.ResourcePath" :placeholder="$t('storage.text_250')" :auto-size="{ minRows: 3, maxRows: 5 }" />
             </div>
           </div>
-        </a-form-item>
-        <a-form-item :label="$t('storage.text_251')" v-bind="formItemLayout">
-          <a-radio-group v-decorator="decorators.CannedAction">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('storage.text_251')" prop="CannedAction">
+          <a-radio-group v-model:value="form.CannedAction">
             <a-radio-button value="Read">{{$t('storage.text_252')}}</a-radio-button>
             <a-radio-button value="ReadWrite">{{$t('storage.text_253')}}</a-radio-button>
             <a-radio-button value="FullControl">{{$t('storage.text_254')}}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -85,52 +83,20 @@ export default {
   data () {
     return {
       loading: false,
-      type: 'child',
-      resourceType: 'entirebucket',
       form: {
-        fc: this.$form.createForm(this),
+        Effect: 'Allow',
+        PrincipalType: 'child',
+        PrincipalId: undefined,
+        resource: 'entirebucket',
+        ResourcePath: '*',
+        CannedAction: 'Read',
       },
-      decorators: {
-        Effect: [
-          'Effect',
-          {
-            initialValue: 'Allow',
-          },
-        ],
-        PrincipalType: [
-          'PrincipalType',
-          {
-            initialValue: 'child',
-          },
-        ],
+      rules: {
         PrincipalId: [
-          'PrincipalId',
-          {
-            rules: [
-              { required: true, message: this.$t('storage.text_255') },
-            ],
-          },
-        ],
-        resource: [
-          'resource',
-          {
-            initialValue: 'entirebucket',
-          },
+          { validator: this.validatePrincipalId },
         ],
         ResourcePath: [
-          'ResourcePath',
-          {
-            initialValue: '*',
-            rules: [
-              { required: true, message: this.$t('storage.text_256') },
-            ],
-          },
-        ],
-        CannedAction: [
-          'CannedAction',
-          {
-            initialValue: 'Read',
-          },
+          { required: true, message: this.$t('storage.text_256') },
         ],
       },
       formItemLayout: {
@@ -153,24 +119,23 @@ export default {
   computed: {
     ...mapGetters(['isAdminMode', 'scope', 'userInfo']),
     isRoot () {
-      return this.type === 'root'
+      return this.form.PrincipalType === 'root'
     },
     isEntirebucket () {
-      return this.resourceType === 'entirebucket'
+      return this.form.resource === 'entirebucket'
     },
   },
   methods: {
     handleTypeChange (value) {
-      this.type = value
-      this.form.fc.resetFields(['PrincipalId'])
+      this.form.PrincipalId = undefined
+      this.$refs.formRef.clearValidate(['PrincipalId'])
     },
     handleResourceTypeChange (e) {
       if (e.target.value === 'entirebucket') {
-        this.form.fc.setFieldsValue({ ResourcePath: '*' })
+        this.form.ResourcePath = '*'
       } else {
-        this.form.fc.setFieldsValue({ ResourcePath: '' })
+        this.form.ResourcePath = ''
       }
-      this.resourceType = e.target.value
     },
     genData (data) {
       const { Effect, CannedAction } = data
@@ -199,8 +164,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        const data = this.genData(values)
+        await this.$refs.formRef.validate()
+        const data = this.genData(this.form)
         await this.doCreate(data)
         this.loading = false
         this.cancelDialog()
@@ -209,9 +174,17 @@ export default {
         this.loading = false
       }
     },
-    validateRootId (rule, value, callback) {
+    validatePrincipalId (rule, value, callback) {
+      if (this.form.PrincipalType === 'child') {
+        if (!value || (Array.isArray(value) && !value.length)) {
+          callback(new Error(this.$t('storage.text_255')))
+        } else {
+          callback()
+        }
+        return
+      }
       if (!value) {
-        callback()
+        callback(new Error(this.$t('storage.text_255')))
         return
       }
       if (/^[0-9]*$/.test(value)) {

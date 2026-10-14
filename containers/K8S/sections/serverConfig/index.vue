@@ -3,23 +3,6 @@
     <a-card class="mb-2 card" v-for="(item, i) in serverConfigList" :key="item.key">
       <a-button v-if="i !== 0" @click="decrease(item.key, i)" type="link" size="small" class="error-color position-absolute" style="right: 10px; top: 10px;">{{ $t('common.delete') }}</a-button>
       <slot name="hypervisor" :formItemLayout="formItemLayout" :i="item.key" />
-      <!-- <a-form-item label="CPU" v-bind="formItemLayout">
-        <a-input-number v-decorator="decorator.vcpu_count(item.key)" :formatter="value => $t('k8s.text_119', [value])" :parser="v => parser(v, $t('k8s.text_100'))" :min="4" :max="32" />
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_101')" v-bind="formItemLayout">
-        <a-input-number v-decorator="decorator.vmem_size(item.key)" :formatter="value => `${value}G`" :parser="v => parser(v, 'G')" :min="1" :max="128" />
-      </a-form-item> -->
-      <!-- <a-form-item :label="$t('network.text_24')" v-bind="formItemLayout">
-        <a-select
-          v-decorator="decorator.zone(item.key)"
-          :placeholder="$t('network.text_287')"
-          @change="handleZoneChanage(i, $event)">
-          <a-select-option
-            v-for="zone in getZones(i)"
-            :key="zone.id"
-            :value="zone.id">{{zone.name}}</a-select-option>
-        </a-select>
-      </a-form-item>-->
       <a-form-item :label="$t('k8s.text_121')" v-bind="formItemLayout" required>
         <a-row :gutter="8">
           <a-col :span="24">
@@ -29,11 +12,11 @@
               class="w-100 mb-0 mr-1">
               <base-select
                 class="w-100"
-                v-decorator="decorator.network(item.key)"
+                :value="fieldVal(serverConfigField.network(item.key))"
+                @change="v => { fieldSet(serverConfigField.network(item.key), v); handleNetworkChange(i, v) }"
                 resource="networks"
                 remote
                 is-default-select
-                @change="handleNetworkChange(i, $event)"
                 v-model:item="item.network"
                 :need-params="true"
                 :params="getNetworkParams(item.key)"
@@ -47,7 +30,8 @@
               <a-input
                 :placeholder="$t('k8s.text_123')"
                 @change="e => ipChange(e, i)"
-                v-decorator="decorator.ip(item.key, item.network)" />
+                :value="fieldVal(serverConfigField.ip(item.key))"
+                @update:value="v => fieldSet(serverConfigField.ip(item.key), v)" />
             </a-form-item>
           </a-col>
           <a-col :span="2">
@@ -58,18 +42,21 @@
       </a-form-item>
       <a-form-item>
         <sku
-          v-decorator="decorator.sku(item.key)"
-          @change="handleSkuChange(i, $event)"
+          :model="resolvedModel"
+          @change="v => handleSkuChange(i, v)"
+          :field="`sku[${item.key}]`"
+          :type="osSelectType"
           :hypervisor="hypervisor"
           :sku-params="skuParam(i)" />
         </a-form-item>
       <a-form-item :label="$t('compute.text_267')" v-bind="formItemLayout" class="mb-0" v-if="useImage">
         <os-select
-          :type="type"
+          :type="osSelectType"
           :uefi="uefi"
+          :model="resolvedModel"
           :form="form"
+          :field="item.key"
           :hypervisor="hypervisor"
-          :decorator="decorator.imageOS(item.key)[1]"
           @updateImageMsg="updateImageMsg(i, $event)"
           :cloudType="platform"
           :imageType="getImageType()"
@@ -78,9 +65,11 @@
       </a-form-item>
       <a-form-item :label="$t('k8s.text_120')" v-bind="formItemLayout" class="mb-0">
         <system-disk
-          :decorator="decorator.disk(item.key)"
+          :ref="`systemDisk_${item.key}`"
+          :field="item.key"
           :type="platform"
           :form="form"
+          :model="resolvedModel"
           :image="imageMock"
           :hypervisor="hypervisor"
           :capability-data="getCapability(i)"
@@ -90,7 +79,8 @@
 
       <a-form-item :label="$t('dictionary.role')" v-bind="formItemLayout">
         <a-radio-group
-          v-decorator="decorator.role(item.key)">
+          :value="fieldVal(serverConfigField.role(item.key))"
+          @change="e => fieldSet(serverConfigField.role(item.key), e.target.value)">
           <a-radio-button v-for="role in roleList" :key="role.value" :value="role.value">
             {{ role.label}}
           </a-radio-button>
@@ -98,7 +88,7 @@
       </a-form-item>
 
       <a-form-item v-show="!item.ipShow" :label="$t('k8s.text_125')" v-bind="formItemLayout" :extra="$t('k8s.text_126')">
-        <a-input-number v-decorator="decorator.num(item.key)" :min="1" :max="item.ipShow ? 1 : 10"  :parser="v => parser(v, '', '1')" />
+        <a-input-number :value="fieldVal(serverConfigField.num(item.key))" @change="v => fieldSet(serverConfigField.num(item.key), v)" :min="1" :max="item.ipShow ? 1 : 10"  :parser="v => parser(v, '', '1')" />
       </a-form-item>
     </a-card>
     <div class="d-flex align-items-center" v-if="serverConfigRemaining > 0">
@@ -119,7 +109,17 @@ import OsSelect from '@Compute/sections/OsSelect'
 import { IMAGES_TYPE_MAP } from '@/constants/compute'
 import { HYPERVISORS_MAP } from '@/constants'
 import { uuid } from '@/utils/utils'
+import { getBracketValue, setBracketValue } from '@/utils/bracketModel'
 import { NODE_ROLE_MAP } from '../../views/cluster/constants'
+import {
+  serverConfigField,
+  serverConfigNetworkRules,
+  serverConfigIpRules,
+  serverConfigSkuRules,
+  serverConfigNumRules,
+  serverConfigRoleRules,
+} from './fields'
+
 export default {
   name: 'K8SClusterServerConfig',
   components: {
@@ -128,13 +128,14 @@ export default {
     OsSelect,
   },
   props: {
-    decorator: {
-      type: Object,
-      required: true,
-    },
     form: {
       type: Object,
-      validator: val => val.fc,
+      default: null,
+    },
+    /** a-form-model end-state（通常 form.fd） */
+    model: {
+      type: Object,
+      default: null,
     },
     cloudregionId: {
       type: String,
@@ -159,6 +160,7 @@ export default {
       roleList.push({ label: value, value: key })
     }, NODE_ROLE_MAP)
     return {
+      serverConfigField,
       imageMock: { min_disk: 40960 }, // 通过mock image数据设置最小磁盘大小
       selectedImage: {},
       formItemLayout: {
@@ -172,6 +174,13 @@ export default {
   },
   computed: {
     ...mapGetters(['isAdminMode', 'scope', 'isDomainMode', 'userInfo', 'l3PermissionEnable']),
+    resolvedModel () {
+      return this.model || this.form?.fd
+    },
+    osSelectType () {
+      if (['idc', 'private', 'public'].includes(this.platform)) return this.platform
+      return 'idc'
+    },
     useImage () {
       const hypervisor = this.$props.hypervisor
       if (hypervisor === HYPERVISORS_MAP.kvm.key || hypervisor === HYPERVISORS_MAP.cloudpods.key) {
@@ -194,6 +203,18 @@ export default {
     this.add()
   },
   methods: {
+
+    fieldVal (nameOrTuple) {
+      const name = Array.isArray(nameOrTuple) ? nameOrTuple[0] : nameOrTuple
+      const opts = Array.isArray(nameOrTuple) ? (nameOrTuple[1] || {}) : {}
+      if (!name || !this.resolvedModel) return undefined
+      const v = getBracketValue(this.resolvedModel, name)
+      return v !== undefined ? v : opts.initialValue
+    },
+    fieldSet (nameOrTuple, value) {
+      const name = Array.isArray(nameOrTuple) ? nameOrTuple[0] : nameOrTuple
+      if (name && this.resolvedModel) setBracketValue(this, this.resolvedModel, name, value)
+    },
     showIp (item) {
       item.ipShow = true
     },
@@ -210,6 +231,17 @@ export default {
       const text = `${net.name} (${net.guest_ip_start} - ${net.guest_ip_end}, zone=${net.zone})`
       return h('div', null, [h('span', null, text)]) // IP子网
     },
+    registerConfigFields (key) {
+      const initial = {
+        [serverConfigField.role(key)]: 'controlplane',
+        [serverConfigField.num(key)]: 1,
+      }
+      Object.keys(initial).forEach((name) => {
+        if (getBracketValue(this.resolvedModel, name) === undefined) {
+          setBracketValue(this, this.resolvedModel, name, initial[name])
+        }
+      })
+    },
     add () {
       const uid = uuid()
       const data = {
@@ -218,6 +250,7 @@ export default {
       }
       this.serverConfigList.push(data)
       this.$nextTick(() => {
+        this.registerConfigFields(uid)
         this.$emit('vmAdd', data)
       })
     },
@@ -366,18 +399,47 @@ export default {
         region: this.cloudregionId,
       }
     },
-    /*
-     * getImageIgnoreOptions () {
-     *   const opts = [
-     *     IMAGES_TYPE_MAP.private,
-     *     IMAGES_TYPE_MAP.customize,
-     *     IMAGES_TYPE_MAP.iso,
-     *     IMAGES_TYPE_MAP.snapshot,
-     *     IMAGES_TYPE_MAP.host,
-     *   ]
-     *   return opts.map(item => item.key)
-     * },
-     */
+    runFieldRule (rule, value) {
+      return new Promise((resolve, reject) => {
+        if (rule.required) {
+          const empty = value === undefined || value === null || value === '' ||
+            (Array.isArray(value) && !value.length)
+          if (empty) {
+            reject(new Error(rule.message || 'required'))
+            return
+          }
+        }
+        if (typeof rule.validator === 'function') {
+          rule.validator(rule, value, (err) => {
+            if (err) reject(err instanceof Error ? err : new Error(String(err)))
+            else resolve()
+          })
+          return
+        }
+        resolve()
+      })
+    },
+    async runRules (rules, value) {
+      for (const rule of rules || []) {
+        await this.runFieldRule(rule, value)
+      }
+    },
+    async validate () {
+      for (const item of this.serverConfigList) {
+        const key = item.key
+        await this.runRules(serverConfigNetworkRules(), this.fieldVal(serverConfigField.network(key)))
+        await this.runRules(serverConfigSkuRules(), this.fieldVal(serverConfigField.sku(key)))
+        await this.runRules(serverConfigRoleRules(), this.fieldVal(serverConfigField.role(key)))
+        await this.runRules(serverConfigNumRules(), this.fieldVal(serverConfigField.num(key)))
+        if (item.ipShow) {
+          await this.runRules(serverConfigIpRules(key, item.network), this.fieldVal(serverConfigField.ip(key)))
+        }
+        const diskRef = this.$refs[`systemDisk_${key}`]
+        const disk = Array.isArray(diskRef) ? diskRef[0] : diskRef
+        if (typeof disk?.validate === 'function') await disk.validate()
+      }
+      return true
+    },
   },
 }
 </script>

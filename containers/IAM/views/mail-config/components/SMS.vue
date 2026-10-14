@@ -1,20 +1,22 @@
 <template>
-  <a-form
-    :form="form.fc"
+  <a-form-model
+    ref="formRef"
+    :model="form"
+    :rules="rules"
     v-bind="formItemLayout">
-    <a-form-item :label="$t('system.text_295')">
+    <a-form-model-item :label="$t('system.text_295')" prop="content">
       <template v-slot:extra>
         <div>{{$t('system.text_296')}}</div>
         <div>{{$t('system.text_575')}}</div>
         <div>{{$t('system.text_298')}}</div>
         <div class="mb-0">{{$t('system.text_299')}}</div>
       </template>
-      <a-input v-decorator="decorators.content" />
-    </a-form-item>
-    <a-form-item :wrapper-col="offsetWrapperCol">
+      <a-input v-model:value="form.content" />
+    </a-form-model-item>
+    <a-form-model-item :wrapper-col="offsetWrapperCol">
       <a-button type="primary" @click="handleSubmit" :loading="submiting">{{ $t('common.ok') }}</a-button>
-    </a-form-item>
-  </a-form>
+    </a-form-model-item>
+  </a-form-model>
 </template>
 
 <script>
@@ -37,16 +39,11 @@ export default {
     return {
       submiting: false,
       form: {
-        fc: this.$form.createForm(this),
+        content: undefined,
       },
-      decorators: {
+      rules: {
         content: [
-          'content',
-          {
-            rules: [
-              { required: true, message: this.$t('system.text_300') },
-            ],
-          },
+          { required: true, message: this.$t('system.text_300') },
         ],
       },
       contactData: null,
@@ -74,9 +71,7 @@ export default {
         if (data.length > 0) {
           this.contactData = data[0]
           this.$nextTick(() => {
-            this.form.fc.setFieldsValue({
-              content: data[0].content,
-            })
+            this.form.content = data[0].content
           })
         }
       } catch (error) {
@@ -87,7 +82,8 @@ export default {
       }
     },
     async handleSubmit () {
-      const values = await this.form.fc.validateFields()
+      await this.$refs.formRef.validate()
+      const values = { ...this.form }
       try {
         this.submiting = true
         if (this.contactData && this.contactData.id) {

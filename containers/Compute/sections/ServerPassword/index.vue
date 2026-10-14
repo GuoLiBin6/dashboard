@@ -1,33 +1,33 @@
 <template>
   <div class="server-password">
-    <a-form-item class="mb-2">
-      <a-radio-group :value="vmLoginType" :disabled="disabled" v-decorator="decorators.loginType" @change="loginTypeChange">
+    <a-form-model-item class="mb-2" :prop="loginTypeField">
+      <a-radio-group v-model:value="vmLoginType" :disabled="disabled" @change="loginTypeChange">
         <a-radio-button v-for="item of loginTypeMap" :value="item.key" :key="item.key" :disabled="disabledLoginTypes.includes(item.key)">
           {{ item.label }}
           <help-tooltip v-if="['image', 'keypair'].includes(item.key)" :name="`${item.key}Password`" class="ml-2" />
         </a-radio-button>
       </a-radio-group>
-    </a-form-item>
-    <a-form-item v-if="(loginTypeMap && loginTypeMap.keypair) && vmLoginType === loginTypeMap.keypair.key" class="mb-0">
+    </a-form-model-item>
+    <a-form-model-item v-if="(loginTypeMap && loginTypeMap.keypair) && vmLoginType === loginTypeMap.keypair.key" class="mb-0" :prop="loginKeypairField">
       <template #extra>
         {{$t('compute.text_201')}}<help-link :href="href">{{$t('compute.text_202')}}</help-link>
       </template>
       <base-select
         ref="keypairSelect"
         class="w-50"
-        v-decorator="decorators.keypair"
+        v-model:value="keypairModel"
         resource="keypairs"
         :isDefaultSelect="true"
         :showSync="true"
         :select-props="{ allowClear: true, placeholder: $t('compute.text_203') }"
         @update:initLoaded="onKeypairInitLoaded" />
-    </a-form-item>
-    <a-form-item v-if="(loginTypeMap && loginTypeMap.password) && vmLoginType === loginTypeMap.password.key" class="mb-0">
+    </a-form-model-item>
+    <a-form-model-item v-if="(loginTypeMap && loginTypeMap.password) && vmLoginType === loginTypeMap.password.key" class="mb-0" :prop="loginPasswordField">
       <a-input-password
         class="w-50"
-        v-decorator="decorators.password"
+        v-model:value="passwordModel"
         :placeholder="$t('compute.text_204')" />
-    </a-form-item>
+    </a-form-model-item>
   </div>
 </template>
 
@@ -39,18 +39,6 @@ import i18n from '@/locales'
 
 import createFormFieldDraftMixin from '@/mixins/createFormFieldDraft'
 
-const DEFAULT_DECORATOR = {
-  password: [
-    'password',
-    {
-      validateFirst: true,
-      rules: [
-        { required: true, message: i18n.t('compute.text_204') },
-        { validator: passwordValidator },
-      ],
-    },
-  ],
-}
 export default {
   name: 'ServerPassword',
   mixins: [createFormFieldDraftMixin],
@@ -67,13 +55,25 @@ export default {
     loginTypes: {
       type: Array,
     },
-    decorator: {
-      type: Object,
-      required: true,
-      // validator: val => R.is(Array, val.loginType) && R.is(Array, val.keypair) && R.is(Array, val.password),
+    loginTypeField: {
+      type: String,
+      default: 'loginType',
+    },
+    loginKeypairField: {
+      type: String,
+      default: 'loginKeypair',
+    },
+    loginPasswordField: {
+      type: String,
+      default: 'loginPassword',
     },
     form: {
       type: Object,
+    },
+    /** a-form-model end-state（通常 form.fd） */
+    model: {
+      type: Object,
+      required: true,
     },
     isSnapshotImageType: { // 表单的镜像类型是否是主机快照
       type: Boolean,
@@ -104,15 +104,25 @@ export default {
       }
       return LOGIN_TYPES_MAP
     },
-    decorators () {
-      return {
-        ...DEFAULT_DECORATOR,
-        ...this.decorator,
-      }
-    },
     href () {
       const url = this.$router.resolve('/keypair')
       return url.href
+    },
+    keypairModel: {
+      get () {
+        return this.model[this.loginKeypairField]
+      },
+      set (v) {
+        this.$set(this.model, this.loginKeypairField, v)
+      },
+    },
+    passwordModel: {
+      get () {
+        return this.model[this.loginPasswordField]
+      },
+      set (v) {
+        this.$set(this.model, this.loginPasswordField, v)
+      },
     },
   },
   watch: {
@@ -120,9 +130,7 @@ export default {
       if (val) {
         this.disabled = true
         const v = LOGIN_TYPES_MAP.image.key
-        this.form.fc.setFieldsValue({
-          [this.decorators.loginType[0]]: v,
-        })
+        this.$set(this.model, this.loginTypeField, v)
         this.vmLoginType = v
       } else {
         this.disabled = false
@@ -139,24 +147,30 @@ export default {
   },
   created () {
     this._keypairListLoaded = false
+    this.vmLoginType = this.model[this.loginTypeField] || this.vmLoginType
   },
   methods: {
+    writeLoginFields (vals) {
+      if (!vals || typeof vals !== 'object') return
+      Object.keys(vals).forEach((key) => {
+        this.$set(this.model, key, vals[key])
+      })
+    },
     getCreateFormFieldDraftSnapshot () {
-      const fc = this.form?.fc
-      if (!fc) return undefined
-      const loginType = fc.getFieldValue('loginType')
+      const loginType = this.model[this.loginTypeField]
+      if (loginType === undefined) return undefined
       // 手工输入：不落盘类型与密码，提交时清空该控件草稿
       if (loginType === LOGIN_TYPES_MAP.password.key) return null
-      const keypair = fc.getFieldValue('keypair')
+      const keypair = this.model[this.loginKeypairField]
       return { loginType, keypair: loginType === LOGIN_TYPES_MAP.keypair.key ? keypair : undefined }
     },
     applyCreateFormFieldDraft (draft) {
-      if (!draft || !this.form?.fc) return
+      if (!draft) return
       // 历史草稿若为手工输入：忽略，不回填为 password
       if (draft.loginType === LOGIN_TYPES_MAP.password.key) return
       const values = {}
       if (draft.loginType && (!this.loginTypes || this.loginTypes.includes(draft.loginType))) {
-        values.loginType = draft.loginType
+        values[this.loginTypeField] = draft.loginType
         this.vmLoginType = draft.loginType
       }
       if (draft.loginType === LOGIN_TYPES_MAP.keypair.key && draft.keypair) {
@@ -165,29 +179,29 @@ export default {
       } else {
         this.pendingKeypair = ''
       }
-      if (Object.keys(values).length) this.form.fc.setFieldsValue(values)
+      if (Object.keys(values).length) this.writeLoginFields(values)
       this.$nextTick(() => this.writePendingKeypair())
     },
     /** 仅 sourceList 非空且命中时回填密钥 */
     writePendingKeypair () {
-      if (!this.pendingKeypair || !this.form?.fc) return
+      if (!this.pendingKeypair) return
       if (this.vmLoginType !== 'keypair' && this.vmLoginType !== this.loginTypeMap?.keypair?.key) return
       const sourceList = this.$refs.keypairSelect?.sourceList || []
       if (!sourceList.length) {
         // 列表空：不写；已加载仍空则丢弃
         if (this._keypairListLoaded) {
           this.pendingKeypair = ''
-          this.form.fc.setFieldsValue({ keypair: undefined })
+          this.writeLoginFields({ [this.loginKeypairField]: undefined })
         }
         return
       }
       const hit = sourceList.some(item => item.id === this.pendingKeypair)
       if (!hit) {
         this.pendingKeypair = ''
-        this.form.fc.setFieldsValue({ keypair: undefined })
+        this.writeLoginFields({ [this.loginKeypairField]: undefined })
         return
       }
-      this.form.fc.setFieldsValue({ keypair: this.pendingKeypair })
+      this.writeLoginFields({ [this.loginKeypairField]: this.pendingKeypair })
     },
     onKeypairInitLoaded () {
       this._keypairListLoaded = true
@@ -195,7 +209,9 @@ export default {
     },
 
     loginTypeChange (e) {
-      this.vmLoginType = e.target.value
+      const v = e && e.target ? e.target.value : e
+      this.vmLoginType = v
+      this.$set(this.model, this.loginTypeField, v)
     },
     setLoginType () {
       if (this.loginTypeMap && !R.isEmpty(this.loginTypeMap)) {
@@ -208,7 +224,7 @@ export default {
         if (draftLoginType && keys.includes(draftLoginType) && !this.isSnapshotImageType) {
           vmLoginType = draftLoginType
         } else {
-          const loginTypeInitailValue = this.decorator.loginType[1].initialValue
+          const loginTypeInitailValue = this.model[this.loginTypeField]
           vmLoginType = loginTypeInitailValue
           if (!keys.includes(loginTypeInitailValue) || this.isSnapshotImageType) { // 如果表单中的初始值不在 loginTypeMap 中, 主机快照只支持保留镜像设置
             if (keys.includes(LOGIN_TYPES_MAP.image.key)) { // 如果maps中有"保留镜像设置"，则设置
@@ -218,13 +234,52 @@ export default {
             }
           }
         }
-        if (this.form && this.form.fc) {
-          this.form.fc.setFieldsValue({
-            [this.decorators.loginType[0]]: vmLoginType,
-          })
-        }
+        this.$set(this.model, this.loginTypeField, vmLoginType)
         this.vmLoginType = vmLoginType
       }
+    },
+    runFieldRule (rule, value) {
+      return new Promise((resolve, reject) => {
+        if (rule.required) {
+          const empty = value === undefined || value === null || value === '' ||
+            (Array.isArray(value) && !value.length)
+          if (empty) {
+            reject(new Error(rule.message || 'required'))
+            return
+          }
+        }
+        if (typeof rule.validator === 'function') {
+          let settled = false
+          const finish = (err) => {
+            if (settled) return
+            settled = true
+            if (err) reject(err instanceof Error ? err : new Error(String(err)))
+            else resolve()
+          }
+          let ret
+          try {
+            ret = rule.validator(rule, value, finish)
+          } catch (e) {
+            finish(e)
+            return
+          }
+          if (ret && typeof ret.then === 'function') {
+            ret.then(() => finish()).catch(finish)
+          }
+          return
+        }
+        resolve()
+      })
+    },
+    async validate () {
+      if (this.loginTypeMap?.keypair && this.vmLoginType === this.loginTypeMap.keypair.key) {
+        await this.runFieldRule({ required: true, message: i18n.t('compute.text_203') }, this.model[this.loginKeypairField])
+      }
+      if (this.loginTypeMap?.password && this.vmLoginType === this.loginTypeMap.password.key) {
+        await this.runFieldRule({ required: true, message: i18n.t('compute.text_204') }, this.model[this.loginPasswordField])
+        await this.runFieldRule({ validator: passwordValidator }, this.model[this.loginPasswordField])
+      }
+      return true
     },
   },
 }

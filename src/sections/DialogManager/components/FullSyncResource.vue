@@ -4,35 +4,24 @@
     <template #body>
       <dialog-selected-tips :name="params.name" class="mt-3" :count="params.data.length" :action="params.action" />
       <dialog-table v-if="params.columns && params.columns.length" :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('common.sync_mode')" :help="$t('common.increment_sync_tip')">
-          <a-radio-group v-decorator="[
-              'sync_mode',
-              {
-                initialValue: 'full'
-              }
-            ]">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('common.sync_mode')" :help="$t('common.increment_sync_tip')">
+          <a-radio-group v-model:value="form.sync_mode">
             <a-radio-button value="full">{{$t('common.full_sync')}}</a-radio-button>
             <a-radio-button value="increment">{{$t('common.increment_sync')}}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('common.full_sync_resource_type')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.full_sync_resource_type')" prop="resource">
           <a-select
             mode="multiple"
-            v-decorator="[
-              'resource',
-              {
-                initialValue: ['all'],
-                rules: [{ required: true, message: $t('cloudenv.text_284', [$t('common.full_sync_resource_type')]) }]
-              },
-            ]"
+            v-model:value="form.resource"
             @change="handleResourceChange">
             <a-select-option v-for="v in resources" :key="v" :value="v">
               {{ v === 'all' ? $t('cloudenv.text_297') : getResourceI18n(v) }}
             </a-select-option>
           </a-select>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </template>
     <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
@@ -53,7 +42,11 @@ export default {
       loading: false,
       resources: ['all', 'network', 'compute', 'loadbalancer', 'objectstore', 'rds', 'cache', 'nat', 'nas', 'waf', 'mongodb', 'es', 'kafka', 'app', 'container', 'quota', 'intervpcnetwork', 'cdn', 'dnszone', 'image'],
       form: {
-        fc: this.$form.createForm(this),
+        sync_mode: 'full',
+        resource: ['all'],
+      },
+      rules: {
+        resource: [{ required: true, message: this.$t('cloudenv.text_284', [this.$t('common.full_sync_resource_type')]) }],
       },
       formItemLayout: {
         wrapperCol: {
@@ -76,34 +69,18 @@ export default {
     handleResourceChange (v) {
       this.$nextTick(() => {
         if (v.join(',').endsWith('all')) {
-          this.form.fc.setFieldsValue({
-            resource: ['all'],
-          })
-        } else {
-          if (v.includes('all') && v.length > 1) {
-            this.form.fc.setFieldsValue({
-              resource: v.filter(v => v !== 'all'),
-            })
-          }
+          this.form.resource = ['all']
+        } else if (v.includes('all') && v.length > 1) {
+          this.form.resource = v.filter(item => item !== 'all')
         }
-      })
-    },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
       })
     },
     async handleConfirm () {
       this.loading = true
       try {
         const ids = this.params.data.map(item => item.id)
-        const values = await this.validateForm()
+        await this.$refs.formRef.validate()
+        const values = this.form
         const data = {
           force: true,
           resources: values.resource,

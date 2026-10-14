@@ -3,29 +3,29 @@
     <div slot="header">{{ $t('aice.llm_update_config') }}</div>
     <div slot="body">
       <dialog-selected-tips :name="instanceLabel" :count="1" :action="$t('aice.llm_update_config')" />
-      <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
-        <a-form-item v-if="supportMountedModels" :label="$t('aice.model')" :extra="$t('aice.llm_override_sku_extra')">
+      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout" hideRequiredMark>
+        <a-form-model-item v-if="supportMountedModels" :label="$t('aice.model')" :extra="$t('aice.llm_override_sku_extra')">
           <base-select
-            v-decorator="decorators.mounted_models"
+            v-model:value="form.mounted_models"
             resource="llm_instant_models"
             remote
             :params="mountedModelParams"
             :selectProps="{ mode: 'multiple', placeholder: $t('common.tips.select', [$t('aice.model')]), allowClear: true }" />
-        </a-form-item>
-        <a-form-item :label="$t('aice.devices')" :extra="$t('aice.llm_override_sku_extra')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('aice.devices')" :extra="$t('aice.llm_override_sku_extra')">
           <base-select
-            v-decorator="decorators.device"
+            v-model:value="form.device"
             :options="specList"
             :selectProps="{ mode: 'multiple', placeholder: $t('common.tips.select', [$t('aice.devices')]), allowClear: true }" />
-        </a-form-item>
-        <a-form-item :label="$t('aice.host_paths')" :extra="$t('aice.llm_override_sku_extra')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('aice.host_paths')" :extra="$t('aice.llm_override_sku_extra')">
           <div v-for="hp in hostPathRows" :key="hp.key" style="display: flex; align-items: stretch; gap: 10px; margin-bottom: 12px;">
             <div style="flex: 1; border: 1px solid #e8e8e8; border-radius: 4px; padding: 12px;">
               <a-row :gutter="8">
                 <a-col :span="8">
                   <a-form-item>
                     <fixed-label-filter :label="$t('aice.host_paths.type')">
-                      <a-select v-decorator="decorators.host_paths.type(hp.key)" :placeholder="$t('common.tips.select', [$t('aice.host_paths.type')])">
+                      <a-select v-model:value="hp.type" :placeholder="$t('common.tips.select', [$t('aice.host_paths.type')])">
                         <a-select-option value="directory">directory</a-select-option>
                         <a-select-option value="file">file</a-select-option>
                       </a-select>
@@ -35,7 +35,7 @@
                 <a-col :span="16">
                   <a-form-item>
                     <fixed-label-filter :label="$t('aice.host_paths.path')">
-                      <a-input v-decorator="decorators.host_paths.path(hp.key)" :placeholder="$t('aice.host_paths.path.placeholder')" />
+                      <a-input v-model:value="hp.path" :placeholder="$t('aice.host_paths.path.placeholder')" />
                     </fixed-label-filter>
                   </a-form-item>
                 </a-col>
@@ -44,29 +44,29 @@
               <a-row :gutter="8">
                 <a-col :span="24">
                   <a-form-item>
-                    <a-checkbox v-decorator="decorators.host_paths.auto_create(hp.key)">{{ $t('aice.host_paths.auto_create') }}</a-checkbox>
+                    <a-checkbox v-model:checked="hp.auto_create">{{ $t('aice.host_paths.auto_create') }}</a-checkbox>
                   </a-form-item>
                 </a-col>
               </a-row>
-              <a-row :gutter="8" v-if="form.fc.getFieldValue(`host_path_auto_create_${hp.key}`)">
+              <a-row :gutter="8" v-if="hp.auto_create">
                 <a-col :span="8">
                   <a-form-item>
                     <fixed-label-filter :label="$t('aice.host_paths.auto_create_config.uid')">
-                      <a-input v-decorator="decorators.host_paths.auto_uid(hp.key)" :placeholder="$t('aice.host_paths.auto_create_config.uid.placeholder')" />
+                      <a-input v-model:value="hp.auto_create_config.uid" :placeholder="$t('aice.host_paths.auto_create_config.uid.placeholder')" />
                     </fixed-label-filter>
                   </a-form-item>
                 </a-col>
                 <a-col :span="8">
                   <a-form-item>
                     <fixed-label-filter :label="$t('aice.host_paths.auto_create_config.gid')">
-                      <a-input v-decorator="decorators.host_paths.auto_gid(hp.key)" :placeholder="$t('aice.host_paths.auto_create_config.gid.placeholder')" />
+                      <a-input v-model:value="hp.auto_create_config.gid" :placeholder="$t('aice.host_paths.auto_create_config.gid.placeholder')" />
                     </fixed-label-filter>
                   </a-form-item>
                 </a-col>
                 <a-col :span="8">
                   <a-form-item>
                     <fixed-label-filter :label="$t('aice.host_paths.permissions')">
-                      <a-input v-decorator="decorators.host_paths.auto_perm(hp.key)" :placeholder="$t('aice.host_paths.permissions.placeholder')" />
+                      <a-input v-model:value="hp.auto_create_config.permissions" :placeholder="$t('aice.host_paths.permissions.placeholder')" />
                     </fixed-label-filter>
                   </a-form-item>
                 </a-col>
@@ -78,14 +78,14 @@
                   <a-col :span="12">
                     <a-form-item>
                       <fixed-label-filter :label="$t('aice.host_paths.mount_path')">
-                        <a-input v-decorator="decorators.host_paths.mount_path(hp.key, c.key)" :placeholder="$t('aice.host_paths.mount_path.placeholder')" />
+                        <a-input v-model:value="c.mount_path" :placeholder="$t('aice.host_paths.mount_path.placeholder')" />
                       </fixed-label-filter>
                     </a-form-item>
                   </a-col>
                   <a-col :span="12">
                     <a-form-item>
                       <fixed-label-filter :label="$t('aice.host_paths.propagation')">
-                        <a-select v-decorator="decorators.host_paths.propagation(hp.key, c.key)" :placeholder="$t('common.tips.select', [$t('aice.host_paths.propagation')])" optionLabelProp="label" :dropdownMatchSelectWidth="false">
+                        <a-select v-model:value="c.propagation" :placeholder="$t('common.tips.select', [$t('aice.host_paths.propagation')])" optionLabelProp="label" :dropdownMatchSelectWidth="false">
                           <a-select-option value="private" label="private">private - {{ $t('aice.host_paths.propagation.private') }}</a-select-option>
                           <a-select-option value="rslave" label="rslave">rslave - {{ $t('aice.host_paths.propagation.rslave') }}</a-select-option>
                           <a-select-option value="rshared" label="rshared">rshared - {{ $t('aice.host_paths.propagation.rshared') }}</a-select-option>
@@ -97,7 +97,7 @@
                 <a-row :gutter="8">
                   <a-col :span="4">
                     <a-form-item>
-                      <a-checkbox v-decorator="decorators.host_paths.read_only(hp.key, c.key)">{{ $t('aice.host_paths.read_only') }}</a-checkbox>
+                      <a-checkbox v-model:checked="c.read_only">{{ $t('aice.host_paths.read_only') }}</a-checkbox>
                     </a-form-item>
                   </a-col>
                 </a-row>
@@ -113,8 +113,8 @@
             <a-button type="primary" shape="circle" icon="plus" size="small" @click="addHostPath" />
             <a-button type="link" @click="addHostPath">{{ $t('aice.host_paths.add') }}</a-button>
           </div>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -131,6 +131,40 @@ import WindowsMixin from '@/mixins/windows'
 import { uuid } from '@/utils/utils'
 import { getParamsForType } from '../../llm-sku/constants/llmTypeConfig'
 
+function buildContainerRows (containers) {
+  const obj = containers && typeof containers === 'object' ? containers : {}
+  const containerRows = Object.keys(obj).map(k => ({
+    key: uuid(),
+    containerIndex: String(k),
+    mount_path: obj[k]?.mount_path || '',
+    read_only: !!obj[k]?.read_only,
+    propagation: obj[k]?.propagation || 'rslave',
+  }))
+  return containerRows.length ? containerRows : [{
+    key: uuid(),
+    containerIndex: '0',
+    mount_path: '',
+    read_only: false,
+    propagation: 'rslave',
+  }]
+}
+
+function buildHostPathRow (hp = {}) {
+  const autoCfg = hp.auto_create_config || {}
+  return {
+    key: hp.key || uuid(),
+    type: hp.type || 'directory',
+    path: hp.path || '',
+    auto_create: !!hp.auto_create,
+    auto_create_config: {
+      uid: autoCfg.uid,
+      gid: autoCfg.gid,
+      permissions: autoCfg.permissions,
+    },
+    containerRows: buildContainerRows(hp.containers),
+  }
+}
+
 export default {
   name: 'LlmUpdateConfigDialog',
   mixins: [DialogMixin, WindowsMixin],
@@ -138,28 +172,9 @@ export default {
     const row = (this.params.data && this.params.data[0]) || {}
     const { isApplyType, isDesktopType } = parseLlmRoute(this.$route.path)
     const devices = Array.isArray(row.devices) ? row.devices : []
-    // 详情响应的字段名是 mounted_model_infos（来自 LLMListDetails.MountedModelInfos）；
-    // 编辑时回填这些已挂载模型的 id 作为 select 的 initialValue。
     const mountedModels = Array.isArray(row.mounted_model_infos) ? row.mounted_model_infos : []
     const hostPaths = Array.isArray(row.host_paths) ? row.host_paths : []
-    const hostPathRows = hostPaths.map(hp => {
-      const containers = hp && hp.containers && typeof hp.containers === 'object' ? hp.containers : {}
-      const containerRows = Object.keys(containers).map(k => ({
-        key: uuid(),
-        containerIndex: String(k),
-        ...(containers[k] || {}),
-      }))
-      return {
-        key: uuid(),
-        ...hp,
-        containerRows: containerRows.length ? containerRows : [{ key: uuid() }],
-      }
-    })
-    const getHostPathRow = rowKey => hostPathRows.find(hp => hp.key === rowKey)
-    const getHostPathContainerRow = (hpKey, cKey) => {
-      const hp = getHostPathRow(hpKey)
-      return hp && Array.isArray(hp.containerRows) ? hp.containerRows.find(c => c.key === cKey) : undefined
-    }
+    const hostPathRows = hostPaths.map(hp => buildHostPathRow(hp))
     return {
       row,
       isApplyType,
@@ -167,76 +182,8 @@ export default {
       loading: false,
       hostPathRows,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach(key => {
-              this.$set(this.form.fd, key, values[key])
-            })
-          },
-        }),
-        fd: {},
-      },
-      decorators: {
-        device: [
-          'device',
-          {
-            initialValue: devices.map(v => v.model),
-          },
-        ],
-        mounted_models: [
-          'mounted_models',
-          {
-            initialValue: mountedModels.map(v => v.id),
-          },
-        ],
-        host_paths: {
-          type: rowKey => [
-            `host_path_type_${rowKey}`,
-            { initialValue: getHostPathRow(rowKey)?.type || 'directory' },
-          ],
-          path: rowKey => [
-            `host_path_path_${rowKey}`,
-            {
-              initialValue: getHostPathRow(rowKey)?.path,
-              rules: [{ required: true, message: this.$t('aice.host_paths.path.required') }],
-            },
-          ],
-          auto_create: rowKey => [
-            `host_path_auto_create_${rowKey}`,
-            { valuePropName: 'checked', initialValue: !!getHostPathRow(rowKey)?.auto_create },
-          ],
-          auto_uid: rowKey => [
-            `host_path_auto_uid_${rowKey}`,
-            { initialValue: getHostPathRow(rowKey)?.auto_create_config?.uid },
-          ],
-          auto_gid: rowKey => [
-            `host_path_auto_gid_${rowKey}`,
-            { initialValue: getHostPathRow(rowKey)?.auto_create_config?.gid },
-          ],
-          auto_perm: rowKey => [
-            `host_path_auto_perm_${rowKey}`,
-            { initialValue: getHostPathRow(rowKey)?.auto_create_config?.permissions },
-          ],
-          container_index: (hpKey, cKey) => [
-            `host_path_container_index_${hpKey}__${cKey}`,
-            { initialValue: getHostPathContainerRow(hpKey, cKey)?.containerIndex ?? 0 },
-          ],
-          mount_path: (hpKey, cKey) => [
-            `host_path_mount_path_${hpKey}__${cKey}`,
-            {
-              initialValue: getHostPathContainerRow(hpKey, cKey)?.mount_path,
-              rules: [{ required: true, message: this.$t('aice.host_paths.mount_path.required') }],
-            },
-          ],
-          read_only: (hpKey, cKey) => [
-            `host_path_read_only_${hpKey}__${cKey}`,
-            { valuePropName: 'checked', initialValue: !!getHostPathContainerRow(hpKey, cKey)?.read_only },
-          ],
-          propagation: (hpKey, cKey) => [
-            `host_path_propagation_${hpKey}__${cKey}`,
-            { initialValue: getHostPathContainerRow(hpKey, cKey)?.propagation || 'rslave' },
-          ],
-        },
+        device: devices.map(v => v.model),
+        mounted_models: mountedModels.map(v => v.id),
       },
       formItemLayout: {
         wrapperCol: { span: 20 },
@@ -270,32 +217,40 @@ export default {
   },
   methods: {
     addHostPath () {
-      this.hostPathRows.push({ key: uuid(), containerRows: [{ key: uuid() }] })
+      this.hostPathRows.push(buildHostPathRow())
     },
     delHostPath (hp) {
       const idx = this.hostPathRows.findIndex(v => v.key === hp.key)
       if (idx >= 0) this.hostPathRows.splice(idx, 1)
     },
+    validateHostPaths () {
+      for (const hp of this.hostPathRows) {
+        if (hp.path == null || String(hp.path).trim() === '') {
+          this.$message.error(this.$t('aice.host_paths.path.required'))
+          return false
+        }
+      }
+      return true
+    },
     async handleConfirm () {
+      if (!this.validateHostPaths()) return
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
         const data = {}
-        data.devices = Array.isArray(values.device) ? devicesFromModelKeys(values.device, this.podPciModels) : []
+        data.devices = Array.isArray(this.form.device) ? devicesFromModelKeys(this.form.device, this.podPciModels) : []
         if (this.supportMountedModels) {
-          data.mounted_models = Array.isArray(values.mounted_models) ? values.mounted_models : []
+          data.mounted_models = Array.isArray(this.form.mounted_models) ? this.form.mounted_models : []
         }
         data.host_paths = this.hostPathRows.map(hp => {
-          const hpKey = hp.key
-          const type = values[`host_path_type_${hpKey}`]
-          const path = values[`host_path_path_${hpKey}`]
-          const autoCreate = !!values[`host_path_auto_create_${hpKey}`]
+          const type = hp.type
+          const path = hp.path
+          const autoCreate = !!hp.auto_create
           const out = { type, path }
           if (autoCreate) {
             out.auto_create = true
-            const uid = values[`host_path_auto_uid_${hpKey}`]
-            const gid = values[`host_path_auto_gid_${hpKey}`]
-            const perm = values[`host_path_auto_perm_${hpKey}`]
+            const uid = hp.auto_create_config?.uid
+            const gid = hp.auto_create_config?.gid
+            const perm = hp.auto_create_config?.permissions
             const cfg = {}
             if (uid !== undefined && uid !== null && uid !== '') cfg.uid = uid
             if (gid !== undefined && gid !== null && gid !== '') cfg.gid = gid
@@ -304,14 +259,13 @@ export default {
           }
           const containers = {}
           ;(hp.containerRows || []).forEach(c => {
-            const composite = `${hpKey}__${c.key}`
-            const idx = values[`host_path_container_index_${composite}`]
-            const mountPath = values[`host_path_mount_path_${composite}`]
+            const idx = c.containerIndex ?? 0
+            const mountPath = c.mount_path
             if (idx == null || mountPath == null || String(mountPath).trim() === '') return
             const k = String(idx).trim()
             if (!k) return
-            const m = { mount_path: String(mountPath).trim(), read_only: !!values[`host_path_read_only_${composite}`] }
-            const prop = values[`host_path_propagation_${composite}`]
+            const m = { mount_path: String(mountPath).trim(), read_only: !!c.read_only }
+            const prop = c.propagation
             if (prop != null && String(prop).trim() !== '') m.propagation = String(prop).trim()
             containers[k] = m
           })

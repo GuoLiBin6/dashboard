@@ -9,7 +9,7 @@ export default function (def, schema) {
     }
   }
 
-  def.decorator = [
+  def.field = [
     {
       initialValue: schema.default,
       rules: [

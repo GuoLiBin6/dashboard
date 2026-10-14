@@ -6,9 +6,9 @@
       <dialog-selected-tips :name="$t('dictionary.server_container')" :count="params.data.length" :action="$t('compute.text_1116')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <loader loading v-if="!(bindedSecgroupsLoaded && secgroupsInitLoaded)" />
-      <a-form :form="form.fc" hideRequiredMark v-show="bindedSecgroupsLoaded && secgroupsInitLoaded" v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.text_105')" v-if="bindedSecgroupsLoaded">
-          <div slot="extra">{{$t('compute.text_1242', [max])}}<!-- <help-link :href="href">{{$t('compute.text_189')}}</help-link> -->
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-show="bindedSecgroupsLoaded && secgroupsInitLoaded" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.text_105')" v-if="bindedSecgroupsLoaded" prop="secgroups">
+          <div slot="extra">{{$t('compute.text_1242', [max])}}
             <dialog-trigger :vm="params.vm" :extParams="{ tenant, domain }" :name="$t('compute.text_189')" value="CreateSecgroupDialog" resource="secgroups" @success="successCallback" />
           </div>
           <base-select
@@ -16,15 +16,15 @@
             class="w-100"
             remote
             show-sync
-            v-decorator="decorators.secgroups"
+            v-model:value="form.secgroups"
             resource="secgroups"
             v-model:resList="secgroupOptions"
             :mapper="mapperSecgroups"
             :params="secgroupsParams"
             v-model:initLoaded="secgroupsInitLoaded"
             :select-props="{ allowClear: true, placeholder: $t('compute.text_190'), mode: 'multiple' }" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -61,18 +61,11 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        secgroups: this.params.data[0].secgroups && this.params.data[0].secgroups.map(item => item.id),
       },
-      decorators: {
+      rules: {
         secgroups: [
-          'secgroups',
-          {
-            initialValue: this.params.data[0].secgroups && this.params.data[0].secgroups.map(item => item.id),
-            validateFirst: true,
-            rules: [
-              { validator: validateSecgroups, trigger: 'change' },
-            ],
-          },
+          { validator: validateSecgroups, trigger: 'change' },
         ],
       },
       formItemLayout: {
@@ -158,8 +151,7 @@ export default {
           },
         })
         this.bindedSecgroups = data
-        const secgroupIds = data.map(item => item.id)
-        this.decorators.secgroups[1].initialValue = secgroupIds
+        this.form.secgroups = data.map(item => item.id)
         this.bindedSecgroupsLoaded = true
       } catch (error) {
         throw error
@@ -168,10 +160,10 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         const ids = this.params.data.map(item => item.id)
         const data = {
-          secgroup_ids: values.secgroups,
+          secgroup_ids: this.form.secgroups,
         }
         if (this.params.manager) {
           await this.params.manager.batchPerformAction({
@@ -197,10 +189,8 @@ export default {
     },
     async successCallback () {
       await this.$refs.secgroupRef.loadOpts()
-      const secgroups = this.form.fc.getFieldValue('secgroups')
       const newSecgroup = this.secgroupOptions[0]
-      secgroups.push(newSecgroup.id)
-      this.form.fc.setFieldsValue({ secgroups: secgroups })
+      this.form.secgroups = [...(this.form.secgroups || []), newSecgroup.id]
     },
   },
 }

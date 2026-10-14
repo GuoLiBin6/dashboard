@@ -1,15 +1,15 @@
 <template>
   <div>
     <page-body>
-      <a-form :form="form.fc" v-bind="formLayout" hideRequiredMark>
-        <a-form-item :label="$t('cloudenv.text_95')">
-          <a-input :placeholder="$t('cloudenv.text_190')" v-decorator="decorators.name" />
-        </a-form-item>
-        <a-form-item :label="$t('cloudenv.text_360')">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formLayout" hideRequiredMark>
+        <a-form-model-item :label="$t('cloudenv.text_95')" prop="name">
+          <a-input :placeholder="$t('cloudenv.text_190')" v-model:value="form.name" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('cloudenv.text_360')">
           {{ $t('cloudenv.sync_account') }}
-        </a-form-item>
-        <scheduled-task-time ref="taskTime" :form="form" />
-      </a-form>
+        </a-form-model-item>
+        <scheduled-task-time ref="taskTime" :model="form" />
+      </a-form-model>
     </page-body>
   </div>
 </template>
@@ -29,20 +29,15 @@ export default {
     },
   },
   data () {
+    const initialName = this.account.name ? `aoto-sync-${this.account.name}-${this.$moment().format('YYYYMMDD')}` : ''
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        name: initialName,
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            initialValue: this.account.name ? `aoto-sync-${this.account.name}-${this.$moment().format('YYYYMMDD')}` : '',
-            rules: [
-              { required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` },
-            ],
-          },
+          { required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` },
         ],
       },
       formLayout: {
@@ -71,15 +66,17 @@ export default {
       this.$refs.taskTime.transformParams(params, values)
       return params
     },
+    async validateForm () {
+      await this.$refs.formRef.validate()
+      return { ...this.form }
+    },
     async handleConfirm (resId) {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        const values = await this.validateForm()
         const params = this.generateData(resId, values)
         await new this.$Manager('scheduledtasks', 'v1').create({ data: params })
         this.$router.push('/cloudaccount')
-      } catch (error) {
-        throw error
       } finally {
         this.loading = false
       }

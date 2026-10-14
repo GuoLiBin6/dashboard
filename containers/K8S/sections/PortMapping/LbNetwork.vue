@@ -7,10 +7,10 @@
         class="w-100"
         filterable
         :params="params"
+        :value="fieldVal(LB_NETWORK_FIELD)"
+        @change="onNetworkSelect"
         v-model:item="selectNet"
         resource="networks"
-        v-decorator="decorator"
-        @change="networkChange"
         :selectProps="{ placeholder: $t('k8s.lb.select_network') }" />
       <a-button type="link" class="mr-1 mt-1" @click="triggerConfigIp">{{$t('compute.text_198')}}</a-button>
     </a-form-item>
@@ -18,7 +18,8 @@
       <a-form-item class="mb-0" :wrapperCol="{ span: 24 }">
         <a-input
           style="width: 300px"
-          v-decorator="addrDecorator(inputAddr, selectNet)"
+          :value="fieldVal('loadBalancerAddress')"
+          @update:value="v => fieldSet('loadBalancerAddress', v)"
           @change="ipChange"
           :placeholder="$t('k8s.lb.input_address')" />
       </a-form-item>
@@ -27,20 +28,23 @@
 </template>
 
 <script>
+import { getBracketValue, setBracketValue } from '@/utils/bracketModel'
+import { LB_NETWORK_FIELD } from './fields'
+
 export default {
   name: 'K8SPortMappingLbNetwork',
   props: {
-    decorator: {
-      type: Array,
-      required: true,
-    },
-    addrDecorator: {
-      type: Array,
-      required: true,
-    },
     vpcId: {
       type: String,
       required: true,
+    },
+    form: {
+      type: Object,
+      default: null,
+    },
+    model: {
+      type: Object,
+      default: null,
     },
   },
   data () {
@@ -56,8 +60,21 @@ export default {
     }
   },
   methods: {
+    fieldVal (name) {
+      const v = getBracketValue(this.model, name)
+      return v !== undefined ? v : undefined
+    },
+    fieldSet (name, value) {
+      if (name) setBracketValue(this, this.model, name, value)
+    },
+    onNetworkSelect (v) {
+      this.fieldSet(LB_NETWORK_FIELD, v)
+      this.networkChange()
+    },
+    networkChange () {},
     ipChange (e) {
       this.inputAddr = e.target.value
+      this.networkChange()
     },
     triggerConfigIp () {
       this.configIp = !this.configIp

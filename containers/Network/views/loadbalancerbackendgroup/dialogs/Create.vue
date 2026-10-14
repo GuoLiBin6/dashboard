@@ -29,10 +29,10 @@
         </a-form-model-item>
         <a-button type="link" @click="addRule">{{ $t('network.add_backend_server') }}</a-button>
         <a-form-model-item class="mt-2" v-if="isCloudflare" :label="$t('network.enable_health_check')" prop="enable_health_check" v-bind="formItemLayout">
-          <a-switch v-model:value="form.enable_health_check" />
+          <a-switch v-model:checked="form.enable_health_check" />
         </a-form-model-item>
         <a-form-model-item v-if="form.enable_health_check" :label="$t('network.health_check')" prop="health_check" :rules="rules.health_check" v-bind="formItemLayout">
-          <base-select v-model="form.health_check" resource="loadbalancer_health_checks" isDefaultSelect :params="healthCheckParams" />
+          <base-select v-model:value="form.health_check" resource="loadbalancer_health_checks" isDefaultSelect :params="healthCheckParams" />
         </a-form-model-item>
       </a-form-model>
     </div>
@@ -82,12 +82,12 @@ export default {
             required: true,
             validator: (rule, value, callback) => {
               if (!value) {
-                callback(new Error(this.$t('common.tips.input', [this.$t('network.ip_or_domain')])))
+                return callback(new Error(this.$t('common.tips.input', [this.$t('network.ip_or_domain')])))
               }
               if (!regexp.isIPOrDomain(value)) {
-                callback(new Error(this.$t('common.tips.input', [this.$t('network.ip_or_domain')])))
+                return callback(new Error(this.$t('common.tips.input', [this.$t('network.ip_or_domain')])))
               }
-              callback()
+              return callback()
             },
           },
         ],

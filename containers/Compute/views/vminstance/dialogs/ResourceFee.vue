@@ -7,10 +7,9 @@
       </a-alert>
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_1117')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('compute.text_1230')" v-bind="formItemLayout">
-          <a-radio-group v-decorator="decorators.buyDuration">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.text_1230')" prop="buyDuration">
+          <a-radio-group v-model:value="form.buyDuration">
             <a-radio-button
               v-for="i in options.buyDurations"
               :key="i.value"
@@ -18,8 +17,8 @@
               {{ i.label }}
             </a-radio-button>
           </a-radio-group>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -40,17 +39,11 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        buyDuration: '1M',
       },
-      decorators: {
+      rules: {
         buyDuration: [
-          'buyDuration',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.text_1231'), trigger: 'change' },
-            ],
-            initialValue: '1M',
-          },
+          { required: true, message: this.$t('compute.text_1231'), trigger: 'change' },
         ],
       },
       options: {
@@ -67,35 +60,25 @@ export default {
     }
   },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
-    doResourceFeeSubmit (data) {
+    doResourceFeeSubmit () {
       const selectedIds = this.params.data.map(item => item.id)
       return new this.$Manager('servers').batchPerformAction({
         ids: selectedIds,
         action: 'renew',
         data: {
-          duration: data.buyDuration,
+          duration: this.form.buyDuration,
         },
       })
     },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
-        await this.doResourceFeeSubmit(values)
-        this.loading = false
+        await this.$refs.formRef.validate()
+        await this.doResourceFeeSubmit()
         this.cancelDialog()
       } catch (error) {
+        // validate / submit failed
+      } finally {
         this.loading = false
       }
     },

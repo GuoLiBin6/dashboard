@@ -2,95 +2,98 @@
   <a-spin :spinning="loading">
     <page-header :title="$t('network.text_722')" />
     <page-body>
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('network.text_21')">
-          <a-input :disabled="!!lbAgentId" v-decorator="decorators.name" :placeholder="$t('network.text_44')" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_19')">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('network.text_21')" prop="name">
+          <a-input :disabled="!!lbAgentId" v-model:value="form.name" :placeholder="$t('network.text_44')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" prop="description">
+          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.description" :placeholder="$t('common_367')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_19')" prop="cluster_id">
           <base-select
             :disabled="!!lbAgentId"
-            v-decorator="decorators.cluster_id"
+            v-model="form.cluster_id"
             resource="loadbalancerclusters"
             remote
             :remote-fn="q => ({ filter: `name.contains(${q})` })"
             showSync
-            :select-props="{ placeholder: $t('network.text_79') }" />
-          <p slot="extra">{{$t('network.text_80')}}<a-button type="link" size="small" @click="createCluster">{{$t('network.text_26')}}</a-button>
-          </p>
-        </a-form-item>
-        <a-form-item :label="$t('network.priority')">
+            :select-props="{ placeholder: $t('network.text_79') }"
+            @change="handleClusterChange" />
+          <template #extra>
+            {{$t('network.text_80')}}<a-button type="link" size="small" @click="createCluster">{{$t('network.text_26')}}</a-button>
+          </template>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.priority')" prop="priority">
           <a-tooltip>
-            <template slot="title">
+            <template #title>
               {{ $t('network.priority.extra') }}
             </template>
             <a-input-number
-              v-decorator="decorators.priority"
+              v-model:value="form.priority"
               :min="1"
               :max="255"
               :step="1"
               :formatter="v => `${ isNaN(parseInt(v)) ? 1 : parseInt(v) }`"
               :parser="v => `${ isNaN(parseInt(v)) ? 1 : parseInt(v) }`" />
           </a-tooltip>
-        </a-form-item>
+        </a-form-model-item>
         <a-collapse :bordered="false">
-         <a-collapse-panel :header="$t('network.text_94')" key="1" forceRender>
+          <a-collapse-panel :header="$t('network.text_94')" key="1" forceRender>
             <a-collapse @change="handleCollapseChange">
               <a-collapse-panel key="telegraf" :header="$t('network.text_97')" forceRender>
-                <a-form-item :label="$t('network.text_98')" :extra="$t('network.text_99')">
+                <a-form-model-item :label="$t('network.text_98')" :extra="$t('network.text_99')">
                   <a-row :gutter="8">
                     <a-col :span="12">
-                      <a-input v-decorator="decorators.telegraf_influx_db_output_url" :placeholder="$t('network.text_100')" />
+                      <a-input v-model:value="form.telegraf.influx_db_output_url" :placeholder="$t('network.text_100')" />
                     </a-col>
                     <a-col :span="12">
-                      <a-checkbox class="ml-4" v-decorator="decorators.telegraf_influx_db_output_unsafe_ssl">{{$t('network.text_101')}}</a-checkbox>
+                      <a-checkbox class="ml-4" v-model:checked="form.telegraf.influx_db_output_unsafe_ssl">{{$t('network.text_101')}}</a-checkbox>
                     </a-col>
                   </a-row>
-                </a-form-item>
-                <a-form-item :label="$t('network.text_102')">
-                  <a-input v-decorator="decorators.telegraf_influx_db_output_name" />
-                </a-form-item>
-                <a-form-item :label="$t('network.text_103')">
-                  <a-input v-decorator="decorators.telegraf_haproxy_input_interval" type="Number" :addonAfter="$t('network.text_76')" />
-                </a-form-item>
-                <a-form-item :label="$t('network.text_104')">
-                  <code-mirror v-decorator="decorators.telegraf_conf_tmpl" :options="cmOptions" />
-                </a-form-item>
+                </a-form-model-item>
+                <a-form-model-item :label="$t('network.text_102')">
+                  <a-input v-model:value="form.telegraf.influx_db_output_name" />
+                </a-form-model-item>
+                <a-form-model-item :label="$t('network.text_103')" prop="telegraf.haproxy_input_interval">
+                  <a-input v-model:value="form.telegraf.haproxy_input_interval" type="Number" :addonAfter="$t('network.text_76')" />
+                </a-form-model-item>
+                <a-form-model-item :label="$t('network.text_104')">
+                  <code-mirror :value="form.telegraf_conf_tmpl" @change="v => form.telegraf_conf_tmpl = v" :options="cmOptions" />
+                </a-form-model-item>
               </a-collapse-panel>
               <a-collapse-panel key="haproxy" :header="$t('network.text_105')" forceRender>
-                <a-form-item :label="$t('network.text_106')">
-                  <a-input v-decorator="decorators.haproxy_global_nbthread" type="Number" />
-                </a-form-item>
-                <a-form-item :label="$t('network.text_107')" :extra="$t('network.text_108')">
-                  <a-input v-decorator="decorators.haproxy_global_log" :placeholder="$t('network.text_109')" />
-                </a-form-item>
-                <a-form-item :label="$t('network.text_110')">
-                  <a-switch v-decorator="decorators.haproxy_log_http" />
-                </a-form-item>
-                <a-form-item :label="$t('network.text_111')">
-                  <a-switch v-decorator="decorators.haproxy_log_tcp" />
-                </a-form-item>
-                 <a-form-item :label="$t('network.text_112')">
-                  <a-switch v-decorator="decorators.haproxy_log_normal" />
-                </a-form-item>
-                <a-form-item :label="$t('network.text_113')">
-                  <a-input v-decorator="decorators.haproxy_tune_http_maxhdr" :extra="$t('network.text_114')" type="Number" />
-                </a-form-item>
-                <a-form-item :label="$t('network.text_104')">
-                  <code-mirror v-decorator="decorators.haproxy_conf_tmpl" :options="cmOptions" />
-                </a-form-item>
+                <a-form-model-item :label="$t('network.text_106')" prop="haproxy.global_nbthread">
+                  <a-input v-model:value="form.haproxy.global_nbthread" type="Number" />
+                </a-form-model-item>
+                <a-form-model-item :label="$t('network.text_107')" :extra="$t('network.text_108')">
+                  <a-input v-model:value="form.haproxy.global_log_path" :placeholder="$t('network.text_109')" />
+                </a-form-model-item>
+                <a-form-model-item :label="$t('network.text_110')">
+                  <a-switch v-model:checked="form.haproxy.log_http" />
+                </a-form-model-item>
+                <a-form-model-item :label="$t('network.text_111')">
+                  <a-switch v-model:checked="form.haproxy.log_tcp" />
+                </a-form-model-item>
+                <a-form-model-item :label="$t('network.text_112')">
+                  <a-switch v-model:checked="form.haproxy.log_normal" />
+                </a-form-model-item>
+                <a-form-model-item :label="$t('network.text_113')" prop="haproxy.tune_http_maxhdr">
+                  <a-input v-model:value="form.haproxy.tune_http_maxhdr" type="Number" />
+                  <template #extra>{{$t('network.text_114')}}</template>
+                </a-form-model-item>
+                <a-form-model-item :label="$t('network.text_104')">
+                  <code-mirror :value="form.haproxy_conf_tmpl" @change="v => form.haproxy_conf_tmpl = v" :options="cmOptions" />
+                </a-form-model-item>
               </a-collapse-panel>
               <a-collapse-panel key="keepalived" :header="$t('network.text_115')" forceRender>
-                <a-form-item :label="$t('network.text_104')">
-                  <code-mirror v-decorator="decorators.keepalived_conf_tmpl" :options="cmOptions" />
-                </a-form-item>
+                <a-form-model-item :label="$t('network.text_104')">
+                  <code-mirror :value="form.keepalived_conf_tmpl" @change="v => form.keepalived_conf_tmpl = v" :options="cmOptions" />
+                </a-form-model-item>
               </a-collapse-panel>
             </a-collapse>
-         </a-collapse-panel>
+          </a-collapse-panel>
         </a-collapse>
-      </a-form>
+      </a-form-model>
     </page-body>
     <page-footer>
       <template v-slot:right>
@@ -106,7 +109,6 @@ import WindowsMixin from '@/mixins/windows'
 
 export default {
   name: 'AgentCreate',
-  components: {},
   mixins: [WindowsMixin, workflowMixin],
   data () {
     return {
@@ -114,7 +116,75 @@ export default {
       submiting: false,
       defaultParams: {},
       form: {
-        fc: this.$form.createForm(this),
+        name: undefined,
+        description: undefined,
+        cluster_id: undefined,
+        priority: 1,
+        telegraf: {
+          influx_db_output_url: undefined,
+          influx_db_output_unsafe_ssl: true,
+          influx_db_output_name: undefined,
+          haproxy_input_interval: undefined,
+        },
+        haproxy: {
+          global_nbthread: undefined,
+          global_log_path: undefined,
+          log_http: undefined,
+          log_tcp: undefined,
+          log_normal: undefined,
+          tune_http_maxhdr: 101,
+        },
+        telegraf_conf_tmpl: undefined,
+        haproxy_conf_tmpl: undefined,
+        keepalived_conf_tmpl: undefined,
+      },
+      rules: {
+        name: [
+          { required: true, message: this.$t('network.text_116') },
+          { validator: this.$validate('resourceName') },
+        ],
+        cluster_id: [
+          { required: true, message: this.$t('network.text_79') },
+        ],
+        'telegraf.haproxy_input_interval': [
+          {
+            validator: (rule, value, callback) => {
+              if (value === undefined || value === null || value === '') return callback()
+              const n = Number(value)
+              if (!Number.isInteger(n) || n < 1 || n > 600) {
+                return callback(new Error(this.$t('network.text_123')))
+              }
+              return callback()
+            },
+            trigger: 'blur',
+          },
+        ],
+        'haproxy.global_nbthread': [
+          {
+            validator: (rule, value, callback) => {
+              if (value === undefined || value === null || value === '') return callback()
+              const n = Number(value)
+              if (!Number.isInteger(n) || n < 1 || n > 64) {
+                return callback(new Error(this.$t('network.text_124')))
+              }
+              return callback()
+            },
+            trigger: 'blur',
+          },
+        ],
+        'haproxy.tune_http_maxhdr': [
+          {
+            validator: (rule, value, callback) => {
+              if (value === undefined || value === null || value === '') return callback()
+              const n = Number(value)
+              if (!Number.isInteger(n) || n < 1 || n > 32767) {
+                return callback(new Error(this.$t('network.text_125')))
+              }
+              return callback()
+            },
+            trigger: 'blur',
+          },
+        ],
       },
       cmOptions: {
         tabSize: 2,
@@ -125,104 +195,6 @@ export default {
         theme: 'material',
         autofocus: true,
         value: undefined,
-      },
-      decorators: {
-        name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('network.text_116') },
-              { validator: this.$validate('resourceName') },
-            ],
-          },
-        ],
-        description: ['description'],
-        cluster_id: [
-          'cluster_id',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_79') },
-            ],
-          },
-        ],
-        priority: [
-          'priority',
-          {
-            initialValue: 1,
-          },
-        ],
-        telegraf_influx_db_output_url: [
-          'telegraf.influx_db_output_url',
-        ],
-        telegraf_influx_db_output_unsafe_ssl: [
-          'telegraf.influx_db_output_unsafe_ssl',
-          {
-            valuePropName: 'checked',
-            initialValue: true,
-          },
-        ],
-        telegraf_influx_db_output_name: [
-          'telegraf.influx_db_output_name',
-        ],
-        telegraf_conf_tmpl: [
-          'telegraf_conf_tmpl',
-        ],
-        telegraf_haproxy_input_interval: [
-          'telegraf.haproxy_input_interval',
-          {
-            normalize: v => Number(v),
-            rules: [
-              { type: 'integer', min: 1, max: 600, message: this.$t('network.text_123'), trigger: 'blur' },
-            ],
-          },
-        ],
-        haproxy_global_nbthread: [
-          'haproxy.global_nbthread',
-          {
-            normalize: v => Number(v),
-            rules: [
-              { type: 'integer', min: 1, max: 64, message: this.$t('network.text_124'), trigger: 'blur' },
-            ],
-          },
-        ],
-        haproxy_global_log: [
-          'haproxy.global_log_path',
-        ],
-        haproxy_log_http: [
-          'haproxy.log_http',
-          {
-            valuePropName: 'checked',
-          },
-        ],
-        haproxy_log_tcp: [
-          'haproxy.log_tcp',
-          {
-            valuePropName: 'checked',
-          },
-        ],
-        haproxy_log_normal: [
-          'haproxy.log_normal',
-          {
-            valuePropName: 'checked',
-          },
-        ],
-        haproxy_tune_http_maxhdr: [
-          'haproxy.tune_http_maxhdr',
-          {
-            initialValue: 101,
-            normalize: v => Number(v),
-            rules: [
-              { type: 'integer', min: 1, max: 32767, message: this.$t('network.text_125'), trigger: 'blur' },
-            ],
-          },
-        ],
-        haproxy_conf_tmpl: [
-          'haproxy_conf_tmpl',
-        ],
-        keepalived_conf_tmpl: [
-          'keepalived_conf_tmpl',
-        ],
       },
       formItemLayout: {
         wrapperCol: {
@@ -260,54 +232,62 @@ export default {
     },
     setValues (data) {
       if (!data || !Object.keys(data).length || !data.params) return false
-      const params = {
-        ...data.params,
-        // 在handleCollapseChange赋值， 为了解决code-mirror赋值bug
-        ...{
-          telegraf_conf_tmpl: undefined,
-          haproxy_conf_tmpl: undefined,
-          keepalived_conf_tmpl: undefined,
-        },
+      const params = { ...data.params }
+      this.form.name = data.name
+      this.form.description = data.description
+      this.form.cluster_id = data.cluster_id
+      this.form.priority = data.priority
+      if (params.telegraf) {
+        this.form.telegraf = {
+          ...this.form.telegraf,
+          ...params.telegraf,
+        }
       }
-      if (params.haproxy && params.haproxy.global_log) {
-        params.haproxy.global_log_path = params.haproxy.global_log.split(' ')[1]
+      if (params.haproxy) {
+        this.form.haproxy = {
+          ...this.form.haproxy,
+          ...params.haproxy,
+        }
+        if (params.haproxy.global_log) {
+          this.form.haproxy.global_log_path = params.haproxy.global_log.split(' ')[1]
+        }
       }
-      this.form.fc.setFieldsValue({
-        name: data.name,
-        description: data.description,
-        cluster_id: data.cluster_id,
-        priority: data.priority,
-        ...params,
-      })
+      // conf tmpl 在 expand collapse 时再填，避免 code-mirror 赋值 bug
+      this.form.telegraf_conf_tmpl = undefined
+      this.form.haproxy_conf_tmpl = undefined
+      this.form.keepalived_conf_tmpl = undefined
       this.defaultParams = data.params
     },
     formatValues (values) {
+      const data = {
+        ...values,
+        telegraf: { ...values.telegraf },
+        haproxy: { ...values.haproxy },
+      }
+      if (data.telegraf.haproxy_input_interval !== undefined && data.telegraf.haproxy_input_interval !== '') {
+        data.telegraf.haproxy_input_interval = Number(data.telegraf.haproxy_input_interval)
+      }
+      if (data.haproxy.global_nbthread !== undefined && data.haproxy.global_nbthread !== '') {
+        data.haproxy.global_nbthread = Number(data.haproxy.global_nbthread)
+      }
+      if (data.haproxy.tune_http_maxhdr !== undefined && data.haproxy.tune_http_maxhdr !== '') {
+        data.haproxy.tune_http_maxhdr = Number(data.haproxy.tune_http_maxhdr)
+      }
       const templKeys = ['telegraf_conf_tmpl', 'haproxy_conf_tmpl', 'keepalived_conf_tmpl']
       templKeys.forEach(k => {
-        if (values[k]) {
-          values[k] = window.btoa(values[k])
+        if (data[k]) {
+          data[k] = window.btoa(data[k])
         } else {
-          values[k] = this.defaultParams[k]
+          data[k] = this.defaultParams[k]
         }
       })
-      if (values.haproxy.global_log_path) {
+      if (data.haproxy.global_log_path && this.defaultParams?.haproxy?.global_log) {
         const logConfs = this.defaultParams.haproxy.global_log.split(' ')
-        logConfs[1] = values.haproxy.global_log_path
-        values.haproxy.global_log = logConfs.join(' ')
-        delete values.global_log_path
+        logConfs[1] = data.haproxy.global_log_path
+        data.haproxy.global_log = logConfs.join(' ')
+        delete data.haproxy.global_log_path
       }
-      const { name, description, cluster_id, priority, ...rest } = values
-      if (this.lbAgentId) {
-        return {
-          name,
-          description,
-          cluster_id,
-          priority,
-          params: {
-            ...rest,
-          },
-        }
-      }
+      const { name, description, cluster_id, priority, ...rest } = data
       return {
         name,
         description,
@@ -333,10 +313,8 @@ export default {
     async handleCollapseChange (activeKeys) {
       activeKeys.forEach((k) => {
         const tk = `${k}_conf_tmpl`
-        if (!this.form.fc.getFieldValue(tk)) {
-          this.form.fc.setFieldsValue({
-            [tk]: window.atob(this.defaultParams[tk]),
-          })
+        if (!this.form[tk] && this.defaultParams[tk]) {
+          this.form[tk] = window.atob(this.defaultParams[tk])
         }
       })
     },
@@ -369,9 +347,9 @@ export default {
     async handleSubmit () {
       this.submiting = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         if (this.lbAgentId) {
-          await this.doUpdate(values)
+          await this.doUpdate(this.form)
           this.$store.commit('keepAlive/ADD_DELAY_EVENT', { name: 'ResourceListSingleRefresh', params: this.lbAgentId })
         }
         this.handleCancel()

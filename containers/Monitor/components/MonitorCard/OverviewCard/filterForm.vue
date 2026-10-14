@@ -1,5 +1,5 @@
 <template>
-  <a-form :form="form" layout="inline" class="overview-filter-form">
+  <div class="overview-filter-form">
       <a-form-item v-if="!isTemplate">
         <refresh  @refresh="handleRefresh" :loading="loading" />
       </a-form-item>
@@ -7,13 +7,13 @@
         <basic-select  v-model="res" :options="resOptions" @change="handleResChange" />
       </a-form-item>
       <a-form-item>
-        <metric-select :value="metric" v-decorator="decorators.metric" :options="metricOptions" @change="handleMetricChange" />
+        <metric-select :value="metric" :options="metricOptions" @change="handleMetricChange" />
       </a-form-item>
       <a-form-item>
-        <time-select :value="from" v-decorator="decorators.from" @change="handleFromChange" />
+        <time-select :value="from" @change="handleFromChange" />
       </a-form-item>
       <a-form-item v-if="!isLineChart">
-        <top-n-select v-decorator="decorators.limit" @change="handleLimitChange" />
+        <top-n-select :value="limit" @change="handleLimitChange" />
       </a-form-item>
       <a-form-item v-if="!isTemplate" :label="$t('monitor.overview.aggregate')">
         <basic-select v-model="dimentionId" :options="dimentions"  style="min-width: 90px" />
@@ -21,7 +21,7 @@
       <a-form-item v-if="isTemplate">
         <base-select v-model="fucType" :options="fucTypeOptions" :select-props="{ mode: 'multiple' }" />
       </a-form-item>
-  </a-form>
+  </div>
 </template>
 
 <script>
@@ -110,15 +110,10 @@ export default {
       dimentionId: initialDimentionId,
       res: initialRes,
       from: this.templateParams?.from || 7 * 24 * 60,
+      limit: this.templateParams?.limit || 10,
       metric: initialMetric,
       loading: false,
       loadingCtx: { lastLoadAt: new Date(), lastIndex: 0, canceledDelay: true },
-      form: this.$form.createForm(this),
-      decorators: {
-        metric: ['metric', { initialValue: initialMetric }],
-        from: ['from', { initialValue: this.templateParams?.from || 7 * 24 * 60 }],
-        limit: ['limit', { initialValue: this.templateParams?.limit || 10 }],
-      },
       fucType: this.templateParams?.fucType || [],
       fucTypeInitialized: false,
     }
@@ -258,12 +253,6 @@ export default {
   },
   created () {
     this.$uM = new this.$Manager('unifiedmonitors', 'v1')
-    // 指令 mounted 晚于父组件 mounted，先注册字段保证 validateFields 能拿到 initialValue
-    Object.values(this.decorators).forEach((d) => {
-      if (Array.isArray(d) && d[0]) {
-        this.form.getFieldDecorator(d[0], d[1] || {})
-      }
-    })
   },
   mounted () {
     this.handleRefreshAll()
@@ -356,14 +345,10 @@ export default {
       return query
     },
     validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
+      return Promise.resolve({
+        metric: this.metric,
+        from: this.from,
+        limit: this.limit,
       })
     },
     getTableNameColumn () {
@@ -398,7 +383,7 @@ export default {
       return namecolumn
     },
     toTableData () {
-      const curMetric = this.form.getFieldValue('metric')
+      const curMetric = this.metric
       // isTemplate 时只使用当前指标的数据
       const targetMetric = this.isTemplate ? curMetric : null
       // 取当前活动监控指标为数据集
@@ -853,17 +838,15 @@ export default {
     },
     async handleMetricChange (metric) {
       this.metric = metric
-      this.form.setFieldsValue({ metric: metric })
       await this.handleRefresh()
       this.emitTable()
     },
     handleFromChange (from) {
       this.from = from
-      this.form.setFieldsValue({ from: from })
       this.handleRefreshAll()
     },
     handleLimitChange (limit) {
-      this.form.setFieldsValue({ limit: limit })
+      this.limit = limit
       this.$emit('changeLimit', limit)
       this.handleRefreshAll()
     },

@@ -2,14 +2,15 @@
   <div>
     <a-card v-for="item in ruleList" class="mb-3" :key="item.key">
       <a-form-item>
-        <a-input v-decorator="decorators.host(item.key)" :placeholder="$t('k8s.text_205')" />
+        <a-input :value="fieldVal(ingressRuleField.host(item.key))" @update:value="v => fieldSet(ingressRuleField.host(item.key), v)" :placeholder="$t('k8s.text_205')" />
       </a-form-item>
       <a-card class="mb-2" v-for="(val, i) in item.routes" :key="val.k">
         <a-row :gutter="1">
           <a-col :span="16">
             <a-form-item>
               <base-select
-                v-decorator="decorators.services(item.key).serviceName(val.k)"
+                :value="fieldVal(ingressRuleField.serviceName(item.key, val.k))"
+                @change="v => fieldSet(ingressRuleField.serviceName(item.key, val.k), v)"
                 resource="k8s_services"
                 version="v1"
                 :need-params="true"
@@ -22,20 +23,14 @@
           </a-col>
           <a-col :span="8">
             <a-form-item>
-              <!-- <base-select
-                :options="genPortOpts(val.service)"
-                idKey="port"
-                nameKey="port"
-                v-decorator="decorators.services(item.key).servicePort(val.k)"
-                :select-props="{  placeholder: $t('k8s.text_207') }" /> -->
-              <a-select v-decorator="decorators.services(item.key).servicePort(val.k)" :placeholder="$t('k8s.text_207')">
+              <a-select :value="fieldVal(ingressRuleField.servicePort(item.key, val.k))" @change="v => fieldSet(ingressRuleField.servicePort(item.key, val.k), v)" :placeholder="$t('k8s.text_207')">
                 <a-select-option v-for="v in genPortOpts(val.service)" :key="v.port" :value="v.port">{{ v.port }}</a-select-option>
               </a-select>
             </a-form-item>
           </a-col>
         </a-row>
         <a-form-item>
-          <a-input v-decorator="decorators.services(item.key).servicePath(val.k)" :placeholder="$t('k8s.text_208')" />
+          <a-input :value="fieldVal(ingressRuleField.servicePath(item.key, val.k))" @update:value="v => fieldSet(ingressRuleField.servicePath(item.key, val.k), v)" :placeholder="$t('k8s.text_208')" />
         </a-form-item>
         <a class="ml-2 error-color" @click="remvoeRoute(item.routes, i)" v-if="item.routes.length > 1">{{$t('k8s.text_201')}}</a>
       </a-card>
@@ -48,13 +43,26 @@
 
 <script>
 import { uuid } from '@/utils/utils'
+import { getBracketValue, setBracketValue } from '@/utils/bracketModel'
+import {
+  ingressRuleField,
+  ingressHostRules,
+  ingressServiceNameRules,
+  ingressServicePathRules,
+  ingressServicePortRules,
+} from './fields'
 
 export default {
   name: 'IngressCreateRouterRules',
   props: {
-    decorators: {
+    form: {
       type: Object,
-      required: true,
+      default: null,
+    },
+    /** a-form-model：与动态 key 对齐的受控对象（通常为 form.fd） */
+    model: {
+      type: Object,
+      default: null,
     },
     cluster: {
       type: String,
@@ -66,6 +74,7 @@ export default {
   data () {
     const key = uuid()
     return {
+      ingressRuleField,
       ruleList: [{
         key,
         routes: [
@@ -75,6 +84,9 @@ export default {
     }
   },
   computed: {
+    boundFd () {
+      return this.model || this.form?.fd || this.form
+    },
     serviceParams () {
       if (this.namespace && this.cluster) {
         return {
@@ -90,6 +102,14 @@ export default {
     },
   },
   methods: {
+    fieldVal (name) {
+      if (!name || !this.boundFd) return undefined
+      return getBracketValue(this.boundFd, name)
+    },
+    fieldSet (name, value) {
+      if (!name || !this.boundFd) return
+      setBracketValue(this, this.boundFd, name, value)
+    },
     addRule () {
       const key = uuid()
       this.ruleList.push({
@@ -111,9 +131,47 @@ export default {
     },
     genPortOpts (service) {
       if (service && service.internalEndpoint && service.internalEndpoint.ports) {
-        return service.internalEndpoint.ports.filter(val => val.protocol && val.protocol.toLowerCase() === 'tcp') // 仅支持tcp协议，不知udp协议（没有http/https）
+        return service.internalEndpoint.ports.filter(val => val.protocol && val.protocol.toLowerCase() === 'tcp')
       }
       return []
+    },
+    runFieldRule (rule, value) {
+      return new Promise((resolve, reject) => {
+        if (rule.required) {
+          const empty = value === undefined || value === null || value === '' ||
+            (Array.isArray(value) && !value.length)
+          if (empty) {
+            reject(new Error(rule.message || 'required'))
+            return
+          }
+        }
+        if (typeof rule.validator === 'function') {
+          rule.validator(rule, value, (err) => {
+            if (err) reject(err instanceof Error ? err : new Error(String(err)))
+            else resolve()
+          })
+          return
+        }
+        resolve()
+      })
+    },
+    async runRules (rules, value) {
+      for (const rule of rules || []) {
+        await this.runFieldRule(rule, value)
+      }
+    },
+    async validate () {
+      for (const item of this.ruleList) {
+        await this.runRules(ingressHostRules(), this.fieldVal(ingressRuleField.host(item.key)))
+        for (const val of item.routes) {
+          const i = item.key
+          const j = val.k
+          await this.runRules(ingressServiceNameRules(), this.fieldVal(ingressRuleField.serviceName(i, j)))
+          await this.runRules(ingressServicePortRules(), this.fieldVal(ingressRuleField.servicePort(i, j)))
+          await this.runRules(ingressServicePathRules(), this.fieldVal(ingressRuleField.servicePath(i, j)))
+        }
+      }
+      return true
     },
   },
 }

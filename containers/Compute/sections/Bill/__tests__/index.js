@@ -1,26 +1,16 @@
 import { shallowMount } from '@vue/test-utils'
 import i18n from '@/locales'
 import VmPublicCreateBill from '../index.vue'
+
 describe('VmPublicCreateBill', () => {
   it('check buyDurationOptions in aliyun, first item is 1W', () => {
-    const decorators = {
-      billType: [
-        'billType',
-        {
-          initialValue: 'quantity',
-        },
-      ],
-      duration: [
-        'duration',
-        {
-          initialValue: '1M',
-        },
-      ],
-    }
     const providerList = ['aliyun']
     const wrapper = shallowMount(VmPublicCreateBill, {
       propsData: {
-        decorators,
+        model: {
+          billType: 'quantity',
+          duration: '1M',
+        },
         providerList,
       },
     })
@@ -30,6 +20,7 @@ describe('VmPublicCreateBill', () => {
         key: '1W',
         unit: 'W',
         includes: ['aliyun'],
+        disabled: false,
       })
     })
   })

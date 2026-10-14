@@ -4,17 +4,19 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.secgroup')" :count="params.data.length" :action="$t('compute.text_1013')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc"
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
         v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.text_1014')">
-          <a-select v-decorator="decorators.name" mode="multiple">
+        <a-form-model-item :label="$t('compute.text_1014')" prop="name">
+          <a-select v-model:value="form.name" mode="multiple">
             <a-select-option v-for="item in secgroupOps" :key="item.id" :value="item.id">
               {{item.name}}
             </a-select-option>
           </a-select>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -34,16 +36,11 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        name: undefined,
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.text_1015') },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_1015') },
         ],
       },
       formItemLayout: {
@@ -78,24 +75,25 @@ export default {
           this.secgroupOps = data.filter(val => val.id !== this.params.data[0].id)
         })
     },
-    doConcat (data) {
+    doConcat () {
       return new this.$Manager('secgroups').performAction({
         id: this.params.data[0].id,
         action: 'merge',
         data: {
-          secgroups: data.name,
+          secgroups: this.form.name,
         },
       })
     },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        await this.doConcat(values)
-        this.loading = false
+        await this.$refs.formRef.validate()
+        await this.doConcat()
         this.cancelDialog()
         this.params.refresh()
       } catch (error) {
+        // validate or submit failed
+      } finally {
         this.loading = false
       }
     },

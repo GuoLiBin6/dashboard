@@ -24,7 +24,7 @@ export default {
   },
   computed: {
     valueC () {
-      // v-decorator 在 Vue3 下不一定能把 value 注入 props，回退读 form.fd
+      // 受控 value 未传时回退读 form.fd
       const v = this.value || this.form?.fd?.zone
       if (R.is(Object, v)) {
         return v.key || undefined

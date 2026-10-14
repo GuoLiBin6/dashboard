@@ -47,6 +47,7 @@ export default {
   },
   inject: {
     form: { default: undefined },
+    validateCreateForm: { default: undefined },
     flushCreateFormFieldDrafts: { default: undefined },
   },
   props: {
@@ -181,7 +182,9 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        let values = await this.form.fc.validateFields()
+        let values = typeof this.validateCreateForm === 'function'
+          ? await this.validateCreateForm()
+          : { ...(this.form?.fd || {}) }
         if (typeof this.flushCreateFormFieldDrafts === 'function') {
           this.flushCreateFormFieldDrafts()
         }
@@ -208,8 +211,8 @@ export default {
           medium: backend.split('__')[1],
           hypervisor: oProvider ? oProvider.hypervisor : (hypervisor || provider),
           size: values.size * 1024,
-          project_domain: (domain && domain.key) || this.userInfo.projectDomainId,
-          project_id: (project && project.key) || this.userInfo.projectId,
+          project_domain: (domain && domain.key) || domain || this.userInfo.projectDomainId,
+          project_id: (project && project.key) || project || this.userInfo.projectId,
           prefer_region_id: preferRegionId,
           prefer_zone: preferZone,
           prefer_manager_id: manager_id,
@@ -232,6 +235,8 @@ export default {
         }
         Reflect.deleteProperty(values, 'cloudregion')
         Reflect.deleteProperty(values, 'zone')
+        Reflect.deleteProperty(values, 'enableWorldMap')
+        Reflect.deleteProperty(values, 'provider')
         await this.doCreate(values)
         this.$emit('create-success')
         const successBack = () => {

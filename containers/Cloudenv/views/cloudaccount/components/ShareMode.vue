@@ -1,13 +1,12 @@
 <template>
   <div v-if="shareModeShow">
-    <!-- 共享范围选择 -->
-    <a-form-item :label="$t('cloudenv.text_282')" :extra="extra">
-      <a-radio-group v-decorator="decorators.share_mode">
+    <a-form-model-item :label="$t('cloudenv.text_282')" :extra="extra" prop="share_mode">
+      <a-radio-group v-model:value="form.share_mode">
         <template v-for="item of shareModeOptions" :key="item.key">
           <a-radio-button :value="item.key">{{ item.label }}</a-radio-button>
         </template>
       </a-radio-group>
-    </a-form-item>
+    </a-form-model-item>
   </div>
 </template>
 
@@ -17,8 +16,9 @@ import { mapGetters } from 'vuex'
 export default {
   name: 'ShareMode',
   props: {
-    fd: {
+    form: {
       type: Object,
+      required: true,
     },
     cloneData: {
       type: Object,
@@ -31,19 +31,11 @@ export default {
       initialShareMode = 'global'
     }
     return {
-      decorators: {
-        share_mode: [
-          'share_mode',
-          {
-            initialValue: initialShareMode,
-            rules: [{ required: true }],
-          },
-        ],
-      },
       shareModeOptions: [
         { key: 'account_domain', label: this.$t('cloudenv.text_285') },
         { key: 'global', label: this.$t('cloudenv.global_share') },
       ],
+      initialShareMode,
     }
   },
   computed: {
@@ -56,8 +48,13 @@ export default {
         account_domain: this.$t('cloudenv.text_288', [this.$t('dictionary.cloudaccount'), this.$t('dictionary.domain'), this.$t('dictionary.project'), this.$t('dictionary.cloudaccount')]),
         global: this.$t('cloudenv.global_share_tip'),
       }
-      return shareModeExtra[this.fd.share_mode]
+      return shareModeExtra[this.form.share_mode]
     },
+  },
+  mounted () {
+    if (this.form.share_mode === undefined) {
+      this.form.share_mode = this.initialShareMode
+    }
   },
 }
 </script>

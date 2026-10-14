@@ -1,24 +1,24 @@
 <template>
   <div class="w-75">
-    <a-form :form="form.fc" v-bind="formItemLayout">
-      <a-form-item :label="$t('k8s.text_41')">
-        <a-input :placeholder="$t('k8s.text_60')" v-decorator="decorators.name" />
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_19')">
-        <cluster-select v-decorator="decorators.cluster" @input="setCluster" v-model:clusterObj="clusterObj" />
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_23')">
-        <namespace-select v-decorator="decorators.namespace" @input="setNamespace" :cluster="cluster" v-model:namespaceObj="namespaceObj" />
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_339')" class="mb-0">
+    <a-form-model ref="formRef" :model="form.fd" :rules="rules" v-bind="formItemLayout">
+      <a-form-model-item :label="$t('k8s.text_41')" prop="name">
+        <a-input :placeholder="$t('k8s.text_60')" v-model:value="form.fd.name" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('k8s.text_19')" prop="cluster">
+        <cluster-select v-model:value="form.fd.cluster" @input="onClusterInput" v-model:clusterObj="clusterObj" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('k8s.text_23')" prop="namespace">
+        <namespace-select v-model:value="form.fd.namespace" @input="onNamespaceInput" :cluster="cluster" v-model:namespaceObj="namespaceObj" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('k8s.text_339')" class="mb-0" prop="selector">
         <a-radio-group v-model:value="form.fd.selectorType">
           <a-radio-button value="deployments">{{$t('k8s.text_4')}}</a-radio-button>
           <a-radio-button value="statefulsets">{{$t('k8s.text_5')}}</a-radio-button>
           <a-radio-button value="daemonsets">{{$t('k8s.text_6')}}</a-radio-button>
         </a-radio-group>
-        <a-form-item>
+        <a-form-model-item prop="selector">
           <base-select
-            v-decorator="decorators.selector"
+            v-model:value="form.fd.selector"
             :resource="form.fd.selectorType"
             version="v1"
             idKey="name"
@@ -27,16 +27,17 @@
             :isDefaultSelect="true"
             :params="resParams"
             :select-props="{ placeholder: $t('k8s.text_77') }" />
-        </a-form-item>
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_13')">
+        </a-form-model-item>
+      </a-form-model-item>
+      <a-form-model-item :label="$t('k8s.text_13')">
         <port-mapping
+          ref="portMappingRef"
           :form="form"
+          :model="form.fd"
           ignore-none
-          :decorators="decorators.portMappings"
           :cluster-obj="clusterObj" />
-      </a-form-item>
-    </a-form>
+      </a-form-model-item>
+    </a-form-model>
   </div>
 </template>
 
@@ -45,7 +46,7 @@ import ClusterSelect from '@K8S/sections/ClusterSelect'
 import NamespaceSelect from '@K8S/sections/NamespaceSelect'
 import PortMapping from '@K8S/sections/PortMapping'
 import k8sCreateMixin from '@K8S/mixins/create'
-import { getServiceConfigDecorators, getServiceCreateParams } from '@K8S/utils'
+import { getServiceCreateParams } from '@K8S/utils'
 
 export default {
   name: 'K8sServiceCreate',
@@ -59,53 +60,32 @@ export default {
     return {
       selectedObj: {},
       form: {
-        fc: this.$form.createForm(this),
         fd: {
+          name: '',
+          cluster: this.$store.state.common.k8s.cluster,
+          namespace: this.$store.state.common.k8s.namespace,
           selectorType: 'deployments',
+          selector: undefined,
         },
       },
       formItemLayout: {
         labelCol: { span: 4 },
         wrapperCol: { span: 20 },
       },
-      decorators: {
-        ...getServiceConfigDecorators(),
+      rules: {
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('k8s.text_60') },
-              { min: 2, max: 24, message: this.$t('k8s.text_132'), trigger: 'blur' },
-              { validator: this.$validate('k8sName') },
-            ],
-          },
+          { required: true, message: this.$t('k8s.text_60') },
+          { min: 2, max: 24, message: this.$t('k8s.text_132'), trigger: 'blur' },
+          { validator: this.$validate('k8sName') },
         ],
         cluster: [
-          'cluster',
-          {
-            initialValue: this.$store.state.common.k8s.cluster,
-            rules: [
-              { required: true, message: this.$t('k8s.text_30'), trigger: 'blur' },
-            ],
-          },
+          { required: true, message: this.$t('k8s.text_30'), trigger: 'blur' },
         ],
         namespace: [
-          'namespace',
-          {
-            initialValue: this.$store.state.common.k8s.namespace,
-            rules: [
-              { required: true, message: this.$t('k8s.text_61'), trigger: 'blur' },
-            ],
-          },
+          { required: true, message: this.$t('k8s.text_61'), trigger: 'blur' },
         ],
         selector: [
-          'selector',
-          {
-            rules: [
-              { required: true, message: this.$t('k8s.text_77'), trigger: 'blur' },
-            ],
-          },
+          { required: true, message: this.$t('k8s.text_77'), trigger: 'blur' },
         ],
       },
       clusterObj: {},
@@ -125,17 +105,32 @@ export default {
       return params
     },
   },
+  provide () {
+    return {
+      form: this.form,
+    }
+  },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFieldsAndScroll({ scroll: { alignWithTop: true, offsetTop: 100 } }, (err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
+    onClusterInput (v) {
+      this.form.fd.cluster = v
+      this.setCluster(v)
+    },
+    onNamespaceInput (v) {
+      this.form.fd.namespace = v
+      this.setNamespace(v)
+    },
+    async validateForm () {
+      await this.$refs.formRef.validate()
+      if (typeof this.$refs.portMappingRef?.validate === 'function') {
+        await this.$refs.portMappingRef.validate()
+      }
+      if (typeof this.$refs.specContainerRef?.validate === 'function') {
+        await this.$refs.specContainerRef.validate()
+      }
+      if (typeof this.$refs.ingressRuleRef?.validate === 'function') {
+        await this.$refs.ingressRuleRef.validate()
+      }
+      return { ...this.form.fd }
     },
     async _doCreate (data) {
       await new this.$Manager('k8s_services', 'v1').create({ data })

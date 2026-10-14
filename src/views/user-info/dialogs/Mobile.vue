@@ -1,28 +1,39 @@
 <template>
-  <a-form :form="form" v-bind="formItemLayout">
-    <a-form-item :label="$t('scope.text_200')">
+  <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+    <a-form-model-item :label="$t('scope.text_200')">
       {{ imobile }}
-    </a-form-item>
-    <a-form-item :label="$t('scope.text_201')">
+    </a-form-model-item>
+    <a-form-model-item :label="$t('scope.text_201')" prop="code">
       <div class="d-flex">
-        <a-input v-decorator="decorators.code" style="max-width: 100px;" />
+        <a-input v-model:value="form.code" style="max-width: 100px;" />
         <a-button type="link" class="flex-grow-0 flex-shrink-0" @click="getMobileVerifyCode" :disabled="codeButtonDisable" style="width: 150px; border-left-width: 0;">{{ codeButtonText }}</a-button>
       </div>
-    </a-form-item>
-  </a-form>
+    </a-form-model-item>
+  </a-form-model>
 </template>
 
 <script>
 export default {
   name: 'mobile',
-  inject: ['userId', 'manager', 'imobile', 'decorators', 'formItemLayout'],
+  inject: ['userId', 'manager', 'imobile', 'formItemLayout'],
   data () {
     return {
       processId: '',
       codeButtonText: this.$t('scope.text_206'),
       codeButtonDisable: false,
       codeInt: null,
-      form: this.$form.createForm(this),
+      form: {
+        code: '',
+      },
+      rules: {
+        code: [
+          { required: true, message: this.$t('scope.text_209') },
+          {
+            pattern: '[0-9]{6}',
+            message: this.$t('scope.text_210'),
+          },
+        ],
+      },
     }
   },
   unmounted () {
@@ -59,13 +70,13 @@ export default {
       }
     },
     async submit () {
-      const values = await this.form.validateFields()
+      await this.$refs.formRef.validate()
       await this.manager.performAction({
         id: this.userId,
         action: 'verify',
         data: {
           contact_type: 'mobile',
-          token: values.code,
+          token: this.form.code,
         },
       })
     },

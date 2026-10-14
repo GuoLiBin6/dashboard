@@ -4,18 +4,18 @@
       <a-tag class="disk-type-tag" v-if="diskTypeLabel && !disabled">{{ diskTypeLabel }}</a-tag>
       <a-select
         v-else
-        v-decorator="decorator.type"
+        :value="diskFieldVal(diskFieldMap.type)"
         labelInValue
         :style="{minWidth: '300px'}"
         :options="diskTypeSelectOptions"
-        @change="typeChange"
+        @change="onTypeChange"
         :disabled="disabled || imageType === 'snapshot'" />
     </a-form-item>
     <a-form-item v-show="!hideSize" class="mx-1" :wrapperCol="{ span: 24 }">
       <a-tooltip :title="tooltip" placement="top">
         <disk-size-input
-          v-decorator="decorator.size"
           :value="sizeFieldValue"
+          @change="v => diskFieldSet(diskFieldMap.size, v)"
           :step="10"
           :min="minSize"
           :max="max"
@@ -29,7 +29,8 @@
       <template v-if="!showMountpoint && has('snapshot') && !disabled && imageType !== 'backup' && imageType !== 'snapshot'">
         <a-form-item v-if="showSnapshot" class="mx-1" :wrapperCol="{ span: 24 }">
           <base-select
-            v-decorator="decorator.snapshot"
+            :value="diskFieldVal(diskFieldMap.snapshot)"
+            @change="v => diskFieldSet(diskFieldMap.snapshot, v)"
             resource="snapshots"
             :params="snapshotsParams"
             v-model:item="snapshotObj"
@@ -41,26 +42,44 @@
         <disk-mountpoint
           class="mx-1"
           v-if="showMountpoint"
-          :decorators="{ filetype: decorator.filetype, mountPath: decorator.mountPath }" />
+          :model="model"
+          :filetype-field="diskFieldMap.filetype[0]"
+          :mount-path-field="diskFieldMap.mountPath[0]" />
           <a-button class="mt-1" type="link" @click="toggleMountpointShow">{{ showMountpoint ? $t('compute.text_135') : $t('compute.text_134') }}</a-button>
       </template>
       <template v-if="has('schedtag') && !showStorage && !isStorageShow && imageType !== 'backup' && imageType !== 'snapshot'">
-        <schedtag-policy v-if="showSchedtag" :class="{ 'ml-2': hideSize }" :form="form" :decorators="{ schedtag: decorator.schedtag, policy: decorator.policy }" :schedtag-params="schedtagParams" :policyReactInSchedtag="false" />
+        <schedtag-policy
+          v-if="showSchedtag"
+          :class="{ 'ml-2': hideSize }"
+          :model="model || (form && form.fd)"
+          :schedtag-field="diskFieldMap.schedtag[0]"
+          :policy-field="diskFieldMap.policy[0]"
+          :schedtag-params="schedtagParams"
+          :policyReactInSchedtag="false" />
         <a-button v-if="!disabled" v-show="!simplify" class="mt-1" type="link" @click="toggleSchedtagShow">{{ showSchedtag ? $t('compute.text_135') : $t('compute.text_1315') }}</a-button>
       </template>
       <template v-if="has('storage') && !showSchedtag && imageType !== 'snapshot'">
-        <storage style="min-width: 480px; max-width: 500px;" :diskKey="diskKey" :decorators="decorator" :storageParams="storageParams" v-if="showStorage" :form="form" :storageHostParams="storageHostParams" @storageHostChange="(val) => $emit('storageHostChange', val)" />
+        <storage
+          style="min-width: 480px; max-width: 500px;"
+          :diskKey="diskKey"
+          :storage-field="diskFieldMap.storage[0]"
+          :storageParams="storageParams"
+          v-if="showStorage"
+          :model="model"
+          :storageHostParams="storageHostParams"
+          @storageHostChange="(val) => $emit('storageHostChange', val)" />
         <a-button v-if="!disabled" type="link" @click="storageShowClick">{{ showStorage ? $t('compute.text_135') : $t('compute.text_1350') }}</a-button>
       </template>
       <!-- 关机重置：checkbox+文案作为整体，空间不足时整块换行，禁止字内折行 -->
       <a-form-item v-if="isAutoResetShow" class="disk-auto-reset-item mx-1">
-        <a-checkbox v-decorator="decorator.auto_reset">{{ $t('compute.shutdown_auto_reset') }}</a-checkbox>
+        <a-checkbox :checked="diskFieldVal(diskFieldMap.auto_reset)" @change="e => diskFieldSet(diskFieldMap.auto_reset, e.target.checked)">{{ $t('compute.shutdown_auto_reset') }}</a-checkbox>
       </a-form-item>
       <template v-if="isVMware && imageType !== 'backup' && imageType !== 'snapshot'">
         <a-form-item class="mx-1" :wrapperCol="{ span: 24 }">
           <base-select
             v-if="showPreallocation"
-            v-decorator="decorator.preallocation"
+            :value="diskFieldVal(diskFieldMap.preallocation)"
+            @change="v => diskFieldSet(diskFieldMap.preallocation, v)"
             :options="preallocationOptions"
             :select-props="{ allowClear: true, placeholder: $t('common.select') }" />
         </a-form-item>
@@ -72,7 +91,8 @@
           <a-tooltip :title="iopsTooltip" placement="top">
             <a-input-number
               v-if="showIops"
-              v-decorator="decorator.iops"
+              :value="diskFieldVal(diskFieldMap.iops)"
+              @change="v => diskFieldSet(diskFieldMap.iops, v)"
               placeholder="IOPS"
               :min="iopsLimit.min"
               :max="iopsLimit.max"
@@ -87,7 +107,8 @@
           <a-tooltip :title="throughputTooltip" placement="top">
             <a-input-number
               v-if="showThroughput"
-              v-decorator="decorator.throughput"
+              :value="diskFieldVal(diskFieldMap.throughput)"
+              @change="v => diskFieldSet(diskFieldMap.throughput, v)"
               :placeholder="$t('compute.throughput')"
               :min="throughputLimit.min"
               :max="throughputLimit.max"
@@ -123,6 +144,8 @@ import DiskMountpoint from '@/sections/DiskMountpoint'
 import DiskSizeInput from '@/sections/DiskSizeInput'
 import { diskSupportTypeMedium } from '@/utils/common/hypervisor'
 import Storage from './components/Storage'
+import diskModelMixin from './diskModelMixin'
+import { buildDataDiskFieldMap, resolveSystemDiskFieldMap } from './fields'
 
 export default {
   name: 'Disk',
@@ -132,12 +155,19 @@ export default {
     Storage,
     DiskSizeInput,
   },
+  mixins: [diskModelMixin],
   props: {
     diskKey: String,
-    decorator: {
+    /** a-form-model end-state：与字段名对齐；有则只写 nested model，不双写 fc */
+    model: {
       type: Object,
-      required: true,
-      validator: val => val.type && val.size,
+      default: null,
+    },
+    /** 自定义字段 map（overlay 等）；默认按 diskKey 自建 */
+    fieldMap: {
+      type: Object,
+      default: null,
+      validator: val => !val || (val.type && val.size),
     },
     typesMap: {
       type: Object,
@@ -201,7 +231,8 @@ export default {
     },
     form: {
       type: Object,
-      validator: val => !val || val.fc, // 不传 或者 传就有fc
+      // end-state：有 model 时写 model；无 model 时读写 form.fd
+      validator: val => !val || typeof val === 'object',
     },
     storageParams: {
       type: Object,
@@ -263,27 +294,18 @@ export default {
     }
   },
   computed: {
+    diskFieldMap () {
+      if (this.fieldMap) return this.fieldMap
+      if (this.diskKey === 'system' || !this.diskKey) return resolveSystemDiskFieldMap()
+      return buildDataDiskFieldMap(this.diskKey)
+    },
     tooltip () {
       return this.$t('compute.text_137', [this.minSize, this.max])
     },
-    // 显式绑定 fd，避免 antdv4 InputNumber 在 setFieldsValue 后不刷新展示
+    // 显式绑定：model / fd
     sizeFieldValue () {
-      const key = this.decorator?.size?.[0]
-      if (!key || !this.form) return undefined
-      const fc = this.form.fc
-      if (fc && typeof fc.getFieldValue === 'function') {
-        const v = fc.getFieldValue(key)
-        if (v !== undefined && v !== null && v !== '') return v
-      }
-      const fd = this.form.fd
-      if (!fd) return undefined
-      if (Object.prototype.hasOwnProperty.call(fd, key) && fd[key] !== undefined && fd[key] !== null && fd[key] !== '') {
-        return fd[key]
-      }
-      const m = String(key).match(/^([^[]+)\[(.+)\]$/)
-      if (m && fd[m[1]] && typeof fd[m[1]] === 'object') {
-        return fd[m[1]][m[2]]
-      }
+      const v = this.diskFieldVal(this.diskFieldMap?.size)
+      if (v !== undefined && v !== null && v !== '') return v
       return undefined
     },
     iopsTooltip () {
@@ -338,9 +360,9 @@ export default {
     // iops 上下限随盘大小变化时，主动夹取已填值，避免仅展示受 min 限制
     iopsLimit: {
       handler (limit) {
-        if (!this.showIops || !this.decorator?.iops || !this.form?.fc) return
-        const key = this.decorator.iops[0]
-        const cur = Number(this.form.fc.getFieldValue(key))
+        if (!this.showIops || !this.diskFieldMap?.iops || (!this.model && !this.form?.fd)) return
+        const key = this.diskFieldMap.iops[0]
+        const cur = Number(this.diskFieldVal(this.diskFieldMap.iops))
         if (!Number.isFinite(cur)) return
         const min = Number(limit?.min)
         const max = Number(limit?.max)
@@ -353,9 +375,9 @@ export default {
     },
     throughputLimit: {
       handler (limit) {
-        if (!this.showThroughput || !this.decorator?.throughput || !this.form?.fc) return
-        const key = this.decorator.throughput[0]
-        const cur = Number(this.form.fc.getFieldValue(key))
+        if (!this.showThroughput || !this.diskFieldMap?.throughput || (!this.model && !this.form?.fd)) return
+        const key = this.diskFieldMap.throughput[0]
+        const cur = Number(this.diskFieldVal(this.diskFieldMap.throughput))
         if (!Number.isFinite(cur)) return
         const min = Number(limit?.min)
         const max = Number(limit?.max)
@@ -368,16 +390,40 @@ export default {
     },
   },
   methods: {
-    syncDiskFieldsToFd (values) {
-      if (!this.form?.fd || !values || typeof values !== 'object') return
-      Object.keys(values).forEach((key) => {
-        this.form.fd[key] = values[key]
-      })
+
+    onTypeChange (v) {
+      this.diskFieldSet(this.diskFieldMap.type, v)
+      this.typeChange(v)
     },
     setDiskFormFields (values) {
-      if (!this.form?.fc || !values) return
-      this.form.fc.setFieldsValue(values)
-      this.syncDiskFieldsToFd(values)
+      this.diskWriteFields(values)
+    },
+    async validate () {
+      await this.runFieldMapRules(this.diskFieldMap.type, this.diskFieldVal(this.diskFieldMap.type))
+      await this.runFieldMapRules(this.diskFieldMap.size, this.diskFieldVal(this.diskFieldMap.size))
+      if (this.showSchedtag) {
+        await this.runFieldMapRules(this.diskFieldMap.schedtag, this.diskFieldVal(this.diskFieldMap.schedtag))
+        await this.runFieldMapRules(this.diskFieldMap.policy, this.diskFieldVal(this.diskFieldMap.policy))
+      }
+      if (this.showStorage) {
+        await this.runFieldMapRules(this.diskFieldMap.storage, this.diskFieldVal(this.diskFieldMap.storage))
+      }
+      if (this.showSnapshot) {
+        await this.runFieldMapRules(this.diskFieldMap.snapshot, this.diskFieldVal(this.diskFieldMap.snapshot))
+      }
+      if (this.showMountpoint) {
+        await this.runFieldMapRules(this.diskFieldMap.filetype, this.diskFieldVal(this.diskFieldMap.filetype))
+        if (this.diskFieldVal(this.diskFieldMap.filetype) !== 'swap') {
+          await this.runFieldMapRules(this.diskFieldMap.mountPath, this.diskFieldVal(this.diskFieldMap.mountPath))
+        }
+      }
+      if (this.showIops) {
+        await this.runFieldMapRules(this.diskFieldMap.iops, this.diskFieldVal(this.diskFieldMap.iops))
+      }
+      if (this.showThroughput) {
+        await this.runFieldMapRules(this.diskFieldMap.throughput, this.diskFieldVal(this.diskFieldMap.throughput))
+      }
+      return true
     },
     normalizeDiskSizeGb (gb) {
       let num = gb
@@ -388,8 +434,8 @@ export default {
     },
     initData (data, hyper) {
       const apply = () => {
-        const typeKey = this.decorator.type[0]
-        const sizeKey = this.decorator.size[0]
+        const typeKey = this.diskFieldMap.type[0]
+        const sizeKey = this.diskFieldMap.size[0]
         const typeVal = {
           key: diskSupportTypeMedium(hyper) ? `${data.backend}/${data.medium}` : data.backend,
           label: '',
@@ -405,8 +451,8 @@ export default {
             this.showSchedtag = true
             this.$nextTick(() => {
               this.setDiskFormFields({
-                [this.decorator.schedtag[0]]: data.schedtags[0].id,
-                [this.decorator.policy[0]]: data.schedtags[0].strategy,
+                [this.diskFieldMap.schedtag[0]]: data.schedtags[0].id,
+                [this.diskFieldMap.policy[0]]: data.schedtags[0].strategy,
               })
             })
           }
@@ -414,14 +460,14 @@ export default {
             this.showStorage = true
             this.$nextTick(() => {
               this.setDiskFormFields({
-                [this.decorator.storage[0]]: data.storage_id,
+                [this.diskFieldMap.storage[0]]: data.storage_id,
               })
             })
           }
           if (data.auto_reset) {
             this.$nextTick(() => {
               this.setDiskFormFields({
-                [this.decorator.auto_reset[0]]: data.auto_reset,
+                [this.diskFieldMap.auto_reset[0]]: data.auto_reset,
               })
             })
           }
@@ -429,7 +475,7 @@ export default {
             this.showIops = true
             this.$nextTick(() => {
               this.setDiskFormFields({
-                [this.decorator.iops[0]]: data.iops,
+                [this.diskFieldMap.iops[0]]: data.iops,
               })
             })
           }
@@ -437,7 +483,7 @@ export default {
             this.showThroughput = true
             this.$nextTick(() => {
               this.setDiskFormFields({
-                [this.decorator.throughput[0]]: data.throughput,
+                [this.diskFieldMap.throughput[0]]: data.throughput,
               })
             })
           }
@@ -445,7 +491,7 @@ export default {
             this.showPreallocation = true
             this.$nextTick(() => {
               this.setDiskFormFields({
-                [this.decorator.preallocation[0]]: data.preallocation,
+                [this.diskFieldMap.preallocation[0]]: data.preallocation,
               })
             })
           }
@@ -499,13 +545,8 @@ export default {
       const clear = {}
       fieldKeys.filter(Boolean).forEach((key) => { clear[key] = undefined })
       if (!Object.keys(clear).length) return
+      // diskWriteFields 已嵌套删除
       this.setDiskFormFields(clear)
-      if (!this.form?.fd) return
-      Object.keys(clear).forEach((key) => {
-        if (Object.prototype.hasOwnProperty.call(this.form.fd, key)) {
-          this.$delete(this.form.fd, key)
-        }
-      })
     },
     emitOptionalChange (flag, show) {
       this.$emit('optionalChange', { flag, show })
@@ -513,7 +554,7 @@ export default {
     storageShowClick () {
       if (this.showStorage) {
         this.$emit('storageHostChange', { disk: this.diskKey, storageHosts: [] })
-        this.clearDiskOptionalFields([this.decorator?.storage?.[0]])
+        this.clearDiskOptionalFields([this.diskFieldMap?.storage?.[0]])
       }
       this.showStorage = !this.showStorage
       this.emitOptionalChange('showStorage', this.showStorage)
@@ -521,8 +562,8 @@ export default {
     toggleSchedtagShow () {
       if (this.showSchedtag) {
         this.clearDiskOptionalFields([
-          this.decorator?.schedtag?.[0],
-          this.decorator?.policy?.[0],
+          this.diskFieldMap?.schedtag?.[0],
+          this.diskFieldMap?.policy?.[0],
         ])
       }
       this.showSchedtag = !this.showSchedtag
@@ -530,7 +571,7 @@ export default {
     },
     toggleSnapshotShow () {
       if (this.showSnapshot) {
-        this.clearDiskOptionalFields([this.decorator?.snapshot?.[0]])
+        this.clearDiskOptionalFields([this.diskFieldMap?.snapshot?.[0]])
         this.snapshotObj = {}
       }
       this.showSnapshot = !this.showSnapshot
@@ -539,8 +580,8 @@ export default {
     toggleMountpointShow () {
       if (this.showMountpoint) {
         this.clearDiskOptionalFields([
-          this.decorator?.filetype?.[0],
-          this.decorator?.mountPath?.[0],
+          this.diskFieldMap?.filetype?.[0],
+          this.diskFieldMap?.mountPath?.[0],
         ])
       }
       this.showMountpoint = !this.showMountpoint
@@ -548,15 +589,16 @@ export default {
     },
     preallocationShowClick () {
       if (this.showPreallocation) {
-        this.clearDiskOptionalFields([this.decorator?.preallocation?.[0]])
+        this.clearDiskOptionalFields([this.diskFieldMap?.preallocation?.[0]])
       }
       this.showPreallocation = !this.showPreallocation
       this.emitOptionalChange('showPreallocation', this.showPreallocation)
       if (this.showPreallocation && this.isVMware) {
-        const systemDiskPreallocation = this.form.fd.systemDiskPreallocation
+        const fd = this.model || this.form?.fd || {}
+        const systemDiskPreallocation = fd.systemDiskPreallocation
         this.$nextTick(() => {
           if (this.diskKey !== 'system') {
-            this.form.fc.setFieldsValue({
+            this.setDiskFormFields({
               [`dataDiskPreallocation[${this.diskKey}]`]: systemDiskPreallocation,
             })
           }
@@ -565,14 +607,14 @@ export default {
     },
     changeIopsShow (show) {
       if (this.showIops && !show) {
-        this.clearDiskOptionalFields([this.decorator?.iops?.[0]])
+        this.clearDiskOptionalFields([this.diskFieldMap?.iops?.[0]])
       }
       this.showIops = show
       this.emitOptionalChange('showIops', show)
     },
     changeThroughputShow (show) {
       if (this.showThroughput && !show) {
-        this.clearDiskOptionalFields([this.decorator?.throughput?.[0]])
+        this.clearDiskOptionalFields([this.diskFieldMap?.throughput?.[0]])
       }
       this.showThroughput = show
       this.emitOptionalChange('showThroughput', show)

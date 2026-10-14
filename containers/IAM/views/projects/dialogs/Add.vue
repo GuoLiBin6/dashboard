@@ -2,15 +2,10 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('common_114')}}</div>
     <div slot="body">
-      <!--a-alert :showIcon="false" banner class="mb-2">
-        <template #message>{{$t('system.text_453', [$t('dictionary.policy', $t('dictionary.role'))]) }}
-        </template>
-      </a-alert-->
       <dialog-selected-tips :name="$t('dictionary.project')" :count="params.data.length" :action="$t('common_114')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 2)" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('system.text_48')" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="formRules">
+        <a-form-model-item :label="$t('system.text_48')" v-bind="formItemLayout">
           <a-radio-group v-model:value="type" @change="handleTypeChange">
             <a-radio-button
               v-for="item of typeOptions"
@@ -19,20 +14,20 @@
               {{item.label}}
             </a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('dictionary.domain')" v-bind="formItemLayout" v-if="isAdminMode">
+        </a-form-model-item>
+        <a-form-model-item v-if="isAdminMode" :label="$t('dictionary.domain')" v-bind="formItemLayout" prop="domain">
           <base-select
-            v-decorator="decorators.domain"
+            v-model:value="form.domain"
             version="v1"
             resource="domains"
             filterable
             :params="domainParams"
             :select-props="{ placeholder: $t('rules.project') }"
             @change="domainChange" />
-        </a-form-item>
-        <a-form-item v-if="type === 'group'" :label="$t('dictionary.group')" v-bind="formItemLayout" key="group">
+        </a-form-model-item>
+        <a-form-model-item v-if="type === 'group'" :label="$t('dictionary.group')" v-bind="formItemLayout" key="group" prop="groups">
           <base-select
-            v-decorator="decorators.groups"
+            v-model:value="form.groups"
             resource="groups"
             version="v1"
             remote
@@ -45,17 +40,15 @@
               <a-select-option v-for="item in options" :key="item.id" :value="item.id" :disabled="item.__disabled">
                 <div class="d-flex">
                   <span class="text-truncate flex-fill mr-2">{{ item.name }}</span>
-                  <!-- template v-if="domain_id === 'default'" -->
                   <span style="color: #8492a6; font-size: 13px">{{ $t('dictionary.domain') }}：{{ item.project_domain }}</span>
-                  <!-- /template -->
                 </div>
               </a-select-option>
             </template>
           </base-select>
-        </a-form-item>
-        <a-form-item v-if="type === 'user'" :label="$t('dictionary.user')" v-bind="formItemLayout" key="user">
+        </a-form-model-item>
+        <a-form-model-item v-if="type === 'user'" :label="$t('dictionary.user')" v-bind="formItemLayout" key="user" prop="users">
           <base-select
-            v-decorator="decorators.users"
+            v-model:value="form.users"
             resource="users"
             version="v1"
             :params="usersParams"
@@ -69,17 +62,15 @@
               <a-select-option v-for="item in options" :key="item.id" :value="item.id" :disabled="item.__disabled">
                 <div class="d-flex">
                   <span class="text-truncate flex-fill mr-2">{{ item.name }}</span>
-                  <!-- template v-if="domain_id === 'default'" -->
                   <span style="color: #8492a6; font-size: 13px">{{ $t('dictionary.domain') }}：{{ item.project_domain }}</span>
-                  <!-- /template -->
                 </div>
               </a-select-option>
             </template>
           </base-select>
-        </a-form-item>
-        <a-form-item :label="$t('dictionary.role')" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('dictionary.role')" v-bind="formItemLayout" prop="roles">
           <base-select
-            v-decorator="decorators.roles"
+            v-model:value="form.roles"
             resource="roles"
             version="v1"
             remote
@@ -97,14 +88,14 @@
               </a-select-option>
             </template>
           </base-select>
-        </a-form-item>
-        <a-form-item v-if="type === 'user' && isSelectedUserDisabled" :label="$t('iam.enabled_user')" v-bind="formItemLayout" :extra="$t('iam.some_user_can_enabled')">
+        </a-form-model-item>
+        <a-form-model-item v-if="type === 'user' && isSelectedUserDisabled" :label="$t('iam.enabled_user')" v-bind="formItemLayout" :extra="$t('iam.some_user_can_enabled')" prop="enable_all_users">
           <a-switch
             :checkedChildren="$t('common_292')"
             :unCheckedChildren="$t('common_293')"
-            v-decorator="decorators.enable_all_users" />
-        </a-form-item>
-      </a-form>
+            v-model:checked="form.enable_all_users" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -128,52 +119,17 @@ export default {
       loading: false,
       domain_id: domainId,
       form: {
-        fc: this.$form.createForm(this),
+        domain: domainId,
+        groups: undefined,
+        users: undefined,
+        roles: undefined,
+        enable_all_users: false,
       },
-      decorators: {
-        domain: [
-          'domain',
-          {
-            initialValue: domainId,
-          },
-        ],
-        groups: [
-          'groups',
-          {
-            rules: [
-              {
-                required: true,
-                message: this.$t('rules.group'),
-              },
-            ],
-          },
-        ],
-        users: [
-          'users',
-          {
-            rules: [
-              {
-                required: true,
-                message: this.$t('rules.user'),
-              },
-            ],
-          },
-        ],
+      rules: {
         roles: [
-          'roles',
           {
-            rules: [
-              {
-                required: true,
-                message: this.$t('rules.role'),
-              },
-            ],
-          },
-        ],
-        enable_all_users: [
-          'enable_all_users',
-          {
-            initialValue: false,
+            required: true,
+            message: this.$t('rules.role'),
           },
         ],
       },
@@ -201,12 +157,6 @@ export default {
   },
   computed: {
     ...mapGetters(['scope', 'isAdminMode']),
-    domainOptions () {
-      const ret = [
-        { label: this.params.data[0].project_domain, value: this.params.data[0].domain_id },
-      ]
-      return ret
-    },
     groupsParams () {
       if (this.domain_id !== 'default') {
         return {
@@ -248,12 +198,16 @@ export default {
     isSelectedUserDisabled () {
       return this.selectedUsers.some(item => !item.enabled)
     },
+    formRules () {
+      const rules = { ...this.rules }
+      if (this.type === 'group') {
+        rules.groups = [{ required: true, message: this.$t('rules.group') }]
+      } else {
+        rules.users = [{ required: true, message: this.$t('rules.user') }]
+      }
+      return rules
+    },
   },
-  // watch: {
-  //   domain_id () {
-  //     this.form.fc.resetFields()
-  //   },
-  // },
   unmounted () {
     this.manager = null
   },
@@ -279,11 +233,18 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const data = { ...this.form }
+        if (this.type === 'group') {
+          delete data.users
+          delete data.enable_all_users
+        } else {
+          delete data.groups
+        }
         await this.manager.performAction({
           id: this.params.data[0].id,
           action: 'join',
-          data: values,
+          data,
         })
         this.loading = false
         this.$bus.$emit('ProjectDirectlyUnderUserListRefresh')
@@ -296,6 +257,7 @@ export default {
     },
     domainChange (val) {
       this.domain_id = val
+      this.form.domain = val
     },
     userSelectChange (val) {
       this.selectedUsers = val

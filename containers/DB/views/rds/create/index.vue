@@ -1,39 +1,53 @@
 <template>
   <div class="rds-create-index pb-5">
     <page-header :title="$t('db.text_140')" />
-    <a-form hideRequiredMark :form="form.fc" class="mt-3"  v-bind="formItemLayout">
-      <a-form-item :label="$t('db.text_139', [$t('dictionary.project')])" v-bind="formItemLayout">
+    <a-form-model
+      ref="formRef"
+      hideRequiredMark
+      class="mt-3"
+      v-bind="formItemLayout"
+      :model="form.fd"
+      :rules="rules">
+      <a-form-model-item :label="$t('db.text_139', [$t('dictionary.project')])" v-bind="formItemLayout" prop="project">
         <domain-project
-          :decorators="decorators.projectDomain"
-          :fc="form.fc"
+          ref="domainProjectRef"
+          :form="form.fd"
           :labelInValue="false"
           :form-draft-key="rdsDraftFields.domainProject"
           @fetchDomainCallback="fetchDomainCallback"
           @fetchProjectCallback="fetchProjectCallback" />
-      </a-form-item>
-      <a-form-item :label="$t('db.text_60')" v-bind="formItemLayout">
-        <a-input :placeholder="$t('validator.resourceCreateName')" v-decorator="decorators.generate_name" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('db.text_60')" v-bind="formItemLayout" prop="generate_name">
+        <a-input v-model:value="form.fd.generate_name" :placeholder="$t('validator.resourceCreateName')" />
         <template #extra>
           <name-repeated
             res="dbinstances"
-            :name="form.getFieldValue('generate_name')"
-            :default-text="$t('db.text_142')"  />
+            :name="form.fd.generate_name"
+            :default-text="$t('db.text_142')" />
         </template>
-      </a-form-item>
-      <a-form-item :label="$t('common.description')" v-bind="formItemLayout">
-        <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-      </a-form-item>
-      <!-- 计费方式 -->
-      <clearing-radios v-bind="formItemLayout" :auto_renew="false" />
-      <a-form-item :label="$t('db.text_71')" v-if="form.fd.billing_type !== 'prepaid'">
-        <duration :decorators="decorators.duration" :form="form" :form-draft-key="rdsDraftFields.duration" />
-      </a-form-item>
-      <a-form-item :label="$t('db.text_265')">
-        <a-input-number v-decorator="decorators.__count__" />
-      </a-form-item>
+      </a-form-model-item>
+      <a-form-model-item :label="$t('common.description')" v-bind="formItemLayout" prop="description">
+        <a-textarea
+          v-model:value="form.fd.description"
+          :auto-size="{ minRows: 1, maxRows: 3 }"
+          :placeholder="$t('common_367')" />
+      </a-form-model-item>
+      <clearing-radios :model="form.fd" v-bind="formItemLayout" :auto_renew="false" />
+      <a-form-model-item :label="$t('db.text_71')" v-if="form.fd.billing_type !== 'prepaid'">
+        <duration
+          :model="form.fd"
+          :form="form"
+          :form-draft-key="rdsDraftFields.duration"
+          v-model:durationStandard="form.fd.durationStandard"
+          v-model:duration="form.fd.duration" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('db.text_265')" prop="__count__">
+        <a-input-number v-model:value="form.fd.__count__" />
+      </a-form-model-item>
       <!-- 区域 -->
       <item-area
         ref="ITEM_AREA"
+        :model="form.fd"
         :billingType="form.fd.billing_type"
         v-if="form.fd.project"
         class="mb-0"
@@ -44,21 +58,37 @@
         @fetchsDone="onAreaSelectsFetchsDone" />
       <!-- 套餐信息 -->
       <s-k-u ref="SKU" />
-      <a-form-item v-if="form.fd.provider !== 'Aliyun'" :label="$t('db.text_143')">
-        <server-password :loginTypes="loginTypes" :decorator="decorators.loginConfig" :form="form" />
-      </a-form-item>
-      <!-- 网络 -->
-      <item-network ref="NETWORK" @vpcListChange="handleVpcListChange" />
-      <!-- 选择安全组 -->
-      <a-form-item v-if="showSecgroup(form)" :label="$t('db.text_144')">
-        <secgroup-config :max="getSecgroupMax(form)" :decorators="decorators.secgroup" :form="form" :secgroup-params="secgroupParams" />
-      </a-form-item>
+      <a-form-model-item v-if="form.fd.provider !== 'Aliyun'" :label="$t('db.text_143')">
+        <server-password
+          ref="passwordRef"
+          :model="form.fd"
+          :loginTypes="loginTypes"
+          :form="form" />
+      </a-form-model-item>
+      <item-network ref="NETWORK" :model="form.fd" @vpcListChange="handleVpcListChange" />
+      <a-form-model-item v-if="showSecgroup(form)" :label="$t('db.text_144')">
+        <secgroup-config
+          ref="secgroupRef"
+          :model="form.fd"
+          :max="getSecgroupMax(form)"
+
+          :form="form"
+          :secgroup-params="secgroupParams" />
+      </a-form-model-item>
       <!-- 标签 -->
-      <a-form-item :label="$t('table.title.tag')" class="mb-3">
-        <tag v-decorator="decorators.__meta__" :allowNoValue="false" :default-checked="tagDefaultChecked" />
-      </a-form-item>
-      <bottom-bar :provider="provider" :values="form.getFieldsValue()" :cloudAccountId="cloudAccountId" @cancel="handleCancel" />
-    </a-form>
+      <a-form-model-item :label="$t('table.title.tag')" class="mb-3" prop="__meta__">
+        <tag
+          :value="form.fd.__meta__"
+          @change="v => { form.fd.__meta__ = v }"
+          :allowNoValue="false"
+          :default-checked="tagDefaultChecked" />
+      </a-form-model-item>
+      <bottom-bar
+        :provider="provider"
+        :values="form.fd"
+        :cloudAccountId="cloudAccountId"
+        @cancel="handleCancel" />
+    </a-form-model>
   </div>
 </template>
 <script>
@@ -68,9 +98,9 @@ import Duration from '@Compute/sections/Duration'
 import ItemArea from '@DB/sections/ItemArea'
 import ItemNetwork from '@DB/sections/ItemNetwork'
 import NameRepeated from '@/sections/NameRepeated'
-import DomainProject from '@/sections/DomainProject'
+import DomainProject from '@/sections/DomainProject/model'
 import Tag from '@/sections/Tag'
-import { getInitialValue } from '@/utils/common/ant'
+import validateForm from '@/utils/validate'
 import { getComponentDraft } from '@/utils/createFormDraft'
 import {
   RDS_CREATE_FORM_DRAFT_FIELD,
@@ -82,7 +112,6 @@ import createFormDraftMixin from '@/mixins/createFormDraft'
 import changeMinxin from './changeMinxin'
 import BottomBar from './components/BottomBar'
 import SKU from './components/SKU'
-import { DECORATORS } from './constants/index'
 
 export default {
   name: 'RDSCreate',
@@ -102,7 +131,18 @@ export default {
   data () {
     return {
       loginTypes: ['random', 'password'],
-      decorators: DECORATORS,
+      rules: {
+        project: [
+          { required: true, message: this.$t('db.text_134'), trigger: 'change' },
+        ],
+        generate_name: [
+          { required: true, message: this.$t('db.text_136') },
+          { validator: validateForm('resourceCreateName') },
+        ],
+        __meta__: [
+          { validator: validateForm('tagName') },
+        ],
+      },
       formItemLayout: {
         wrapperCol: {
           lg: { span: 18 },
@@ -142,19 +182,6 @@ export default {
     rdsDraftFields () {
       return RDS_CREATE_FORM_DRAFT_FIELDS
     },
-    form () {
-      const fc = this.$form.createForm(this, { onValuesChange: this.handleValuesChange })
-      const initFd = getInitialValue(DECORATORS)
-      const { getFieldDecorator, getFieldValue, getFieldsValue, setFieldsValue } = fc
-      return {
-        fc,
-        fd: initFd,
-        getFieldDecorator,
-        getFieldValue,
-        getFieldsValue,
-        setFieldsValue,
-      }
-    },
     providers () {
       if (this.form.fd.billing_type === 'prepaid') {
         return ['Aliyun', 'Huawei']
@@ -162,8 +189,8 @@ export default {
       return ['Aliyun', 'Huawei', 'Google', 'Aws']
     },
     cloudAccountId () {
-      const values = this.form.getFieldsValue()
-      const currentVpc = this.vpcList.filter(item => item.id === values.vpc)
+      const vpcId = this.form.fd.vpc
+      const currentVpc = this.vpcList.filter(item => item.id === vpcId)
       if (currentVpc[0]) {
         return currentVpc[0].account_id
       }
@@ -183,6 +210,7 @@ export default {
       formItemLayout: this.formItemLayout,
       scopeParams: this.scopeParams,
       tailFormItemLayout: this.tailFormItemLayout,
+      validateCreateForm: () => this.validateCreateForm(),
       getCreateFormDraftScope: () => this.getCreateFormDraftScope(),
       canUseCreateFormFieldDraft: () => this.canRestoreCreateFormDraft,
       canRestoreCreateFormFieldDraft: () => this.canRestoreCreateFormDraft,
@@ -224,13 +252,13 @@ export default {
   },
   created () {
     this._rdsPrepaidBillingDraftApplied = false
-    this.bindRdsCreateFormFcDrafts()
+    this.bindRdsCreateFormFdDrafts()
     this.bindRdsCreateFormCompositeDrafts()
     this.bindRdsPrepaidBillingDrafts()
   },
   mounted () {
     this.$nextTick(() => {
-      if (this.form?.fc?.getFieldValue?.('billing_type') === 'prepaid') {
+      if (this.form?.fd?.billing_type === 'prepaid') {
         this.restoreRdsPrepaidBillingDraft()
       }
     })
@@ -251,9 +279,9 @@ export default {
       return this.readCreateFormFieldDraft(fieldKey)
     },
     showSecgroup (form) {
-      const provider = form.getFieldValue('provider')
+      const provider = form.fd?.provider
       if (provider === 'Qcloud') {
-        return form.getFieldValue('category') !== 'basic'
+        return form.fd?.category !== 'basic'
       }
 
       return ['Huawei', 'Aliyun'].includes(provider)
@@ -264,7 +292,8 @@ export default {
         Qcloud: 5,
         Aliyun: 3,
       }
-      return secgroupMaxMap[form.getFieldValue('provider')] || 5
+      const provider = form.fd?.provider
+      return secgroupMaxMap[provider] || 5
     },
     handleVpcListChange (list) {
       this.vpcList = list
@@ -276,44 +305,41 @@ export default {
     fetchDomainCallback () {
       const domain = this.$route.query.domain_id
       if (domain) {
-        this.form.fc.setFieldsValue({ domain })
-        this.form.fd.domain = domain
+        this.$set(this.form.fd, 'domain', domain)
         this.domain_change()
       }
     },
     fetchProjectCallback () {
       const project = this.$route.query.tenant_id
       if (project) {
-        this.form.fc.setFieldsValue({ project })
-        this.form.fd.project = project
+        this.$set(this.form.fd, 'project', project)
       }
     },
     /** SYNC 字段取值：无值返回 undefined（跳过 flush），禁止 null 误清草稿 */
     getRdsSyncDraftValue (formField) {
       if (formField === 'sku') {
-        const sku = this.form?.fc?.getFieldValue?.('sku')
+        const sku = this.form?.fd?.sku
         if (!sku || typeof sku !== 'object') return undefined
         if (!sku.id && !sku.name) return undefined
         return { id: sku.id, name: sku.name }
       }
-      const val = this.form?.fc?.getFieldValue?.(formField)
+      const val = this.form?.fd?.[formField]
       if (val === undefined || val === null || val === '') return undefined
       return val
     },
-    bindRdsCreateFormFcDrafts () {
-      this._rdsCreateFormFcDraftMap = Object.create(null)
+    bindRdsCreateFormFdDrafts () {
+      this._rdsCreateFormFdDraftMap = Object.create(null)
       // billing_type：set 时同步 fd，并在 prepaid 时回填购买时长/自动续费
-      this._rdsCreateFormFcDraftMap.billing_type = RDS_CREATE_FORM_DRAFT_FIELD.BILLING_TYPE
+      this._rdsCreateFormFdDraftMap.billing_type = RDS_CREATE_FORM_DRAFT_FIELD.BILLING_TYPE
       this.bindCreateFormFieldDraft({
         key: RDS_CREATE_FORM_DRAFT_FIELD.BILLING_TYPE,
         kind: 'selection',
         get: () => {
-          const v = this.form?.fc?.getFieldValue?.('billing_type')
+          const v = this.form?.fd?.billing_type
           return (v === undefined || v === null || v === '') ? undefined : v
         },
         set: (val) => {
-          if (val == null || val === '' || !this.form?.fc) return
-          this.form.fc.setFieldsValue({ billing_type: val })
+          if (val == null || val === '') return
           if (this.form.fd) this.form.fd.billing_type = val
           if (val === 'prepaid') {
             this.$nextTick(() => this.restoreRdsPrepaidBillingDraft())
@@ -323,7 +349,7 @@ export default {
       // 套餐级联：仅 flush 落盘；回填由 Filters/SizeFilters/List 对照 options 自管
       ;(RDS_CREATE_FORM_DRAFT_SYNC_FIELDS || []).forEach((item) => {
         if (!item?.key || !item.formField) return
-        this._rdsCreateFormFcDraftMap[item.formField] = item.key
+        this._rdsCreateFormFdDraftMap[item.formField] = item.key
         const formField = item.formField
         this.bindCreateFormFieldDraft({
           key: item.key,
@@ -340,8 +366,8 @@ export default {
         key: RDS_CREATE_FORM_DRAFT_FIELD.PREPAID_DURATION,
         kind: 'selection',
         get: () => {
-          if (this.form?.fc?.getFieldValue?.('billing_type') !== 'prepaid') return null
-          const val = this.form.fc.getFieldValue('duration')
+          if (this.form?.fd?.billing_type !== 'prepaid') return null
+          const val = this.form.fd.duration
           return (val === undefined || val === null || val === '') ? undefined : val
         },
       })
@@ -349,8 +375,8 @@ export default {
         key: RDS_CREATE_FORM_DRAFT_FIELD.AUTO_RENEW,
         kind: 'selection',
         get: () => {
-          if (this.form?.fc?.getFieldValue?.('billing_type') !== 'prepaid') return null
-          const val = this.form.fc.getFieldValue('auto_renew')
+          if (this.form?.fd?.billing_type !== 'prepaid') return null
+          const val = this.form.fd.auto_renew
           if (val === undefined || val === null) return undefined
           return !!val
         },
@@ -358,8 +384,8 @@ export default {
     },
     restoreRdsPrepaidBillingDraft () {
       if (this._rdsPrepaidBillingDraftApplied) return
-      if (!this.canRestoreCreateFormDraft || !this.form?.fc) return
-      if (this.form.fc.getFieldValue('billing_type') !== 'prepaid') return
+      if (!this.canRestoreCreateFormDraft || !this.form?.fd) return
+      if (this.form.fd.billing_type !== 'prepaid') return
       const duration = this.readRdsSkuDraftField(RDS_CREATE_FORM_DRAFT_FIELD.PREPAID_DURATION)
       const autoRenew = this.readRdsSkuDraftField(RDS_CREATE_FORM_DRAFT_FIELD.AUTO_RENEW)
       const fields = {}
@@ -371,11 +397,8 @@ export default {
       }
       this.$nextTick(() => {
         this.$nextTick(() => {
-          if (this.form.fc.getFieldValue('billing_type') !== 'prepaid') return
-          this.form.fc.setFieldsValue(fields)
-          Object.keys(fields).forEach((k) => {
-            if (this.form.fd) this.form.fd[k] = fields[k]
-          })
+          if (this.form.fd.billing_type !== 'prepaid') return
+          Object.assign(this.form.fd, fields)
           this._rdsPrepaidBillingDraftApplied = true
         })
       })
@@ -385,19 +408,15 @@ export default {
         key: RDS_CREATE_FORM_DRAFT_FIELD.NETWORK,
         kind: 'composite',
         get: () => {
-          const fc = this.form?.fc
-          if (!fc) return undefined
-          const vpc = fc.getFieldValue('vpc')
-          const network = fc.getFieldValue('network')
+          const vpc = this.form.fd.vpc
+          const network = this.form.fd.network
           if (vpc == null && network == null) return undefined
           return { vpc, network }
         },
         set: (val) => {
-          if (!val || !this.form?.fc) return
-          const fields = {}
-          if (val.vpc != null) fields.vpc = val.vpc
-          if (val.network != null) fields.network = val.network
-          if (Object.keys(fields).length) this.form.fc.setFieldsValue(fields)
+          if (!val || !this.form?.fd) return
+          if (val.vpc != null) this.$set(this.form.fd, 'vpc', val.vpc)
+          if (val.network != null) this.$set(this.form.fd, 'network', val.network)
         },
       })
     },

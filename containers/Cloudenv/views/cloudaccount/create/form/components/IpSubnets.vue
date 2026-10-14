@@ -2,8 +2,10 @@
   <div>
     <div class="ip-subnets-item" v-for="(item, i) in ipSubnets" :key="item.key">
       <ip-subnet
+        :ref="'ipSubnet_' + item.key"
         class="ip-subnets-item__block"
-        :decorator="genDecorator(item.key)" />
+        :fields="genFields(item.key)"
+        :model="model" />
       <a-button
         shape="circle"
         icon="minus"
@@ -24,6 +26,7 @@
 import * as R from 'ramda'
 import IpSubnet from '@/sections/IpSubnet'
 import { uuid } from '@/utils/utils'
+import { buildIpSubnetsFactories } from '@/sections/IpSubnet/ipSubnetsFields'
 
 export default {
   name: 'VmNetworkIpSubnets',
@@ -31,13 +34,19 @@ export default {
     IpSubnet,
   },
   props: {
-    decorator: {
+    fieldFactories: {
       type: Object,
-      required: true,
+      default: null,
       validator: val => {
+        if (!val) return true
         const fields = ['startip', 'endip', 'netmask', 'gateway', 'vlan']
         return fields.every(f => R.is(Function, val[f]))
       },
+    },
+    /** a-form-model：透传 form.fd 给 IpSubnet */
+    model: {
+      type: Object,
+      default: null,
     },
   },
   data () {
@@ -50,13 +59,18 @@ export default {
       const remain = 6 - this.ipSubnets.length
       return Math.max(remain, 0)
     },
+    rowFactories () {
+      return this.fieldFactories || buildIpSubnetsFactories('cloudenv', {
+        validateIpv4: this.$validate('IPv4'),
+      })
+    },
   },
   methods: {
-    genDecorator (uid) {
+    genFields (uid) {
       const ret = {}
       R.forEachObjIndexed((value, key) => {
         ret[key] = value(uid)
-      }, this.decorator)
+      }, this.rowFactories)
       return ret
     },
     add () {
@@ -68,6 +82,17 @@ export default {
     },
     decrease (index) {
       this.ipSubnets.splice(index, 1)
+    },
+    async validate () {
+      if (!this.model) return true
+      for (const item of this.ipSubnets) {
+        const ref = this.$refs[`ipSubnet_${item.key}`]
+        const comp = Array.isArray(ref) ? ref[0] : ref
+        if (comp && typeof comp.validate === 'function') {
+          await comp.validate()
+        }
+      }
+      return true
     },
   },
 }

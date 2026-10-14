@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <template #header>{{ params.title }}</template>
     <template #body>
-      <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
+      <a-form hideRequiredMark v-bind="formItemLayout">
         <a-form-item :label="$t('common.text00097')" class="mb-0">
           <a-radio-group :value="currentExportType" @update:value="onExportTypeChange">
             <a-radio-button
@@ -158,26 +158,6 @@ export default {
       loading: false,
       isBusinessCE: process.env.VUE_APP_IS_BUSINESS_CE,
       exportOptionItems,
-      form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        type: [
-          'type',
-          {
-            initialValue: currentExportType,
-          },
-        ],
-        selected: [
-          'selected',
-          {
-            initialValue: selectedExportKeys,
-            rules: [
-              { required: true, message: this.$t('common_94') },
-            ],
-          },
-        ],
-      },
       allExportKeys,
       currentExportType,
       indeterminate: selectedExportKeys.length !== allExportKeys.length,
@@ -237,9 +217,6 @@ export default {
       return '-'
     },
   },
-  created () {
-    this.syncFormFieldValues()
-  },
   mounted () {
     this.initExportSortable()
   },
@@ -247,12 +224,6 @@ export default {
     this.destroyExportSortable()
   },
   methods: {
-    syncFormFieldValues () {
-      this.form.fc.setFieldsValue({
-        type: this.currentExportType,
-        selected: this.selectedExportKeys,
-      })
-    },
     initExportSortable () {
       this.destroyExportSortable()
       if (!this.$appConfig.isPrivate && !this.isBusinessCE) return
@@ -398,8 +369,14 @@ export default {
       return params
     },
     validateForm () {
-      this.syncFormFieldValues()
-      return Promise.resolve(this.form.fc.getFieldsValue())
+      if (!this.selectedExportKeys || !this.selectedExportKeys.length) {
+        this.$message.error(this.$t('common_94'))
+        return Promise.reject(new Error(this.$t('common_94')))
+      }
+      return Promise.resolve({
+        type: this.currentExportType,
+        selected: this.selectedExportKeys,
+      })
     },
     async handleOfflineConfirm () {
       try {
@@ -487,18 +464,15 @@ export default {
     },
     onExportTypeChange (val) {
       this.currentExportType = val
-      this.syncFormFieldValues()
     },
     onSelectedUpdate (val) {
       this.selectedExportKeys = val
-      this.syncFormFieldValues()
       this.indeterminate = !!val.length && val.length < this.allExportKeys.length
       this.checkAll = val.length === this.allExportKeys.length
     },
     handleCheckAllChange (e) {
       const next = e.target.checked ? this.allExportKeys : []
       this.selectedExportKeys = next
-      this.syncFormFieldValues()
       this.checkAll = e.target.checked
       this.indeterminate = false
     },

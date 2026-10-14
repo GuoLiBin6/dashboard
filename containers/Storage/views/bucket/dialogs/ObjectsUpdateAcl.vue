@@ -4,10 +4,10 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="this.params.title" :name="params.name || $t('dictionary.bucket')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout">
         <a-spin :spinning="getAclsLoading">
-          <a-form-item :label="$t('storage.text_93')">
-            <a-radio-group v-decorator="decorators.acl">
+          <a-form-model-item :label="$t('storage.text_93')" prop="acl">
+            <a-radio-group v-model:value="form.acl">
               <a-radio-button v-for="k in acls" :key="k" :value="k">{{$t('storageAclTypes')[k]}}</a-radio-button>
             </a-radio-group>
             <div slot="extra">
@@ -15,9 +15,9 @@
                 {{$t('storageAclExtras')[k]}}<br />
               </div>
           </div>
-          </a-form-item>
+          </a-form-model-item>
         </a-spin>
-      </a-form>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
@@ -42,36 +42,14 @@ export default {
       fileList: [],
       acls: [],
       form: {
-        fc: this.$form.createForm(this),
+        acl: this.params.data[0].acl,
       },
     }
-  },
-  provide () {
-    return {
-      form: this.form,
-    }
-  },
-  computed: {
-    decorators () {
-      return {
-        acl: ['acl', {
-          initialValue: this.params.data[0].acl,
-        }],
-      }
-    },
   },
   created () {
     this.queryAcls()
   },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (err) return reject(err)
-          resolve(values)
-        })
-      })
-    },
     async queryAcls () {
       this.getAclsLoading = true
       const { bucket, type = 'bucket' } = this.params
@@ -92,7 +70,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const { acl } = await this.validateForm()
+        await this.$refs.formRef.validate()
+        const { acl } = this.form
         const { bucket, data } = this.params
         const key = data.map(({ key }) => key).filter((t) => !!t)
         const params = {

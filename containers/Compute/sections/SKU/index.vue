@@ -77,6 +77,7 @@ import storage from '@/utils/storage'
 import RegionalAvailabilityPopover from '@/sections/RegionalAvailabilityPopover'
 import ListPager from '@/components/PageList/components/ListPager.vue'
 import createFormFieldDraftMixin from '@/mixins/createFormFieldDraft'
+import { getBracketValue, setBracketValue } from '@/utils/bracketModel'
 const SKU_HIDDEN_COLUMNS_KEY = '__oc_sku_hidden_columns'
 const DEFAULT_HIDDEN_COLUMNS = ['cpu_model', 'nic_bandwidth', 'disk_performance']
 const SKU_FILTERABLE_FIELDS = ['cpu_arch', 'name', 'cpu_model', 'nic_bandwidth', 'disk_performance']
@@ -164,8 +165,17 @@ export default {
         return true
       },
     },
-    value: { // v-decorator 的 props；挂载后才注入，初始可为空
+    value: { // 父级受控字段 props；挂载后才注入，初始可为空
       default: undefined,
+    },
+    /** a-form-model：通常 form.fd；K8S 嵌套时可传 field 如 sku[uuid] */
+    model: {
+      type: Object,
+      required: true,
+    },
+    field: {
+      type: String,
+      default: 'sku',
     },
     priceUnit: {
       type: Object,
@@ -269,6 +279,9 @@ export default {
     }
   },
   computed: {
+    skuFieldName () {
+      return this.field || 'sku'
+    },
     isSameSku () {
       return this.dataList.length === 1 || this.dataList.map(item => item.instance_type).filter(item => item).length === 1
     },
@@ -740,9 +753,52 @@ export default {
             this.$refs.tableRef.setRadioRow(null)
           }
         }
-        this.$emit('change', hasSelected ? chooseSku : {})
+        const next = hasSelected ? chooseSku : {}
+        this.$emit('change', next)
+        setBracketValue(this, this.model, this.skuFieldName, next)
         this.restoreTableSort()
       })
+    },
+    runFieldRule (rule, value) {
+      return new Promise((resolve, reject) => {
+        if (rule.required) {
+          const empty = value === undefined || value === null || value === '' ||
+            (Array.isArray(value) && !value.length)
+          if (empty) {
+            reject(new Error(rule.message || 'required'))
+            return
+          }
+        }
+        if (typeof rule.validator === 'function') {
+          let settled = false
+          const finish = (err) => {
+            if (settled) return
+            settled = true
+            if (err) reject(err instanceof Error ? err : new Error(String(err)))
+            else resolve()
+          }
+          let ret
+          try {
+            ret = rule.validator(rule, value, finish)
+          } catch (e) {
+            finish(e)
+            return
+          }
+          if (ret && typeof ret.then === 'function') {
+            ret.then(() => finish()).catch(finish)
+          }
+          return
+        }
+        resolve()
+      })
+    },
+    async validate () {
+      const value = getBracketValue(this.model, this.skuFieldName)
+      const id = value && typeof value === 'object' ? value.id : value
+      if (!id) {
+        throw new Error(i18n.t('compute.text_216'))
+      }
+      return true
     },
     /**
      * 提交时获取表单草稿（name + 套餐类型 radio）

@@ -5,9 +5,9 @@
       <dialog-selected-tips :name="$route.path.includes('app-package') ? $t('dictionary.app_package') : $t('dictionary.image')" :count="params.data.length" :action="$t('dashboard.text_105')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-spin :spinning="loading">
-        <a-form :form="form" v-bind="formItemLayout">
-          <a-form-item :label="$t('compute.text_640')">
-            <a-radio-group v-decorator="decorators.format">
+        <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+          <a-form-model-item :label="$t('compute.text_640')" prop="format">
+            <a-radio-group v-model:value="form.format">
               <a-radio
                 v-for="o in formatOptions"
                 :key="o.key"
@@ -15,8 +15,8 @@
                 {{ o.label }}
               </a-radio>
             </a-radio-group>
-          </a-form-item>
-          <a-form-item :label="$t('compute.image.export')">
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.image.export')">
             <a-radio-group v-model:value="isDownload">
               <a-radio :value="true">
                 {{ $t('compute.image.export.file') }}
@@ -25,8 +25,8 @@
                 {{ $t('compute.image.export.url') }}
               </a-radio>
             </a-radio-group>
-          </a-form-item>
-        </a-form>
+          </a-form-model-item>
+        </a-form-model>
       </a-spin>
       <a ref="imageButton" download :id="params.data[0].id" v-show="false" />
     </div>
@@ -52,7 +52,12 @@ export default {
       manager: m,
       show: true,
       formatOptions: [],
-      form: this.$form.createForm(this),
+      form: {
+        format: undefined,
+      },
+      rules: {
+        format: [{ required: true, message: this.$t('compute.text_148', [this.$t('compute.text_640')]) }],
+      },
       formItemLayout: {
         wrapperCol: {
           span: 20,
@@ -60,14 +65,6 @@ export default {
         labelCol: {
           span: 4,
         },
-      },
-      decorators: {
-        format: [
-          'format',
-          {
-            rules: [{ required: true, message: this.$t('compute.text_148', [this.$t('compute.text_640')]) }],
-          },
-        ],
       },
     }
   },
@@ -86,7 +83,7 @@ export default {
             return { key: item.format, label: item.format.toUpperCase() }
           })
           if (this.formatOptions.length >= 1) {
-            this.form.setFieldsValue({ format: this.formatOptions[0].key })
+            this.form.format = this.formatOptions[0].key
           }
           this.$nextTick(() => {
             this.loading = false
@@ -126,11 +123,11 @@ export default {
     async handleConfirm () {
       try {
         this.loading = true
-        const values = await this.form.validateFields()
+        await this.$refs.formRef.validate()
         if (this.isDownload) {
-          await this.download(values)
+          await this.download(this.form)
         } else {
-          await this.fetchUrl(values)
+          await this.fetchUrl(this.form)
         }
         this.loading = false
       } catch (error) {

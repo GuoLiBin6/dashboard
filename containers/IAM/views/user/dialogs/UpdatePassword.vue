@@ -4,13 +4,11 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.user')" :count="params.data.length" :action="params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc"
-        v-bind="formItemLayout">
-        <a-form-item :label="$t('system.text_221')">
-          <a-input-password :placeholder="$t('system.text_239')" v-decorator="decorators.password" />
-        </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('system.text_221')" prop="password">
+          <a-input-password :placeholder="$t('system.text_239')" v-model:value="form.password" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -27,52 +25,15 @@ export default {
   name: 'UserUpdatePasswordDialog',
   mixins: [DialogMixin, WindowsMixin],
   data () {
-    // const validatePassword = async (rule, value, callback) => {
-    //   if (this.minPasswordLen) {
-    //     if (value.length < this.minPasswordLen) return callback(new Error(this.$t('system.text_485', [this.minPasswordLen])))
-    //     return callback()
-    //   }
-    //   const manager = new this.$Manager('services', 'v1')
-    //   try {
-    //     const response = await manager.list({
-    //       params: {
-    //         type: 'identity',
-    //       },
-    //     })
-    //     const id = response.data.data && response.data.data[0] && response.data.data[0].id
-    //     if (id) {
-    //       const configRes = await manager.getSpecific({
-    //         id,
-    //         spec: 'config',
-    //       })
-    //       const len = configRes.data.config && configRes.data.config.default && configRes.data.config.default.password_minimal_length
-    //       if (len) {
-    //         this.minPasswordLen = len
-    //         if (value.length < len) return callback(new Error(this.$t('system.text_485', [len])))
-    //       }
-    //     }
-    //     return callback()
-    //   } catch (error) {
-    //     callback()
-    //     throw error
-    //   }
-    // }
     return {
       loading: false,
       minPasswordLen: null,
       form: {
-        fc: this.$form.createForm(this),
+        password: '',
       },
-      decorators: {
+      rules: {
         password: [
-          'password',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('system.text_486'), trigger: 'blur' },
-              // { validator: validatePassword, trigger: 'blur' },
-            ],
-          },
+          { required: true, message: this.$t('system.text_486'), trigger: 'blur' },
         ],
       },
       formItemLayout: {
@@ -90,12 +51,12 @@ export default {
       this.loading = true
       const { data, onManager } = this.params
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         onManager('patch', {
           id: data[0].id,
           managerArgs: {
             data: {
-              ...values,
+              ...this.form,
               skip_password_complexity_check: true,
             },
           },

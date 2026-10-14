@@ -16,17 +16,17 @@
         <a-button key="submit" type="primary" :loading="mobileDialog.loading" @click="doVerifyMobile">{{$t('scope.text_14')}}</a-button>
         <a-button key="back" @click="() => mobileDialog.visible = false">{{$t('scope.text_152')}}</a-button>
       </template>
-      <a-form :form="mobileForm.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('scope.text_200')">
+      <a-form-model ref="mobileFormRef" :model="mobileForm" :rules="codeRules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('scope.text_200')">
           {{ contact }}
-        </a-form-item>
-        <a-form-item :label="$t('scope.text_201')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('scope.text_201')" prop="code">
           <div class="d-flex">
-            <a-input v-decorator="mobileDecorators.code" style="max-width: 100px;" />
+            <a-input v-model:value="mobileForm.code" style="max-width: 100px;" />
             <a-button type="link" class="flex-grow-0 flex-shrink-0" @click="getMobileVerifyCode" :disabled="codeButtonDisable" style="width: 150px; border-left-width: 0;">{{ codeButtonText }}</a-button>
           </div>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </a-modal>
     <a-modal
       :title="$t('scope.text_202')"
@@ -39,17 +39,17 @@
         <a-button key="submit" type="primary" :loading="emailDialog.loading" @click="doVerifyEmail">{{$t('scope.text_14')}}</a-button>
         <a-button key="back" @click="() => emailDialog.visible = false">{{$t('scope.text_152')}}</a-button>
       </template>
-      <a-form :form="emailForm.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('scope.text_204')" :help="$t('scope.text_205')">
+      <a-form-model ref="emailFormRef" :model="emailForm" :rules="codeRules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('scope.text_204')" :help="$t('scope.text_205')">
           {{ contact }}
-        </a-form-item>
-        <a-form-item :label="$t('scope.text_201')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('scope.text_201')" prop="code">
           <div class="d-flex">
-            <a-input v-decorator="emailDecorators.code" style="max-width: 100px;" />
+            <a-input v-model:value="emailForm.code" style="max-width: 100px;" />
             <a-button type="link" class="flex-grow-0 flex-shrink-0" @click="getEmailVerifyCode" :disabled="codeButtonDisable" style="width: 150px; border-left-width: 0;">{{ codeButtonText }}</a-button>
           </div>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </a-modal>
   </span>
 </template>
@@ -80,10 +80,19 @@ export default {
       codeButtonText: this.$t('scope.text_206'),
       codeButtonDisable: false,
       mobileForm: {
-        fc: this.$form.createForm(this),
+        code: '',
       },
       emailForm: {
-        fc: this.$form.createForm(this),
+        code: '',
+      },
+      codeRules: {
+        code: [
+          { required: true, message: this.$t('scope.text_209') },
+          {
+            pattern: '[0-9]{6}',
+            message: this.$t('scope.text_210'),
+          },
+        ],
       },
       mobileDialog: {
         loading: false,
@@ -118,36 +127,6 @@ export default {
       codeDict: {
         mobile: this.$t('scope.text_201'),
         email: this.$t('scope.text_208'),
-      },
-      mobileDecorators: {
-        code: [
-          'code',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('scope.text_209') },
-              {
-                pattern: '[0-9]{6}',
-                message: this.$t('scope.text_210'),
-              },
-            ],
-          },
-        ],
-      },
-      emailDecorators: {
-        code: [
-          'code',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('scope.text_209') },
-              {
-                pattern: '[0-9]{6}',
-                message: this.$t('scope.text_210'),
-              },
-            ],
-          },
-        ],
       },
     }
   },
@@ -231,7 +210,8 @@ export default {
     async doVerifyMobile () {
       this.mobileDialog.loading = true
       try {
-        const values = await this.mobileForm.fc.validateFields()
+        await this.$refs.mobileFormRef.validate()
+        const values = this.mobileForm
         if (!this.processId || this.processId.length <= 0) {
           this.$message.error(this.$t('scope.text_220'))
         } else {
@@ -288,7 +268,8 @@ export default {
     async doVerifyEmail () {
       this.emailDialog.loading = true
       try {
-        const values = await this.emailForm.fc.validateFields()
+        await this.$refs.emailFormRef.validate()
+        const values = this.emailForm
         await this.manager.performAction({
           id: this.userInfo.id,
           action: 'verify',

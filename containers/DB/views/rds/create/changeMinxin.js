@@ -1,7 +1,24 @@
+/** END-STATE：form = { fd }；SKU / Network 写 fd；原 onValuesChange → watch form.fd */
+import { getInitialValue } from '@/utils/common/ant'
+import { RDS_CREATE_FIELD_MAP } from './constants/index'
+
 export default {
   data () {
+    const initFd = {
+      billing_type: 'postpaid',
+      ...getInitialValue(RDS_CREATE_FIELD_MAP),
+    }
     return {
       provider: '',
+      form: {
+        fd: initFd,
+      },
+    }
+  },
+  provide () {
+    return {
+      form: this.form,
+      validateCreateForm: () => this.validateCreateForm(),
     }
   },
   async created () {
@@ -11,76 +28,85 @@ export default {
       capability,
       specs,
     }
+    ;['billing_type', 'domain', 'project', 'provider', 'cloudregion', 'generate_name', 'description', '__count__', '__meta__', 'multi_az', 'disk_size_gb'].forEach((name) => {
+      if (this.form.fd[name] === undefined && name !== 'billing_type') {
+        this.$set(this.form.fd, name, this.form.fd[name])
+      }
+    })
     await this.$nextTick()
     this.skuRef = this.$refs.SKU
     this.networkRef = this.$refs.NETWORK
+  },
+  watch: {
+    'form.fd.domain' () { this.domain_change() },
+    'form.fd.provider' (val) {
+      this.provider = val || ''
+      if (this.networkRef) this.provider_change()
+    },
+    'form.fd.cloudregion' () {
+      if (this.skuRef) this.cloudregion_change()
+    },
+    'form.fd.engine' () { this.capability_change() },
+    'form.fd.engine_version' () { this.capability_change() },
+    'form.fd.category' () { this.capability_change() },
+    'form.fd.storage_type' () { this.capability_change() },
+    'form.fd.vcpu_count' () { this.specs_change() },
+    'form.fd.vmem_size_mb' () { this.specs_change() },
+    'form.fd.zones' () { this.zones_change() },
   },
   methods: {
     domain_change () {
       if (this.$store.getters.isAdminMode) {
         const { domain } = this.form.fd
-        this.scopeParams.project_domain = domain || this.form.getFieldValue('domain')
+        this.scopeParams.project_domain = domain
         delete this.scopeParams.scope
       } else {
         delete this.scopeParams.project_domain
       }
     },
-    // 获取CPU核数、内存、可用区
     capability_change () {
-      // 级联回填/切换引擎过程中由 Filters @change 统一拉，避免半成品参数把 CPU 清空
       if (this.skuRef && this.skuRef.ensureFetchSpecs) {
         this.skuRef.ensureFetchSpecs(0)
       }
     },
     cloudregion_change () {
-      // capability 拉完后 Filters 会 emit change → ensureFetchSpecs；这里只触发引擎级联
       if (this.skuRef && this.skuRef.fetchCapability) {
         this.skuRef.fetchCapability()
       }
     },
-    // 获取skulist
     specs_change () {
-      this.skuRef.fetchSkus()
+      if (this.skuRef) this.skuRef.fetchSkus()
     },
     zones_change () {
-      this.skuRef.fetchSkus()
-      this.networkRef.fetchVpc()
+      if (this.skuRef) this.skuRef.fetchSkus()
+      if (this.networkRef) this.networkRef.fetchVpc()
     },
     provider_change () {
       const { provider } = this.form.fd
-      if (provider && provider === 'Aws') {
+      if (provider && provider === 'Aws' && this.networkRef) {
         this.networkRef.fetchVpc()
       }
     },
-    async handleValuesChange (fc, changedFields) {
-      const fields = Object.keys(changedFields)
-      if (changedFields && fields.length > 0) {
-        fields.forEach(field => {
-          this.form.fd[field] = changedFields[field]
-          if (field === 'vpc') {
-            this.vpc = changedFields[field]
-          }
-        })
+    async validateCreateForm () {
+      if (this.$refs.formRef?.validate) {
+        await this.$refs.formRef.validate()
       }
-      if (changedFields.hasOwnProperty('provider')) {
-        this.provider = changedFields.provider
+      const refs = [
+        this.$refs.domainProjectRef,
+        this.$refs.ITEM_AREA,
+        this.$refs.NETWORK,
+        this.$refs.passwordRef,
+        this.$refs.secgroupRef,
+      ]
+      for (const ref of refs) {
+        if (typeof ref?.validate === 'function') {
+          await ref.validate()
+        }
       }
-      await this.$nextTick()
-      Object.keys(changedFields).forEach(field => {
-        if (changedFields[field] === undefined) return false
-        let _field = field
-        if (this[`${_field}_change`] === undefined) {
-          for (const k in this.keysChange) {
-            if (this.keysChange[k].indexOf(_field) > -1) {
-              _field = k
-            }
-          }
-        }
-        const handleChange = this[`${_field}_change`]
-        if (this[`${_field}_change`]) {
-          return handleChange()
-        }
-      })
+      if (!(this.form.fd.sku && this.form.fd.sku.name)) {
+        throw new Error('sku')
+      }
+      return { ...this.form.fd }
     },
   },
 }

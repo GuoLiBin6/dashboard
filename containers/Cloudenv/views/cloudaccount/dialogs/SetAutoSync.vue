@@ -4,19 +4,21 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.cloudaccount')" :count="params.data.length" :action="$t('cloudenv.text_106')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('cloudenv.text_83')" v-bind="formItemLayout">
-          <a-switch :checkedChildren="$t('cloudenv.text_84')" :unCheckedChildren="$t('cloudenv.text_85')" v-decorator="decorators.enable_auto_sync" @change="enableChange" />
-        </a-form-item>
-        <a-form-item :label="$t('cloudenv.text_86')" v-bind="formItemLayout" v-if="showTime">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('cloudenv.text_83')" prop="enable_auto_sync">
+          <a-switch :checkedChildren="$t('cloudenv.text_84')" :unCheckedChildren="$t('cloudenv.text_85')" v-model:checked="form.enable_auto_sync" @change="enableChange" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('cloudenv.text_86')" prop="sync_interval_seconds" v-if="showTime">
           <a-input-number
-            v-decorator="decorators.sync_interval_seconds"
+            v-model:value="form.sync_interval_seconds"
             :min="30" />
           <span class="ml-1">{{$t('cloudenv.text_87')}}</span>
           <div slot="extra">{{$t('cloudenv.text_280')}}</div>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -42,22 +44,8 @@ export default {
       loading: false,
       showTime: data.enable_auto_sync,
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        enable_auto_sync: [
-          'enable_auto_sync',
-          {
-            initialValue: data.enable_auto_sync,
-            valuePropName: 'checked',
-          },
-        ],
-        sync_interval_seconds: [
-          'sync_interval_seconds',
-          {
-            initialValue: exsitInterval >= MIN_TIME ? exsitInterval : DEFAULT_TIME,
-          },
-        ],
+        enable_auto_sync: data.enable_auto_sync,
+        sync_interval_seconds: exsitInterval >= MIN_TIME ? exsitInterval : DEFAULT_TIME,
       },
       formItemLayout: {
         wrapperCol: {
@@ -72,17 +60,6 @@ export default {
   methods: {
     enableChange (val) {
       this.showTime = val
-    },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
     },
     // 更新自动同步状态
     updateAutoSyncStatus (data, ids) {
@@ -119,14 +96,15 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
+        await this.$refs.formRef.validate()
         const ids = this.params.data.map(item => item.id)
-        this.loading = true
+        const values = { ...this.form }
         await this.updateAutoSyncStatus(values, ids)
         await this.updateAutoSyncInterval(values, ids)
-        this.loading = false
         this.cancelDialog()
       } catch (error) {
+        // validation or API error
+      } finally {
         this.loading = false
       }
     },

@@ -16,11 +16,6 @@
         </template>
       </table-lite-grid>
     </a-form-item>
-    <a-form-item class="nat-sku-valid" v-bind="tailFormItemLayout">
-      <template v-show="false">
-        <a-radio-group v-decorator="skuDecorator" :placeholder="$t('validator.serverName')" />
-      </template>
-    </a-form-item>
   </div>
 </template>
 
@@ -46,12 +41,6 @@ export default {
       loading: false,
       rateLoading: false,
       skuList: [],
-      skuDecorator: [
-        'sku',
-        {
-          rules: [{ required: true, message: this.$t('network.nat.sku.choose') }],
-        },
-      ],
     }
   },
   computed: {
@@ -59,12 +48,6 @@ export default {
       return {
         reserve: true,
       }
-    },
-    FC () {
-      if (this.form && this.form.fc) {
-        return this.form.fc
-      }
-      return {}
     },
     tableColumn () {
       const columns = [
@@ -153,7 +136,7 @@ export default {
             if (this.rateLoading) {
               return [<icon type="loading" />]
             }
-            const isPackage = this.form.getFieldValue('billing_type') === BILL_TYPES_MAP.prepaid.key
+            const isPackage = this.form.fd?.billing_type === BILL_TYPES_MAP.prepaid.key
             if (rate) {
               let price = rate.hour_price
               let unit = this.$t('network.unit.hour')
@@ -187,25 +170,25 @@ export default {
     },
   },
   methods: {
+    getSku () {
+      return this.form.fd?.sku
+    },
     getZone () {
-      const sku = this.FC.getFieldValue('sku')
+      const sku = this.getSku()
       if (sku) {
         return sku.zone_ids
       }
     },
     getCloudregionId () {
-      const sku = this.FC.getFieldValue('sku')
+      const sku = this.getSku()
       if (sku) {
         return sku.cloudregion_id
       }
     },
     async handleSkuChange ({ row }) {
-      this.FC.setFieldsValue({
-        sku: row,
-      })
+      this.$set(this.form.fd, 'sku', row)
       await this.$nextTick()
       this.$refs.tableRef.setRadioRow(row)
-      this.FC.validateFields(['sku'])
     },
     skuSort (skuList) {
       return skuList ? skuList.sort((a, b) => a.cnns - b.cnns) : []

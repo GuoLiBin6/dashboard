@@ -10,20 +10,23 @@
       </a-alert>
       <dialog-selected-tips :name="name" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc"
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
         v-bind="formItemLayout">
-        <a-form-item :label="$t('common.text00061')">
-          <a-switch :checkedChildren="$t('common.text00062')" :unCheckedChildren="$t('common.text00063')" v-decorator="decorators.durationEnable" />
-        </a-form-item>
-        <a-form-item
-          v-if="form.fd.durationEnable"
+        <a-form-model-item :label="$t('common.text00061')">
+          <a-switch v-model:checked="form.durationEnable" :checkedChildren="$t('common.text00062')" :unCheckedChildren="$t('common.text00063')" />
+        </a-form-model-item>
+        <a-form-model-item
+          v-if="form.durationEnable"
           :label="$t('common.text00064')"
+          prop="durationDate"
           :help="help">
           <div class="d-flex">
             <div @click="openDatePicker">
               <a-date-picker
-                v-decorator="decorators.durationDate"
+                v-model:value="form.durationDate"
                 :disabledDate="disabledDate"
                 :disabledTime="disabledDateTime"
                 :open="open"
@@ -38,8 +41,8 @@
               </a-date-picker>
             </div>
           </div>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </template>
     <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -67,32 +70,16 @@ export default {
       loading: false,
       action: this.$t('common.text00061'),
       form: {
-        fc: this.$form.createForm(this, { onValuesChange: this.onValuesChange }),
-        fd: {
-          durationEnable: false,
-          durationDate: expireDate,
-        },
+        durationEnable: false,
+        durationDate: expireDate,
+      },
+      rules: {
+        durationDate: [
+          { required: true, message: this.$t('common.text00066') },
+        ],
       },
       currentDuration: '',
       expireDate,
-      decorators: {
-        durationEnable: [
-          'durationEnable',
-          {
-            initialValue: false,
-            valuePropName: 'checked',
-          },
-        ],
-        durationDate: [
-          'durationDate',
-          {
-            initialValue: expireDate,
-            rules: [
-              { required: true, message: this.$t('common.text00066') },
-            ],
-          },
-        ],
-      },
       formItemLayout: {
         wrapperCol: {
           span: 20,
@@ -122,15 +109,13 @@ export default {
     },
   },
   watch: {
-    'form.fd.durationEnable' (val) {
+    'form.durationEnable' (val) {
       this.open = false
     },
   },
   created () {
     if (this.params.data[0].release_at !== undefined) {
-      this.$nextTick(() => {
-        this.form.fc.setFieldsValue({ durationEnable: true })
-      })
+      this.form.durationEnable = true
     }
   },
   methods: {
@@ -164,9 +149,9 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        if (this.form.fd.durationEnable) {
-          const values = await this.form.fc.validateFields()
-          await this.doUpdateSubmit(values)
+        if (this.form.durationEnable) {
+          await this.$refs.formRef.validate()
+          await this.doUpdateSubmit(this.form)
         } else {
           await this.doCancelExpireSubmit()
         }
@@ -176,11 +161,6 @@ export default {
       } catch (error) {
         this.loading = false
       }
-    },
-    onValuesChange (props, values) {
-      Object.keys(values).forEach((key) => {
-        this.form.fd[key] = values[key]
-      })
     },
     range (start, end) {
       const result = []
@@ -230,7 +210,7 @@ export default {
           durationDate.add(1, 'w')
           break
       }
-      this.form.fc.setFieldsValue({ durationDate: durationDate })
+      this.form.durationDate = durationDate
     },
     dateChangeHandle (v) {
       this.currentDuration = ''

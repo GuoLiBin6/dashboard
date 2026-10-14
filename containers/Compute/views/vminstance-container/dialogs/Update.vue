@@ -4,33 +4,35 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('compute.container', [])" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.repo.edit_mode')">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.repo.edit_mode')">
           <a-radio-group v-model:value="editMode">
             <a-radio-button value="custom">{{ $t('compute.repo.edit_mode.custom') }}</a-radio-button>
             <a-radio-button value="yaml">{{ $t('compute.repo.edit_mode.yaml') }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
+        </a-form-model-item>
         <template v-if="editMode === 'custom'">
-          <a-form-item :label="$t('compute.repo.image.source')">
+          <a-form-model-item :label="$t('compute.repo.image.source')">
             <a-radio-group :value="source" @change="handleSourceChange">
               <a-radio-button value="custom">{{ $t('compute.repo.image.custom') }}</a-radio-button>
               <a-radio-button value="registry">{{ $t('compute.repo.image.registry') }}</a-radio-button>
               <a-radio-button value="container_image">{{ $t('compute.repo.image.container_image') }}</a-radio-button>
             </a-radio-group>
-          </a-form-item>
-          <a-form-item v-if="source === 'custom'" :label="$t('compute.repo.container_image')">
+          </a-form-model-item>
+          <a-form-model-item v-if="source === 'custom'" :label="$t('compute.repo.container_image')" prop="image">
             <a-input
-              v-decorator="decorators.image"
+              v-model:value="form.image"
               :placeholder="$t('common.tips.input', [$t('compute.repo.container_image')])" />
-          </a-form-item>
-          <a-form-item v-else-if="source === 'registry'" :label="$t('compute.repo.container_image')">
-            <mirror-registry v-decorator="decorators.registryImage" @credential-change="handleCredentialChange" />
-            <a-input v-show="false" v-decorator="decorators.imageCredentialId" />
-          </a-form-item>
-          <a-form-item v-else :label="$t('compute.repo.container_image')">
+          </a-form-model-item>
+          <a-form-model-item v-else-if="source === 'registry'" :label="$t('compute.repo.container_image')" prop="registryImage">
+            <mirror-registry
+              :value="form.registryImage"
+              @change="v => form.registryImage = v"
+              @credential-change="handleCredentialChange" />
+          </a-form-model-item>
+          <a-form-model-item v-else :label="$t('compute.repo.container_image')" prop="containerImageId">
             <a-select
-              v-decorator="decorators.containerImageId"
+              v-model:value="form.containerImageId"
               showSearch
               :filterOption="filterOption"
               :loading="containerImageLoading"
@@ -54,22 +56,27 @@
                 </template>
               </a-alert>
             </div>
-          </a-form-item>
-          <a-form-item :label="$t('compute.repo.command')">
-            <a-input v-decorator="decorators.command" :disabled="imageHasCommand" :placeholder="$t('compute.repo.command.placeholder')" />
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.repo.command')" prop="command">
+            <a-input v-model:value="form.command" :disabled="imageHasCommand" :placeholder="$t('compute.repo.command.placeholder')" />
             <div v-if="imageHasCommand" class="ant-form-explain">{{ $t('compute.repo.image.container_image.locked_tip') }}</div>
-          </a-form-item>
-          <a-form-item :label="$t('compute.repo.command.params')">
-            <a-input v-decorator="decorators.arg" :disabled="imageHasArgs" :placeholder="$t('compute.repo.command.params.placeholder')" />
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.repo.command.params')" prop="arg">
+            <a-input v-model:value="form.arg" :disabled="imageHasArgs" :placeholder="$t('compute.repo.command.params.placeholder')" />
             <div v-if="imageHasArgs" class="ant-form-explain">{{ $t('compute.repo.image.container_image.locked_tip') }}</div>
-          </a-form-item>
-          <a-form-item :label="$t('compute.repo.env_variables')">
-            <labels ref="envRef" :decorators="decorators.env(0)" :title="$t('compute.repo.variables')" :keyLabel="$t('compute.repo.variables')" :readonly-keys="lockedEnvKeys" />
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.repo.env_variables')">
+            <labels
+              ref="envRef"
+              v-model:value="form.envs"
+              :title="$t('compute.repo.variables')"
+              :keyLabel="$t('compute.repo.variables')"
+              :readonly-keys="lockedEnvKeys" />
             <div v-if="lockedEnvKeys.length" class="ant-form-explain">{{ $t('compute.repo.image.container_image.env_locked_tip') }}</div>
-          </a-form-item>
-          <a-form-item :label="$t('compute.repo.capabilities.add')">
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.repo.capabilities.add')" prop="capAdd">
             <a-select
-              v-decorator="decorators.capAdd"
+              v-model:value="form.capAdd"
               mode="multiple"
               :placeholder="$t('compute.repo.capabilities.add.placeholder')"
               optionLabelProp="label"
@@ -79,10 +86,10 @@
                 <span style="color: rgba(0,0,0,.45); margin-left: 8px; font-size: 12px;">{{ cap.description }}</span>
               </a-select-option>
             </a-select>
-          </a-form-item>
-          <a-form-item :label="$t('compute.repo.capabilities.drop')">
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.repo.capabilities.drop')" prop="capDrop">
             <a-select
-              v-decorator="decorators.capDrop"
+              v-model:value="form.capDrop"
               mode="multiple"
               :placeholder="$t('compute.repo.capabilities.drop.placeholder')"
               optionLabelProp="label"
@@ -92,19 +99,19 @@
                 <span style="color: rgba(0,0,0,.45); margin-left: 8px; font-size: 12px;">{{ cap.description }}</span>
               </a-select-option>
             </a-select>
-          </a-form-item>
-          <a-form-item label="">
-            <a-checkbox v-decorator="decorators.privileged">{{$t('compute.repo.privileged_mode')}}</a-checkbox>
-          </a-form-item>
+          </a-form-model-item>
+          <a-form-model-item label="" prop="privileged">
+            <a-checkbox v-model:checked="form.privileged">{{$t('compute.repo.privileged_mode')}}</a-checkbox>
+          </a-form-model-item>
         </template>
         <template v-else>
-          <a-form-item :label="$t('compute.yaml_config')">
+          <a-form-model-item :label="$t('compute.yaml_config')" prop="yaml">
             <div class="yaml-config-wrapper">
-              <code-mirror v-decorator="decorators.yaml" :options="cmOptions" />
+              <code-mirror :value="form.yaml" @change="v => form.yaml = v" :options="cmOptions" />
             </div>
-          </a-form-item>
+          </a-form-model-item>
         </template>
-      </a-form>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -116,7 +123,7 @@
 <script>
 import jsYaml from 'js-yaml'
 import MirrorRegistry from '@Compute/sections/MirrorRegistry'
-import Labels from '@Compute/sections/Labels'
+import Labels from '@Compute/sections/Labels/model'
 import { CAPABILITY_OPTIONS } from '@Compute/views/vminstance-container/constants'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
@@ -144,19 +151,45 @@ export default {
       editMode: 'custom',
       containerImageLoading: false,
       containerImages: [],
-      // 当前选中的容器镜像（含 command/args/envs）
       selectedImage: null,
-      // 由容器镜像提供的环境变量 key，这些行不可修改、不可删除
       lockedEnvKeys: [],
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.$set(this.form.fd, key, values[key])
-            })
+        image: specData.image,
+        registryImage: undefined,
+        imageCredentialId: specData.image_credential_id,
+        containerImageId: specData.container_image_id,
+        command: specData.command?.join(' '),
+        arg: specData.args?.join(' '),
+        envs: [],
+        capAdd: specData.capabilities?.add || [],
+        capDrop: specData.capabilities?.drop || [],
+        privileged: !!specData.privileged,
+        yaml: jsYaml.safeDump(this.params.data[0]),
+      },
+      rules: {
+        registryImage: [
+          { required: true, message: this.$t('common.tips.select', [this.$t('compute.eci.repo.image.registry')]) },
+        ],
+        containerImageId: [
+          { required: true, message: this.$t('common.tips.select', [this.$t('compute.repo.image.container_image')]) },
+        ],
+        image: [
+          { required: true, message: `${this.$t('common.placeholder')}${this.$t('compute.repo.container_image')}` },
+        ],
+        yaml: [
+          { required: true, message: this.$t('common.tips.input', ['Yaml']) },
+          {
+            validator: (rule, value, _callback) => {
+              validateYaml(value)
+                .then(() => {
+                  return _callback()
+                })
+                .catch(() => {
+                  return _callback(this.$t('compute.yaml_check_tip'))
+                })
+            },
           },
-        }),
-        fd: {},
+        ],
       },
       cmOptions: {
         tabSize: 2,
@@ -165,110 +198,6 @@ export default {
         line: true,
         mode: 'text/x-yaml',
         theme: 'material',
-      },
-      decorators: {
-        registryImage: [
-          'registryImage',
-          {
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('compute.eci.repo.image.registry')]) },
-            ],
-          },
-        ],
-        imageCredentialId: [
-          'imageCredentialId',
-          {
-            initialValue: specData.image_credential_id,
-          },
-        ],
-        containerImageId: [
-          'containerImageId',
-          {
-            initialValue: specData.container_image_id,
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('compute.repo.image.container_image')]) },
-            ],
-          },
-        ],
-        image: [
-          'image',
-          {
-            initialValue: specData.image,
-            rules: [
-              { required: true, message: `${this.$t('common.placeholder')}${this.$t('compute.repo.container_image')}` },
-            ],
-          },
-        ],
-        command: [
-          'command',
-          {
-            initialValue: specData.command?.join(' '),
-          },
-        ],
-        arg: [
-          'arg',
-          {
-            initialValue: specData.args?.join(' '),
-          },
-        ],
-        env: i => ({
-          key: j => [
-            `envNames[${i}][${j}]`,
-            {
-              rules: [
-                { required: true, message: this.$t('common.tips.input', [this.$t('compute.repo.variables')]) },
-              ],
-            },
-          ],
-          value: j => [
-            `envValues[${i}][${j}]`,
-            {
-              rules: [
-                { required: true, message: this.$t('common.tips.input', [this.$t('compute.repo.value')]) },
-              ],
-            },
-          ],
-        }),
-        capAdd: [
-          'capAdd',
-          {
-            initialValue: specData.capabilities?.add || [],
-          },
-        ],
-        capDrop: [
-          'capDrop',
-          {
-            initialValue: specData.capabilities?.drop || [],
-          },
-        ],
-        privileged: [
-          'privileged',
-          {
-            valuePropName: 'checked',
-            initialValue: specData.privileged,
-          },
-        ],
-        yaml: [
-          'yaml',
-          {
-            validateFirst: true,
-            initialValue: jsYaml.safeDump(this.params.data[0]),
-            rules: [
-              { required: true, message: this.$t('common.tips.input', ['Yaml']) },
-              {
-                validator: (rule, value, _callback) => {
-                  validateYaml(value)
-                    .then(() => {
-                      return _callback()
-                    })
-                    .catch(() => {
-                      return _callback(this.$t('compute.yaml_check_tip'))
-                    })
-                },
-              },
-            ],
-          },
-        ],
       },
       capabilityOptions: CAPABILITY_OPTIONS,
       formItemLayout: {
@@ -311,7 +240,6 @@ export default {
     }
     setTimeout(() => {
       const envs = this.selectItems[0].spec?.envs || []
-
       if (this.$refs.envRef) {
         this.$refs.envRef.initData(envs.map(v => ({ key: v.key, value: v.value })))
       }
@@ -319,7 +247,7 @@ export default {
   },
   methods: {
     filterOption (input, option) {
-      const label = option.componentOptions?.propsData?.label || ''
+      const label = option.componentOptions?.propsData?.label || option.label || ''
       return label.toLowerCase().indexOf((input || '').toLowerCase()) >= 0
     },
     async fetchContainerImages () {
@@ -351,42 +279,24 @@ export default {
     findContainerImage (imageId) {
       return this.containerImages.find(img => img.value === imageId) || null
     },
-    /** 回显时仅同步锁定状态，不改写已保存的 command/args/envs */
     syncSelectedImage () {
-      const imageId = this.form.fc.getFieldValue('containerImageId')
+      const imageId = this.form.containerImageId
       const image = this.findContainerImage(imageId || this.params.data[0].spec?.container_image_id)
       if (!image) return
       this.selectedImage = image
       this.lockedEnvKeys = (image.envs || []).map(env => env.key).filter(Boolean)
     },
-    envDecorators () {
-      const env = this.decorators && this.decorators.env
-      if (!env) return null
-      return typeof env === 'function' ? env(0) : env
-    },
-    /** 读取当前表单里已填写的环境变量行 */
     readEnvRows () {
-      const envRef = this.$refs.envRef
-      const fc = this.form && this.form.fc
-      const d = this.envDecorators
-      if (!envRef || !fc || !d) return []
-      const rows = []
-      ;(envRef.labelList || []).forEach((row) => {
-        const keyField = d.key(row.key) && d.key(row.key)[0]
-        const valueField = d.value(row.key) && d.value(row.key)[0]
-        const key = keyField ? fc.getFieldValue(keyField) : undefined
-        if (key == null || key === '') return
-        rows.push({ key, value: valueField ? fc.getFieldValue(valueField) : undefined })
-      })
-      return rows
+      if (this.$refs.envRef?.getPairs) {
+        return this.$refs.envRef.getPairs()
+      }
+      return this.form.envs || []
     },
-    /** 镜像环境变量中可在表单里展示的行（value_from 类型的值无法用表单表达，交由后端合并） */
     imageEnvRows (image) {
       return ((image && image.envs) || [])
         .filter(env => env.key && !env.value_from)
         .map(env => ({ key: env.key, value: env.value }))
     },
-    /** 合并环境变量：以已有行为基础，镜像同名 key 覆盖其值，新 key 追加（与后端语义一致） */
     mergeImageEnvs (baseRows, imageEnvs) {
       const out = []
       const indexByKey = {}
@@ -408,24 +318,16 @@ export default {
       })
       return out
     },
-    /**
-     * 应用容器镜像的默认启动参数与环境变量
-     * @param {Object} image 容器镜像对象
-     * @param {Object} options refillCommand: 是否回填 command/args；keepExistingEnvs: 是否保留并合并已有 env 行
-     */
     applyImageDefaults (image, options = {}) {
       const { refillCommand = true, keepExistingEnvs = true } = options
       this.selectedImage = image || null
       const envs = (image && image.envs) || []
       this.lockedEnvKeys = envs.map(env => env.key).filter(Boolean)
-      const fc = this.form && this.form.fc
-      if (image && refillCommand && fc) {
-        const values = {}
+      if (image && refillCommand) {
         const command = (image.command || []).filter(Boolean)
         const args = (image.args || []).filter(Boolean)
-        if (command.length) values.command = command.join(' ')
-        if (args.length) values.arg = args.join(' ')
-        if (Object.keys(values).length) fc.setFieldsValue(values)
+        if (command.length) this.form.command = command.join(' ')
+        if (args.length) this.form.arg = args.join(' ')
       }
       const envRef = this.$refs.envRef
       if (!envRef) return
@@ -443,37 +345,23 @@ export default {
     },
     handleSourceChange (e) {
       this.source = e.target.value
-      // 离开容器镜像来源时，清空锁定状态
       this.selectedImage = null
       this.lockedEnvKeys = []
-      this.form.fc.setFieldsValue({
-        image: undefined,
-        registryImage: undefined,
-        imageCredentialId: undefined,
-        containerImageId: undefined,
-      })
+      this.form.image = undefined
+      this.form.registryImage = undefined
+      this.form.imageCredentialId = undefined
+      this.form.containerImageId = undefined
     },
     handleCredentialChange (credentialId) {
-      this.form.fc.setFieldsValue({
-        imageCredentialId: credentialId,
-      })
+      this.form.imageCredentialId = credentialId
     },
     async doSubmit (values) {
       const { id, spec } = this.params.data[0]
-      const getEnvs = (names, values) => {
-        const envs = []
-        if (names) {
-          for (const k in names) {
-            envs.push({ key: names[k], value: values[k] })
-          }
-        }
-        return envs
-      }
       let specData = {
         ...spec,
       }
       if (this.editMode === 'custom') {
-        const { image, registryImage, imageCredentialId, containerImageId, command, arg, envNames, envValues, privileged, capAdd, capDrop } = values
+        const { image, registryImage, imageCredentialId, containerImageId, command, arg, privileged, capAdd, capDrop } = values
         if (this.source === 'container_image' && containerImageId) {
           specData.container_image_id = containerImageId
           delete specData.image
@@ -497,11 +385,8 @@ export default {
         if (arg) {
           specData.args = arg.split(' ')
         }
-        if (envNames) {
-          specData.envs = getEnvs(envNames[0], envValues[0])
-        } else {
-          specData.envs = []
-        }
+        const envRows = this.readEnvRows()
+        specData.envs = envRows.map(({ key, value }) => ({ key, value }))
         specData.privileged = privileged
         if (capAdd?.length || capDrop?.length) {
           specData.capabilities = {
@@ -527,15 +412,15 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        await this.doSubmit(values)
-        this.loading = false
+        await this.$refs.formRef.validate()
+        await this.doSubmit({ ...this.form })
         this.$message.success(this.$t('common.success'))
         this.cancelDialog()
       } catch (error) {
-        this.loading = false
         this.$message.error(this.$t('common.failed'))
         throw error
+      } finally {
+        this.loading = false
       }
     },
   },

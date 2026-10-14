@@ -13,15 +13,16 @@
       </a-alert>
       <dialog-selected-tips :name="$t('compute.text_113')" :count="params.data.length" :action="$t('gpu.device_type.update')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc"
+      <a-form-model
+        ref="formRef"
+        :model="form"
         v-bind="formItemLayout">
-        <a-form-item :label="$t('gpu.device_type')">
-          <a-radio-group v-decorator="decorators.type">
+        <a-form-model-item :label="$t('gpu.device_type')" prop="type">
+          <a-radio-group v-model:value="form.type">
             <a-radio-button v-for="item in gpuTypeList" :key="item.value" :value="item.value">{{ item.label }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -46,15 +47,7 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        type: [
-          'type',
-          {
-            initialValue: initialType,
-          },
-        ],
+        type: initialType,
       },
       formItemLayout: {
         wrapperCol: {
@@ -76,32 +69,20 @@ export default {
     },
   },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
-    doSubmit (data) {
+    doSubmit () {
       const ids = this.params.data.map((item) => item.id)
       return new this.$Manager('isolated_devices').batchUpdate({
         ids,
         data: {
-          gpu_type: data.type,
+          gpu_type: this.form.type,
         },
       })
     },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
-        this.loading = true
-        await this.doSubmit(values)
+        await this.$refs.formRef.validate()
+        await this.doSubmit()
         this.params.refresh()
         this.cancelDialog()
       } catch (error) {

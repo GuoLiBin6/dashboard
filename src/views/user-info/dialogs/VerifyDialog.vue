@@ -77,21 +77,6 @@ export default {
           sm: { span: 21 },
         },
       },
-      decorators: {
-        code: [
-          'code',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('scope.text_209') },
-              {
-                pattern: '[0-9]{6}',
-                message: this.$t('scope.text_210'),
-              },
-            ],
-          },
-        ],
-      },
     }
   },
   methods: {

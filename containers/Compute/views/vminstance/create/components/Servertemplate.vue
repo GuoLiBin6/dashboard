@@ -1,23 +1,21 @@
 <template>
   <div>
     <slot />
-    <a-form-item :label="$t('compute.text_1140')" help="" :extra="$t('validator.resourceName')">
-      <a-input v-decorator="decorators.servertemplate_name" :placeholder="$t('compute.text_220')" />
-    </a-form-item>
-    <a-form-item :label="$t('common.description')">
-      <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-    </a-form-item>
+    <a-form-model-item :label="$t('compute.text_1140')" help="" :extra="$t('validator.resourceName')" prop="servertemplate_name">
+      <a-input v-model:value="form.fd.servertemplate_name" :placeholder="$t('compute.text_220')" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('common.description')" prop="description">
+      <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.fd.description" :placeholder="$t('common_367')" />
+    </a-form-model-item>
   </div>
 </template>
 
 <script>
-import * as R from 'ramda'
-
 export default {
   props: {
-    decorators: {
+    form: {
       type: Object,
-      validator: val => R.is(Array, val.servertemplate_name),
+      required: true,
     },
   },
 }

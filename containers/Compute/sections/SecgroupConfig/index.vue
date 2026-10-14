@@ -1,60 +1,69 @@
 <template>
   <div>
-    <a-form-item class="mb-0">
-      <a-radio-group v-decorator="decorators.type" :disabled="disabled" @change="handleTypeChange">
+    <a-form-model-item class="mb-0" :prop="typeField">
+      <a-radio-group :value="model[typeField]" :disabled="disabled" @change="e => { $set(model, typeField, e.target.value); handleTypeChange(e) }">
         <a-radio-button
           v-for="item of types"
           :key="item.key"
           :value="item.key">{{ item.label }}</a-radio-button>
       </a-radio-group>
-    </a-form-item>
-    <a-form-item class="mb-0" v-if="isBind">
+    </a-form-model-item>
+    <a-form-model-item class="mb-0" v-if="isBind" :prop="secgroupField">
       <template #extra>{{$t('compute.text_188', [_max])}}<help-link :href="href">{{$t('compute.text_189')}}</help-link></template>
       <base-select
         remote
         class="w-50 pr-1"
-        v-decorator="secgroupDecorator"
+        :value="model[secgroupField]"
+        @change="v => $set(model, secgroupField, v)"
         resource="secgroups"
         :params="params"
         :extra-opts="secgroupExtraOpts"
         :showSync="true"
         :select-props="{ allowClear: true, placeholder: $t('compute.text_190'), mode: 'multiple' }"
         @update:initLoaded="onSecgroupInitLoaded" />
-    </a-form-item>
-    <a-form-item
+    </a-form-model-item>
+    <a-form-model-item
       class="mb-0"
       v-if="isNetworkTag"
+      :prop="networkTagsField"
       :validate-status="networkTagError ? 'error' : ''"
       :help="networkTagError || undefined">
       <template #extra>{{ $t('validator.secgroupNetworkTag') }}</template>
       <a-select
         ref="networkTagsSelect"
-        v-decorator="networkTagsDecorator"
+        :value="model[networkTagsField]"
+        @change="v => { $set(model, networkTagsField, v); handleNetworkTagsChange(v) }"
         mode="tags"
         allow-clear
         :show-arrow="false"
         dropdown-class-name="secgroup-network-tags-dropdown"
         class="w-50 pr-1"
         :placeholder="$t('compute.network_tag_placeholder')"
-        :token-separators="[',']"
-        @change="handleNetworkTagsChange" />
-    </a-form-item>
+        :token-separators="[',']" />
+    </a-form-model-item>
   </div>
 </template>
 
 <script>
-import * as R from 'ramda'
 import { SECGROUP_OPTIONS_MAP } from '@Compute/constants'
 import { HYPERVISORS_MAP, isUcloudLikeHypervisor } from '@/constants'
 import { validate } from '@/utils/validate'
 
 export default {
   name: 'SecgroupConfig',
+  mixins: [],
   props: {
-    decorators: {
-      type: Object,
-      required: true,
-      validator: val => val.type && val.secgroup,
+    typeField: {
+      type: String,
+      default: 'secgroup_type',
+    },
+    secgroupField: {
+      type: String,
+      default: 'secgroup',
+    },
+    networkTagsField: {
+      type: String,
+      default: 'network_tags',
     },
     secgroupParams: {
       type: Object,
@@ -62,6 +71,11 @@ export default {
     },
     form: {
       type: Object,
+    },
+    /** a-form-model end-state：与字段名对齐（通常 form.fd） */
+    model: {
+      type: Object,
+      required: true,
     },
     isSnapshotImageType: { // 表单的镜像类型是否是主机快照
       type: Boolean,
@@ -94,14 +108,9 @@ export default {
     },
   },
   data () {
-    // const concatRules = (k, l, r) => k === 'rules' ? R.concat(l, r) : r
-    // const secgroupDecMsg = R.mergeDeepWithKey(concatRules,
-    //   (this.decorators.secgroup[1] || {}),
-    //   { rules: [{ validator: this.validateSecgroups }] },
-    // )
     return {
-      isBind: this.decorators.type[1].initialValue === SECGROUP_OPTIONS_MAP.bind.key,
-      isNetworkTag: this.decorators.type[1].initialValue === SECGROUP_OPTIONS_MAP.networkTag.key,
+      isBind: this.model[this.typeField] === SECGROUP_OPTIONS_MAP.bind.key,
+      isNetworkTag: this.model[this.typeField] === SECGROUP_OPTIONS_MAP.networkTag.key,
       networkTagInputEl: null,
       networkTagComposing: false,
       networkTagSyncing: false,
@@ -164,45 +173,13 @@ export default {
       }
       return (this.isAzure || this.isUCloud || this.isZstack) ? 1 : 5
     },
-    secgroupDecorator () {
-      const concatRules = (k, l, r) => k === 'rules' ? R.concat(l, r) : r
-      const obj = R.mergeDeepWithKey(concatRules,
-        (this.decorators.secgroup[1] || {}),
-        {
-          rules: [{ validator: this.validateSecgroups }],
-          initialValue: this.decorators.secgroup[1].initialValue || [],
-        },
-      )
-      if (obj.rules.length > 1) {
-        obj.validateFirst = true
-      }
-      const arr = [
-        this.decorators.secgroup[0],
-        obj,
-      ]
-      return arr
-    },
-    networkTagsDecorator () {
-      const concatRules = (k, l, r) => k === 'rules' ? R.concat(l, r) : r
-      const obj = R.mergeDeepWithKey(concatRules,
-        (this.decorators.network_tags[1] || {}),
-        {
-          rules: [{ validator: this.validateNetworkTags }],
-          initialValue: this.decorators.network_tags[1]?.initialValue || [],
-        },
-      )
-      return [
-        this.decorators.network_tags[0],
-        obj,
-      ]
-    },
   },
   watch: {
     isSnapshotImageType (val) {
       if (val) {
         this.disabled = true
-        this.form.fc.setFieldsValue({
-          [this.decorators.type[0]]: SECGROUP_OPTIONS_MAP.none.key,
+        this.applyFormFields({
+          [this.typeField]: SECGROUP_OPTIONS_MAP.none.key,
         })
         this.isBind = false
         this.isNetworkTag = false
@@ -211,22 +188,17 @@ export default {
         this.disabled = false
       }
     },
-    hypervisor () {
-      if (this.form && this.form.fc) {
-        this.form.fc.validateFields([this.decorators.secgroup[0]])
-      }
-    },
     types (val) {
       if (this.ignoreAutoTypeReset) return
-      if (!val.bind && this.form.fd && this.form.fd[this.decorators.type[0]] === 'bind' && this.form && this.form.fc) {
-        this.form.fc.setFieldsValue({
-          [this.decorators.type[0]]: 'default',
+      if (!val.bind && this.model[this.typeField] === 'bind') {
+        this.applyFormFields({
+          [this.typeField]: 'default',
         })
         this.isBind = false
       }
-      if (!val.networkTag && this.form?.fd?.[this.decorators.type[0]] === SECGROUP_OPTIONS_MAP.networkTag.key && this.form?.fc) {
-        this.form.fc.setFieldsValue({
-          [this.decorators.type[0]]: SECGROUP_OPTIONS_MAP.none.key,
+      if (!val.networkTag && this.model[this.typeField] === SECGROUP_OPTIONS_MAP.networkTag.key) {
+        this.applyFormFields({
+          [this.typeField]: SECGROUP_OPTIONS_MAP.none.key,
         })
         this.isNetworkTag = false
       }
@@ -275,6 +247,52 @@ export default {
     this.unbindNetworkTagInputKeydown()
   },
   methods: {
+    applyFormFields (vals) {
+      if (!vals || typeof vals !== 'object') return
+      Object.keys(vals).forEach(k => this.$set(this.model, k, vals[k]))
+    },
+    runFieldRule (rule, value) {
+      return new Promise((resolve, reject) => {
+        if (rule.required) {
+          const empty = value === undefined || value === null || value === '' ||
+            (Array.isArray(value) && !value.length)
+          if (empty) {
+            reject(new Error(rule.message || 'required'))
+            return
+          }
+        }
+        if (typeof rule.validator === 'function') {
+          let settled = false
+          const finish = (err) => {
+            if (settled) return
+            settled = true
+            if (err) reject(err instanceof Error ? err : new Error(String(err)))
+            else resolve()
+          }
+          let ret
+          try {
+            ret = rule.validator(rule, value, finish)
+          } catch (e) {
+            finish(e)
+            return
+          }
+          if (ret && typeof ret.then === 'function') {
+            ret.then(() => finish()).catch(finish)
+          }
+          return
+        }
+        resolve()
+      })
+    },
+    async validate () {
+      if (this.isBind) {
+        await this.runFieldRule({ validator: this.validateSecgroups }, this.model[this.secgroupField])
+      }
+      if (this.isNetworkTag) {
+        await this.runFieldRule({ validator: this.validateNetworkTags }, this.model[this.networkTagsField])
+      }
+      return true
+    },
     normalizeSecgroupIds (secgroups) {
       if (!Array.isArray(secgroups) || !secgroups.length) return []
       return secgroups.map((item) => {
@@ -356,16 +374,16 @@ export default {
       this.writePendingSecgroups()
     },
     writePendingSecgroups () {
-      if (!this.pendingInitSecgroups.length || !this.form?.fc) return
+      if (!this.pendingInitSecgroups.length) return
       // 回填结束后不再强写，避免覆盖用户手动清空
       if (!this.ignoreAutoTypeReset) {
         this.setPendingInitSecgroups([])
         return
       }
       this.isBind = true
-      this.form.fc.setFieldsValue({
-        [this.decorators.type[0]]: SECGROUP_OPTIONS_MAP.bind.key,
-        [this.decorators.secgroup[0]]: [...this.pendingInitSecgroups],
+      this.applyFormFields({
+        [this.typeField]: SECGROUP_OPTIONS_MAP.bind.key,
+        [this.secgroupField]: [...this.pendingInitSecgroups],
       })
     },
     onSecgroupInitLoaded () {
@@ -409,13 +427,13 @@ export default {
       this.networkTagError = this.getNetworkTagsValidateError(value) || ''
     },
     handleNetworkTagsChange (value) {
-      if (this.networkTagSyncing || !this.form?.fc) return
-      const field = this.decorators.network_tags[0]
+      if (this.networkTagSyncing) return
+      const field = this.networkTagsField
       const tags = this.normalizeNetworkTags(value)
-      const current = this.normalizeNetworkTags(this.form.fc.getFieldValue(field))
+      const current = this.normalizeNetworkTags(this.model[field])
       if (JSON.stringify(tags) !== JSON.stringify(current)) {
         this.networkTagSyncing = true
-        this.form.fc.setFieldsValue({ [field]: tags })
+        this.applyFormFields({ [field]: tags })
         this.$nextTick(() => {
           this.networkTagSyncing = false
           this.clearNetworkTagSearchInput()
@@ -468,19 +486,19 @@ export default {
       e.preventDefault()
       e.stopPropagation()
       const value = (e.target.value || '').trim()
-      if (!value || !this.form?.fc) return
-      const field = this.decorators.network_tags[0]
-      const current = [...(this.form.fc.getFieldValue(field) || [])]
+      if (!value) return
+      const field = this.networkTagsField
+      const current = [...(this.model[field] || [])]
       if (!current.includes(value)) {
         this.networkTagSyncing = true
-        this.form.fc.setFieldsValue({
+        this.applyFormFields({
           [field]: [...current, value],
         })
       }
       this.$nextTick(() => {
         this.networkTagSyncing = false
         this.clearNetworkTagSearchInput()
-        this.syncNetworkTagsValidation(this.form.fc.getFieldValue(field))
+        this.syncNetworkTagsValidation(this.model[field])
       })
     },
     clearNetworkTagSearchInput () {

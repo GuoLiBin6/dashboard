@@ -4,17 +4,18 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="title"  :name="params.name" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
+      <a-form-model
+        ref="formRef"
         class="mt-3"
-        :form="form.fc"
+        :model="form"
         v-bind="formItemLayout">
-        <a-form-item :label="$t('common.text00076')">
-          <a-radio-group  v-decorator="decorators.disable_delete">
+        <a-form-model-item :label="$t('common.text00076')">
+          <a-radio-group v-model:value="form.disable_delete">
             <a-radio :value="true">{{$t('status.enabled.true')}}</a-radio>
             <a-radio :value="false">{{$t('status.enabled.false')}}</a-radio>
           </a-radio-group>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
@@ -43,15 +44,7 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this, { onFieldsChange: this.onFieldsChange }),
-      },
-      decorators: {
-        disable_delete: [
-          'disable_delete',
-          {
-            initialValue: !isAllNotDisable,
-          },
-        ],
+        disable_delete: !isAllNotDisable,
       },
       formItemLayout: {
         wrapperCol: { span: 20 },
@@ -69,7 +62,7 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const isDelete = this.form.fc.getFieldValue('disable_delete')
+        const isDelete = this.form.disable_delete
         if (this.params.data.length === 1) {
           this.params.onManager('update', {
             id: this.params.data[0].id,

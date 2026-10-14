@@ -5,19 +5,21 @@
       <a-alert class="mb-2" type="warning">
         <template #message>{{$t('compute.text_665')}}</template>
       </a-alert>
-      <a-form
-        v-bind="formItemLayout"
-        :form="form.fc">
-        <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-bind="formItemLayout">
-          <domain-project :fc="form.fc" :decorators="{ project: decorators.project, domain: decorators.domain }" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_667')" v-bind="formItemLayout">
-          <a-radio-group @change="handleUploadTypeChange" v-decorator="decorators.uploadType">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-bind="formItemLayout">
+          <domain-project :form="form" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_667')" v-bind="formItemLayout" prop="uploadType">
+          <a-radio-group @change="handleUploadTypeChange" v-model:value="form.uploadType">
             <a-radio-button value="file">{{$t('compute.text_668')}}</a-radio-button>
             <a-radio-button value="url">{{$t('compute.text_669')}}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_670')" v-bind="formItemLayout" v-if="byUpload" :help="uploadFileHelp">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_670')" v-bind="formItemLayout" v-if="byUpload" :help="uploadFileHelp">
           <a-upload
             @change="handleUploadChange"
             @reject="handleUploadReject"
@@ -30,15 +32,15 @@
             :strokeColor="{ from: '#108ee9', to: '#87d068' }"
             :percent="imageUploadPercent"
             status="active" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_672')" v-bind="formItemLayout" v-if="!byUpload">
-          <a-input :placeholder="$t('compute.text_673')" v-decorator="decorators.copy_from" @change="handleCopyFromChange" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_627')" v-bind="formItemLayout">
-          <a-input :placeholder="$t('compute.text_416')" v-decorator="decorators.name" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_267')" v-bind="formItemLayout">
-          <a-radio-group v-decorator="decorators.os_type">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_672')" v-bind="formItemLayout" v-if="!byUpload" prop="copy_from">
+          <a-input :placeholder="$t('compute.text_673')" v-model:value="form.copy_from" @change="handleCopyFromChange" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_627')" v-bind="formItemLayout" prop="name">
+          <a-input :placeholder="$t('compute.text_416')" v-model:value="form.name" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_267')" v-bind="formItemLayout" prop="os_type">
+          <a-radio-group v-model:value="form.os_type">
             <a-radio-button value="Linux">
               Linux
             </a-radio-button>
@@ -47,16 +49,17 @@
             </a-radio-button>
             <a-radio-button value="other">{{$t('compute.text_674')}}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_1365')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_1365')">
           <os-arch
-            v-decorator="decorators.os_arch"
+            :value="form.os_arch"
+            @change="v => form.os_arch = v"
             :form="form" />
-        </a-form-item>
-        <a-form-item v-if="enableEncryption" :label="$t('compute.image.encryption')" :extra="$t('compute.image.encryption.extra')">
-          <encrypt-keys :decorators="decorators.encrypt_keys" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+        <a-form-model-item v-if="enableEncryption" :label="$t('compute.image.encryption')" :extra="$t('compute.image.encryption.extra')">
+          <encrypt-keys :form="form" :model="form" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -68,15 +71,13 @@
 <script>
 import { mapGetters } from 'vuex'
 import * as R from 'ramda'
-import EncryptKeys from '@Compute/sections/encryptkeys'
+import EncryptKeys from '@Compute/sections/encryptkeys/model'
 import { isRequired } from '@/utils/validate'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
-import DomainProject from '@/sections/DomainProject'
-import i18n from '@/locales'
+import DomainProject from '@/sections/DomainProject/model'
 import OsArch from '@/sections/OsArch'
 import { HOST_CPU_ARCHS } from '@/constants/compute'
-// import _ from 'lodash'
 export default {
   name: 'ImageUploadDialog',
   components: {
@@ -89,87 +90,33 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        domain: this.$store.getters.userInfo.projectDomainId,
+        project: this.$store.getters.userInfo.projectId,
+        name: undefined,
+        uploadType: 'file',
+        copy_from: undefined,
+        os_type: 'Linux',
+        os_arch: HOST_CPU_ARCHS.x86.key,
+        encryptEnable: '',
+        encrypt_key_alg: '',
+        encrypt_key_id: undefined,
       },
-      decorators: {
+      rules: {
         domain: [
-          'domain',
-          {
-            rules: [
-              { validator: isRequired(), message: i18n.t('rules.domain'), trigger: 'change' },
-            ],
-          },
+          { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
         ],
         project: [
-          'project',
-          {
-            rules: [
-              { validator: isRequired(), message: i18n.t('rules.project'), trigger: 'change' },
-            ],
-          },
+          { validator: isRequired(), message: this.$t('rules.project'), trigger: 'change' },
         ],
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_660') },
-              { validator: this.$validate('imageName') },
-              { validator: this.checkTemplateName },
-            ],
-          },
-        ],
-        uploadType: [
-          'uploadType',
-          {
-            initialValue: 'file',
-          },
+          { required: true, message: this.$t('compute.text_660') },
+          { validator: this.$validate('imageName') },
+          { validator: this.checkTemplateName },
         ],
         copy_from: [
-          'copy_from',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_673') },
-              { validator: this.validateUrl },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_673') },
+          { validator: this.validateUrl },
         ],
-        os_type: [
-          'os_type',
-          {
-            initialValue: 'Linux',
-          },
-        ],
-        os_arch: [
-          'os_arch',
-          {
-            initialValue: HOST_CPU_ARCHS.x86.key,
-          },
-        ],
-        // os_bit: [
-        //   'os_bit',
-        //   {
-        //     initialValue: '64',
-        //   },
-        // ],
-        encrypt_keys: {
-          encryptEnable: [
-            'encryptEnable',
-            {
-              initialValue: '',
-            },
-          ],
-          encrypt_key_alg: [
-            'encrypt_key_alg',
-            {
-              initialValue: '',
-            },
-          ],
-          encrypt_key_id: [
-            'encrypt_key_id',
-          ],
-        },
       },
       formItemLayout: {
         wrapperCol: {
@@ -218,7 +165,6 @@ export default {
     beforeUpload (file) {
       if (this.isAppPackage && !this.isTarGzFile(file.name)) {
         this.$message.error(this.$t('compute.upload_app_package_format_tip'))
-        // 勿 return false：antd Upload 会把文件仍加入列表
         return Promise.reject(new Error(this.$t('compute.upload_app_package_format_tip')))
       }
       this.fileList = [file]
@@ -234,7 +180,7 @@ export default {
       if (e.target.value === 'url') {
         this.byUpload = false
         this.$nextTick(() => {
-          this.setImageNameFromUrl(this.form.fc.getFieldValue('copy_from'))
+          this.setImageNameFromUrl(this.form.copy_from)
         })
       } else {
         this.byUpload = true
@@ -278,7 +224,7 @@ export default {
     },
     setImageName (name) {
       if (!name) return
-      this.form.fc.setFieldsValue({ name })
+      this.form.name = name
     },
     setImageNameFromFileList (fileList) {
       const file = fileList && fileList[0]
@@ -331,7 +277,6 @@ export default {
         data,
         timeout: 0,
         onUploadProgress: (progressEvent) => {
-          // 计算上传进度百分比
           const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total)
           this.imageUploadPercent = percent
           if (this.imageUploadPercent >= 100) {
@@ -374,17 +319,10 @@ export default {
       try {
         const { fileList } = this
         const formData = new FormData()
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         formData.append('domain_id', (values.domain && values.domain.key) || this.userInfo.projectDomainId)
         formData.append('project_id', (values.project && values.project.key) || this.userInfo.projectId)
-        // const os_bit = values.os_bit
-        // if (values.os_arch === HOST_CPU_ARCHS.arm.key) {
-        //   values.os_arch = `aarch${os_bit}`
-        // } else {
-        //   if (os_bit === '64') { // else 情况就是x86，既 os_arch 本身的值
-        //     values.os_arch = 'x86-64'
-        //   }
-        // }
         if (values.uploadType === 'file') {
           formData.append('name', values.name)
           formData.append('os_version', '')
@@ -420,7 +358,6 @@ export default {
               this.loading = false
               this.clearTimer()
             })
-          // this.getProcessBarInfo()
         } else {
           await this.doImportUrl(values)
           this.cancelDialog()
@@ -431,36 +368,6 @@ export default {
         throw error
       }
     },
-    fetchImageInfoByName () {
-      const imageManager = new this.$Manager('images', 'v1')
-      const name = this.form.fc.getFieldValue('name')
-      return imageManager.list({ params: { name, scope: this.$store.getters.scope } })
-    },
-    // getProcessBarInfo () {
-    //   this.clearTimer()
-    //   this.timer = setInterval(() => {
-    //     this.fetchImageInfoByName()
-    //       .then((res) => {
-    //         const imageInfo = res.data && res.data.data && res.data.data[0]
-    //         if (this.fileList && this.fileList.length > 0) {
-    //           if (imageInfo) {
-    //             const percent = (imageInfo.size / this.fileList[0].size) * 100
-    //             if (percent === 100) {
-    //               this.percentTimer = setTimeout(() => {
-    //                 this.imageUploadPercent = _.floor(percent)
-    //               }, 5000)
-    //             } else {
-    //               this.imageUploadPercent = _.floor(percent)
-    //             }
-    //           }
-    //         }
-    //         if (this.imageUploadPercent >= 100) {
-    //           this.cancelDialog()
-    //           this.params.refresh()
-    //         }
-    //       })
-    //   }, 5000)
-    // },
   },
 }
 </script>

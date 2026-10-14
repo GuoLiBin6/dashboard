@@ -8,38 +8,38 @@
       class="mb-2"
       :checkedChildren="$t('compute.text_115')"
       :unCheckedChildren="$t('compute.text_116')"
-      v-decorator="decorators.pciEnable"
-      @change="change" />
+      :checked="resolvedModel.pciEnable"
+      @change="v => { $set(resolvedModel, 'pciEnable', v); change(v) }" />
     <template v-if="pciEnable">
       <div
-        v-for="(k, index) in pciForm.fc.getFieldValue('keys')"
+        v-for="(k, index) in pciKeys"
         :key="k"
         class="pci-group-row">
-        <a-form-item class="pci-group">
+        <component :is="itemTag" class="pci-group">
           <div class="pci-select-row">
-            <a-form-item class="pci-select-item pci-select-item--fixed mb-0">
+            <component :is="itemTag" class="pci-select-item pci-select-item--fixed mb-0">
               <fixed-label-filter :label="$t('compute.pci.dev_type_sharing_mode')">
-                <base-select v-decorator="decorators.pciDevType(k)" :options="getRealPciDevTypeOptions(realPciDevTypeOptions, index)" @change="(val) => onChangeDevType(val, k)" isDefaultSelect />
+                <base-select :value="readPciRowField('pciDevType', k)" @change="(val) => { setPciMapField('pciDevType', k, val); onChangeDevType(val, k) }" :options="getRealPciDevTypeOptions(realPciDevTypeOptions, index)" isDefaultSelect />
               </fixed-label-filter>
-            </a-form-item>
-            <a-form-item v-if="isCurGpuDevType(k)" class="pci-select-item pci-select-item--fixed mb-0">
+            </component>
+            <component :is="itemTag" v-if="isCurGpuDevType(k)" class="pci-select-item pci-select-item--fixed mb-0">
               <fixed-label-filter :label="$t('compute.pci.gpu_mode')">
-                <base-select v-decorator="decorators.pciGpuType(k)" :options="getGpuTypeOptions(k)" @change="(val) => onChangeGpuType(val, k)" />
+                <base-select :value="readPciRowField('pciGpuType', k)" @change="(val) => { setPciMapField('pciGpuType', k, val); onChangeGpuType(val, k) }" :options="getGpuTypeOptions(k)" />
               </fixed-label-filter>
-            </a-form-item>
-            <a-form-item class="pci-select-item pci-select-item--model mb-0">
+            </component>
+            <component :is="itemTag" class="pci-select-item pci-select-item--model mb-0">
               <fixed-label-filter :label="$t('compute.pci.vendor_model')">
-                <base-select v-decorator="decorators.pciModel(k)" :options="getRealPciOptions(realPciOptions, index)" @change="(val) => onChangeModel(val, k)"
+                <base-select :value="readPciRowField('pciModel', k)" @change="(val) => { setPciMapField('pciModel', k, val); onChangeModel(val, k) }" :options="getRealPciOptions(realPciOptions, index)"
                   :selectProps="{ placeholder: $t('compute.text_147') }" />
               </fixed-label-filter>
-            </a-form-item>
+            </component>
           </div>
           <a-row :gutter="[8,0]">
             <a-col :span="20">
               <div class="pci-count-memory-row">
-                <a-form-item class="mb-0">
+                <component :is="itemTag" class="mb-0">
                   <fixed-label-filter :label="$t('compute.text_294')">
-                    <a-radio-group class="p-0" v-decorator="decorators.pciCount(k)" @change="(e) => onChangeCount(e, k)">
+                    <a-radio-group class="p-0" :value="readPciRowField('pciCount', k)" @change="(e) => { setPciMapField('pciCount', k, e.target.value); onChangeCount(e, k) }">
                       <a-radio-button
                         v-for="item in pciCountOptions"
                         :value="item.key"
@@ -47,27 +47,27 @@
                         :key="item.key">{{ item.label }}</a-radio-button>
                     </a-radio-group>
                   </fixed-label-filter>
-                </a-form-item>
-                <a-form-item v-if="isHamiSharingMode(k)" class="mb-0 pci-memory-item">
+                </component>
+                <component :is="itemTag" v-if="isHamiSharingMode(k)" class="mb-0 pci-memory-item">
                   <fixed-label-filter :label="$t('compute.pci.memory_request')">
                     <a-tooltip :title="getMemoryRangeTooltip(k)" class="p-0" placement="top">
                       <disk-size-input
-                        v-decorator="decorators.memoryRequest(k)"
+                        :value="readPciRowField('memory_request', k)"
+                        @change="(val) => { setPciMapField('memory_request', k, val); onChangeMemoryRequest(val, k) }"
                         :min="1"
                         :max="getMemorySizeMb(k) || Infinity"
                         :step="1"
                         :units="['MB', 'GB']"
                         value-unit="MB"
                         default-unit="GB"
-                        @change="(val) => onChangeMemoryRequest(val, k)"
                         @unitChange="(unit) => onMemoryUnitChange(k, unit)" />
                     </a-tooltip>
                   </fixed-label-filter>
-                </a-form-item>
+                </component>
               </div>
             </a-col>
           </a-row>
-        </a-form-item>
+        </component>
         <a-button
           v-if="index > 0"
           class="pci-group-row__remove"
@@ -97,6 +97,7 @@ import {
 import DiskSizeInput from '@/sections/DiskSizeInput'
 import createFormFieldDraftMixin from '@/mixins/createFormFieldDraft'
 import { pickFields } from '@/utils/createFormDraft'
+import pciModelMixin from './pciModelMixin'
 
 let id = 0
 export default {
@@ -104,7 +105,7 @@ export default {
   components: {
     DiskSizeInput,
   },
-  mixins: [createFormFieldDraftMixin],
+  mixins: [createFormFieldDraftMixin, pciModelMixin],
   props: {
     formDraftKey: {
       type: String,
@@ -114,9 +115,10 @@ export default {
       type: Object,
       require: true,
     },
-    decorators: {
+    /** a-form-model：与动态 field key 对齐的受控对象（通常为 form.fd，必传） */
+    model: {
       type: Object,
-      validator: val => val.pciEnable && val.pciDevType && val.pciGpuType && val.pciModel && val.pciCount && val.memoryRequest,
+      required: true,
     },
     pciDevTypeOptions: {
       type: Array,
@@ -130,6 +132,7 @@ export default {
   data () {
     return {
       pciEnable: false,
+      pciKeys: [0],
       curPciDevType: '',
       curGpuType: GPU_TYPE_OPTION_MAP.HPC.value,
       memoryUnits: {},
@@ -137,6 +140,9 @@ export default {
     }
   },
   computed: {
+    itemTag () {
+      return 'a-form-model-item'
+    },
     isPciEmpty () {
       return (this.pciOptions && this.pciOptions.length === 0) || !this.realPciDevTypeOptions.length
     },
@@ -184,13 +190,8 @@ export default {
       if (val) {
         this.init()
       } else {
-        const keys = this.pciForm.fc.getFieldValue('keys')
-        keys.forEach(key => {
-          this.$delete(this.form.fd, `pciDevType[${key}]`)
-          this.$delete(this.form.fd, `pciGpuType[${key}]`)
-          this.$delete(this.form.fd, `pciModel[${key}]`)
-          this.$delete(this.form.fd, `pciCount[${key}]`)
-          this.$delete(this.form.fd, `memory_request[${key}]`)
+        this.pciKeys.forEach(key => {
+          this.removePciRow(key)
         })
       }
     },
@@ -218,28 +219,18 @@ export default {
       if (val) this.pciEnable = false
     },
   },
-  beforeCreate () {
-    this.pciForm = {}
-    this.pciForm.fc = this.$form.createForm(this, { name: 'gpu_form' })
-    this.pciForm.fc.getFieldDecorator('keys', { initialValue: [id], preserve: true })
+  mounted () {
+    if (this.resolvedModel?.pciEnable === undefined) {
+      this.$set(this.resolvedModel, 'pciEnable', false)
+    }
+    this.pciEnable = !!this.resolvedModel?.pciEnable
   },
   methods: {
-    /** 选型在父 form.fc/fd；pciForm 仅 keys */
-    readPciRowField (field, key) {
-      const bracketKey = `${field}[${key}]`
-      const fc = this.form?.fc
-      const fromFc = fc?.getFieldValue?.(bracketKey)
-      if (fromFc !== undefined && fromFc !== null && fromFc !== '') return fromFc
-      const fd = this.form?.fd || {}
-      if (fd[bracketKey] !== undefined) return fd[bracketKey]
-      if (fd[field] && typeof fd[field] === 'object') return fd[field][key]
-      return undefined
-    },
     getCreateFormFieldDraftSnapshot () {
       const enable = this.pciEnable
       if (!enable) return { pciEnable: false }
-      const keys = this.pciForm?.fc?.getFieldValue?.('keys') || []
-      const ret = { pciEnable: true, keys: Array.isArray(keys) ? [...keys] : [] }
+      const keys = [...this.pciKeys]
+      const ret = { pciEnable: true, keys }
       ret.keys.forEach((key) => {
         ;['pciDevType', 'pciGpuType', 'pciModel', 'pciCount'].forEach((field) => {
           const val = this.readPciRowField(field, key)
@@ -253,10 +244,6 @@ export default {
     applyCreateFormFieldDraft (draft) {
       this.tryApplyPciDraft(draft || this.readFormFieldDraft())
     },
-    /**
-     * 回填白名单：只保留开关 + 结构 + 选择型子字段（设备类型/GPU 模式/型号/数量），
-     * 输入子字段 memory_request 不回填
-     */
     sanitizeDraftForRestore (draft) {
       if (draft == null || typeof draft !== 'object') return draft
       if (Array.isArray(this.formDraftRestoreFields) && this.formDraftRestoreFields.length) {
@@ -280,18 +267,14 @@ export default {
       this.pciDraftRestoring = true
       this.pciEnable = true
       const keys = Array.isArray(draft.keys) && draft.keys.length ? draft.keys : [0]
-      // 避免后续 add 与回填 key 冲突
       keys.forEach((k) => {
         const n = Number(k)
         if (!Number.isNaN(n) && n > id) id = n
       })
       this.$nextTick(() => {
         try {
-          if (this.form?.fc) this.form.fc.setFieldsValue({ pciEnable: true })
-          if (this.pciForm?.fc) {
-            try { this.pciForm.fc.setFieldsValue({ keys }) } catch (e) { /* ignore */ }
-          }
-          // 等行挂载后再写父表单选型
+          this.$set(this.resolvedModel, 'pciEnable', true)
+          this.syncPciFormKeys(keys)
           this.$nextTick(() => {
             try {
               const fields = {}
@@ -301,11 +284,8 @@ export default {
                   if (draft[bracketKey] !== undefined) fields[bracketKey] = draft[bracketKey]
                 })
               })
-              if (Object.keys(fields).length && this.form?.fc) {
-                this.form.fc.setFieldsValue(fields)
-                if (this.form.fd) {
-                  Object.keys(fields).forEach((k) => { this.form.fd[k] = fields[k] })
-                }
+              if (Object.keys(fields).length) {
+                this.pciWriteFields(fields)
               }
               const first = keys[0]
               if (draft[`pciDevType[${first}]`]) this.curPciDevType = draft[`pciDevType[${first}]`]
@@ -313,7 +293,6 @@ export default {
             } finally {
               this.$nextTick(() => {
                 this.pciDraftRestoring = false
-                // 对照当前可选设备/型号，非法值回退
                 this.$nextTick(() => this.changeSelectedValue())
               })
             }
@@ -337,23 +316,26 @@ export default {
       const pciKey = key || this.curPciDevType
       return this.realPciDevTypeOptions.find(item => item.key === pciKey)
     },
+    fdPciVal (field, key) {
+      return this.readPciRowField(field, key)
+    },
     isCurGpuDevType (key) {
-      const pciKey = this.form.fd[`pciDevType[${key}]`] || this.curPciDevType
+      const pciKey = this.fdPciVal('pciDevType', key) || this.curPciDevType
       const { dev_type } = this.parsePciDevTypeKey(pciKey)
       return dev_type === 'GPU'
     },
     isHamiSharingMode (key) {
-      const pciKey = this.form.fd[`pciDevType[${key}]`] || this.curPciDevType
+      const pciKey = this.fdPciVal('pciDevType', key) || this.curPciDevType
       const option = this.getPciOptionByKey(pciKey)
       return option?.sharing_mode === 'HAMI'
     },
     getGpuTypeOptions (key) {
-      const pciKey = this.form.fd[`pciDevType[${key}]`] || this.curPciDevType
+      const pciKey = this.fdPciVal('pciDevType', key) || this.curPciDevType
       const option = this.getPciOptionByKey(pciKey)
       return getGpuTypeSelectOptions(option?.sharing_mode)
     },
     getMemorySizeMb (key) {
-      const modelKey = this.form.fd[`pciModel[${key}]`]
+      const modelKey = this.fdPciVal('pciModel', key)
       const curPci = this.pciOptions.find(o => o.key === modelKey) || this.getRealPciOptions(this.realPciOptions, key)[0]
       return curPci?.memory_size_mb
     },
@@ -373,62 +355,50 @@ export default {
     init () {
       this.initialValue()
     },
-    initialValue (id = 0) {
+    initialValue (rowId = 0) {
       this.$nextTick(() => {
         const pciDevType = this.curPciDevType || (this.getRealPciDevTypeOptions(this.realPciDevTypeOptions).length ? this.getRealPciDevTypeOptions(this.realPciDevTypeOptions)[0].key : '')
         const { sharing_mode } = this.parsePciDevTypeKey(pciDevType)
         this.curGpuType = resolveGpuTypeBySharingMode(this.curGpuType, sharing_mode)
+        const firstModel = this.fdPciVal('pciModel', 0) || (this.getRealPciOptions(this.realPciOptions).length ? this.getRealPciOptions(this.realPciOptions)[0].key : '')
         const fields = {
-          [`pciDevType[${id}]`]: pciDevType,
-          [`pciModel[${id}]`]: this.form.fd['pciModel[0]'] || (this.getRealPciOptions(this.realPciOptions).length ? this.getRealPciOptions(this.realPciOptions)[0].key : ''),
-          [`pciCount[${id}]`]: 1,
+          [`pciDevType[${rowId}]`]: pciDevType,
+          [`pciModel[${rowId}]`]: firstModel,
+          [`pciCount[${rowId}]`]: 1,
         }
         if (this.parsePciDevTypeKey(pciDevType).dev_type === 'GPU') {
-          fields[`pciGpuType[${id}]`] = this.curGpuType
+          fields[`pciGpuType[${rowId}]`] = this.curGpuType
         }
-        this.form.fc.setFieldsValue(fields)
+        this.pciWriteFields(fields)
       })
     },
     changeSelectedValue () {
       if (this.pciDraftRestoring) return
-      const keys = this.pciForm.fc.getFieldValue('keys')
+      const keys = this.pciKeys
       keys.forEach(key => {
-        if (this.form.fd[`pciDevType[${key}]`] && !this.getRealPciDevTypeOptions(this.realPciDevTypeOptions).some(item => item.key === this.form.fd[`pciDevType[${key}]`])) {
+        const curType = this.fdPciVal('pciDevType', key)
+        if (curType && !this.getRealPciDevTypeOptions(this.realPciDevTypeOptions).some(item => item.key === curType)) {
           if (this.getRealPciDevTypeOptions(this.realPciDevTypeOptions).length) {
-            this.form.fc.setFieldsValue({
-              [`pciDevType[${key}]`]: this.getRealPciDevTypeOptions(this.realPciDevTypeOptions)[0].key,
-            })
-            this.curPciDevType = this.getRealPciDevTypeOptions(this.realPciDevTypeOptions)[0].key
+            const next = this.getRealPciDevTypeOptions(this.realPciDevTypeOptions)[0].key
+            this.pciWriteFields({ [`pciDevType[${key}]`]: next })
+            this.curPciDevType = next
           } else {
-            this.form.fc.setFieldsValue({
-              [`pciDevType[${key}]`]: undefined,
-            })
+            this.pciWriteFields({ [`pciDevType[${key}]`]: undefined })
             this.curPciDevType = undefined
           }
         }
         this.$nextTick(() => {
-          if (this.form.fd[`pciModel[${key}]`] && !this.getRealPciOptions(this.realPciOptions, key).some(item => item.key === this.form.fd[`pciModel[${key}]`])) {
-            if (this.getRealPciOptions(this.realPciOptions, key).length && this.form.fd[`pciDevType[${key}]`]) {
-              this.form.fc.setFieldsValue({
-                [`pciModel[${key}]`]: this.getRealPciOptions(this.realPciOptions, key)[0].key,
-              })
-              this.form.fd[`pciModel[${key}]`] = this.getRealPciOptions(this.realPciOptions, key)[0].key
+          const curModel = this.fdPciVal('pciModel', key)
+          if (curModel && !this.getRealPciOptions(this.realPciOptions, key).some(item => item.key === curModel)) {
+            if (this.getRealPciOptions(this.realPciOptions, key).length && this.fdPciVal('pciDevType', key)) {
+              const nextModel = this.getRealPciOptions(this.realPciOptions, key)[0].key
+              this.pciWriteFields({ [`pciModel[${key}]`]: nextModel })
             } else {
-              this.form.fc.setFieldsValue({
-                [`pciModel[${key}]`]: undefined,
-              })
-              this.form.fd[`pciModel[${key}]`] = undefined
+              this.pciWriteFields({ [`pciModel[${key}]`]: undefined })
             }
           }
         })
       })
-    },
-    removeValue (id) {
-      this.$delete(this.form.fd, `pciDevType[${id}]`)
-      this.$delete(this.form.fd, `pciGpuType[${id}]`)
-      this.$delete(this.form.fd, `pciModel[${id}]`)
-      this.$delete(this.form.fd, `pciCount[${id}]`)
-      this.$delete(this.form.fd, `memory_request[${id}]`)
     },
     change (val) {
       this.pciEnable = val
@@ -446,79 +416,55 @@ export default {
       if (this.parsePciDevTypeKey(val).dev_type === 'GPU') {
         fields[`pciGpuType[${key}]`] = this.curGpuType
       }
-      this.form.fc.setFieldsValue(fields)
+      this.pciWriteFields(fields)
       if (!this.isHamiSharingMode(key)) {
-        this.$delete(this.form.fd, `memory_request[${key}]`)
+        this.setPciMapField('memory_request', String(key), undefined)
       }
       this.reset()
     },
     onChangeGpuType (val, key) {
       this.curGpuType = val
-      this.form.fc.setFieldsValue({
-        [`pciGpuType[${key}]`]: val,
-      })
+      this.pciWriteFields({ [`pciGpuType[${key}]`]: val })
     },
     onChangeModel (val, key) {
-      this.form.fc.setFieldsValue({
-        [`pciModel[${key}]`]: val,
-      })
+      this.pciWriteFields({ [`pciModel[${key}]`]: val })
       const curPci = this.pciOptions.find(o => o.key === val)
       const max = curPci?.memory_size_mb
-      const current = this.form.fd[`memory_request[${key}]`]
+      const current = this.fdPciVal('memory_request', key)
       if (max && current > max) {
-        this.form.fc.setFieldsValue({
-          [`memory_request[${key}]`]: max,
-        })
+        this.pciWriteFields({ [`memory_request[${key}]`]: max })
       }
     },
     onChangeCount (e, key) {
-      this.form.fc.setFieldsValue({
-        [`pciCount[${key}]`]: e.target.value,
-      })
+      this.pciWriteFields({ [`pciCount[${key}]`]: e.target.value })
     },
     onChangeMemoryRequest (val, key) {
-      this.form.fc.setFieldsValue({
-        [`memory_request[${key}]`]: val,
-      })
+      this.pciWriteFields({ [`memory_request[${key}]`]: val })
+    },
+    syncPciFormKeys (keys) {
+      this.pciKeys = [...keys]
     },
     add () {
-      const { pciForm } = this
-      const keys = pciForm.fc.getFieldValue('keys')
       const nextKey = ++id
-      const nextKeys = keys.concat(nextKey)
-      pciForm.fc.setFieldsValue({ keys: nextKeys })
+      const nextKeys = this.pciKeys.concat(nextKey)
+      this.syncPciFormKeys(nextKeys)
       this.initialValue(nextKey)
     },
     remove (k) {
-      const { pciForm } = this
-      const keys = pciForm.fc.getFieldValue('keys')
-
-      if (keys.length === 1) {
-        return
-      }
-      pciForm.fc.setFieldsValue({
-        keys: keys.filter(key => key !== k),
-      })
-      this.removeValue(k)
+      if (this.pciKeys.length === 1) return
+      this.syncPciFormKeys(this.pciKeys.filter(key => key !== k))
+      this.removePciRow(k)
     },
     reset () {
-      const { pciForm } = this
-      const keys = pciForm.fc.getFieldValue('keys')
-
-      pciForm.fc.setFieldsValue({
-        keys: keys.filter(key => key === 0),
-      })
-      keys.forEach(k => {
-        if (k !== 0) {
-          this.removeValue(k)
-        }
-      })
+      const toRemove = this.pciKeys.filter(key => key !== 0)
+      this.syncPciFormKeys(this.pciKeys.filter(key => key === 0))
+      toRemove.forEach(k => this.removePciRow(k))
     },
     getRealPciDevTypeOptions (realPciDevTypeOptions, index = 0) {
       let options = realPciDevTypeOptions
       if (index !== 0) {
         options = realPciDevTypeOptions.filter(o => {
-          return this.form.fd['pciDevType[0]'] === o.key
+          return this.fdPciVal('pciDevType', 0) === o.key
         })
       }
       if (!this.curPciDevType) {
@@ -530,10 +476,25 @@ export default {
       let options = realPciOptions
       if (index !== 0) {
         options = realPciOptions.filter(o => {
-          return this.form.fd['pciModel[0]'] === o.key
+          return this.fdPciVal('pciModel', 0) === o.key
         })
       }
       return options
+    },
+    async validate () {
+      if (!this.pciEnable) return true
+      for (const k of this.pciKeys) {
+        if (!this.readPciRowField('pciDevType', k)) {
+          throw new Error(this.$t('compute.text_147'))
+        }
+        if (!this.readPciRowField('pciModel', k)) {
+          throw new Error(this.$t('compute.text_147'))
+        }
+        if (this.isHamiSharingMode(k) && !this.readPciRowField('memory_request', k)) {
+          throw new Error(this.$t('compute.pci.memory_request.required'))
+        }
+      }
+      return true
     },
   },
 }
@@ -557,7 +518,6 @@ export default {
   margin-bottom: 0;
   flex: 1;
   min-width: 0;
-  // border: 1px solid #e8e8e8;
   border-radius: 4px;
   background: #fafafa;
 }
@@ -578,7 +538,6 @@ export default {
 }
 .pci-select-item {
   margin-bottom: 0 !important;
-  // 与 BaseSelect 默认 minWidth 一致
   &--fixed {
     flex: 0 0 auto;
     /deep/ .ant-select {

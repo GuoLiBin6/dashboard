@@ -2,27 +2,29 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('compute.text_709', [$t('dictionary.instancegroup')])}}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-bind="formItemLayout">
-          <domain-project :fc="form.fc" :decorators="{ project: decorators.project, domain: decorators.domain }" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_228')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.name" :placeholder="$t('validator.resourceName')" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')" v-bind="formItemLayout">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_694')" v-bind="formItemLayout" :extra="forceDispersionExtra">
-          <a-radio-group v-decorator="decorators.force_dispersion">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules">
+        <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-bind="formItemLayout">
+          <domain-project :form="form" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_228')" v-bind="formItemLayout" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('validator.resourceName')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" v-bind="formItemLayout" prop="description">
+          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.description" :placeholder="$t('common_367')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_694')" v-bind="formItemLayout" :extra="forceDispersionExtra" prop="force_dispersion">
+          <a-radio-group v-model:value="form.force_dispersion">
             <a-radio-button :value="true">{{$t('compute.text_695')}}</a-radio-button>
             <a-radio-button :value="false">{{$t('compute.text_696')}}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_697')" v-bind="formItemLayout" :extra="$t('compute.text_710')">
-          <a-input-number :min="1" :max="10" :parser="Math.round" v-decorator="decorators.granularity" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_697')" v-bind="formItemLayout" :extra="$t('compute.text_710')" prop="granularity">
+          <a-input-number :min="1" :max="10" :parser="Math.round" v-model:value="form.granularity" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -37,7 +39,7 @@ import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import { isRequired } from '@/utils/validate'
 import i18n from '@/locales'
-import DomainProject from '@/sections/DomainProject'
+import DomainProject from '@/sections/DomainProject/model'
 
 export default {
   name: 'InstanceGroupCreateDialog',
@@ -49,63 +51,27 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            if (values.hasOwnProperty('force_dispersion')) {
-              this.form.fd.force_dispersion = values.force_dispersion
-            }
-          },
-        }),
-        fd: {
-          force_dispersion: true,
-        },
+        domain: undefined,
+        project: undefined,
+        name: undefined,
+        description: undefined,
+        force_dispersion: true,
+        granularity: 1,
       },
-      decorators: {
+      rules: {
         domain: [
-          'domain',
-          {
-            rules: [
-              { validator: isRequired(), message: i18n.t('rules.domain'), trigger: 'change' },
-            ],
-          },
+          { validator: isRequired(), message: i18n.t('rules.domain'), trigger: 'change' },
         ],
         project: [
-          'project',
-          {
-            rules: [
-              { validator: isRequired(), message: i18n.t('rules.project'), trigger: 'change' },
-            ],
-          },
+          { validator: isRequired(), message: i18n.t('rules.project'), trigger: 'change' },
         ],
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_210') },
-              { validator: this.$validate('resourceName') },
-            ],
-          },
-        ],
-        description: [
-          'description',
-        ],
-        force_dispersion: [
-          'force_dispersion',
-          {
-            initialValue: true,
-          },
+          { required: true, message: this.$t('compute.text_210') },
+          { validator: this.$validate('resourceName') },
         ],
         granularity: [
-          'granularity',
-          {
-            initialValue: 1,
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_711') },
-              { type: 'number', min: 1, max: 10, message: this.$t('compute.text_712') },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_711') },
+          { type: 'number', min: 1, max: 10, message: this.$t('compute.text_712') },
         ],
       },
       formItemLayout: {
@@ -122,29 +88,18 @@ export default {
     ...mapGetters(['userInfo']),
     forceDispersionExtra () {
       let s = this.$t('compute.text_713')
-      if (!this.form.fd.force_dispersion) {
+      if (!this.form.force_dispersion) {
         s = this.$t('compute.text_714')
       }
       return s
     },
   },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
-        const { project, domain, ...rest } = values
+        await this.$refs.formRef.validate()
+        const { project, domain, ...rest } = this.form
         await this.params.onManager('create', {
           managerArgs: {
             data: {
@@ -154,10 +109,11 @@ export default {
             },
           },
         })
-        this.loading = false
         this.params.refresh()
         this.cancelDialog()
       } catch (error) {
+        // validate or submit failed
+      } finally {
         this.loading = false
       }
     },

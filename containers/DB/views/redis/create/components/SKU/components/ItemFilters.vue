@@ -1,37 +1,37 @@
 <template>
   <div>
     <a-form-item :label="$t('db.text_61')" v-bind="formItemLayout">
-      <a-radio-group :disabled="!!disableds.engine" v-decorator="decorators.engine || ['engine', { initialValue: 'redis' }]" @change="onEngineChange">
+      <a-radio-group :disabled="!!disableds.engine" :value="fieldVal(engineDec)" @change="e => { fieldSet(engineDec, e.target.value); onEngineChange(e) }">
         <a-radio-button :key="item" :value="item" v-for="item in engines">{{item}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
     <a-form-item :label="$t('db.text_236')" v-bind="formItemLayout">
-      <a-radio-group :disabled="!!disableds.engine_version" v-decorator="decorators.engine_version || ['engine_version']" @change="onVersionChange">
+      <a-radio-group :disabled="!!disableds.engine_version" :value="fieldVal(engineVersionDec)" @change="e => { fieldSet(engineVersionDec, e.target.value); onVersionChange(e) }">
         <a-radio-button :key="item" :value="item" v-for="item in engine_versions">{{item}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
     <a-form-item :label="$t('db.text_119')" v-bind="formItemLayout">
-      <a-radio-group :disabled="!!disableds.local_category" v-decorator="decorators.local_category || ['local_category']" @change="onCategoryChange">
+      <a-radio-group :disabled="!!disableds.local_category" :value="fieldVal(localCategoryDec)" @change="e => { fieldSet(localCategoryDec, e.target.value); onCategoryChange(e) }">
         <a-radio-button :key="item" :value="item" v-for="item in local_categorys">{{ENGINE_ARCH[item] || item}}</a-radio-button>
       </a-radio-group>
       <div style="color:#888;font-size:12px;line-height:30px">
-        {{archPoints(getFieldValue('local_category'))}}
+        {{archPoints(form.fd.local_category)}}
       </div>
     </a-form-item>
      <a-form-item :label="$t('db.text_271')" v-bind="formItemLayout">
-      <a-radio-group v-decorator="decorators.nodeType || ['node_type']" @change="onNodeTypeChange">
+      <a-radio-group :value="fieldVal(nodeTypeDec)" @change="e => { fieldSet(nodeTypeDec, e.target.value); onNodeTypeChange(e) }">
          <a-radio-button :key="item" :value="item" v-for="item in node_types">{{NODE_TYPE[item] || item}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
      <a-form-item :label="$t('db.text_272')" v-bind="formItemLayout">
-      <a-radio-group v-decorator="decorators.performance_type || ['performance_type', { initialValue: 'standard' }]">
+      <a-radio-group :value="fieldVal(performanceTypeDec)" @change="e => fieldSet(performanceTypeDec, e.target.value)">
         <template v-for="item in performance_types">
            <a-radio-button v-if="item" :key="item" :value="item">{{PERFORMANCE_TYPE[item] || item}}</a-radio-button>
         </template>
       </a-radio-group>
     </a-form-item>
     <a-form-item :label="$t('db.text_132')" v-bind="formItemLayout" v-if="memorys && memorys.length > 0">
-      <a-radio-group v-decorator="decorators.memory_size_mb || ['memory_size_mb']">
+      <a-radio-group :value="fieldVal(memorySizeDec)" @change="e => fieldSet(memorySizeDec, e.target.value)">
         <a-radio-button v-for="size in memorys" :key="size" :value="size" v-show="(size / 1024) < max || !showMore" :disabled="getIsMemoryDisabled(size)">{{sizestr(size, 'M', 1024)}}</a-radio-button>
         <a-radio-button v-if="showMore" @click="showMore = !showMore">...</a-radio-button>
       </a-radio-group>
@@ -42,6 +42,7 @@
 import * as R from 'ramda'
 import { ENGINE_ARCH, NODE_TYPE, PERFORMANCE_TYPE } from '@DB/views/redis/constants'
 import { sizestr } from '@/utils/utils'
+import { resolveFieldMeta } from '@/utils/common/ant'
 export default {
   name: 'SkuFilters',
   inject: {
@@ -50,7 +51,7 @@ export default {
     getCreateFormDraftPreferred: { default: undefined },
   },
   props: {
-    decorators: {
+    fieldMap: {
       type: Object,
       default: () => {
         return {}
@@ -100,17 +101,26 @@ export default {
     }
   },
   computed: {
-    FC () {
-      if (this.form && this.form.fc) {
-        return this.form.fc
-      }
-      return null
+    boundFd () {
+      return this.form?.fd || this.form
     },
-    getFieldValue () {
-      if (this.FC && this.FC.getFieldValue) {
-        return this.FC.getFieldValue
-      }
-      return () => null
+    engineDec () {
+      return this.fieldMap.engine || { name: 'engine', initialValue: 'redis' }
+    },
+    engineVersionDec () {
+      return this.fieldMap.engine_version || ['engine_version']
+    },
+    localCategoryDec () {
+      return this.fieldMap.local_category || ['local_category']
+    },
+    nodeTypeDec () {
+      return this.fieldMap.nodeType || ['node_type']
+    },
+    performanceTypeDec () {
+      return this.fieldMap.performance_type || { name: 'performance_type', initialValue: 'standard' }
+    },
+    memorySizeDec () {
+      return this.fieldMap.memory_size_mb || ['memory_size_mb']
     },
   },
   watch: {
@@ -122,7 +132,53 @@ export default {
       this.showMore = max > this.max
     },
   },
+  created () {
+    ;[this.engineDec, this.engineVersionDec, this.localCategoryDec, this.nodeTypeDec, this.performanceTypeDec, this.memorySizeDec].forEach(fieldDef => {
+      const meta = resolveFieldMeta(fieldDef)
+      if (!meta) return
+      const { name, ...opts } = meta
+      if (this.boundFd && this.boundFd[name] === undefined) {
+        this.$set(this.boundFd, name, opts.initialValue)
+      }
+    })
+  },
   methods: {
+    fieldName (fieldTuple) {
+      return resolveFieldMeta(fieldTuple)?.name
+    },
+    fieldVal (fieldTuple) {
+      const meta = resolveFieldMeta(fieldTuple)
+      if (!meta) return undefined
+      const { name, ...opts } = meta
+      const m = this.boundFd
+      const v = m ? m[name] : undefined
+      return v !== undefined ? v : opts.initialValue
+    },
+    fieldSet (fieldTuple, value) {
+      const meta = resolveFieldMeta(fieldTuple)
+      if (!meta) return
+      const { name, ...opts } = meta
+      const m = this.boundFd
+      if (!m) return
+      if (m[name] === undefined && opts.initialValue !== undefined && value === undefined) {
+        this.$set(m, name, opts.initialValue)
+        return
+      }
+      this.$set(m, name, value)
+    },
+    ensureFieldInitials (fieldMap, keys) {
+      const list = keys || Object.keys(fieldMap || {})
+      list.forEach((key) => {
+        const fieldDef = fieldMap[key]
+        const meta = resolveFieldMeta(fieldDef)
+        if (!meta) return
+        const { name, ...opts } = meta
+        if (this.boundFd && this.boundFd[name] === undefined && opts.initialValue !== undefined) {
+          this.$set(this.boundFd, name, opts.initialValue)
+        }
+      })
+    },
+
     getIsMemoryDisabled (size) {
       if (this.redisItem && this.redisItem.capacity_mb) {
         const redisMb = this.redisItem.capacity_mb
@@ -158,9 +214,14 @@ export default {
     onNodeTypeChange (e) {
       this.getPerformanceTypes(e)
     },
+    pickFd (keys) {
+      const data = {}
+      ;(keys || []).forEach((k) => { data[k] = this.form.fd[k] })
+      return data
+    },
     setInitValue (key, callback = () => {}) {
       const draft = this.readDraft(key)
-      const value = draft != null ? draft : this.form.getFieldValue(key)
+      const value = draft != null ? draft : this.form.fd[key]
       const data = this[`${key}s`]
       let isNull = true
       let newVal = ''
@@ -175,16 +236,13 @@ export default {
         isNull = value == null || value === '' || hit == null
       }
       if (!value || isNull) {
-        this.form.setFieldsValue({
-          [key]: newVal,
-        }, callback)
+        this.$set(this.form.fd, key, newVal)
       } else {
         // options 就绪后写一次，保证 radio 回显（含数字/字符串兼容）
         const finalVal = (hit != null && R.type(data) === 'Array') ? hit : value
-        this.form.setFieldsValue({
-          [key]: finalVal,
-        }, callback)
+        this.$set(this.form.fd, key, finalVal)
       }
+      this.$nextTick(() => { callback && callback() })
     },
     getEngines () {
       this.engines = R.keys(this.filterItems)
@@ -194,7 +252,7 @@ export default {
     },
     getVersion (e) {
       const target = (e && e.target) ? e.target : {}
-      const engine = target.value || this.getFieldValue('engine')
+      const engine = target.value || this.form.fd.engine
       this.engine_versions = R.keys(this.filterItems[engine])
         .sort((a, b) => a - b)
       this.setInitValue('engine_version', () => {
@@ -204,7 +262,7 @@ export default {
     getArcha (e) {
       const target = (e && e.target) ? e.target : {}
       const keys = ['engine', 'engine_version']
-      const data = this.FC.getFieldsValue(keys)
+      const data = this.pickFd(keys)
       data.engine_version = target.value || data.engine_version
       this.local_categorys = R.keys(R.pathOr({}, R.values(data), this.filterItems))
       this.setInitValue('local_category', () => {
@@ -214,7 +272,7 @@ export default {
     getNodeTypes (e) {
       const target = (e && e.target) ? e.target : {}
       const keys = ['engine', 'engine_version', 'local_category']
-      const data = this.FC.getFieldsValue(keys)
+      const data = this.pickFd(keys)
       data.local_category = target.value || data.local_category
       this.node_types = R.keys(R.pathOr({}, R.values(data), this.filterItems))
       this.setInitValue('node_type', () => {
@@ -224,7 +282,7 @@ export default {
     getPerformanceTypes (e) {
       const target = (e && e.target) ? e.target : {}
       const keys = ['engine', 'engine_version', 'local_category', 'node_type']
-      const data = this.FC.getFieldsValue(keys)
+      const data = this.pickFd(keys)
       data.node_type = target.value || data.node_type
       this.performance_types = R.pathOr([], R.values(data), this.filterItems)
       this.setInitValue('performance_type', () => {})
@@ -252,8 +310,7 @@ export default {
         next = this.pickFromOptions(this.memorys, this.readDraft('memory_size_mb'))
       }
       if (next == null) return
-      this.FC.setFieldsValue({ memory_size_mb: next })
-      if (this.form.fd) this.form.fd.memory_size_mb = next
+      this.$set(this.form.fd, 'memory_size_mb', next)
     },
     async fetchSpecs (params) {
       const instanceSpecsManager = new this.$Manager('elasticcacheskus/instance-specs')
@@ -277,11 +334,11 @@ export default {
           ? this.getCreateFormDraftPreferred()
           : null
         if (preferred) {
-          const vals = {}
           ;['engine', 'engine_version', 'local_category', 'node_type', 'performance_type'].forEach(k => {
-            if (preferred[k] != null && preferred[k] !== '') vals[k] = preferred[k]
+            if (preferred[k] != null && preferred[k] !== '') {
+              this.$set(this.form.fd, k, preferred[k])
+            }
           })
-          if (Object.keys(vals).length) this.form.setFieldsValue(vals)
         }
         this.filterItems = { redis }
       } catch (err) {

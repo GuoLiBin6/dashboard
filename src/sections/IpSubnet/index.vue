@@ -1,19 +1,35 @@
 <template>
   <div class="ip-subnet">
-    <div v-if="decorator.name" class="ip-subnet__row ip-subnet__row--name">
+    <div v-if="resolvedFields.name" class="ip-subnet__row ip-subnet__row--name">
       <a-form-item class="mb-0">
-        <a-input :addon-before="$t('network.text_21')" v-decorator="decorator.name" :placeholder="$t('network.text_21')" />
+        <a-input
+          :addon-before="$t('network.text_21')"
+          :value="fieldVal(resolvedFields.name)"
+          @update:value="v => fieldSet(resolvedFields.name, v)"
+          :placeholder="$t('network.text_21')" />
       </a-form-item>
     </div>
     <div class="ip-subnet__row ip-subnet__row--v4">
       <a-form-item class="mb-0">
-        <a-input :addon-before="$t('network.text_607')" v-decorator="decorator.startip" :placeholder="$t('common_161')" />
+        <a-input
+          :addon-before="$t('network.text_607')"
+          :value="fieldVal(resolvedFields.startip)"
+          @update:value="v => fieldSet(resolvedFields.startip, v)"
+          :placeholder="$t('common_161')" />
       </a-form-item>
       <a-form-item class="mb-0">
-        <a-input :addon-before="$t('network.text_608')" v-decorator="decorator.endip" :placeholder="$t('common_162')" />
+        <a-input
+          :addon-before="$t('network.text_608')"
+          :value="fieldVal(resolvedFields.endip)"
+          @update:value="v => fieldSet(resolvedFields.endip, v)"
+          :placeholder="$t('common_162')" />
       </a-form-item>
       <a-form-item class="mb-0 ip-subnet__mask">
-        <a-select v-decorator="decorator.netmask" :placeholder="$t('network.text_595')" dropdownClassName="oc-select-dropdown">
+        <a-select
+          :value="fieldVal(resolvedFields.netmask)"
+          @change="v => fieldSet(resolvedFields.netmask, v)"
+          :placeholder="$t('network.text_595')"
+          dropdownClassName="oc-select-dropdown">
           <a-select-option
             v-for="item of netMaskOptions"
             :key="item.key"
@@ -23,22 +39,42 @@
         </a-select>
       </a-form-item>
       <a-form-item class="mb-0">
-        <a-input :addon-before="$t('network.text_610')" v-decorator="decorator.gateway" :placeholder="$t('common_163')" />
+        <a-input
+          :addon-before="$t('network.text_610')"
+          :value="fieldVal(resolvedFields.gateway)"
+          @update:value="v => fieldSet(resolvedFields.gateway, v)"
+          :placeholder="$t('common_163')" />
       </a-form-item>
       <a-form-item class="mb-0 ip-subnet__vlan">
-        <a-input addon-before="VLAN ID" v-decorator="decorator.vlan" placeholder="VLAN ID" />
+        <a-input
+          addon-before="VLAN ID"
+          :value="fieldVal(resolvedFields.vlan)"
+          @update:value="v => fieldSet(resolvedFields.vlan, v)"
+          placeholder="VLAN ID" />
       </a-form-item>
     </div>
     <div class="ip-subnet__row ip-subnet__row--v6" v-if="showV6 || !isButtonHide">
       <template v-if="showV6">
         <a-form-item class="mb-0">
-          <a-input :addon-before="$t('network.ipv6.ip_start.label')" v-decorator="decorator.startip6" :placeholder="$t('network.ipv6.ip_start.label')" />
+          <a-input
+            :addon-before="$t('network.ipv6.ip_start.label')"
+            :value="fieldVal(resolvedFields.startip6)"
+            @update:value="v => fieldSet(resolvedFields.startip6, v)"
+            :placeholder="$t('network.ipv6.ip_start.label')" />
         </a-form-item>
         <a-form-item class="mb-0">
-          <a-input :addon-before="$t('network.ipv6.ip_end.label')" v-decorator="decorator.endip6" :placeholder="$t('network.ipv6.ip_end.label')" />
+          <a-input
+            :addon-before="$t('network.ipv6.ip_end.label')"
+            :value="fieldVal(resolvedFields.endip6)"
+            @update:value="v => fieldSet(resolvedFields.endip6, v)"
+            :placeholder="$t('network.ipv6.ip_end.label')" />
         </a-form-item>
         <a-form-item class="mb-0 ip-subnet__mask">
-          <a-select v-decorator="decorator.netmask6" :placeholder="$t('network.ipv6.ip_mask.label')" dropdownClassName="oc-select-dropdown">
+          <a-select
+            :value="fieldVal(resolvedFields.netmask6)"
+            @change="v => fieldSet(resolvedFields.netmask6, v)"
+            :placeholder="$t('network.ipv6.ip_mask.label')"
+            dropdownClassName="oc-select-dropdown">
             <a-select-option
               v-for="item of net6MaskOptions"
               :key="item.key"
@@ -48,7 +84,11 @@
           </a-select>
         </a-form-item>
         <a-form-item class="mb-0">
-          <a-input :addon-before="$t('network.ipv6.gateway.label')" v-decorator="decorator.gateway6" :placeholder="$t('network.ipv6.gateway.label')" />
+          <a-input
+            :addon-before="$t('network.ipv6.gateway.label')"
+            :value="fieldVal(resolvedFields.gateway6)"
+            @update:value="v => fieldSet(resolvedFields.gateway6, v)"
+            :placeholder="$t('network.ipv6.gateway.label')" />
         </a-form-item>
         <div class="ip-subnet__vlan ip-subnet__spacer" />
       </template>
@@ -64,16 +104,27 @@
 </template>
 
 <script>
+import { resolveFieldMeta } from '@/utils/common/ant'
+
 export default {
   name: 'IpSubnet',
+  inject: {
+    form: { default: undefined },
+  },
   props: {
-    decorator: {
+    fields: {
       type: Object,
-      required: true,
+      default: null,
       validator: val => {
-        const fields = ['startip', 'endip', 'netmask', 'gateway', 'startip6', 'endip6', 'netmask6', 'gateway6', 'vlan']
-        return fields.every(item => val.hasOwnProperty(item))
+        if (!val) return true
+        const keys = ['startip', 'endip', 'netmask', 'gateway', 'vlan']
+        return keys.every(item => Object.prototype.hasOwnProperty.call(val, item))
       },
+    },
+    /** a-form-model：与 fields 字段名对齐的受控对象（通常为 form.fd） */
+    model: {
+      type: Object,
+      default: null,
     },
     showIpv6: {
       type: Boolean,
@@ -116,6 +167,111 @@ export default {
       ],
       showV6: this.showIpv6,
     }
+  },
+  computed: {
+    resolvedFields () {
+      return this.fields || {}
+    },
+  },
+  created () {
+    Object.keys(this.resolvedFields).forEach(key => {
+      const fieldDef = this.resolvedFields[key]
+      if (Array.isArray(fieldDef)) {
+        const { name, ...opts } = resolveFieldMeta(fieldDef) || {}
+        if (name && this.modelGet(name) === undefined && opts.initialValue !== undefined) {
+          this.modelSet(name, opts.initialValue)
+        }
+      }
+    })
+  },
+  methods: {
+    parseBracketName (name) {
+      const m = typeof name === 'string' && name.match(/^(\w+)\[([^\]]+)\]$/)
+      if (!m) return null
+      return { root: m[1], key: m[2] }
+    },
+    modelGet (name) {
+      if (!this.model || !name) return undefined
+      const nested = this.parseBracketName(name)
+      if (nested && this.model[nested.root] != null && typeof this.model[nested.root] === 'object') {
+        return this.model[nested.root][nested.key]
+      }
+      if (Object.prototype.hasOwnProperty.call(this.model, name)) {
+        return this.model[name]
+      }
+      return undefined
+    },
+    modelSet (name, value) {
+      if (!this.model || !name) return
+      const nested = this.parseBracketName(name)
+      if (nested) {
+        if (!this.model[nested.root] || typeof this.model[nested.root] !== 'object') {
+          this.$set(this.model, nested.root, {})
+        }
+        this.$set(this.model[nested.root], nested.key, value)
+      } else {
+        this.$set(this.model, name, value)
+      }
+    },
+    fieldVal (fieldTuple) {
+      const meta = resolveFieldMeta(fieldTuple)
+      if (!meta) return undefined
+      const { name, ...opts } = meta
+      if (!name) return undefined
+      const v = this.modelGet(name)
+      if (v !== undefined) return v
+      return opts.initialValue
+    },
+    fieldSet (fieldTuple, value) {
+      const meta = resolveFieldMeta(fieldTuple)
+      if (!meta) return
+      const { name } = meta
+      if (name) this.modelSet(name, value)
+    },
+    runFieldRule (rule, value) {
+      return new Promise((resolve, reject) => {
+        if (rule.required) {
+          const empty = value === undefined || value === null || value === '' ||
+            (Array.isArray(value) && !value.length)
+          if (empty) {
+            reject(new Error(rule.message || 'required'))
+            return
+          }
+        }
+        if (typeof rule.validator === 'function') {
+          let settled = false
+          const finish = (err) => {
+            if (settled) return
+            settled = true
+            if (err) reject(err instanceof Error ? err : new Error(String(err)))
+            else resolve()
+          }
+          let ret
+          try {
+            ret = rule.validator(rule, value, finish)
+          } catch (e) {
+            finish(e)
+            return
+          }
+          if (ret && typeof ret.then === 'function') {
+            ret.then(() => finish()).catch(finish)
+          }
+          return
+        }
+        resolve()
+      })
+    },
+    async validate () {
+      for (const key of Object.keys(this.resolvedFields)) {
+        const fieldDef = this.resolvedFields[key]
+        if (!resolveFieldMeta(fieldDef)) continue
+        const rules = resolveFieldMeta(fieldDef)?.rules || []
+        for (const rule of rules) {
+          await this.runFieldRule(rule, this.fieldVal(fieldDef))
+        }
+      }
+      return true
+    },
   },
 }
 </script>

@@ -1,16 +1,17 @@
 <template>
-  <a-form v-bind="formItemLayout" :form="form.fc">
-    <scope-radio :decorators="decorators" @change="scopeChange" :form="form" :disabled="disabled" :label="label" />
-    <a-form-item :label="$t('common.name')">
-      <a-input v-decorator="decorators.name" :placeholder="$t('common.placeholder')" :disabled="disabled" />
-    </a-form-item>
-    <a-form-item :label="$t('common.description')">
-      <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-    </a-form-item>
-    <a-form-item :label="$t('monitor.monitor_metric')" class="mb-0">
+  <a-form-model ref="formRef" v-bind="formItemLayout" :model="form.fd" :rules="rules">
+    <scope-radio :model="form.fd" @change="scopeChange" :form="form" :disabled="disabled" :label="label" />
+    <a-form-model-item :label="$t('common.name')" prop="name">
+      <a-input v-model:value="form.fd.name" @update:value="v => syncFd('name', v)" :placeholder="$t('common.placeholder')" :disabled="disabled" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('common.description')" prop="description">
+      <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.fd.description" @update:value="v => syncFd('description', v)" :placeholder="$t('common_367')" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('monitor.monitor_metric')" class="mb-0">
       <metric
+        ref="metricRef"
         :form="form"
-        :decorators="decorators"
+        :model="form.fd"
         :res_types="res_types"
         :res_type_measurements="res_type_measurements"
         :disabled="disabled"
@@ -18,64 +19,65 @@
         :showResType="showResType"
         @metricClear="resetMetric"
         @metricChange="getMetricInfo" />
-    </a-form-item>
-    <a-form-item :label="$t('monitor.monitor_filters')">
+    </a-form-model-item>
+    <a-form-model-item :label="$t('monitor.monitor_filters')">
       <filters
         :form="form"
+        :model="form.fd"
         ref="filtersRef"
         :tags="tags"
         :disabled="disabled"
-        :decorators="decorators.filters"
         @remove="$nextTick(toParams)"
         :loading="metricInfoLoading"
         :metricInfo="metricInfo" />
-    </a-form-item>
-    <a-form-item :label="$t('monitor.condition')" class="mb-0">
-      <condition :decorators="decorators" :disabled="disabled" @comparatorChange="emitComparator"  @thresholdChange="emitThreshold" :unit="metricInfo.measurement === 'cloudaccount_balance' ? '' : conditionUnit" />
-    </a-form-item>
-    <a-form-item :label="$t('monitor.commonalerts.form.column.silent')" class="mb-0">
-      <a-form-item class="mr-1">
-        <base-select v-decorator="decorators.silent_period" :options="silentOpts" style="display: inline-flex;" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('monitor.condition')" class="mb-0">
+      <condition ref="conditionRef" :model="form.fd" :disabled="disabled" @comparatorChange="emitComparator"  @thresholdChange="emitThreshold" :unit="metricInfo.measurement === 'cloudaccount_balance' ? '' : conditionUnit" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('monitor.commonalerts.form.column.silent')" class="mb-0" prop="silent_period">
+      <a-form-model-item class="mr-1">
+        <base-select v-model:value="form.fd.silent_period" @change="v => syncFd('silent_period', v)" :options="silentOpts" style="display: inline-flex;" />
         <a-tooltip style="padding-left: 5px;" placement="top"><icon type="question-circle" />
         <template slot="title">
           <span>{{ $t('monitor.commonalerts.form.column.silent.tips') }}</span>
         </template>
         </a-tooltip>
-      </a-form-item>
-    </a-form-item>
-    <a-form-item :label="$t('monitor.level')">
-      <a-radio-group v-decorator="decorators.level">
+      </a-form-model-item>
+    </a-form-model-item>
+    <a-form-model-item :label="$t('monitor.level')" prop="level">
+      <a-radio-group :value="form.fd.level" @change="e => syncFd('level', e.target.value)">
         <a-radio-button v-for="item in levelOpts" :value="item.key" :key="item.key">{{ item.label }}</a-radio-button>
       </a-radio-group>
-    </a-form-item>
-    <a-form-item :label="$t('monitor.notification_type')">
-      <a-checkbox-group v-decorator="decorators.notify_type">
+    </a-form-model-item>
+    <a-form-model-item :label="$t('monitor.notification_type')" prop="notify_type">
+      <a-checkbox-group :value="form.fd.notify_type" @change="v => syncFd('notify_type', v)">
         <a-checkbox value="recipient">{{ $t('monitor.recipient') }}</a-checkbox>
         <a-checkbox v-if="currentScope!=='project'" value="role">{{ $t('monitor.role') }}</a-checkbox>
         <a-checkbox value="robot">{{ $t('monitor.text_11') }}</a-checkbox>
       </a-checkbox-group>
-    </a-form-item>
-    <a-form-item v-if="notifyTypes.includes('recipient')" :label="$t('monitor.recipient')" style="white-space: nowrap;">
+    </a-form-model-item>
+    <a-form-model-item v-if="notifyTypes.includes('recipient')" :label="$t('monitor.recipient')" style="white-space: nowrap;" prop="recipients">
       <template #extra style="width: 1200px;" v-if="scope !== 'project'">
         <i18n tag="div" path="monitor_text00001">
           <help-link slot="new" href="/contact">{{$t('monitor.text_15')}}</help-link>
         </i18n>
       </template>
       <base-select
-        v-decorator="decorators.recipients"
+        v-model:value="form.fd.recipients"
         optionLabelProp="label"
         resource="receivers"
         version="v1"
         filterable
         show-sync
-        @change="contactArrOptsChange"
+        @change="v => { syncFd('recipients', v); contactArrOptsChange(v) }"
         v-model:resList="recipientOpts"
         :select-props="{ mode: 'multiple', placeholder: $t('compute.text_741') }"
         :params="contactParams" />
-    </a-form-item>
-    <a-form-item v-if="notifyTypes.includes('recipient')" :label="$t('monitor.channel')">
+    </a-form-model-item>
+    <a-form-model-item v-if="notifyTypes.includes('recipient')" :label="$t('monitor.channel')" prop="channel">
       <a-checkbox-group
-        v-decorator="decorators.channel">
+        :value="form.fd.channel"
+        @change="v => syncFd('channel', v)">
         <a-checkbox
           v-for="v in contactArrOpts"
           :key="v.label"
@@ -94,24 +96,26 @@
           </template>
         </a-checkbox>
       </a-checkbox-group>
-    </a-form-item>
-    <a-form-item v-if="notifyTypes.includes('role') && currentScope!=='project'" :label="$t('monitor.role')">
+    </a-form-model-item>
+    <a-form-model-item v-if="notifyTypes.includes('role') && currentScope!=='project'" :label="$t('monitor.role')" prop="roles">
       <base-select
-        v-decorator="decorators.roles"
+        v-model:value="form.fd.roles"
+        @change="v => syncFd('roles', v)"
         resource="roles"
         version="v1"
         filterable
         show-sync
         :select-props="{ mode: 'multiple', placeholder: $t('compute.text_741') }"
         :params="rolesParams" />
-    </a-form-item>
+    </a-form-model-item>
     <notify-types
       v-if="notifyTypes.includes('robot')"
+      :model="form.fd"
       :label="$t('monitor.text_11')"
       :placeholder="$t('common.tips.select', [$t('monitor.text_11')])"
-      :decorator="decorators.robot_ids"
+      field="robot_ids"
       :getParams="robotParams" />
-  </a-form>
+  </a-form-model>
 </template>
 
 <script>
@@ -122,8 +126,8 @@ import Metric from '@Monitor/sections/Metric'
 import Filters from '@Monitor/sections/Filters'
 import { levelMaps, metric_zh } from '@Monitor/constants'
 import ScopeRadio from '@/sections/ScopeRadio'
-import { resolveValueChangeField } from '@/utils/common/ant'
 import NotifyTypes from '@/sections/NotifyTypes'
+import { METRIC_FIELD_NAMES } from '@Monitor/sections/fields'
 import Condition from './Condition'
 export default {
   name: 'CommonalertForm',
@@ -227,208 +231,78 @@ export default {
     }
     return {
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: this.onValuesChange,
-        }),
         fd: {
+          scope: initialValue.scope,
+          domain: initialValue.domain,
+          project: initialValue.project,
+          name: initialValue.name,
+          description: initialValue.description,
+          silent_period: initialValue.silent_period,
+          level: initialValue.level,
           notify_type: initialValue.notifyTypes,
+          recipients: initialValue.recipients || [],
+          roles: initialValue.roles || [],
+          robot_ids: initialValue.robot_ids || [],
+          channel: initialValue.channel || ['webconsole'],
+          metric_res_type: initialValue.res_type,
+          metric_key: initialValue.metric_key,
+          metric_value: initialValue.metric_value,
+          period: initialValue.period,
+          alert_duration: initialValue.alert_duration,
+          reduce: initialValue.reduce,
+          comparator: initialValue.comparator,
+          threshold: initialValue.threshold,
         },
       },
       formScopeParams: {
         scope: initialValue.scope,
       },
-      decorators: {
-        scope: [
-          'scope',
-          {
-            initialValue: initialValue.scope,
-          },
-        ],
-        domain: [
-          'domain',
-          {
-            initialValue: initialValue.domain,
-            rules: [
-              { required: true, message: `${this.$t('common.select')}` },
-            ],
-          },
-        ],
-        project: [
-          'project',
-          {
-            initialValue: initialValue.project,
-            rules: [
-              { required: true, message: `${this.$t('common.select')}` },
-            ],
-          },
-        ],
-        name: [
-          'name',
-          {
-            initialValue: initialValue.name,
-            rules: [
-              { required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` },
-            ],
-          },
-        ],
-        description: ['description'],
-        metric_res_type: [
-          'metric_res_type',
-          {
-            initialValue: initialValue.res_type,
-            rules: [
-              { required: true, message: this.$t('common.select') },
-            ],
-          },
-        ],
-        metric_key: [
-          'metric_key',
-          {
-            initialValue: initialValue.metric_key,
-            rules: [
-              { required: true, message: this.$t('common.select') },
-            ],
-          },
-        ],
-        metric_value: [
-          'metric_value',
-          {
-            initialValue: initialValue.metric_value,
-            rules: [
-              { required: true, message: this.$t('common.select') },
-            ],
-          },
-        ],
-        filters: {
-          tagCondition: i => [
-            `tagConditions[${i}]`,
-            {
-              initialValue: 'AND',
-              rules: [
-                { required: true, message: this.$t('common.select') },
-              ],
-            },
-          ],
-          tagKey: i => [
-            `tagKeys[${i}]`,
-            {
-              rules: [
-                // { required: true, message: this.$t('common.select') },
-              ],
-            },
-          ],
-          tagOperator: i => [
-            `tagOperators[${i}]`,
-            {
-              initialValue: '=',
-              rules: [
-                { required: true, message: this.$t('common.select') },
-              ],
-            },
-          ],
-          tagValue: i => [
-            `tagValues[${i}]`,
-            {
-              rules: [
-                // { required: true, message: this.$t('common.select') },
-              ],
-            },
+      fieldMap: {
+        scope: { name: 'scope', initialValue: initialValue.scope },
+        domain: {
+          name: 'domain',
+          initialValue: initialValue.domain,
+          rules: [
+            { required: true, message: `${this.$t('common.select')}` },
           ],
         },
-        period: [
-          'period',
-          {
-            initialValue: initialValue.period,
-            rules: [
-              { required: true, message: this.$t('common.select') },
-            ],
-          },
-        ],
-        alert_duration: [
-          'alert_duration',
-          {
-            initialValue: initialValue.alert_duration,
-            rules: [
-              { required: true, message: this.$t('common.select') },
-            ],
-          },
-        ],
-        silent_period: [
-          'silent_period',
-          {
-            initialValue: initialValue.silent_period,
-            rules: [],
-          },
-        ],
-        reduce: [
-          'reduce',
-          {
-            initialValue: initialValue.reduce,
-            rules: [
-              { required: true, message: this.$t('common.select') },
-            ],
-          },
-        ],
-        comparator: [
-          'comparator',
-          {
-            initialValue: initialValue.comparator,
-            rules: [
-              { required: true, message: this.$t('common.select') },
-            ],
-          },
-        ],
-        threshold: [
-          'threshold',
-          {
-            initialValue: initialValue.threshold,
-            rules: [
-              { required: true, message: this.$t('common.placeholder') },
-            ],
-          },
-        ],
-        level: [
-          'level',
-          {
-            initialValue: initialValue.level,
-          },
-        ],
-        notify_type: [
-          'notify_type',
-          {
-            initialValue: initialValue.notifyTypes,
-            rules: [
-              { required: true, message: this.$t('common.select') },
-            ],
-          },
-        ],
-        roles: [
-          'roles',
-          {
-            initialValue: initialValue.roles,
-          },
-        ],
-        recipients: [
-          'recipients',
-          {
-            initialValue: initialValue.recipients,
-            rules: [
-              { required: true, message: this.$t('common.select') },
-            ],
-          },
-        ],
-        robot_ids: [
-          'robot_ids',
-          {
-            initialValue: initialValue.robot_ids,
-          },
-        ],
-        channel: [
-          'channel',
-          {
-            initialValue: initialValue.channel,
-          },
-        ],
+        project: {
+          name: 'project',
+          initialValue: initialValue.project,
+          rules: [
+            { required: true, message: `${this.$t('common.select')}` },
+          ],
+        },
+        name: {
+          name: 'name',
+          initialValue: initialValue.name,
+          rules: [
+            { required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` },
+          ],
+        },
+        description: { name: 'description' },
+        silent_period: {
+          name: 'silent_period',
+          initialValue: initialValue.silent_period,
+          rules: [],
+        },
+        level: { name: 'level', initialValue: initialValue.level },
+        notify_type: {
+          name: 'notify_type',
+          initialValue: initialValue.notifyTypes,
+          rules: [
+            { required: true, message: this.$t('common.select') },
+          ],
+        },
+        roles: { name: 'roles', initialValue: initialValue.roles },
+        recipients: {
+          name: 'recipients',
+          initialValue: initialValue.recipients,
+          rules: [
+            { required: true, message: this.$t('common.select') },
+          ],
+        },
+        channel: { name: 'channel', initialValue: initialValue.channel },
       },
       tags,
       oldParams: {},
@@ -468,13 +342,28 @@ export default {
   },
   computed: {
     ...mapGetters(['isDomainMode', 'scope']),
+    rules () {
+      return {
+        name: [
+          { required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` },
+        ],
+        notify_type: [
+          { required: true, message: this.$t('common.tips.select', [this.$t('monitor.notification_type')]) },
+        ],
+        recipients: [
+          { required: true, message: this.$t('common.tips.select', [this.$t('monitor.recipient')]) },
+        ],
+        roles: [
+          { required: true, message: this.$t('common.tips.select', [this.$t('monitor.role')]) },
+        ],
+      }
+    },
     disabled () {
       return this.$route.query.alertType === 'system'
     },
     showResType () {
       if (this.alertData && this.alertData.alert_type === 'system') {
-        const { initialValue } = this.decorators.metric_res_type[1]
-        if (!initialValue) {
+        if (!this.form.fd.metric_res_type) {
           return false // 如果是默认策略并且资源类型没有默认值的话，不显示
         }
       }
@@ -502,17 +391,13 @@ export default {
     recipientOpts (val) {
       if (!this.alertData && val) {
         if (val.length === 1) {
-          this.form.fc.setFieldsValue({
-            [this.decorators.recipients[0]]: [val[0].id],
-          })
+          this.syncFd('recipients', [val[0].id])
           this.contactArrOptsChange([val[0].id])
         } else if (val.length > 1) {
           const currentUser = this.$store.getters.userInfo.id
           const hasCurrentUser = val.find(val => val.id === currentUser)
           if (hasCurrentUser) {
-            this.form.fc.setFieldsValue({
-              [this.decorators.recipients[0]]: [hasCurrentUser.id],
-            })
+            this.syncFd('recipients', [hasCurrentUser.id])
             this.contactArrOptsChange([hasCurrentUser.id])
           }
         }
@@ -522,18 +407,22 @@ export default {
       }
     },
     contactArrOpts () {
-      const ect = this.form.fc.getFieldValue('channel')
+      const ect = this.form.fd.channel
       if (ect) {
         let newContactTypes = this.contactArrOpts.filter((c) => { return ect.indexOf(c.value) >= 0 }).map((c) => c.value)
         if (newContactTypes.length === 0) {
           newContactTypes = ['webconsole']
         }
-        this.form.fc.setFieldsValue({ channel: newContactTypes })
+        this.syncFd('channel', newContactTypes)
       }
     },
     res_type_measurements () {
       if (!this.conditionUnit || this.conditionUnit === '') {
-        const data = this.form.fc.getFieldsValue([this.decorators.metric_res_type[0], this.decorators.metric_key[0], this.decorators.metric_value[0]])
+        const data = {
+          [METRIC_FIELD_NAMES.metric_res_type]: this.form.fd[METRIC_FIELD_NAMES.metric_res_type],
+          [METRIC_FIELD_NAMES.metric_key]: this.form.fd[METRIC_FIELD_NAMES.metric_key],
+          [METRIC_FIELD_NAMES.metric_value]: this.form.fd[METRIC_FIELD_NAMES.metric_value],
+        }
         if (!this.res_type_measurements) {
           return
         }
@@ -564,8 +453,8 @@ export default {
     const params = {
       scope,
     }
-    if (scope !== 'system' && this.decorators[scope][1].initialValue) {
-      params[`${scope}_id`] = this.decorators[scope][1].initialValue
+    if (scope !== 'system' && this.fieldMap[scope].initialValue) {
+      params[`${scope}_id`] = this.fieldMap[scope].initialValue
     }
     this.formScopeParams = params
     this.scopeChange(params)
@@ -573,10 +462,17 @@ export default {
   },
   mounted () {
     if (R.is(Object, this.alertData)) {
-      this.emitThreshold(this.decorators.threshold[1].initialValue)
+      this.emitThreshold(this.form.fd.threshold)
     }
   },
   methods: {
+    syncFd (key, val) {
+      this.$set(this.form.fd, key, val)
+      if (key === 'notify_type') {
+        this.notifyTypes = val
+      }
+      this.$nextTick(this.toParams)
+    },
     contactArrOptsChange (rs) {
       const getLabel = (val) => {
         if (val === 'mobile') val = 'message' // mobile 应该翻译为 短信
@@ -623,8 +519,18 @@ export default {
     },
     async validate () {
       const monitorParams = this.toParams(false)
-      const fd = await this.form.fc.validateFields()
-      if (this.projectItem && this.projectItem.domain_id) fd.domain_id = this.projectItem.domain_id // 其实不传domain后端也会根据project定位domain，这里保险起见
+      await this.$refs.formRef.validate()
+      if (typeof this.$refs.metricRef?.validate === 'function') {
+        await this.$refs.metricRef.validate()
+      }
+      if (typeof this.$refs.filtersRef?.validate === 'function') {
+        await this.$refs.filtersRef.validate()
+      }
+      if (typeof this.$refs.conditionRef?.validate === 'function') {
+        await this.$refs.conditionRef.validate()
+      }
+      const fd = { ...this.form.fd }
+      if (this.projectItem && this.projectItem.domain_id) fd.domain_id = this.projectItem.domain_id
       return {
         monitorParams,
         fd,
@@ -635,40 +541,24 @@ export default {
     },
     emitComparator (val) {
       if (val === 'nodata') {
-        this.form.fc.setFieldsValue({ threshold: '0' })
+        this.$set(this.form.fd, 'threshold', '0')
       }
       this.$emit('update:comparator', val)
-    },
-    onValuesChange (props, values) {
-      const newField = resolveValueChangeField(values)
-      R.forEachObjIndexed((item, key) => {
-        if (R.is(Object, this.form.fd[key]) && R.is(Object, item)) {
-          this.$set(this.form.fd, key, { ...this.form.fd[key], ...item })
-        } else {
-          this.$set(this.form.fd, key, item)
-        }
-        if (values[this.decorators.metric_value[0]]) {
-          this.$refs.filtersRef.reset()
-        }
-      }, newField)
-      this.$nextTick(this.toParams)
-      if ((values.hasOwnProperty('metric_key') && !values.metric_key) || (values.hasOwnProperty('metric_value') && !values.metric_value)) {
-        this.resetChart()
-      }
-      if (newField.hasOwnProperty('notify_type')) {
-        this.notifyTypes = newField.notify_type
-      }
     },
     async getMetricInfo ({ metricKey, mertric, mertricItem, metricKeyItem }) {
       try {
         this.metricKeyItem = metricKeyItem || {}
         this.conditionUnit = _.get(mertricItem, 'description.unit') || ''
         this.$emit('mertricItemChange', { ...mertricItem, title: this.getTitle(mertricItem) })
-        const scopeFormValues = this.form.fc.getFieldsValue([this.decorators.scope[0], this.decorators.domain[0], this.decorators.project[0]])
+        const scopeFormValues = {
+          scope: this.form.fd.scope,
+          domain: this.form.fd.domain,
+          project: this.form.fd.project,
+        }
         const scopeParams = {}
         for (const k in scopeFormValues) {
           if (scopeFormValues[k]) {
-            if (k === this.decorators.scope[0]) {
+            if (k === 'scope') {
               scopeParams[k] = scopeFormValues[k]
             } else {
               scopeParams[`${k}_id`] = scopeFormValues[k]
@@ -707,7 +597,7 @@ export default {
       }
     },
     toParams (needEmit = true) {
-      const fd = this.form.fc.getFieldsValue()
+      const fd = { ...this.form.fd }
       const params = {
         database: this.metricKeyItem.database || _.get(this.alertData, 'common_alert_metric_details[0].db', 'telegraf'),
       }

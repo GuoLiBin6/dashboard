@@ -30,37 +30,90 @@ export const resolveValueChangeField = changedFields => {
   return fields
 }
 
+/** 字段元数据对象上的常见键（用于区分「叶子字段」与「嵌套分组」） */
+const FIELD_META_KEYS = [
+  'initialValue',
+  'rules',
+  'label',
+  'placeholder',
+  'validateFirst',
+  'validateTrigger',
+  'valuePropName',
+  'render',
+  'extra',
+  'name',
+]
+
 /**
- * @description 将 decorators 里面的 initialValue 数据转换为普通对象
- * @param {Object} decorators { zone: ['zone', { initialValue: '' }], image: { type: ['imageType', { initialValue: 'standard' }] } } -> { zone: '', imageType: '' }
+ * 是否为可读字段元数据（非嵌套分组）
+ * @param {*} value
  */
-export const getInitialValue = decorators => {
+export function isFieldMeta (value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value) || typeof value === 'function') {
+    return false
+  }
+  return FIELD_META_KEYS.some(k => Object.prototype.hasOwnProperty.call(value, k))
+}
+
+/**
+ * 统一字段定义 → { name, initialValue, rules, label, ... }
+ * 仅支持 object meta：{ name?, initialValue, rules, ... }（name 默认取 map 的 key）
+ */
+export function normalizeFieldDef (key, def) {
+  if (isFieldMeta(def)) {
+    return { name: def.name || key, ...def }
+  }
+  return { name: key }
+}
+
+/** 解析字段定义；非字段则返回 null */
+export function resolveFieldMeta (fieldDef, key = '') {
+  if (fieldDef == null) return null
+  if (isFieldMeta(fieldDef)) {
+    return normalizeFieldDef(key, fieldDef)
+  }
+  return null
+}
+
+/**
+ * @description 从 fieldMap 抽出 initialValue 为普通对象
+ * 支持嵌套分组与可读 field meta
+ */
+export const getInitialValue = fieldMap => {
   let initData = {}
   R.forEachObjIndexed((value, key) => {
-    if (R.is(Array, value)) {
-      if (value[1] && value[1].initialValue !== undefined) {
-        initData[value[0]] = value[1].initialValue
+    if (isFieldMeta(value)) {
+      const meta = normalizeFieldDef(key, value)
+      if (meta.initialValue !== undefined) {
+        initData[meta.name] = meta.initialValue
       }
-    } else if (R.is(Object, value) && !R.is(Function, value)) {
+      return
+    }
+    if (R.is(Object, value) && !R.is(Function, value)) {
       initData = { ...getInitialValue(value), ...initData }
     }
-    return initData
-  }, decorators)
+  }, fieldMap)
   return initData
 }
 
 /**
- * @description 回填表单数据，将 请求回来的诗句回填表单字段 initialValue eg: { zone: ['zone', { initialValue: '' }], image: ['image'] } -> { zone: ['zone', { initialValue: 'xxx' }], image: ['image', { initialValue: 'xxx' }] }
+ * @description 回填表单字段 initialValue（object meta fieldMap）
  * @param {Object} data 数据
- * @param {Object} decorators
- * @param {Object} fieldMap 由 decorators 到 data 的字段映射，默认两个字段一样，既 decorators的zone会取data.zone
+ * @param {Object} fieldMap
+ * @param {Object} dataKeyMap fieldMap key → data key，默认同名
  */
-export const rollupFormData = (data, decorators, fieldMap) => {
+export const rollupFormData = (data, fieldMap, dataKeyMap) => {
   R.forEachObjIndexed((value, key) => {
-    if (value[1]) {
-      const k = _.get(fieldMap, key) || key
-      _.set(decorators, [key, 1, 'initialValue'], data[k])
+    if (isFieldMeta(value)) {
+      const k = _.get(dataKeyMap, key) || key
+      if (data[k] !== undefined) {
+        value.initialValue = data[k]
+      }
+      return
     }
-  }, decorators)
-  return decorators
+    if (R.is(Object, value) && !R.is(Function, value) && !Array.isArray(value)) {
+      rollupFormData(data, value, dataKeyMap)
+    }
+  }, fieldMap)
+  return fieldMap
 }

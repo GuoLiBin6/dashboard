@@ -1,16 +1,14 @@
 import { mapGetters } from 'vuex'
 import * as R from 'ramda'
 import _ from 'lodash'
-import DomainProject from '@/sections/DomainProject'
+import DomainProject from '@/sections/DomainProject/model'
 import { isRequired } from '@/utils/validate'
-import CloudproviderRegionZone from '@/sections/CloudproviderRegionZone'
 import i18n from '@/locales'
 import Tag from '@/sections/Tag'
 
 export default {
   components: {
     DomainProject,
-    CloudproviderRegionZone,
     Tag,
   },
   props: {
@@ -23,13 +21,55 @@ export default {
       vpcObj: {},
       networkObj: {},
       form: {
-        fc: this.$form.createForm(this, { onValuesChange: this.onValuesChange }),
         fd: {
           address_type: 'internet',
           charge_type: 'traffic',
           bandwidth: 1,
           ip: 'ipv4',
+          domain: this.$store.getters.userInfo.projectDomainId,
+          project: this.$store.getters.userInfo.projectId,
+          name: undefined,
+          description: undefined,
+          cluster_id: undefined,
+          vpc: undefined,
+          network: undefined,
+          manager: undefined,
+          cloudregion: undefined,
+          zone: undefined,
+          loadbalancer_spec: undefined,
+          instance_type: 'application',
+          eip: undefined,
+          eip_type: 'none',
+          eip_charge_type: undefined,
+          eip_bgp_type: '',
+          eip_bw: 30,
+          __meta__: undefined,
+          provider: undefined,
         },
+      },
+      rules: {
+        name: [
+          { required: true, message: i18n.t('network.text_116') },
+          { validator: this.$validate('resourceName') },
+        ],
+        vpc: [
+          { required: true, message: i18n.t('network.text_274'), trigger: 'change' },
+        ],
+        network: [
+          { required: true, message: i18n.t('network.text_284'), trigger: 'change' },
+        ],
+        cloudregion: [
+          { validator: isRequired(), message: i18n.t('network.text_286') },
+        ],
+        zone: [
+          { validator: isRequired(), message: i18n.t('scope.text_65') },
+        ],
+        project: [
+          { required: true, message: this.$t('rules.project'), trigger: 'change' },
+        ],
+        domain: [
+          { required: true, message: this.$t('rules.domain'), trigger: 'change' },
+        ],
       },
       formItemLayout: {
         wrapperCol: {
@@ -38,171 +78,6 @@ export default {
         labelCol: {
           span: 4,
         },
-      },
-      decorators: {
-        domain: [
-          'domain',
-          {
-            initialValue: this.$store.getters.userInfo.projectDomainId,
-            rules: [
-              { required: true, message: this.$t('rules.domain'), trigger: 'change' },
-            ],
-          },
-        ],
-        project: [
-          'project',
-          {
-            initialValue: this.$store.getters.userInfo.projectId,
-            rules: [
-              { required: true, message: this.$t('rules.project'), trigger: 'change' },
-            ],
-          },
-        ],
-        name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: i18n.t('network.text_116') },
-              { validator: this.$validate('resourceName') },
-            ],
-          },
-        ],
-        description: ['description'],
-        cluster_id: [
-          'cluster_id',
-          {
-            rules: [
-              { required: true, message: i18n.t('network.text_79'), trigger: 'change' },
-            ],
-          },
-        ],
-        vpc: [
-          'vpc',
-          {
-            rules: [
-              { required: true, message: i18n.t('network.text_274'), trigger: 'change' },
-            ],
-          },
-        ],
-        network: [
-          'network',
-          {
-            rules: [
-              { required: true, message: i18n.t('network.text_284'), trigger: 'change' },
-            ],
-          },
-        ],
-        manager: [
-          'manager',
-          {
-            // initialValue: { key: '', label: '' },
-            rules: [
-              { required: true, message: i18n.t('network.text_285') },
-            ],
-          },
-        ],
-        cloudregion: [
-          'cloudregion',
-          {
-            initialValue: { key: '', label: '' },
-            rules: [
-              { validator: isRequired(), message: i18n.t('network.text_286') },
-            ],
-          },
-        ],
-        zone: [
-          'zone',
-          {
-            initialValue: { key: '', label: '' },
-            rules: [
-              { validator: isRequired(), message: i18n.t('scope.text_65') },
-            ],
-          },
-        ],
-        loadbalancer_spec: [
-          'loadbalancer_spec',
-          {
-            rules: [
-              { required: true, message: i18n.t('network.text_269') },
-            ],
-          },
-        ],
-        instance_type: [
-          'instance_type',
-          {
-            initialValue: 'application',
-            rules: [
-              { required: true, message: i18n.t('network.text_269') },
-            ],
-          },
-        ],
-        address_type: [
-          'address_type',
-          {
-            initialValue: 'internet',
-          },
-        ],
-        chargeType: [
-          'charge_type',
-          {
-            initialValue: 'traffic',
-          },
-        ],
-        bandwidth: [
-          'bandwidth',
-          {
-            initialValue: 1,
-            rules: [
-              { required: true, message: i18n.t('network.text_288'), trigger: 'change', type: 'number' },
-            ],
-          },
-        ],
-        ip: [
-          'ip',
-          {
-            initialValue: 'ipv4',
-          },
-        ],
-        eip: {
-          type: [
-            'eip_type',
-            {
-              initialValue: 'none',
-            },
-          ],
-          charge_type: [
-            'eip_charge_type',
-          ],
-          bgp_type: [
-            'eip_bgp_type',
-            {
-              initialValue: '',
-            },
-          ],
-          bandwidth: [
-            'eip_bw',
-            {
-              initialValue: 30,
-            },
-          ],
-          eip: [
-            'eip',
-            {
-              rules: [
-                { required: true, message: i18n.t('network.text_278') },
-              ],
-            },
-          ],
-        },
-        __meta__: [
-          '__meta__',
-          {
-            rules: [
-              { validator: this.$validate('tagName') },
-            ],
-          },
-        ],
       },
     }
   },
@@ -362,10 +237,22 @@ export default {
       }
       return true
     },
-    onValuesChange (props, values) {
-      R.forEachObjIndexed((value, key) => {
-        this.$set(this.form.fd, key, value)
-      }, values)
+    async validateCreateForm () {
+      if (this.$refs.formRef) {
+        await this.$refs.formRef.validate()
+      }
+      const refs = [
+        this.$refs.domainProjectRef,
+        this.$refs.areaSelects,
+        this.$refs.cloudregionZoneRef,
+        this.$refs.eipConfigRef,
+      ]
+      for (const ref of refs) {
+        if (typeof ref?.validate === 'function') {
+          await ref.validate()
+        }
+      }
+      return { ...this.form.fd }
     },
   },
 }

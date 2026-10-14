@@ -1,24 +1,24 @@
 <template>
-  <div>
+  <a-form-model ref="formRef" :model="fd" :rules="rules">
     <template v-if="isCommon">
-      <a-form-item :label="$t('common_516')" :extra="$t('common_504', [templateLabel])">
-        <a-input v-decorator="decorators.user_id_attribute" />
-      </a-form-item>
-      <a-form-item :label="$t('system.field.username')" :extra="$t('common_505', [templateLabel])">
-        <a-input v-decorator="decorators.user_name_attribute" />
-      </a-form-item>
+      <a-form-model-item :label="$t('common_516')" :extra="$t('common_504', [templateLabel])" prop="user_id_attribute">
+        <a-input v-model:value="fd.user_id_attribute" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('system.field.username')" :extra="$t('common_505', [templateLabel])" prop="user_name_attribute">
+        <a-input v-model:value="fd.user_name_attribute" />
+      </a-form-model-item>
     </template>
-    <a-form-item :label="$t('common_501')">
-      <a-switch v-decorator="decorators.auto_create_user">{{$t('common_499')}}</a-switch>
+    <a-form-model-item :label="$t('common_501')" prop="auto_create_user">
+      <a-switch v-model:checked="fd.auto_create_user">{{$t('common_499')}}</a-switch>
       <template slot="extra">{{$t('common_513')}}<br />{{$t('common_514')}}</template>
-    </a-form-item>
+    </a-form-model-item>
     <template v-if="fd.auto_create_user">
-      <a-form-item :label="$t('common_503', [$t('dictionary.domain')])" :extra="$t('system.text_229', [$t('dictionary.domain')])">
+      <a-form-model-item :label="$t('common_503', [$t('dictionary.domain')])" :extra="$t('system.text_229', [$t('dictionary.domain')])" prop="target_domain">
         <base-select
           v-if="isAdmin"
           @update:resList="resTargetDomain"
-          :disabled="!!fc.getFieldValue('project_domain')"
-          v-decorator="decorators.target_domain"
+          :disabled="!!fd.project_domain"
+          v-model:value="fd.target_domain"
           resource="domains"
           filterable
           version="v1"
@@ -28,15 +28,15 @@
           <span v-else>
             {{projectDomain}}
           </span>
-      </a-form-item>
+      </a-form-model-item>
       <a-collapse accordion v-if="showCollapse">
         <a-collapse-panel key="1" :header="$t('system.text_214')">
-          <a-form-item class="mb-0" :label="$t('system.text_205', [$t('dictionary.project')])">
+          <a-form-model-item class="mb-0" :label="$t('system.text_205', [$t('dictionary.project')])">
             <a-row :gutter="8">
               <a-col :span="10">
-                <a-form-item :wrapperCol="{ span: 24 }" :extra="$t('common_506', [templateLabel,$t('dictionary.user'),$t('dictionary.project')])">
+                <a-form-model-item :wrapperCol="{ span: 24 }" :extra="$t('common_506', [templateLabel,$t('dictionary.user'),$t('dictionary.project')])" prop="default_project_id">
                   <base-select
-                    v-decorator="decorators.default_project_id"
+                    v-model:value="fd.default_project_id"
                     resource="projects"
                     version="v1"
                     :params="projectParams"
@@ -44,14 +44,14 @@
                     v-model:item="project"
                     :remote-fn="q => ({ filter: `name.contains(${q})` })"
                     :select-props="{ placeholder: $t('rules.project') }" />
-                </a-form-item>
+                </a-form-model-item>
               </a-col>
               <a-col :span="14" v-if="isCommon">
                 <template v-if="showProjectInput">
-                  <a-form-item :wrapperCol="{ span: 24 }">
+                  <a-form-model-item :wrapperCol="{ span: 24 }">
                     <div class="d-flex align-items-center">
                       <div class="flex-fill mr-1">
-                        <a-input v-decorator="decorators.project_attribute" :placeholder="$t('common_507', [templateLabel,$t('dictionary.project'),templateLabel.toLocaleLowerCase()])" />
+                        <a-input v-model:value="fd.project_attribute" :placeholder="$t('common_507', [templateLabel,$t('dictionary.project'),templateLabel.toLocaleLowerCase()])" />
                       </div>
                       <a-tooltip placement="right">
                         <span slot="title">{{$t('common_517', [templateLabel])}}</span>
@@ -60,22 +60,22 @@
                       <a-button type="link" @click="showProjectInput = !showProjectInput">{{$t('common_518', [templateLabel, this.$t('dictionary.project')]) }}</a-button>
                     </div>
                     <div slot="extra">
-                      <a-checkbox v-decorator="decorators.auto_create_project">{{$t('common_519')}}</a-checkbox>
+                      <a-checkbox v-model:checked="fd.auto_create_project">{{$t('common_519')}}</a-checkbox>
                       <br />{{$t('common_520')}}</div>
-                  </a-form-item>
+                  </a-form-model-item>
                 </template>
                 <template v-else>
                   <a-button type="link" @click="showProjectInput = true">{{$t('common_521', [templateLabel, this.$t('dictionary.project')]) }}</a-button>
                 </template>
               </a-col>
             </a-row>
-          </a-form-item>
-          <a-form-item class="mb-0" :label="$t('system.text_205', [$t('dictionary.role')])">
+          </a-form-model-item>
+          <a-form-model-item class="mb-0" :label="$t('system.text_205', [$t('dictionary.role')])">
             <a-row :gutter="8">
               <a-col :span="10">
-                <a-form-item :wrapperCol="{ span: 24 }" :extra="$t('common_508', [templateLabel,$t('dictionary.user'),$t('dictionary.role'),$t('dictionary.project')])">
+                <a-form-model-item :wrapperCol="{ span: 24 }" :extra="$t('common_508', [templateLabel,$t('dictionary.user'),$t('dictionary.role'),$t('dictionary.project')])" prop="default_role_id">
                   <base-select
-                    v-decorator="decorators.default_role_id"
+                    v-model:value="fd.default_role_id"
                     resource="roles"
                     version="v1"
                     :params="roleParams"
@@ -83,14 +83,14 @@
                     :mapper="roleMapper"
                     :remote-fn="q => ({ filter: `name.contains(${q})` })"
                     :select-props="{ placeholder: $t('rules.role') }" />
-                </a-form-item>
+                </a-form-model-item>
               </a-col>
               <a-col :span="14" v-if="isCommon">
                 <template v-if="showRoleInput">
-                  <a-form-item :wrapperCol="{ span: 24 }">
+                  <a-form-model-item :wrapperCol="{ span: 24 }">
                     <div class="d-flex align-items-center">
                       <div class="flex-fill mr-1">
-                        <a-input v-decorator="decorators.role_attribute" :placeholder="$t('common_509', [templateLabel,$t('dictionary.role'),templateLabel.toLocaleLowerCase()])" />
+                        <a-input v-model:value="fd.role_attribute" :placeholder="$t('common_509', [templateLabel,$t('dictionary.role'),templateLabel.toLocaleLowerCase()])" />
                       </div>
                       <a-tooltip placement="right">
                         <span slot="title">{{$t('common_522', [templateLabel])}}</span>
@@ -98,29 +98,29 @@
                       </a-tooltip>
                       <a-button type="link" @click="showRoleInput = !showRoleInput">{{$t('common_518', [templateLabel, this.$t('dictionary.role')])}}</a-button>
                     </div>
-                  </a-form-item>
+                  </a-form-model-item>
                 </template>
                 <template v-else>
                   <a-button type="link" @click="showRoleInput = true">{{$t('common_521', [templateLabel, this.$t('dictionary.role')])}}</a-button>
                 </template>
               </a-col>
             </a-row>
-          </a-form-item>
+          </a-form-model-item>
           <template v-if="isCommon">
-            <a-form-item :label="$t('scope.text_245')" :extra="$t('common_510', [templateLabel])">
-              <a-input v-decorator="decorators.user_displayname_attribute" />
-            </a-form-item>
-            <a-form-item :label="$t('scope.text_553')" :extra="$t('common_511', [templateLabel])">
-              <a-input v-decorator="decorators.user_email_attribute" />
-            </a-form-item>
-            <a-form-item :label="$t('scope.text_200')" :extra="$t('common_512', [templateLabel])">
-              <a-input v-decorator="decorators.user_mobile_attribute" />
-            </a-form-item>
+            <a-form-model-item :label="$t('scope.text_245')" :extra="$t('common_510', [templateLabel])" prop="user_displayname_attribute">
+              <a-input v-model:value="fd.user_displayname_attribute" />
+            </a-form-model-item>
+            <a-form-model-item :label="$t('scope.text_553')" :extra="$t('common_511', [templateLabel])" prop="user_email_attribute">
+              <a-input v-model:value="fd.user_email_attribute" />
+            </a-form-model-item>
+            <a-form-model-item :label="$t('scope.text_200')" :extra="$t('common_512', [templateLabel])" prop="user_mobile_attribute">
+              <a-input v-model:value="fd.user_mobile_attribute" />
+            </a-form-model-item>
           </template>
         </a-collapse-panel>
       </a-collapse>
     </template>
-  </div>
+  </a-form-model>
 </template>
 
 <script>
@@ -128,10 +128,6 @@ export default {
   name: 'IDPEditAdvanced',
   props: {
     fd: {
-      type: Object,
-      required: true,
-    },
-    fc: {
       type: Object,
       required: true,
     },
@@ -158,61 +154,12 @@ export default {
       showProjectInput: false,
       showRoleInput: false,
       project: {},
-      decorators: {
-        auto_create_user: [
-          'auto_create_user',
-          {
-            valuePropName: 'checked',
-          },
-        ],
-        disable_user_on_import: [
-          'disable_user_on_import',
-          {
-            initialValue: false,
-          },
-        ],
-        target_domain: [
-          'target_domain',
-        ],
-        default_project_id: [
-          'default_project_id',
-        ],
-        role_attribute: [
-          'role_attribute',
-        ],
-        project_attribute: [
-          'project_attribute',
-        ],
-        default_role_id: [
-          'default_role_id',
-        ],
-        auto_create_project: [
-          'auto_create_project',
-        ],
-        user_displayname_attribute: [
-          'user_displayname_attribute',
-        ],
-        user_email_attribute: [
-          'user_email_attribute',
-        ],
-        user_mobile_attribute: [
-          'user_mobile_attribute',
-        ],
+      rules: {
         user_id_attribute: [
-          'user_id_attribute',
-          {
-            rules: [
-              { required: true, message: this.$t('common_607') },
-            ],
-          },
+          { required: true, message: this.$t('common_607') },
         ],
         user_name_attribute: [
-          'user_name_attribute',
-          {
-            rules: [
-              { required: true, message: this.$t('common_608') },
-            ],
-          },
+          { required: true, message: this.$t('common_608') },
         ],
       },
     }
@@ -243,8 +190,9 @@ export default {
     },
   },
   watch: {
-    'fd.target_domain' (val) {
-      this.fc.resetFields(['default_project_id', 'project_attribute'])
+    'fd.target_domain' () {
+      this.fd.default_project_id = undefined
+      this.fd.project_attribute = undefined
     },
     'fd.template': {
       async handler (val) {
@@ -270,12 +218,15 @@ export default {
           }
         }
         await this.$nextTick()
-        this.fc.setFieldsValue(initialValues)
+        Object.assign(this.fd, initialValues)
       },
       immediate: true,
     },
   },
   methods: {
+    async validateForm () {
+      await this.$refs.formRef.validate()
+    },
     roleMapper (list) {
       if (list && list.length > 0) {
         return list.filter(row => {
@@ -287,12 +238,8 @@ export default {
       }
       return []
     },
-    resTargetDomain (list) {
-      const project_domain = this.fc.getFieldValue('project_domain')
-      console.log(project_domain)
-      this.fc.setFieldsValue({
-        target_domain: project_domain,
-      })
+    resTargetDomain () {
+      this.fd.target_domain = this.fd.project_domain
     },
   },
 }

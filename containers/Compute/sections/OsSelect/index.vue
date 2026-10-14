@@ -1,18 +1,22 @@
 <template>
   <div class="image-select">
-    <a-form-item class="mb-2">
-      <a-radio-group :value="imageTypeValue" v-decorator="decorator.imageType" @change="change">
+    <a-form-model-item class="mb-2" :prop="fieldProp('imageType')">
+      <a-radio-group
+        :value="fieldVal(imageOsFieldMap.imageType)"
+        @change="change">
         <a-tooltip v-for="item in mirrorTypeOptions" :key="item.key" :title="item.tooltip" :mouseEnterDelay="0.5">
           <a-radio-button :value="item.key" :disabled="item.disabled">{{ item.label }}</a-radio-button>
         </a-tooltip>
       </a-radio-group>
-    </a-form-item>
+    </a-form-model-item>
     <image-select
+      ref="imageSelectRef"
       :cloud-type="type"
       :uefi="uefi"
       :vgaPci="vgaPci"
       :image-type="imageType"
-      :decorator="decorator"
+      :model="model"
+      :field="field"
       @input="imageInput"
       @updateImageMsg="updateImageMsg"
       :imageParams="imageParams"
@@ -37,7 +41,10 @@ import { IMAGES_TYPE_MAP } from '@/constants/compute'
 import { HYPERVISORS_MAP } from '@/constants'
 import storage from '@/utils/storage'
 import createFormFieldDraftMixin from '@/mixins/createFormFieldDraft'
+import { getBracketValue, setBracketValue } from '@/utils/bracketModel'
+import { resolveFieldMeta } from '@/utils/common/ant'
 import ImageSelect from './ImageSelect'
+import { IMAGE_OS_FIELDS, resolveImageOsFieldMap, resolveImageOsFieldMapForKey } from './fields'
 
 export default {
   name: 'OsSelect',
@@ -58,10 +65,15 @@ export default {
     types: {
       type: Array,
     },
-    decorator: {
+    /** 动态 bracket 字段后缀（如 K8S serverConfig 的 uuid） */
+    field: {
+      type: String,
+      default: '',
+    },
+    /** a-form-model：与字段名对齐的受控对象 */
+    model: {
       type: Object,
       required: true,
-      validator: val => R.is(Array, val.imageType) && R.is(Array, val.os) && R.is(Array, val.image),
     },
     imageParams: {
       type: Object,
@@ -109,6 +121,8 @@ export default {
     form: {
       type: Object,
       required: true,
+      // end-state：有 model 时仅写 model；无 model 时读写 form.fd
+      validator: val => !!val && typeof val === 'object',
     },
     sysDiskSize: {
       type: Number,
@@ -128,11 +142,15 @@ export default {
   },
   data () {
     return {
-      imageType: this.decorator.imageType[1].initialValue,
+      imageType: this.model?.imageType,
       isFirstLoad: true,
     }
   },
   computed: {
+    imageOsFieldMap () {
+      if (this.field) return resolveImageOsFieldMapForKey(this.field)
+      return resolveImageOsFieldMap()
+    },
     isPublic () {
       return this.type === 'public'
     },
@@ -157,8 +175,8 @@ export default {
     },
     hasOsWorkflowPrefer () {
       if (this.ignoreStorage || this.edit) return true
-      const osInit = this.decorator?.os?.[1]?.initialValue
-      const imageInit = this.decorator?.image?.[1]?.initialValue
+      const osInit = this.model?.os ?? resolveFieldMeta(this.imageOsFieldMap?.os, 'os')?.initialValue
+      const imageInit = this.model?.image ?? resolveFieldMeta(this.imageOsFieldMap?.image, 'image')?.initialValue
       return !!(osInit && imageInit)
     },
     hasOsDraftPrefer () {
@@ -182,10 +200,6 @@ export default {
       if (!this.hasOsDraftPrefer) return null
       const draft = this.readFormFieldDraft()
       return draft && typeof draft === 'object' ? draft : null
-    },
-    imageTypeValue () {
-      const name = this.decorator.imageType[0]
-      return (name && this.form?.fd?.[name]) || this.imageType
     },
     mirrorTypeOptions () {
       let ret = [IMAGES_TYPE_MAP.standard, IMAGES_TYPE_MAP.customize]
@@ -264,9 +278,38 @@ export default {
     },
   },
   created () {
+    this.initModelFields()
     this.lockDraftImageTypeFromStorage()
   },
   methods: {
+    fieldProp (key) {
+      return IMAGE_OS_FIELDS[key] || this.imageOsFieldMap[key]?.[0]
+    },
+    fieldVal (fieldTuple) {
+      const meta = resolveFieldMeta(fieldTuple)
+      if (!meta) return undefined
+      const { name, ...opts } = meta
+      const v = getBracketValue(this.model, name)
+      return v !== undefined ? v : opts.initialValue
+    },
+    fieldSet (fieldTuple, value) {
+      if (!resolveFieldMeta(fieldTuple)) return
+      setBracketValue(this, this.model, resolveFieldMeta(fieldTuple)?.name, value)
+    },
+    initModelFields () {
+      const fieldDef = this.imageOsFieldMap.imageType
+      const meta = resolveFieldMeta(fieldDef)
+      if (!meta) return
+      const { name, ...opts } = meta
+      if (getBracketValue(this.model, name) === undefined && opts.initialValue !== undefined) {
+        setBracketValue(this, this.model, name, opts.initialValue)
+      }
+    },
+    async validate () {
+      const ref = this.$refs.imageSelectRef
+      if (ref?.validate) await ref.validate()
+      return true
+    },
     /**
      * 解析 imageType 偏好（与 os/image 同源互斥）
      */
@@ -274,17 +317,17 @@ export default {
       const q = this.$route?.query || {}
       if (q.imageType) return q.imageType
       if (this.hasOsWorkflowPrefer) {
-        return this.form.fd?.imageType || this.decorator.imageType[1].initialValue
+        return this.fieldVal(this.imageOsFieldMap.imageType) || this.form.fd?.imageType || this.imageOsFieldMap.imageType.initialValue
       }
       if (this.hasOsDraftPrefer) {
         const draft = this.readFormFieldDraft()
-        return this._lockedDraftImageType || draft?.imageType || this.decorator.imageType[1].initialValue
+        return this._lockedDraftImageType || draft?.imageType || this.imageOsFieldMap.imageType.initialValue
       }
       if (this.shouldRestoreOsFromStorage) {
         const last = storage.get('oc_selected_image') || {}
-        return last.imageType || this.form.fd?.imageType || this.decorator.imageType[1].initialValue
+        return last.imageType || this.fieldVal(this.imageOsFieldMap.imageType) || this.form.fd?.imageType || this.imageOsFieldMap.imageType.initialValue
       }
-      return this.form.fd?.imageType || this.decorator.imageType[1].initialValue
+      return this.fieldVal(this.imageOsFieldMap.imageType) || this.form.fd?.imageType || this.imageOsFieldMap.imageType.initialValue
     },
     /**
      * 首屏 ImageSelect 默认 standard 拉镜像后会 persist；
@@ -304,30 +347,29 @@ export default {
       const last = storage.get('oc_selected_image') || {}
       storage.set('oc_selected_image', { ...last, ...patch })
     },
-    /** 写 fc，并同步 fd/fi（setFieldsValue 不走 onValuesChange） */
+    /** 写 model，并同步 fi（SKU/disk 仍读 fi） */
     applyImageTypeValue (imageType) {
-      if (!imageType || !this.form?.fc) return
-      const field = this.decorator.imageType[0]
+      if (!imageType) return
       this.imageType = imageType
-      this.form.fc.setFieldsValue({ [field]: imageType })
-      if (this.form.fd) {
+      this.fieldSet(this.imageOsFieldMap.imageType, imageType)
+      // fieldSet 已写 model；model 常即 form.fd。model !== fd 时补写
+      if (this.form.fd && this.model !== this.form.fd) {
         this.form.fd.imageType = imageType
       }
+      // SKU/disk 仍读 form.fi.imageType
       if (this.form.fi) {
         this.form.fi.imageType = imageType
       }
     },
     getCreateFormFieldDraftSnapshot () {
       this.lockDraftImageTypeFromStorage()
-      const f = this.form?.fc
-      if (!f) return undefined
-      let imageType = f.getFieldValue(this.decorator.imageType[0])
+      let imageType = this.fieldVal(this.imageOsFieldMap.imageType)
+      const os = this.model[IMAGE_OS_FIELDS.os]
+      const image = this.model[IMAGE_OS_FIELDS.image]
       // 用户未改镜像类型前：禁止用当前 UI（常为 standard）覆盖草稿
       if (this.isFirstLoad && this.hasOsDraftPrefer && this._lockedDraftImageType) {
         imageType = this._lockedDraftImageType
       }
-      const os = f.getFieldValue(this.decorator.os[0])
-      const image = f.getFieldValue(this.decorator.image[0])
       return {
         imageType,
         os,
@@ -337,7 +379,7 @@ export default {
     applyCreateFormFieldDraft (draft) {
       // query / 工单独占时不应用草稿
       if (this.hasOsQueryPrefer || this.hasOsWorkflowPrefer) return
-      if (!draft || !this.form?.fc) return
+      if (!draft) return
       if (draft.imageType && !this._lockedDraftImageType) {
         this._lockedDraftImageType = draft.imageType
       }

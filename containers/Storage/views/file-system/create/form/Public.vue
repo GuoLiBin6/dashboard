@@ -1,31 +1,37 @@
 <template>
   <div>
-    <a-form
+    <a-form-model
+      ref="formRef"
       class="mt-3"
       v-bind="formItemLayout"
-      :form="form.fc"
+      :model="form.fd"
+      :rules="rules"
       hideRequiredMark>
-      <a-form-item :label="$t('storage.text_55', [$t('dictionary.project')])" v-bind="formItemLayout">
-        <domain-project :fc="form.fc" :decorators="{ project: decorators.project, domain: decorators.domain }" @update:domain="handleDomainChange" />
-      </a-form-item>
-      <a-form-item :label="$t('storage.text_40')">
-        <a-input v-decorator="decorators.name" />
-        <template v-slot:extra>
+      <a-form-model-item :label="$t('storage.text_55', [$t('dictionary.project')])" prop="project" v-bind="formItemLayout">
+        <domain-project :form="form.fd" @update:domain="handleDomainChange" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('storage.text_40')" prop="name">
+        <a-input v-model:value="form.fd.name" />
+        <template #extra>
           <name-repeated res="file_systems" :name="form.fd.name" :default-text="$t('compute.text_893')" />
         </template>
-      </a-form-item>
-      <a-form-item :label="$t('common.description')">
-        <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-      </a-form-item>
+      </a-form-model-item>
+      <a-form-model-item :label="$t('common.description')" prop="description">
+        <a-textarea v-model:value="form.fd.description" :auto-size="{ minRows: 1, maxRows: 3 }" :placeholder="$t('common_367')" />
+      </a-form-model-item>
       <!-- 计费方式 -->
-      <clearing-radios v-bind="formItemLayout" :auto_renew="false" />
-      <a-form-item :label="$t('network.expired_release')" v-if="form.fd.billing_type !== 'prepaid'">
-        <duration :decorators="decorators.duration" :form="form" />
-      </a-form-item>
-      <a-form-item :label="$t('regionMap.enable_world_map')">
-        <a-switch v-decorator="decorators.enableWorldMap" @change="onWorldMapModeChange" />
-      </a-form-item>
-      <a-form-item v-if="form.fd.enableWorldMap" :label="$t('compute.region_map')">
+      <clearing-radios :model="form.fd" v-bind="formItemLayout" :auto_renew="false" />
+      <a-form-model-item :label="$t('network.expired_release')" v-if="form.fd.billing_type !== 'prepaid'">
+        <duration
+          :model="form.fd"
+          v-model:durationStandard="form.fd.durationStandard"
+          v-model:duration="form.fd.duration"
+          :form="form" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('regionMap.enable_world_map')" prop="enableWorldMap">
+        <a-switch v-model:checked="form.fd.enableWorldMap" @change="onWorldMapModeChange" />
+      </a-form-model-item>
+      <a-form-model-item v-if="form.fd.enableWorldMap" :label="$t('compute.region_map')">
         <region-map
           :region-filter-params="regionMapParams"
           filter-brand-resource="nas"
@@ -33,11 +39,12 @@
           split-key="provider"
           @select="onRegionSelect"
           @params-change="onRegionMapParamsChange" />
-      </a-form-item>
+      </a-form-model-item>
       <area-selects
         class="mb-0"
         v-if="showAreaSelect"
         ref="areaSelects"
+        :model="form.fd"
         :wrapperCol="formItemLayout.wrapperCol"
         :labelCol="formItemLayout.labelCol"
         :names="areaselectsName"
@@ -49,11 +56,10 @@
         :defaultActiveFirstOption="areaDefaultActiveFirstOption"
         filterBrandResource="nas"
         @change="handleRegionChange" />
-      <!-- 套餐 -->
       <file-system-sku
         @update:options="skuChanged"
         ref="REF_SKU" />
-      <a-form-item :label="$t('storage.capacity')" v-bind="formItemLayout" v-if="isShowCapacity">
+      <a-form-model-item :label="$t('storage.capacity')" v-bind="formItemLayout" v-if="isShowCapacity" prop="capacity">
         <a-col :span="12">
           <a-tooltip>
             <template #title v-if="capacityTooltip">
@@ -62,17 +68,17 @@
             <a-input-number v-model:value="capacity" v-bind="skuOptions" /> GB
           </a-tooltip>
         </a-col>
-      </a-form-item>
+      </a-form-model-item>
       <a-alert
         v-if="needsSkuForAreaDownstream"
         type="info"
         show-icon
         :message="$t('regionMap.select_sku_first_tip')"
         class="mb-2" />
-      <a-form-item :label="$t('compute.text_15')" required v-bind="formItemLayout">
+      <a-form-model-item :label="$t('compute.text_15')" prop="cloudprovider" required v-bind="formItemLayout">
         <base-select
           class="w-50"
-          v-decorator="decorators.cloudprovider"
+          v-model:value="form.fd.cloudprovider"
           resource="cloudproviders"
           :params="cloudproviderParams"
           :mapper="providerMapper"
@@ -80,9 +86,10 @@
           :showSync="true"
           :select-props="{ placeholder: $t('common.tips.select', [$t('compute.text_653')]) }"
           @update:item="cloudproviderSelected" />
-      </a-form-item>
+      </a-form-model-item>
       <network-selects
         ref="REF_NETWORK"
+        :model="form.fd"
         :label="$t('network.text_16')"
         :isDefaultFetch="false"
         :vpcFormat="vpcFormat"
@@ -90,13 +97,13 @@
         :networkParams="netParams"
         v-bind="formItemLayout"
         class="mb-0" />
-      <a-form-item :label="$t('compute.text_1154')" class="mb-0">
+      <a-form-model-item :label="$t('compute.text_1154')" class="mb-0" prop="tag">
         <tag
-          v-decorator="decorators.tag" :allowNoValue="false" />
-      </a-form-item>
-    </a-form>
+          :value="form.fd.tag" @change="v => { form.fd.tag = v || {} }" :allowNoValue="false" />
+      </a-form-model-item>
+    </a-form-model>
     <bottom-bar
-      :values="form.fc.getFieldsValue()"
+      :values="form.fd"
       :cloudAccountId="cloudAccountId"
       @submit="handleConfirm"
       @cancel="handleCancel" />
@@ -107,11 +114,11 @@
 import * as R from 'ramda'
 import Duration from '@Compute/sections/Duration'
 import RegionMap from '@Compute/sections/RegionMap'
-import DomainProject from '@/sections/DomainProject'
-import NetworkSelects from '@/sections/NetworkSelects'
+import DomainProject from '@/sections/DomainProject/model'
+import NetworkSelects from '@/sections/NetworkSelects/model'
 import validateForm, { isRequired } from '@/utils/validate'
 import Tag from '@/sections/Tag'
-import AreaSelects from '@/sections/AreaSelects'
+import AreaSelects from '@/sections/AreaSelects/model'
 import { getCloudEnvOptions } from '@/utils/common/hypervisor'
 import { HYPERVISORS_MAP, PROVIDER_MAP, resolveHypervisorKey } from '@/constants'
 import { cloudregionFilterByCapability } from '@/utils/common/capability'
@@ -119,6 +126,7 @@ import i18n from '@/locales'
 import fsCreateMixin from './mixin'
 import BottomBar from '../components/BottomBar'
 import FileSystemSku from '../components/SKU'
+
 function validateTag (rule, value, callback) {
   if (R.is(Object, value) && Object.keys(value).length > 20) {
     return callback(new Error(i18n.t('compute.text_209')))
@@ -141,81 +149,8 @@ export default {
   mixins: [fsCreateMixin],
   data () {
     const cloudEnvOptions = getCloudEnvOptions('object_storage_brands', true)
-    const decorators = {
-      domain: [
-        'domain',
-        {
-          rules: [
-            { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
-          ],
-        },
-      ],
-      project: [
-        'project',
-        {
-          rules: [
-            { validator: isRequired(), message: this.$t('rules.project'), trigger: 'change' },
-          ],
-        },
-      ],
-      name: [
-        'name',
-        {
-          validateFirst: true,
-          rules: [
-            { required: true, message: this.$t('network.text_218') },
-            { validator: validateForm('serverName') },
-          ],
-        },
-      ],
-      description: ['description'],
-      enableWorldMap: [
-        'enableWorldMap',
-        {
-          valuePropName: 'checked',
-          initialValue: false,
-        },
-      ],
-      cloudprovider: [
-        'cloudprovider',
-        {
-          rules: [
-            { required: true, message: this.$t('common.tips.select', [this.$t('compute.text_653')]) },
-          ],
-        },
-      ],
-      duration: {
-        durationStandard: [
-          'durationStandard',
-          {
-            initialValue: 'none',
-          },
-        ],
-        duration: [
-          'duration',
-          {
-            initialValue: '1h',
-          },
-        ],
-      },
-      billing_type: [
-        'billing_type',
-        {
-          initialValue: 'postpaid',
-        },
-      ],
-      tag: [
-        'tag',
-        {
-          rules: [
-            { validator: validateTag },
-          ],
-        },
-      ],
-    }
     return {
       loading: false,
-      decorators,
       skuOptions: {},
       capacity: 0,
       cloudproviderItem: null,
@@ -230,6 +165,21 @@ export default {
       cloudEnvOptions,
       routerQuery: this.$route.query.type,
       cloudEnv: this.$route.query.type ? this.$route.query.type : cloudEnvOptions[0].key,
+      rules: {
+        project: [
+          { validator: isRequired(), message: this.$t('rules.project'), trigger: 'change' },
+        ],
+        name: [
+          { required: true, message: this.$t('network.text_218') },
+          { validator: validateForm('serverName') },
+        ],
+        cloudprovider: [
+          { required: true, message: this.$t('common.tips.select', [this.$t('compute.text_653')]) },
+        ],
+        tag: [
+          { validator: validateTag },
+        ],
+      },
     }
   },
   computed: {
@@ -246,8 +196,8 @@ export default {
       return []
     },
     cloudAccountId () {
-      const values = this.form.fc.getFieldsValue()
-      const currentVpc = this.vpcList.filter(item => item.id === values.vpc)
+      const vpcId = this.form.fd.vpc
+      const currentVpc = this.vpcList.filter(item => item.id === vpcId)
       if (currentVpc[0]) {
         return currentVpc[0].account_id
       }
@@ -267,7 +217,6 @@ export default {
     needsSkuForAreaDownstream () {
       return this.hasMultipleAreaSelection && !R.is(Object, this.form.fd.sku)
     },
-    // 下游/提交用：优先套餐，其次云订阅，再次单选区域
     resolvedAreaFilterParams () {
       const fromForm = {
         provider: this.pickSingleAreaValue(this.form.fd.provider),
@@ -430,14 +379,18 @@ export default {
       scopeParams: this.scopeParams,
       formItemLayout: this.formItemLayout,
       tailFormItemLayout: this.tailFormItemLayout,
+      validateCreateForm: () => this.validateCreateForm(),
     }
   },
   watch: {
     capacity: {
       handler (val) {
-        this.form.fc.setFieldsValue({
-          capacity: val,
-        })
+        this.form.fd.capacity = val
+      },
+    },
+    'form.fd.billing_type': {
+      handler (val) {
+        this.refreshSkuByAreaSelection()
       },
     },
     'form.fd.provider': {
@@ -459,16 +412,8 @@ export default {
         }
       },
     },
-    'form.fd.billing_type': {
-      handler () {
-        this.refreshSkuByAreaSelection()
-      },
-    },
   },
   created () {
-    this.form.fc.getFieldDecorator('cloudregion_id', { preserve: true })
-    this.form.fc.getFieldDecorator('zone_id', { preserve: true })
-    this.form.fc.getFieldDecorator('capacity', { preserve: true })
   },
   methods: {
     pickSingleAreaValue (value) {
@@ -539,9 +484,8 @@ export default {
     },
     syncAreaHiddenFields () {
       const cloudregionIds = this.selectedCloudregionIds
-      this.form.fc.setFieldsValue({
-        cloudregion_id: cloudregionIds.length === 1 ? cloudregionIds[0] : undefined,
-      })
+      const cloudregion_id = cloudregionIds.length === 1 ? cloudregionIds[0] : undefined
+      this.form.fd.cloudregion_id = cloudregion_id
     },
     syncResolvedLocationFields () {
       const { cloudregion, zone } = this.resolvedAreaFilterParams
@@ -549,7 +493,7 @@ export default {
       if (cloudregion) fields.cloudregion_id = cloudregion
       if (zone) fields.zone_id = zone
       if (Object.keys(fields).length) {
-        this.form.fc.setFieldsValue(fields)
+        Object.assign(this.form.fd, fields)
       }
     },
     appendSkuFilter (params, filter) {
@@ -568,13 +512,12 @@ export default {
       const params = {
         scope: 'domain',
       }
-      // 单区域用 cloudregion_id；多区域用 filter: cloudregion_id.in(...)
       if (regionIds.length === 1) {
         params.cloudregion_id = regionIds[0]
       } else {
         this.appendSkuFilter(params, `cloudregion_id.in(${regionIds.join(',')})`)
       }
-      if (this.form.fc.getFieldValue('billing_type') === 'postpaid') {
+      if (this.form.fd.billing_type === 'postpaid') {
         params.postpaid_status = 'available'
       } else {
         params.prepaid_status = 'available'
@@ -591,11 +534,9 @@ export default {
       return params
     },
     refreshSkuByAreaSelection () {
-      this.form.fc.setFieldsValue({
-        sku: undefined,
-        cloudprovider: undefined,
-        zone_id: undefined,
-      })
+      this.form.fd.sku = undefined
+      this.form.fd.cloudprovider = undefined
+      this.form.fd.zone_id = undefined
       this.cloudproviderItem = null
       this.$nextTick(() => {
         const params = this.buildSkuFetchParams()
@@ -612,14 +553,12 @@ export default {
       this.$refs.areaSelects.fetchs(this.areaselectsName)
     },
     clearPublicLocationFields () {
-      this.form.fc.setFieldsValue({
-        provider: [],
-        cloudregion: [],
-        cloudprovider: undefined,
-        sku: undefined,
-        cloudregion_id: undefined,
-        zone_id: undefined,
-      })
+      this.form.fd.provider = []
+      this.form.fd.cloudregion = []
+      this.form.fd.cloudprovider = undefined
+      this.form.fd.sku = undefined
+      this.form.fd.cloudregion_id = undefined
+      this.form.fd.zone_id = undefined
       this.cloudproviderItem = null
     },
     onRegionSelect (payload) {
@@ -647,11 +586,9 @@ export default {
         return matched ? matched.name : hvKey
       }).filter(Boolean))]
       const cloudregionIds = regions.map(item => item.id).filter(Boolean)
-      this.form.fc.setFieldsValue({
-        cloudprovider: undefined,
-        sku: undefined,
-        zone_id: undefined,
-      })
+      this.form.fd.cloudprovider = undefined
+      this.form.fd.sku = undefined
+      this.form.fd.zone_id = undefined
       this.cloudproviderItem = null
       await this.$nextTick()
       const areaRef = this.$refs.areaSelects
@@ -665,9 +602,7 @@ export default {
     },
     skuChanged (options) {
       this.skuOptions = options
-      this.form.fc.setFieldsValue({
-        capacity: this.skuOptions.min,
-      })
+      this.form.fd.capacity = this.skuOptions.min
       this.capacity = this.skuOptions.min
       this.syncResolvedLocationFields()
       this.fetchVpc()
@@ -679,9 +614,6 @@ export default {
     },
     providerMapper (data) {
       return data
-    },
-    billing_type_change () {
-      this.refreshSkuByAreaSelection()
     },
     vpcFormat (vpc) {
       const { name, manager } = vpc
@@ -709,27 +641,13 @@ export default {
     handleRegionChange () {
       this.syncAreaHiddenFields()
     },
-    async handleValuesChange (fc, changedFields) {
-      this.form.fd = {
-        ...this.form.fd,
-        ...changedFields,
-      }
-      await this.$nextTick()
-      const changedFieldsKey = Object.keys(changedFields)
-      changedFieldsKey.forEach(field => {
-        const handleChange = this[`${field}_change`]
-        if (this[`${field}_change`]) {
-          return handleChange()
-        }
-      })
-    },
     doCreate (data) {
       return new this.$Manager('file_systems').create({ data })
     },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        const values = await this.validateCreateForm()
         const { zone } = this.resolvedAreaFilterParams
         const params = {
           billing_type: values.billing_type,
@@ -739,7 +657,6 @@ export default {
           project_domain: (values.domain && values.domain.key) || this.userInfo.projectDomainId,
           project_id: (values.project && values.project.key) || this.userInfo.projectId,
         }
-        // zone_id 来自所选套餐，不再由用户选择可用区
         if (zone || values.zone_id) {
           params.zone_id = zone || values.zone_id
         }

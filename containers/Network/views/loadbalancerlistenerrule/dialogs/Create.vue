@@ -2,84 +2,97 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('network.text_521')}}</div>
     <div slot="body">
-      <a-form
+      <a-form-model
+        v-if="isOneCloud && !isCloudflare"
+        ref="redirectFormRef"
+        :model="redirectForm"
+        v-bind="formItemLayout">
+        <redirect-form-items
+          :form="redirectForm"
+          modelMode
+          :listenerType="params.lbListenerData.listener_type"
+          @redirectChange="handleRedirectChange" />
+      </a-form-model>
+      <a-form-model
+        ref="formRef"
         v-bind="formItemLayout"
-        :form="form.fc">
-        <a-form-item :label="$t('network.text_21')">
-          <a-input v-decorator="decorators.name"  :placeholder="$t('network.text_522')" />
-        </a-form-item>
+        :model="form"
+        :rules="rules">
+        <a-form-model-item :label="$t('network.text_21')" prop="name">
+          <a-input v-model:value="form.name"  :placeholder="$t('network.text_522')" />
+        </a-form-model-item>
         <template v-if="isCloudflare">
           <a-form-model-item :label="$t('network.text_156')" class="mb-0" required>
             <div class="d-flex align-items-top">
-              <a-form-item class="mr-2" style="width: 100%" :extra="$t('network.domain_prefix_extra')">
-                <a-input v-decorator="decorators.domain_prefix" :placeholder="$t('network.domain_prefix')" />
-              </a-form-item>
-              <a-form-item style="width: 100%">
+              <a-form-model-item class="mr-2" style="width: 100%" :extra="$t('network.domain_prefix_extra')" prop="domain_prefix">
+                <a-input v-model:value="form.domain_prefix" :placeholder="$t('network.domain_prefix')" />
+              </a-form-model-item>
+              <a-form-model-item style="width: 100%" prop="domain_name">
                 <base-select
-                  v-decorator="decorators.domain_name"
+                  v-model:value="form.domain_name"
                   resource="cdn_domains"
                   :params="cdnDomainParams"
                   filterable
                   :mapper="domainMapper"
                   :select-props="{ placeholder: $t('network.text_156') }" />
-              </a-form-item>
+              </a-form-model-item>
             </div>
           </a-form-model-item>
-          <a-form-item label="URL" :extra="$t('network.domain_url_extra')">
+          <a-form-model-item label="URL" :extra="$t('network.domain_url_extra')">
             {{ currentUrl }}
-          </a-form-item>
-          <a-form-item :label="$t('network.text_139')">
+          </a-form-model-item>
+          <a-form-model-item :label="$t('network.text_139')" prop="backend_groups">
             <base-select
-              v-decorator="decorators.backend_groups"
+              v-model:value="form.backend_groups"
               resource="loadbalancerbackendgroups"
               :params="backendParams"
               filterable
               :select-props="{ placeholder: $t('network.text_139'), mode: 'multiple' }" />
-          </a-form-item>
-          <a-form-item :label="$t('network.default_backend_server_group')" :extra="$t('network.default_backend_server_group_extra')">
+          </a-form-model-item>
+          <a-form-model-item :label="$t('network.default_backend_server_group')" :extra="$t('network.default_backend_server_group_extra')" prop="backend_group_id">
             <base-select
-              v-decorator="decorators.backend_group_id"
+              v-model:value="form.backend_group_id"
               resource="loadbalancerbackendgroups"
               :params="backendParams1"
               filterable
               :select-props="{ placeholder: $t('network.default_backend_server_group') }" />
-          </a-form-item>
-          <a-form-item :label="$t('network.rule_redirect')" :extra="form.fd.redirect_type === 'geography' ? $t('network.rule_redirect_extra') : ''">
-            <a-select v-decorator="decorators.redirect_type">
+          </a-form-model-item>
+          <a-form-model-item :label="$t('network.rule_redirect')" :extra="form.redirect_type === 'geography' ? $t('network.rule_redirect_extra') : ''" prop="redirect_type">
+            <a-select v-model:value="form.redirect_type">
               <a-select-option value="off">{{$t('network.rule_redirect_type_off')}}</a-select-option>
               <a-select-option value="geography">{{$t('network.rule_redirect_type_geography')}}</a-select-option>
             </a-select>
-          </a-form-item>
-          <template v-if="form.fd.redirect_type === 'geography'">
+          </a-form-model-item>
+          <template v-if="form.redirect_type === 'geography'">
             <a-form-model-item v-bind="formItemLayout2" :label="$t('network.rule_redirect_region_country')">
               <div class="d-flex" v-for="(item, index) in redirectRules" :key="index">
-                <a-form-item class="mr-2 w-100">
-                  <a-select class="w-100" v-decorator="decorators.redirect_region_type(index)" :placeholder="$t('network.rule_redirect_type')">
+                <a-form-model-item class="mr-2 w-100" :prop="'redirect_region_type.' + index" :rules="rules.redirect_region_type">
+                  <a-select class="w-100" v-model:value="form.redirect_region_type[index]" :placeholder="$t('network.rule_redirect_type')" @change="v => onRedirectRegionTypeChange(index, v)">
                     <a-select-option value="region">{{$t('network.text_199')}}</a-select-option>
                     <a-select-option value="country">{{$t('network.cdn.clear_cache_country')}}</a-select-option>
                   </a-select>
-                </a-form-item>
-                <a-form-item class="mr-2 w-100">
-                  <a-select v-if="item.type === 'region'" class="w-100" v-decorator="decorators.redirect_region_country(index)" :placeholder="item.type === 'region' ? $t('network.text_199') : $t('network.cdn.clear_cache_country')">
+                </a-form-model-item>
+                <a-form-model-item class="mr-2 w-100" :prop="'redirect_region_country.' + index" :rules="rules.redirect_region_country">
+                  <a-select v-if="item.type === 'region'" class="w-100" v-model:value="form.redirect_region_country[index]" :placeholder="$t('network.text_199')">
                     <a-select-option v-for="region in REGIONS" :key="region.key" :value="region.key">{{region.label}}</a-select-option>
                   </a-select>
-                  <a-select v-else-if="item.type === 'country'" class="w-100" v-decorator="decorators.redirect_region_country(index)" :placeholder="item.type === 'region' ? $t('network.text_199') : $t('network.cdn.clear_cache_country')">
+                  <a-select v-else-if="item.type === 'country'" class="w-100" v-model:value="form.redirect_region_country[index]" :placeholder="$t('network.cdn.clear_cache_country')">
                     <a-select-option v-for="country in COUNTRYS" :key="country.key" :value="country.key">{{country.label}}</a-select-option>
                   </a-select>
                   <a-select v-else class="w-100" />
-                </a-form-item>
-                <a-form-item class="mr-2 w-100">
+                </a-form-model-item>
+                <a-form-model-item class="mr-2 w-100" :prop="'redirect_backend_groups.' + index" :rules="rules.redirect_backend_groups">
                   <base-select
                     class="w-100"
-                    v-decorator="decorators.redirect_backend_groups(index)"
+                    v-model:value="form.redirect_backend_groups[index]"
                     resource="loadbalancerbackendgroups"
                     :params="genBackendParams(index)"
                     filterable
                     :select-props="{placeholder: $t('network.text_139'), mode: 'multiple' }" />
-                </a-form-item>
-                <a-form-item>
+                </a-form-model-item>
+                <a-form-model-item>
                   <div><a-button style="flex: 0 0 24px;" shape="circle" icon="minus" size="small" :disabled="redirectRules.length === 1" @click="deleteRule(item,index)" /></div>
-                </a-form-item>
+                </a-form-model-item>
               </div>
             </a-form-model-item>
             <div class="d-flex align-items-center">
@@ -89,50 +102,48 @@
           </template>
         </template>
         <template v-else>
-          <a-form-item :label="$t('network.text_156')">
-            <div slot="extra">
-              <!-- - 泛解析域名：*.test.com，*一定在第一个字符，并且是*.或者*aaa.的格式，*不能在最后。<br /> -->{{$t('network.text_523')}}</div>
-            <a-input v-decorator="decorators.domain" :placeholder="$t('network.text_522')" />
-          </a-form-item>
-          <a-form-item :label="$t('network.text_143')" v-if="params.lbListenerData.listener_type === 'https'">
+          <a-form-model-item :label="$t('network.text_156')" prop="domain">
+            <div slot="extra">{{$t('network.text_523')}}</div>
+            <a-input v-model:value="form.domain" :placeholder="$t('network.text_522')" />
+          </a-form-model-item>
+          <a-form-model-item :label="$t('network.text_143')" v-if="params.lbListenerData.listener_type === 'https'" prop="certificate_id">
             <base-select
-              v-decorator="decorators.certificate_id"
+              v-model:value="form.certificate_id"
               resource="loadbalancercertificates"
               :params="certificateParams"
               :label-format="certificateFormatter"
               show-sync
               :select-props="{ placeholder: $t('network.text_421') }" />
             <div slot="extra">{{$t('network.text_422')}}<help-link href="/lbcert">{{$t('network.text_321')}}</help-link></div>
-          </a-form-item>
-          <a-form-item :label="$t('network.text_524')">
+          </a-form-model-item>
+          <a-form-model-item :label="$t('network.text_524')" prop="path">
             <div slot="extra">
               {{$t('network.text_525')}}
               <span v-if="isDomainOrPathProviders" :class="{'error-color': !isDomainOrPath}">{{$t('common_465')}}</span>
             </div>
-            <a-input v-decorator="decorators.path" :placeholder="$t('network.text_522')" />
-          </a-form-item>
-          <redirect-form-items v-if="isOneCloud" :form="form" @redirectChange="handleRedirectChange" />
+            <a-input v-model:value="form.path" :placeholder="$t('network.text_522')" />
+          </a-form-model-item>
           <template v-if="!isRedirect">
-            <a-form-item :label="$t('network.default_backend_server_group')">
+            <a-form-model-item :label="$t('network.default_backend_server_group')" prop="backend_group">
               <base-select
+                v-model:value="form.backend_group"
                 resource="loadbalancerbackendgroups"
                 need-params
                 :params="bgParams"
                 filterable
-                v-decorator="decorators.backend_group"
                 :select-props="{ placeholder: $t('network.text_394') }" />
-            </a-form-item>
-            <a-form-item v-if="isOneCloud" :label="$t('network.text_527')">
+            </a-form-model-item>
+            <a-form-model-item v-if="isOneCloud" :label="$t('network.text_527')" prop="http_request_rate">
               <div slot="extra">{{$t('network.text_438')}}</div>
-              <a-input :min="0" v-decorator="decorators.http_request_rate" :addonAfter="$t('network.text_439')" type="number" />
-            </a-form-item>
-            <a-form-item v-if="isOneCloud" :label="$t('network.text_440')">
+              <a-input :min="0" v-model:value="form.http_request_rate" :addonAfter="$t('network.text_439')" type="number" />
+            </a-form-model-item>
+            <a-form-model-item v-if="isOneCloud" :label="$t('network.text_440')" prop="http_request_rate_per_src">
               <div slot="extra">{{$t('network.text_528')}}</div>
-              <a-input :min="0" v-decorator="decorators.http_request_rate_per_src" :addonAfter="$t('network.text_439')" type="number" />
-            </a-form-item>
+              <a-input :min="0" v-model:value="form.http_request_rate_per_src" :addonAfter="$t('network.text_439')" type="number" />
+            </a-form-model-item>
           </template>
         </template>
-      </a-form>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -158,16 +169,11 @@ export default {
   data () {
     const provider = this.params.lbListenerData.provider.toLowerCase()
     const customDomain = (rule, value, callback) => {
-      // 泛解析域名：*.test.com，*一定在第一个字符，并且是*.或者*aaa.的格式，*不能在最后。
-      // const reg = /^\*.*\..[a-zA-Z]+/
       if (value === '' || REGEXP.domain.regexp.test(value)) {
         callback()
       } else {
         callback(new Error())
       }
-      // else if (reg.test(value) && !value.endsWith('.')) {
-      //   callback()
-      // }
     }
     return {
       REGIONS,
@@ -175,138 +181,33 @@ export default {
       isRedirect: false,
       loading: false,
       isDomainOrPath: true,
+      provider,
       form: {
-        fc: this.$form.createForm(this, { onValuesChange: this.onValuesChange }),
-        fd: {
-          domain_prefix: '',
-          domain_name: '',
-          redirect_type: 'off',
-        },
+        name: undefined,
+        domain: undefined,
+        domain_prefix: '',
+        domain_name: undefined,
+        certificate_id: undefined,
+        path: undefined,
+        backend_group: undefined,
+        backend_groups: undefined,
+        backend_group_id: undefined,
+        redirect_type: 'off',
+        redirect_region_type: [''],
+        redirect_region_country: [''],
+        redirect_backend_groups: [undefined],
+        http_request_rate: 0,
+        http_request_rate_per_src: 0,
       },
-      decorators: {
-        name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('network.text_116') },
-              { validator: this.$validate('resourceName') },
-            ],
-          },
-        ],
-        domain: [
-          'domain',
-          {
-            rules: [
-              { required: provider === 'qcloud', message: this.$t('network.text_530') },
-              { validator: customDomain, message: this.$t('network.text_531'), trigger: 'blur' },
-            ],
-          },
-        ],
-        domain_prefix: [
-          'domain_prefix',
-          {
-            rules: [{
-              required: true,
-              validator: (rule, value, callback) => {
-                if (!value) {
-                  callback(new Error(this.$t('common.tips.input', [this.$t('network.domain_prefix')])))
-                }
-                const regex = /^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$/
-                if (!regex.test(value)) {
-                  callback(new Error(this.$t('network.domain_prefix_invalid')))
-                }
-                callback()
-              },
-            }],
-          },
-        ],
-        domain_name: [
-          'domain_name',
-          {
-            rules: [{ required: true, message: this.$t('common.tips.select', [this.$t('network.text_156')]) }],
-          },
-        ],
-        certificate_id: [
-          'certificate_id',
-        ],
-        path: [
-          'path',
-          {
-            validateFirst: true,
-            rules: [
-              { required: provider === 'qcloud', message: this.$t('network.text_530') },
-              { pattern: /^\/.+/, message: this.$t('network.text_529'), trigger: 'blur' },
-            ],
-          },
-        ],
-        backend_group: [
-          'backend_group',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('network.text_394') },
-            ],
-          },
-        ],
-        backend_group_id: [
-          'backend_group_id',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('network.default_backend_server_group')]) },
-            ],
-          },
-        ],
-        backend_groups: [
-          'backend_groups',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('network.text_139')]) },
-            ],
-          },
-        ],
-        http_request_rate: [
-          'http_request_rate',
-          {
-            normalize: v => Number(v),
-            initialValue: 0,
-          },
-        ],
-        http_request_rate_per_src: [
-          'http_request_rate_per_src',
-          {
-            normalize: v => Number(v),
-            initialValue: 0,
-          },
-        ],
-        redirect_type: [
-          'redirect_type',
-          {
-            initialValue: 'off',
-            rules: [{ required: true, message: this.$t('network.rule_redirect_type') }],
-          },
-        ],
-        redirect_region_type: (key) => [
-          `redirect_region_type[${key}]`,
-          {
-            rules: [{ required: true, message: this.$t('network.rule_redirect_type') }],
-          },
-        ],
-        redirect_region_country: (key) => [
-          `redirect_region_country[${key}]`,
-          {
-            rules: [{ required: true, message: this.$t('network.text_203') }],
-          },
-        ],
-        redirect_backend_groups: (key) => [
-          `redirect_backend_groups[${key}]`,
-          {
-            rules: [{ required: true, message: this.$t('network.text_139') }],
-          },
-        ],
+      redirectForm: {
+        redirect: false,
+        redirect_code: 301,
+        redirect_scheme: 'http',
+        redirect_host: undefined,
+        redirect_path: undefined,
+        listener_type: this.params.lbListenerData.listener_type,
       },
+      customDomain,
       redirectRules: [
         {
           type: '',
@@ -333,6 +234,69 @@ export default {
     }
   },
   computed: {
+    rules () {
+      const rules = {
+        name: [
+          { required: true, message: this.$t('network.text_116') },
+          { validator: this.$validate('resourceName') },
+        ],
+      }
+      if (this.isCloudflare) {
+        rules.domain_prefix = [
+          {
+            required: true,
+            validator: (rule, value, callback) => {
+              if (!value) {
+                callback(new Error(this.$t('common.tips.input', [this.$t('network.domain_prefix')])))
+              }
+              const regex = /^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]$/
+              if (!regex.test(value)) {
+                callback(new Error(this.$t('network.domain_prefix_invalid')))
+              }
+              callback()
+            },
+          },
+        ]
+        rules.domain_name = [
+          { required: true, message: this.$t('common.tips.select', [this.$t('network.text_156')]) },
+        ]
+        rules.backend_groups = [
+          { required: true, message: this.$t('common.tips.select', [this.$t('network.text_139')]) },
+        ]
+        rules.backend_group_id = [
+          { required: true, message: this.$t('common.tips.select', [this.$t('network.default_backend_server_group')]) },
+        ]
+        rules.redirect_type = [
+          { required: true, message: this.$t('network.rule_redirect_type') },
+        ]
+        if (this.form.redirect_type === 'geography') {
+          rules.redirect_region_type = [
+            { required: true, message: this.$t('network.rule_redirect_type') },
+          ]
+          rules.redirect_region_country = [
+            { required: true, message: this.$t('network.text_203') },
+          ]
+          rules.redirect_backend_groups = [
+            { required: true, message: this.$t('network.text_139') },
+          ]
+        }
+      } else {
+        rules.domain = [
+          { required: this.provider === 'qcloud', message: this.$t('network.text_530') },
+          { validator: this.customDomain, message: this.$t('network.text_531'), trigger: 'blur' },
+        ]
+        rules.path = [
+          { required: this.provider === 'qcloud', message: this.$t('network.text_530') },
+          { pattern: /^\/.+/, message: this.$t('network.text_529'), trigger: 'blur' },
+        ]
+        if (!this.isRedirect) {
+          rules.backend_group = [
+            { required: true, message: this.$t('network.text_394') },
+          ]
+        }
+      }
+      return rules
+    },
     certificateParams () {
       const params = {
         usable: true,
@@ -358,9 +322,6 @@ export default {
         params.type = 'normal'
       }
       return params
-    },
-    provider () {
-      return this.params.lbListenerData.provider.toLowerCase()
     },
     isOneCloud () {
       return this.provider === 'onecloud'
@@ -395,26 +356,42 @@ export default {
     },
     currentUrl () {
       if (this.isCloudflare) {
-        return `${this.form.fd.domain_prefix}.${this.form.fd.domain_name}`
+        return `${this.form.domain_prefix}.${this.form.domain_name}`
       }
       return ''
     },
   },
-  created () {
-    this.form.fc.getFieldDecorator('listener_type', {
-      preserve: true,
-      initialValue: this.params.lbListenerData.listener_type,
-    })
+  watch: {
+    'form.path' () {
+      this.syncDomainOrPathFlag()
+    },
+    'form.domain' () {
+      this.syncDomainOrPathFlag()
+    },
   },
   methods: {
+    syncDomainOrPathFlag () {
+      if (this.isDomainOrPathProviders) {
+        this.isDomainOrPath = this.form.path || this.form.domain
+      }
+    },
+    onRedirectRegionTypeChange (index, val) {
+      this.$set(this.redirectRules[index], 'type', val)
+    },
     deleteRule (item, index) {
       this.redirectRules = this.redirectRules.filter((_, i) => i !== index)
+      this.form.redirect_region_type.splice(index, 1)
+      this.form.redirect_region_country.splice(index, 1)
+      this.form.redirect_backend_groups.splice(index, 1)
     },
     addRule () {
       this.redirectRules.push({
         region: '',
         backend_group: '',
       })
+      this.form.redirect_region_type.push('')
+      this.form.redirect_region_country.push('')
+      this.form.redirect_backend_groups.push(undefined)
     },
     genBackendParams (index) {
       return {
@@ -432,26 +409,6 @@ export default {
     },
     handleRedirectChange (bool) {
       this.isRedirect = bool
-    },
-    async onValuesChange (props, values) {
-      await this.$nextTick()
-      const redirectKeys = ['redirect', 'redirect_scheme', 'redirect_host', 'redirect_path']
-      if (redirectKeys.indexOf(Object.keys(values)[0]) > -1) {
-        this.form.fc.resetFields(['check'])
-        this.form.fc.validateFields(['check'])
-      }
-      const { path, domain } = this.form.fc.getFieldsValue(['path', 'domain'])
-      if (this.isDomainOrPathProviders) {
-        this.isDomainOrPath = path || domain
-      }
-      Object.keys(values).forEach((key) => {
-        if (key === 'domain_name' || key === 'domain_prefix' || key === 'redirect_type') {
-          this.form.fd[key] = values[key]
-        }
-        if (key === 'redirect_region_type') {
-          this.$set(this.redirectRules[values[key].length - 1], 'type', values[key][values[key].length - 1])
-        }
-      })
     },
     async doCreate (values) {
       let data = { listener: this.params.lbListenerData.id }
@@ -486,13 +443,23 @@ export default {
     },
     async handleConfirm () {
       try {
-        const { path, domain } = this.form.fc.getFieldsValue(['path', 'domain'])
-        const values = await this.form.fc.validateFields()
-        if (this.isDomainOrPathProviders) {
-          this.isDomainOrPath = path || domain
-          if (!(path || domain)) {
+        if (this.isDomainOrPathProviders && !this.isCloudflare) {
+          this.syncDomainOrPathFlag()
+          if (!(this.form.path || this.form.domain)) {
             return false
           }
+        }
+        await this.$refs.formRef.validate()
+        let values = { ...this.form }
+        if (this.isOneCloud && !this.isCloudflare) {
+          if (this.$refs.redirectFormRef) {
+            await this.$refs.redirectFormRef.validate()
+          }
+          values = { ...values, ...this.redirectForm }
+          values.http_request_rate = Number(values.http_request_rate)
+          values.http_request_rate_per_src = Number(values.http_request_rate_per_src)
+          delete values.listener_type
+          delete values.check
         }
         this.loading = true
         values.redirect = values.redirect ? 'raw' : 'off'

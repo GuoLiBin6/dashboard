@@ -1,8 +1,6 @@
 <template>
-  <a-form
-    :form="form"
-    :style="{ width: `${width}px` }"
-    @submit="handleSubmit">
+  <div
+    :style="{ width: `${width}px` }">
     <a-alert class="mb-2" type="warning">
       <template #message>
         {{ $t('help.ipSupplement') }}
@@ -32,19 +30,18 @@
         :params="{ ...networkParamsC(nic) }"
         :select-props="{ allowClear: false }"
         :min-width="'200px'" />
-      <ip-select v-decorator="decorators.input(i)" :value="nic.ip" :network="nic.network" @change="e => ipChange(e, i)" />
+      <ip-select :value="nic.ip" :network="nic.network" @change="e => ipChange(e, i)" />
       </div>
       <template v-if="i === 0" #extra>{{$t('compute.text_196')}}<help-link :href="`/network/create?vpc=default&wire=${nic.wire}&domain=${domain}&project=${project}&type=idc`">{{$t('compute.perform_create')}}</help-link></template>
     </a-form-item>
     <div class="text-right">
-      <a-button type="primary" html-type="submit" :loading="loading" v-if="localNics && localNics.length > 0">{{$t('common.ok')}}</a-button>
-      <a-button class="ml-3" html-type="button" @click.stop.prevent="cancel">{{$t('common.cancel')}}</a-button>
+      <a-button type="primary" :loading="loading" v-if="localNics && localNics.length > 0" @click="handleSubmit">{{$t('common.ok')}}</a-button>
+      <a-button class="ml-3" @click.stop.prevent="cancel">{{$t('common.cancel')}}</a-button>
     </div>
-  </a-form>
+  </div>
 </template>
 
 <script>
-import * as R from 'ramda'
 import IpSelect from '@Compute/sections/ServerNetwork/IpSelect.vue'
 
 function createLocalNics (nics = []) {
@@ -104,21 +101,7 @@ export default {
   },
   data () {
     return {
-      form: this.$form.createForm(this),
       localNics: createLocalNics(this.nics),
-      decorators: {
-        input: i => [
-          `input[${i}]`,
-          {
-            initialValue: this.nics[i]?.ip || this.defaultValue,
-            validateFirst: true,
-            rules: [
-              { required: true, message: `${this.$t('common.placeholder')}${this.label}` },
-              { validator: this.$validate('IPv4') },
-            ],
-          },
-        ],
-      },
     }
   },
   computed: {
@@ -168,19 +151,30 @@ export default {
     cancel () {
       this.$emit('cancel')
     },
-    handleSubmit (e) {
-      e.preventDefault()
-      this.form.validateFields((err, values) => {
-        if (!err) {
-          const trimValue = R.map(value => {
-            if (R.is(String, value)) {
-              return value.trim()
-            }
-            return value
-          }, values)
-          this.$emit('submit', trimValue)
-        }
+    async validateIp (ip) {
+      const trimmed = (ip || '').trim()
+      if (!trimmed) {
+        throw new Error(`${this.$t('common.placeholder')}${this.label}`)
+      }
+      return new Promise((resolve, reject) => {
+        this.$validate('IPv4')(null, trimmed, err => {
+          if (err) reject(err)
+          else resolve(trimmed)
+        })
       })
+    },
+    async handleSubmit () {
+      try {
+        const values = {}
+        for (let i = 0; i < this.localNics.length; i++) {
+          values[`input[${i}]`] = await this.validateIp(this.localNics[i].ip)
+        }
+        this.$emit('submit', values)
+      } catch (err) {
+        if (err?.message) {
+          this.$message.error(err.message)
+        }
+      }
     },
   },
 }

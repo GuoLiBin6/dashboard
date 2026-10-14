@@ -4,20 +4,18 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :name="$t('helm.text_73')" :action="$t('helm.text_72')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        v-bind="formItemLayout"
-        :form="form.fc">
-        <a-form-item :label="$t('helm.text_74')">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('helm.text_74')" prop="revision">
           <base-select
-            v-decorator="decorators.revision"
+            v-model:value="form.revision"
             need-params
             :params="releaseParams"
             :options="options"
             id-key="revision"
             name-key="label"
             :select-props="{ placeholder: $t('helm.text_30') }" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -38,21 +36,15 @@ export default {
       loading: false,
       options: [],
       form: {
-        fc: this.$form.createForm(this),
-        fd: {},
+        revision: undefined,
+      },
+      rules: {
+        revision: [
+          { required: true, message: this.$t('helm.text_30') },
+        ],
       },
       data: this.params.data[0],
       containerImages: [],
-      decorators: {
-        revision: [
-          'revision',
-          {
-            rules: [
-              { required: true, message: this.$t('helm.text_30') },
-            ],
-          },
-        ],
-      },
       formItemLayout: {
         wrapperCol: {
           span: 21,
@@ -107,8 +99,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        await this.doUpdate(values)
+        await this.$refs.formRef.validate()
+        await this.doUpdate(this.form)
         this.loading = false
         this.cancelDialog()
       } catch (error) {

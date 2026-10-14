@@ -4,16 +4,20 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.instancegroup')" :count="params.data.length" :action="$t('compute.text_1179')" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" hideRequiredMark>
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
         <eip-config
           hidden-none-type
-          :decorators="decorators.eipConfig"
+          type-field="type"
+          charge-type-field="charge_type"
+          bgp-type-field="bgp_type"
+          bandwidth-field="bandwidth"
+          eip-field="eip"
           :eip-params="eipParams"
           :hypervisor="hypervisor"
           :cloud-env="params.data[0].cloud_env"
-          :form="form"
+          :model="form"
           :formItemLayout="formItemLayout" />
-      </a-form>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -23,7 +27,7 @@
 </template>
 
 <script>
-import EipConfig from '@Compute/sections/EipConfig'
+import EipConfig from '@Compute/sections/EipConfig/model'
 import { SERVER_TYPE } from '@Compute/constants'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
@@ -41,47 +45,15 @@ export default {
     if (findPlatform(hypervisor) === SERVER_TYPE.private) {
       typeInitialValue = 'bind'
     }
+    const chargeInitial = (this.params.data[0].hypervisor == null || this.params.data[0].hypervisor === 'kvm') ? 'bandwidth' : 'traffic'
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        eipConfig: {
-          type: [
-            'type',
-            {
-              initialValue: typeInitialValue,
-            },
-          ],
-          charge_type: [
-            'charge_type',
-            {
-              initialValue: (this.params.data[0].hypervisor == null || this.params.data[0].hypervisor === 'kvm') ? 'bandwidth' : 'traffic',
-            },
-          ],
-          bgp_type: [
-            'bgp_type',
-            {
-              initialValue: '',
-            },
-          ],
-          bandwidth: [
-            'bandwidth',
-            {
-              initialValue: 30,
-              validateFirst: true,
-            },
-          ],
-          eip: [
-            'eip',
-            {
-              rules: [
-                { required: true, message: this.$t('compute.text_145'), trigger: 'change' },
-              ],
-            },
-          ],
-        },
+        type: typeInitialValue,
+        charge_type: chargeInitial,
+        bgp_type: '',
+        bandwidth: 30,
+        eip: undefined,
       },
       formItemLayout: {
         wrapperCol: {
@@ -114,6 +86,14 @@ export default {
         return fields.indexOf(field) > -1
       })
     },
+    rules () {
+      if (this.form.type !== 'bind') return {}
+      return {
+        eip: [
+          { required: true, message: this.$t('compute.text_145'), trigger: 'change' },
+        ],
+      }
+    },
   },
   methods: {
     doCreateEip (ids, values) {
@@ -145,7 +125,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = this.form
         const ids = this.params.data.map(item => item.id)
         if (values.type === 'new') {
           await this.doCreateEip(ids, values)

@@ -2,48 +2,50 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{params.title}}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc">
-        <a-form-item v-if="isConvert" :label="$t('compute.text_327')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.name" v-if="!isDisabled" class="workspace-prefix-wrapper">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules">
+        <a-form-model-item v-if="isConvert" :label="$t('compute.text_327')" v-bind="formItemLayout" prop="name">
+          <a-input v-model:value="form.name" v-if="!isDisabled" class="workspace-prefix-wrapper">
             <span class="workspace-prefix" slot="prefix">{{prefix}}</span>
           </a-input>
-          <a-input v-else :disabled="isDisabled" v-decorator="decorators.name" />
+          <a-input v-else :disabled="isDisabled" v-model:value="form.name" />
           <template #extra v-if="!isDisabled">
             {{$t('compute.text_1361', ['/opt/cloud/workspace'])}}
           </template>
-        </a-form-item>
-        <a-form-item v-else :label="$t('compute.text_327')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.name" :disabled="isDisabled" />
+        </a-form-model-item>
+        <a-form-model-item v-else :label="$t('compute.text_327')" v-bind="formItemLayout" prop="name">
+          <a-input v-model:value="form.name" :disabled="isDisabled" />
           <template #extra v-if="!isDisabled">
             {{$t('compute.mount_point_tips', ['/opt/cloud/workspace'])}}
           </template>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_328')" v-bind="formItemLayout" v-if="!isDisabled">
-          <a-select v-decorator="decorators.format" :placeholder="$t('compute.text_329')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_328')" v-bind="formItemLayout" v-if="!isDisabled" prop="format">
+          <a-select v-model:value="form.format" :placeholder="$t('compute.text_329')">
             <a-select-option value="ext4">ext4</a-select-option>
             <a-select-option value="xfs">xfs</a-select-option>
             <a-select-option value="ntfs">ntfs</a-select-option>
             <a-select-option value="swap">swap</a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_330')" v-bind="formItemLayout">
-          <a-radio-group v-decorator="decorators.method" @change="handleMethodChange">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_330')" v-bind="formItemLayout" prop="method">
+          <a-radio-group v-model:value="form.method" @change="handleMethodChange">
             <a-radio value="autoextend" v-show="this.params.item.remainder !== 0">{{$t('compute.text_331')}}</a-radio>
             <a-radio value="manual">{{$t('compute.text_332')}}</a-radio>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item v-bind="tailFormItemLayout" v-if="isManual">
+        </a-form-model-item>
+        <a-form-model-item v-bind="tailFormItemLayout" v-if="isManual" prop="size">
           <a-tooltip :title="coutTitle">
             <a-input-number
-              v-decorator="decorators.size"
+              v-model:value="form.size"
               :min="1"
               :max="maxNumber"
               :formatter="value => `${value}G`"
               :parser="value => value.replace('G', '')" />
           </a-tooltip>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -86,47 +88,24 @@ export default {
         },
       },
       form: {
-        fc: this.$form.createForm(this),
+        name: isConvert ? initConvertNameValue : initNameValue,
+        format: this.params.title === this.$t('compute.text_318') ? this.params.selectedArea.format : 'ext4',
+        method: this.params.title === this.$t('compute.text_317') ? 'autoextend' : 'manual',
+        size: this.params.title === this.$t('compute.text_318') ? this.params.selectedArea.size : 1,
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            initialValue: isConvert ? initConvertNameValue : initNameValue,
-            validateTrigger: ['change', 'blur'],
-            validateFirst: true,
-            rules: [
-              { required: !isConvert, message: this.$t('compute.text_333') },
-              { validator: isConvert ? this.checkConvertMountpoint : this.checkMountpoint },
-            ],
-          },
+          { required: !isConvert, message: this.$t('compute.text_333') },
+          { validator: isConvert ? this.checkConvertMountpoint : this.checkMountpoint },
         ],
         format: [
-          'format',
-          {
-            initialValue: this.params.title === this.$t('compute.text_318') ? this.params.selectedArea.format : 'ext4',
-            rules: [
-              { required: true, message: this.$t('compute.text_329') },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_329') },
         ],
         method: [
-          'method',
-          {
-            initialValue: this.params.title === this.$t('compute.text_317') ? 'autoextend' : 'manual',
-            rules: [
-              { required: true },
-            ],
-          },
+          { required: true },
         ],
         size: [
-          'size',
-          {
-            initialValue: this.params.title === this.$t('compute.text_318') ? this.params.selectedArea.size : 1,
-            rules: [
-              { required: true },
-            ],
-          },
+          { required: true },
         ],
       },
       isManual: this.params.title !== this.$t('compute.text_317'),
@@ -200,19 +179,9 @@ export default {
       }
       callback()
     },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     async handleConfirm () {
-      let values = await this.validateForm()
+      await this.$refs.formRef.validate()
+      let values = { ...this.form }
       if (values.method === 'autoextend' && this.params.title === this.$t('compute.text_317')) {
         values = {
           ...values,

@@ -3,12 +3,12 @@
     <a-row :gutter="8">
       <a-col :span="12">
         <a-form-item :wrapperCol="{ span: 24 }">
-          <cloudregion v-decorator="decorator.cloudregion" @change="handleChange" :options="regionOpts" :disabledRegion="disabledRegion" />
+          <cloudregion :value="cloudregionValue" @change="handleChange" :options="regionOpts" :disabledRegion="disabledRegion" />
         </a-form-item>
       </a-col>
       <a-col :span="12">
         <a-form-item :wrapperCol="{ span: 24 }">
-          <zone v-decorator="decorator.zone" @change="handleZoneChange" :options="zoneOpts" />
+          <zone :value="zoneValue" @change="handleZoneChange" :options="zoneOpts" />
         </a-form-item>
       </a-col>
     </a-row>
@@ -21,6 +21,7 @@ import { mapGetters } from 'vuex'
 import { Manager } from '@/utils/manager'
 import { cloudregionFilterByCapability } from '@/utils/common/capability'
 import createFormFieldDraftMixin from '@/mixins/createFormFieldDraft'
+import { resolveFieldMeta } from '@/utils/common/ant'
 import Cloudregion from './components/Cloudregion'
 import Zone from './components/Zone'
 
@@ -32,10 +33,20 @@ export default {
   },
   mixins: [createFormFieldDraftMixin],
   props: {
-    decorator: {
+    /**
+     * a-form-model：传入父级 form，读写 cloudregion/zone（labelInValue: { key, label }）。
+     * 有 model 时不依赖 createForm / field-map。
+     */
+    model: {
       type: Object,
-      required: true,
-      validator: obj => R.is(Array, obj.cloudregion) && R.is(Array, obj.zone),
+      default: null,
+    },
+    /** 可选 field-map：{ cloudregion: [name, opts], zone: [name, opts] } */
+    fields: {
+      type: Object,
+      required: false,
+      default: null,
+      validator: obj => !obj || (R.is(Array, obj.cloudregion) && R.is(Array, obj.zone)),
     },
     cloudregionParams: {
       type: Object,
@@ -67,7 +78,21 @@ export default {
       zoneOpts: [],
     }
   },
-  computed: mapGetters(['isAdminMode', 'scope', 'isDomainMode', 'userInfo', 'l3PermissionEnable', 'capability']),
+  computed: {
+    ...mapGetters(['isAdminMode', 'scope', 'isDomainMode', 'userInfo', 'l3PermissionEnable', 'capability']),
+    cloudregionField () {
+      return this.fields?.cloudregion?.[0] || 'cloudregion'
+    },
+    zoneField () {
+      return this.fields?.zone?.[0] || 'zone'
+    },
+    cloudregionValue () {
+      return this.model[this.cloudregionField]
+    },
+    zoneValue () {
+      return this.model[this.zoneField]
+    },
+  },
   watch: {
     cloudregionParams: {
       deep: true,
@@ -79,6 +104,8 @@ export default {
     },
   },
   created () {
+    if (this.model[this.cloudregionField] === undefined) this.model[this.cloudregionField] = undefined
+    if (this.model[this.zoneField] === undefined) this.model[this.zoneField] = undefined
     // 勿放 data：vue/no-reserved-keys 禁止 data 里用 _ 前缀
     this._regionZoneWriting = false
     // 字段级 touched：zone 手改不挡 region；region 手改可清 zone touched 再试草稿
@@ -93,6 +120,7 @@ export default {
     this.fetchRegions()
   },
   methods: {
+
     isRzFieldTouched (field) {
       return !!this._regionZoneFieldTouched?.[field]
     },
@@ -113,7 +141,7 @@ export default {
       }
     },
     getFieldKey (field) {
-      const v = this.form?.fc?.getFieldValue?.(field)
+      const v = this.model[field]
       if (v == null || v === '') return undefined
       if (R.is(Object, v)) return v.key || undefined
       return v
@@ -124,48 +152,35 @@ export default {
       return arr.find(item => String(item.id) === String(id)) || null
     },
     setRegionZoneFields (values) {
-      if (!this.form?.fc || !values) return
+      if (!values) return
       this.withRzWriting(() => {
-        const keys = Object.keys(values)
-        const hasUndef = keys.some(k => values[k] === undefined)
-        if (hasUndef) {
-          // setFieldsValue 对部分场景丢 undefined；setFields 可真正清空并触发 onValuesChange
-          const fields = {}
-          keys.forEach((key) => {
-            fields[key] = { value: values[key] }
-          })
-          this.form.fc.setFields(fields)
-          this.syncFormFieldValuesToFd(values)
-        } else {
-          this.applyFormFieldValues(values)
-        }
+        Object.keys(values).forEach((key) => {
+          this.model[key] = values[key]
+        })
       })
     },
     clearZoneField () {
       this.emit({}, 'zone')
-      if (this.form?.fc) {
-        this.setRegionZoneFields({ zone: undefined })
-      }
+      this.setRegionZoneFields({ zone: undefined })
     },
     clearRegionAndZoneFields () {
       this.emit({}, 'cloudregion')
       this.emit({}, 'zone')
       this.zoneOpts = []
-      if (this.form?.fc) {
-        this.setRegionZoneFields({
-          cloudregion: undefined,
-          zone: undefined,
-        })
-      }
+      this.setRegionZoneFields({
+        cloudregion: undefined,
+        zone: undefined,
+      })
     },
     pickRegionCandidate () {
       const draft = this.canRestoreFormFieldDraft() ? this.readFormFieldDraft() : null
       const draftRegion = draft
         ? this.matchFormFieldDraftInOptions(this.regionOpts, draft.cloudregion)
         : null
-      const initialVal = this.decorator.cloudregion?.[1]?.initialValue
-      const initialRegion = (initialVal && this.findOptById(this.regionOpts, initialVal.key))
-        ? this.findOptById(this.regionOpts, initialVal.key)
+      const initialVal = this.model[this.cloudregionField] || resolveFieldMeta(this.fields?.cloudregion, 'cloudregion')?.initialValue
+      const initialKey = initialVal?.key ?? initialVal
+      const initialRegion = (initialKey && this.findOptById(this.regionOpts, initialKey))
+        ? this.findOptById(this.regionOpts, initialKey)
         : null
       return draftRegion || initialRegion || this.regionOpts[0] || null
     },
@@ -179,9 +194,10 @@ export default {
           draftZone = this.matchFormFieldDraftInOptions(this.zoneOpts, draft.zone)
         }
       }
-      const initialVal = this.decorator.zone?.[1]?.initialValue
-      const initialZone = (initialVal && this.findOptById(this.zoneOpts, initialVal.key))
-        ? this.findOptById(this.zoneOpts, initialVal.key)
+      const initialVal = this.model[this.zoneField] || resolveFieldMeta(this.fields?.zone, 'zone')?.initialValue
+      const initialKey = initialVal?.key ?? initialVal
+      const initialZone = (initialKey && this.findOptById(this.zoneOpts, initialKey))
+        ? this.findOptById(this.zoneOpts, initialKey)
         : null
       return draftZone || initialZone || this.zoneOpts[0] || null
     },
@@ -223,8 +239,6 @@ export default {
             this.regionOpts = data
           }
           this.$emit('update:closeregionOpts', this.regionOpts)
-          if (!this.form) return
-
           if (!this.regionOpts.length) {
             this.clearRegionAndZoneFields()
             return
@@ -284,8 +298,6 @@ export default {
         .then(({ data: { data = [] } }) => {
           if (seq !== this._fetchZonesSeq) return
           this.zoneOpts = data
-          if (!this.form) return
-
           if (!this.zoneOpts.length) {
             this.clearZoneField()
             return
@@ -337,8 +349,12 @@ export default {
       }
       const selectedRegionOption = this.findOptById(this.regionOpts, cloudregionId)
       this.emit(selectedRegionOption || {}, 'cloudregion')
+      const cloudregionVal = {
+        key: cloudregionId,
+        label: selectedRegionOption?.name || '',
+      }
       // 换 region 先清 zone，再拉新列表回填
-      this.setRegionZoneFields({ zone: undefined })
+      this.setRegionZoneFields({ cloudregion: cloudregionVal, zone: undefined })
       this.fetchZones(cloudregionId)
     },
     handleZoneChange (value) {
@@ -347,17 +363,71 @@ export default {
         return
       }
       this.markRzFieldTouched('zone')
+      let zoneVal = value
+      if (R.is(String, value) || typeof value === 'number') {
+        const opt = this.findOptById(this.zoneOpts, value)
+        zoneVal = opt ? { key: opt.id, label: opt.name } : { key: value, label: '' }
+      }
+      this.setRegionZoneFields({ zone: zoneVal })
       this.emit(value, 'zone')
     },
     serializeFormFieldDraft () {
-      if (!this.form?.fc) return undefined
-      const cloudregion = this.form.fc.getFieldValue('cloudregion')
-      const zone = this.form.fc.getFieldValue('zone')
+      const cloudregion = this.model[this.cloudregionField]
+      const zone = this.model[this.zoneField]
       if (!cloudregion?.key && !zone?.key) return undefined
       return {
         cloudregion: cloudregion?.key ? { key: cloudregion.key, label: cloudregion.label } : null,
         zone: zone?.key ? { key: zone.key, label: zone.label } : null,
       }
+    },
+    /** 自管 snapshot，不走 mixin 默认 fd pick */
+    resolveFormDraftStore () {
+      return null
+    },
+    runFieldRule (rule, value) {
+      return new Promise((resolve, reject) => {
+        if (rule.required) {
+          const empty = value === undefined || value === null || value === '' ||
+            (Array.isArray(value) && !value.length) ||
+            (typeof value === 'object' && !(value.key || value.id))
+          if (empty) {
+            reject(new Error(rule.message || 'required'))
+            return
+          }
+        }
+        if (typeof rule.validator === 'function') {
+          let settled = false
+          const finish = (err) => {
+            if (settled) return
+            settled = true
+            if (err) reject(err instanceof Error ? err : new Error(String(err)))
+            else resolve()
+          }
+          let ret
+          try {
+            ret = rule.validator(rule, value, finish)
+          } catch (e) {
+            finish(e)
+            return
+          }
+          if (ret && typeof ret.then === 'function') {
+            ret.then(() => finish()).catch(finish)
+          }
+          return
+        }
+        resolve()
+      })
+    },
+    async validate () {
+      const regionRules = resolveFieldMeta(this.fields?.cloudregion, 'cloudregion')?.rules || []
+      const zoneRules = resolveFieldMeta(this.fields?.zone, 'zone')?.rules || []
+      for (const rule of regionRules) {
+        await this.runFieldRule(rule, this.model[this.cloudregionField])
+      }
+      for (const rule of zoneRules) {
+        await this.runFieldRule(rule, this.model[this.zoneField])
+      }
+      return true
     },
   },
 }

@@ -1,22 +1,22 @@
 <template>
   <div v-if="dbInstance">
      <a-form-item :label="$t('db.text_57')" v-bind="formItemLayout">
-      <a-radio-group v-decorator="['engine']" :disabled="!!disableds.engine" @change="onEngineChange">
+      <a-radio-group :value="fieldVal(engineDec)" :disabled="!!disableds.engine" @change="e => { fieldSet(engineDec, e.target.value); onEngineChange(e) }">
         <a-radio-button :key="engine" :value="engine" v-for="(value, engine) of engines">{{engine}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
     <a-form-item :label="$t('db.text_63')" v-bind="formItemLayout">
-      <a-radio-group v-decorator="['engine_version']" :disabled="!!disableds.engine_version" @change="onVersionChange">
+      <a-radio-group :value="fieldVal(engineVersionDec)" :disabled="!!disableds.engine_version" @change="e => { fieldSet(engineVersionDec, e.target.value); onVersionChange(e) }">
         <a-radio-button :key="key" :value="key" v-for="key in engine_versions"> {{versionCn(key)}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
     <a-form-item :label="$t('db.text_119')" v-bind="formItemLayout">
-      <a-radio-group v-decorator="['category']" @change="onCategoryChange" :disabled="!!disableds.category">
+      <a-radio-group :value="fieldVal(categoryDec)" @change="e => { fieldSet(categoryDec, e.target.value); onCategoryChange(e) }" :disabled="!!disableds.category">
         <a-radio-button :key="key" :value="key" v-for="key in categorys">{{formatCategoryLabel(key)}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
     <a-form-item :label="$t('db.text_120')" v-bind="formItemLayout">
-      <a-radio-group v-decorator="['storage_type']" @change="onStorageChange" :disabled="!!disableds.storage_type">
+      <a-radio-group :value="fieldVal(storageTypeDec)" @change="e => { fieldSet(storageTypeDec, e.target.value); onStorageChange(e) }" :disabled="!!disableds.storage_type">
         <a-radio-button :key="item" :value="item" v-for="item of storage_types">{{formatStorageLabel(item)}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
@@ -24,6 +24,7 @@
 </template>
 <script>
 import { DBINSTANCE_CATEGORY, ENGINR_VERSION_POSTGRE_KYES, DBINSTANCE_CATEGORY_KEYS, DBINSTANCE_STORAGE_TYPE, DBINSTANCE_STORAGE_TYPE_KEYS, ENGINR_VERSION_SERVER_ALIYUN_KYES, ENGINR_VERSION_SERVER_HUAWEI_KYES, ENGINR_VERSION } from '@DB/views/rds/constants'
+import { resolveFieldMeta } from '@/utils/common/ant'
 
 const VERSION_SORT = {
   PostgreSQL: ENGINR_VERSION_POSTGRE_KYES,
@@ -32,8 +33,9 @@ const VERSION_SORT = {
 
 /**
  * 约定：options / 拉取数据变化时，草稿命中可选值则回填，否则取第一项；
- * 程序化 setFieldsValue 不落盘；落盘仅提交校验通过后由页面 flush。
+ * 程序化写 form.fd 不落盘；落盘仅提交校验通过后由页面 flush。
  */
+
 export default {
   name: 'rdsSkuFilter',
   inject: {
@@ -50,6 +52,10 @@ export default {
   },
   data () {
     return {
+      engineDec: { name: 'engine' },
+      engineVersionDec: { name: 'engine_version' },
+      categoryDec: { name: 'category' },
+      storageTypeDec: { name: 'storage_type' },
       dbInstance: undefined,
       engines: {},
       engine_versions: [],
@@ -57,12 +63,36 @@ export default {
       storage_types: [],
     }
   },
+  computed: {
+    boundFd () {
+      return this.form?.fd || this.form
+    },
+  },
   created () {
     this._ignoreRadioChange = false
+    ;[this.engineDec, this.engineVersionDec, this.categoryDec, this.storageTypeDec].forEach(fieldDef => {
+      const name = resolveFieldMeta(fieldDef)?.name
+      if (name && this.form?.fd && this.form.fd[name] === undefined) {
+        this.$set(this.form.fd, name, undefined)
+      }
+    })
   },
   methods: {
+    fieldVal (decoratorTuple) {
+      const meta = resolveFieldMeta(decoratorTuple)
+      if (!meta) return undefined
+      const { name, ...opts } = meta
+      if (this.form?.fd && this.form.fd[name] !== undefined) return this.form.fd[name]
+      return opts.initialValue
+    },
+    fieldSet (decoratorTuple, value) {
+      const meta = resolveFieldMeta(decoratorTuple)
+      if (!meta) return
+      const { name } = meta
+      if (this.form?.fd) this.$set(this.form.fd, name, value)
+    },
     versionCn (key) {
-      if (this.form.getFieldValue('provider') === 'Aws' && this.form.getFieldValue('engine') === 'SQLServer') {
+      if (this.form.fd.provider === 'Aws' && this.form.fd.engine === 'SQLServer') {
         const _arr = key.split('.')
         if (_arr && _arr[0]) {
           let ret = key
@@ -132,36 +162,29 @@ export default {
     /** 程序化写表单：不落盘 */
     setFieldQuiet (fields, callback) {
       this._ignoreRadioChange = true
-      const setter = (this.form && this.form.fc && this.form.fc.setFieldsValue) ||
-        (this.form && this.form.setFieldsValue)
-      if (!setter) {
+      Object.keys(fields || {}).forEach((k) => {
+        if (this.form.fd) this.$set(this.form.fd, k, fields[k])
+        else this.$set(this.form, k, fields[k])
+      })
+      this.$nextTick(() => {
         callback && callback()
-        return
-      }
-      setter.call(this.form.fc || this.form, fields, () => {
-        Object.keys(fields || {}).forEach((k) => {
-          if (this.form.fd) this.form.fd[k] = fields[k]
-        })
-        this.$nextTick(() => {
-          callback && callback()
-        })
       })
     },
     onEngineChange (e) {
       if (this._ignoreRadioChange) return
-      const val = e && e.target ? e.target.value : this.form.getFieldValue('engine')
+      const val = e && e.target ? e.target.value : this.form.fd.engine
       this.setCascading(true)
       this.refreshVersions(val)
     },
     onVersionChange (e) {
       if (this._ignoreRadioChange) return
-      const val = e && e.target ? e.target.value : this.form.getFieldValue('engine_version')
+      const val = e && e.target ? e.target.value : this.form.fd.engine_version
       this.setCascading(true)
       this.refreshCategories(val)
     },
     onCategoryChange (e) {
       if (this._ignoreRadioChange) return
-      const val = e && e.target ? e.target.value : this.form.getFieldValue('category')
+      const val = e && e.target ? e.target.value : this.form.fd.category
       this.setCascading(true)
       this.refreshStorages(val)
     },
@@ -190,8 +213,8 @@ export default {
       })
     },
     refreshVersions (engineVal) {
-      const engine = engineVal || this.form.getFieldValue('engine') || this.readDraft('engine')
-      const provider = this.form.getFieldValue('provider')
+      const engine = engineVal || this.form.fd.engine || this.readDraft('engine')
+      const provider = this.form.fd.provider
       const engineMap = (this.dbInstance && engine) ? this.dbInstance[engine] : null
       if (!engineMap || typeof engineMap !== 'object') {
         this.engine_versions = []
@@ -217,8 +240,8 @@ export default {
       })
     },
     refreshCategories (versionVal) {
-      const engine = this.form.getFieldValue('engine') || this.readDraft('engine')
-      const version = versionVal || this.form.getFieldValue('engine_version') || this.readDraft('engine_version')
+      const engine = this.form.fd.engine || this.readDraft('engine')
+      const version = versionVal || this.form.fd.engine_version || this.readDraft('engine_version')
       const categoryMap = this.dbInstance && engine && version
         ? (this.dbInstance[engine] && this.dbInstance[engine][version])
         : null
@@ -236,9 +259,9 @@ export default {
       })
     },
     refreshStorages (categoryVal) {
-      const engine = this.form.getFieldValue('engine') || this.readDraft('engine')
-      const engineVersion = this.form.getFieldValue('engine_version') || this.readDraft('engine_version')
-      const category = categoryVal || this.form.getFieldValue('category') || this.readDraft('category')
+      const engine = this.form.fd.engine || this.readDraft('engine')
+      const engineVersion = this.form.fd.engine_version || this.readDraft('engine_version')
+      const category = categoryVal || this.form.fd.category || this.readDraft('category')
       const storages = (this.dbInstance && engine && engineVersion && category &&
         this.dbInstance[engine] &&
         this.dbInstance[engine][engineVersion] &&
@@ -265,8 +288,6 @@ export default {
     buildSpecsPayload () {
       const fd = (this.form && this.form.fd) || {}
       const pick = (key) => {
-        const v = this.form.getFieldValue(key)
-        if (v != null && v !== '') return v
         if (fd[key] != null && fd[key] !== '') return fd[key]
         return this.readDraft(key)
       }
@@ -279,7 +300,7 @@ export default {
         storage_type: pick('storage_type'),
       }
     },
-    async fetchFilters (cloudregionId = this.form.getFieldValue('cloudregion')) {
+    async fetchFilters (cloudregionId = this.form.fd.cloudregion) {
       if (!cloudregionId) return false
       const params = {
         resource_type: 'shared',
@@ -290,7 +311,7 @@ export default {
         this.setCascading(true)
         const { data } = await new this.$Manager('cloudregions', 'v2').getSpecific({ id: cloudregionId, spec: 'capability', params })
         this.dbInstance = data && data.db_instance ? data.db_instance : {}
-        if (this.form.getFieldValue('provider') === 'Qcloud' || (this.rdsItem && this.rdsItem.provider === 'Qcloud')) {
+        if (this.form.fd.provider === 'Qcloud' || (this.rdsItem && this.rdsItem.provider === 'Qcloud')) {
           this.dbInstance = this.dbInstance.MySQL ? { MySQL: this.dbInstance.MySQL } : {}
         }
         // capability 拉取完成 → options 变化 → 按草稿回填

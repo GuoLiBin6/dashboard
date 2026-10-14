@@ -2,39 +2,41 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{params.title}}</div>
     <div slot="body">
-      <a-form
+      <a-form-model
         v-bind="formItemLayout"
-        :form="form.fc">
-        <a-form-item :label="$t('network.text_21')">
-          <a-input v-decorator="decorators.name" :placeholder="$t('network.text_44')" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_249')">
+        ref="formRef"
+        :model="form"
+        :rules="rules">
+        <a-form-model-item :label="$t('network.text_21')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('network.text_44')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_249')">
           <a-radio-group v-model:value="resource" @change="onResourceTypeChanged">
             <a-radio value="networks">{{$t('network.snat.type.network')}}</a-radio>
             <a-radio value="servers">{{$t('network.snat.type.server')}}</a-radio>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="resource_label">
+        </a-form-model-item>
+        <a-form-model-item :label="resource_label" prop="res_id">
           <base-select
-            v-decorator="decorators.res_id"
+            v-model:value="form.res_id"
             :params="resParams"
             :select-props="resouce_props"
             :resource="resource"
             v-model:resList="resOptions"
             :filterable="true" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_539')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_539')" prop="eip">
           <template #extra>{{$t('network.text_540')}}<router-link :to="{ path: '/eip' }" target="_blank">{{$t('dictionary.eip')}}</router-link>
           </template>
           <base-select
-            v-decorator="decorators.eip"
+            v-model:value="form.eip"
             :params="eipParams"
             :select-props="{ placeholder: $t('network.text_541') }"
             resource="eips"
             :labelFormat="labelFormat"
             :showSync="true" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -55,38 +57,23 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        name: undefined,
+        res_id: undefined,
+        eip: undefined,
       },
       resource_label: this.$t('network.snat.type.network'),
       resource: 'networks',
       resouce_props: { placeholder: this.$t('network.text_552') },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            validateTrigger: ['blur'],
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('network.text_116') },
-              { validator: this.$validate('serverCreateName') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_116') },
+          { validator: this.$validate('serverCreateName') },
         ],
         res_id: [
-          'res_id',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_552') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_552') },
         ],
         eip: [
-          'eip',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_541') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_541') },
         ],
       },
       formItemLayout: {
@@ -121,17 +108,18 @@ export default {
   },
   methods: {
     onResourceTypeChanged (e) {
-      this.resource = e.target.value
+      this.resource = e.target ? e.target.value : e
+      this.form.res_id = undefined
       switch (this.resource) {
         case 'servers':
           this.resource_label = this.$t('network.snat.type.server')
           this.resouce_props = { placeholder: this.$t('network.text_60') }
-          this.decorators.res_id[1].rules[0].message = this.$t('network.text_60')
+          this.rules.res_id[0].message = this.$t('network.text_60')
           break
         case 'networks':
           this.resource_label = this.$t('network.snat.type.network')
           this.resouce_props = { placeholder: this.$t('network.text_552') }
-          this.decorators.res_id[1].rules[0].message = this.$t('network.text_552')
+          this.rules.res_id[0].message = this.$t('network.text_552')
           break
       }
     },
@@ -148,7 +136,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         const params = {
           name: values.name,
           natgateway_id: this.params.data.id,

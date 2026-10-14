@@ -1,22 +1,22 @@
 <template>
-    <base-dialog @cancel="cancelDialog">
-        <div slot="header">{{title}}</div>
-        <div slot="body">
-          <dialog-selected-tips :name="$t('dictionary.elasticcaches')" :count="params.data.length" :action="title" />
-          <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-        </div>
-         <div slot="footer">
-            <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
-            <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-         </div>
-    </base-dialog>
+  <base-dialog @cancel="cancelDialog">
+    <div slot="header">{{title}}</div>
+    <div slot="body">
+      <dialog-selected-tips :name="$t('dictionary.elasticcaches')" :count="params.data.length" :action="title" />
+      <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
+    </div>
+    <div slot="footer">
+      <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
+      <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
+    </div>
+  </base-dialog>
 </template>
 
 <script>
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import { ACCOUNT_PRIVILEGES } from '../constants'
-// import validateForm from '@/utils/validate'
+
 export default {
   name: 'RedisBackupResumeDialog',
   mixins: [DialogMixin, WindowsMixin],
@@ -25,9 +25,6 @@ export default {
       title: this.$t('db.text_45'),
       loading: false,
       privileges: ACCOUNT_PRIVILEGES,
-      form: {
-        fc: this.$form.createForm(this),
-      },
     }
   },
   methods: {

@@ -21,7 +21,11 @@ const parseErrors = function (errors) {
   const map = {}
 
   errors.forEach(err => {
-    map[err.path.replace(/\.(\d+)\./g, '[$1].')] = err
+    const bracketPath = err.path.replace(/\.(\d+)(\.|$)/g, '[$1]$2')
+    const dotPath = err.path.replace(/\[(\d+)\]/g, '.$1')
+    map[bracketPath] = err
+    map[dotPath] = err
+    map[err.path] = err
   })
 
   return map

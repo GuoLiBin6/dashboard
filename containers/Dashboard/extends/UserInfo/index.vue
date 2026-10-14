@@ -2,7 +2,7 @@
   <div class="h-100 position-relative">
     <div class="dashboard-card-wrap">
       <div class="dashboard-card-header">
-        <div class="dashboard-card-header-left">{{ form.fd.name || $t('dashboard.userinfo') }}<icon class="ml-2" type="loading" v-if="loading" /></div>
+        <div class="dashboard-card-header-left">{{ fd.name || $t('dashboard.userinfo') }}<icon class="ml-2" type="loading" v-if="loading" /></div>
         <div class="dashboard-card-header-right">
           <slot name="actions" :handle-edit="handleEdit" />
           <!-- <router-link v-if="!edit" to="/log" class="ml-2">
@@ -25,14 +25,16 @@
       </div>
     </div>
     <base-drawer v-model:visible="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit">
-      <a-form
+      <a-form-model
+        ref="formRef"
         hideRequiredMark
-        :form="form.fc"
+        :model="fd"
+        :rules="rules"
         v-bind="formItemLayout">
-        <a-form-item :label="$t('dashboard.text_6')">
-          <a-input v-decorator="decorators.name" />
-        </a-form-item>
-      </a-form>
+        <a-form-model-item :label="$t('dashboard.text_6')" prop="name">
+          <a-input v-model:value="fd.name" />
+        </a-form-model-item>
+      </a-form-model>
     </base-drawer>
   </div>
 </template>
@@ -60,21 +62,12 @@ export default {
       data: [],
       visible: false,
       loading: false,
-      form: {
-        fc: this.$form.createForm(this),
-        fd: {
-          name: initialNameValue,
-        },
+      fd: {
+        name: initialNameValue,
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            initialValue: initialNameValue,
-            rules: [
-              { required: true, message: this.$t('dashboard.text_8') },
-            ],
-          },
+          { required: true, message: this.$t('dashboard.text_8') },
         ],
       },
       formItemLayout: {
@@ -112,7 +105,7 @@ export default {
   },
   created () {
     this.$emit('update', this.options.i, {
-      ...this.form.fd,
+      ...this.fd,
     })
   },
   methods: {
@@ -124,9 +117,8 @@ export default {
     },
     async handleSubmit () {
       try {
-        const values = await this.form.fc.validateFields()
-        this.form.fd = values
-        this.$emit('update', this.options.i, values)
+        await this.$refs.formRef.validate()
+        this.$emit('update', this.options.i, { ...this.fd })
         this.visible = false
       } catch (error) {
         throw error

@@ -4,12 +4,11 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :name="$t('dictionary.disk')" :action="$t('compute.disk_set_auto_reset')" />
       <dialog-table v-if="params.columns && params.columns.length" :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('compute.shutdown_auto_reset')" v-bind="formItemLayout">
-          <a-switch :checkedChildren="$t('cloudenv.text_84')" :unCheckedChildren="$t('cloudenv.text_85')" v-decorator="decorators.auto_reset" />
-        </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" :model="form">
+        <a-form-model-item :label="$t('compute.shutdown_auto_reset')" v-bind="formItemLayout" prop="auto_reset">
+          <a-switch v-model:checked="form.auto_reset" :checkedChildren="$t('cloudenv.text_84')" :unCheckedChildren="$t('cloudenv.text_85')" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -30,16 +29,7 @@ export default {
       loading: false,
       scope: this.$store.getters.scope,
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        auto_reset: [
-          'auto_reset',
-          {
-            valuePropName: 'checked',
-            initialValue: this.params.data[0].auto_reset || false,
-          },
-        ],
+        auto_reset: this.params.data[0].auto_reset || false,
       },
       formItemLayout: {
         labelCol: {
@@ -51,36 +41,24 @@ export default {
       },
     }
   },
-  computed: {
-    domain () {
-      return this.params.data[0].domain_id
-    },
-    tenant () {
-      return this.params.data[0].tenant_id
-    },
-  },
-  created () {
-  },
   methods: {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        this.loading = true
         await this.params.onManager('update', {
           id: this.params.data[0].id,
           managerArgs: {
             data: {
-              auto_reset: values.auto_reset,
+              auto_reset: this.form.auto_reset,
             },
           },
         })
-        this.loading = false
         this.params.refresh()
         this.cancelDialog()
       } catch (error) {
-        this.loading = false
         throw error
+      } finally {
+        this.loading = false
       }
     },
   },

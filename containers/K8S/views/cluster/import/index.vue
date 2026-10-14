@@ -1,40 +1,43 @@
 <template>
   <div>
     <page-header :title="$t('k8s.text_177')" />
-    <a-form
+    <a-form-model
+      ref="formRef"
       class="mt-3"
-      :form="form.fc">
-      <a-form-item
+      :model="form"
+      :rules="rules"
+      v-bind="formItemLayout">
+      <a-form-model-item
         :label="$t('k8s.text_412')"
-        v-bind="formItemLayout">
+        prop="project_domain_id">
         <base-select
           v-if="isAdminMode"
-          v-decorator="decorators.project_domain_id"
+          v-model:value="form.project_domain_id"
           resource="domains"
           version="v1"
           :params="domainParams"
           is-default-select
           filterable />
         <div v-else>{{ userInfo.projectDomain }}</div>
-      </a-form-item>
-      <a-form-item
+      </a-form-model-item>
+      <a-form-model-item
         :label="$t('k8s.text_41')"
-        v-bind="formItemLayout">
-        <a-input v-decorator="decorators.name" :placeholder="$t('k8s.text_60')" />
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_401')" v-bind="formItemLayout">
-        <icon-radio v-decorator="decorators.distribution" :options="clusterTypesOpt" />
-      </a-form-item>
-      <a-form-item
+        prop="name">
+        <a-input v-model:value="form.name" :placeholder="$t('k8s.text_60')" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('k8s.text_401')" prop="distribution">
+        <icon-radio v-model:value="form.distribution" :options="clusterTypesOpt" />
+      </a-form-model-item>
+      <a-form-model-item
         :label="$t('k8s.text_181')"
-        v-bind="formItemLayout">
-        <code-mirror v-decorator="decorators.kubeconfig" :options="cmOptions" />
-      </a-form-item>
-      <a-form-item :wrapper-col="offsetWrapperCol">
+        prop="kubeconfig">
+        <code-mirror v-model:value="form.kubeconfig" :options="cmOptions" />
+      </a-form-model-item>
+      <a-form-model-item :wrapper-col="offsetWrapperCol">
         <a-button class="mr-2" type="primary" @click="doImport" :loading="loading">{{$t('k8s.text_143')}}</a-button>
         <a-button @click="cancel">{{$t('k8s.text_162')}}</a-button>
-      </a-form-item>
-    </a-form>
+      </a-form-model-item>
+    </a-form-model>
   </div>
 </template>
 
@@ -65,41 +68,27 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        project_domain_id: undefined,
+        name: '',
+        distribution: clusterTypesOpt[0].key,
+        kubeconfig: '',
       },
-      decorators: {
+      rules: {
         project_domain_id: [
-          'project_domain_id',
           {
-            rules: [
-              { required: true, message: this.$t('k8s.text_413') },
-            ],
+            validator: (rule, value, callback) => {
+              if (!this.isAdminMode) return callback()
+              if (!value) return callback(this.$t('k8s.text_413'))
+              return callback()
+            },
           },
         ],
         name: [
-          'name',
-          {
-            validateTrigger: 'blur',
-            rules: [
-              { required: true, message: this.$t('k8s.text_60') },
-            ],
-          },
-        ],
-        distribution: [
-          'distribution',
-          {
-            initialValue: clusterTypesOpt[0].key,
-          },
+          { required: true, message: this.$t('k8s.text_60'), trigger: 'blur' },
         ],
         kubeconfig: [
-          'kubeconfig',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('k8s.text_183') },
-              { validator },
-            ],
-          },
+          { required: true, message: this.$t('k8s.text_183') },
+          { validator },
         ],
       },
       formItemLayout: {
@@ -144,7 +133,8 @@ export default {
     async doImport () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = this.form
         const data = {
           mode: 'import',
           provider: 'external',

@@ -4,13 +4,11 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="$t('table.action.clone')" :name="$t('res.policy')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc"
-        v-bind="formItemLayout">
-        <a-form-item :label="$t('table.title.name')">
-          <a-input v-decorator="decorators.name" />
-        </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('table.title.name')" prop="name">
+          <a-input v-model:value="form.name" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -30,20 +28,14 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        name: '',
       },
-      contactArrOpts: [],
-      decorators: {
+      rules: {
         name: [
-          'name',
           {
-            rules: [
-              {
-                required: true,
-                message: this.$t('common.tips.input', [this.$t('res.policy')]),
-                whitespace: true,
-              },
-            ],
+            required: true,
+            message: this.$t('common.tips.input', [this.$t('res.policy')]),
+            whitespace: true,
           },
         ],
       },
@@ -67,8 +59,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        const { name } = values
+        await this.$refs.formRef.validate()
+        const { name } = this.form
         const { scope, policy, description } = this.params.data[0]
         const data = {
           type: name,

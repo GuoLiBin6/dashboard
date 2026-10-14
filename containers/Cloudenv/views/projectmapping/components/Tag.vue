@@ -55,22 +55,12 @@
             :defaultChecked="defaultChecked" />
           <a-button class="ml-2" v-if="!showForm" @click="() => showForm = true">{{$t('compute.text_1382')}}</a-button>
         </div>
-        <a-form
-            layout="inline"
-            :form="tagForm.fc"
-            v-if="showForm"
-            class="ml-2">
-            <a-form-item>
-              <a-input v-decorator="decorators.key" :placeholder="$t('compute.text_1148')" style="width:130px" />
-            </a-form-item>
-            <a-form-item>
-              <a-input v-decorator="decorators.value" :placeholder="$t('compute.text_1149')" style="width:130px" />
-            </a-form-item>
-            <a-form-item>
-              <a-button @click="addTag">{{$t('compute.text_822')}}</a-button>
-              <a-button @click="() => showForm = false" class="ml-2">{{$t('compute.text_135')}}</a-button>
-            </a-form-item>
-          </a-form>
+        <div v-if="showForm" class="ml-2 d-inline-flex align-items-center">
+          <a-input v-model:value="tagKey" :placeholder="$t('compute.text_1148')" style="width:130px" />
+          <a-input v-model:value="tagValue" :placeholder="$t('compute.text_1149')" style="width:130px" class="ml-2" />
+          <a-button class="ml-2" @click="addTag">{{$t('compute.text_822')}}</a-button>
+          <a-button @click="resetTagForm" class="ml-2">{{$t('compute.text_135')}}</a-button>
+        </div>
       </div>
     </a-form-item>
   </div>
@@ -101,27 +91,8 @@ export default {
     return {
       checked: {},
       showForm: false,
-      tagForm: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        key: [
-          'key',
-          {
-            rules: [
-              { required: true, whitespace: true, message: this.$t('compute.text_1150') },
-            ],
-          },
-        ],
-        value: [
-          'value',
-          {
-            rules: [
-              { required: true, whitespace: true, message: this.$t('common.tips.input', [this.$t('common_113')]) },
-            ],
-          },
-        ],
-      },
+      tagKey: '',
+      tagValue: '',
       checkedInfo,
       flag: true,
     }
@@ -224,9 +195,24 @@ export default {
       }, checkedInfo)
       return ++maxIdx
     },
+    resetTagForm () {
+      this.tagKey = ''
+      this.tagValue = ''
+      this.showForm = false
+    },
     async addTag () {
       try {
-        const values = await this.tagForm.fc.validateFields()
+        const keyTrim = R.trim(this.tagKey)
+        const valueTrim = R.trim(this.tagValue)
+        if (R.isEmpty(keyTrim)) {
+          this.$message.warning(this.$t('compute.text_1150'))
+          return
+        }
+        if (R.isEmpty(valueTrim)) {
+          this.$message.warning(this.$t('common.tips.input', [this.$t('common_113')]))
+          return
+        }
+        const values = { key: keyTrim, value: valueTrim }
         const key = `user:${values.key}`
         const newValue = { ...this.checked }
         const newCheckedInfo = { ...this.checkedInfo }
@@ -266,7 +252,7 @@ export default {
         }
         this.checked = newValue
         this.checkedInfo = newCheckedInfo
-        this.tagForm.fc.resetFields()
+        this.resetTagForm()
       } catch (error) {
         throw error
       }

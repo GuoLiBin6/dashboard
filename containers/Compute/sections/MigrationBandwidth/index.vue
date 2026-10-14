@@ -1,28 +1,33 @@
 <template>
   <div>
     <a-form-item class="mb-0">
-      <a-radio-group @change="brandWidthChangeHandle" v-decorator="decorators.brandWidth">
+      <a-radio-group :value="brandWidthValue" @change="brandWidthChangeHandle">
         <a-radio-button v-for="item in brandWidthOptions" :key="item.key" :value="item.key">{{ item.label }}</a-radio-button>
       </a-radio-group>
     </a-form-item>
     <a-form-item v-if="showDuration" class="mb-0">
       <a-input-group compact>
-        <a-input class="w-25" type="number" suffix="M" v-decorator="decorators.customBrandWidth" @change="customBrandWidthChangeHandle" />
+        <a-input class="w-25" type="number" suffix="M" :value="customBrandWidthValue" @change="customBrandWidthChangeHandle" />
       </a-input-group>
     </a-form-item>
   </div>
 </template>
 
 <script>
-import * as R from 'ramda'
-
 export default {
   name: 'MigrationBandwidth',
   props: {
-    decorators: {
+    model: {
       type: Object,
-      required: true,
-      validator: val => !R.isNil(val.brandWidth) && !R.isNil(val.customBrandWidth),
+      default: null,
+    },
+    brandWidthField: {
+      type: String,
+      default: 'brandWidth',
+    },
+    customBrandWidthField: {
+      type: String,
+      default: 'customBrandWidth',
     },
     form: {
       type: Object,
@@ -42,19 +47,33 @@ export default {
       showDuration: false,
     }
   },
+  computed: {
+    boundFd () {
+      return this.model || this.form?.fd || this.form
+    },
+    brandWidthValue () {
+      return this.boundFd?.[this.brandWidthField]
+    },
+    customBrandWidthValue () {
+      return this.boundFd?.[this.customBrandWidthField]
+    },
+  },
+  created () {
+    const fd = this.boundFd
+    if (fd && fd[this.brandWidthField] === undefined) {
+      this.$set(fd, this.brandWidthField, '-1')
+    }
+    this.showDuration = fd?.[this.brandWidthField] === 'custom'
+  },
   methods: {
     brandWidthChangeHandle (e) {
-      this.form.fc.setFieldsValue({ brandWidth: e.target.value })
-
-      if (e.target.value === 'custom') {
-        this.showDuration = true
-      } else {
-        this.showDuration = false
-      }
+      const val = e.target.value
+      this.$set(this.boundFd, this.brandWidthField, val)
+      this.showDuration = val === 'custom'
     },
     customBrandWidthChangeHandle (e) {
       const brandWidth = isNaN(parseInt(e.target.value)) ? 1 : parseInt(e.target.value)
-      this.form.fc.setFieldsValue({ customBrandWidth: brandWidth })
+      this.$set(this.boundFd, this.customBrandWidthField, brandWidth)
     },
   },
 }

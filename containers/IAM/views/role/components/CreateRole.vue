@@ -1,16 +1,18 @@
 <template>
-  <a-form
-    :form="form.fc"
+  <a-form-model
+    ref="formRef"
+    :model="form"
+    :rules="rules"
     v-bind="formItemLayout">
-    <a-form-item :label="$t('system.text_101')">
-      <a-input v-decorator="decorators.name" />
-    </a-form-item>
-    <a-form-item :label="$t('common.description')">
-      <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-    </a-form-item>
-    <a-form-item :label="$t('dictionary.domain')" v-if="isAdminMode && l3PermissionEnable">
+    <a-form-model-item :label="$t('system.text_101')" prop="name">
+      <a-input v-model:value="form.name" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('common.description')" prop="description">
+      <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.description" :placeholder="$t('common_367')" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('dictionary.domain')" v-if="isAdminMode && l3PermissionEnable" prop="domain_id">
       <base-select
-        v-decorator="decorators.domain_id"
+        v-model="form.domain_id"
         resource="domains"
         version="v1"
         remote
@@ -18,8 +20,8 @@
         :remote-fn="q => ({ filter: `name.contains(${q})` })"
         :select-props="{ mode: 'default' }"
         v-model:initLoaded="domainOpsLoaded" />
-    </a-form-item>
-  </a-form>
+    </a-form-model-item>
+  </a-form-model>
 </template>
 
 <script>
@@ -34,31 +36,22 @@ export default {
     return {
       domainOpsLoaded: false,
       form: {
-        fc: this.$form.createForm(this),
+        name: undefined,
+        description: undefined,
+        domain_id: undefined,
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
           {
-            rules: [
-              {
-                required: true,
-                message: this.$t('system.text_194'),
-                whitespace: true,
-              },
-            ],
+            required: true,
+            message: this.$t('system.text_194'),
+            whitespace: true,
           },
         ],
-        description: ['description'],
         domain_id: [
-          'domain_id',
           {
-            rules: [
-              {
-                required: true,
-                message: this.$t('rules.domain'),
-              },
-            ],
+            required: true,
+            message: this.$t('rules.domain'),
           },
         ],
       },
@@ -75,8 +68,8 @@ export default {
   computed: mapGetters(['isAdminMode', 'l3PermissionEnable']),
   watch: {
     domainOpsLoaded (val) {
-      if (val) {
-        this.form.fc.getFieldDecorator('domain_id', { initialValue: this.domain })
+      if (val && this.domain) {
+        this.form.domain_id = this.domain
       }
     },
   },
@@ -90,9 +83,9 @@ export default {
     async create () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         const response = await this.manager.create({
-          data: values,
+          data: { ...this.form },
         })
         return response
       } catch (error) {

@@ -41,6 +41,7 @@ export default {
   },
   inject: {
     form: { default: undefined },
+    validateCreateForm: { default: undefined },
     flushCreateFormFieldDrafts: { default: undefined },
   },
   props: {
@@ -111,20 +112,23 @@ export default {
       }
       return items
     },
-    validateForm () {
-      let f = false
-      this.form.fc.validateFieldsAndScroll({ scroll: { alignWithTop: true, offsetTop: 100 } }, (err, values) => {
-        const { sku } = values
-        if (err !== null) {
-          console.log(err)
-        }
-        f = (err === null) && (sku && sku.name)
-      })
-      return f
+    async validateForm () {
+      if (typeof this.validateCreateForm === 'function') {
+        return this.validateCreateForm()
+      }
+      const formRef = this.$parent?.$refs?.formRef
+      if (formRef?.validate) {
+        await formRef.validate()
+      }
+      const values = { ...this.form.fd }
+      if (!(values.sku && values.sku.name)) {
+        return Promise.reject(new Error('sku'))
+      }
+      return values
     },
-    formatParams () {
+    formatParams (mergedValues) {
       const params = {
-        ...this.values,
+        ...(mergedValues || this.values),
       }
       if (params.zones) {
         const { zones } = params
@@ -151,14 +155,19 @@ export default {
       return params
     },
     async doCreate () {
-      if (!this.validateForm()) return false
+      let merged
+      try {
+        merged = await this.validateForm()
+      } catch (err) {
+        return false
+      }
       if (typeof this.flushCreateFormFieldDrafts === 'function') {
         this.flushCreateFormFieldDrafts()
       }
       this.loading = true
       const manager = new Manager('dbinstances', 'v2')
       try {
-        await manager.create({ data: this.formatParams() })
+        await manager.create({ data: this.formatParams(merged) })
         this.$emit('create-success')
         this.$router.push('/rds')
       } catch (err) {

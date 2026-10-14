@@ -4,16 +4,17 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.network')" :count="params.data.length" :action="$t('network.text_629')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('network.text_630')" v-bind="formItemLayout">
-          <a-select v-decorator="decorators.schedTags" :placeholder="$t('network.text_631')" mode="multiple">
+      <a-form-model
+        ref="formRef"
+        :model="form">
+        <a-form-model-item :label="$t('network.text_630')" v-bind="formItemLayout" prop="schedTags">
+          <a-select v-model:value="form.schedTags" :placeholder="$t('network.text_631')" mode="multiple">
             <a-select-option v-for="item in schedTags" :key="item.id" :value="item.id">
               {{item.name}}
             </a-select-option>
           </a-select>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -35,12 +36,7 @@ export default {
       loading: false,
       scope: this.$store.getters.scope,
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        schedTags: [
-          'schedTags',
-        ],
+        schedTags: [],
       },
       formItemLayout: {
         wrapperCol: {
@@ -73,7 +69,7 @@ export default {
           const allUseSchedTags = R.uniqBy(obj => obj.id, R.flatten(this.params.data.map(item => item.schedtags || [])))
           if (allUseSchedTags) {
             this.useSchedTags = allUseSchedTags.map(item => ({ id: item.id, name: item.name }))
-            this.form.fc.setFieldsValue({ schedTags: allUseSchedTags.map(item => item.id) })
+            this.form.schedTags = allUseSchedTags.map(item => item.id)
           }
         })
     },
@@ -89,7 +85,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         values.schedTags.forEach((item, idx) => {
           values[`schedtag.${idx}`] = item
         })

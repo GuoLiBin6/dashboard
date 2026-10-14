@@ -2,24 +2,29 @@
   <div>
     <page-header :title="$t('common_628', [$t('dictionary.vpc_peer_connect')])" />
     <page-body>
-      <a-form :form="form.fc" v-bind="formItemLayout" hideRequiredMark>
-        <a-form-item :label="$t('common.attribution_scope')">
-          <domain-select v-decorator="decorators.project_domain" />
-        </a-form-item>
-        <a-form-item :label="$t('common.name')">
-          <a-input v-decorator="decorators.name" :placeholder="$t('compute.text_210')" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_198')">
-          <a-select v-decorator="decorators.brand" @change="handleBrandChange">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout"
+        hideRequiredMark>
+        <a-form-model-item :label="$t('common.attribution_scope')" prop="project_domain">
+          <domain-select v-model:value="form.project_domain" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.name')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('compute.text_210')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_198')" prop="brand">
+          <a-select v-model:value="form.brand" @change="handleBrandChange">
             <a-select-option v-for="item in VPC_PEER_BRANDS" :key="item.key">{{ item.label }}</a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('network.request.vpc')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.request.vpc')" required>
           <a-row :gutter="6">
             <a-col :span="12">
-              <a-form-item :wrapperCol="{ span: 24 }" class="mb-0 mr-1">
+              <a-form-model-item prop="request_cloudregion" :wrapperCol="{ span: 24 }" class="mb-0 mr-1">
                 <a-select
-                  v-decorator="decorators.request_cloudregion"
+                  v-model:value="form.request_cloudregion"
                   @change="handleRequestRegionChange"
                   :placeholder="$t('network.text_199')"
                   :loading="regionLoading"
@@ -29,12 +34,12 @@
                     {{item.label}}
                   </a-select-option>
                 </a-select>
-              </a-form-item>
+              </a-form-model-item>
             </a-col>
             <a-col :span="12">
-              <a-form-item :wrapperCol="{ span: 24 }" class="mb-0 mr-1">
+              <a-form-model-item prop="request_vpc" :wrapperCol="{ span: 24 }" class="mb-0 mr-1">
                 <a-select
-                  v-decorator="decorators.request_vpc"
+                  v-model:value="form.request_vpc"
                   placeholder="VPC"
                   :loading="requestVpcLoading"
                   :disabled="regionLoading || !requestVpcLoaded">
@@ -43,16 +48,16 @@
                     {{item.label}}
                   </a-select-option>
                 </a-select>
-              </a-form-item>
+              </a-form-model-item>
             </a-col>
           </a-row>
-        </a-form-item>
-        <a-form-item :label="$t('network.receive.vpc')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.receive.vpc')" required>
           <a-row :gutter="6">
             <a-col :span="12">
-              <a-form-item :wrapperCol="{ span: 24 }" class="mb-0 mr-1">
+              <a-form-model-item prop="receive_cloudregion" :wrapperCol="{ span: 24 }" class="mb-0 mr-1">
                 <a-select
-                  v-decorator="decorators.receive_cloudregion"
+                  v-model:value="form.receive_cloudregion"
                   @change="handleReceiveRegionChange"
                   :placeholder="$t('network.text_199')"
                   :loading="regionLoading"
@@ -62,12 +67,12 @@
                     {{item.label}}
                   </a-select-option>
                 </a-select>
-              </a-form-item>
+              </a-form-model-item>
             </a-col>
             <a-col :span="12">
-              <a-form-item :wrapperCol="{ span: 24 }" class="mb-0 mr-1">
+              <a-form-model-item prop="receive_vpc" :wrapperCol="{ span: 24 }" class="mb-0 mr-1">
                 <a-select
-                  v-decorator="decorators.receive_vpc"
+                  v-model:value="form.receive_vpc"
                   placeholder="VPC"
                   :loading="receiveVpcLoading"
                   :disabled="regionLoading || !receiveVpcLoaded">
@@ -76,11 +81,11 @@
                     {{item.label}}
                   </a-select-option>
                 </a-select>
-              </a-form-item>
+              </a-form-model-item>
             </a-col>
           </a-row>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </page-body>
     <page-footer>
       <div slot="right">
@@ -98,6 +103,7 @@ import { uuid } from '@/utils/utils'
 import DomainSelect from '@/sections/DomainSelect'
 import { Manager } from '@/utils/manager'
 import { VPC_PEER_BRANDS } from '../constants'
+
 export default {
   name: 'NetworkVpcPeerConnectCreate',
   components: {
@@ -117,60 +123,29 @@ export default {
       receiveVpcArr: [],
       VPC_PEER_BRANDS,
       form: {
-        fc: this.$form.createForm(this),
+        project_domain: this.$store.getters.userInfo.projectDomainId,
+        name: '',
+        brand: VPC_PEER_BRANDS[0].key,
+        request_cloudregion: undefined,
+        request_vpc: undefined,
+        receive_cloudregion: undefined,
+        receive_vpc: undefined,
       },
-      decorators: {
-        project_domain: [
-          'project_domain',
-          {
-            initialValue: this.$store.getters.userInfo.projectDomainId,
-          },
-        ],
+      rules: {
         name: [
-          'name',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.text_210') },
-            ],
-          },
-        ],
-        brand: [
-          'brand',
-          {
-            initialValue: VPC_PEER_BRANDS[0].key,
-          },
+          { required: true, message: this.$t('compute.text_210') },
         ],
         request_cloudregion: [
-          'request_cloudregion',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_286') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_286') },
         ],
         request_vpc: [
-          'request_vpc',
-          {
-            rules: [
-              { required: true, message: this.$t('common_226') },
-            ],
-          },
+          { required: true, message: this.$t('common_226') },
         ],
         receive_cloudregion: [
-          'receive_cloudregion',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_286') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_286') },
         ],
         receive_vpc: [
-          'receive_vpc',
-          {
-            rules: [
-              { required: true, message: this.$t('common_226') },
-            ],
-          },
+          { required: true, message: this.$t('common_226') },
         ],
       },
       formItemLayout: {
@@ -206,10 +181,8 @@ export default {
         })
         if (this.regionArr.length) {
           const defaultValue = this.regionArr[0].value
-          this.form.fc.setFieldsValue({
-            [this.decorators.request_cloudregion[0]]: defaultValue,
-            [this.decorators.receive_cloudregion[0]]: defaultValue,
-          })
+          this.form.request_cloudregion = defaultValue
+          this.form.receive_cloudregion = defaultValue
           this.fetchRequestVpcs(defaultValue)
           this.fetchReceiveVpcs(defaultValue)
         }
@@ -239,10 +212,7 @@ export default {
           }
         })
         if (this.requestVpcArr.length) {
-          const defaultValue = this.requestVpcArr[0].value
-          this.form.fc.setFieldsValue({
-            [this.decorators.request_vpc[0]]: defaultValue,
-          })
+          this.form.request_vpc = this.requestVpcArr[0].value
         }
         this.requestVpcLoading = false
         this.requestVpcLoaded = true
@@ -269,10 +239,7 @@ export default {
           }
         })
         if (this.receiveVpcArr.length) {
-          const defaultValue = this.receiveVpcArr[0].value
-          this.form.fc.setFieldsValue({
-            [this.decorators.receive_vpc[0]]: defaultValue,
-          })
+          this.form.receive_vpc = this.receiveVpcArr[0].value
         }
         this.receiveVpcLoading = false
         this.receiveVpcLoaded = true
@@ -291,12 +258,10 @@ export default {
       this.fetchRegions(v)
     },
     resetVpc () {
-      this.form.fc.setFieldsValue({
-        [this.decorators.request_cloudregion[0]]: undefined,
-        [this.decorators.receive_cloudregion[0]]: undefined,
-        [this.decorators.request_vpc[0]]: undefined,
-        [this.decorators.receive_vpc[0]]: undefined,
-      })
+      this.form.request_cloudregion = undefined
+      this.form.receive_cloudregion = undefined
+      this.form.request_vpc = undefined
+      this.form.receive_vpc = undefined
       this.regionArr = []
       this.requestVpcArr = []
       this.receiveVpcArr = []
@@ -315,8 +280,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        await this.doSubmit(values)
+        await this.$refs.formRef.validate()
+        await this.doSubmit(this.form)
         this.loading = false
         this.$message.success(this.$t('common.success'))
         this.goBack()

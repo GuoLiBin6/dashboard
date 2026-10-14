@@ -1,40 +1,42 @@
 <template>
-  <a-form :form="form" v-bind="formItemLayout">
-    <a-form-item :label="$t('network.ssh-proxy.port')">
-      <a-input-number v-decorator="decorators.port" />
-    </a-form-item>
-    <a-form-item :label="$t('compute.vminstance.setup_ssh_authentication.method')">
-      <a-radio-group v-model:value="method">
+  <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+    <a-form-model-item :label="$t('network.ssh-proxy.port')" prop="port">
+      <a-input-number v-model:value="form.port" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('compute.vminstance.setup_ssh_authentication.method')" prop="method">
+      <a-radio-group v-model:value="form.method" @change="onMethodChange">
         <a-radio-button v-for="m in METHODS" :value="m.value" :key="m.key">{{ m.label }}</a-radio-button>
       </a-radio-group>
-    </a-form-item>
-    <a-form-item v-if="method !== 'scripts'">
-     <span slot="label">
-        {{ $t('compute.text_163') }}
-        <a-tooltip :title="$t('compute.vminstance.setup_ssh_authentication.create.username.tips')">
-          <icon type="question-circle" />
-        </a-tooltip>
-      </span>
-      <a-input v-decorator="decorators.user" />
-    </a-form-item>
-    <a-form-item :label="$t('compute.text_108')" v-if="method === 'keypair'">
-      <a-textarea :placeholder="$t('compute.text_797')" v-decorator="decorators.private_key" />
-    </a-form-item>
-    <a-form-item :label="$t('compute.text_340')" v-if="method === 'password'">
-      <a-input-password :placeholder="$t('compute.text_204')" v-decorator="decorators.password" />
-    </a-form-item>
-    <a-form-item :label="$t('compute.vminstance.setup_ssh_authentication.method.script')" v-if="method === 'scripts'">
+    </a-form-model-item>
+    <a-form-model-item v-if="form.method !== 'scripts'" prop="user">
+      <template #label>
+        <span>
+          {{ $t('compute.text_163') }}
+          <a-tooltip :title="$t('compute.vminstance.setup_ssh_authentication.create.username.tips')">
+            <icon type="question-circle" />
+          </a-tooltip>
+        </span>
+      </template>
+      <a-input v-model:value="form.user" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('compute.text_108')" v-if="form.method === 'keypair'" prop="private_key">
+      <a-textarea :placeholder="$t('compute.text_797')" v-model:value="form.private_key" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('compute.text_340')" v-if="form.method === 'password'" prop="password">
+      <a-input-password :placeholder="$t('compute.text_204')" v-model:value="form.password" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('compute.vminstance.setup_ssh_authentication.method.script')" v-if="form.method === 'scripts'">
       <a-alert :message="$t('compute.vminstance.setup_ssh_authentication.method.script.tips')" banner />
       <code-mirror :value="scripts" :options="cmOptions" />
       <div class="text-right">
         <a-button
-            type="link"
-            icon="copy"
-            class="pl-0 pr-0"
-            @click="handleCopy">{{$t('compute.text_801')}}</a-button>
+          type="link"
+          icon="copy"
+          class="pl-0 pr-0"
+          @click="handleCopy">{{$t('compute.text_801')}}</a-button>
       </div>
-    </a-form-item>
-  </a-form>
+    </a-form-model-item>
+  </a-form-model>
 </template>
 
 <script>
@@ -50,7 +52,6 @@ export default {
   },
   data () {
     return {
-      method: 'keypair',
       METHODS: [
         { key: 'keypair', value: 'keypair', label: this.$t('compute.text_108') },
         { key: 'password', value: 'password', label: this.$t('compute.text_340') },
@@ -73,72 +74,52 @@ export default {
           span: 4,
         },
       },
-      form: this.$form.createForm(this),
-      decorators: {
-        port: [
-          'port',
-          {
-            initialValue: 22,
-            rules: [
-              { required: true, message: this.$t('network.text_176') },
-              { type: 'number', min: 1, max: 65535, message: this.$t('network.text_347') },
-            ],
-          },
-        ],
-        method: [
-          'method',
-          {
-            initialValue: 'keypair',
-          },
-        ],
-        user: [
-          'user',
-          {
-            initialValue: '',
-            validateTrigger: 'blur',
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_210') },
-            ],
-          },
-        ],
-        password: [
-          'password',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.text_204') },
-            ],
-          },
-        ],
-        private_key: [
-          'private_key',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.vminstance.setup_ssh_authentication.keypair.tips') },
-            ],
-          },
-        ],
+      form: {
+        port: 22,
+        method: 'keypair',
+        user: '',
+        password: undefined,
+        private_key: undefined,
       },
     }
   },
-  watch: {
-    method (val) {
+  computed: {
+    rules () {
+      const rules = {
+        port: [
+          { required: true, message: this.$t('network.text_176') },
+          { type: 'number', min: 1, max: 65535, message: this.$t('network.text_347') },
+        ],
+      }
+      if (this.form.method !== 'scripts') {
+        rules.user = [
+          { required: true, message: this.$t('compute.text_210'), trigger: 'blur' },
+        ]
+      }
+      if (this.form.method === 'keypair') {
+        rules.private_key = [
+          { required: true, message: this.$t('compute.vminstance.setup_ssh_authentication.keypair.tips') },
+        ]
+      }
+      if (this.form.method === 'password') {
+        rules.password = [
+          { required: true, message: this.$t('compute.text_204') },
+        ]
+      }
+      return rules
+    },
+  },
+  methods: {
+    onMethodChange (e) {
+      const val = e?.target?.value ?? e
+      this.form.method = val
       if (val === 'scripts') {
         this.fetchScripts()
       }
     },
-  },
-  methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
+    async validateForm () {
+      await this.$refs.formRef.validate()
+      return { ...this.form }
     },
     handleSubmitResult (ret) {
       const tasks = {}
@@ -158,7 +139,7 @@ export default {
           return
         }
         const values = await this.validateForm()
-        if (this.method === 'scripts') {
+        if (this.form.method === 'scripts') {
           await new this.$Manager('servers').batchUpdate({ ids: this.servers, data: { ssh_port: values.port } })
           this.$emit('tasks', {})
           return

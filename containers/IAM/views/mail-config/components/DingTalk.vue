@@ -1,39 +1,40 @@
 <template>
-  <a-form
-    :form="form.fc"
+  <a-form-model
+    ref="formRef"
+    :model="form"
+    :rules="rules"
     v-bind="formItemLayout">
-    <!-- <a-alert type="warning" :message="$t('system.text_256')" class="mb-2" /> -->
     <contact-tips
       :before="$t('system.dingding.before')"
       :after="$t('system.dingding.after')"
       :href="href"
       :hrefText="$t('system.detail')" />
-    <a-form-item label="AgentId">
+    <a-form-model-item label="AgentId" prop="agent_id">
       <template v-slot:extra>
         <div>{{$t('system.text_257')}}</div>
         <div class="mb-0">{{$t('system.text_568')}}</div>
       </template>
-      <a-input v-decorator="decorators.agent_id" />
-    </a-form-item>
-    <a-form-item label="AppKey">
+      <a-input v-model:value="form.agent_id" />
+    </a-form-model-item>
+    <a-form-model-item label="AppKey" prop="app_key">
       <template v-slot:extra>
         <div>{{$t('system.text_259')}}</div>
         <div class="mb-0">{{$t('system.text_569')}}</div>
       </template>
-      <a-input v-decorator="decorators.app_key" />
-    </a-form-item>
-    <a-form-item label="AppSecret">
+      <a-input v-model:value="form.app_key" />
+    </a-form-model-item>
+    <a-form-model-item label="AppSecret" prop="app_secret">
       <template v-slot:extra>
         <div>{{$t('system.text_260')}}</div>
         <div class="mb-0">{{$t('system.text_569')}}</div>
       </template>
-      <a-input-password v-decorator="decorators.app_secret" />
-    </a-form-item>
-    <a-form-item :wrapper-col="offsetWrapperCol">
+      <a-input-password v-model:value="form.app_secret" />
+    </a-form-model-item>
+    <a-form-model-item :wrapper-col="offsetWrapperCol">
       <a-button type="primary" @click="handleSubmit" :loading="submiting">{{ $t('common.ok') }}</a-button>
       <test-button v-if="false" class="ml-3" :post="testPost" />
-    </a-form-item>
-  </a-form>
+    </a-form-model-item>
+  </a-form-model>
 </template>
 
 <script>
@@ -59,32 +60,19 @@ export default {
     return {
       submiting: false,
       form: {
-        fc: this.$form.createForm(this),
+        agent_id: undefined,
+        app_key: undefined,
+        app_secret: undefined,
       },
-      decorators: {
+      rules: {
         agent_id: [
-          'agent_id',
-          {
-            rules: [
-              { required: true, message: this.$t('system.text_261') },
-            ],
-          },
+          { required: true, message: this.$t('system.text_261') },
         ],
         app_key: [
-          'app_key',
-          {
-            rules: [
-              { required: true, message: this.$t('system.text_262') },
-            ],
-          },
+          { required: true, message: this.$t('system.text_262') },
         ],
         app_secret: [
-          'app_secret',
-          {
-            rules: [
-              { required: true, message: this.$t('system.text_263') },
-            ],
-          },
+          { required: true, message: this.$t('system.text_263') },
         ],
       },
       contactData: null,
@@ -110,7 +98,7 @@ export default {
         const data = response.data.data[0] || {}
         this.contactData = data
         this.$nextTick(() => {
-          this.form.fc.setFieldsValue(data.content)
+          Object.assign(this.form, data.content || {})
         })
       } catch (error) {
         throw error
@@ -121,7 +109,8 @@ export default {
     async handleSubmit () {
       this.submiting = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         if (this.contactData && this.contactData.id) {
           await this.manager.update({
             id: this.contactData.id,
@@ -149,7 +138,8 @@ export default {
     },
     async testPost () {
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         await new this.$Manager('notifyconfigs', 'v1').performClassAction({
           action: 'validate',
           data: {

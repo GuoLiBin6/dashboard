@@ -64,6 +64,7 @@ export default {
   },
   inject: {
     form: { default: undefined },
+    validateCreateForm: { default: undefined },
     flushCreateFormFieldDrafts: { default: undefined },
   },
   props: {
@@ -125,16 +126,19 @@ export default {
         return `${pvt}::${region_ext_id}::::rds::${name}`
       }
     },
-    validateForm () {
-      let f = false
-      this.form.fc.validateFieldsAndScroll({ scroll: { alignWithTop: true, offsetTop: 100 } }, (err, values) => {
-        f = err === null
-      })
-      return f
+    async validateForm () {
+      if (typeof this.validateCreateForm === 'function') {
+        return this.validateCreateForm()
+      }
+      const formRef = this.$parent?.$refs?.formRef
+      if (formRef?.validate) {
+        await formRef.validate()
+      }
+      return { ...this.form.fd }
     },
-    formatParams () {
+    formatParams (mergedValues) {
       const params = {
-        ...this.values,
+        ...(mergedValues || this.values),
       }
       if (params.sku) {
         params.cloudregion = params.sku.cloudregion_id
@@ -160,14 +164,19 @@ export default {
       return params
     },
     async doCreate () {
-      if (!this.validateForm()) return false
+      let merged
+      try {
+        merged = await this.validateForm()
+      } catch (err) {
+        return false
+      }
       if (typeof this.flushCreateFormFieldDrafts === 'function') {
         this.flushCreateFormFieldDrafts()
       }
       const manager = new Manager('elasticcaches', 'v2')
       this.loading = true
       try {
-        await manager.create({ data: this.formatParams() })
+        await manager.create({ data: this.formatParams(merged) })
         this.$emit('create-success')
         this.$router.push('/redis')
       } catch (err) {

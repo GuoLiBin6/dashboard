@@ -15,10 +15,10 @@
           </a-select>
         </a-form-model-item>
         <a-form-model-item :label="$t('network.cdn.https_enabled')" prop="https_enabled" :extra="$t(`network.cdn.https_enabled.extra`)">
-          <a-switch v-model:value="form.https_enabled" />
+          <a-switch v-model:checked="form.https_enabled" />
         </a-form-model-item>
         <a-form-model-item :label="$t('network.cdn.https_rewrites')" prop="https_rewrites">
-          <a-switch v-model:value="form.https_rewrites" />
+          <a-switch v-model:checked="form.https_rewrites" />
         </a-form-model-item>
         <a-form-model-item :label="$t('network.cdn.cache_level')" prop="cache_level">
           <a-select v-model:value="form.cache_level">
@@ -35,7 +35,7 @@
           </a-select>
         </a-form-model-item>
         <a-form-model-item :label="$t('network.cdn.dnssec_enabled')" prop="dnssec_enabled">
-          <a-switch v-model:value="form.dnssec_enabled" />
+          <a-switch v-model:checked="form.dnssec_enabled" />
         </a-form-model-item>
       </a-form-model>
     </div>

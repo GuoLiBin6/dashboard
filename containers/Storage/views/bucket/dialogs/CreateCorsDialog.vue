@@ -2,33 +2,35 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{isUpdate ? $t('storage.text_192') : $t('storage.text_193')}}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('storage.text_194')" v-bind="formItemLayout">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules">
+        <a-form-model-item :label="$t('storage.text_194')" v-bind="formItemLayout" prop="allowed_origins">
           <a-textarea
-            v-decorator="decorators.allowed_origins"
+            v-model:value="form.allowed_origins"
             :placeholder="$t('storage.text_195')"
             :auto-size="{ minRows: 5, maxRows: 8 }" />
-        </a-form-item>
-        <a-form-item :label="$t('storage.text_196')" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('storage.text_196')" v-bind="formItemLayout" prop="allowed_methods">
           <a-checkbox-group
-            v-decorator="decorators.allowed_methods"
+            v-model:value="form.allowed_methods"
             :options="methodsOptions" />
-        </a-form-item>
-        <a-form-item :label="$t('storage.text_197')" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('storage.text_197')" v-bind="formItemLayout" prop="allowed_headers">
           <a-textarea
-            v-decorator="decorators.allowed_headers"
+            v-model:value="form.allowed_headers"
             :auto-size="{ minRows: 5, maxRows: 8 }" />
-        </a-form-item>
-        <a-form-item :label="$t('storage.text_198')" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('storage.text_198')" v-bind="formItemLayout" prop="expose_headers">
           <a-textarea
-            v-decorator="decorators.expose_headers"
+            v-model:value="form.expose_headers"
             :auto-size="{ minRows: 5, maxRows: 8 }" />
-        </a-form-item>
-        <a-form-item :label="$t('storage.text_199')" v-bind="formItemLayout">
-          <a-input-number v-decorator="decorators.max_age_seconds" :min="0" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('storage.text_199')" v-bind="formItemLayout" prop="max_age_seconds">
+          <a-input-number v-model:value="form.max_age_seconds" :min="0" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -49,53 +51,27 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        allowed_origins: this.params.data && this.params.data[0].allowed_origins ? this.params.data[0].allowed_origins.join('\n') : '',
+        allowed_methods: this.params.data && this.params.data[0].allowed_methods ? this.params.data[0].allowed_methods : [],
+        allowed_headers: this.params.data && this.params.data[0].allowed_headers ? this.params.data[0].allowed_headers.join('\n') : '',
+        expose_headers: this.params.data && this.params.data[0].expose_headers ? this.params.data[0].expose_headers.join('\n') : '',
+        max_age_seconds: this.params.data && this.params.data[0].max_age_seconds ? this.params.data[0].max_age_seconds : 0,
       },
-      decorators: {
+      rules: {
         allowed_origins: [
-          'allowed_origins',
-          {
-            initialValue: this.params.data && this.params.data[0].allowed_origins ? this.params.data[0].allowed_origins.join('\n') : '',
-            rules: [
-              { required: true, message: this.$t('storage.text_200') },
-            ],
-          },
+          { required: true, message: this.$t('storage.text_200') },
         ],
         allowed_methods: [
-          'allowed_methods',
-          {
-            initialValue: this.params.data && this.params.data[0].allowed_methods ? this.params.data[0].allowed_methods : [],
-            rules: [
-              { required: true, message: this.$t('storage.text_201') },
-            ],
-          },
+          { required: true, message: this.$t('storage.text_201') },
         ],
         allowed_headers: [
-          'allowed_headers',
-          {
-            initialValue: this.params.data && this.params.data[0].allowed_headers ? this.params.data[0].allowed_headers.join('\n') : '',
-            rules: [
-              { required: true, message: this.$t('storage.text_202') },
-            ],
-          },
+          { required: true, message: this.$t('storage.text_202') },
         ],
         expose_headers: [
-          'expose_headers',
-          {
-            initialValue: this.params.data && this.params.data[0].expose_headers ? this.params.data[0].expose_headers.join('\n') : '',
-            rules: [
-              { required: true, message: this.$t('storage.text_203') },
-            ],
-          },
+          { required: true, message: this.$t('storage.text_203') },
         ],
         max_age_seconds: [
-          'max_age_seconds',
-          {
-            initialValue: this.params.data && this.params.data[0].max_age_seconds ? this.params.data[0].max_age_seconds : 0,
-            rules: [
-              { required: true, message: this.$t('storage.text_204') },
-            ],
-          },
+          { required: true, message: this.$t('storage.text_204') },
         ],
       },
       formItemLayout: {
@@ -146,8 +122,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        const data = this.genData(values)
+        await this.$refs.formRef.validate()
+        const data = this.genData({ ...this.form })
         await this.doCreate(data)
         this.loading = false
         this.cancelDialog()

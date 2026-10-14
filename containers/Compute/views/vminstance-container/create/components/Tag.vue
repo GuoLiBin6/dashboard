@@ -16,38 +16,16 @@
     <a-form-item :extra="$t('compute.text_1146')" class="mt-2">
       <div class="d-flex">
         <div style="line-height: 40px;">
-          <tag-select
-            global
-            v-model="checked"
-            :params="params"
-            :button-text="$t('compute.text_1147')"
-            :defaultChecked="defaultChecked"
-            :allowNoValue="false" />
-          <pre-defined-tag-select
-            v-if="showPreDefinedTagSelect"
-            global
-            v-model="checked"
-            :params="params"
-            :defaultChecked="defaultChecked"
-            :allowNoValue="false" />
+          <tag-select global v-model="checked" :params="params" :button-text="$t('compute.text_1147')" :defaultChecked="defaultChecked" :allowNoValue="false" />
+          <pre-defined-tag-select v-if="showPreDefinedTagSelect" v-model="checked" :params="params" :defaultChecked="defaultChecked" :allowNoValue="false" />
           <a-button class="ml-2" v-if="!showForm" @click="() => showForm = true">{{$t('compute.text_1382')}}</a-button>
         </div>
-        <a-form
-          class="ml-2"
-          layout="inline"
-          :form="tagForm.fc"
-          v-if="showForm">
-          <a-form-item>
-            <a-input v-decorator="decorators.key" :placeholder="$t('compute.text_1148')" />
-          </a-form-item>
-          <a-form-item>
-            <a-input v-decorator="decorators.value" :placeholder="$t('compute.text_1149')" />
-          </a-form-item>
-          <a-form-item>
-            <a-button @click="addTag">{{$t('compute.text_822')}}</a-button>
-            <a-button @click="() => showForm = false" class="ml-2">{{$t('compute.text_135')}}</a-button>
-          </a-form-item>
-        </a-form>
+        <div class="ml-2 d-flex align-items-start" v-if="showForm">
+          <a-input v-model:value="tagKey" :placeholder="$t('compute.text_1148')" class="mr-2" />
+          <a-input v-model:value="tagValue" :placeholder="$t('compute.text_1149')" class="mr-2" />
+          <a-button @click="addTag">{{$t('compute.text_822')}}</a-button>
+          <a-button @click="() => showForm = false" class="ml-2">{{$t('compute.text_135')}}</a-button>
+        </div>
       </div>
     </a-form-item>
   </div>
@@ -68,35 +46,23 @@ export default {
     PreDefinedTagSelect,
   },
   props: {
+    /** end-state：v-model:value → form.fd.__meta__（flat { key: value }） */
+    value: {
+      type: Object,
+      default () {
+        return {}
+      },
+    },
     defaultChecked: {
       type: Object,
     },
   },
   data () {
     return {
-      checked: this.defaultChecked || {},
+      checked: this.normalizeChecked(this.defaultChecked || this.value),
       showForm: false,
-      tagForm: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        key: [
-          'key',
-          {
-            rules: [
-              { required: true, whitespace: true, message: this.$t('compute.text_1150') },
-            ],
-          },
-        ],
-        value: [
-          'value',
-          {
-            rules: [
-              { required: true, whitespace: true, message: this.$t('common.tips.input', [this.$t('common_113')]) },
-            ],
-          },
-        ],
-      },
+      tagKey: '',
+      tagValue: '',
     }
   },
   computed: {
@@ -112,8 +78,12 @@ export default {
       const ret = []
       R.forEachObjIndexed((value, key) => {
         if (value.length > 0) {
-          for (let i = 0, len = value.length; i < len; i++) {
-            ret.push(this.genTag(key, value[i]))
+          if (Array.isArray(value)) {
+            for (let i = 0, len = value.length; i < len; i++) {
+              ret.push(this.genTag(key, value[i]))
+            }
+          } else {
+            ret.push(this.genTag(key, value))
           }
         } else {
           ret.push(this.genTag(key, null))
@@ -130,37 +100,62 @@ export default {
         for (let i = 0, len = val.length; i < len; i++) {
           ret[val[i].key] = val[i].value || ''
         }
+      } else {
+        ret = {}
       }
       this.$emit('change', ret)
+      this.$emit('update:value', ret)
     },
     defaultChecked (val) {
-      this.checked = Object.assign({}, this.checked, this.defaultChecked || {})
+      if (!val || Object.keys(val).length === 0) {
+        this.checked = {}
+        return
+      }
+      this.checked = this.normalizeChecked(val)
+    },
+    value (val) {
+      if (!val || R.isEmpty(val)) {
+        if (!R.isEmpty(this.checked || {})) this.checked = {}
+        return
+      }
+      const next = this.normalizeChecked(val)
+      if (R.equals(next, this.checked)) return
+      this.checked = next
     },
   },
   methods: {
-    async addTag () {
-      try {
-        const values = await this.tagForm.fc.validateFields()
-        const key = `user:${values.key}`
-        const newValue = { ...this.checked }
-        if (newValue[key]) {
-          if (values.value) {
-            if (!newValue[key].includes(values.value)) {
-              newValue[key] = [values.value]
-            }
-          }
-        } else {
-          if (values.value) {
-            newValue[key] = [values.value]
-          } else {
-            newValue[key] = []
-          }
-        }
-        this.checked = newValue
-        this.tagForm.fc.resetFields()
-      } catch (error) {
-        throw error
+    /** TagSelect 要 { key: [value] }；fd.__meta__ 多为 flat { key: value } */
+    normalizeChecked (val) {
+      if (!val || typeof val !== 'object') return {}
+      const ret = {}
+      R.forEachObjIndexed((v, k) => {
+        ret[k] = Array.isArray(v) ? v : (v == null || v === '' ? [] : [v])
+      }, val)
+      return ret
+    },
+    addTag () {
+      const key = (this.tagKey || '').trim()
+      const value = (this.tagValue || '').trim()
+      if (!key) {
+        this.$message.error(this.$t('compute.text_1150'))
+        return
       }
+      if (!value) {
+        this.$message.error(this.$t('common.tips.input', [this.$t('common_113')]))
+        return
+      }
+      const userKey = `user:${key}`
+      const newValue = { ...this.checked }
+      if (newValue[userKey]) {
+        if (!newValue[userKey].includes(value)) {
+          newValue[userKey] = [value]
+        }
+      } else {
+        newValue[userKey] = [value]
+      }
+      this.checked = newValue
+      this.tagKey = ''
+      this.tagValue = ''
     },
     genTag (key, value) {
       const rgb = getTagColor(key, value, 'rgb')

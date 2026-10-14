@@ -17,11 +17,24 @@ import PageListEmpty from '@/components/PageList/Loader'
 
 export default {
   name: 'BackupRecoveryRdsList',
-  inject: ['form'],
   components: {
     PageListEmpty,
   },
-  props: ['backupItem'],
+  props: {
+    backupItem: {
+      type: Object,
+      default: () => ({}),
+    },
+    model: {
+      type: Object,
+      default: null,
+    },
+  },
+  inject: {
+    form: {
+      default: null,
+    },
+  },
   data () {
     return {
       loading: false,
@@ -66,11 +79,18 @@ export default {
     this.fetchQueryRDSList()
   },
   methods: {
+    setDbinstanceId (id) {
+      if (this.model) {
+        this.model.dbinstance_id = id
+        return
+      }
+      if (this.form?.fd) {
+        this.form.fd.dbinstance_id = id
+      }
+    },
     handleRdsChange ({ row = {} }) {
       const { id } = row
-      this.form.fc.setFieldsValue({
-        dbinstance_id: id,
-      })
+      this.setDbinstanceId(id)
     },
     async fetchQueryRDSList () {
       // eslint-disable-next-line camelcase

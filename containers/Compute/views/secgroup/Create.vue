@@ -2,20 +2,31 @@
   <div>
     <page-header :title="$t('compute.text_189')" :tabs="cloudEnvOptions" v-model:currentTab="cloudEnv" />
     <page-body>
-      <a-form class="mt-3" :form="form.fc" @submit.prevent="handleSubmit" v-bind="formItemLayout" hideRequiredMark>
-        <a-form-item :label="$t('network.text_205', [$t('dictionary.project')])" class="mt-3" v-bind="formItemLayout">
-          <domain-project :fc="form.fc" :decorators="{ project: decorators.project, domain: decorators.domain }" @update:domain="handleDomainChange" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_21')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.name" :placeholder="$t('validator.resourceName')" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')" v-bind="formItemLayout">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
+      <a-form-model
+        ref="formRef"
+        class="mt-3"
+        :model="form"
+        :rules="rules"
+        @submit.prevent="handleSubmit"
+        v-bind="formItemLayout"
+        hideRequiredMark>
+        <a-form-model-item :label="$t('network.text_205', [$t('dictionary.project')])" class="mt-3" prop="project">
+          <domain-project
+            :form="form"
+            :labelInValue="true"
+            @update:domain="handleDomainChange" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_21')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('validator.resourceName')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" prop="description">
+          <a-textarea v-model:value="form.description" :auto-size="{ minRows: 1, maxRows: 3 }" :placeholder="$t('common_367')" />
+        </a-form-model-item>
         <template v-if="cloudEnv !== 'idc' && cloudEnv !== 'onpremise'">
           <area-selects
             class="mb-0"
             ref="areaSelects"
+            :model="form"
             :wrapperCol="formItemLayout.wrapperCol"
             :labelCol="formItemLayout.labelCol"
             :names="areaselectsName"
@@ -24,30 +35,29 @@
             :isRequired="true"
             filterBrandResource="security_group"
             @change="handleRegionChange" />
-          <a-form-item label="VPC" v-bind="formItemLayout" v-if="regionId !== 'default'">
+          <a-form-model-item label="VPC" prop="vpc" v-if="regionId !== 'default'">
             <base-select
-              v-decorator="decorators.vpc"
+              v-model="form.vpc"
               resource="vpcs"
               :params="vpcParams"
               :isDefaultSelect="true"
               :needParams="true"
-              @change="vpcChange"
               v-model:item="curVpc"
               :labelFormat="vpcLabelFormat"
-              :select-props="{ placeholder: $t('common_226') }" />
-          </a-form-item>
+              :select-props="{ placeholder: $t('common_226') }"
+              @change="vpcChange" />
+          </a-form-model-item>
         </template>
-        <a-form-item :label="$t('common.text00012')" class="mb-0">
-          <tag
-            v-decorator="decorators.__meta__" />
-        </a-form-item>
+        <a-form-model-item :label="$t('common.text00012')" class="mb-0" prop="__meta__">
+          <tag :value="form.__meta__" @change="v => { form.__meta__ = v }" />
+        </a-form-model-item>
         <page-footer>
           <template v-slot:right>
             <a-button type="primary" html-type="submit" class="ml-3" :loading="submiting">{{$t('network.text_30')}}</a-button>
             <a-button class="ml-3" @click="() => $router.back()">{{$t('common.cancel')}}</a-button>
           </template>
         </page-footer>
-      </a-form>
+      </a-form-model>
     </page-body>
   </div>
 </template>
@@ -57,9 +67,8 @@ import { mapGetters } from 'vuex'
 import validateForm, { isRequired } from '@/utils/validate'
 import { Manager } from '@/utils/manager'
 import { getCloudEnvOptions } from '@/utils/common/hypervisor'
-import DomainProject from '@/sections/DomainProject'
-import AreaSelects from '@/sections/AreaSelects'
-import i18n from '@/locales'
+import DomainProject from '@/sections/DomainProject/model'
+import AreaSelects from '@/sections/AreaSelects/model'
 import { HYPERVISORS_MAP } from '@/constants'
 import Tag from '@/sections/Tag'
 
@@ -85,8 +94,14 @@ export default {
       cloudEnv,
       routerQuery,
       form: {
-        fc: this.$form.createForm(this, { onValuesChange: this.handleValuesChange }),
-        fd: {},
+        domain: undefined,
+        project: undefined,
+        name: '',
+        description: '',
+        provider: undefined,
+        cloudregion: undefined,
+        vpc: undefined,
+        __meta__: {},
       },
       guestIpPrefixValidateStatus: '',
       guestIpPrefixHelp: '',
@@ -102,52 +117,6 @@ export default {
           xxl: { span: 2 },
         },
       },
-      decorators: {
-        domain: [
-          'domain',
-          {
-            rules: [
-              { validator: isRequired(), message: i18n.t('rules.domain'), trigger: 'change' },
-            ],
-          },
-        ],
-        project: [
-          'project',
-          {
-            rules: [
-              { validator: isRequired(), message: i18n.t('rules.project'), trigger: 'change' },
-            ],
-          },
-        ],
-        name: [
-          'name',
-          {
-            initialValue: '',
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('network.text_116') },
-              { validator: this.$validate('resourceName') },
-            ],
-          },
-        ],
-        description: ['description'],
-        vpc: [
-          'vpc',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_274') },
-            ],
-          },
-        ],
-        __meta__: [
-          '__meta__',
-          {
-            rules: [
-              { validator: validateForm('tagName') },
-            ],
-          },
-        ],
-      },
       show: true,
       regionProvider: '',
       regionId: '',
@@ -158,6 +127,26 @@ export default {
   },
   computed: {
     ...mapGetters(['isAdminMode', 'isDomainMode', 'scope', 'userInfo']),
+    rules () {
+      const rules = {
+        project: [
+          { validator: isRequired(), message: this.$t('rules.project'), trigger: 'change' },
+        ],
+        name: [
+          { required: true, message: this.$t('network.text_116'), trigger: 'blur' },
+          { validator: this.$validate('resourceName'), trigger: 'blur' },
+        ],
+        __meta__: [
+          { validator: validateForm('tagName'), trigger: 'change' },
+        ],
+      }
+      if (this.cloudEnv !== 'idc' && this.cloudEnv !== 'onpremise' && this.regionId !== 'default') {
+        rules.vpc = [
+          { required: true, message: this.$t('network.text_274'), trigger: 'change' },
+        ]
+      }
+      return rules
+    },
     vpcParams () {
       const params = {
         limit: 0,
@@ -207,18 +196,13 @@ export default {
         cloud_env: 'public',
         usable: false,
         usable_vpc: true,
-        project_domain: this.form.fd.domain?.key,
+        project_domain: this.form.domain?.key,
       }
     },
   },
-  provide () {
-    return {
-      form: this.form,
-    }
-  },
   watch: {
     cloudEnv (newValue) {
-      this.$refs.areaSelects.fetchs(this.areaselectsName)
+      this.$refs.areaSelects?.fetchs(this.areaselectsName)
       if (newValue === 'private') {
         this.show = false
         this.isGroupGuestIpPrefix = false
@@ -231,17 +215,9 @@ export default {
       }
     },
   },
-  created () {
-  },
   methods: {
-    handleValuesChange (props, values) {
-      this.form.fd = {
-        ...this.form.fd,
-        ...values,
-      }
-    },
     handleDomainChange (val) {
-      this.project_domain = val.key
+      this.project_domain = val?.key || val || ''
     },
     handleRegionChange (data) {
       const { provider, cloudregion } = data
@@ -311,9 +287,9 @@ export default {
     async handleSubmit () {
       const ListPath = this.$router.resolve(this.$route.path)
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         this.submiting = true
-        const data = this.genData(values)
+        const data = this.genData(this.form)
         const manager = new Manager('secgroups')
         await manager.create({ data })
         this.$router.push({ path: ListPath.resolved.matched[0].path })

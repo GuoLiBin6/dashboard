@@ -4,7 +4,7 @@
       <base-select
         class="metric-select"
         minWidth="0"
-        v-decorator="decorators.metric_res_type"
+        :value="metric_res_type"
         :options="metricTypeOpts"
         filterable
         :disabled="disabled"
@@ -15,7 +15,7 @@
       <base-select
         class="metric-select"
         minWidth="0"
-        v-decorator="decorators.metric_key"
+        :value="metric_key"
         :options="metricKeyOpts"
         filterable
         :disabled="disabled"
@@ -28,7 +28,7 @@
         class="metric-select"
         minWidth="0"
         filterable
-        v-decorator="decorators.metric_value"
+        :value="metricValue"
         v-model:item="metricValueItem"
         :options="metricOpts"
         :labelFormat="metricValueLabelFormat"
@@ -43,18 +43,24 @@
 <script lang="jsx">
 import _ from 'lodash'
 import { metric_zh } from '@Monitor/constants'
+import { resolveFieldMeta } from '@/utils/common/ant'
+import { buildMetricFieldMap } from '../fields'
 
 export default {
   name: 'ExplorerFormMetric',
   props: {
-    decorators: {
+    fieldMap: {
       type: Object,
-      required: true,
+      default: null,
     },
     form: {
       type: Object,
-      required: true,
-      validator: val => val.fc,
+      default: null,
+    },
+    /** a-form-model：与 field 字段名对齐的受控对象（通常为 form.fd） */
+    model: {
+      type: Object,
+      default: null,
     },
     disabled: {
       type: Boolean,
@@ -78,14 +84,19 @@ export default {
     },
   },
   data () {
+    const fieldDef = this.fieldMap || buildMetricFieldMap()
     return {
-      metric_key: _.get(this.decorators.metric_key, '[1].initialValue'),
-      metric_res_type: _.get(this.decorators.metric_res_type, '[1].initialValue'),
+      metric_key: fieldDef.metric_key?.initialValue,
+      metric_res_type: fieldDef.metric_res_type?.initialValue,
+      metricValue: fieldDef.metric_value?.initialValue,
       metricValueItem: {},
       metricKeyItem: {},
     }
   },
   computed: {
+    resolvedFieldMap () {
+      return this.fieldMap || buildMetricFieldMap()
+    },
     metricTypeOpts () {
       return this.res_types.map(val => {
         const label = val === 'system' ? this.$t('common.system_service') : this.$t(`dictionary.${val}`)
@@ -142,8 +153,8 @@ export default {
       if (!this.metricTypeOpts) {
         this.resetMetric()
       } else {
-        const metricKey = this.form.fc.getFieldValue(this.decorators.metric_key[0])
-        const metricValue = this.form.fc.getFieldValue(this.decorators.metric_value[0])
+        const metricKey = this.fieldVal(this.resolvedFieldMap.metric_key)
+        const metricValue = this.fieldVal(this.resolvedFieldMap.metric_value)
         if (metricKey) {
           const validMetric = this.metricTypeOpts.find(option => option.key === metricKey)
           if (!validMetric && !this.disabled) {
@@ -157,9 +168,8 @@ export default {
         }
       }
     },
-    // measurements 异步加载完成后，回填已选指标（含 unit），供图表形式配置判断
     metricOpts (opts) {
-      const metricValue = this.form.fc.getFieldValue(this.decorators.metric_value[0])
+      const metricValue = this.fieldVal(this.resolvedFieldMap.metric_value)
       if (!metricValue || !opts || !opts.length) return
       const vItem = opts.find(opt => opt.key === metricValue)
       if (!vItem) return
@@ -169,13 +179,80 @@ export default {
       this.metricValueChange(metricValue)
     },
   },
+  created () {
+    this.initModelFields()
+  },
   mounted: function () {
     this.$nextTick(function () {
-      const metricValue = this.form.fc.getFieldValue(this.decorators.metric_value[0])
-      if (metricValue) this.metricValueChange(metricValue)
+      const metricValue = this.fieldVal(this.resolvedFieldMap.metric_value)
+      if (metricValue) {
+        this.metricValue = metricValue
+        this.metricValueChange(metricValue)
+      }
     })
   },
   methods: {
+
+    fieldVal (fieldTuple) {
+      const meta = resolveFieldMeta(fieldTuple)
+      if (!meta) return undefined
+      const { name, ...opts } = meta
+      const v = this.model[name]
+      return v !== undefined ? v : opts.initialValue
+    },
+    fieldSet (fieldTuple, value) {
+      if (!resolveFieldMeta(fieldTuple)) return
+      this.$set(this.model, resolveFieldMeta(fieldTuple)?.name, value)
+    },
+    runFieldRule (rule, value) {
+      return new Promise((resolve, reject) => {
+        if (rule.required) {
+          const empty = value === undefined || value === null || value === '' ||
+            (Array.isArray(value) && !value.length)
+          if (empty) {
+            reject(new Error(rule.message || 'required'))
+            return
+          }
+        }
+        if (typeof rule.validator === 'function') {
+          rule.validator(rule, value, (err) => {
+            if (err) reject(err instanceof Error ? err : new Error(String(err)))
+            else resolve()
+          })
+          return
+        }
+        resolve()
+      })
+    },
+    async runFieldMapRules (fieldTuple, value) {
+      const meta = resolveFieldMeta(fieldTuple)
+      if (!meta) return
+      const rules = meta.rules || []
+      for (const rule of rules) {
+        await this.runFieldRule(rule, value)
+      }
+    },
+    async validate () {
+      for (const key of ['metric_res_type', 'metric_key', 'metric_value']) {
+        const fieldDef = this.resolvedFieldMap[key]
+        if (fieldDef) await this.runFieldMapRules(fieldDef, this.fieldVal(fieldDef))
+      }
+      return true
+    },
+    initModelFields () {
+      ;['metric_res_type', 'metric_key', 'metric_value'].forEach((key) => {
+        const fieldDef = this.resolvedFieldMap[key]
+        const meta = resolveFieldMeta(fieldDef)
+        if (!meta) return
+        const { name, ...opts } = meta
+        if (this.model[name] === undefined && opts.initialValue !== undefined) {
+          this.$set(this.model, name, opts.initialValue)
+        }
+      })
+    },
+    setField (fieldKey, value) {
+      this.fieldSet(this.resolvedFieldMap[fieldKey], value)
+    },
     metricValueLabelFormat (item) {
       return (<div>
         {item.label}<span class="text-black-50">({item.description.name})</span>
@@ -183,16 +260,19 @@ export default {
     },
     metricTypeChange (val) {
       this.metric_res_type = val
+      this.setField('metric_res_type', val)
     },
     metricKeyChange (val, isNative = true) {
       this.metric_key = val
-      if (this.form && this.form.fc && isNative) {
-        this.form.fc.setFieldsValue({
-          [this.decorators.metric_value[0]]: undefined,
-        })
+      this.setField('metric_key', val)
+      if (isNative) {
+        this.metricValue = undefined
+        this.setField('metric_value', undefined)
       }
     },
     metricValueChange (val) {
+      this.metricValue = val
+      this.setField('metric_value', val)
       if (!val) {
         this.$emit('metricClear')
       } else {
@@ -208,10 +288,10 @@ export default {
       }
     },
     resetMetric () {
-      this.form.fc.setFieldsValue({
-        [this.decorators.metric_key[0]]: undefined,
-        [this.decorators.metric_value[0]]: undefined,
-      })
+      this.metric_key = undefined
+      this.metricValue = undefined
+      this.fieldSet(this.resolvedFieldMap.metric_key, undefined)
+      this.fieldSet(this.resolvedFieldMap.metric_value, undefined)
       this.$emit('metricClear')
     },
   },

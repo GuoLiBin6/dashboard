@@ -5,7 +5,8 @@
         class="ip-subnets-item__block"
         showIpv6
         isButtonHide
-        :decorator="genDecorator(item.key)" />
+        :fields="genFields(item.key)"
+        :model="model" />
       <a-button
         shape="circle"
         icon="minus"
@@ -26,6 +27,7 @@
 import * as R from 'ramda'
 import IpSubnet from '@/sections/IpSubnet'
 import { uuid } from '@/utils/utils'
+import { buildIpSubnetsFactories } from '@/sections/IpSubnet/ipSubnetsFields'
 
 export default {
   name: 'IpSubnets',
@@ -33,13 +35,18 @@ export default {
     IpSubnet,
   },
   props: {
-    decorator: {
+    fieldFactories: {
       type: Object,
-      required: true,
+      default: null,
       validator: val => {
+        if (!val) return true
         const fields = ['startip', 'endip', 'netmask', 'gateway', 'vlan']
         return fields.every(f => R.is(Function, val[f]))
       },
+    },
+    factoryPreset: {
+      type: String,
+      default: 'network',
     },
     hiddenAddAction: {
       type: Boolean,
@@ -48,6 +55,11 @@ export default {
     hiddenDeleteAction: {
       type: Boolean,
       default: false,
+    },
+    /** a-form-model：透传 form.fd 给 IpSubnet 双写 */
+    model: {
+      type: Object,
+      default: null,
     },
   },
   data () {
@@ -60,13 +72,20 @@ export default {
       const remain = 6 - this.ipSubnets.length
       return Math.max(remain, 0)
     },
+    rowFactories () {
+      return this.fieldFactories || buildIpSubnetsFactories(this.factoryPreset, {
+        validateIpv4: this.$validate('IPv4'),
+        validateIpv6: this.$validate('IPv6'),
+        validateResourceName: this.$validate('resourceName'),
+      })
+    },
   },
   methods: {
-    genDecorator (uid) {
+    genFields (uid) {
       const ret = {}
       R.forEachObjIndexed((value, key) => {
         ret[key] = value(uid)
-      }, this.decorator)
+      }, this.rowFactories)
       return ret
     },
     add () {
@@ -78,6 +97,15 @@ export default {
     },
     decrease (index) {
       this.ipSubnets.splice(index, 1)
+    },
+    async validate () {
+      const children = this.$children || []
+      for (const child of children) {
+        if (typeof child.validate === 'function') {
+          await child.validate()
+        }
+      }
+      return true
     },
   },
 }

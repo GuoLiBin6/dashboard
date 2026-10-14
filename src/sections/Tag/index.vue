@@ -34,22 +34,12 @@
             :allowNoValue="allowNoValue" />
           <a-button class="ml-2" v-if="!showForm && canCreate" @click="() => showForm = true">{{$t('common_258')}}</a-button>
         </div>
-        <a-form
-          class="ml-2"
-          layout="inline"
-          :form="tagForm.fc"
-          v-if="showForm">
-          <a-form-item>
-            <a-input v-decorator="decorators.key" :placeholder="$t('common_112')" />
-          </a-form-item>
-          <a-form-item>
-            <a-input v-decorator="decorators.value" :placeholder="$t('common_113')" />
-          </a-form-item>
-          <a-form-item>
-            <a-button @click="addTag">{{$t('common_114')}}</a-button>
-            <a-button @click="() => showForm = false" class="ml-2">{{$t('common_115')}}</a-button>
-          </a-form-item>
-        </a-form>
+        <div class="ml-2 d-inline-flex align-items-center" v-if="showForm">
+          <a-input v-model:value="tagKey" :placeholder="$t('common_112')" />
+          <a-input class="ml-2" v-model:value="tagValue" :placeholder="$t('common_113')" />
+          <a-button class="ml-2" @click="addTag">{{$t('common_114')}}</a-button>
+          <a-button @click="resetTagForm" class="ml-2">{{$t('common_115')}}</a-button>
+        </div>
       </div>
     </a-form-item>
   </div>
@@ -111,27 +101,8 @@ export default {
     return {
       checked: this.defaultChecked || this.value || {},
       showForm: false,
-      tagForm: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        key: [
-          'key',
-          {
-            rules: [
-              { required: true, whitespace: true, message: this.$t('common_116') },
-            ],
-          },
-        ],
-        value: [
-          'value',
-          {
-            rules: [
-              { required: true, whitespace: true, message: this.$t('common.tips.input', [this.$t('common_113')]) },
-            ],
-          },
-        ],
-      },
+      tagKey: '',
+      tagValue: '',
     }
   },
   computed: {
@@ -168,6 +139,17 @@ export default {
       if (R.equals(val, this.checked)) return
       this.checked = { ...val }
     },
+    // 受控 :value 与 defaultChecked 同等同步 UI
+    value (val) {
+      if (!val || R.isEmpty(val)) {
+        if (!R.isEmpty(this.checked || {})) {
+          this.checked = {}
+        }
+        return
+      }
+      if (R.equals(val, this.checked)) return
+      this.checked = { ...val }
+    },
     tags (val) {
       let ret
       if (val && val.length > 0) {
@@ -185,33 +167,39 @@ export default {
         }
       }
       this.$emit('change', ret)
+      this.$emit('update:value', ret)
       this.$emit('tagsChange', this.tags)
     },
   },
   methods: {
-    async addTag () {
-      try {
-        const values = await this.tagForm.fc.validateFields()
-        const key = `user:${values.key}`
-        const newValue = { ...this.checked }
-        if (newValue[key]) {
-          if (values.value) {
-            if (!newValue[key].includes(values.value)) {
-              newValue[key] = this.multiple ? [...newValue[key], values.value] : [values.value]
-            }
-          }
-        } else {
-          if (values.value) {
-            newValue[key] = [values.value]
-          } else {
-            newValue[key] = []
-          }
-        }
-        this.checked = newValue
-        this.tagForm.fc.resetFields()
-      } catch (error) {
-        throw error
+    resetTagForm () {
+      this.tagKey = ''
+      this.tagValue = ''
+      this.showForm = false
+    },
+    addTag () {
+      const keyRaw = (this.tagKey || '').trim()
+      const valueRaw = (this.tagValue || '').trim()
+      if (!keyRaw) {
+        this.$message.error(this.$t('common_116'))
+        return
       }
+      if (!valueRaw) {
+        this.$message.error(this.$t('common.tips.input', [this.$t('common_113')]))
+        return
+      }
+      const key = `user:${keyRaw}`
+      const newValue = { ...this.checked }
+      if (newValue[key]) {
+        if (!newValue[key].includes(valueRaw)) {
+          newValue[key] = this.multiple ? [...newValue[key], valueRaw] : [valueRaw]
+        }
+      } else {
+        newValue[key] = [valueRaw]
+      }
+      this.checked = newValue
+      this.tagKey = ''
+      this.tagValue = ''
     },
     genTag (key, value) {
       const rgb = getTagColor(key, value, 'rgb')

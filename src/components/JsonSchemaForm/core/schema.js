@@ -206,7 +206,7 @@ function combine (form, schemaForm, lookup) {
             obj.type = _def.type
             delete _def.schema
             obj = extend(true, {}, _def, obj)
-            delete def.decorator
+            delete def.field
             obj = extend(true, {}, def, obj)
           } else {
             obj = extend(true, {}, def, obj)

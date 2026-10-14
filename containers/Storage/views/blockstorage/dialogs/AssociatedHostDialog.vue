@@ -4,16 +4,16 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.blockstorage')" :count="params.data.length" :action="this.params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('storage.text_50')">
-          <a-select :loading="hostsLoading" allowClear showSearch :filterOption="filterOption" mode="multiple" v-decorator="decorators.host" :placeholder="$t('storage.text_51')">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('storage.text_50')" prop="host">
+          <a-select :loading="hostsLoading" allowClear showSearch :filterOption="filterOption" mode="multiple" v-model:value="form.host" :placeholder="$t('storage.text_51')">
             <a-select-option v-for="item in hosts" :key="item.id" :value="item.id">{{item.name}}</a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('storage.text_52')" v-if="!isHiddenDir">
-          <a-input v-decorator="decorators.dir"  :placeholder="$t('storage.text_53')" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('storage.text_52')" v-if="!isHiddenDir" prop="dir">
+          <a-input v-model:value="form.dir"  :placeholder="$t('storage.text_53')" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
@@ -35,7 +35,16 @@ export default {
       hostsLoading: false,
       hosts: [],
       form: {
-        fc: this.$form.createForm(this),
+        host: undefined,
+        dir: undefined,
+      },
+      rules: {
+        host: [
+          { required: true, message: this.$t('storage.text_54') },
+        ],
+        dir: [
+          { required: true, message: this.$t('storage.text_53') },
+        ],
       },
       formItemLayout: {
         labelCol: { span: 4 },
@@ -44,26 +53,6 @@ export default {
     }
   },
   computed: {
-    decorators () {
-      return {
-        host: [
-          'host',
-          {
-            rules: [
-              { required: true, message: this.$t('storage.text_54') },
-            ],
-          },
-        ],
-        dir: [
-          'dir',
-          {
-            rules: [
-              { required: true, message: this.$t('storage.text_53') },
-            ],
-          },
-        ],
-      }
-    },
     isHiddenDir () {
       return ['rbd', 'slvm'].includes(this.params.data[0].storage_type)
     },
@@ -93,7 +82,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         const manager = new this.$Manager('hosts', 'v2')
         if (!this.isHiddenDir) {
           values.mount_point = values.dir

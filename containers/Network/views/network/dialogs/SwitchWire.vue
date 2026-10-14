@@ -4,16 +4,16 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.network')" :count="params.data.length" :action="params.title" />
       <dialog-table class="mb-2" :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('network.text_571')">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('network.text_571')" prop="wire">
           <base-select
             resource="wires"
-            v-decorator="decorators.wire"
+            v-model:value="form.wire"
             :selectProps="{ 'placeholder': $t('network.text_572') }"
             :isDefaultSelect="true"
             :params="wireParams" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -33,17 +33,11 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        wire: this.params.data[0].wire_id,
       },
-      decorators: {
+      rules: {
         wire: [
-          'wire',
-          {
-            initialValue: this.params.data[0].wire_id,
-            rules: [
-              { required: true, message: this.$t('network.text_572') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_572') },
         ],
       },
       formItemLayout: {
@@ -74,7 +68,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         const ids = this.params.data.map(item => item.id)
         if (ids.length > 1) {
           await this.params.onManager('batchPerformAction', {

@@ -2,16 +2,19 @@
   <div>
     <page-header :title="$t('network.text_723')" :tabs="cloudEnvOptions" v-model:currentTab="cloudEnv" />
     <page-body>
-      <a-form
+      <a-form-model
+        ref="formRef"
         class="mt-3"
-        :form="form.fc">
-        <a-form-item v-bind="formItemLayout" :label="$t('network.text_205', [$t('dictionary.domain')])" v-if="$store.getters.isAdminMode">
-          <domain-select v-decorator="decorators.project_domain" @change="handleDomainChange" />
-        </a-form-item>
-        <a-form-item v-if="isPublic" :label="$t('regionMap.enable_world_map')" v-bind="formItemLayout">
-          <a-switch v-decorator="decorators.enableWorldMap" />
-        </a-form-item>
-        <a-form-item v-if="isPublic && form.fd.enableWorldMap" :label="$t('compute.region_map')" v-bind="formItemLayout">
+        :model="form.fd"
+        :rules="rules"
+        hideRequiredMark>
+        <a-form-model-item v-bind="formItemLayout" :label="$t('network.text_205', [$t('dictionary.domain')])" v-if="$store.getters.isAdminMode" prop="project_domain">
+          <domain-select v-model:value="form.fd.project_domain" @change="handleDomainChange" />
+        </a-form-model-item>
+        <a-form-model-item v-if="isPublic" :label="$t('regionMap.enable_world_map')" v-bind="formItemLayout" prop="enableWorldMap">
+          <a-switch v-model:checked="form.fd.enableWorldMap" />
+        </a-form-model-item>
+        <a-form-model-item v-if="isPublic && form.fd.enableWorldMap" :label="$t('compute.region_map')" v-bind="formItemLayout">
           <region-map
             :region-filter-params="regionMapParams"
             filter-brand-resource="network_manage"
@@ -19,11 +22,12 @@
             split-key="provider"
             @select="onRegionSelect"
             @params-change="onRegionMapParamsChange" />
-        </a-form-item>
+        </a-form-model-item>
         <area-selects
           class="mb-0"
           ref="areaSelects"
           :key="`vpc-area-${cloudEnv}`"
+          :model="form.fd"
           :wrapperCol="formItemLayout.wrapperCol"
           :labelCol="formItemLayout.labelCol"
           :names="areaselectsName"
@@ -37,32 +41,32 @@
           v-model:region="regionList"
           filterBrandResource="network_manage"
           @change="handleRegionChange" />
-        <a-form-item :label="$t('network.text_21')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.name" :placeholder="$t('network.text_684')" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')" v-bind="formItemLayout">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
-        <a-form-item v-if="isShowIp" :label="$t('network.vpc.cidr_block.ipv4.label')" v-bind="formItemLayout" :extra="$t('network.text_686')">
-          <a-input v-decorator="decorators.cidr_block" :placeholder="$t('network.text_687')" v-if="cloudEnv !== 'onpremise'" />
-          <a-select v-decorator="decorators.cidr_block" allowClear v-else>
+        <a-form-model-item :label="$t('network.text_21')" v-bind="formItemLayout" prop="name">
+          <a-input v-model:value="form.fd.name" :placeholder="$t('network.text_684')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" v-bind="formItemLayout" prop="description">
+          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.fd.description" :placeholder="$t('common_367')" />
+        </a-form-model-item>
+        <a-form-model-item v-if="isShowIp" :label="$t('network.vpc.cidr_block.ipv4.label')" v-bind="formItemLayout" :extra="$t('network.text_686')" prop="cidr_block">
+          <a-input v-model:value="form.fd.cidr_block" :placeholder="$t('network.text_687')" v-if="cloudEnv !== 'onpremise'" />
+          <a-select v-model:value="form.fd.cidr_block" allowClear v-else>
             <a-select-option value="192.168.0.0/16">192.168.0.0/16</a-select-option>
             <a-select-option value="172.16.0.0/12">172.16.0.0/12</a-select-option>
             <a-select-option value="10.0.0.0/8">10.0.0.0/8</a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item v-if="isShowIp" :label="$t('network.vpc.cidr_block.ipv6.label')" v-bind="formItemLayout" :extra="$t('network.text_686')">
-          <a-input v-decorator="decorators.cidr_block6" :placeholder="$t('network.vpc.prefix6.prompt')" />
-        </a-form-item>
-        <a-form-item :label="$t('network.external_access_mode_label')" v-if="cloudEnv === 'public' || cloudEnv === 'onpremise'" v-bind="formItemLayout">
-          <a-switch v-decorator="decorators.external_access_mode" :disabled="!isAws && cloudEnv !== 'onpremise'" />
+        </a-form-model-item>
+        <a-form-model-item v-if="isShowIp" :label="$t('network.vpc.cidr_block.ipv6.label')" v-bind="formItemLayout" :extra="$t('network.text_686')" prop="cidr_block6">
+          <a-input v-model:value="form.fd.cidr_block6" :placeholder="$t('network.vpc.prefix6.prompt')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.external_access_mode_label')" v-if="cloudEnv === 'public' || cloudEnv === 'onpremise'" v-bind="formItemLayout" prop="external_access_mode">
+          <a-switch v-model:checked="form.fd.external_access_mode" :disabled="!isAws && cloudEnv !== 'onpremise'" />
           <template v-slot:extra>{{ $t('network.external_access_mode_extra') }}</template>
-        </a-form-item>
+        </a-form-model-item>
         <template v-if="cloudEnv === 'public' || cloudEnv === 'private'">
-          <a-form-item :label="$t('compute.text_15')" required v-bind="formItemLayout" v-show="cloudEnv === 'public' || cloudEnv === 'private'">
+          <a-form-model-item :label="$t('compute.text_15')" required v-bind="formItemLayout" v-show="cloudEnv === 'public' || cloudEnv === 'private'" prop="cloudprovider">
             <base-select
               class="w-50"
-              v-decorator="decorators.cloudprovider"
+              v-model:value="form.fd.cloudprovider"
               resource="cloudproviders"
               :params="cloudproviderParams"
               :isDefaultSelect="true"
@@ -71,24 +75,24 @@
               :select-props="{ placeholder: $t('compute.text_149') }"
               v-model:resList="cloudproviderData"
               @change="handleProviderChange" />
-          </a-form-item>
+          </a-form-model-item>
         </template>
-        <a-form-item v-if="isGoogle" :label="$t('network.text_242')" v-bind="formItemLayout">
+        <a-form-model-item v-if="isGoogle" :label="$t('network.text_242')" v-bind="formItemLayout" prop="globalvpc_id">
           <base-select
               class="w-50"
-              v-decorator="decorators.globalvpc_id"
+              v-model:value="form.fd.globalvpc_id"
               resource="globalvpcs"
               :params="globalvpcParams"
               :isDefaultSelect="true"
               :needParams="true"
               :showSync="true"
               :select-props="{ placeholder: $t('compute.text_149') }" />
-        </a-form-item>
-        <a-form-item :label="$t('common.text00012')" class="mb-0" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.text00012')" class="mb-0" v-bind="formItemLayout" prop="__meta__">
           <tag
-            v-decorator="decorators.__meta__" />
-        </a-form-item>
-      </a-form>
+            :value="form.fd.__meta__" @change="v => { form.fd.__meta__ = v }" />
+        </a-form-model-item>
+      </a-form-model>
     </page-body>
     <page-footer>
       <template #right>
@@ -104,7 +108,7 @@ import * as R from 'ramda'
 import { mapGetters } from 'vuex'
 import RegionMap from '@Compute/sections/RegionMap'
 import validateForm, { REGEXP } from '@/utils/validate'
-import AreaSelects from '@/sections/AreaSelects'
+import AreaSelects from '@/sections/AreaSelects/model'
 import DomainSelect from '@/sections/DomainSelect'
 import { getCloudEnvOptions } from '@/utils/common/hypervisor'
 import { cloudregionFilterByCapability } from '@/utils/common/capability'
@@ -138,95 +142,40 @@ export default {
       cloudEnv,
       routerQuery,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-            if (Object.prototype.hasOwnProperty.call(values, 'cloudregion')) {
-              const regionId = this.pickSingleAreaValue(values.cloudregion)
-              this.cloudregion = regionId || ''
-            }
-          },
-        }),
         fd: {
           enableWorldMap: false,
+          project_domain: this.$store.getters.userInfo.projectDomainId,
+          name: undefined,
+          description: undefined,
+          cloudprovider: undefined,
+          globalvpc_id: undefined,
+          cidr_block: undefined,
+          cidr_block6: undefined,
+          external_access_mode: true,
+          __meta__: undefined,
+          provider: undefined,
+          cloudregion: undefined,
         },
       },
-      decorators: {
-        enableWorldMap: [
-          'enableWorldMap',
-          {
-            valuePropName: 'checked',
-            initialValue: false,
-          },
-        ],
+      rules: {
         name: [
-          'name',
-          {
-            validateFirst: true,
-            validateTrigger: ['blur'],
-            rules: [
-              { required: true, message: this.$t('network.text_688') },
-              { validator: this.$validate('broadName') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_688') },
+          { validator: this.$validate('broadName') },
         ],
-        description: ['description'],
         cloudprovider: [
-          'cloudprovider',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_689') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_689') },
         ],
         globalvpc_id: [
-          'globalvpc_id',
-          {
-            rules: [{ required: true }],
-          },
+          { required: true },
         ],
         cidr_block: [
-          'cidr_block',
-          {
-            validateFirst: true,
-            validateTrigger: ['blur'],
-            rules: [
-              { validator: this.validatePublicIpPrefix4 },
-            ],
-          },
+          { validator: this.validatePublicIpPrefix4, trigger: 'blur' },
         ],
         cidr_block6: [
-          'cidr_block6',
-          {
-            validateFirst: true,
-            validateTrigger: ['blur'],
-            rules: [
-              { validator: this.validatePublicIpPrefix6 },
-            ],
-          },
-        ],
-        project_domain: [
-          'project_domain',
-          {
-            initialValue: this.$store.getters.userInfo.projectDomainId,
-          },
-        ],
-        external_access_mode: [
-          'external_access_mode',
-          {
-            valuePropName: 'checked',
-            initialValue: true,
-          },
+          { validator: this.validatePublicIpPrefix6, trigger: 'blur' },
         ],
         __meta__: [
-          '__meta__',
-          {
-            rules: [
-              { validator: validateForm('tagName') },
-            ],
-          },
+          { validator: validateForm('tagName') },
         ],
       },
       formItemLayout: {
@@ -376,21 +325,19 @@ export default {
       this.isGoogle = false
       this.isAws = false
       const isPublic = this.cloudEnv === 'public'
-      this.form.fc.resetFields(['provider', 'cloudregion', 'cloudprovider', 'enableWorldMap'])
-      this.form.fc.setFieldsValue({
-        provider: isPublic ? [] : undefined,
-        cloudregion: isPublic ? [] : undefined,
-        cloudprovider: undefined,
-        enableWorldMap: false,
-      })
       this.form.fd.provider = isPublic ? [] : undefined
       this.form.fd.cloudregion = isPublic ? [] : undefined
+      this.form.fd.cloudprovider = undefined
       this.form.fd.enableWorldMap = false
       this.cloudproviderData = []
       this.regionList = {}
       this.$nextTick(() => {
         this.$refs.areaSelects && this.$refs.areaSelects.fetchs(this.areaselectsName)
       })
+    },
+    'form.fd.cloudregion' (val) {
+      const regionId = this.pickSingleAreaValue(val)
+      this.cloudregion = regionId || ''
     },
   },
   provide () {
@@ -412,7 +359,7 @@ export default {
           callback(new Error(this.$t('network.ipaddr.mask.error', [min, max])))
           return
         }
-      } else if (!this.form.fc.getFieldValue('cidr_block6')) {
+      } else if (!this.form.fd.cidr_block6) {
         callback(new Error(this.$t('network.cidr_block.empty.error')))
         return
       }
@@ -435,7 +382,7 @@ export default {
           callback(new Error(this.$t('network.ipv6.private_prefix.error')))
           return
         }
-      } else if (!this.form.fc.getFieldValue('cidr_block')) {
+      } else if (!this.form.fd.cidr_block) {
         callback(new Error(this.$t('network.cidr_block.empty.error')))
         return
       }
@@ -545,11 +492,9 @@ export default {
       }) || null
     },
     clearPublicLocationFields () {
-      this.form.fc.setFieldsValue({
-        provider: [],
-        cloudregion: [],
-        cloudprovider: undefined,
-      })
+      this.form.fd.provider = []
+      this.form.fd.cloudregion = []
+      this.form.fd.cloudprovider = undefined
       this.cloudregion = ''
       this.cloudprovider = ''
       this.isGoogle = false
@@ -580,9 +525,7 @@ export default {
         return matched ? matched.name : hvKey
       }).filter(Boolean))]
       const cloudregionIds = regions.map(item => item.id).filter(Boolean)
-      this.form.fc.setFieldsValue({
-        cloudprovider: undefined,
-      })
+      this.form.fd.cloudprovider = undefined
       this.cloudprovider = ''
       await this.$nextTick()
       const areaRef = this.$refs.areaSelects
@@ -600,34 +543,19 @@ export default {
       }
       return this.filterCloudregionListByProvider(list)
     },
-    async checkIp (rule, value, callback) {
-      const params = {
-        search: value,
-      }
-      const data = await new this.$Manager('reservedips').list({ params })
-      if (data.data.data.length >= 1) {
-        callback(new Error(this.$t('network.text_645')))
-      } else {
-        const ips = Object.values(this.form.fc.getFieldValue('networkIps'))
-        const ipsRepreat = Array.from(new Set(ips))
-        if (ipsRepreat.length === ips.length) {
-          callback()
-        } else {
-          callback(new Error(this.$t('network.text_644')))
-        }
-      }
+    handleDomainChange (val) {
+      this.project_domain = val
+      this.form.fd.project_domain = val
+      this.$refs.areaSelects.fetchs(this.areaselectsName)
     },
     doCreate (data) {
       return new this.$Manager('vpcs').create({ data })
     },
-    handleDomainChange (val) {
-      this.project_domain = val
-      this.$refs.areaSelects.fetchs(this.areaselectsName)
-    },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form.fd }
         let cloudregionId = this.pickSingleAreaValue(values.cloudregion)
         let provider = this.pickSingleAreaValue(values.provider)
         if (this.isPublic) {

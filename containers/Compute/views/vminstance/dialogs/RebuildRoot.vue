@@ -13,16 +13,17 @@
         <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="action" />
         <dialog-table :data="params.data" :columns="params.columns.filter(item => ['name', 'os_dist', 'instance_type'].includes(item.field))" />
       </template>
-      <a-form
-        v-bind="formItemLayout"
-        :form="form.fc">
-        <a-form-item v-show="!imgHidden" :label="$t('compute.text_267')">
-          <div slot="help">
+      <!-- OsSelect end-state（:model + validate）；密码/agent/开机 在 form.fd -->
+      <div v-bind="formItemLayout">
+        <a-form-model-item v-show="!imgHidden" :label="$t('compute.text_267')" :labelCol="formItemLayout.labelCol" :wrapperCol="formItemLayout.wrapperCol">
+          <template #help>
             <div class="help-color">{{$t('compute.text_302')}}</div>
-          </div>
+          </template>
           <os-select
+            ref="osSelectRef"
             :type="type"
             :form="form"
+            :model="form.fd"
             :types="osSelectTypes"
             :hypervisor="hypervisor"
             :image-params="image"
@@ -30,27 +31,37 @@
             :osType="osType"
             :os-arch="osArch"
             :cache-image-params="cacheImageParams"
-            :decorator="decorators.imageOS"
             :sys-disk-size="sysDiskSize"
             :imageCloudproviderDisabled="true"
             :cloudproviderParamsExtra="cloudproviderParamsExtra"
             @updateImageMsg="updateImageMsgDebounce"
             :imageTypeMap="imageTypeMap"
             :edit="true" />
-        </a-form-item>
-        <a-form-item v-show="imgHidden" :label="$t('compute.text_267')">
+        </a-form-model-item>
+        <a-form-model-item v-show="imgHidden" :label="$t('compute.text_267')" :labelCol="formItemLayout.labelCol" :wrapperCol="formItemLayout.wrapperCol">
           <div>{{ imgHidden.text }}</div>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_308')" v-if="!isZStack" class="mb-0">
-          <server-password :decorator="decorators.loginConfig" :loginTypes="loginTypes" :form="form" />
-        </a-form-item>
-        <a-form-item v-if="isShowAgent" :label="$t('compute.agent.label')" :extra="$t('compute.agent.extra')">
-          <a-checkbox v-decorator="decorators.deploy_telegraf">{{ $t('compute.agent.install.plugin') }}</a-checkbox>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_494')" :extra="$t('compute.text_1220')">
-          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-decorator="decorators.autoStart" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </div>
+      <a-form-model
+        ref="formRef"
+        v-bind="formItemLayout"
+        :model="form.fd"
+        :rules="modelRules">
+        <a-form-model-item :label="$t('compute.text_308')" v-if="!isZStack" class="mb-0">
+          <server-password
+            :form="form.fd"
+            :loginTypes="loginTypes"
+            keypairProp="loginKeypair"
+            passwordProp="loginPassword"
+            initialLoginType="random" />
+        </a-form-model-item>
+        <a-form-model-item v-if="isShowAgent" :label="$t('compute.agent.label')" :extra="$t('compute.agent.extra')" prop="deploy_telegraf">
+          <a-checkbox v-model:checked="form.fd.deploy_telegraf">{{ $t('compute.agent.install.plugin') }}</a-checkbox>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_494')" :extra="$t('compute.text_1220')" prop="autoStart">
+          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-model:checked="form.fd.autoStart" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -63,14 +74,13 @@
 import _ from 'lodash'
 import { mapGetters } from 'vuex'
 import OsSelect from '@Compute/sections/OsSelect'
-import ServerPassword from '@Compute/sections/ServerPassword'
+import ServerPassword, { PASSWORD_RULES } from '@Compute/sections/ServerPassword/model'
 import { SERVER_TYPE, LOGIN_TYPES_MAP } from '@Compute/constants'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import { HYPERVISORS_MAP, isUcloudLikeHypervisor } from '@/constants'
 import { Manager } from '@/utils/manager'
 import { IMAGES_TYPE_MAP, HOST_CPU_ARCHS } from '@/constants/compute'
-import { isRequired, passwordValidator } from '@/utils/validate'
 import { findPlatform } from '@/utils/common/hypervisor'
 
 export default {
@@ -90,14 +100,14 @@ export default {
       loading: false,
       action: this.$t('compute.text_357'),
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.$set(this.form.fd, key, values[key])
-            })
-          },
-        }),
-        fd: {},
+        fd: {
+          loginType: 'random',
+          loginKeypair: undefined,
+          loginPassword: '',
+          autoStart: true,
+          deploy_telegraf: true,
+        },
+        fi: {},
       },
       ignoreImageOptions: [
         IMAGES_TYPE_MAP.iso.key,
@@ -123,6 +133,18 @@ export default {
   },
   computed: {
     ...mapGetters(['userInfo', 'auth']),
+    modelRules () {
+      const rules = {}
+      if (this.form.fd.loginType === 'password') {
+        rules.loginPassword = PASSWORD_RULES
+      }
+      if (this.form.fd.loginType === 'keypair') {
+        rules.loginKeypair = [
+          { required: true, message: this.$t('compute.text_203') },
+        ]
+      }
+      return rules
+    },
     enableMFA () {
       return this.userInfo.enable_mfa && this.auth.auth.system_totp_on
     },
@@ -174,95 +196,6 @@ export default {
     },
     isZStack () {
       return this.hypervisor === HYPERVISORS_MAP.zstack.key
-    },
-    decorators () {
-      const validateToImage = (isZStack) => {
-        return (rule, value, callback) => {
-          if (isZStack) {
-            callback()
-          } else {
-            isRequired()(rule, value, callback)
-          }
-        }
-      }
-      return {
-        imageOS: {
-          prefer_manager: [
-            'prefer_manager',
-            {
-              initialValue: _.get(this.params, 'data[0].manager_id') || '',
-              rules: [
-                { required: true, message: this.$t('compute.text_149') },
-              ],
-            },
-          ],
-          os: [
-            'os',
-            {
-              initialValue: '',
-              rules: [
-                { required: !this.isZStack, message: this.$t('compute.text_153') },
-              ],
-            },
-          ],
-          image: [
-            'image',
-            {
-              initialValue: { key: '', label: '' },
-              rules: [
-                { validator: validateToImage(this.isZStack), message: this.$t('compute.text_214') },
-              ],
-            },
-          ],
-          imageType: [
-            'imageType',
-            {
-              initialValue: this.imageType,
-            },
-          ],
-        },
-        loginConfig: {
-          loginType: [
-            'loginType',
-            {
-              initialValue: 'random',
-            },
-          ],
-          keypair: [
-            'loginKeypair',
-            {
-              initialValue: undefined,
-              rules: [
-                { required: true, message: this.$t('compute.text_203') },
-              ],
-            },
-          ],
-          password: [
-            'loginPassword',
-            {
-              initialValue: '',
-              rules: [
-                { required: true, message: this.$t('compute.text_204') },
-                { validator: passwordValidator, trigger: 'blur' },
-              ],
-            },
-          ],
-        },
-        autoStart: [
-          'autoStart',
-          {
-            valuePropName: 'checked',
-            initialValue: true,
-          },
-        ],
-        deploy_telegraf: [
-          'deploy_telegraf',
-          {
-            valuePropName: 'checked',
-            initialValue: true,
-          },
-        ],
-      }
     },
     cacheImageParams () {
       const params = {
@@ -386,7 +319,7 @@ export default {
   //     handler (val) {
   //       if (val === SERVER_TYPE.public) {
   //         this.$nextTick(() => {
-  //           this.form.fc.setFieldsValue({ 'imageType': IMAGES_TYPE_MAP.public.key })
+  //           this.form.fd.imageType = IMAGES_TYPE_MAP.public.key
   //         })
   //       }
   //     },
@@ -437,7 +370,13 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        if (typeof this.$refs.osSelectRef?.validate === 'function') {
+          await this.$refs.osSelectRef.validate()
+        }
+        if (this.$refs.formRef) {
+          await this.$refs.formRef.validate()
+        }
+        const values = { ...this.form.fd }
         const success = async () => {
           this.loading = true
           await this.doRebuildRootSubmit(values)
@@ -450,10 +389,11 @@ export default {
             success,
           })
         } else {
-          success()
+          await success()
         }
-        this.loading = false
       } catch (error) {
+        // validation / request error
+      } finally {
         this.loading = false
       }
     },
@@ -495,11 +435,9 @@ export default {
           if (imageMsg.name !== image.image) return
           if (!image.image_id) return
           this.$nextTick(() => {
-            this.form.fc.setFieldsValue({
-              image: {
-                key: image.image_id,
-                label: image.image || '',
-              },
+            this.$set(this.form.fd, 'image', {
+              key: image.image_id,
+              label: image.image || '',
             })
           })
         }

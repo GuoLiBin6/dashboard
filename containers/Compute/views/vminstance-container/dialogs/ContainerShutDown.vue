@@ -24,21 +24,6 @@ export default {
     return {
       loading: false,
       action: this.$t('compute.text_273'),
-      form: {
-        fc: this.$form.createForm(this),
-        fd: {
-          stopPaying: false,
-        },
-      },
-      decorators: {},
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
-      },
     }
   },
   computed: {
@@ -50,14 +35,13 @@ export default {
   },
   methods: {
     async doShutDownSubmit () {
-      const data = {}
       const ids = this.params.data.map(item => item.id)
       return this.params.onManager('batchPerformAction', {
         id: ids,
         steadyStatus: 'ready',
         managerArgs: {
           action: 'stop',
-          data,
+          data: {},
         },
       })
     },

@@ -2,25 +2,31 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{ $t('network.ssh-proxy-match.link.create') }}</div>
     <div slot="body">
-      <a-form
-          :form="form.fc">
-        <a-form-item :label="$t('network.text_21')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.name" :placeholder="$t('network.text_44')" @change="handleNameChange" />
-          <name-repeated v-slot:extra res="proxy_matches" :name="name" />
-        </a-form-item>
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
         <area-selects
-            class="mb-0"
-            ref="areaSelects"
-            :wrapperCol="formItemLayout.wrapperCol"
-            :labelCol="formItemLayout.labelCol"
-            :names="['provider', 'cloudregion']"
-            :cloudregionParams="regionParams"
-            :providerParams="providerParams"
-            :isRequired="false"
-            filterBrandResource="compute_engine"
-            @change="handleRegionChange" />
-        <a-form-item :label="$t('network.text_277')" v-bind="formItemLayout">
-          <a-radio-group v-decorator="decorators.match_scope" :defaultChecked="true" @change="handleScopeChange">
+          class="mb-0"
+          ref="areaSelects"
+          :model="form"
+          :wrapperCol="formItemLayout.wrapperCol"
+          :labelCol="formItemLayout.labelCol"
+          :names="['provider', 'cloudregion']"
+          :cloudregionParams="regionParams"
+          :providerParams="providerParams"
+          :isRequired="false"
+          filterBrandResource="compute_engine"
+          @change="handleRegionChange" />
+        <a-form-model-item :label="$t('network.text_21')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('network.text_44')" @update:value="handleNameChange" />
+          <template #extra>
+            <name-repeated res="proxy_matches" :name="name" />
+          </template>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_277')" prop="match_scope">
+          <a-radio-group v-model:value="form.match_scope" @change="handleScopeChange">
             <a-radio-button value="vpc" key="vpc">
               {{ $t('dictionary.vpc') }}
             </a-radio-button>
@@ -28,29 +34,29 @@
               {{ $t('compute.text_106') }}
             </a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item label="VPC" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item label="VPC" prop="vpc">
           <base-select
-              v-decorator="decorators.vpc"
-              resource="vpcs"
-              @change="handleVpcChange"
-              :params="vpcParams"
-              :isDefaultSelect="true"
-              :needParams="true"
-              :labelFormat="vpcLabelFormat"
-              :select-props="{ placeholder: $t('common_226') }" />
-        </a-form-item>
-        <a-form-item v-if="showNetworks" :label="$t('compute.text_106')" v-bind="formItemLayout">
+            v-model="form.vpc"
+            resource="vpcs"
+            @change="handleVpcChange"
+            :params="vpcParams"
+            :isDefaultSelect="true"
+            :needParams="true"
+            :labelFormat="vpcLabelFormat"
+            :select-props="{ placeholder: $t('common_226') }" />
+        </a-form-model-item>
+        <a-form-model-item v-if="showNetworks" :label="$t('compute.text_106')" prop="network">
           <base-select
-              v-decorator="decorators.network"
-              resource="networks"
-              need-params
-              filterable
-              :isDefaultSelect="true"
-              :params="networkParams"
-              :select-props="{ placeholder: $t('network.text_212') }" />
-        </a-form-item>
-      </a-form>
+            v-model="form.network"
+            resource="networks"
+            need-params
+            filterable
+            :isDefaultSelect="true"
+            :params="networkParams"
+            :select-props="{ placeholder: $t('network.text_212') }" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -65,7 +71,7 @@ import * as R from 'ramda'
 import { mapGetters } from 'vuex'
 import { h } from 'vue'
 import NameRepeated from '@/sections/NameRepeated'
-import AreaSelects from '@/sections/AreaSelects'
+import AreaSelects from '@/sections/AreaSelects/model'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 
@@ -83,52 +89,32 @@ export default {
       manager: new this.$Manager('proxy_matches'),
       showNetworks: false,
       form: {
-        fc: this.$form.createForm(this),
+        provider: undefined,
+        cloudregion: undefined,
+        name: '',
+        match_scope: 'vpc',
+        vpc: '',
+        network: '',
+      },
+      rules: {
+        name: [
+          { required: true, message: this.$t('network.text_116') },
+          { validator: this.$validate('resourceCreateName') },
+        ],
+        match_scope: [
+          { required: true, message: this.$t('network.text_343') },
+        ],
+        vpc: [
+          { required: true, message: this.$t('network.text_274') },
+        ],
+        network: [
+          { required: true, message: this.$t('network.text_212') },
+        ],
       },
       scope: this.$store.getters.scope,
       name: '',
       regionId: '',
       vpcId: '',
-      decorators: {
-        name: [
-          'name',
-          {
-            validateFirst: true,
-            validateTrigger: ['blur'],
-            rules: [
-              { required: true, message: this.$t('network.text_116') },
-              { validator: this.$validate('resourceCreateName') },
-            ],
-          },
-        ],
-        match_scope: [
-          'match_scope',
-          {
-            initialValue: 'vpc',
-            rules: [
-              { required: true, message: this.$t('network.text_343') },
-            ],
-          },
-        ],
-        vpc: [
-          'vpc',
-          {
-            initialValue: '',
-            rules: [
-              { required: true, message: this.$t('network.text_274') },
-            ],
-          },
-        ],
-        network: [
-          'network',
-          {
-            initialValue: '',
-            rules: [
-              { required: true, message: this.$t('network.text_212') },
-            ],
-          },
-        ],
-      },
       formItemLayout: {
         wrapperCol: {
           span: 20,
@@ -173,11 +159,11 @@ export default {
     },
   },
   methods: {
-    _handleNameChange (e) {
-      this.name = e.target.value
+    _handleNameChange (val) {
+      this.name = val
     },
     handleScopeChange (e) {
-      this.showNetworks = e.target.value === 'network'
+      this.showNetworks = (e?.target?.value ?? e) === 'network'
     },
     handleVpcChange (e) {
       this.vpcId = e
@@ -218,8 +204,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        await this.doCreate(values)
+        await this.$refs.formRef.validate()
+        await this.doCreate(this.form)
         this.loading = false
         if (this.params.list && typeof this.params.list.fetchData === 'function') {
           this.params.list.fetchData()

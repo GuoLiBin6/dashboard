@@ -3,7 +3,7 @@ export default function (def, schema) {
 
   if (type === 'string') {
     def.type = 'a-input'
-    def.decorator = [
+    def.field = [
       {
         initialValue: schema.default,
         rules: [

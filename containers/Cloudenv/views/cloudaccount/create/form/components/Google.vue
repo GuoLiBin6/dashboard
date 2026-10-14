@@ -1,35 +1,35 @@
 <template>
   <div>
-    <a-form :form="form.fc"  v-bind="formLayout" :data-oc-label-min-text="$t('cloudenv.project_mapping_effective_scope')">
-      <a-form-item :label="$t('cloudenv.text_95')">
-        <a-input v-decorator="decorators.name" :placeholder="$t('cloudenv.text_190')" />
-      </a-form-item>
-      <a-form-item :label="$t('common.description')">
-        <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-      </a-form-item>
-      <domain-project :fc="form.fc" :form-layout="formLayout" :decorators="{ project: decorators.project, domain: decorators.domain, auto_create_project: decorators.auto_create_project }" :cloneData="cloneData" />
-      <blocked-resources :decorators="{ isOpenBlockedResources: decorators.isOpenBlockedResources, blockedResources: decorators.blockedResources }" :cloneData="cloneData" />
-      <upload-json-file :fc="form.fc">
-        <a-form-item label="project_id">
-          <a-input v-decorator="decorators.project_id" :placeholder="$t('cloudenv.text_247')" />
+    <a-form-model ref="formRef" :model="form.fd" :rules="formRules" v-bind="formLayout" :data-oc-label-min-text="$t('cloudenv.project_mapping_effective_scope')">
+      <a-form-model-item :label="$t('cloudenv.text_95')">
+        <a-input v-model:value="form.fd.name" :placeholder="$t('cloudenv.text_190')" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('common.description')">
+        <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.fd.description" :placeholder="$t('common_367')" />
+      </a-form-model-item>
+      <domain-project :form="form.fd" :form-layout="formLayout" :cloneData="cloneData" />
+      <blocked-resources :form="form.fd" :cloneData="cloneData"  />
+      <upload-json-file :form="form.fd">
+        <a-form-model-item label="project_id" prop="gcp_project_id">
+          <a-input v-model:value="form.fd.gcp_project_id" :placeholder="$t('cloudenv.text_247')" />
           <div slot="extra" v-if="showDocsLink()">{{$t('cloudenv.text_248', [ `如何获取Google云project_id？点击查看帮助` ])}}<help-link :href="docs['google']">{{$t('cloudenv.text_237')}}</help-link>
           </div>
-        </a-form-item>
-        <a-form-item label="private_key_id">
-          <a-input v-decorator="decorators.private_key_id" :placeholder="$t('cloudenv.text_162')" />
-        </a-form-item>
-        <a-form-item label="private_key">
-          <a-textarea style="overflow-y:auto" :autosize="{ minRows: 3, maxRows: 35 }" v-decorator="decorators.private_key" :placeholder="$t('cloudenv.text_161')" />
-        </a-form-item>
-        <a-form-item label="client_email">
-          <a-input v-decorator="decorators.client_email" :placeholder="$t('cloudenv.text_249')" />
-        </a-form-item>
+        </a-form-model-item>
+        <a-form-model-item label="private_key_id" prop="gcp_private_key_id">
+          <a-input v-model:value="form.fd.gcp_private_key_id" :placeholder="$t('cloudenv.text_162')" />
+        </a-form-model-item>
+        <a-form-model-item label="private_key" prop="gcp_private_key">
+          <a-textarea style="overflow-y:auto" :autosize="{ minRows: 3, maxRows: 35 }" v-model:value="form.fd.gcp_private_key" :placeholder="$t('cloudenv.text_161')" />
+        </a-form-model-item>
+        <a-form-model-item label="client_email" prop="gcp_client_email">
+          <a-input v-model:value="form.fd.gcp_client_email" :placeholder="$t('cloudenv.text_249')" />
+        </a-form-model-item>
       </upload-json-file>
-      <proxy-setting :fc="form.fc" :fd="form.fd" ref="proxySetting" :cloneData="cloneData" />
-      <auto-sync :fc="form.fc" :form-layout="formLayout" :cloneData="cloneData" />
+      <proxy-setting :form="form.fd" ref="proxySetting" :cloneData="cloneData" />
+      <auto-sync :form="form.fd" :form-layout="formLayout" :cloneData="cloneData" />
       <read-only :cloneData="cloneData" />
-      <share-mode :fd="form.fd" :cloneData="cloneData" />
-    </a-form>
+      <share-mode :form="form.fd" :cloneData="cloneData" />
+    </a-form-model>
   </div>
 </template>
 
@@ -93,71 +93,57 @@ export default {
       docs: DOCS_MAP.cloudaccount(),
       showDocsLink,
       keySecretField,
-      decorators: {
-        name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('cloudenv.text_190') },
-              // { validator: this.$validate('resourceName') },
-            ],
-          },
-        ],
-        description: ['description'],
-        project_id: [
-          'gcp_project_id',
-          {
-            initialValue: initProjectId,
-            rules: [
-              { required: true, message: this.$t('cloudenv.text_247') },
-            ],
-          },
-        ],
-        private_key_id: [
-          'gcp_private_key_id',
-          {
-            initialValue: initPrivateKeyId,
-            rules: [
-              { required: true, message: this.$t('cloudenv.text_162') },
-            ],
-          },
-        ],
-        private_key: [
-          'gcp_private_key',
-          {
-            initialValue: initPrivateKey,
-            rules: [
-              { required: true, message: this.$t('cloudenv.text_161') },
-            ],
-          },
-        ],
-        client_email: [
-          'gcp_client_email',
-          {
-            initialValue: initClientEmail,
-            rules: [
-              { required: true, message: this.$t('cloudenv.text_249') },
-              { type: 'email', message: this.$t('cloudenv.text_250') },
-            ],
-          },
-        ],
-        domain: [
-          'domain',
-          {
-            initialValue: initDomain,
-            rules: [
-              { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
-            ],
-          },
-        ],
-        auto_create_project: [
-          'auto_create_project',
-          {
-            initialValue: initAutoCreateProject,
-            valuePropName: 'checked',
-          },
-        ],
+      fieldMap: {
+        name: {
+          name: 'name',
+          validateFirst: true,
+          rules: [
+            { required: true, message: this.$t('cloudenv.text_190') },
+            // { validator: this.$validate('resourceName') },
+          ],
+        },
+        description: { name: 'description' },
+        project_id: {
+          name: 'gcp_project_id',
+          initialValue: initProjectId,
+          rules: [
+            { required: true, message: this.$t('cloudenv.text_247') },
+          ],
+        },
+        private_key_id: {
+          name: 'gcp_private_key_id',
+          initialValue: initPrivateKeyId,
+          rules: [
+            { required: true, message: this.$t('cloudenv.text_162') },
+          ],
+        },
+        private_key: {
+          name: 'gcp_private_key',
+          initialValue: initPrivateKey,
+          rules: [
+            { required: true, message: this.$t('cloudenv.text_161') },
+          ],
+        },
+        client_email: {
+          name: 'gcp_client_email',
+          initialValue: initClientEmail,
+          rules: [
+            { required: true, message: this.$t('cloudenv.text_249') },
+            { type: 'email', message: this.$t('cloudenv.text_250') },
+          ],
+        },
+        domain: {
+          name: 'domain',
+          initialValue: initDomain,
+          rules: [
+            { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
+          ],
+        },
+        auto_create_project: {
+          name: 'auto_create_project',
+          initialValue: initAutoCreateProject,
+          valuePropName: 'checked',
+        },
       },
     }
   },

@@ -123,17 +123,16 @@ export default {
       this.$router.push('/k8s-kubecomponent')
     },
     async handleConfirm (formName) {
-      this.$refs[formName].validate((valid) => {
-        if (valid) {
-          const data = this.formData.config.map(val => {
-            return {
-              clusterId: val.clusterId,
-              monitors: val.monitors.map(v => v.monitor),
-            }
-          })
-          this.$emit('submit', { config: data })
-        }
-      })
+      try {
+        await this.$refs[formName].validate()
+        const data = this.formData.config.map(val => {
+          return {
+            clusterId: val.clusterId,
+            monitors: val.monitors.map(v => v.monitor),
+          }
+        })
+        this.$emit('submit', { config: data })
+      } catch (e) { /* invalid */ }
     },
   },
 }

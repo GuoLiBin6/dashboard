@@ -5,20 +5,20 @@
       <a-alert class="mb-2" type="warning" v-if="params.tip">
         <template #message>{{params.tip}}</template>
       </a-alert>
-      <a-form :form="form.fc">
-        <a-form-item :label="$t('common_136')" v-bind="formItemLayout">
-          <a-input-password v-decorator="decorators.password_old" :placeholder="$t('common_137')" />
-        </a-form-item>
-        <a-form-item :label="$t('common_138')" v-bind="formItemLayout">
-          <a-input-password v-decorator="decorators.password_new" :placeholder="$t('common_139')" />
-        </a-form-item>
-        <a-form-item :label="$t('common_140')" v-bind="formItemLayout">
-          <a-input-password v-decorator="decorators.com_password" :placeholder="$t('common_141')" />
-        </a-form-item>
-        <a-form-item :label="$t('common_142')" v-bind="formItemLayout" v-if="userInfo.enable_mfa && userInfo.system_totp_on">
-          <a-input v-decorator="decorators.passcode" :placeholder="$t('common_142')" />
-        </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('common_136')" prop="password_old">
+          <a-input-password v-model:value="form.password_old" :placeholder="$t('common_137')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common_138')" prop="password_new">
+          <a-input-password v-model:value="form.password_new" :placeholder="$t('common_139')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common_140')" prop="com_password">
+          <a-input-password v-model:value="form.com_password" :placeholder="$t('common_141')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common_142')" prop="passcode" v-if="userInfo.enable_mfa && userInfo.system_totp_on">
+          <a-input v-model:value="form.passcode" :placeholder="$t('common_142')" />
+        </a-form-model-item>
+      </a-form-model>
     </template>
     <template #footer>
       <a-button type="primary" :loading="loading" @click="handleConfirm">{{ $t('dialog.ok') }}</a-button>
@@ -75,8 +75,8 @@ export default {
       if (passLevel < this.complexity || value.length < passMaxLen) {
         return callback(new Error(this.$t('validator.passwordLevel', [this.complexity === 0 ? 1 : this.complexity, passMaxLen])))
       }
-      const passwordOld = this.form.fc.getFieldValue('password_old')
-      const passwordNew = this.form.fc.getFieldValue('password_new')
+      const passwordOld = this.form.password_old
+      const passwordNew = this.form.password_new
       if (passwordOld && passwordOld === passwordNew) {
         return callback(new Error(this.$t('common.password_no_equal')))
       }
@@ -87,48 +87,25 @@ export default {
       minPasswordLen: null,
       complexity: null,
       form: {
-        fc: this.$form.createForm(this),
+        password_old: '',
+        password_new: '',
+        com_password: '',
+        passcode: '',
       },
-      decorators: {
+      rules: {
         password_old: [
-          'password_old',
-          {
-            validateFirst: true,
-            validateTrigger: ['blur'],
-            rules: [
-              { required: true, message: this.$t('common_144') },
-            ],
-          },
+          { required: true, message: this.$t('common_144'), trigger: 'blur' },
         ],
         password_new: [
-          'password_new',
-          {
-            validateFirst: true,
-            validateTrigger: ['blur'],
-            rules: [
-              { required: true, message: this.$t('common_145') },
-              { validator: validatePassword },
-            ],
-          },
+          { required: true, message: this.$t('common_145'), trigger: 'blur' },
+          { validator: validatePassword, trigger: 'blur' },
         ],
         com_password: [
-          'com_password',
-          {
-            validateFirst: true,
-            validateTrigger: ['blur'],
-            rules: [
-              { required: true, message: this.$t('common_146') },
-              { validator: this.checkComPassword },
-            ],
-          },
+          { required: true, message: this.$t('common_146'), trigger: 'blur' },
+          { validator: this.checkComPassword, trigger: 'blur' },
         ],
         passcode: [
-          'passcode',
-          {
-            rules: [
-              { required: true, message: this.$t('common_147') },
-            ],
-          },
+          { required: true, message: this.$t('common_147') },
         ],
       },
       formItemLayout: {
@@ -167,22 +144,11 @@ export default {
       }
     },
     checkComPassword (rule, value, callback) {
-      const password = this.form.fc.getFieldValue('password_new')
+      const password = this.form.password_new
       if (password !== value) {
         callback(new Error(this.$t('common_148')))
       }
       callback()
-    },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
     },
     doUpdatePassword (values) {
       return this.manager.performClassAction({
@@ -193,7 +159,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
+        await this.$refs.formRef.validate()
+        const values = this.form
         let data = {
           password_confirm: Base64.encode(values.com_password),
           password_old: Base64.encode(values.password_old),

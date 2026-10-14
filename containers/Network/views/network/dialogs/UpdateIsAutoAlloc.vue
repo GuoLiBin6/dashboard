@@ -4,12 +4,12 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.network')" :count="params.data.length" :action="params.title" />
       <dialog-table class="mb-2" :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('common_498')">
-          <a-switch v-decorator="decorators.is_auto_alloc" />
+      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('common_498')" prop="is_auto_alloc">
+          <a-switch v-model:checked="form.is_auto_alloc" />
           <template slot="extra">{{$t('common_500')}}</template>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -29,15 +29,7 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        is_auto_alloc: [
-          'is_auto_alloc',
-          {
-            initialValue: this.params.data.length === 1 ? this.params.data[0].is_auto_alloc : this.params.data.every(item => item.is_auto_alloc),
-            valuePropName: 'checked',
-          }],
+        is_auto_alloc: this.params.data.length === 1 ? this.params.data[0].is_auto_alloc : this.params.data.every(item => item.is_auto_alloc),
       },
       formItemLayout: {
         wrapperCol: {
@@ -53,7 +45,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         const ids = this.params.data.map(item => item.id)
         if (ids.length > 1) {
           await this.params.onManager('batchUpdate', {

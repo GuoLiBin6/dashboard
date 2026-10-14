@@ -5,14 +5,12 @@
       <a-alert :message="$t('iam.project.alter_role_tips')" class="mb-2" />
       <dialog-selected-tips :name="$t('common_578')" :count="params.data.length" :action="params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc"
-        v-bind="formItemLayout">
-        <a-form-item :label="$t('dictionary.role')">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('dictionary.role')" prop="roles">
           <a-select
             :filterOption="filterOption"
             :loading="roleLoading"
-            v-decorator="decorators.roles"
+            v-model:value="form.roles"
             mode="multiple"
             :placeholder="$t('rules.role')"
             @deselect="handleDeselect"
@@ -21,8 +19,8 @@
               {{item.name}}
             </a-select-option>
           </a-select>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -49,16 +47,11 @@ export default {
       deselectList: [],
       selectList: [],
       form: {
-        fc: this.$form.createForm(this),
+        roles: this.params.data[0].roles.map(item => item.id),
       },
-      decorators: {
+      rules: {
         roles: [
-          'roles',
-          {
-            rules: [
-              { required: true, message: this.$t('rules.role') },
-            ],
-          },
+          { required: true, message: this.$t('rules.role') },
         ],
       },
       formItemLayout: {
@@ -87,7 +80,7 @@ export default {
       try {
         const { data = {} } = await manager.list({ params })
         this.roleList = data.data || []
-        this.form.fc.getFieldDecorator('roles', { initialValue: this.initialValue })
+        this.form.roles = [...this.initialValue]
       } catch (err) {
         throw err
       } finally {
@@ -150,8 +143,8 @@ export default {
       this.loading = true
       try {
         if (this.selectList.length > 0) {
-          const { roles } = await this.form.fc.validateFields()
-          await this.doJoint(roles)
+          await this.$refs.formRef.validate()
+          await this.doJoint(this.form.roles)
         }
         if (this.deselectList.length > 0) {
           const roles = this.deselectList.map(item => ({

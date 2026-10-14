@@ -1,15 +1,15 @@
 <template>
-  <a-form :form="form" v-bind="formItemLayout">
-    <a-form-item :label="$t('scope.text_204')" :help="$t('scope.text_205')">
+  <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+    <a-form-model-item :label="$t('scope.text_204')" :help="$t('scope.text_205')">
       {{ email }}
-    </a-form-item>
-    <a-form-item :label="$t('scope.text_201')">
+    </a-form-model-item>
+    <a-form-model-item :label="$t('scope.text_201')" prop="code">
       <div class="d-flex">
-        <a-input v-decorator="decorators.code" style="max-width: 100px;" />
+        <a-input v-model:value="form.code" style="max-width: 100px;" />
         <a-button type="link" class="flex-grow-0 flex-shrink-0" @click="getEmailVerifyCode" :disabled="codeButtonDisable" style="width: 150px; border-left-width: 0;">{{ codeButtonText }}</a-button>
       </div>
-    </a-form-item>
-  </a-form>
+    </a-form-model-item>
+  </a-form-model>
 </template>
 
 <script>
@@ -17,14 +17,25 @@ import * as R from 'ramda'
 
 export default {
   name: 'email',
-  inject: ['userId', 'manager', 'dialogData', 'decorators', 'formItemLayout'],
+  inject: ['userId', 'manager', 'dialogData', 'formItemLayout'],
   data () {
     return {
       codeButtonText: this.$t('scope.text_206'),
       codeButtonDisable: false,
       codeInt: null,
       email: this.dialogData.email,
-      form: this.$form.createForm(this),
+      form: {
+        code: '',
+      },
+      rules: {
+        code: [
+          { required: true, message: this.$t('scope.text_209') },
+          {
+            pattern: '[0-9]{6}',
+            message: this.$t('scope.text_210'),
+          },
+        ],
+      },
     }
   },
   unmounted () {
@@ -60,14 +71,14 @@ export default {
       }
     },
     async submit () {
-      const values = await this.form.validateFields()
+      await this.$refs.formRef.validate()
       await this.manager.performAction({
         id: this.userId,
         action: 'verify',
         data: {
           contact: this.email,
           contact_type: 'email',
-          token: R.trim(values.code),
+          token: R.trim(this.form.code),
         },
       })
     },

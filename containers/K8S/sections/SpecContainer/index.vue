@@ -7,7 +7,13 @@
             <span>{{$t('k8s.text_114', [i+1])}}</span>
           </a-badge>
         </template>
-        <spec-container-form :decorators="getDecorators(pane.key)" :cluster="cluster" :namespace="namespace" :form="form" />
+        <spec-container-form
+          :ref="`form_${pane.key}`"
+          :pane-key="pane.key"
+          :cluster="cluster"
+          :namespace="namespace"
+          :form="form"
+          :model="model || form.fd" />
       </a-tab-pane>
       <template v-slot:tabBarExtraContent>
         <a-button type="link" @click="add">{{$t('k8s.text_115')}}</a-button>
@@ -17,7 +23,6 @@
 </template>
 
 <script>
-import * as R from 'ramda'
 import SpecContainerForm from '@K8S/sections/SpecContainer/Form'
 import { uuid } from '@/utils/utils'
 
@@ -27,15 +32,16 @@ export default {
     SpecContainerForm,
   },
   props: {
-    decorators: {
-      type: Object,
-      required: true,
-    },
     cluster: String,
     namespace: String,
     form: {
       type: Object,
-      validator: v => v.fc,
+      default: null,
+    },
+    /** a-form-model：与 field 动态 key 对齐（通常为 form.fd） */
+    model: {
+      type: Object,
+      default: null,
     },
     errPanes: {
       type: Array,
@@ -79,14 +85,15 @@ export default {
         this.syncPanes()
       }
     },
-    getDecorators (k) {
-      const ret = {}
-      R.forEachObjIndexed((item, key) => {
-        if (R.is(Function, item)) {
-          ret[key] = item(k)
+    async validate () {
+      for (const pane of this.panes) {
+        const formRef = this.$refs[`form_${pane.key}`]
+        const formComp = Array.isArray(formRef) ? formRef[0] : formRef
+        if (typeof formComp?.validate === 'function') {
+          await formComp.validate()
         }
-      }, this.decorators)
-      return ret
+      }
+      return true
     },
   },
 }

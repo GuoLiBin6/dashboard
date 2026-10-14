@@ -7,19 +7,21 @@
       </a-alert>
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="tableColumns" />
-      <a-form
-        :form="form.fc"
+      <a-form-model
+        ref="formRef"
+        :model="form.fd"
+        :rules="rules"
         v-bind="formItemLayout">
         <!-- 多机：操作类型 -->
-        <a-form-item v-if="isGroupAction" :label="$t('compute.isolated_device.operation_type')">
+        <a-form-model-item v-if="isGroupAction" :label="$t('compute.isolated_device.operation_type')">
           <a-radio-group v-model:value="groupOperation">
             <a-radio value="attach">{{$t('compute.isolated_device.operation.attach')}}</a-radio>
             <a-radio value="detach">{{$t('compute.isolated_device.operation.detach_all')}}</a-radio>
           </a-radio-group>
-        </a-form-item>
+        </a-form-model-item>
         <!-- 多对一：批量增加绑定 -->
         <template v-if="isGroupAction && groupOperation === 'attach'">
-          <a-form-item>
+          <a-form-model-item>
             <template #extra>
               <div v-for="(tip, idx) in deviceTips" :key="idx">{{ tip }}</div>
             </template>
@@ -30,7 +32,7 @@
               </a-tooltip>
             </span>
             <base-select
-              v-decorator="decorators.device"
+              v-model:value="form.fd.device"
               :params="gpuParams"
               :need-params="false"
               :labelFormat="labelFormat"
@@ -56,11 +58,11 @@
                 </div>
               </template>
             </base-select>
-          </a-form-item>
-          <a-form-item v-if="showGroupGpuType" :label="$t('gpu.device_type')">
-            <base-select v-decorator="decorators.gpuType" :options="groupGpuTypeOptions" />
-          </a-form-item>
-          <a-form-item
+          </a-form-model-item>
+          <a-form-model-item v-if="showGroupGpuType" :label="$t('gpu.device_type')">
+            <base-select v-model:value="form.fd.gpu_type" :options="groupGpuTypeOptions" />
+          </a-form-model-item>
+          <a-form-model-item
             v-if="showGroupMemoryRequest"
             :label="$t('compute.pci.memory_request')">
             <a-tooltip
@@ -68,7 +70,7 @@
               placement="top"
               :get-popup-container="getTooltipContainer">
               <disk-size-input
-                v-decorator="decorators.memoryRequest"
+                v-model:value="form.fd.memory_request"
                 :min="1"
                 :max="groupMemorySizeMb || Infinity"
                 :step="1"
@@ -78,14 +80,14 @@
                 @change="onGroupMemoryRequestChange"
                 @unitChange="onGroupMemoryUnitChange" />
             </a-tooltip>
-          </a-form-item>
-          <a-form-item :label="$t('compute.text_294')" :extra="$t('compute.text_1175')">
-            <a-input-number :min="1" v-decorator="decorators.number" />
-          </a-form-item>
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.text_294')" :extra="$t('compute.text_1175')">
+            <a-input-number :min="1" v-model:value="form.fd.number" />
+          </a-form-model-item>
         </template>
         <!-- 单机：直接以列表为准 -->
         <template v-if="!isGroupAction">
-          <a-form-item class="pci-device-list-item">
+          <a-form-model-item class="pci-device-list-item">
             <template #extra>
               <div v-for="(tip, idx) in deviceTips" :key="idx">{{ tip }}</div>
             </template>
@@ -101,11 +103,11 @@
               class="pci-device-row">
               <div class="pci-device-group">
                 <div class="pci-select-row">
-                  <a-form-item class="pci-select-item pci-select-item--model mb-0">
+                  <a-form-model-item class="pci-select-item pci-select-item--model mb-0">
                     <fixed-label-filter :label="getRowDeviceCategoryLabel(k)">
                       <base-select
                         :key="`row-${k}`"
-                        v-decorator="decorators.deviceItem(k)"
+                        v-model:value="form.fd[`device[${k}]`]"
                         :params="gpuParams"
                         :need-params="false"
                         :labelFormat="labelFormat"
@@ -129,14 +131,14 @@
                         </template>
                       </base-select>
                     </fixed-label-filter>
-                  </a-form-item>
-                  <a-form-item v-if="isRowGpuDevType(k)" class="pci-select-item pci-select-item--fixed mb-0">
+                  </a-form-model-item>
+                  <a-form-model-item v-if="isRowGpuDevType(k)" class="pci-select-item pci-select-item--fixed mb-0">
                     <fixed-label-filter :label="$t('compute.pci.gpu_mode')">
-                      <base-select v-decorator="decorators.gpuTypeItem(k)" :options="getRowGpuTypeOptions(k)" />
+                      <base-select v-model:value="form.fd[`gpu_type[${k}]`]" :options="getRowGpuTypeOptions(k)" />
                     </fixed-label-filter>
-                  </a-form-item>
+                  </a-form-model-item>
                 </div>
-                <a-form-item
+                <a-form-model-item
                   v-if="isRowHamiSharingMode(k)"
                   class="mb-0 pci-memory-item">
                   <fixed-label-filter :label="$t('compute.pci.memory_request')">
@@ -145,7 +147,7 @@
                       placement="top"
                       :get-popup-container="getTooltipContainer">
                       <disk-size-input
-                        v-decorator="decorators.memoryRequestItem(k)"
+                        v-model:value="form.fd[`memory_request[${k}]`]"
                         :min="1"
                         :max="getRowMemorySizeMb(k) || Infinity"
                         :step="1"
@@ -156,7 +158,7 @@
                         @unitChange="(unit) => onRowMemoryUnitChange(k, unit)" />
                     </a-tooltip>
                   </fixed-label-filter>
-                </a-form-item>
+                </a-form-model-item>
               </div>
               <a-button
                 class="pci-device-row__remove"
@@ -169,12 +171,12 @@
               <a-button type="primary" shape="circle" icon="plus" size="small" @click="addDeviceRow" />
               <a-button type="link" @click="addDeviceRow">{{ $t('compute.pci.add_transparent_device') }}</a-button>
             </div>
-          </a-form-item>
+          </a-form-model-item>
         </template>
-        <a-form-item :label="$t('compute.text_494')" :extra="$t('compute.text_495')" v-if="isOpenAutoStart">
-          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-decorator="decorators.autoStart" />
-        </a-form-item>
-      </a-form>
+        <a-form-model-item :label="$t('compute.text_494')" :extra="$t('compute.text_495')" v-if="isOpenAutoStart">
+          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-model:checked="form.fd.autoStart" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -213,71 +215,13 @@ export default {
       loading: false,
       action: this.$t('compute.set_host_isolated_device'),
       form: {
-        fc: this.$form.createForm(this, { onValuesChange: this.onValuesChange }),
         fd: {
-          device: [],
+          device: undefined,
+          gpu_type: GPU_TYPE_OPTION_MAP.HPC.value,
+          memory_request: undefined,
+          number: 1,
+          autoStart: false,
         },
-      },
-      decorators: {
-        device: [
-          'device',
-          {
-            rules: [
-              { required: true, type: 'any', message: this.$t('compute.text_1172'), trigger: 'change' },
-            ],
-          },
-        ],
-        deviceItem: i => [
-          `device[${i}]`,
-          {
-            rules: [
-              { required: true, message: this.$t('compute.text_1172'), trigger: 'change' },
-            ],
-          },
-        ],
-        gpuType: [
-          'gpu_type',
-          {
-            initialValue: GPU_TYPE_OPTION_MAP.HPC.value,
-          },
-        ],
-        gpuTypeItem: i => [
-          `gpu_type[${i}]`,
-          {
-            initialValue: GPU_TYPE_OPTION_MAP.HPC.value,
-          },
-        ],
-        memoryRequest: [
-          'memory_request',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.pci.memory_request.required') },
-              { validator: (rule, value, callback) => this.validateMemoryRequest(rule, value, callback) },
-            ],
-          },
-        ],
-        memoryRequestItem: i => [
-          `memory_request[${i}]`,
-          {
-            rules: [
-              { required: true, message: this.$t('compute.pci.memory_request.required') },
-              { validator: (rule, value, callback) => this.validateMemoryRequest(rule, value, callback, i) },
-            ],
-          },
-        ],
-        autoStart: [
-          'autoStart',
-          {
-            valuePropName: 'checked',
-            initialValue: false,
-          },
-        ],
-        number: [
-          'number',
-          {
-            initialValue: 1,
-          },
-        ],
       },
       formItemLayout: {
         wrapperCol: {
@@ -430,6 +374,21 @@ export default {
       if (this.params.data.length > 1) return true
       return false
     },
+    rules () {
+      if (!(this.isGroupAction && this.groupOperation === 'attach')) return {}
+      const rules = {
+        device: [
+          { required: true, type: 'any', message: this.$t('compute.text_1172'), trigger: 'change' },
+        ],
+      }
+      if (this.showGroupMemoryRequest) {
+        rules.memory_request = [
+          { required: true, message: this.$t('compute.pci.memory_request.required') },
+          { validator: (rule, value, callback) => this.validateMemoryRequest(rule, value, callback) },
+        ]
+      }
+      return rules
+    },
     isOpenAutoStart () {
       return this.selectedItems.every(item => item.status === 'ready')
     },
@@ -577,7 +536,6 @@ export default {
         this.form.fd[k] = fields[k]
       })
       this.$nextTick(() => {
-        this.form.fc.setFieldsValue(fields)
         Object.assign(this.form.fd, fields)
         // memory 字段依赖 v-if 挂载，需再设一次
         this.$nextTick(() => {
@@ -588,7 +546,6 @@ export default {
             }
           })
           if (Object.keys(memoryFields).length) {
-            this.form.fc.setFieldsValue(memoryFields)
             Object.assign(this.form.fd, memoryFields)
           }
         })
@@ -738,7 +695,6 @@ export default {
     },
     onGroupMemoryRequestChange (val) {
       const next = this.clampMemoryRequest(val, this.groupMemorySizeMb)
-      this.form.fc.setFieldsValue({ memory_request: next })
       this.form.fd.memory_request = next
     },
     onGroupMemoryUnitChange (unit) {
@@ -746,19 +702,17 @@ export default {
     },
     onRowMemoryRequestChange (val, key) {
       const next = this.clampMemoryRequest(val, this.getRowMemorySizeMb(key))
-      this.form.fc.setFieldsValue({ [`memory_request[${key}]`]: next })
       this.form.fd[`memory_request[${key}]`] = next
     },
     onRowMemoryUnitChange (key, unit) {
       this.memoryUnits[key] = unit
     },
     groupDeviceChange (val) {
-      this.form.fd.device = [val]
+      this.form.fd.device = val
       if (!this.showGroupGpuType) {
         this.$delete(this.form.fd, 'gpu_type')
       } else {
         const nextGpuType = resolveGpuTypeBySharingMode(this.form.fd.gpu_type, this.selectedGroupDevice?.sharing_mode)
-        this.form.fc.setFieldsValue({ gpu_type: nextGpuType })
         this.form.fd.gpu_type = nextGpuType
       }
       if (!this.showGroupMemoryRequest) {
@@ -767,7 +721,6 @@ export default {
         const current = this.form.fd.memory_request
         const next = this.clampMemoryRequest(current, this.groupMemorySizeMb)
         if (current !== next) {
-          this.form.fc.setFieldsValue({ memory_request: next })
           this.form.fd.memory_request = next
         }
       }
@@ -779,7 +732,6 @@ export default {
         })
         if (duplicated) {
           this.$message.warning(this.$t('compute.pci.device_duplicate'))
-          this.form.fc.setFieldsValue({ [`device[${key}]`]: undefined })
           this.$delete(this.form.fd, `device[${key}]`)
           return
         }
@@ -791,9 +743,6 @@ export default {
           this.getFieldByKey(this.form.fd, 'gpu_type', key) || GPU_TYPE_OPTION_MAP.HPC.value,
           device?.sharing_mode,
         )
-        this.form.fc.setFieldsValue({
-          [`gpu_type[${key}]`]: gpuType,
-        })
         this.form.fd[`gpu_type[${key}]`] = gpuType
       } else {
         this.$delete(this.form.fd, `gpu_type[${key}]`)
@@ -804,7 +753,6 @@ export default {
         const current = this.getFieldByKey(this.form.fd, 'memory_request', key)
         const next = this.clampMemoryRequest(current, this.getDeviceMemorySizeMb(device))
         if (current !== next) {
-          this.form.fc.setFieldsValue({ [`memory_request[${key}]`]: next })
           this.form.fd[`memory_request[${key}]`] = next
         }
       }
@@ -937,25 +885,38 @@ export default {
       try {
         if (this.isGroupAction) {
           if (this.groupOperation === 'attach') {
-            const values = await this.form.fc.validateFields()
+            await this.$refs.formRef.validate()
+            const values = { ...this.form.fd }
             await this.doAttachSubmit(values)
           } else {
-            const values = await this.form.fc.getFieldsValue()
+            const values = { ...this.form.fd }
             await this.doDetachSubmit(values)
           }
         } else {
           let values = {}
           if (this.deviceKeys.length) {
-            values = await this.form.fc.validateFields()
             const deviceIds = this.deviceKeys
-              .map(k => this.getFieldByKey(values, 'device', k))
+              .map(k => this.getFieldByKey(this.form.fd, 'device', k))
               .filter(Boolean)
+            if (deviceIds.length !== this.deviceKeys.length) {
+              this.$message.warning(this.$t('compute.text_1172'))
+              throw new Error(this.$t('compute.text_1172'))
+            }
             if (new Set(deviceIds).size !== deviceIds.length) {
               this.$message.warning(this.$t('compute.pci.device_duplicate'))
               throw new Error(this.$t('compute.pci.device_duplicate'))
             }
+            for (const k of this.deviceKeys) {
+              if (this.isRowHamiSharingMode(k)) {
+                const mem = this.getFieldByKey(this.form.fd, 'memory_request', k)
+                await new Promise((resolve, reject) => {
+                  this.validateMemoryRequest(null, mem, (err) => err ? reject(err) : resolve(), k)
+                })
+              }
+            }
+            values = { ...this.form.fd }
           } else {
-            values = await this.form.fc.getFieldsValue()
+            values = { ...this.form.fd }
           }
           await this.doAttachSubmit(values)
         }
@@ -1067,31 +1028,6 @@ export default {
     },
     labelFormat (val) {
       return formatIsolatedDeviceSelectLabel(val)
-    },
-    onValuesChange (props, values) {
-      Object.keys(values).forEach((key) => {
-        const value = values[key]
-        // 一对多：把 device/gpu_type/memory_request 的嵌套值展平到 fd[`name[index]`]
-        if (!this.isGroupAction && ['device', 'gpu_type', 'memory_request'].includes(key) && value != null && typeof value === 'object') {
-          if (Array.isArray(value)) {
-            value.forEach((v, i) => {
-              if (v !== undefined && v !== null) {
-                this.form.fd[`${key}[${i}]`] = v
-              }
-            })
-          } else {
-            Object.keys(value).forEach(subKey => {
-              this.form.fd[`${key}[${subKey}]`] = value[subKey]
-            })
-          }
-          return
-        }
-        if (key === 'device' && this.isGroupAction) {
-          this.form.fd[key] = [value]
-        } else {
-          this.form.fd[key] = value
-        }
-      })
     },
   },
 }

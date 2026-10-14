@@ -1,54 +1,56 @@
 <template>
   <div class="w-75">
-    <a-form :form="form.fc" v-bind="formItemLayout">
-      <a-form-item :label="$t('k8s.text_41')">
-        <a-input :placeholder="$t('k8s.text_60')" v-decorator="decorators.name" />
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_19')">
-        <cluster-select v-decorator="decorators.cluster" @input="setCluster" v-model:clusterObj="clusterObj" />
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_23')">
-        <namespace-select v-decorator="decorators.namespace" @input="setNamespace" :cluster="clusterObj.id" v-model:namespaceObj="namespaceObj" />
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_229')">
-        <a-input-number v-decorator="decorators.replicas" :min="1" :max="10" />
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_220')">
+    <a-form-model ref="formRef" :model="form.fd" :rules="rules" v-bind="formItemLayout">
+      <a-form-model-item :label="$t('k8s.text_41')" prop="name">
+        <a-input :placeholder="$t('k8s.text_60')" v-model:value="form.fd.name" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('k8s.text_19')" prop="cluster">
+        <cluster-select v-model:value="form.fd.cluster" @input="onClusterInput" v-model:clusterObj="clusterObj" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('k8s.text_23')" prop="namespace">
+        <namespace-select v-model:value="form.fd.namespace" @input="onNamespaceInput" :cluster="clusterObj.id" v-model:namespaceObj="namespaceObj" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('k8s.text_229')" prop="replicas">
+        <a-input-number v-model:value="form.fd.replicas" :min="1" :max="10" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('k8s.text_220')">
         <image-secret
           :form="form"
-          :decorators="decorators.imageSecrets"
           :namespace="namespaceObj.name"
           :cluster="clusterObj.id" />
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_13')">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('k8s.text_13')">
         <port-mapping
+          ref="portMappingRef"
           :form="form"
-          :decorators="decorators.portMappings"
+          :model="form.fd"
+          :cluster-obj="clusterObj"
           :is-import-cluster="isImportCluster" />
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_221')">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('k8s.text_221')">
         <restart-policy-select
-          :decorator="decorators.restartPolicy"
-          type="statefulset" />
-      </a-form-item>
+          :form="form"
+          type="pod" />
+      </a-form-model-item>
       <a-collapse :bordered="false" class="mb-3">
         <a-collapse-panel :header="$t('k8s.text_223')" key="1">
-          <a-form-item :label="$t('k8s.text_82')">
-            <labels :decorators="decorators.labels" />
-          </a-form-item>
-          <a-form-item :label="$t('k8s.text_224')">
-            <labels :decorators="decorators.annotations" :title="$t('k8s.text_224')" />
-          </a-form-item>
+          <a-form-model-item :label="$t('k8s.text_82')">
+            <labels ref="labelsRef" />
+          </a-form-model-item>
+          <a-form-model-item :label="$t('k8s.text_224')">
+            <labels ref="annotationsRef" :title="$t('k8s.text_224')" />
+          </a-form-model-item>
         </a-collapse-panel>
       </a-collapse>
       <spec-container
+        ref="specContainerRef"
         :form="form"
+        :model="form.fd"
         v-model:panes="containerPanes"
         :errPanes="errPanes"
-        :decorators="decorators.containers"
         :namespace="namespaceObj.name"
         :cluster="clusterObj.id" />
-    </a-form>
+    </a-form-model>
   </div>
 </template>
 
@@ -59,12 +61,13 @@ import NamespaceSelect from '@K8S/sections/NamespaceSelect'
 import ImageSecret from '@K8S/sections/ImageSecret'
 import PortMapping from '@K8S/sections/PortMapping'
 import RestartPolicySelect from '@K8S/sections/RestartPolicySelect'
-import Labels from '@K8S/sections/Labels'
+import Labels from '@K8S/sections/Labels/model'
 import SpecContainer from '@K8S/sections/SpecContainer'
-import { getSpecContainerParams, getLabels, getCreateDecorators } from '@K8S/utils'
+import { getSpecContainerParams } from '@K8S/utils'
+import k8sCreateMixin from '@K8S/mixins/create'
 
 export default {
-  name: 'K8sStatefulsetCreate',
+  name: 'K8sPodCreate',
   components: {
     ClusterSelect,
     NamespaceSelect,
@@ -74,18 +77,36 @@ export default {
     Labels,
     SpecContainer,
   },
+  mixins: [k8sCreateMixin],
   data () {
     return {
       form: {
-        fc: this.$form.createForm(this),
+        fd: {
+          name: '',
+          cluster: this.$store.state.common.k8s.cluster,
+          namespace: this.$store.state.common.k8s.namespace,
+          replicas: 1,
+        },
       },
       formItemLayout: {
         labelCol: { span: 4 },
         wrapperCol: { span: 20 },
       },
-      errPanes: [], // 表单校验错误的tabs
-      containerPanes: [], // 子组件同步的tabs
-      decorators: getCreateDecorators.call(this, 'statefulset'),
+      rules: {
+        name: [
+          { required: true, message: this.$t('k8s.text_60') },
+          { min: 2, max: 24, message: this.$t('k8s.text_132'), trigger: 'blur' },
+          { validator: this.$validate('k8sName') },
+        ],
+        cluster: [
+          { required: true, message: this.$t('k8s.text_30'), trigger: 'blur' },
+        ],
+        namespace: [
+          { required: true, message: this.$t('k8s.text_61'), trigger: 'blur' },
+        ],
+      },
+      errPanes: [],
+      containerPanes: [],
       clusterObj: {},
       namespaceObj: {},
     }
@@ -98,18 +119,32 @@ export default {
       return false
     },
   },
+  provide () {
+    return {
+      form: this.form,
+    }
+  },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFieldsAndScroll({ scroll: { alignWithTop: true, offsetTop: 100 } }, (err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            this.setErrorPane(err)
-            reject(err)
-          }
-        })
-      })
+    onClusterInput (v) {
+      this.form.fd.cluster = v
+      this.setCluster(v)
+    },
+    onNamespaceInput (v) {
+      this.form.fd.namespace = v
+      this.setNamespace(v)
+    },
+    async validateForm () {
+      await this.$refs.formRef.validate()
+      if (typeof this.$refs.portMappingRef?.validate === 'function') {
+        await this.$refs.portMappingRef.validate()
+      }
+      if (typeof this.$refs.specContainerRef?.validate === 'function') {
+        await this.$refs.specContainerRef.validate()
+      }
+      if (typeof this.$refs.ingressRuleRef?.validate === 'function') {
+        await this.$refs.ingressRuleRef.validate()
+      }
+      return { ...this.form.fd }
     },
     setErrorPane (err) {
       const keys = Object.keys(err).filter(v => v.startsWith('container'))
@@ -118,14 +153,14 @@ export default {
       this.errPanes = Array.from(new Set(errPanes))
     },
     async _doCreate (data) {
-      await new this.$Manager('statefulsets', 'v1').create({ data })
+      await new this.$Manager('pods', 'v1').create({ data })
     },
     async doCreate () {
       try {
         const values = await this.validateForm()
         const spec = getSpecContainerParams(values, this.containerPanes)
-        const labels = getLabels(values, 'labelKeys', 'labelValues')
-        const annotations = getLabels(values, 'annotationsKeys', 'annotationsValues')
+        const labels = this.$refs.labelsRef ? this.$refs.labelsRef.getLabelMap() : {}
+        const annotations = this.$refs.annotationsRef ? this.$refs.annotationsRef.getLabelMap() : {}
         const service = {}
         if (values.serviceType !== 'none') {
           service.isExternal = (values.serviceType === 'external')

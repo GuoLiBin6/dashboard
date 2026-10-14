@@ -4,22 +4,20 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.group')" :count="params.data.length" :action="params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc"
-        v-bind="formItemLayout">
-        <a-form-item :label="$t('dictionary.user')">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('dictionary.user')" prop="users">
           <a-select
             :filterOption="filterOption"
             :loading="userLoading"
-            v-decorator="decorators.users"
+            v-model:value="form.users"
             mode="multiple"
             :placeholder="$t('common_489')">
             <a-select-option v-for="item in users" :key="item.id">
               {{item.name}}
             </a-select-option>
           </a-select>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -41,17 +39,11 @@ export default {
       users: [],
       userLoading: false,
       form: {
-        fc: this.$form.createForm(this),
+        users: [],
       },
-      decorators: {
+      rules: {
         users: [
-          'users',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('system.text_499') },
-            ],
-          },
+          { required: true, message: this.$t('system.text_499') },
         ],
       },
       formItemLayout: {
@@ -93,12 +85,12 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         await new this.$Manager('groups', 'v1').performAction({
           id: this.params.data[0].id,
           action: 'add-users',
           data: {
-            user: values.users,
+            user: this.form.users,
           },
         })
         this.params.success()

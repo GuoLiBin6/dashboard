@@ -1,29 +1,29 @@
 <template>
   <div>
-    <a-form-item :label="label">
-      <a-radio-group v-decorator="decorators.scope" @change="scopeChange" :disabled="disabled">
+    <a-form-model-item :label="label" :prop="scopeProp">
+      <a-radio-group :value="formScope" @change="scopeChange" :disabled="disabled">
         <a-radio-button
           v-for="item in scopeOptions"
           :value="item.key"
           :key="item.key">{{ item.label }}</a-radio-button>
       </a-radio-group>
-    </a-form-item>
-    <a-form-item :label="$t('dictionary.domain')" key="domain"  v-if="isAdminMode && l3PermissionEnable && isDomainScope">
+    </a-form-model-item>
+    <a-form-model-item :label="$t('dictionary.domain')" key="domain" :prop="domainProp" v-if="isAdminMode && l3PermissionEnable && isDomainScope">
       <base-select
         resource="domains"
-        v-decorator="decorators.domain"
+        :value="domainValue"
         :params="domainParams"
         filterable
         remote
         version="v1"
         :disabled="disabled"
-        @change="v => emit(v, 'domainId')"
+        @change="onDomainChange"
         :select-props="{ placeholder: `${$t('common.text00106')}${$t('dictionary.domain')}` }" />
-    </a-form-item>
-    <a-form-item :label="$t('dictionary.project')" key="project" v-if="!isProjectMode && isProjectScope">
+    </a-form-model-item>
+    <a-form-model-item :label="$t('dictionary.project')" key="project" :prop="projectProp" v-if="!isProjectMode && isProjectScope">
       <base-select
         resource="projects"
-        v-decorator="decorators.project"
+        :value="projectValue"
         :params="projectParams"
         v-model:item="project"
         filterable
@@ -31,39 +31,53 @@
         version="v1"
         :need-params="true"
         :disabled="disabled"
-        @change="v => emit(v, 'projectId')"
+        @change="onProjectChange"
         :select-props="{ placeholder: `${$t('common.text00106')}${$t('dictionary.project')}` }" />
-    </a-form-item>
-    <a-form-item :label="$t('dictionary.domain')" v-if="isDomainMode && isDomainScope">
+    </a-form-model-item>
+    <a-form-model-item :label="$t('dictionary.domain')" v-if="isDomainMode && isDomainScope">
       <div>{{ userInfo.projectDomain }}</div>
-    </a-form-item>
-    <a-form-item :label="$t('dictionary.project')" v-if="isProjectMode && isProjectScope">
+    </a-form-model-item>
+    <a-form-model-item :label="$t('dictionary.project')" v-if="isProjectMode && isProjectScope">
       <div>{{ userInfo.projectName }}</div>
-    </a-form-item>
+    </a-form-model-item>
   </div>
 </template>
 
 <script lang="jsx">
-import _ from 'lodash'
 import { mapGetters } from 'vuex'
 import i18n from '@/locales'
 
 export default {
   name: 'ScopeRadio',
   props: {
-    decorators: {
-      type: Object,
-      required: true,
-      validator: val => val.scope && val.domain && val.project,
-    },
     disabled: {
       type: Boolean,
       default: false,
     },
     form: {
       type: Object,
+    },
+    /** a-form-model：读写 scope / domain / project（必传） */
+    model: {
+      type: Object,
       required: true,
-      validator: val => val.fc,
+    },
+    /** 可选：{ scope, domain, project } → rules[]，供 validate() */
+    fieldRules: {
+      type: Object,
+      default: null,
+    },
+    scopeProp: {
+      type: String,
+      default: 'scope',
+    },
+    domainProp: {
+      type: String,
+      default: 'domain',
+    },
+    projectProp: {
+      type: String,
+      default: 'project',
     },
     isDefaultSelect: {
       type: Boolean,
@@ -82,7 +96,7 @@ export default {
   },
   data () {
     return {
-      formScope: _.get(this.decorators, 'scope[1].initialValue'),
+      formScope: this.model[this.scopeProp],
       domainParams: {
         scope: this.scope,
         limit: 20,
@@ -107,6 +121,12 @@ export default {
       }
       return params
     },
+    domainValue () {
+      return this.model[this.domainProp]
+    },
+    projectValue () {
+      return this.model[this.projectProp]
+    },
     scopeOptions () {
       const ret = [
         { label: this.$t('shareScope.project'), key: 'project' },
@@ -123,25 +143,35 @@ export default {
   watch: {
     project: {
       handler (val) {
-        this.form.fc.setFieldsValue({
-          domain: val.domain_id,
-        })
+        if (!val || !val.domain_id) return
+        this.model[this.domainProp] = val.domain_id
       },
       immediate: true,
       deep: true,
     },
   },
   created () {
-    const formScopeInit = _.get(this.decorators, 'scope[1].initialValue')
-    const isValid = !!this.scopeOptions.find(val => val.key === formScopeInit)
-    if (!isValid) {
-      this.formScope = this.scopeOptions[0].key
-      this.form.fc.setFieldsValue({
-        [this.decorators.scope[0]]: this.formScope,
-      })
-    }
+    this.initModelMode()
   },
   methods: {
+    initModelMode () {
+      const isValid = !!this.scopeOptions.find(val => val.key === this.formScope)
+      if (!isValid) {
+        this.formScope = this.scopeOptions[0].key
+      }
+      this.model[this.scopeProp] = this.formScope
+    },
+    setField (key, value) {
+      this.model[key] = value
+    },
+    onDomainChange (v) {
+      this.setField(this.domainProp, v)
+      this.emit(v, 'domainId')
+    },
+    onProjectChange (v) {
+      this.setField(this.projectProp, v)
+      this.emit(v, 'projectId')
+    },
     emit (val, field) {
       const value = {
         scope: this.formScope,
@@ -151,38 +181,72 @@ export default {
       }
       if (field === 'projectId') {
         value.project_id = val
-        this.form.fc.setFieldsValue({
-          domain: this.project.domain_id,
-        })
+        this.model[this.domainProp] = this.project.domain_id
       }
       this.$emit('change', value)
     },
-    projectsLabelFormat (item) {
-      let text = item.name
-      if (this.isAdminMode && this.l3PermissionEnable) {
-        text += `（${this.$t('monitor.text_107')}: ${item.project_domain}）`
-      }
-      return text
-      // 因为在 BaseSelect 的 OptionLabel 中关闭了 labelformat直接返回vnode，所以会显示出兼容的 name，此vnode不会展示。因此目前展示采用👆样式丑陋的方式展示，至少数据是全的
-      // return <div class='d-flex'>
-      //   <span class='text-truncate flex-fill mr-2' title={ item.name }>{ item.name }</span>
-      //   {(this.isAdminMode && this.l3PermissionEnable) ? <span style="color: #8492a6; font-size: 13px">{this.$t('common_257')}{this.$t('dictionary.domain')}: {item.project_domain}</span> : null}
-      // </div>
-    },
     async scopeChange (e) {
-      this.formScope = e.target.value
+      this.formScope = e?.target?.value ?? e
+      this.setField(this.scopeProp, this.formScope)
       const emitValue = {
         scope: this.formScope,
       }
       if (this.isDefaultSelect && (this.formScope !== 'system')) {
         await this.$nextTick()
         const key = this.formScope === 'domain' ? 'projectDomainId' : 'projectId'
-        this.form.fc.setFieldsValue({
-          [this.decorators[this.formScope][0]]: this.userInfo[key],
-        })
+        const fieldKey = this.formScope === 'domain' ? this.domainProp : this.projectProp
+        this.setField(fieldKey, this.userInfo[key])
         emitValue[`${this.formScope}_id`] = this.userInfo[key]
       }
       this.$emit('change', emitValue)
+    },
+    runFieldRule (rule, value) {
+      return new Promise((resolve, reject) => {
+        if (rule.required) {
+          const empty = value === undefined || value === null || value === '' ||
+            (Array.isArray(value) && !value.length)
+          if (empty) {
+            reject(new Error(rule.message || 'required'))
+            return
+          }
+        }
+        if (typeof rule.validator === 'function') {
+          let settled = false
+          const finish = (err) => {
+            if (settled) return
+            settled = true
+            if (err) reject(err instanceof Error ? err : new Error(String(err)))
+            else resolve()
+          }
+          let ret
+          try {
+            ret = rule.validator(rule, value, finish)
+          } catch (e) {
+            finish(e)
+            return
+          }
+          if (ret && typeof ret.then === 'function') {
+            ret.then(() => finish()).catch(finish)
+          }
+          return
+        }
+        resolve()
+      })
+    },
+    async validate () {
+      const rulesMap = this.fieldRules || {}
+      const pairs = [
+        [this.scopeProp, rulesMap.scope],
+        [this.domainProp, rulesMap.domain],
+        [this.projectProp, rulesMap.project],
+      ]
+      for (const [prop, rules] of pairs) {
+        if (!rules?.length) continue
+        for (const rule of rules) {
+          await this.runFieldRule(rule, this.model[prop])
+        }
+      }
+      return true
     },
   },
 }

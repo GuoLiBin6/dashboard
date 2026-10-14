@@ -1,7 +1,15 @@
 <template>
   <div class="policy-schedtag">
     <div class="d-flex align-items-start mb-2" v-for="(item, i) in schedtagPolicyList" :key="item.key">
-      <schedtag-policy :form="form" class="w-50" :decorators="genDecorator(item.key)" :schedtag-params="{ ...schedtagParams, $t: `schedtag-${i}` }" :policyReactInSchedtag="false" @change="onItemFieldChange" />
+      <schedtag-policy
+        :model="model"
+        class="w-50"
+        :item-key="item.key"
+        schedtag-root="policySchedtagSchedtags"
+        policy-root="policySchedtagPolicys"
+        :schedtag-params="{ ...schedtagParams, $t: `schedtag-${i}` }"
+        :policyReactInSchedtag="false"
+        @change="onItemFieldChange" />
       <a-button shape="circle" icon="minus" size="small" @click="decrease(item.key, i)" class="mt-2" />
     </div>
     <a-button type="primary" shape="circle" icon="plus" size="small" @click="add" />
@@ -10,10 +18,12 @@
 </template>
 
 <script>
-import * as R from 'ramda'
 import { uuid } from '@/utils/utils'
 import { SCHEDTAG_POLICY_OPTIONS } from '@/constants'
 import SchedtagPolicy from '@/sections/SchedtagPolicy'
+
+const SCHEDTAG_ROOT = 'policySchedtagSchedtags'
+const POLICY_ROOT = 'policySchedtagPolicys'
 
 function normalizeSchedtagItem (item) {
   if (!item || typeof item !== 'object') return null
@@ -35,16 +45,13 @@ export default {
       type: Object,
       required: true,
     },
-    decorators: {
-      type: Object,
-      required: true,
-      validator: val => R.is(Function, val.schedtags) && R.is(Function, val.policys),
-    },
     form: {
       type: Object,
-      validator: val => !val || val.fc, // 不传 或者 传就有fc
     },
-    /** 挂载前即可用的回填数据（工单 / 草稿），避免 created add 空行后再异步 initData 丢值 */
+    model: {
+      type: Object,
+      required: true,
+    },
     initSchedtags: {
       type: Array,
       default: () => [],
@@ -58,7 +65,6 @@ export default {
     }
   },
   watch: {
-    // zone 等 params 变化会触发 base-select clearSelect，回填后再补一次
     schedtagParams () {
       if (!this.schedtagsApplied) return
       this.$nextTick(() => {
@@ -76,6 +82,7 @@ export default {
     },
   },
   created () {
+    ;[SCHEDTAG_ROOT, POLICY_ROOT].forEach(root => this.ensureMap(root))
     if (Array.isArray(this.initSchedtags) && this.initSchedtags.length) {
       this.initData(this.initSchedtags)
     } else {
@@ -83,11 +90,32 @@ export default {
     }
   },
   methods: {
-    /**
-     * 回填调度标签。优先靠 decorator initialValue 挂载即带值，
-     * 再多次 setFieldsValue 兜底（选项异步加载 / params 变化清值）。
-     * @param {Array} data
-     */
+    ensureMap (root) {
+      if (!this.model[root] || typeof this.model[root] !== 'object') {
+        this.$set(this.model, root, {})
+      }
+    },
+    mapGet (root, key) {
+      return this.model?.[root]?.[key]
+    },
+    mapSet (root, key, val) {
+      this.ensureMap(root)
+      if (val === undefined) {
+        if (Object.prototype.hasOwnProperty.call(this.model[root], key)) {
+          this.$delete(this.model[root], key)
+        }
+        return
+      }
+      this.$set(this.model[root], key, val)
+    },
+    clearMapsForKey (key) {
+      if (!key) return
+      ;[SCHEDTAG_ROOT, POLICY_ROOT].forEach((root) => {
+        if (this.model[root] && Object.prototype.hasOwnProperty.call(this.model[root], key)) {
+          this.$delete(this.model[root], key)
+        }
+      })
+    },
     initData (data) {
       if (!Array.isArray(data) || !data.length) return
       const list = data.map(item => {
@@ -109,67 +137,48 @@ export default {
       })
     },
     applySchedtagFieldsValue () {
-      if (!this.form?.fc || !this.schedtagPolicyList.length) return
+      if (!this.schedtagPolicyList.length) return
       this.schedtagPolicyList.forEach(item => {
         if (!item.schedtag && !item.policy) return
-        const schedtagField = this.decorators.schedtags(item.key)[0]
-        const policyField = this.decorators.policys(item.key)[0]
-        this.form.fc.getFieldDecorator(schedtagField, this.decorators.schedtags(item.key)[1] || {})
-        this.form.fc.getFieldDecorator(policyField, this.decorators.policys(item.key)[1] || {})
-        const values = {}
-        if (item.schedtag) values[schedtagField] = item.schedtag
-        if (item.policy) values[policyField] = item.policy
-        this.form.fc.setFieldsValue(values)
+        if (item.schedtag) this.mapSet(SCHEDTAG_ROOT, item.key, item.schedtag)
+        if (item.policy) this.mapSet(POLICY_ROOT, item.key, item.policy)
       })
       this.$emit('change')
     },
     add () {
       const uid = uuid()
+      ;[SCHEDTAG_ROOT, POLICY_ROOT].forEach(root => this.ensureMap(root))
       this.schedtagPolicyList.push({
         key: uid,
       })
       this.$emit('change')
     },
     decrease (uid, index) {
+      this.clearMapsForKey(uid)
       this.schedtagPolicyList.splice(index, 1)
       this.$emit('change')
     },
-    genDecorator (key) {
-      const item = this.schedtagPolicyList.find(v => v.key === key) || {}
-      const schedtagDec = this.decorators.schedtags(key)
-      const policyDec = this.decorators.policys(key)
-      return {
-        schedtag: [
-          schedtagDec[0],
-          {
-            ...(schedtagDec[1] || {}),
-            initialValue: item.schedtag || undefined,
-          },
-        ],
-        policy: [
-          policyDec[0],
-          {
-            ...(policyDec[1] || {}),
-            initialValue: item.policy || undefined,
-          },
-        ],
-      }
-    },
     onItemFieldChange () {
-      // 用户改调度标签/策略后，把 fc 值同步回 list 再通知父级落盘
-      if (!this.form?.fc || !this.schedtagPolicyList.length) {
+      if (!this.schedtagPolicyList.length) {
         this.$emit('change')
         return
       }
       this.schedtagPolicyList.forEach((item) => {
-        const schedtagField = this.decorators.schedtags(item.key)[0]
-        const policyField = this.decorators.policys(item.key)[0]
-        const schedtag = this.form.fc.getFieldValue(schedtagField)
-        const policy = this.form.fc.getFieldValue(policyField)
+        const schedtag = this.mapGet(SCHEDTAG_ROOT, item.key)
+        const policy = this.mapGet(POLICY_ROOT, item.key)
         if (schedtag) item.schedtag = typeof schedtag === 'object' ? (schedtag.key || schedtag.id) : schedtag
         if (policy) item.policy = typeof policy === 'object' ? (policy.key || policy.id) : policy
       })
       this.$emit('change')
+    },
+    async validate () {
+      for (const item of this.schedtagPolicyList) {
+        const schedtag = this.mapGet(SCHEDTAG_ROOT, item.key)
+        if (!schedtag) throw new Error(this.$t('compute.text_123'))
+        const policy = this.mapGet(POLICY_ROOT, item.key)
+        if (!policy) throw new Error(this.$t('common_256'))
+      }
+      return true
     },
   },
 }

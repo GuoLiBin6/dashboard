@@ -1,42 +1,43 @@
-
 <template>
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('storage.text_205')}}</div>
     <div slot="body">
       <dialog-selected-tips :name="params.name" :count="params.data.length" :action="$t('storage.text_205')" />
       <dialog-table class="mb-2" :data="params.data" :columns="[params.columns[0], params.columns[7], params.columns[9]]" />
-      <a-form
+      <a-form-model
         v-bind="formItemLayout"
-        :form="form.fc">
-        <a-form-item :label="$t('storage.text_214')">
+        ref="formRef"
+        :model="form"
+        :rules="rules">
+        <a-form-model-item :label="$t('storage.text_214')" prop="enabled">
           <a-tooltip>
             <template v-if="refererDisabled" slot="title">
               {{$t('storage.text_68')}}
             </template>
-            <a-switch v-decorator="decorators.enabled" :disabled="refererDisabled" :checked-children="$t('storage.text_215')" :un-checked-children="$t('storage.text_216')" @change="handleEnabledChange" />
+            <a-switch v-model:checked="form.enabled" :disabled="refererDisabled" :checked-children="$t('storage.text_215')" :un-checked-children="$t('storage.text_216')" @change="handleEnabledChange" />
           </a-tooltip>
-        </a-form-item>
-        <a-form-item :label="$t('storage.text_208')" :extra="$t('storage.text_209')" v-if="referer_enabled">
-          <a-switch v-decorator="decorators.allow_empty_refer" :checked-children="$t('storage.text_184')" :un-checked-children="$t('storage.text_185')" />
-        </a-form-item>
-        <a-form-item :label="$t('storage.text_86')" v-if="referer_enabled">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('storage.text_208')" :extra="$t('storage.text_209')" v-if="form.enabled" prop="allow_empty_refer">
+          <a-switch v-model:checked="form.allow_empty_refer" :checked-children="$t('storage.text_184')" :un-checked-children="$t('storage.text_185')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('storage.text_86')" v-if="form.enabled" prop="referer_type">
           <a-tooltip>
             <template v-if="refererDisabled" slot="title">
               {{$t('storage.text_68')}}
             </template>
-            <a-radio-group v-decorator="decorators.referer_type" :disabled="refererDisabled">
+            <a-radio-group v-model:value="form.referer_type" :disabled="refererDisabled">
               <a-radio value="White-List">{{$t('storage.text_206')}}</a-radio>
               <a-radio value="Black-List">{{$t('storage.black_list')}}</a-radio>
             </a-radio-group>
           </a-tooltip>
-        </a-form-item>
-        <a-form-item :label="$t('storage.text_219')" v-if="referer_enabled">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('storage.text_219')" v-if="form.enabled" prop="domain_list">
           <a-textarea
-            v-decorator="decorators.domain_list"
+            v-model:value="form.domain_list"
             :placeholder="$t('storage.text_207')"
             :auto-size="{ minRows: 3, maxRows: 5 }" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -60,39 +61,15 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        enabled: referer_enabled,
+        allow_empty_refer: this.params.data[0].referer?.allow_empty_refer || false,
+        referer_type: this.params.data[0].referer?.referer_type || 'White-List',
+        domain_list: this.params.data[0].referer?.domain_list ? this.params.data[0].referer.domain_list.join('\n') : '',
       },
       init_referer_enabled: referer_enabled,
-      referer_enabled,
-      decorators: {
-        enabled: [
-          'enabled',
-          {
-            valuePropName: 'checked',
-            initialValue: referer_enabled,
-          },
-        ],
-        allow_empty_refer: [
-          'allow_empty_refer',
-          {
-            valuePropName: 'checked',
-            initialValue: this.params.data[0].referer?.allow_empty_refer || false,
-          },
-        ],
-        referer_type: [
-          'referer_type',
-          {
-            initialValue: this.params.data[0].referer?.referer_type || 'White-List',
-          },
-        ],
+      rules: {
         domain_list: [
-          'domain_list',
-          {
-            initialValue: this.params.data[0].referer?.domain_list ? this.params.data[0].referer.domain_list.join('\n') : '',
-            rules: [
-              { required: isDomainListRequired, message: this.$t('storage.bucket.referer.domain_list.tooltip') },
-            ],
-          },
+          { required: isDomainListRequired, message: this.$t('storage.bucket.referer.domain_list.tooltip') },
         ],
       },
       formItemLayout: {
@@ -117,7 +94,7 @@ export default {
   },
   methods: {
     handleEnabledChange (val) {
-      this.referer_enabled = val
+      this.form.enabled = val
     },
     doSet (data) {
       return this.params.onManager('performAction', {
@@ -131,7 +108,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         if (values.domain_list && values.domain_list.length > 0) {
           const domains = []
           values.domain_list.split('\n').forEach((domain) => {

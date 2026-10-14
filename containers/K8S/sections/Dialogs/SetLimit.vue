@@ -4,13 +4,11 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :name="$t('k8s.text_64')" :action="$t('k8s.text_68')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        v-bind="formItemLayout"
-        :form="form.fc">
-        <a-form-item :label="$t('k8s.text_69')" v-if="!params.hideReplicas">
-          <a-input v-decorator="decorators.replicas" :min="0" type="number" :placeholder="$t('k8s.text_70')" :addonAfter="$t('k8s.text_71')" @blur="change" />
-        </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('k8s.text_69')" v-if="!params.hideReplicas" prop="replicas">
+          <a-input v-model:value="form.replicas" :min="0" type="number" :placeholder="$t('k8s.text_70')" :addonAfter="$t('k8s.text_71')" @blur="change" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -32,20 +30,14 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-        fd: {},
+        replicas: 3,
       },
-      data: this.params.data[0],
-      decorators: {
+      rules: {
         replicas: [
-          'replicas',
-          {
-            rules: [
-              { required: true, message: this.$t('k8s.text_70') },
-            ],
-          },
+          { required: true, message: this.$t('k8s.text_70') },
         ],
       },
+      data: this.params.data[0],
       formItemLayout: {
         wrapperCol: {
           span: 19,
@@ -65,9 +57,7 @@ export default {
       const val = Number(e.target.value)
       if (R.is(Number, val) && !Number.isNaN(val) && val >= 0) {
       } else {
-        this.form.fc.setFieldsValue({
-          replicas: this.replicas,
-        })
+        this.form.replicas = this.replicas
       }
     },
     async fetchData () {
@@ -81,11 +71,7 @@ export default {
         },
       })
       this.replicas = data.replicas || 3
-      this.$nextTick(() => {
-        this.form.fc.setFieldsValue({
-          replicas: this.replicas,
-        })
-      })
+      this.form.replicas = this.replicas
     },
     async doUpdate (params) {
       const data = {
@@ -109,14 +95,13 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        await this.doUpdate(values)
+        await this.$refs.formRef.validate()
+        await this.doUpdate(this.form)
         this.loading = false
         this.cancelDialog()
         if (R.is(Function, this.params.success)) this.params.success()
       } catch (error) {
         this.loading = false
-        throw error
       }
     },
   },

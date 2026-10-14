@@ -4,20 +4,20 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.loadbalancer')" :count="params.data.length" :action="params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('network.text_19')">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('network.text_19')" prop="cluster_id">
           <base-select
             remote
             showSync
             :params="clusterParams"
-            v-decorator="decorators.cluster_id"
+            v-model:value="form.cluster_id"
             resource="loadbalancerclusters"
             :remote-fn="q => ({ filter: `name.contains(${q})` })"
             :select-props="{ placeholder: $t('network.text_79') }" />
           <!-- <p slot="extra" v-if="this.params.data.length === 1">{{$t('network.text_80')}}<a-button type="link" size="small" @click="createCluster">{{$t('network.text_26')}}</a-button>
           </p> -->
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -38,17 +38,11 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        cluster_id: this.params.data[0].cluster_id,
       },
-      decorators: {
+      rules: {
         cluster_id: [
-          'cluster_id',
-          {
-            initialValue: this.params.data[0].cluster_id,
-            rules: [
-              { required: true, message: this.$t('network.text_79') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_79') },
         ],
       },
       formItemLayout: {
@@ -79,7 +73,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         const ids = this.params.data.map(item => item.id)
         await this.params.onManager('batchUpdate', {
           id: ids,

@@ -8,7 +8,7 @@ export default function (def, schema) {
     def.input = {
       options: enumToOptions(schema.enum),
     }
-    def.decorator = [
+    def.field = [
       {
         initialValue: schema.default,
         rules: [

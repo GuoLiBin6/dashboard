@@ -32,12 +32,14 @@ export default {
   methods: {
     async validateForm (isGoPrev) {
       try {
-        const values = await this.$refs.formRef.form.fc.validateFields()
-        this.allFd = { ...this.allFd, ...values }
+        const step = this.$refs.formRef
+        const values = await step.validate()
+        this.allFd = { ...this.allFd, ...(step.form.fd || {}), ...values }
         return values
       } catch (error) {
         if (isGoPrev) { // 如果是上一步的话，要同步数据并可以允许返回上一步，故这里不 throw error
-          this.allFd = { ...this.allFd, ...error.values }
+          const step = this.$refs.formRef
+          this.allFd = { ...this.allFd, ...(step?.form?.fd || {}), ...(error?.values || {}) }
           console.error(error)
         } else {
           throw error

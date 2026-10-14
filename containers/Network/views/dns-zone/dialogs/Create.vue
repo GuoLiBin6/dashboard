@@ -2,26 +2,27 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{params.title}}</div>
     <div slot="body">
-      <a-form
+      <a-form-model
         class="mt-3"
-        :form="form.fc"
-        @submit.prevent="handleSubmit"
+        ref="formRef"
+        :model="form"
+        :rules="rules"
         v-bind="formItemLayout">
-        <a-form-item :label="$t('network.text_205', [$t('dictionary.domain')])" v-if="$store.getters.isAdminMode">
-          <domain-select v-decorator="decorators.project_domain" @change="handleDomainChange" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_717')">
+        <a-form-model-item :label="$t('network.text_205', [$t('dictionary.domain')])" v-if="$store.getters.isAdminMode" prop="project_domain">
+          <domain-select v-model:value="form.project_domain" @change="handleDomainChange" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_717')" prop="zoneType">
           <a-select
-            v-decorator="decorators.zoneType" @change="zoneTypeChangeHandle">
+            v-model:value="form.zoneType" @change="zoneTypeChangeHandle">
             <a-select-option v-for="v in options.zoneTypes" :value="v.value" :key="v.value">
               <div>{{ v.label }}<span class="ml-2">{{ v.desc }}</span></div>
             </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('network.text_156')">
-          <a-input v-decorator="decorators.name" :placeholder="$t('network.text_157')" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_156')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('network.text_157')" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -54,43 +55,17 @@ export default {
         zoneTypes,
       },
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-          },
-        }),
-        fd: {
-          zoneType,
-        },
+        project_domain: projectDomainId,
+        zoneType,
+        name: undefined,
       },
-      decorators: {
-        project_domain: [
-          'project_domain',
-          {
-            initialValue: projectDomainId,
-          },
-        ],
+      rules: {
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('network.text_157') },
-              { validator: this.checkDomainHandle },
-            ],
-          },
+          { required: true, message: this.$t('network.text_157') },
+          { validator: this.checkDomainHandle },
         ],
         zoneType: [
-          'zoneType',
-          {
-            initialValue: zoneType,
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('network.text_717') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_717') },
         ],
       },
       formItemLayout: {
@@ -113,8 +88,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        const { name, project_domain, zoneType } = values
+        await this.$refs.formRef.validate()
+        const { name, project_domain, zoneType } = this.form
         const data = {
           name,
           project_domain_id: project_domain,
@@ -132,9 +107,10 @@ export default {
     },
     handleDomainChange (val) {
       this.project_domain = val
+      this.form.project_domain = val
     },
     checkDomainHandle (rule, value, callback) {
-      if (this.form.fd.zoneType === 'PublicZone') {
+      if (this.form.zoneType === 'PublicZone') {
         if (validate(value, 'domain') === false || validate(value, 'domain').result === false) {
           callback(new Error(this.$t('network.text_178')))
         }
@@ -143,7 +119,7 @@ export default {
     },
     zoneTypeChangeHandle () {
       this.$nextTick(() => {
-        this.form.fc.validateFields(['name'], { force: true })
+        this.$refs.formRef.validateField('name')
       })
     },
   },

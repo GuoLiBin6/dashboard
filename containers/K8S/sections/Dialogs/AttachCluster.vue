@@ -2,16 +2,16 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('k8s.text_366')}}</div>
     <div slot="body">
-      <a-form class="mt-3" :form="form.fc">
-        <a-form-item :label="$t('k8s.text_28')" class="mb-0" v-bind="formItemLayout">
+      <a-form-model ref="formRef" class="mt-3" :model="form" :rules="rules">
+        <a-form-model-item :label="$t('k8s.text_28')" class="mb-0" v-bind="formItemLayout" prop="cluster_id">
           <base-select
+            v-model:value="form.cluster_id"
             resource="kubeclusters"
             :params="clusterParams"
             version="v1"
-            v-decorator="decorators.cluster_id"
             :select-props="{ placeholder: $t('k8s.text_30') }" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -32,17 +32,11 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-        }),
+        cluster_id: undefined,
       },
-      decorators: {
+      rules: {
         cluster_id: [
-          'cluster_id',
-          {
-            rules: [
-              { required: true, message: this.$t('k8s.text_30'), trigger: 'blur' },
-            ],
-          },
+          { required: true, message: this.$t('k8s.text_30'), trigger: 'blur' },
         ],
       },
       formItemLayout: {
@@ -63,12 +57,12 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         await this.params.onManager('performAction', {
           id: this.params.data.id,
           managerArgs: {
             action: 'attach-cluster',
-            data: values,
+            data: { ...this.form },
           },
         })
         this.loading = false

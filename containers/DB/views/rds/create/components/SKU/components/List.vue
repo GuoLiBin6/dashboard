@@ -132,7 +132,7 @@ export default {
               if (this.rateLoading) {
                 return [<icon type="loading" />]
               }
-              const isPackage = this.form.getFieldValue('billing_type') === BILL_TYPES_MAP.prepaid.key
+              const isPackage = this.form.fd.billing_type === BILL_TYPES_MAP.prepaid.key
               if (rate) {
                 let price = rate.hour_price
                 let unit = this.$t('db.text_129')
@@ -179,7 +179,9 @@ export default {
     },
   },
   created () {
-    this.form.getFieldDecorator('sku', { preserve: true })
+    if (this.form?.fd && this.form.fd.sku === undefined) {
+      this.$set(this.form.fd, 'sku', undefined)
+    }
     this._skuListApplying = false
   },
   methods: {
@@ -189,9 +191,7 @@ export default {
     async handleSkuChange ({ row }) {
       if (row && !this.isAvailable(row)) return
       const _row = (row && this.isAvailable(row)) ? row : undefined
-      this.form.setFieldsValue({
-        sku: _row,
-      })
+      this.$set(this.form.fd, 'sku', _row)
       this.selectedSku = _row
       await this.$nextTick()
       this.$refs.tableRef.setRadioRow(_row)
@@ -243,12 +243,12 @@ export default {
       }
     },
     getSkuParams () {
-      const { getFieldsValue } = this.form
       const paramsKeys = ['engine', 'engine_version', 'category', 'storage_type', 'vcpu_count', 'vmem_size_mb', 'cloudregion']
       if (this.form.fd.provider !== 'Aws') { // aws 可用区根据套餐来定 [单,双]
         paramsKeys.push('zones')
       }
-      const PARAMS = getFieldsValue(paramsKeys)
+      const PARAMS = {}
+      paramsKeys.forEach((k) => { PARAMS[k] = this.form.fd[k] })
       PARAMS.cloudregion_id = PARAMS.cloudregion
       if (PARAMS.zones) {
         const zoneArr = PARAMS.zones.split('+')

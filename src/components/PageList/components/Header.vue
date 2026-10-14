@@ -393,12 +393,13 @@ export default {
     handleCustomList () {
       const grid = this.getGrid()
       const cols = grid.getTableColumn().collectColumn || []
-      let nameIndex = 0
-      const hidenColumns = []
+      // 首列（名称等）改为可配置固定，但仍锁定：不可取消勾选、不可拖排序
+      const lockedColumns = []
       if (cols.length) {
         const colType = cols[0].type
-        nameIndex = colType === 'checkbox' ? 1 : 0
-        hidenColumns.push(cols[nameIndex].property)
+        const nameIndex = colType === 'checkbox' || colType === 'radio' ? 1 : 0
+        const primary = cols[nameIndex]
+        if (primary && primary.property) lockedColumns.push(primary.property)
       }
       this.createDialog('CustomListDialog', {
         title: this.$t('common.text00011'),
@@ -413,7 +414,7 @@ export default {
         tagColumnParamsFormatter: this.tagColumnParamsFormatter,
         tagColumn2Resource: this.tagColumn2Resource,
         tagColumn2ParamsFormatter: this.tagColumn2ParamsFormatter,
-        hidenColumns,
+        lockedColumns,
       })
     },
     toggleTreeSelect () {

@@ -4,19 +4,19 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('aice.mounted_apps')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" v-bind="formItemLayout" hideRequiredMark>
-        <a-form-item :label="$t('aice.mounted_apps.mounts')">
-          <a-textarea v-decorator="decorators.mounts" :placeholder="mountsExample" :auto-size="{ minRows: 3, maxRows: 5 }" />
-        </a-form-item>
-        <a-form-item :label="$t('aice.template')">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout" hideRequiredMark>
+        <a-form-model-item :label="$t('aice.mounted_apps.mounts')" prop="mounts">
+          <a-textarea v-model:value="form.mounts" :placeholder="mountsExample" :auto-size="{ minRows: 3, maxRows: 5 }" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('aice.template')" prop="image_id">
           <base-select
-            v-decorator="decorators.image_id"
+            v-model:value="form.image_id"
             resource="images"
             :params="templateParams"
             filterable
             :selectProps="{ placeholder: $t('common.tips.select', [$t('aice.template')]) }" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -34,36 +34,19 @@ export default {
   name: 'PhoneImageUpdateDialog',
   mixins: [DialogMixin, WindowsMixin],
   data () {
+    const row = this.params.data[0] || {}
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.$set(this.form.fd, key, values[key])
-            })
-          },
-        }),
-        fd: {},
+        mounts: (row.mounts || []).join('\n'),
+        image_id: row.image_id,
       },
-      decorators: {
+      rules: {
         mounts: [
-          'mounts',
-          {
-            initialValue: this.params.data[0].mounts.join('\n'),
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('aice.mounted_apps.mounts')]) },
-            ],
-          },
+          { required: true, message: this.$t('common.tips.input', [this.$t('aice.mounted_apps.mounts')]) },
         ],
         image_id: [
-          'image_id',
-          {
-            initialValue: this.params.data[0].image_id,
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('aice.template')]) },
-            ],
-          },
+          { required: true, message: this.$t('common.tips.input', [this.$t('aice.template')]) },
         ],
       },
       formItemLayout: {
@@ -97,12 +80,12 @@ export default {
   methods: {
     async handleConfirm () {
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         const manager = new this.$Manager('instant_apps', '')
-        const mountPaths = values.mounts.split('\n')
+        const mountPaths = this.form.mounts.split('\n')
         const data = {
           mounts: mountPaths,
-          image_id: values.image_id,
+          image_id: this.form.image_id,
         }
         manager.update({
           id: this.params.data[0].id,

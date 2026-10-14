@@ -4,28 +4,29 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.server.quick.recovery')" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-bind="formItemLayout">
         <!-- 自动启动 -->
-        <a-form-item :label="$t('compute.text_494')" v-if="isSingle && firstData.status === 'ready'" :extra="$t('compute.text_1263')">
+        <a-form-model-item :label="$t('compute.text_494')" v-if="isSingle && firstData.status === 'ready'" :extra="$t('compute.text_1263')" prop="auto_start">
           <a-switch
+            v-model:checked="form.auto_start"
             :checkedChildren="$t('compute.text_115')"
-            :unCheckedChildren="$t('compute.text_116')"
-            v-decorator="decorators.auto_start" />
-        </a-form-item>
-        <a-form-item
+            :unCheckedChildren="$t('compute.text_116')" />
+        </a-form-model-item>
+        <a-form-model-item
           :label="$t('compute.text_111')"
           :validate-status="message ? 'warning' : hostValidateStatus"
-          :help="message || hostValidateMsg">
+          :help="message || hostValidateMsg"
+          prop="host">
           <list-select
-            v-decorator="decorators.host"
+            v-model:value="form.host"
             :list-props="resourceProps"
             :formatter="v => v.name"
             :multiple="false"
             :placeholder="$t('compute.text_314')"
             :dialog-params="{ title: $t('compute.text_111'), width: 1060 }"
             @change="hostChangeHandle" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading" :disabled="handleConfirmDisabled">{{ $t('dialog.ok') }}</a-button>
@@ -51,26 +52,15 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        host: undefined,
+        auto_start: true,
       },
       forcastData: null,
       hosts: [],
       message: '',
-      decorators: {
+      rules: {
         host: [
-          'host',
-          {
-            rules: [
-              { required: false, message: this.$t('compute.text_314'), trigger: 'change' },
-            ],
-          },
-        ],
-        auto_start: [
-          'auto_start',
-          {
-            initialValue: true,
-            valuePropName: 'checked',
-          },
+          { required: false, message: this.$t('compute.text_314'), trigger: 'change' },
         ],
       },
       formItemLayout: {
@@ -157,13 +147,13 @@ export default {
     this.queryHosts()
   },
   methods: {
-    doSingleTransfer (ids, values) {
+    doSingleTransfer () {
       const data = {
-        prefer_host: values.host,
+        prefer_host: this.form.host,
         rescue_mode: true,
       }
       if (this.firstData.status === 'ready') {
-        data.auto_start = values.auto_start
+        data.auto_start = this.form.auto_start
       }
       return this.params.onManager('performAction', {
         id: this.firstData.id,
@@ -174,10 +164,10 @@ export default {
         },
       })
     },
-    doBatchTransfer (ids, values) {
+    doBatchTransfer (ids) {
       const data = {
         guest_ids: ids,
-        prefer_host: values.host,
+        prefer_host: this.form.host,
         rescue_mode: true,
       }
       return this.params.onManager('performClassAction', {
@@ -192,12 +182,12 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         const ids = this.params.data.map(item => item.id)
         if (this.isSingle) {
-          await this.doSingleTransfer(ids, values)
+          await this.doSingleTransfer()
         } else {
-          await this.doBatchTransfer(ids, values)
+          await this.doBatchTransfer(ids)
         }
         this.cancelDialog()
       } finally {

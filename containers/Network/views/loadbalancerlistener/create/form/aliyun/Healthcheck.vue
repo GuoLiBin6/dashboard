@@ -1,58 +1,82 @@
 <template>
-  <a-form :form="form.fc" class="mt-3" v-bind="formItemLayout">
+  <a-form-model :model="form.fd" class="mt-3" v-bind="formItemLayout">
     <a-divider orientation="left">{{$t('network.text_397')}}</a-divider>
     <a-form-item :label="$t('network.text_398')">
       <a-tooltip :title="$t('network.text_399')" placement="top">
-        <a-switch v-decorator="decorators.health_check" @change="healthCheckChange" :disabled="['tcp', 'udp'].includes(allFd.listener_type)" />
+        <a-switch :checked="form.fd.health_check" :disabled="['tcp', 'udp'].includes(allFd.listener_type)" @change="onHealthCheckChange" />
       </a-tooltip>
     </a-form-item>
     <template v-if="form.fd.health_check">
       <a-divider orientation="left">{{$t('network.text_94')}}</a-divider>
       <a-form-item :label="$t('network.text_400')" v-if="['tcp'].includes(allFd.listener_type)">
-        <a-radio-group v-decorator="decorators.health_check_type">
+        <a-radio-group :value="form.fd.health_check_type" @change="e => setField('health_check_type', e.target.value)">
           <a-radio-button v-for="item in healthCheckTypeOpts" :value="item.key" :key="item.key">{{ item.label }}</a-radio-button>
         </a-radio-group>
       </a-form-item>
       <template v-if="(['tcp'].includes(allFd.listener_type) && ['http'].includes(form.fd.health_check_type)) || ['http', 'https'].includes(allFd.listener_type)">
         <a-form-item :label="$t('network.text_401')">
-          <a-input v-decorator="decorators.health_check_uri" :placeholder="$t('network.text_402')" />
+          <a-input :value="form.fd.health_check_uri" @update:value="v => setField('health_check_uri', v)" :placeholder="$t('network.text_402')" />
         </a-form-item>
         <a-form-item :label="$t('network.text_403')">
-          <a-input v-decorator="decorators.health_check_domain" :placeholder="$t('network.text_404')" />
+          <a-input :value="form.fd.health_check_domain" @update:value="v => setField('health_check_domain', v)" :placeholder="$t('network.text_404')" />
         </a-form-item>
         <a-form-item :label="$t('network.text_405')">
-          <a-checkbox-group name="checkboxgroup" :options="healthCheckHttpCodeOpts" v-decorator="decorators.health_check_http_code" />
+          <a-checkbox-group name="checkboxgroup" :options="healthCheckHttpCodeOpts" :value="form.fd.health_check_http_code" @change="v => setField('health_check_http_code', v)" />
         </a-form-item>
       </template>
       <a-form-item :label="$t('network.text_406')" v-if="['http', 'https'].includes(allFd.listener_type)">
-        <a-input v-decorator="decorators.health_check_timeout" :addonAfter="$t('network.text_76')" :placeholder="$t('network.text_407')" />
+        <a-input :value="form.fd.health_check_timeout" @update:value="v => setField('health_check_timeout', v)" :addonAfter="$t('network.text_76')" :placeholder="$t('network.text_407')" />
       </a-form-item>
       <a-form-item :label="$t('network.text_408')">
-        <a-input v-decorator="decorators.health_check_interval" :addonAfter="$t('network.text_76')" :placeholder="$t('network.text_409')" />
+        <a-input :value="form.fd.health_check_interval" @update:value="v => setField('health_check_interval', v)" :addonAfter="$t('network.text_76')" :placeholder="$t('network.text_409')" />
       </a-form-item>
       <a-form-item :label="$t('network.text_410')">
-        <a-input v-decorator="decorators.health_check_rise" :addonAfter="$t('network.text_411')" :placeholder="$t('network.text_412')" />
+        <a-input :value="form.fd.health_check_rise" @update:value="v => setField('health_check_rise', v)" :addonAfter="$t('network.text_411')" :placeholder="$t('network.text_412')" />
       </a-form-item>
       <a-form-item :label="$t('network.text_413')">
-        <a-input v-decorator="decorators.health_check_fall" :addonAfter="$t('network.text_411')" :placeholder="$t('network.text_412')" />
+        <a-input :value="form.fd.health_check_fall" @update:value="v => setField('health_check_fall', v)" :addonAfter="$t('network.text_411')" :placeholder="$t('network.text_412')" />
       </a-form-item>
       <template v-if="['udp'].includes(allFd.listener_type)">
         <a-form-item :label="$t('network.text_414')">
-          <a-input v-decorator="decorators.health_check_req" :placeholder="$t('network.text_415')" />
+          <a-input :value="form.fd.health_check_req" @update:value="v => setField('health_check_req', v)" :placeholder="$t('network.text_415')" />
         </a-form-item>
         <a-form-item :label="$t('network.text_416')">
-          <a-input v-decorator="decorators.health_check_exp" :placeholder="$t('network.text_417')" />
+          <a-input :value="form.fd.health_check_exp" @update:value="v => setField('health_check_exp', v)" :placeholder="$t('network.text_417')" />
         </a-form-item>
       </template>
     </template>
-  </a-form>
+  </a-form-model>
 </template>
 
 <script>
 import mixin from '../mixins/formStepItem'
+import controlledFieldMap from '../mixins/controlledFieldMap'
 
 export default {
   name: 'LBListenerCreateHealcheck',
-  mixins: [mixin],
+  mixins: [mixin, controlledFieldMap],
+  created () {
+    this.registerFields([
+      'health_check',
+      'health_check_type',
+      'health_check_uri',
+      'health_check_domain',
+      'health_check_http_code',
+      'health_check_timeout',
+      'health_check_interval',
+      'health_check_rise',
+      'health_check_fall',
+      'health_check_req',
+      'health_check_exp',
+    ])
+  },
+  methods: {
+    onHealthCheckChange (val) {
+      this.setField('health_check', val)
+      if (val) {
+        this.setDefaultHealthCheckType(this.healthCheckTypeOpts)
+      }
+    },
+  },
 }
 </script>

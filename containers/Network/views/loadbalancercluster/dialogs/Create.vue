@@ -2,26 +2,31 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{params.title}}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('network.text_199')" class="mb-0" v-bind="formItemLayout">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('network.text_199')" class="mb-0" prop="cloudregion">
           <cloudregion-zone
+            :model="form"
             :zone-params="resParams.zone"
             :cloudregion-params="resParams.region"
-            :decorator="decorators.regionZone"
             filterBrandResource="loadbalancer_engine" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_21')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.name" :placeholder="$t('network.text_44')" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')" v-bind="formItemLayout">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
-        <a-form-item :label="$t('common.text00012')" class="mb-0" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_21')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('network.text_44')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" prop="description">
+          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.description" :placeholder="$t('common_367')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.text00012')" class="mb-0" prop="__meta__">
           <tag
-            v-decorator="decorators.__meta__" />
-        </a-form-item>
-      </a-form>
+            :value="form.__meta__"
+            @change="v => form.__meta__ = v"
+            :allowNoValue="false" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -31,11 +36,11 @@
 </template>
 
 <script>
-import CloudregionZone from '@/sections/CloudregionZone'
+import CloudregionZone from '@/sections/CloudregionZone/model'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import Tag from '@/sections/Tag'
-import validateForm from '@/utils/validate'
+import validateForm, { isRequired } from '@/utils/validate'
 
 export default {
   name: 'LoadbalancerclusterCreateDialog',
@@ -48,49 +53,26 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        cloudregion: undefined,
+        zone: undefined,
+        name: undefined,
+        description: undefined,
+        __meta__: {},
       },
-      decorators: {
+      rules: {
+        cloudregion: [
+          { validator: isRequired(), message: this.$t('network.text_286'), trigger: 'change' },
+        ],
+        zone: [
+          { validator: isRequired(), message: this.$t('network.text_287'), trigger: 'change' },
+        ],
         name: [
-          'name',
-          {
-            validateFirst: true,
-            validateTrigger: ['blur'],
-            rules: [
-              { required: true, message: this.$t('network.text_116') },
-              { validator: this.$validate('resourceName') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_116') },
+          { validator: this.$validate('resourceName') },
         ],
-        description: ['description'],
         __meta__: [
-          '__meta__',
-          {
-            rules: [
-              { validator: validateForm('tagName') },
-            ],
-          },
+          { validator: validateForm('tagName') },
         ],
-        regionZone: {
-          cloudregion: [
-            'cloudregion',
-            {
-              initialValue: { key: '', label: '' },
-              rules: [
-                { required: true, message: this.$t('network.text_286') },
-              ],
-            },
-          ],
-          zone: [
-            'zone',
-            {
-              initialValue: { key: '', label: '' },
-              rules: [
-                { required: true, message: this.$t('network.text_287') },
-              ],
-            },
-          ],
-        },
       },
       formItemLayout: {
         wrapperCol: {
@@ -108,11 +90,6 @@ export default {
           scope: this.$store.getters.scope,
         },
       },
-    }
-  },
-  provide () {
-    return {
-      form: this.form,
     }
   },
   methods: {
@@ -136,8 +113,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        await this.doCreate(values)
+        await this.$refs.formRef.validate()
+        await this.doCreate(this.form)
         this.loading = false
         this.cancelDialog()
         this.params.refresh()

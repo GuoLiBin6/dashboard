@@ -208,6 +208,8 @@ export default {
       _debouncedCloudShellInitHeight: null,
       // 全量列（含 visible:false）；TableLiteGrid 会过滤 visible
       tableColumns: [],
+      // 固定重排前的列顺序，供自定义列表配置使用（取消固定后可恢复原排序）
+      configColumns: [],
     }
   },
   computed: {
@@ -424,6 +426,9 @@ export default {
         })
         .map(item => ({ ...item }))
 
+      // 业务首列（通常为名称）：始终展示，对应自定义列表中的锁定首列
+      const primaryField = (cols.find(item => item && item.field && item.field !== '_action' && item.field !== '_action_placeholder') || {}).field
+
       const maps = this.config && this.config.sortColumnsMap
       if (!R.isNil(maps) && !R.isEmpty(maps)) {
         cols.sort((prev, next) => {
@@ -466,7 +471,13 @@ export default {
       }
 
       cols.forEach(item => {
-        if (item.type === 'checkbox' || item.type === 'radio' || item.field === '_action' || item.field === '_action_placeholder') {
+        if (
+          item.type === 'checkbox' ||
+          item.type === 'radio' ||
+          item.field === '_action' ||
+          item.field === '_action_placeholder' ||
+          (primaryField && item.field === primaryField)
+        ) {
           item.visible = true
           return
         }
@@ -585,7 +596,79 @@ export default {
         return next
       })
 
-      this.tableColumns = cols
+      // 配置用顺序：保留 sortColumnsMap / 拖拽顺序，不受左右固定重排影响
+      this.configColumns = cols.map(col => ({ ...col }))
+      this.tableColumns = this.applyColumnFixedConfig(cols)
+    },
+    /**
+     * 应用用户配置的左右固定列，并重排为：左固定 | 中间 | 右固定 | 操作列。
+     * 默认无固定列；仅当存在左固定列时，checkbox/radio/expand/seq 一并左固定并置最左。
+     * 操作列始终在最右侧（可单独配置 fixed）。
+     */
+    applyColumnFixedConfig (cols) {
+      const fixedCfg = (this.config && this.config.fixedColumns) || {}
+      const leftKeys = new Set(Array.isArray(fixedCfg.left) ? fixedCfg.left : [])
+      const rightKeys = new Set(Array.isArray(fixedCfg.right) ? fixedCfg.right : [])
+      const isSelectCol = (col) => ['checkbox', 'radio', 'expand', 'seq'].includes(col && col.type)
+      const isActionCol = (col) => col && (col.field === '_action' || col.field === '_action_placeholder')
+
+      const marked = cols.map((item) => {
+        const next = { ...item }
+        if (isSelectCol(next)) {
+          delete next.fixed
+          return next
+        }
+        // 操作列仅支持右固定
+        if (isActionCol(next)) {
+          if (next.field && rightKeys.has(next.field)) next.fixed = 'right'
+          else delete next.fixed
+          return next
+        }
+        if (next.field && leftKeys.has(next.field)) {
+          next.fixed = 'left'
+        } else if (next.field && rightKeys.has(next.field)) {
+          next.fixed = 'right'
+        } else if (next.fixed === 'left' || next.fixed === 'right') {
+          // 保留业务列自带的 fixed
+        } else {
+          delete next.fixed
+        }
+        if (next.visible === false) {
+          delete next.fixed
+        }
+        return next
+      })
+
+      const hasLeftFixed = marked.some(col => col.fixed === 'left' && !isSelectCol(col) && !isActionCol(col))
+      if (hasLeftFixed) {
+        marked.forEach((col) => {
+          if (isSelectCol(col)) col.fixed = 'left'
+        })
+      }
+
+      const left = []
+      const mid = []
+      const right = []
+      const actionCols = []
+      marked.forEach((col) => {
+        if (isActionCol(col)) {
+          actionCols.push(col)
+          return
+        }
+        if (col.fixed === 'left') left.push(col)
+        else if (col.fixed === 'right') right.push(col)
+        else mid.push(col)
+      })
+
+      let orderedLeft = left
+      if (hasLeftFixed && left.length) {
+        const selectCols = left.filter(isSelectCol)
+        const otherLeft = left.filter(col => !isSelectCol(col))
+        orderedLeft = [...selectCols, ...otherLeft]
+      }
+
+      // 操作列始终在最右；若配置了 fixed 则带 sticky
+      return [...orderedLeft, ...mid, ...right, ...actionCols]
     },
     handleSortChange ({ column, property, order }) {
       this.$emit('clear-selected')
@@ -657,8 +740,12 @@ export default {
       grid.clearRadioRow()
     },
     getTableColumn () {
+      // 使用固定重排前的顺序，避免「设固定→排到两端→取消固定无法恢复原序」
+      const source = (this.configColumns && this.configColumns.length)
+        ? this.configColumns
+        : this.tableColumns
       return {
-        collectColumn: (this.tableColumns || []).map(col => ({
+        collectColumn: (source || []).map(col => ({
           ...col,
           property: col.field,
           visible: col.visible !== false,

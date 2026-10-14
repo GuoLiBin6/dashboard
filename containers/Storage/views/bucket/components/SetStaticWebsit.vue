@@ -1,4 +1,3 @@
-
 <template>
   <div>
     <page-header :title="$t('storage.text_183')" />
@@ -6,21 +5,27 @@
       <dialog-selected-tips :name="$t('storage.text_18')" :count="1" :action="$t('storage.text_183')" />
       <dialog-table class="mb-2" :data="currentItem" :columns="bucketColumns" />
       <a-divider />
-      <a-form :form="form.fc">
-        <a-form-item :label="$t('storage.text_41')" v-bind="formItemLayout">
-          <a-switch v-decorator="decorators.status" :checked-children="$t('storage.text_184')" :un-checked-children="$t('storage.text_185')" @change="handleStatusChange" />
-        </a-form-item>
-        <template v-if="status">
-          <div>
-            <a-form-item :label="$t('storage.text_186')" v-bind="formItemLayout" :extra="$t('storage.text_187')">
-              <a-input v-decorator="decorators.index" />
-            </a-form-item>
-            <a-form-item :label="$t('storage.text_188')" v-bind="formItemLayout" :extra="$t('storage.text_189')">
-              <a-input v-decorator="decorators.error_document" />
-            </a-form-item>
-          </div>
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('storage.text_41')" prop="status">
+          <a-switch
+            v-model:checked="form.status"
+            :checked-children="$t('storage.text_184')"
+            :un-checked-children="$t('storage.text_185')"
+            @change="handleStatusChange" />
+        </a-form-model-item>
+        <template v-if="form.status">
+          <a-form-model-item :label="$t('storage.text_186')" prop="index" :extra="$t('storage.text_187')">
+            <a-input v-model:value="form.index" />
+          </a-form-model-item>
+          <a-form-model-item :label="$t('storage.text_188')" prop="error_document" :extra="$t('storage.text_189')">
+            <a-input v-model:value="form.error_document" />
+          </a-form-model-item>
         </template>
-      </a-form>
+      </a-form-model>
     </page-body>
     <page-footer>
       <template #right>
@@ -41,40 +46,22 @@ export default {
   data () {
     return {
       loading: false,
-      status: !!this.$route.query.url,
       form: {
-        fc: this.$form.createForm(this),
+        status: !!this.$route.query.url,
+        index: this.$route.query.index || '',
+        error_document: this.$route.query.error_document || '',
+      },
+      rules: {
+        index: [
+          { required: true, message: this.$t('storage.text_190'), trigger: 'blur' },
+        ],
+        error_document: [
+          { required: true, message: this.$t('storage.text_190'), trigger: 'blur' },
+        ],
       },
       formItemLayout: {
         labelCol: { span: 3 },
         wrapperCol: { span: 21 },
-      },
-      decorators: {
-        status: [
-          'status',
-          {
-            valuePropName: 'checked',
-            initialValue: !!this.$route.query.url,
-          },
-        ],
-        index: [
-          'index',
-          {
-            initialValue: this.$route.query.index || '',
-            rules: [
-              { required: true, message: this.$t('storage.text_190') },
-            ],
-          },
-        ],
-        error_document: [
-          'error_document',
-          {
-            initialValue: this.$route.query.error_document || '',
-            rules: [
-              { required: true, message: this.$t('storage.text_190') },
-            ],
-          },
-        ],
       },
       currentItem: [],
       bucketColumns: [
@@ -121,7 +108,7 @@ export default {
       })
     },
     handleStatusChange (val) {
-      this.status = val
+      this.form.status = val
     },
     handleCancel () {
       this.$router.back()
@@ -129,9 +116,12 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        if (this.status) {
-          const values = await this.form.fc.validateFields()
-          await this.doSet(values)
+        if (this.form.status) {
+          await this.$refs.formRef.validate()
+          await this.doSet({
+            index: this.form.index,
+            error_document: this.form.error_document,
+          })
         } else {
           await this.doDelete()
         }

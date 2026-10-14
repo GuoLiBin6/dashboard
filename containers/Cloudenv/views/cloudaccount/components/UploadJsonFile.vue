@@ -1,12 +1,12 @@
 <template>
  <div>
-   <a-form-item :label="$t('cloudenv.text_113')">
+   <a-form-model-item :label="$t('cloudenv.text_113')">
     <a-radio-group @change="handleTypeChange" v-model:value="type">
         <a-radio-button :value="1">{{$t('cloudenv.text_114')}}</a-radio-button>
         <a-radio-button :value="2">{{$t('cloudenv.text_115')}}</a-radio-button>
       </a-radio-group>
-   </a-form-item>
-   <a-form-item :label="$t('cloudenv.text_116')" v-if="type === 1" class="google-account-file">
+   </a-form-model-item>
+   <a-form-model-item :label="$t('cloudenv.text_116')" v-if="type === 1" class="google-account-file">
     <a-upload-dragger
       v-bind="uploadDraggerConfig"
       :beforeUpload="handleBeforeUpload"
@@ -20,8 +20,7 @@
         <p class="ant-upload-hint">{{$t('cloudenv.text_118')}}</p>
       </div>
     </a-upload-dragger>
-    <a-input v-show="false" v-decorator="decorators.file" type="text" />
-  </a-form-item>
+  </a-form-model-item>
   <slot v-else />
  </div>
 </template>
@@ -30,8 +29,9 @@
 export default {
   name: 'ObjectsUploadFileDialog',
   props: {
-    fc: {
+    form: {
       type: Object,
+      required: true,
     },
   },
   data () {
@@ -42,13 +42,6 @@ export default {
     }
   },
   computed: {
-    decorators () {
-      return {
-        file: ['file', {
-          rules: [{ required: true, message: this.$t('cloudenv.text_119') }],
-        }],
-      }
-    },
     uploadDraggerConfig () {
       return {
         name: 'file',
@@ -57,15 +50,6 @@ export default {
           Authorization: `Bearer ${this.$store.getters.userInfo.session}`,
         },
       }
-    },
-  },
-  watch: {
-    fileList (value, oldValue) {
-      this.fc.setFieldsValue({
-        file: (value && value.length > 0) || undefined,
-      }, () => {
-        this.fc.validateFields(['file'])
-      })
     },
   },
   created () {
@@ -78,15 +62,19 @@ export default {
     setValues (jsonStr) {
       if (!jsonStr || jsonStr === '') return false
       const json = JSON.parse(jsonStr)
-      for (const key in json) {
-        const k = ['project_id', 'private_key_id', 'private_key', 'client_email'].indexOf(key) > -1 ? `gcp_${key}` : key
-        this.fc.getFieldDecorator(k, { preserve: true })
-        this.fc.setFieldsValue({
-          [k]: json[key],
-        })
+      const fieldMap = {
+        project_id: 'gcp_project_id',
+        private_key_id: 'gcp_private_key_id',
+        private_key: 'gcp_private_key',
+        client_email: 'gcp_client_email',
       }
+      Object.keys(fieldMap).forEach(key => {
+        if (json[key] !== undefined) {
+          this.form[fieldMap[key]] = json[key]
+        }
+      })
     },
-    handleBeforeUpload (file, fileList) {
+    handleBeforeUpload (file) {
       const isJson = file.name.endsWith('.json')
       const isLt2M = file.size / 1024 / 1024 < 2
       if (!isJson) {
@@ -100,11 +88,10 @@ export default {
       file.text().then(jsonStr => {
         this.setValues(jsonStr)
       })
-      // eslint-disable-next-line vue/no-side-effects-in-computed-properties
       this.fileList = [file]
       return false
     },
-    hanldeRemoveFile (file) {
+    hanldeRemoveFile () {
       this.fileList = []
       return true
     },

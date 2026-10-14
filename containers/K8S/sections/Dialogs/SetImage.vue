@@ -4,23 +4,21 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :name="$t('k8s.text_64')" :action="$t('k8s.text_63')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        v-bind="formItemLayout"
-        :form="form.fc">
+      <a-form-model v-bind="formItemLayout" :model="form">
         <a-alert :message="$t('k8s.text_65')" banner v-if="!containerImages.length && !initContainerImages.length" />
-        <a-form-item :label="$t('k8s.repo.image.source')">
-          <a-radio-group v-decorator="decorators.source" @change="handleSourceChange">
+        <a-form-model-item :label="$t('k8s.repo.image.source')">
+          <a-radio-group v-model:value="form.source" @change="handleSourceChange">
             <a-radio-button value="custom">{{ $t('k8s.repo.image.custom') }}</a-radio-button>
             <a-radio-button value="registry">{{ $t('k8s.repo.image.registry') }}</a-radio-button>
             <a-radio-button value="container_image">{{ $t('k8s.repo.image.container_image') }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('k8s.text_66')" v-if="initContainerImages.length">
-          <a-form-item v-for="(item, i) in initContainerImages" :key="'init-' + i">
-            <mirror-registry v-if="form.fd.source === 'registry'" v-decorator="decorators.initRegistryImage(i)" :label="item.name" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('k8s.text_66')" v-if="initContainerImages.length">
+          <a-form-model-item v-for="(item, i) in initContainerImages" :key="'init-' + i">
+            <mirror-registry v-if="form.source === 'registry'" :label="item.name" @change="val => setFieldValue(`initRegistryImages${i}`, val)" />
             <a-select
-              v-else-if="form.fd.source === 'container_image'"
-              v-decorator="decorators.initContainerImageId(i)"
+              v-else-if="form.source === 'container_image'"
+              v-model:value="fieldValues[`initContainerImageIds${i}`]"
               showSearch
               :filterOption="filterOption"
               :loading="glanceImageLoading"
@@ -35,15 +33,15 @@
                 <div style="font-size: 12px; color: #999;">{{ img.ref }}</div>
               </a-select-option>
             </a-select>
-            <a-input v-else v-decorator="decorators.initImage(i)" :placeholder="$t('k8s.text_67')" :addonBefore="item.name" />
-          </a-form-item>
-        </a-form-item>
-        <a-form-item :label="$t('k8s.text_42')" v-if="containerImages.length">
-          <a-form-item v-for="(item, i) in containerImages" :key="'ctn-' + i">
-            <mirror-registry v-if="form.fd.source === 'registry'" v-decorator="decorators.registryImage(i)" :label="item.name" />
+            <a-input v-else v-model:value="fieldValues[`initImages${i}`]" :placeholder="$t('k8s.text_67')" :addonBefore="item.name" />
+          </a-form-model-item>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('k8s.text_42')" v-if="containerImages.length">
+          <a-form-model-item v-for="(item, i) in containerImages" :key="'ctn-' + i">
+            <mirror-registry v-if="form.source === 'registry'" :label="item.name" @change="val => setFieldValue(`registryImages${i}`, val)" />
             <a-select
-              v-else-if="form.fd.source === 'container_image'"
-              v-decorator="decorators.containerImageId(i)"
+              v-else-if="form.source === 'container_image'"
+              v-model:value="fieldValues[`containerImageIds${i}`]"
               showSearch
               :filterOption="filterOption"
               :loading="glanceImageLoading"
@@ -58,10 +56,10 @@
                 <div style="font-size: 12px; color: #999;">{{ img.ref }}</div>
               </a-select-option>
             </a-select>
-            <a-input v-else v-decorator="decorators.image(i)" :placeholder="$t('k8s.text_67')" :addonBefore="item.name" />
-          </a-form-item>
-        </a-form-item>
-      </a-form>
+            <a-input v-else v-model:value="fieldValues[`images${i}`]" :placeholder="$t('k8s.text_67')" :addonBefore="item.name" />
+          </a-form-model-item>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -90,76 +88,12 @@ export default {
       glanceImageLoading: false,
       glanceImages: [],
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach(key => {
-              this.$set(this.form.fd, key, values[key])
-            })
-          },
-        }),
-        fd: {
-          source: 'custom',
-        },
+        source: 'custom',
       },
+      fieldValues: {},
       data: this.params.data[0],
       containerImages: [],
       initContainerImages: [],
-      decorators: {
-        source: [
-          'source',
-          {
-            initialValue: 'custom',
-          },
-        ],
-        registryImage: i => [
-          `registryImages${i}`,
-          {
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('k8s.repo.image.registry')]) },
-            ],
-          },
-        ],
-        initRegistryImage: i => [
-          `initRegistryImages${i}`,
-          {
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('k8s.repo.image.registry')]) },
-            ],
-          },
-        ],
-        containerImageId: i => [
-          `containerImageIds${i}`,
-          {
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('k8s.repo.image.container_image')]) },
-            ],
-          },
-        ],
-        initContainerImageId: i => [
-          `initContainerImageIds${i}`,
-          {
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('k8s.repo.image.container_image')]) },
-            ],
-          },
-        ],
-        image: i => [
-          `images${i}`,
-          {
-            rules: [
-              { required: true, message: this.$t('k8s.text_67') },
-            ],
-          },
-        ],
-        initImage: i => [
-          `initImages${i}`,
-          {
-            rules: [
-              { required: true, message: this.$t('k8s.text_67') },
-            ],
-          },
-        ],
-      },
       formItemLayout: {
         wrapperCol: {
           span: 21,
@@ -174,13 +108,16 @@ export default {
     this.fetchData()
   },
   methods: {
+    setFieldValue (key, val) {
+      this.$set(this.fieldValues, key, val)
+    },
     filterOption (input, option) {
       const label = option.componentOptions?.propsData?.label || ''
       return label.toLowerCase().indexOf((input || '').toLowerCase()) >= 0
     },
     handleSourceChange (e) {
       const source = e.target.value
-      this.$set(this.form.fd, 'source', source)
+      this.form.source = source
       if (source === 'container_image' && this.glanceImages.length === 0) {
         this.fetchGlanceImages()
       }
@@ -220,16 +157,40 @@ export default {
       })
       this.containerImages = data.containerImages
       this.initContainerImages = data.initContainerImages || []
-      const imagesFieldValue = {}
       this.containerImages.forEach((item, i) => {
-        imagesFieldValue[`images${i}`] = item.image
+        this.$set(this.fieldValues, `images${i}`, item.image)
       })
       this.initContainerImages.forEach((item, i) => {
-        imagesFieldValue[`initImages${i}`] = item.image
+        this.$set(this.fieldValues, `initImages${i}`, item.image)
       })
-      this.$nextTick(() => {
-        this.form.fc.setFieldsValue(imagesFieldValue)
-      })
+    },
+    validateImageFields () {
+      const params = { ...this.fieldValues, source: this.form.source }
+      const check = (keys, message) => {
+        for (const key of keys) {
+          if (!params[key]) {
+            this.$message.error(message)
+            return false
+          }
+        }
+        return true
+      }
+      if (this.form.source === 'registry') {
+        const keys = []
+        this.containerImages.forEach((_, i) => keys.push(`registryImages${i}`))
+        this.initContainerImages.forEach((_, i) => keys.push(`initRegistryImages${i}`))
+        return check(keys, this.$t('common.tips.select', [this.$t('k8s.repo.image.registry')]))
+      }
+      if (this.form.source === 'container_image') {
+        const keys = []
+        this.containerImages.forEach((_, i) => keys.push(`containerImageIds${i}`))
+        this.initContainerImages.forEach((_, i) => keys.push(`initContainerImageIds${i}`))
+        return check(keys, this.$t('common.tips.select', [this.$t('k8s.repo.image.container_image')]))
+      }
+      const keys = []
+      this.containerImages.forEach((_, i) => keys.push(`images${i}`))
+      this.initContainerImages.forEach((_, i) => keys.push(`initImages${i}`))
+      return check(keys, this.$t('k8s.text_67'))
     },
     resolveImage (params, i, { customKey, registryKey, containerImageKey }) {
       if (params.source === 'registry') {
@@ -278,9 +239,10 @@ export default {
       }
     },
     async handleConfirm () {
+      if (!this.validateImageFields()) return
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        const values = { source: this.form.source, ...this.fieldValues }
         await this.doUpdate(values)
         this.loading = false
         this.cancelDialog()

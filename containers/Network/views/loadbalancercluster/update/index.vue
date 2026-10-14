@@ -2,29 +2,29 @@
   <a-spin :spinning="loading">
     <page-header :title="$t('network.update_cluster')" />
     <page-body>
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('network.text_21')">
-          <a-input :disabled="!!lbAgentId" v-decorator="decorators.name" :placeholder="$t('network.text_44')" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')" v-bind="formItemLayout">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_83')" :extra="$t('network.text_84')">
-          <a-switch :checkedChildren="$t('network.text_85')" :unCheckedChildren="$t('network.text_86')" v-decorator="decorators.preempt" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_87')" :extra="$t('network.text_88')">
-          <a-input-number v-decorator="decorators.virtual_router_id" :max="255" :min="1" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_92')" :extra="$t('network.text_93')">
-          <a-input v-decorator="decorators.advert_int" type="number" :addonAfter="$t('network.text_76')" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_95')" :extra="$t('network.text_96')">
-          <a-input v-decorator="decorators.pass" />
-        </a-form-item>
-        <a-form-item v-if="!lbAgentId" :label="$t('common.text00012')" class="mb-0">
-          <tag v-decorator="decorators.__meta__" />
-        </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('network.text_21')" prop="name">
+          <a-input :disabled="!!lbAgentId" v-model:value="form.name" :placeholder="$t('network.text_44')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" prop="description">
+          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.description" :placeholder="$t('common_367')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_83')" prop="preempt" :extra="$t('network.text_84')">
+          <a-switch v-model:checked="form.preempt" :checkedChildren="$t('network.text_85')" :unCheckedChildren="$t('network.text_86')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_87')" prop="virtual_router_id" :extra="$t('network.text_88')">
+          <a-input-number v-model:value="form.virtual_router_id" :max="255" :min="1" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_92')" prop="advert_int" :extra="$t('network.text_93')">
+          <a-input v-model:value="form.advert_int" type="number" :addonAfter="$t('network.text_76')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_95')" prop="pass" :extra="$t('network.text_96')">
+          <a-input v-model:value="form.pass" />
+        </a-form-model-item>
+        <a-form-model-item v-if="!lbAgentId" :label="$t('common.text00012')" class="mb-0" prop="__meta__">
+          <tag :value="form.__meta__" @change="v => form.__meta__ = v" />
+        </a-form-model-item>
+      </a-form-model>
     </page-body>
     <page-footer>
       <template v-slot:right>
@@ -51,60 +51,31 @@ export default {
       loading: false,
       submiting: false,
       form: {
-        fc: this.$form.createForm(this),
+        name: '',
+        description: '',
+        preempt: false,
+        virtual_router_id: 1,
+        advert_int: 1,
+        pass: '',
+        __meta__: {},
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('network.text_116') },
-              { validator: this.$validate('resourceName') },
-            ],
-          },
-        ],
-        description: ['description'],
-        __meta__: [
-          '__meta__',
-          {
-            rules: [
-              { validator: validateForm('tagName') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_116') },
+          { validator: this.$validate('resourceName') },
         ],
         virtual_router_id: [
-          'virtual_router_id',
-          {
-            initialValue: 1,
-            rules: [
-              { required: true, message: this.$t('network.text_118') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_118') },
         ],
         preempt: [
-          'preempt',
-          {
-            initialValue: false,
-            valuePropName: 'checked',
-            rules: [
-              { required: true, message: this.$t('network.text_120') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_120') },
         ],
         advert_int: [
-          'advert_int',
-          {
-            initialValue: 1,
-            normalize: v => Number(v),
-            rules: [
-              { required: true, message: this.$t('network.text_121') },
-              { type: 'integer', min: 1, max: 255, message: this.$t('network.text_122'), trigger: 'blur' },
-            ],
-          },
+          { required: true, message: this.$t('network.text_121') },
+          { type: 'integer', min: 1, max: 255, message: this.$t('network.text_122'), trigger: 'blur' },
         ],
-        pass: [
-          'pass',
+        __meta__: [
+          { validator: validateForm('tagName') },
         ],
       },
       formItemLayout: {
@@ -136,14 +107,14 @@ export default {
       const params = {
         ...data.params,
       }
-      this.form.fc.setFieldsValue({
+      Object.assign(this.form, {
         name: data.name,
         description: data.description,
         ...params,
       })
     },
     formatValues (values) {
-      const { name, description, ...params } = values
+      const { name, description, __meta__, ...params } = values
       return {
         name,
         description,
@@ -171,8 +142,8 @@ export default {
     async handleSubmit () {
       this.submiting = true
       try {
-        const values = await this.form.fc.validateFields()
-        await this.doUpdate(values)
+        await this.$refs.formRef.validate()
+        await this.doUpdate(this.form)
         this.$store.commit('keepAlive/ADD_DELAY_EVENT', { name: 'ResourceListSingleRefresh', params: this.clusterId })
         this.handleCancel()
       } catch (error) {

@@ -1,20 +1,20 @@
 <template>
   <div class="k8s-deployment-create w-75">
-    <a-form :form="form.fc" v-bind="formItemLayout">
-      <a-form-item :label="$t('k8s.text_41')">
-        <a-input :placeholder="$t('k8s.text_60')" v-decorator="decorators.name" />
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_23')">
+    <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model-item :label="$t('k8s.text_41')" prop="name">
+        <a-input :placeholder="$t('k8s.text_60')" v-model:value="form.name" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('k8s.text_23')" prop="federatednamespace_id">
         <base-select
           resource="federatednamespaces"
           version="v1"
-          v-decorator="decorators.federatednamespace_id"
+          v-model:value="form.federatednamespace_id"
           :params="federatednamespaceParams" />
-      </a-form-item>
+      </a-form-model-item>
       <a-form-item :label="$t('k8s.text_386')">
         <role-rule-form-item ref="roleRuleRef" federatedResource="federatedroles" />
       </a-form-item>
-    </a-form>
+    </a-form-model>
   </div>
 </template>
 
@@ -31,7 +31,18 @@ export default {
   data () {
     return {
       form: {
-        fc: this.$form.createForm(this),
+        name: '',
+        federatednamespace_id: undefined,
+      },
+      rules: {
+        name: [
+          { required: true, message: this.$t('k8s.text_60') },
+          { min: 2, max: 24, message: this.$t('k8s.text_132'), trigger: 'blur' },
+          { validator: this.$validate('k8sName') },
+        ],
+        federatednamespace_id: [
+          { required: true, message: this.$t('k8s.text_61'), trigger: 'blur' },
+        ],
       },
       formItemLayout: {
         wrapperCol: {
@@ -45,27 +56,6 @@ export default {
           xxl: { span: 4 },
         },
       },
-      decorators: {
-        name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('k8s.text_60') },
-              { min: 2, max: 24, message: this.$t('k8s.text_132'), trigger: 'blur' },
-              { validator: this.$validate('k8sName') },
-            ],
-          },
-        ],
-        federatednamespace_id: [
-          'federatednamespace_id',
-          {
-            rules: [
-              { required: true, message: this.$t('k8s.text_61'), trigger: 'blur' },
-            ],
-          },
-        ],
-      },
       federatednamespaceParams: {
         scope: this.$store.getters.scope,
         limit: 0,
@@ -75,12 +65,15 @@ export default {
   methods: {
     async validateForm () {
       try {
-        const [roleRuleData, values] = await Promise.all([this.$refs.roleRuleRef.validateForm(), this.form.fc.validateFields()])
+        const [roleRuleData] = await Promise.all([
+          this.$refs.roleRuleRef.validateForm(),
+          this.$refs.formRef.validate(),
+        ])
         return {
           spec: {
             template: roleRuleData,
           },
-          ...values,
+          ...this.form,
         }
       } catch (error) {
         throw error

@@ -8,18 +8,18 @@
       <template v-if="isUpdate">
         <idp-detail-table :data="[detailData]" />
       </template>
-      <a-form :form="form.fc" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form.fd" :rules="rules" v-bind="formItemLayout">
         <template v-if="!isUpdate">
           <template v-if="isAdmin">
-            <a-form-item :label="$t('common_548')">
+            <a-form-model-item :label="$t('common_548')">
               <a-radio-group v-model:value="isShowDomain">
                 <a-radio-button :value="false">{{$t('system.text_15')}}</a-radio-button>
                 <a-radio-button :value="true">{{$t('dictionary.domain')}}</a-radio-button>
               </a-radio-group>
-            </a-form-item>
-            <a-form-item v-if="isAdmin && isShowDomain" :label="$t('common_547', [$t('dictionary.domain')])">
+            </a-form-model-item>
+            <a-form-model-item v-if="isAdmin && isShowDomain" :label="$t('common_547', [$t('dictionary.domain')])" prop="project_domain">
               <base-select
-                v-decorator="decorators.project_domain"
+                v-model:value="form.fd.project_domain"
                 @change="handleDomain"
                 resource="domains"
                 filterable
@@ -28,26 +28,26 @@
                 :select-props="{
                   placeholder: $t('common_515', [$t('dictionary.domain')])
                 }" />
-            </a-form-item>
+            </a-form-model-item>
           </template>
-          <a-form-item v-else :label="$t('common_566', [$t('dictionary.domain')])">
+          <a-form-model-item v-else :label="$t('common_566', [$t('dictionary.domain')])">
             {{projectDomain}}
-          </a-form-item>
-          <a-form-item :label="$t('common_186')">
-            <a-input v-decorator="decorators.name" :placeholder="$t('common_549')" />
-          </a-form-item>
-          <a-form-item :label="$t('common.description')">
-            <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-          </a-form-item>
-          <a-form-item :label="$t('system.text_204')">
-            <a-radio-group @change="({ target })=> driverChange(target.value)" v-decorator="decorators.driver">
+          </a-form-model-item>
+          <a-form-model-item :label="$t('common_186')" prop="name">
+            <a-input v-model:value="form.fd.name" :placeholder="$t('common_549')" />
+          </a-form-model-item>
+          <a-form-model-item :label="$t('common.description')" prop="description">
+            <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.fd.description" :placeholder="$t('common_367')" />
+          </a-form-model-item>
+          <a-form-model-item :label="$t('system.text_204')" prop="driver">
+            <a-radio-group v-model:value="form.fd.driver" @change="({ target })=> driverChange(target.value)">
               <a-radio-button v-for="(item, key) of templateOptions" :key="key" :value="key">
                 {{key}}
               </a-radio-button>
             </a-radio-group>
-          </a-form-item>
-          <a-form-item :label="$t('common_550')">
-            <a-radio-group  v-decorator="decorators.template" @change="handleTemplateChange">
+          </a-form-model-item>
+          <a-form-model-item :label="$t('common_550')" prop="template">
+            <a-radio-group v-model:value="form.fd.template" @change="handleTemplateChange">
               <template v-for="(item) of templateOptions[form.fd.driver]" :key="item.key">
                 <a-radio-button :value="item.key">{{ item.label }}</a-radio-button>
               </template>
@@ -56,38 +56,37 @@
               {{$t('common_709', [templateData.label])}}
               <help-link :href="docLink">{{$t('common_386')}}</help-link>
             </template>
-          </a-form-item>
+          </a-form-model-item>
           <template v-if="isLdap && (form.fd.template === 'msad_one_domain' || form.fd.template === 'openldap_one_domain')">
             <ldap-advanced
               :is-common="isCommon"
               :fd="form.fd"
-              :fc="form.fc"
               :template-data="templateData"
               :offset-wrapper-col="offsetWrapperCol" />
           </template>
         </template>
         <component
           v-if="currentTemplateComponent"
+          ref="templateRef"
           :is="currentTemplateComponent"
           :fd="form.fd"
-          :offset-wrapper-col="offsetWrapperCol"
-          :fc="form.fc" />
+          :offset-wrapper-col="offsetWrapperCol" />
         <template v-if="!isUpdate">
-          <a-form-item v-if="isLdap" :label="$t('system.text_223')" :extra="$t('system.text_224')">
-            <a-radio-group v-decorator="decorators.disable_user_on_import">
+          <a-form-model-item v-if="isLdap" :label="$t('system.text_223')" :extra="$t('system.text_224')" prop="disable_user_on_import">
+            <a-radio-group v-model:value="form.fd.disable_user_on_import">
               <a-radio-button :value="false">{{$t('status.enabled.true')}}</a-radio-button>
               <a-radio-button :value="true">{{$t('status.enabled.false')}}</a-radio-button>
             </a-radio-group>
-          </a-form-item>
+          </a-form-model-item>
           <advanced
             v-if="!isLdap"
+            ref="advancedRef"
             :is-common="isCommon"
             :fd="form.fd"
-            :fc="form.fc"
             :template-data="templateData"
             :offset-wrapper-col="offsetWrapperCol" />
         </template>
-      </a-form>
+      </a-form-model>
     </page-body>
     <page-footer>
       <template v-slot:right>
@@ -101,7 +100,6 @@
 <script>
 import * as R from 'ramda'
 import jumper from '@/mixins/jumper'
-import { resolveValueChangeField } from '@/utils/common/ant'
 import { docs, idpDrivers } from '../constants'
 import IDPDetailTable from '../components/DetailTable'
 import MSADMulti from './MSADMulti'
@@ -137,57 +135,11 @@ export default {
       projectDomain: this.$store.getters.userInfo.projectDomain,
       projectDomainId: this.$store.getters.userInfo.projectDomainId,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            this.$nextTick(() => {
-              const newField = resolveValueChangeField(values)
-              R.forEachObjIndexed((item, key) => {
-                this.form.fd[key] = item
-              }, newField)
-            })
-          },
-        }),
         fd: {
           template: templateInitialValue,
           driver: driverInitialValue,
+          disable_user_on_import: false,
         },
-      },
-      decorators: {
-        driver: [
-          'driver',
-          {
-            initialValue: driverInitialValue,
-          },
-        ],
-        name: [
-          'name',
-          {
-            rules: [
-              { required: true, message: this.$t('system.text_168') },
-            ],
-          },
-        ],
-        description: ['description'],
-        project_domain: [
-          'project_domain',
-          {
-            rules: [
-              { required: true, message: this.$t('common_523', [this.$t('dictionary.domain')]) },
-            ],
-          },
-        ],
-        template: [
-          'template',
-          {
-            initialValue: templateInitialValue,
-          },
-        ],
-        disable_user_on_import: [
-          'disable_user_on_import',
-          {
-            initialValue: false,
-          },
-        ],
       },
       formItemLayout: {
         wrapperCol: {
@@ -252,10 +204,9 @@ export default {
           })
         })
       })
-      // 认证源归属为域时，删除ldap多域导入选项
       if (this.isShowDomain) {
         const index = R.findIndex(R.propEq('key', 'msad_multi_domain'))(templateOptions.LDAP)
-        templateOptions.LDAP = R.remove(index, 1, templateOptions.LDAP)
+        templateOptions.LDAP = R.remove(index, 1)(templateOptions.LDAP)
       }
       return templateOptions
     },
@@ -266,13 +217,24 @@ export default {
       const key = this.form.fd.template
       return (key && TEMPLATE_COMPONENTS[key]) || null
     },
+    rules () {
+      const rules = {
+        name: [
+          { required: true, message: this.$t('system.text_168') },
+        ],
+      }
+      if (this.isAdmin && this.isShowDomain) {
+        rules.project_domain = [
+          { required: true, message: this.$t('common_523', [this.$t('dictionary.domain')]) },
+        ]
+      }
+      return rules
+    },
   },
   watch: {
     isShowDomain (val) {
       if (val && this.form.fd.template === 'msad_multi_domain') {
-        this.form.fc.setFieldsValue({
-          template: 'msad_one_domain',
-        })
+        this.form.fd.template = 'msad_one_domain'
       }
     },
   },
@@ -289,9 +251,7 @@ export default {
   },
   methods: {
     handleDomain (domainId) {
-      this.form.fc.setFieldsValue({
-        target_domain: domainId,
-      })
+      this.form.fd.target_domain = domainId
     },
     scopesFormat (value, f) {
       if (value) {
@@ -302,10 +262,6 @@ export default {
       }
       return f ? '' : []
     },
-    /**
-     * 更新页用 template 动态加载表单。
-     * 接口常只有 driver: ldap、无 template，不能把 ldap 当组件名。
-     */
     resolveTemplateKey (data = {}) {
       const ldapTemplates = idpDrivers.LDAP || []
       const template = data.template
@@ -352,28 +308,19 @@ export default {
       try {
         await this.fetchDetail()
         const configValues = await this.fetchConfig()
-        // detail.template 优先；否则用 config 里的 template；都没有则默认 msad_one_domain
         const template = this.resolveTemplateKey({
           ...this.detailData,
           template: this.detailData.template || configValues.template,
         })
-        // 表单字段不要用 config 里的 template/driver 覆盖解析结果（driver 常为 ldap）
         const { template: _t, driver: _d, ...configFields } = configValues
         const formValues = {
           ...configFields,
           template,
           driver: configValues.driver || this.detailData.driver || 'ldap',
         }
-        this.form.fc.getFieldDecorator('template', { preserve: true })
-        this.form.fc.getFieldDecorator('driver', { preserve: true })
-        // 先写 fd，保证动态表单能挂上
-        Object.keys(formValues).forEach((key) => {
-          this.form.fd[key] = formValues[key]
-        })
-        this.form.fc.setFieldsValue(formValues)
-        this.loading = false
+        Object.assign(this.form.fd, formValues)
         await this.$nextTick()
-        this.form.fc.setFieldsValue(formValues)
+        Object.assign(this.form.fd, formValues)
       } catch (err) {
         throw err
       } finally {
@@ -415,12 +362,19 @@ export default {
       })
     },
     async getValues () {
-      try {
-        const values = await this.form.fc.validateFields()
-        return values
-      } catch (err) {
-        throw err
+      const validators = []
+      if (!this.isUpdate && this.$refs.formRef) {
+        validators.push(this.$refs.formRef.validate())
       }
+      const { templateRef, advancedRef } = this.$refs
+      if (templateRef?.validateForm) {
+        validators.push(templateRef.validateForm())
+      }
+      if (advancedRef?.validateForm) {
+        validators.push(advancedRef.validateForm())
+      }
+      await Promise.all(validators)
+      return { ...this.form.fd }
     },
     async handleSubmit () {
       this.submiting = true
@@ -443,23 +397,23 @@ export default {
       this.jumpTo('@idp')
     },
     driverChange (driver = 'LDAP') {
-      const { fc } = this.form
-      if (driver === 'LDAP') {
-        fc.getFieldDecorator('auto_create_user', { preserve: true, valuePropName: 'checked' })
-      }
-      fc.setFieldsValue({
-        template: this.templateOptions[driver][0].key,
-        auto_create_user: driver === 'LDAP',
-      })
+      this.form.fd.template = this.templateOptions[driver][0].key
+      this.form.fd.auto_create_user = driver === 'LDAP'
     },
     async handleTemplateChange ({ target: { value } }) {
-      const { fc } = this.form
-      const values = fc.getFieldsValue(['driver', 'name', 'domain_id', 'auto_create_user', 'target_domain', 'project_domain'])
-      fc.resetFields()
-      this.form.fd = {}
+      const preserveKeys = ['driver', 'name', 'domain_id', 'auto_create_user', 'target_domain', 'project_domain', 'description']
+      const kept = {}
+      preserveKeys.forEach((key) => {
+        if (this.form.fd[key] !== undefined) kept[key] = this.form.fd[key]
+      })
+      const disableUserOnImport = this.form.fd.disable_user_on_import
+      Object.keys(this.form.fd).forEach((key) => {
+        if (!preserveKeys.includes(key) && key !== 'template' && key !== 'disable_user_on_import') {
+          delete this.form.fd[key]
+        }
+      })
+      Object.assign(this.form.fd, kept, { template: value, disable_user_on_import: disableUserOnImport })
       await this.$nextTick()
-      values.template = value
-      fc.setFieldsValue(values)
     },
   },
 }

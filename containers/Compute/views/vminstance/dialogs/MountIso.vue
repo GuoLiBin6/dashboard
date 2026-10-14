@@ -4,23 +4,23 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_366')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" hideRequiredMark>
-        <a-form-item v-if="hasMounted" :label="$t('compute.iso.mounted')" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
+        <a-form-model-item v-if="hasMounted" :label="$t('compute.iso.mounted')" v-bind="formItemLayout">
           <span>{{ mountedIsoName }}</span>
-        </a-form-item>
-        <a-form-item :label="imageLabel" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item :label="imageLabel" v-bind="formItemLayout" prop="image_id">
           <base-select
             class="w-100"
             remote
             filterable
             version="v1"
-            v-decorator="decorators.image_id"
+            v-model:value="form.image_id"
             resource="images"
             :params="imageParams"
             :select-props="{ allowClear: hasMounted, placeholder: $t('compute.text_1219') }"
             @change="onImageChange" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <template v-if="hasMounted">
@@ -55,17 +55,12 @@ export default {
       loading: false,
       selectedImageId: undefined,
       form: {
-        fc: this.$form.createForm(this),
+        image_id: undefined,
       },
-      decorators: {
-        image_id: [
-          'image_id',
-          {
-            rules: hasMounted
-              ? []
-              : [{ required: true, message: this.$t('compute.text_1219') }],
-          },
-        ],
+      rules: {
+        image_id: hasMounted
+          ? []
+          : [{ required: true, message: this.$t('compute.text_1219') }],
       },
       formItemLayout: {
         wrapperCol: {
@@ -150,8 +145,8 @@ export default {
     async handleMount () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        await this.doSetIso(values.image_id)
+        await this.$refs.formRef.validate()
+        await this.doSetIso(this.form.image_id)
       } finally {
         this.loading = false
       }

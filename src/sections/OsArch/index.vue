@@ -35,8 +35,7 @@ export default {
     value: {},
     form: {
       type: Object,
-      required: true,
-      validator: val => val.fc,
+      default: () => ({}),
     },
     decoratorField: {
       type: String,
@@ -77,6 +76,7 @@ export default {
   methods: {
     emit (v) {
       this.$emit('change', v)
+      this.$emit('update:value', v)
     },
     onChange (e) {
       this.emit(e.target.value)
@@ -90,7 +90,47 @@ export default {
      * 提交时获取表单草稿
      */
     serializeFormFieldDraft () {
-      return this.form?.fc?.getFieldValue?.(this.decoratorField) || undefined
+      return this.value ?? this.form?.fd?.[this.decoratorField]
+    },
+    runFieldRule (rule, value) {
+      return new Promise((resolve, reject) => {
+        if (rule.required) {
+          const empty = value === undefined || value === null || value === '' ||
+            (Array.isArray(value) && !value.length)
+          if (empty) {
+            reject(new Error(rule.message || 'required'))
+            return
+          }
+        }
+        if (typeof rule.validator === 'function') {
+          let settled = false
+          const finish = (err) => {
+            if (settled) return
+            settled = true
+            if (err) reject(err instanceof Error ? err : new Error(String(err)))
+            else resolve()
+          }
+          let ret
+          try {
+            ret = rule.validator(rule, value, finish)
+          } catch (e) {
+            finish(e)
+            return
+          }
+          if (ret && typeof ret.then === 'function') {
+            ret.then(() => finish()).catch(finish)
+          }
+          return
+        }
+        resolve()
+      })
+    },
+    async validate (rules = []) {
+      const list = Array.isArray(rules) ? rules : []
+      for (const rule of list) {
+        await this.runFieldRule(rule, this.value)
+      }
+      return true
     },
   },
 }

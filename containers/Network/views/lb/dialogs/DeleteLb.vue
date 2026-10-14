@@ -5,11 +5,11 @@
       <a-alert v-if="alertProps" v-bind="alertProps" class="mb-2" />
       <dialog-selected-tips :count="params.data.length" :action="this.params.title" :name="this.params.name" :unit="params.unit" />
       <dialog-table v-if="params.columns && params.columns.length" :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" hideRequiredMark>
-        <a-form-item v-if="showDeleteEip" :label="$t('compute.text_1265')" v-bind="formItemLayout" :extra="$t('compute.text_1266')">
-          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-decorator="decorators.auto_delete" />
-        </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" :model="form" hideRequiredMark>
+        <a-form-model-item v-if="showDeleteEip" :label="$t('compute.text_1265')" v-bind="formItemLayout" :extra="$t('compute.text_1266')" prop="auto_delete">
+          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-model:checked="form.auto_delete" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button v-bind="okButtonProps" @click="handleConfirm">{{ $t("dialog.ok") }}</a-button>
@@ -30,16 +30,7 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        auto_delete: [
-          'auto_delete',
-          {
-            initialValue: false,
-            valuePropName: 'checked',
-          },
-        ],
+        auto_delete: false,
       },
       formItemLayout: {
         wrapperCol: {
@@ -86,9 +77,9 @@ export default {
       this.loading = true
       try {
         const ids = this.params.data.map(item => item[this.idKey])
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         const data = {}
-        if (values.auto_delete) {
+        if (this.form.auto_delete) {
           data.delete_eip = true
         }
         await this.params.onManager('batchDelete', {

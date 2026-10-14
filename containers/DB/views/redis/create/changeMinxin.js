@@ -1,42 +1,31 @@
+/** END-STATE：form = { fd }；SKU / Network 写 fd；原 onValuesChange → watch form.fd */
 import { getInitialValue } from '@/utils/common/ant'
-import { SKU_PARAMS, CAPABILIT_PARAMS, SPECS_PARAMS, DECORATORS } from '../constants'
+import { SKU_PARAMS, CAPABILIT_PARAMS, SPECS_PARAMS, REDIS_CREATE_FIELD_MAP } from '../constants'
 
 export default {
   data () {
+    const initFd = {
+      ...getInitialValue(REDIS_CREATE_FIELD_MAP),
+    }
     return {
       provider: '',
-    }
-  },
-  computed: {
-    form () {
-      const fc = this.$form.createForm(this, { onValuesChange: this.handleValuesChange })
-      const initFd = getInitialValue(DECORATORS)
-      const { getFieldDecorator, getFieldValue, getFieldsValue, setFieldsValue } = fc
-      return {
-        fc,
+      form: {
         fd: initFd,
-        getFieldDecorator,
-        getFieldValue,
-        getFieldsValue,
-        setFieldsValue,
-      }
-    },
+      },
+    }
   },
   provide () {
     return {
       form: this.form,
-      scopeParams: this.scopeParams,
-      formItemLayout: this.formItemLayout,
-      tailFormItemLayout: this.tailFormItemLayout,
-      redisItem: this.redisItem,
+      validateCreateForm: () => this.validateCreateForm(),
     }
   },
   async created () {
-    // 当前选中的sku内部的 cloudregion_id
-    this.form.fc.getFieldDecorator('cloudregion_id', { preserve: true })
-    // 当前选中的sku内部的 zone_id
-    this.form.fc.getFieldDecorator('zone_id', { preserve: true })
-
+    ;['cloudregion_id', 'zone_id'].forEach((name) => {
+      if (this.form.fd[name] === undefined) {
+        this.$set(this.form.fd, name, undefined)
+      }
+    })
     this.keysChange = {
       area: CAPABILIT_PARAMS,
       capability: SPECS_PARAMS,
@@ -46,46 +35,55 @@ export default {
     this.skuRef = this.$refs.REF_SKU
     this.networkRef = this.$refs.REF_NETWORK
   },
+  watch: {
+    'form.fd.domain' () { this.domain_change() },
+    'form.fd.project' () { this.project_change() },
+    'form.fd.provider' (val) {
+      this.provider = val || ''
+      this.area_change()
+    },
+    'form.fd.cloudregion' () { this.area_change() },
+    'form.fd.zone' () { this.zone_change() },
+    'form.fd.engine' () { this.capability_change() },
+    'form.fd.engine_version' () { this.capability_change() },
+    'form.fd.local_category' () { this.capability_change() },
+    'form.fd.memory_size_mb' () { this.sku_params_change() },
+    'form.fd.sku' () { this.sku_change() },
+    'form.fd.cloudregion_id' () { this.cloudregion_id_change() },
+    'form.fd.zone_id' () { this.zone_id_change() },
+  },
   methods: {
     domain_change () {
       if (this.$store.getters.isAdminMode) {
         const { domain } = this.form.fd
-        this.scopeParams.project_domain = domain || this.form.getFieldValue('domain')
-        delete this.scopeParams.scope
+        this.project_domain = domain
       } else {
-        delete this.scopeParams.project_domain
+        this.project_domain = undefined
       }
     },
     project_change () {
       const { project } = this.form.fd
       this.project_id = project
     },
-    // 区域字段发生变化，获取Capability信息
     area_change () {
-      this.skuRef.fetchCapability()
+      if (this.skuRef) this.skuRef.fetchCapability()
     },
-    // capability中有字段发生变化，获取specs信息
     async capability_change () {
-      await this.skuRef.fetchSpecs()
+      if (this.skuRef) await this.skuRef.fetchSpecs()
     },
-    // 获取sku
     sku_params_change () {
-      this.skuRef.fetchSkus()
+      if (this.skuRef) this.skuRef.fetchSkus()
     },
     sku_change () {
       const { fd } = this.form
       const { sku } = fd
       let callback
       if (sku && (fd.cloudregion_id !== sku.cloudregion_id)) {
-        this.form.fc.setFieldsValue({
-          cloudregion_id: sku.cloudregion_id,
-        })
+        this.$set(this.form.fd, 'cloudregion_id', sku.cloudregion_id)
         callback = this.cloudregion_id_change
       }
       if (sku && (fd.zone_id !== sku.zone_id)) {
-        this.form.fc.setFieldsValue({
-          zone_id: sku.zone_id,
-        })
+        this.$set(this.form.fd, 'zone_id', sku.zone_id)
         callback = this.zone_id_change
       }
       if (callback) {
@@ -107,34 +105,26 @@ export default {
         this.networkRef.fetchVpc()
       }
     },
-    async handleValuesChange (fc, changedFields) {
-      const fields = Object.keys(changedFields)
-      if (changedFields && fields.length > 0) {
-        fields.forEach(field => {
-          this.form.fd[field] = changedFields[field]
-          if (field === 'vpc') {
-            this.vpc = changedFields[field]
-          }
-        })
+    async validateCreateForm () {
+      if (this.$refs.formRef?.validate) {
+        await this.$refs.formRef.validate()
       }
-      if (changedFields.hasOwnProperty('provider')) {
-        this.provider = changedFields.provider
+      const refs = [
+        this.$refs.domainProjectRef,
+        this.$refs.ITEM_AREA,
+        this.$refs.REF_NETWORK,
+        this.$refs.passwordRef,
+        this.$refs.secgroupRef,
+      ]
+      for (const ref of refs) {
+        if (typeof ref?.validate === 'function') {
+          await ref.validate()
+        }
       }
-      await this.$nextTick()
-      const changedFieldsKey = Object.keys(changedFields)
-      changedFieldsKey.forEach(field => {
-        // if (changedFields[field] === undefined) return false
-        const handleChange = this[`${field}_change`]
-        if (this[`${field}_change`]) {
-          return handleChange()
-        }
-
-        for (const k in this.keysChange) {
-          if (this.keysChange[k].indexOf(field) > -1 && this[`${k}_change`]) {
-            this[`${k}_change`]()
-          }
-        }
-      })
+      if (!this.form.fd.sku) {
+        throw new Error('sku')
+      }
+      return { ...this.form.fd }
     },
   },
 }

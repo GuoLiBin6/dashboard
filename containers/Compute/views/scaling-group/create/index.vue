@@ -2,66 +2,71 @@
   <div>
     <page-header :title="$t('compute.text_892')" />
     <page-body>
-      <a-form :form="form.fc" class="mt-3" v-bind="formItemLayout" hideRequiredMark>
-        <a-form-item class="mb-0" :label="$t('compute.text_297', [$t('dictionary.project')])">
-          <domain-project :decorators="decorators.projectDomain" :fc="form.fc" :labelInValue="false" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_228')">
-          <a-input :placeholder="$t('validator.serverCreateName')" v-decorator="decorators.generate_name" />
-          <!-- <name-repeated
-            v-slot:extra
-            res="scalinggroups"
-            :default-text="$t('compute.text_893')"  /> -->
-        </a-form-item>
-        <a-form-item :label="$t('common.description')">
-        <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-      </a-form-item>
-        <a-form-item :label="$t('compute.text_176')">
-          <a-radio-group v-decorator="decorators.brand">
+      <a-form-model
+        ref="formRef"
+        class="mt-3"
+        :model="form.fd"
+        :rules="formRules"
+        v-bind="formItemLayout"
+        hideRequiredMark>
+        <a-form-model-item class="mb-0" :label="$t('compute.text_297', [$t('dictionary.project')])" prop="project">
+          <domain-project :form="form.fd" :labelInValue="false" @update:project="projectChange" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_228')" prop="generate_name">
+          <a-input v-model:value="form.fd.generate_name" :placeholder="$t('validator.serverCreateName')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" prop="description">
+          <a-textarea v-model:value="form.fd.description" :auto-size="{ minRows: 1, maxRows: 3 }" :placeholder="$t('common_367')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_176')" prop="brand">
+          <a-radio-group v-model:value="form.fd.brand" @change="brandChange">
             <a-radio-button v-for="item in brands" :key="item.brand" :value="item.brand">{{item.label}}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_873')">
-          <a-select :filterOption="filterOption" showSearch @change="handleServerTemplateChange" v-decorator="decorators.guest_template_id" :loading="serverTemplateListLoading">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_873')" prop="guest_template_id">
+          <a-select
+            :filterOption="filterOption"
+            showSearch
+            v-model:value="form.fd.guest_template_id"
+            :loading="serverTemplateListLoading"
+            @change="(v, option) => handleServerTemplateChange(v, option)">
             <a-select-option v-for="item in serverTemplateList" :row="item" :key="item.id" :value="item.id">{{item.name}}</a-select-option>
           </a-select>
-          <div slot="extra">{{$t('compute.text_894')}}</div>
-        </a-form-item>
+          <template #extra>{{$t('compute.text_894')}}</template>
+        </a-form-model-item>
         <network-selects
           isRequired
-          :decorators="networlDecorators"
           :isDefaultFetch="false"
           :defaultActiveFirstOption="false"
           :disabled="networlDisabled"
           ref="NETWORK"
           :label="$t('compute.text_104')"
-          :form="form"
+          :model="form.fd"
           v-bind="formItemLayout"
           :networkParams="networkParams"
           :vpcParams="vpcParams" />
-        <a-form-item :label="$t('compute.text_877')">
+        <a-form-model-item :label="$t('compute.text_877')" prop="max_instance_number">
           <a-tooltip placement="top" :title="$t('compute.text_895')">
-            <a-input-number v-decorator="decorators.max_instance_number" :min="1" :max="1000" />
+            <a-input-number v-model:value="form.fd.max_instance_number" :min="1" :max="1000" />
           </a-tooltip>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_875')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_875')" prop="desire_instance_number">
           <a-tooltip placement="top" :title="$t('compute.text_896')">
-            <a-input-number v-decorator="decorators.desire_instance_number" :min="form.fd.min_instance_number" :max="Math.max(0, form.fd.max_instance_number)" />
+            <a-input-number v-model:value="form.fd.desire_instance_number" :min="form.fd.min_instance_number" :max="Math.max(0, form.fd.max_instance_number)" />
           </a-tooltip>
-          <div slot="extra">{{$t('compute.text_897')}}</div>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_876')">
+          <template #extra>{{$t('compute.text_897')}}</template>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_876')" prop="min_instance_number">
           <a-tooltip placement="top" :title="$t('compute.text_891')">
-            <a-input-number @blur="handleMinBlur" v-model:value="min" :min="0" :max="Math.max(0, form.fd.desire_instance_number)"  />
-            <a-input v-show="false" v-decorator="decorators.min_instance_number" />
+            <a-input-number :value="min" @change="handleMinChange" :min="0" :max="Math.max(0, form.fd.desire_instance_number)" />
           </a-tooltip>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_898')">
-          <a-select v-decorator="decorators.shrink_principle">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_898')" prop="shrink_principle">
+          <a-select v-model:value="form.fd.shrink_principle">
             <a-select-option v-for="(v, k) in $t('flexGrouPprinciple')" :key="k" :value="k">{{v}}</a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item required :label="$t('compute.text_899')">
+        </a-form-model-item>
+        <a-form-model-item required :label="$t('compute.text_899')">
           <a-radio-group v-model:value="isLoadbalancer">
             <a-radio-button :value="false">{{$t('compute.text_900')}}</a-radio-button>
             <a-tooltip v-if="form.fd.brand === 'Azure'" placement="top" :title="$t('compute.text_901')">
@@ -70,25 +75,26 @@
             <a-radio-button v-else :value="true">{{$t('compute.text_902')}}</a-radio-button>
           </a-radio-group>
           <div v-if="isLoadbalancer" style="max-width: 920px">
-            <bind-lb :fc="form.fc" ref="BIND_LB" />
+            <bind-lb :model="form.fd" ref="BIND_LB" />
           </div>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_903')">
-          <a-select v-decorator="decorators.health_check_mode">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_903')" prop="health_check_mode">
+          <a-select v-model:value="form.fd.health_check_mode">
             <template v-for="(v, k) in $t('flexGroupHealthCheckMode')" :key="k">
               <a-select-option v-if="k !== 'loadbalancer' || (isLoadbalancer && k === 'loadbalancer')" :value="k">{{v}}</a-select-option>
             </template>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_904')">
-          <a-select v-decorator="decorators.health_check_cycle">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_904')" prop="health_check_cycle">
+          <a-select v-model:value="form.fd.health_check_cycle">
             <a-select-option v-for="(v, k) in $t('flexGroupCycles')" :key="k" :value="parseInt(k)">{{v}}</a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_905')">
-          <a-input-number :min="1"  v-decorator="decorators.health_check_gov" />{{$t('compute.text_767')}}<div slot="extra">{{$t('compute.text_906')}}</div>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_905')" prop="health_check_gov">
+          <a-input-number :min="1" v-model:value="form.fd.health_check_gov" />{{$t('compute.text_767')}}
+          <template #extra>{{$t('compute.text_906')}}</template>
+        </a-form-model-item>
+      </a-form-model>
     </page-body>
     <page-footer>
       <div slot="right">
@@ -101,28 +107,25 @@
 
 <script>
 import { HYPERVISORS_MAP } from '@/constants'
-import DomainProject from '@/sections/DomainProject'
-// import NameRepeated from '@/sections/NameRepeated'
-import NetworkSelects from '@/sections/NetworkSelects'
-import { getInitialValue } from '@/utils/common/ant'
+import DomainProject from '@/sections/DomainProject/model'
+import NetworkSelects from '@/sections/NetworkSelects/model'
 import { typeClouds } from '@/utils/common/hypervisor'
+import validateForm from '@/utils/validate'
+import { getInitialValue } from '@/utils/common/ant'
 import BindLb from '../components/BindLb'
-import { DECORATORS, BRANDS } from '../constants'
+import { SCALING_GROUP_FIELD_MAP, BRANDS, BIND_LB_RULES } from '../constants'
 
 export default {
   name: 'ScalingGroupCreae',
   components: {
     BindLb,
     DomainProject,
-    // NameRepeated,
     NetworkSelects,
   },
   data () {
-    const initFd = getInitialValue(DECORATORS)
     return {
       min: 0,
       BRANDS,
-      decorators: DECORATORS,
       loading: false,
       isLoadbalancer: false,
       serverTemplateListLoading: false,
@@ -131,10 +134,8 @@ export default {
       healthCheckModeList: [],
       networlDisabled: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: this.handleValuesChange,
-        }),
-        fd: { ...initFd },
+        fd: { ...getInitialValue(SCALING_GROUP_FIELD_MAP) },
+        fi: {},
       },
       formItemLayout: {
         wrapperCol: {
@@ -150,6 +151,61 @@ export default {
       },
       isDeleteVpc: false,
       isDeleteNetwork: false,
+      rules: {
+        generate_name: [
+          { required: true, message: this.$t('compute.text_210') },
+          { validator: validateForm('serverCreateName') },
+        ],
+        brand: [
+          { required: true, message: this.$t('compute.text_882') },
+        ],
+        guest_template_id: [
+          { required: true, message: this.$t('compute.text_878') },
+        ],
+        vpc: [
+          { required: true, message: this.$t('compute.text_194') },
+          {
+            validator: (rule, value, cb) => {
+              if (this.isDeleteVpc) {
+                return cb(this.$t('compute.text_909'))
+              }
+              cb()
+            },
+          },
+        ],
+        network: [
+          { required: true, message: this.$t('compute.text_195') },
+          {
+            validator: (rule, value, cb) => {
+              if (this.isDeleteNetwork) {
+                return cb(this.$t('compute.text_909'))
+              }
+              cb()
+            },
+          },
+        ],
+        max_instance_number: [
+          { required: true, message: this.$t('compute.text_880') },
+        ],
+        desire_instance_number: [
+          { required: true, message: this.$t('compute.text_881') },
+        ],
+        min_instance_number: [
+          { required: true, message: this.$t('compute.text_879') },
+        ],
+        shrink_principle: [
+          { required: true, message: this.$t('compute.text_889') },
+        ],
+        health_check_mode: [
+          { required: true, message: this.$t('compute.text_884') },
+        ],
+        health_check_cycle: [
+          { required: true, message: this.$t('compute.text_890') },
+        ],
+        health_check_gov: [
+          { required: true, message: this.$t('compute.text_883') },
+        ],
+      },
     }
   },
   provide () {
@@ -158,6 +214,9 @@ export default {
     }
   },
   computed: {
+    formRules () {
+      return this.isLoadbalancer ? { ...this.rules, ...BIND_LB_RULES } : this.rules
+    },
     capabilityBrands () {
       return this.$store.getters.capability.brands
     },
@@ -185,38 +244,6 @@ export default {
       }
       return { scope: this.$store.getters.scope }
     },
-    networlDecorators () {
-      return {
-        vpc: ['vpc', {
-          validateFirst: true,
-          rules: [
-            { required: true, message: this.$t('compute.text_194') },
-            {
-              validator: (rule, value, _cb) => {
-                if (this.isDeleteVpc) {
-                  return _cb(this.$t('compute.text_909'))
-                }
-                _cb()
-              },
-            },
-          ],
-        }],
-        network: ['network', {
-          validateFirst: true,
-          rules: [
-            { required: true, message: this.$t('compute.text_195') },
-            {
-              validator: (rule, value, _cb) => {
-                if (this.isDeleteNetwork) {
-                  return _cb(this.$t('compute.text_909'))
-                }
-                _cb()
-              },
-            },
-          ],
-        }],
-      }
-    },
   },
   watch: {
     isLoadbalancer (v) {
@@ -225,13 +252,11 @@ export default {
           this.$refs.BIND_LB.fetchQueryLbs(this.form.fd.vpc)
         })
       }
-      this.form.fc.setFieldsValue({
-        health_check_mode: v ? 'loadbalancer' : 'normal',
-      })
+      this.form.fd.health_check_mode = v ? 'loadbalancer' : 'normal'
     },
-  },
-  created () {
-    this.form.fc.getFieldDecorator('cloudregion', { preserve: true })
+    'form.fd.vpc' () {
+      this.vpcChange()
+    },
   },
   methods: {
     filterOption (input, option) {
@@ -239,23 +264,15 @@ export default {
         option.componentOptions.children[0].text.toLowerCase().indexOf(input.toLowerCase()) >= 0
       )
     },
-    async handleMinBlur ({ target }) {
-      const val = parseInt(target.value || 0)
-      const { setFieldsValue } = this.form.fc
-      await this.$nextTick()
-      setFieldsValue({
-        min_instance_number: val || undefined,
-      })
+    handleMinChange (val) {
+      const n = parseInt(val || 0)
+      this.min = n
+      this.form.fd.min_instance_number = n || undefined
     },
-    // domainChange () {
-    //   this.fetchQueryTs()
-    //   this.$refs['NETWORK'].fetchs()
-    // },
     projectChange () {
-      if (this.brands && this.brands.length > 0) {
-        this.form.fc.setFieldsValue({
-          brand: this.brands[0].brand,
-        })
+      if (this.brands && this.brands.length > 0 && !this.form.fd.brand) {
+        this.form.fd.brand = this.brands[0].brand
+        this.brandChange()
       }
     },
     vpcChange () {
@@ -273,42 +290,20 @@ export default {
     templateChange () {
       this.isDeleteVpc = false
       this.isDeleteNetwork = false
-      const { fc } = this.form
       this.$refs.NETWORK.fetchs(async (rets) => {
         await this.$nextTick()
         const { vpcList, networkList } = rets
-        // 判断当前选择的主机模板中的VPC是否存在VPC列表中
-        const _vpcId = fc.getFieldValue('vpc')
+        const _vpcId = this.form.fd.vpc
         if (vpcList !== undefined && _vpcId) {
           this.isDeleteVpc = vpcList.length === 0 || !vpcList.find(item => item.id === _vpcId)
-          fc.validateFields(['vpc'])
+          this.$refs.formRef.validateField('vpc')
         }
-        // 判断当前选择的主机模板中的netwrok是否存在netwrok列表中
-        const _networkId = fc.getFieldValue('network')
+        const _networkId = this.form.fd.network
         if (networkList !== undefined && _networkId) {
           this.isDeleteNetwork = networkList.length === 0 || !networkList.find(item => item.id === _networkId)
-          fc.validateFields(['network'])
+          this.$refs.formRef.validateField('network')
         }
       })
-    },
-    async handleValuesChange (vm, changedFields) {
-      this.form.fd = {
-        ...this.form.fd,
-        ...changedFields,
-      }
-      await this.$nextTick()
-      if (changedFields.project) {
-        this.projectChange()
-      }
-      if (changedFields.brand) {
-        this.brandChange()
-      }
-      if (changedFields.guest_template_id) {
-        this.templateChange()
-      }
-      if (changedFields.vpc || Object.keys(changedFields).indexOf('vpc') > -1) {
-        this.vpcChange()
-      }
     },
     vpcParams () {
       const { brand } = this.form.fd
@@ -328,31 +323,26 @@ export default {
       if (row.config_info && row.config_info.nets && row.config_info.nets.length > 0) {
         const net = row.config_info.nets[0]
         if (net.vpc_id && net.id) {
-          this.form.fc.setFieldsValue({
-            vpc: net.vpc_id,
-            network: net.id,
-          })
+          this.form.fd.vpc = net.vpc_id
+          this.form.fd.network = net.id
           this.networlDisabled = true
           return true
         }
       }
-      this.form.fc.setFieldsValue({
-        vpc: undefined,
-        network: undefined,
-      })
+      this.form.fd.vpc = undefined
+      this.form.fd.network = undefined
       this.networlDisabled = false
     },
-    handleServerTemplateChange (e, { data }) {
-      const { row } = data.attrs
+    handleServerTemplateChange (e, option) {
+      const row = option?.row || option?.data?.attrs?.row
+      if (!row) return
       this.serverTemplate = row
       this.setNetworkValues(row)
-      this.form.fc.setFieldsValue({
-        cloudregion: row.cloudregion_id,
-      })
+      this.form.fd.cloudregion = row.cloudregion_id
+      this.templateChange()
     },
     async fetchQueryTs () {
       const manager = new this.$Manager('servertemplates')
-      // console.log(this.form.fd)
       const { brand } = this.form.fd
       this.serverTemplateListLoading = true
       try {
@@ -372,16 +362,12 @@ export default {
           })
           this.serverTemplate = this.serverTemplateList[0]
           this.setNetworkValues(this.serverTemplateList[0])
-          this.form.fc.setFieldsValue({
-            cloudregion: this.serverTemplateList[0].cloudregion_id,
-          })
+          this.form.fd.cloudregion = this.serverTemplateList[0].cloudregion_id
         } else {
           this.serverTemplateList = []
           this.networlDisabled = false
-          this.form.fc.setFieldsValue({
-            vpc: undefined,
-            network: undefined,
-          })
+          this.form.fd.vpc = undefined
+          this.form.fd.network = undefined
           this.$refs.NETWORK.networkList = []
           this.$refs.NETWORK.vpcList = []
         }
@@ -390,9 +376,7 @@ export default {
       } finally {
         this.serverTemplateListLoading = false
         const list = this.serverTemplateList
-        this.form.fc.setFieldsValue({
-          guest_template_id: (list && list.length > 0) ? list[0].id : undefined,
-        })
+        this.form.fd.guest_template_id = (list && list.length > 0) ? list[0].id : undefined
       }
     },
     formatValues (values) {
@@ -412,10 +396,10 @@ export default {
       })
     },
     async handleConfirm () {
-      const { validateFields } = this.form.fc
       const manager = new this.$Manager('scalinggroups', 'v1')
       try {
-        const values = await validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form.fd }
         this.loading = true
         await manager.create({
           data: Object.assign({}, this.formatValues(values)),

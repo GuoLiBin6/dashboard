@@ -4,26 +4,27 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_1127')" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-bind="formItemLayout">
         <!-- 自动启动 -->
-        <a-form-item :label="$t('compute.text_494')" v-if="isSingle && isAllReady" :extra="$t('compute.text_1263')">
+        <a-form-model-item :label="$t('compute.text_494')" v-if="isSingle && isAllReady" :extra="$t('compute.text_1263')" prop="auto_start">
           <a-switch
             :checkedChildren="$t('compute.text_115')"
             :unCheckedChildren="$t('compute.text_116')"
-            v-decorator="decorators.auto_start" />
-        </a-form-item>
+            v-model:checked="form.auto_start" />
+        </a-form-model-item>
         <!-- 跳过CPU检查 -->
-        <a-form-item :label="$t('compute.live_migrate.skip_cpu_check')" v-if="isKvm && isAllRunning" :extra="$t('compute.live_migrate.skip_cpu_check.explain')">
+        <a-form-model-item :label="$t('compute.live_migrate.skip_cpu_check')" v-if="isKvm && isAllRunning" :extra="$t('compute.live_migrate.skip_cpu_check.explain')" prop="skip_cpu_check">
           <a-switch
             :checkedChildren="$t('compute.text_115')"
             :unCheckedChildren="$t('compute.text_116')"
-            v-decorator="decorators.skip_cpu_check"
+            v-model:checked="form.skip_cpu_check"
             @change="onSkipCpuCheck" />
-        </a-form-item>
-        <a-form-item
-          :label="$t('compute.text_111')">
+        </a-form-model-item>
+        <a-form-model-item
+          :label="$t('compute.text_111')"
+          prop="host">
           <list-select
-            v-decorator="decorators.host"
+            v-model:value="form.host"
             :list-props="resourceProps"
             :formatter="v => v.name"
             :multiple="false"
@@ -32,17 +33,24 @@
             :tab-props="tabProps"
             @change="hostChangeHandle" />
             <div :class="[hostValidateStatus]" style="line-height: 20px; color: rgba(0,0,0,.45);">{{ message || hostValidateMsg }}</div>
-        </a-form-item>
+        </a-form-model-item>
         <template v-if="isKvm && isAllRunning">
-          <a-form-item>
+          <a-form-model-item prop="brandWidth">
             <span slot="label">
               {{ $t('compute.vminstance.transfer.max_brand_width') }}
               <a-tooltip :title="$t('compute.transfer.max_brand_width.tooltip')"><icon type="question-circle" /></a-tooltip>
             </span>
-            <migration-bandwidth :decorators="decorators" :form="form" />
-          </a-form-item>
+            <a-radio-group v-model:value="form.brandWidth" @change="brandWidthChangeHandle">
+              <a-radio-button v-for="item in brandWidthOptions" :key="item.key" :value="item.key">{{ item.label }}</a-radio-button>
+            </a-radio-group>
+          </a-form-model-item>
+          <a-form-model-item v-if="showCustomBrandWidth" prop="customBrandWidth">
+            <a-input-group compact>
+              <a-input class="w-25" type="number" suffix="M" v-model:value="form.customBrandWidth" />
+            </a-input-group>
+          </a-form-model-item>
         </template>
-      </a-form>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading" :disabled="handleConfirmDisabled">{{ $t('dialog.ok') }}</a-button>
@@ -53,7 +61,6 @@
 
 <script>
 import { mapGetters } from 'vuex'
-import MigrationBandwidth from '@Compute/sections/MigrationBandwidth'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import { HYPERVISORS_MAP } from '@/constants'
@@ -63,7 +70,6 @@ export default {
   name: 'VmTransferDialog',
   components: {
     ListSelect,
-    MigrationBandwidth,
   },
   mixins: [DialogMixin, WindowsMixin, ResourceProps],
   data () {
@@ -72,58 +78,34 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-          },
-        }),
-        fd: {},
+        host: undefined,
+        auto_start: true,
+        skip_cpu_check: false,
+        brandWidth: '-1',
+        customBrandWidth: undefined,
+      },
+      rules: {
+        host: [
+          { required: isVMware, message: this.$t('compute.text_314'), trigger: 'change' },
+        ],
+        customBrandWidth: [
+          { required: true, message: this.$t('compute.vminstance.transfer.max_brand_width.required'), trigger: 'change' },
+          { pattern: /^[1-9][0-9]*$/, message: this.$t('compute.transfer.bandwidth.number.check') },
+        ],
       },
       forcastData: null,
       hosts: [],
       message: '',
-      decorators: {
-        host: [
-          'host',
-          {
-            rules: [
-              { required: isVMware, message: this.$t('compute.text_314'), trigger: 'change' },
-            ],
-          },
-        ],
-        auto_start: [
-          'auto_start',
-          {
-            initialValue: true,
-            valuePropName: 'checked',
-          },
-        ],
-        skip_cpu_check: [
-          'skip_cpu_check',
-          {
-            initialValue: false,
-            valuePropName: 'checked',
-          },
-        ],
-        brandWidth: [
-          'brandWidth',
-          {
-            initialValue: '-1',
-          },
-        ],
-        customBrandWidth: [
-          'customBrandWidth',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.vminstance.transfer.max_brand_width.required'), trigger: 'change' },
-              { pattern: /^[1-9][0-9]*$/, message: this.$t('compute.transfer.bandwidth.number.check') },
-            ],
-          },
-        ],
-      },
+      showCustomBrandWidth: false,
+      brandWidthOptions: [
+        { key: '-1', label: this.$t('compute.text_138') },
+        { key: '100', label: '100M' },
+        { key: '200', label: '200M' },
+        { key: '300', label: '300M' },
+        { key: '500', label: '500M' },
+        { key: '1000', label: '1000M' },
+        { key: 'custom', label: this.$t('compute.text_144') },
+      ],
       formItemLayout: {
         wrapperCol: {
           span: 20,
@@ -320,6 +302,9 @@ export default {
     this.queryHosts()
   },
   methods: {
+    brandWidthChangeHandle (e) {
+      this.showCustomBrandWidth = e.target.value === 'custom'
+    },
     doSingleTransfer (ids, values) {
       let action = 'migrate'
       const selectedItem = this.params.data[0]
@@ -379,7 +364,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         const ids = this.params.data.map(item => item.id)
         if (this.isSingle) {
           await this.doSingleTransfer(ids, values)
@@ -408,7 +394,7 @@ export default {
         ids.push(item.id)
       })
       return manager.batchPerformAction({
-        ids: ids, // this.params.data[0].id,
+        ids: ids,
         action: 'migrate-forecast',
         data: params,
       })

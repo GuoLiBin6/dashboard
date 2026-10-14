@@ -4,38 +4,46 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.network')" :count="params.data.length" :action="$t('network.set_static_routes')" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" class="mt-3" v-bind="formItemLayout" hideRequiredMark>
-        <a-form-item
-          v-for="(k, index) in (form.fc.getFieldValue('keys') || [])"
-          :key="k"
+      <a-form-model ref="formRef" :model="form" class="mt-3" v-bind="formItemLayout" hideRequiredMark>
+        <a-form-model-item
+          v-for="(row, index) in form.rows"
+          :key="row.key"
           v-bind="index === 0 ? formItemLayout : formItemLayoutWithOutLabel"
           :label="index === 0 ? $t('network.static_routes') : ''"
           :required="false">
           <a-row :gutter="6">
             <a-col :span="11">
-              <a-form-item :wrapperCol="{ span: 24 }" class="mb-0 mr-1">
-                <a-input v-decorator="decorators.routes.net(k)" :placeholder="$t('network.static_routes.net_placeholder')" />
-              </a-form-item>
+              <a-form-model-item
+                :wrapperCol="{ span: 24 }"
+                class="mb-0 mr-1"
+                :prop="`rows.${index}.net`"
+                :rules="netRules(row.key)">
+                <a-input v-model:value="row.net" :placeholder="$t('network.static_routes.net_placeholder')" />
+              </a-form-model-item>
             </a-col>
             <a-col :span="11">
-              <a-form-item :wrapperCol="{ span: 24 }" class="mb-0 mr-1">
-                <a-input v-decorator="decorators.routes.gw(k)" :placeholder="$t('network.static_routes.gw_placeholder')" />
-              </a-form-item>
+              <a-form-model-item
+                :wrapperCol="{ span: 24 }"
+                class="mb-0 mr-1"
+                :prop="`rows.${index}.gw`"
+                :rules="rules.gw">
+                <a-input v-model:value="row.gw" :placeholder="$t('network.static_routes.gw_placeholder')" />
+              </a-form-model-item>
             </a-col>
             <a-col :span="2">
-              <a-button shape="circle" icon="minus" size="small" @click="remove(k)" />
+              <a-button shape="circle" icon="minus" size="small" @click="remove(row.key)" />
             </a-col>
           </a-row>
-        </a-form-item>
-        <a-form-item
-          v-bind="(form.fc.getFieldValue('keys') || []).length ? formItemLayoutWithOutLabel : formItemLayout"
-          :label="(form.fc.getFieldValue('keys') || []).length ? '' : $t('network.static_routes')">
+        </a-form-model-item>
+        <a-form-model-item
+          v-bind="form.rows.length ? formItemLayoutWithOutLabel : formItemLayout"
+          :label="form.rows.length ? '' : $t('network.static_routes')">
           <a-button type="link" class="px-0" @click="add">
             <a-icon type="plus-circle" theme="filled" class="mr-2" style="font-size: 16px" />
             {{ $t('network.static_routes.add') }}
           </a-button>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -84,36 +92,22 @@ export default {
   mixins: [DialogMixin, WindowsMixin],
   data () {
     const initialRoutes = getInitialRoutes(this.params)
+    id = initialRoutes.length ? initialRoutes.length - 1 : -1
+    const rows = initialRoutes.map((route, idx) => ({
+      key: idx,
+      net: route.net || undefined,
+      gw: route.gw || undefined,
+    }))
     return {
       loading: false,
-      decorators: {
-        routes: {
-          net: i => [
-            `net[${i}]`,
-            {
-              initialValue: initialRoutes[i]?.net || undefined,
-              validateTrigger: ['change', 'blur'],
-              validateFirst: true,
-              rules: [
-                { required: true, message: this.$t('network.static_routes.net_placeholder') },
-                { validator: this.$validate('cidr') },
-                { validator: this.checkNetDuplicate(i) },
-              ],
-            },
-          ],
-          gw: i => [
-            `gw[${i}]`,
-            {
-              initialValue: initialRoutes[i]?.gw || undefined,
-              validateTrigger: ['change', 'blur'],
-              validateFirst: true,
-              rules: [
-                { required: true, message: this.$t('network.static_routes.gw_placeholder') },
-                { validator: this.$validate('IPv4') },
-              ],
-            },
-          ],
-        },
+      form: {
+        rows,
+      },
+      rules: {
+        gw: [
+          { required: true, message: this.$t('network.static_routes.gw_placeholder') },
+          { validator: this.$validate('IPv4') },
+        ],
       },
       formItemLayout: {
         wrapperCol: {
@@ -142,53 +136,46 @@ export default {
       return fields.map(field => (this.params.columns || []).find(item => item.field === field)).filter(Boolean)
     },
   },
-  beforeCreate () {
-    this.form = {}
-    this.form.fc = this.$form.createForm(this, { name: 'set_static_routes_form' })
-    const initialRoutes = getInitialRoutes(this.$options.propsData.params)
-    id = initialRoutes.length ? initialRoutes.length - 1 : -1
-    const keys = initialRoutes.map((_, idx) => idx)
-    this.form.fc.getFieldDecorator('keys', { initialValue: keys, preserve: true })
-  },
   methods: {
+    netRules (currentKey) {
+      return [
+        { required: true, message: this.$t('network.static_routes.net_placeholder') },
+        { validator: this.$validate('cidr') },
+        { validator: this.checkNetDuplicate(currentKey) },
+      ]
+    },
     checkNetDuplicate (currentKey) {
       return (rule, value, callback) => {
         if (!value) return callback()
-        const keys = this.form.fc.getFieldValue('keys') || []
-        const nets = this.form.fc.getFieldValue('net') || {}
-        const duplicated = keys.some(key => key !== currentKey && nets[key] === value)
+        const duplicated = this.form.rows.some(row => row.key !== currentKey && row.net === value)
         if (duplicated) {
           return callback(new Error(this.$t('network.static_routes.net_duplicate')))
         }
         return callback()
       }
     },
-    generateValues (values) {
-      const keys = values.keys || []
+    generateValues () {
       const staticRoutes = {}
-      keys.forEach(key => {
-        const net = values.net?.[key]
-        const gw = values.gw?.[key]
-        if (net && gw) {
-          staticRoutes[net] = gw
+      this.form.rows.forEach(row => {
+        if (row.net && row.gw) {
+          staticRoutes[row.net] = row.gw
         }
       })
       return {
         static_routes: Object.keys(staticRoutes).length ? staticRoutes : {},
       }
     },
-    doSubmit (values) {
+    doSubmit () {
       return new this.$Manager('networks').performAction({
         id: this.params.data[0].id,
         action: 'metadata',
-        data: this.generateValues(values),
+        data: this.generateValues(),
       })
     },
     async handleConfirm () {
       this.loading = true
       try {
-        const keys = this.form.fc.getFieldValue('keys') || []
-        if (!keys.length) {
+        if (!this.form.rows.length) {
           this.loading = false
           this.$confirm({
             title: this.$t('network.set_static_routes'),
@@ -199,8 +186,8 @@ export default {
           })
           return
         }
-        const values = await this.form.fc.validateFields()
-        await this.doSubmit(values)
+        await this.$refs.formRef.validate()
+        await this.doSubmit()
         this.$message.success(this.$t('common.success'))
         this.params.ok && this.params.ok()
         this.cancelDialog()
@@ -213,7 +200,7 @@ export default {
     async doClearStaticRoutes () {
       this.loading = true
       try {
-        await this.doSubmit({ keys: [] })
+        await this.doSubmit()
         this.$message.success(this.$t('common.success'))
         this.params.ok && this.params.ok()
         this.cancelDialog()
@@ -224,14 +211,11 @@ export default {
       }
     },
     add () {
-      const keys = this.form.fc.getFieldValue('keys') || []
-      this.form.fc.setFieldsValue({ keys: keys.concat(++id) })
+      const nextKey = ++id
+      this.form.rows.push({ key: nextKey, net: undefined, gw: undefined })
     },
     remove (k) {
-      const keys = this.form.fc.getFieldValue('keys') || []
-      this.form.fc.setFieldsValue({
-        keys: keys.filter(key => key !== k),
-      })
+      this.form.rows = this.form.rows.filter(row => row.key !== k)
     },
   },
 }

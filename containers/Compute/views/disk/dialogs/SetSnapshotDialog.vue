@@ -5,45 +5,43 @@
       <a-alert class="mb-2" type="warning" :message="$t('compute.snapshotpolicy_bind_disk_tip')" />
       <dialog-selected-tips :count="params.data.length" :name="$t('dictionary.disk')" :action="$t('compute.disk_perform_setup_snapshot_policy')" />
       <dialog-table v-if="params.columns && params.columns.length" :data="params.data" :columns="[...params.columns.slice(0, 3), { field: 'guest_snapshotpolicy_count', title: $t('compute.guest_snapshotpolicy_count'), formatter: ({ row }) => { return row.guest_snapshotpolicy_count || 0 } }]" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('compute.text_427')" v-bind="formItemLayout">
-          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-decorator="decorators.isOpen" />
-        </a-form-item>
-        <template v-if="enable">
-          <a-form-item :label="$t('compute.text_428')" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
+        <a-form-model-item :label="$t('compute.text_427')" v-bind="formItemLayout" prop="isOpen">
+          <a-switch v-model:checked="form.isOpen" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" @change="onOpenChange" />
+        </a-form-model-item>
+        <template v-if="form.isOpen">
+          <a-form-model-item :label="$t('compute.text_428')" v-bind="formItemLayout" prop="snapshotpolicy">
             <a-row :gutter="8">
               <a-col :span="12">
-                <a-select v-decorator="decorators.snapshotpolicy" :filterOption="filterOption" showSearch>
-                  <a-select-option v-for="item in snapshotpolicyOptions" :key="item.id">
+                <a-select v-model:value="form.snapshotpolicy" :filterOption="filterOption" showSearch @change="assembly">
+                  <a-select-option v-for="item in snapshotpolicyOptions" :key="item.id" :value="item.id">
                     {{getPolicyLabel(item)}}
                   </a-select-option>
                 </a-select>
               </a-col>
               <a-col :span="12">
                 <icon type="sync" class="mr-1" @click="refresh" />
-                <!-- <router-link target="_blank" :to="{ path: '/snapshotpolicy' }" style="color: #409EFF;">{{$t('compute.text_429')}}</router-link> -->
                 <dialog-trigger :vm="params.vm" :extParams="{ tenant, domain, types: ['disk'] }" :name="$t('compute.text_430')" value="CreateSnapshotPolicyDialog" resource="snapshotpolicies" @success="successCallback" />
               </a-col>
             </a-row>
-          </a-form-item>
-          <a-form-item :label="$t('compute.text_431')" v-bind="formItemLayout">
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.text_431')" v-bind="formItemLayout">
             <span class="ant-form-text">
               {{ weekTips }}
             </span>
-          </a-form-item>
-          <a-form-item :label="$t('compute.text_432')" v-bind="formItemLayout">
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.text_432')" v-bind="formItemLayout">
             <span class="ant-form-text">
               {{ timeTips }}
             </span>
-          </a-form-item>
-          <a-form-item :label="$t('compute.text_433')" v-bind="formItemLayout">
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.text_433')" v-bind="formItemLayout">
             <span class="ant-form-text">
               {{ dayTips }}
             </span>
-          </a-form-item>
+          </a-form-model-item>
         </template>
-      </a-form>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -62,42 +60,17 @@ export default {
   name: 'DiskSetSnapshotDialog',
   mixins: [DialogMixin, WindowsMixin],
   data () {
+    const hasPolicy = this.params.data[0].snapshotpolicies && this.params.data[0].snapshotpolicies.length > 0
     return {
       loading: false,
       scope: this.$store.getters.scope,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            if (values.hasOwnProperty('snapshotpolicy')) {
-              this.assembly(values.snapshotpolicy)
-            }
-            if (values.hasOwnProperty('isOpen')) {
-              this.enable = !this.enable
-              if (values.isOpen === true && this.snapshotpolicyOptions.length) {
-                this.$nextTick(function () {
-                  this.form.fc.setFieldsValue({ snapshotpolicy: this.snapshotpolicyOptions[0].id })
-                })
-              }
-            }
-          },
-        }),
+        isOpen: hasPolicy,
+        snapshotpolicy: hasPolicy ? this.params.data[0].snapshotpolicies[0].id : '',
       },
-      decorators: {
-        isOpen: [
-          'isOpen',
-          {
-            valuePropName: 'checked',
-            initialValue: this.params.data[0].snapshotpolicies && this.params.data[0].snapshotpolicies.length > 0,
-          },
-        ],
+      rules: {
         snapshotpolicy: [
-          'snapshotpolicy',
-          {
-            initialValue: this.params.data[0].snapshotpolicies && this.params.data[0].snapshotpolicies.length ? this.params.data[0].snapshotpolicies[0].id : '',
-            rules: [
-              { required: true },
-            ],
-          },
+          { required: true },
         ],
       },
       formItemLayout: {
@@ -109,11 +82,10 @@ export default {
         },
       },
       snapshotpolicyOptions: [],
-      attchedPolices: this.params.data[0].snapshotpolicies && this.params.data[0].snapshotpolicies.length ? this.params.data[0].snapshotpolicies : [],
+      attchedPolices: hasPolicy ? this.params.data[0].snapshotpolicies : [],
       weekTips: '',
       timeTips: '',
       dayTips: '',
-      enable: this.params.data[0].snapshotpolicies && this.params.data[0].snapshotpolicies.length,
     }
   },
   computed: {
@@ -133,6 +105,14 @@ export default {
     this.manager = new this.$Manager('snapshotpolicies')
   },
   methods: {
+    onOpenChange (checked) {
+      if (checked === true && this.snapshotpolicyOptions.length) {
+        this.$nextTick(() => {
+          this.form.snapshotpolicy = this.snapshotpolicyOptions[0].id
+          this.assembly(this.form.snapshotpolicy)
+        })
+      }
+    },
     refresh () {
       this.fetchSnaphotpolicy()
     },
@@ -157,9 +137,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        this.loading = true
-        if (this.enable) {
+        if (this.form.isOpen) {
+          await this.$refs.formRef.validate()
           await this.detachPolices()
           await this.params.onManager('performAction', {
             id: this.params.data[0].id,
@@ -167,21 +146,19 @@ export default {
             managerArgs: {
               action: 'set-snapshotpolicy',
               data: {
-                snapshotpolicy_id: values.snapshotpolicy,
+                snapshotpolicy_id: this.form.snapshotpolicy,
               },
             },
           })
-        } else {
-          if (this.attchedPolices.length) {
-            await this.detachPolices()
-          }
+        } else if (this.attchedPolices.length) {
+          await this.detachPolices()
         }
-        this.loading = false
         this.params.refresh()
         this.cancelDialog()
       } catch (error) {
-        this.loading = false
         throw error
+      } finally {
+        this.loading = false
       }
     },
     getPolicyLabel (item) {
@@ -227,6 +204,7 @@ export default {
     assembly (id) {
       const snapshotpolicyObj = R.indexBy(R.prop('id'), this.snapshotpolicyOptions)
       const selectItem = snapshotpolicyObj[id]
+      if (!selectItem) return
       this.weekTips = (
         selectItem.repeat_weekdays &&
         selectItem.repeat_weekdays.map(item => weekOptions[item - 1]).join('、')
@@ -247,12 +225,14 @@ export default {
     },
     async successCallback () {
       await this.fetchSnaphotpolicy()
-      this.form.fc.setFieldsValue({ snapshotpolicy: this.snapshotpolicyOptions[0].id })
+      if (this.snapshotpolicyOptions.length) {
+        this.form.snapshotpolicy = this.snapshotpolicyOptions[0].id
+        this.assembly(this.form.snapshotpolicy)
+      }
     },
     filterOption (input, option) {
-      return (
-        option.componentOptions.children[0].text.toLowerCase().indexOf(input.toLowerCase()) >= 0
-      )
+      const label = option.children?.[0]?.children || option.label || ''
+      return String(label).toLowerCase().indexOf(input.toLowerCase()) >= 0
     },
   },
 }

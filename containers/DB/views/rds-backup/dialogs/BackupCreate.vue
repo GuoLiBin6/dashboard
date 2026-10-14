@@ -1,20 +1,20 @@
 <template>
   <base-dialog @cancel="cancelDialog" :width="900">
     <div slot="header">{{$t('db.text_215')}}</div>
-    <a-form slot="body" :form="form.fc" class="mt-3">
-      <a-form-item  v-bind="formItemLayout" :label="$t('db.text_60')">
-        <a-input v-decorator="decorators.name" :placeholder="$t('db.text_216')" />
-        <name-repeated v-slot:extra res="dbinstancebackups" :name="form.fc.getFieldValue('name')" />
-      </a-form-item>
-        <a-form-item v-bind="formItemLayout" :label="$t('db.text_217')" v-if="!params.rdsItem">
-        <a-select v-decorator="decorators.dbinstance" :placeholder="$t('db.text_218')" :loading="rdsListLoading">
+    <a-form-model ref="formRef" slot="body" :model="form" :rules="rules" class="mt-3" v-bind="formItemLayout">
+      <a-form-model-item :label="$t('db.text_60')" prop="generate_name">
+        <a-input v-model:value="form.generate_name" :placeholder="$t('db.text_216')" />
+        <name-repeated v-slot:extra res="dbinstancebackups" :name="form.generate_name" />
+      </a-form-model-item>
+        <a-form-model-item :label="$t('db.text_217')" v-if="!params.rdsItem" prop="dbinstance">
+        <a-select v-model:value="form.dbinstance" :placeholder="$t('db.text_218')" :loading="rdsListLoading">
           <a-select-option :key="item.id" v-for="item in rdsList">{{item.name}}</a-select-option>
         </a-select>
-      </a-form-item>
-      <a-form-item v-bind="formItemLayout" :label="$t('db.text_219')">
-        <a-textarea :autosize="{ minRows: 2, maxRows: 6 }" v-decorator="decorators.description" :placeholder="$t('db.text_220')" />
-      </a-form-item>
-    </a-form>
+      </a-form-model-item>
+      <a-form-model-item :label="$t('db.text_219')" prop="description">
+        <a-textarea :autosize="{ minRows: 2, maxRows: 6 }" v-model:value="form.description" :placeholder="$t('db.text_220')" />
+      </a-form-model-item>
+    </a-form-model>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
@@ -39,7 +39,9 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        generate_name: undefined,
+        description: undefined,
+        dbinstance: undefined,
       },
       formItemLayout: {
         wrapperCol: { span: CreateServerForm.wrapperCol },
@@ -49,42 +51,23 @@ export default {
       rdsList: [],
     }
   },
-  provide () {
-    return {
-      form: this.form,
-    }
-  },
   computed: {
-    decorators () {
-      const decorators = {
-        name: [
-          'generate_name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('db.text_136') },
-              { validator: validateForm('serverName') },
-            ],
-          },
+    rules () {
+      const rules = {
+        generate_name: [
+          { required: true, message: this.$t('db.text_136') },
+          { validator: validateForm('serverName') },
         ],
         description: [
-          'description',
-          {
-            rules: [
-              { max: 200 },
-            ],
-          },
-        ],
-        dbinstance: [
-          'dbinstance',
-          {
-            rules: [
-              { required: true, message: this.$t('db.text_136') },
-            ],
-          },
+          { max: 200 },
         ],
       }
-      return decorators
+      if (!this.params.rdsItem) {
+        rules.dbinstance = [
+          { required: true, message: this.$t('db.text_136') },
+        ]
+      }
+      return rules
     },
   },
   created () {
@@ -111,25 +94,15 @@ export default {
         this.rdsListLoading = false
       }
     },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            if (this.params.rdsItem) {
-              values.dbinstance_id = this.params.rdsItem.id
-              values.dbinstance = this.params.rdsItem.id
-            }
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
+        if (this.params.rdsItem) {
+          values.dbinstance_id = this.params.rdsItem.id
+          values.dbinstance = this.params.rdsItem.id
+        }
         await this.params.list.onManager('create', {
           managerArgs: {
             data: values,

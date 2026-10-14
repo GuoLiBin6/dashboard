@@ -1,6 +1,11 @@
 <template>
-  <div>
-    <a-form-item label="Application Key">
+  <a-form-model
+    ref="formRef"
+    :model="form"
+    :rules="rules"
+    v-bind="formItemLayout"
+    hideRequiredMark>
+    <a-form-model-item label="Application Key" prop="access_key_id">
       <template v-slot:extra>
         <div>
           {{$t('notify.smshuawei.application_key.example')}}
@@ -8,32 +13,32 @@
         </div>
         <div class="mb-0">{{ $t('notify.smshuawei.application_key.guid') }}</div>
       </template>
-      <a-input v-decorator="decorators.access_key_id" />
-    </a-form-item>
-    <a-form-item label="Application Secret">
+      <a-input v-model:value="form.access_key_id" />
+    </a-form-model-item>
+    <a-form-model-item label="Application Secret" prop="access_key_secret">
       <template v-slot:extra>
         <div>{{$t('notify.smshuawei.application_secret.example')}}</div>
         <div class="mb-0">{{ $t('notify.smshuawei.application_secret.guid') }}</div>
       </template>
-      <a-input-password v-decorator="decorators.access_key_secret" />
-    </a-form-item>
-    <a-form-item :label="$t('notify.smshuawei.app_access_url')">
+      <a-input-password v-model:value="form.access_key_secret" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('notify.smshuawei.app_access_url')" prop="service_url">
       <template v-slot:extra>
         <div>{{$t('notify.smshuawei.service_url.example')}}</div>
         <div class="mb-0">{{$t('notify.smshuawei.service_url.guid')}}</div>
       </template>
-      <a-input v-decorator="decorators.service_url" />
-    </a-form-item>
-    <a-form-item :label="$t('system.text_288')">
+      <a-input v-model:value="form.service_url" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('system.text_288')" prop="signature">
       <template v-slot:extra>
         <div>{{$t('notify.smshuawei.signature.example')}}</div>
         <div class="mb-0">{{$t('notify.smshuawei.signature.guid')}}</div>
       </template>
-      <a-input v-decorator="decorators.signature" />
-    </a-form-item>
+      <a-input v-model:value="form.signature" />
+    </a-form-model-item>
     <a-collapse :border="false" v-model:activeKey="activeKey">
       <a-collapse-panel key="1" :header="$t('system.mobile_cn_tpl')">
-        <a-form-item :label="$t('system.text_295')">
+        <a-form-model-item :label="$t('system.text_295')">
           <template v-slot:extra>
             <div>{{ $t('notify.smshuawei.template.verify_code.example') }}</div>
             <div>{{ $t('notify.smshuawei.template.verify_code.guid') }}</div>
@@ -43,15 +48,19 @@
           <a-input-group>
             <a-row :gutter="8">
               <a-col :span="12">
-                <a-input v-decorator="decorators.verifiyCode" :placeholder="$t('notify.smshuawei.template_id.placeholder')" />
+                <a-form-model-item prop="verifiyCode" class="mb-0">
+                  <a-input v-model:value="form.verifiyCode" :placeholder="$t('notify.smshuawei.template_id.placeholder')" />
+                </a-form-model-item>
               </a-col>
               <a-col :span="12">
-                <a-input v-decorator="decorators.verifiyCodeChannel" :placeholder="$t('notify.smshuawei.channel_no.placeholder')" />
+                <a-form-model-item prop="verifiyCodeChannel" class="mb-0">
+                  <a-input v-model:value="form.verifiyCodeChannel" :placeholder="$t('notify.smshuawei.channel_no.placeholder')" />
+                </a-form-model-item>
               </a-col>
             </a-row>
           </a-input-group>
-        </a-form-item>
-        <a-form-item :label="$t('system.alert_tpl')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('system.alert_tpl')">
           <template v-slot:extra>
             <div>{{ $t('notify.smshuawei.template.alarm_message.example') }}</div>
             <div>{{ $t('notify.smshuawei.template.alarm_message.guid') }}</div>
@@ -61,15 +70,19 @@
           <a-input-group>
             <a-row :gutter="8">
               <a-col :span="12">
-                <a-input v-decorator="decorators.alertsCode" :placeholder="$t('notify.smshuawei.template_id.placeholder')" />
+                <a-form-model-item prop="alertsCode" class="mb-0">
+                  <a-input v-model:value="form.alertsCode" :placeholder="$t('notify.smshuawei.template_id.placeholder')" />
+                </a-form-model-item>
               </a-col>
               <a-col :span="12">
-                <a-input v-decorator="decorators.alertsCodeChannel" :placeholder="$t('notify.smshuawei.channel_no.placeholder')" />
+                <a-form-model-item prop="alertsCodeChannel" class="mb-0">
+                  <a-input v-model:value="form.alertsCodeChannel" :placeholder="$t('notify.smshuawei.channel_no.placeholder')" />
+                </a-form-model-item>
               </a-col>
             </a-row>
           </a-input-group>
-        </a-form-item>
-        <a-form-item :label="$t('system.error_login_tpl')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('system.error_login_tpl')">
           <template v-slot:extra>
             <div>{{ $t('notify.smshuawei.template.abnormal_login.example') }}</div>
             <div>{{ $t('notify.smshuawei.template.abnormal_login.guid') }}</div>
@@ -79,19 +92,23 @@
           <a-input-group>
             <a-row :gutter="8">
               <a-col :span="12">
-                <a-input v-decorator="decorators.errorCode" :placeholder="$t('notify.smshuawei.template_id.placeholder')" />
+                <a-form-model-item prop="errorCode" class="mb-0">
+                  <a-input v-model:value="form.errorCode" :placeholder="$t('notify.smshuawei.template_id.placeholder')" />
+                </a-form-model-item>
               </a-col>
               <a-col :span="12">
-                <a-input v-decorator="decorators.errorCodeChannel" :placeholder="$t('notify.smshuawei.channel_no.placeholder')" />
+                <a-form-model-item prop="errorCodeChannel" class="mb-0">
+                  <a-input v-model:value="form.errorCodeChannel" :placeholder="$t('notify.smshuawei.channel_no.placeholder')" />
+                </a-form-model-item>
               </a-col>
             </a-row>
           </a-input-group>
-        </a-form-item>
+        </a-form-model-item>
       </a-collapse-panel>
     </a-collapse>
     <a-collapse :border="false">
       <a-collapse-panel key="1" :header="$t('system.mobile_en_tpl')">
-        <a-form-item :label="$t('system.text_295')">
+        <a-form-model-item :label="$t('system.text_295')">
           <template v-slot:extra>
             <div>{{ $t('notify.smshuawei.template.verify_code.en.example') }}</div>
             <div>{{ $t('notify.smshuawei.template.verify_code.en.guid') }}</div>
@@ -101,15 +118,19 @@
           <a-input-group>
             <a-row :gutter="8">
               <a-col :span="12">
-                <a-input v-decorator="decorators.verifiyCodeEn" :placeholder="$t('notify.smshuawei.template_id.placeholder')" />
+                <a-form-model-item prop="verifiyCodeEn" class="mb-0">
+                  <a-input v-model:value="form.verifiyCodeEn" :placeholder="$t('notify.smshuawei.template_id.placeholder')" />
+                </a-form-model-item>
               </a-col>
               <a-col :span="12">
-                <a-input v-decorator="decorators.verifiyCodeEnChannel" :placeholder="$t('notify.smshuawei.channel_no.placeholder')" />
+                <a-form-model-item prop="verifiyCodeEnChannel" class="mb-0">
+                  <a-input v-model:value="form.verifiyCodeEnChannel" :placeholder="$t('notify.smshuawei.channel_no.placeholder')" />
+                </a-form-model-item>
               </a-col>
             </a-row>
           </a-input-group>
-        </a-form-item>
-        <a-form-item :label="$t('system.alert_tpl')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('system.alert_tpl')">
           <template v-slot:extra>
             <div>{{ $t('notify.smshuawei.template.alarm_message.en.example') }}</div>
             <div>{{ $t('notify.smshuawei.template.alarm_message.en.guid') }}</div>
@@ -119,15 +140,19 @@
           <a-input-group>
             <a-row :gutter="8">
               <a-col :span="12">
-                <a-input v-decorator="decorators.alertsCodeEn" :placeholder="$t('notify.smshuawei.template_id.placeholder')" />
+                <a-form-model-item prop="alertsCodeEn" class="mb-0">
+                  <a-input v-model:value="form.alertsCodeEn" :placeholder="$t('notify.smshuawei.template_id.placeholder')" />
+                </a-form-model-item>
               </a-col>
               <a-col :span="12">
-                <a-input v-decorator="decorators.alertsCodeEnChannel" :placeholder="$t('notify.smshuawei.channel_no.placeholder')" />
+                <a-form-model-item prop="alertsCodeEnChannel" class="mb-0">
+                  <a-input v-model:value="form.alertsCodeEnChannel" :placeholder="$t('notify.smshuawei.channel_no.placeholder')" />
+                </a-form-model-item>
               </a-col>
             </a-row>
           </a-input-group>
-        </a-form-item>
-        <a-form-item :label="$t('system.error_login_tpl')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('system.error_login_tpl')">
           <template v-slot:extra>
             <div>{{ $t('notify.smshuawei.template.abnormal_login.en.example') }}</div>
             <div>{{ $t('notify.smshuawei.template.abnormal_login.en.guid') }}</div>
@@ -137,17 +162,21 @@
           <a-input-group>
             <a-row :gutter="8">
               <a-col :span="12">
-                <a-input v-decorator="decorators.errorCodeEn" :placeholder="$t('notify.smshuawei.template_id.placeholder')" />
+                <a-form-model-item prop="errorCodeEn" class="mb-0">
+                  <a-input v-model:value="form.errorCodeEn" :placeholder="$t('notify.smshuawei.template_id.placeholder')" />
+                </a-form-model-item>
               </a-col>
               <a-col :span="12">
-                <a-input v-decorator="decorators.errorCodeEnChannel" :placeholder="$t('notify.smshuawei.channel_no.placeholder')" />
+                <a-form-model-item prop="errorCodeEnChannel" class="mb-0">
+                  <a-input v-model:value="form.errorCodeEnChannel" :placeholder="$t('notify.smshuawei.channel_no.placeholder')" />
+                </a-form-model-item>
               </a-col>
             </a-row>
           </a-input-group>
-        </a-form-item>
+        </a-form-model-item>
       </a-collapse-panel>
     </a-collapse>
-  </div>
+  </a-form-model>
 </template>
 
 <script>
@@ -164,7 +193,7 @@ export default {
       type: Object,
     },
     loading: Boolean,
-    form: Object,
+    docUrl: String,
   },
   data () {
     return {
@@ -173,88 +202,51 @@ export default {
       submiting: false,
       testLoding: false,
       activeKey: ['1'],
-      decorators: {
+      form: {
+        access_key_id: undefined,
+        access_key_secret: undefined,
+        service_url: undefined,
+        signature: undefined,
+        verifiyCode: undefined,
+        verifiyCodeChannel: undefined,
+        alertsCode: undefined,
+        alertsCodeChannel: undefined,
+        errorCode: undefined,
+        errorCodeChannel: undefined,
+        verifiyCodeEn: undefined,
+        verifiyCodeEnChannel: undefined,
+        alertsCodeEn: undefined,
+        alertsCodeEnChannel: undefined,
+        errorCodeEn: undefined,
+        errorCodeEnChannel: undefined,
+      },
+      rules: {
         access_key_id: [
-          'access_key_id',
-          {
-            rules: [
-              { required: true, message: this.$t('notify.smshuawei.application_key.prompt') },
-            ],
-          },
+          { required: true, message: this.$t('notify.smshuawei.application_key.prompt') },
         ],
         access_key_secret: [
-          'access_key_secret',
-          {
-            rules: [
-              { required: true, message: this.$t('notify.smshuawei.application_secret.prompt') },
-            ],
-          },
+          { required: true, message: this.$t('notify.smshuawei.application_secret.prompt') },
         ],
         service_url: [
-          'service_url',
-          {
-            rules: [
-              { required: true, message: this.$t('notify.smshuawei.service_url.prompt') },
-            ],
-          },
+          { required: true, message: this.$t('notify.smshuawei.service_url.prompt') },
         ],
         signature: [
-          'signature',
-          {
-            rules: [
-              { required: true, message: this.$t('system.text_293') },
-            ],
-          },
+          { required: true, message: this.$t('system.text_293') },
         ],
         verifiyCode: [
-          'verifiyCode',
-          {
-            rules: [
-              { required: true, message: this.$t('notify.smshuawei.verify_code_channel.prompt') },
-            ],
-          },
+          { required: true, message: this.$t('notify.smshuawei.verify_code_channel.prompt') },
         ],
         verifiyCodeChannel: [
-          'verifiyCodeChannel',
-          {
-            rules: [
-              { required: true, message: this.$t('notify.smshuawei.verify_code_channel.prompt') },
-            ],
-          },
-        ],
-        alertsCode: [
-          'alertsCode',
-        ],
-        alertsCodeChannel: [
-          'alertsCodeChannel',
-        ],
-        errorCode: [
-          'errorCode',
-        ],
-        errorCodeChannel: [
-          'errorCodeChannel',
-        ],
-        verifiyCodeEn: [
-          'verifiyCodeEn',
-        ],
-        verifiyCodeEnChannel: [
-          'verifiyCodeEnChannel',
-        ],
-        alertsCodeEn: [
-          'alertsCodeEn',
-        ],
-        alertsCodeEnChannel: [
-          'alertsCodeEnChannel',
-        ],
-        errorCodeEn: [
-          'errorCodeEn',
-        ],
-        errorCodeEnChannel: [
-          'errorCodeEnChannel',
+          { required: true, message: this.$t('notify.smshuawei.verify_code_channel.prompt') },
         ],
       },
-      docUrl: DOCS_MAP.mailConfig('mobile_huawei'),
     }
+  },
+  methods: {
+    async validateForm () {
+      await this.$refs.formRef.validate()
+      return { ...this.form }
+    },
   },
 }
 </script>

@@ -1,19 +1,19 @@
 <template>
   <div>
-    <a-form :form="form.fc" v-bind="formLayout" :data-oc-label-min-text="$t('cloudenv.project_mapping_effective_scope')">
-      <a-form-item :label="$t('cloudenv.text_95')">
-        <a-input v-decorator="decorators.name" :placeholder="$t('cloudenv.text_190')" />
-      </a-form-item>
-      <a-form-item :label="$t('common.description')">
-        <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.auth_url_label')" :extra="$t('cloudenv.auth_url_extra')">
-        <a-input v-decorator="decorators.auth_url" />
-      </a-form-item>
-      <domain-project :fc="form.fc" :form-layout="formLayout" :decorators="{ project: decorators.project, domain: decorators.domain, auto_create_project: decorators.auto_create_project }" :cloneData="cloneData" />
-      <blocked-resources :decorators="{ isOpenBlockedResources: decorators.isOpenBlockedResources, blockedResources: decorators.blockedResources }" :cloneData="cloneData" />
-      <proxy-setting :fc="form.fc" :fd="form.fd" ref="proxySetting" :cloneData="cloneData" />
-    </a-form>
+    <a-form-model ref="formRef" :model="form.fd" :rules="formRules" v-bind="formLayout" :data-oc-label-min-text="$t('cloudenv.project_mapping_effective_scope')">
+      <a-form-model-item :label="$t('cloudenv.text_95')">
+        <a-input v-model:value="form.fd.name" :placeholder="$t('cloudenv.text_190')" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('common.description')">
+        <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.fd.description" :placeholder="$t('common_367')" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.auth_url_label')" :extra="$t('cloudenv.auth_url_extra')">
+        <a-input v-model:value="form.fd.auth_url" />
+      </a-form-model-item>
+      <domain-project :form="form.fd" :form-layout="formLayout" :cloneData="cloneData" />
+      <blocked-resources :form="form.fd" :cloneData="cloneData"  />
+      <proxy-setting :form="form.fd" ref="proxySetting" :cloneData="cloneData" />
+    </a-form-model>
   </div>
 </template>
 
@@ -48,43 +48,35 @@ export default {
       }
     }
     return {
-      decorators: {
-        name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('cloudenv.text_190') },
-              // { validator: this.$validate('resourceName') },
-            ],
-          },
-        ],
-        description: ['description'],
-        auth_url: [
-          'auth_url',
-          {
-            initialValue: initAuthUrl,
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('cloudenv.auth_url_label')]) },
-            ],
-          },
-        ],
-        domain: [
-          'domain',
-          {
-            initialValue: initDomain,
-            rules: [
-              { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
-            ],
-          },
-        ],
-        auto_create_project: [
-          'auto_create_project',
-          {
-            initialValue: initAutoCreateProject,
-            valuePropName: 'checked',
-          },
-        ],
+      fieldMap: {
+        name: {
+          name: 'name',
+          validateFirst: true,
+          rules: [
+            { required: true, message: this.$t('cloudenv.text_190') },
+            // { validator: this.$validate('resourceName') },
+          ],
+        },
+        description: { name: 'description' },
+        auth_url: {
+          name: 'auth_url',
+          initialValue: initAuthUrl,
+          rules: [
+            { required: true, message: this.$t('common.tips.input', [this.$t('cloudenv.auth_url_label')]) },
+          ],
+        },
+        domain: {
+          name: 'domain',
+          initialValue: initDomain,
+          rules: [
+            { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
+          ],
+        },
+        auto_create_project: {
+          name: 'auto_create_project',
+          initialValue: initAutoCreateProject,
+          valuePropName: 'checked',
+        },
       },
     }
   },

@@ -1,27 +1,27 @@
 <template>
   <div>
     <page-header :title="id ? $t('compute.text_247') : $t('compute.text_248')" />
-    <a-form class="mt-3" :form="form" v-bind="formItemLayout">
-      <a-form-item :label="$t('compute.text_228')">
-        <a-input :disabled="!!id" v-decorator="decorators.name" :placeholder="$t('validator.serverName')" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_90')">
-        <code-mirror v-decorator="decorators.hosts" @input="(v) => handleCodeInput('hosts', v)" :options="cmOptions" style="line-height: 25px" view-height="120px" :is-scroll="true" />
-      </a-form-item>
+    <a-form-model ref="formRef" class="mt-3" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model-item :label="$t('compute.text_228')" prop="name">
+        <a-input :disabled="!!id" v-model:value="form.name" :placeholder="$t('validator.serverName')" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_90')" prop="hosts">
+        <code-mirror :value="form.hosts" @input="(v) => handleCodeInput('hosts', v)" :options="cmOptions" style="line-height: 25px" view-height="120px" :is-scroll="true" />
+      </a-form-model-item>
       <!-- 文件上传 -->
       <upload :defaultFiles="defaultFiles" />
-      <a-form-item label="playbook" required>
-        <code-mirror v-decorator="decorators.playbook" @input="(v) => handleCodeInput('playbook', v)" :options="cmOptions" style="line-height: 25px"  view-height="300px" :is-scroll="true" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_249')" required>
-        <a-switch :defaultChecked="decorators.start[1].initialValue" v-decorator="decorators.start" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
+      <a-form-model-item label="playbook" prop="playbook" required>
+        <code-mirror :value="form.playbook" @input="(v) => handleCodeInput('playbook', v)" :options="cmOptions" style="line-height: 25px"  view-height="300px" :is-scroll="true" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_249')" prop="start" required>
+        <a-switch v-model:checked="form.start" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
         <span slot="extra">{{$t('compute.text_250')}}</span>
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_242')" required>
-        <a-input-number v-decorator="decorators.hour" :min="1" @blur="handleNumBlur" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_242')" prop="hour" required>
+        <a-input-number v-model:value="form.hour" :min="1" @blur="handleNumBlur" />
         <span slot="extra">{{$t('compute.text_251')}}</span>
-      </a-form-item>
-    </a-form>
+      </a-form-model-item>
+    </a-form-model>
     <page-footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading" class="ml-3">{{$t('compute.text_162')}}</a-button>
       <a-button type="primary" @click="handleCancel" :loading="loading" class="ml-3">{{$t('compute.text_135')}}</a-button>
@@ -29,7 +29,6 @@
   </div>
 </template>
 <script>
-// import * as R from 'ramda'
 import { CreateServerForm } from '@Compute/constants'
 import Upload from './components/Upload'
 export default {
@@ -42,7 +41,14 @@ export default {
       id: undefined,
       loading: false,
       retData: {},
-      form: this.$form.createForm(this, { onFieldsChange: this.onFieldsChange }),
+      form: {
+        name: '',
+        hosts: '',
+        playbook: '',
+        start: true,
+        hour: 24,
+        files: {},
+      },
       cmOptions: {
         tabSize: 2,
         styleActiveLine: true,
@@ -56,6 +62,59 @@ export default {
         labelCol: { span: CreateServerForm.labelCol },
       },
       modNames: ['yum', 'package', 'group', 'user', 'get_url', 'file', 'unarchive', 'template', 'service'],
+      rules: {
+        name: [
+          { required: true, message: this.$t('compute.text_210') },
+          { validator: this.$validate('serverName') },
+        ],
+        hosts: [
+          { required: true, message: this.$t('compute.text_252') },
+          {
+            validator: (rule, value, _callback) => {
+              const arr = (value || '').split(' ')
+              if (arr && arr.length > 0) {
+                if (arr[0] !== 'HOSTNAME') {
+                  return _callback(this.$t('compute.text_253'))
+                }
+                for (let i = 1; i < arr.length; i++) {
+                  const _itemArr = arr[i].split('=')
+                  if (_itemArr.length !== 2) {
+                    return _callback(this.$t('compute.text_253'))
+                  }
+                }
+              }
+              return _callback()
+            },
+          },
+        ],
+        playbook: [
+          { required: true, message: this.$t('compute.text_254') },
+          {
+            validator: (rule, value, _callback) => {
+              const modeItems = (value || '').replace(/[\r\n]/g, '<br/>').split('<br/>')
+              if (modeItems && modeItems.length > 0) {
+                for (let i = 0; i < modeItems.length; i++) {
+                  const items = modeItems[i].split(' ')
+                  const [name, ...values] = items
+                  if (this.modNames.indexOf(name) === -1) {
+                    return _callback(this.$t('compute.text_255'))
+                  }
+                  if (!values || values.length === 0) {
+                    return _callback(this.$t('compute.text_255'))
+                  }
+                  for (let j = 0; j < values.length; j++) {
+                    const arr = values[j].split('=')
+                    if (arr.length !== 2) {
+                      return _callback(this.$t('compute.text_255'))
+                    }
+                  }
+                }
+              }
+              return _callback()
+            },
+          },
+        ],
+      },
     }
   },
   computed: {
@@ -63,116 +122,14 @@ export default {
       const { playbook = {} } = this.retData
       return playbook.files || []
     },
-    decorators () {
-      const { name, playbook = {}, start, hour } = this.retData
-      const { inventory, modules } = playbook
-      let hostStr = ''
-      if (inventory && inventory.hosts && inventory.hosts.length > 0) {
-        const _arr = []
-        const { name, vars } = playbook.inventory.hosts[0]
-        _arr.push(name)
-        if (vars) {
-          Object.keys(vars).forEach(k => {
-            _arr.push(`${k}=${vars[k]}`)
-          })
-        }
-        hostStr = _arr.join(' ')
-      }
-      let moduleStr = ''
-      if (modules && modules.length > 0) {
-        playbook.modules.forEach((item, i) => {
-          item.args = item.args || []
-          const { name, args } = item
-          moduleStr += `${i ? '\r' : ''}${name} ${args.join(' ')}`
-        })
-      }
-      return {
-        name: [
-          'name',
-          {
-            initialValue: name,
-            validateTrigger: 'blur',
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_210') },
-              { validator: this.$validate('serverName') },
-            ],
-          },
-        ],
-        hosts: [
-          'hosts',
-          {
-            initialValue: hostStr,
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_252') },
-              {
-                validator: (rule, value, _callback) => {
-                  const arr = value.split(' ')
-                  if (arr && arr.length > 0) {
-                    if (arr[0] !== 'HOSTNAME') {
-                      return _callback(this.$t('compute.text_253'))
-                    }
-                    for (let i = 1; i < arr.length; i++) {
-                      const _itemArr = arr[i].split('=')
-                      if (_itemArr.length !== 2) {
-                        return _callback(this.$t('compute.text_253'))
-                      }
-                    }
-                  }
-                  return _callback()
-                },
-              },
-            ],
-          },
-        ],
-        playbook: [
-          'playbook',
-          {
-            validateFirst: true,
-            initialValue: moduleStr,
-            rules: [
-              { required: true, message: this.$t('compute.text_254') },
-              {
-                validator: (rule, value, _callback) => {
-                  const modeItems = value.replace(/[\r\n]/g, '<br/>').split('<br/>')
-                  if (modeItems && modeItems.length > 0) {
-                    for (let i = 0; i < modeItems.length; i++) {
-                      const items = modeItems[i].split(' ')
-                      const [name, ...values] = items
-                      if (this.modNames.indexOf(name) === -1) {
-                        return _callback(this.$t('compute.text_255'))
-                      }
-                      if (!values || values.length === 0) {
-                        return _callback(this.$t('compute.text_255'))
-                      }
-                      for (let j = 0; j < values.length; j++) {
-                        const arr = values[j].split('=')
-                        if (arr.length !== 2) {
-                          return _callback(this.$t('compute.text_255'))
-                        }
-                      }
-                    }
-                  }
-                  return _callback()
-                },
-              },
-            ],
-          },
-        ],
-        start: [
-          'start',
-          {
-            initialValue: start === undefined ? true : start,
-          },
-        ],
-        hour: [
-          'hour',
-          {
-            initialValue: hour || 24,
-          },
-        ],
-      }
+  },
+  watch: {
+    retData: {
+      handler (data) {
+        if (!data || !Object.keys(data).length) return
+        this.applyRetData(data)
+      },
+      immediate: true,
     },
   },
   provide () {
@@ -189,76 +146,101 @@ export default {
     }
   },
   methods: {
+    applyRetData (data) {
+      const { name, playbook = {}, start, hour } = data
+      const { inventory, modules } = playbook
+      let hostStr = ''
+      if (inventory && inventory.hosts && inventory.hosts.length > 0) {
+        const _arr = []
+        const { name: hostName, vars } = playbook.inventory.hosts[0]
+        _arr.push(hostName)
+        if (vars) {
+          Object.keys(vars).forEach(k => {
+            _arr.push(`${k}=${vars[k]}`)
+          })
+        }
+        hostStr = _arr.join(' ')
+      }
+      let moduleStr = ''
+      if (modules && modules.length > 0) {
+        playbook.modules.forEach((item, i) => {
+          item.args = item.args || []
+          const { name: modName, args } = item
+          moduleStr += `${i ? '\r' : ''}${modName} ${args.join(' ')}`
+        })
+      }
+      this.form.name = name || ''
+      this.form.hosts = hostStr
+      this.form.playbook = moduleStr
+      this.form.start = start === undefined ? true : start
+      this.form.hour = hour || 24
+    },
     handleCodeInput (key, value) {
-      this.form.setFieldsValue({
-        [key]: value,
-      }, () => {
-        this.form.validateFields([key])
+      this.form[key] = value
+      this.$nextTick(() => {
+        this.$refs.formRef?.validateField?.(key)
       })
     },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.validateFields((err, values) => {
-          if (err || document.querySelector('.ant-form .error-color')) {
-            reject(err)
-            return false
-          }
-          const { name, hour, start, hosts, files } = values
-          const params = { name, hour, start, enabled: true }
-          const playbook = {
-            files,
-            inventory: {
-              hosts: [],
-            },
-            modules: [],
-          }
-          const hostItem = {
-            vars: {},
-          }
-          hosts.split(' ').forEach(item => {
-            item = item.replace("'", '')
-            if (!item || item === '--host' || item === '\\') return false
-            const arr = item.split('=')
-            if (arr.length === 2) {
-              const [key, value] = arr
-              hostItem.vars[key] = value
-            } else {
-              hostItem.name = item
+    buildParams () {
+      const { name, hour, start, hosts, files, playbook: playbookStr } = this.form
+      const params = { name, hour, start, enabled: true }
+      const playbook = {
+        files,
+        inventory: {
+          hosts: [],
+        },
+        modules: [],
+      }
+      const hostItem = {
+        vars: {},
+      }
+      hosts.split(' ').forEach(item => {
+        item = item.replace("'", '')
+        if (!item || item === '--host' || item === '\\') return false
+        const arr = item.split('=')
+        if (arr.length === 2) {
+          const [key, value] = arr
+          hostItem.vars[key] = value
+        } else {
+          hostItem.name = item
+        }
+      })
+      playbook.inventory.hosts.push(hostItem)
+      if (playbookStr) {
+        const modules = []
+        const modeItems = playbookStr.replace(/[\r\n]/g, '<br/>').split('<br/>')
+        modeItems.forEach(item => {
+          const _arr = []
+          const moduleItem = {}
+          item.split(' ').forEach(subItem => {
+            subItem = subItem.replace("'", '')
+            if (subItem && subItem !== '\\') {
+              _arr.push(subItem)
             }
           })
-          playbook.inventory.hosts.push(hostItem)
-          if (values.playbook) {
-            const modules = []
-            const modeItems = values.playbook.replace(/[\r\n]/g, '<br/>').split('<br/>')
-            modeItems.forEach(item => {
-              const _arr = []
-              const moduleItem = {}
-              item.split(' ').forEach(subItem => {
-                subItem = subItem.replace("'", '')
-                if (subItem && subItem !== '\\') {
-                  _arr.push(subItem)
-                }
-              })
-              if (_arr && _arr.length > 0) {
-                moduleItem.name = _arr.shift()
-                moduleItem.args = _arr
-                modules.push(moduleItem)
-              }
-            })
-            playbook.modules = modules
+          if (_arr && _arr.length > 0) {
+            moduleItem.name = _arr.shift()
+            moduleItem.args = _arr
+            modules.push(moduleItem)
           }
-          params.playbook = playbook
-          resolve(params)
         })
-      })
+        playbook.modules = modules
+      }
+      params.playbook = playbook
+      return params
+    },
+    async validateForm () {
+      await this.$refs.formRef.validate()
+      if (document.querySelector('.ant-form .error-color') || document.querySelector('.error-color')) {
+        return Promise.reject(new Error('upload size error'))
+      }
+      return this.buildParams()
     },
     handleNumBlur ({ target }) {
-      this.form.setFieldsValue({
-        hour: target.value || 1,
-      })
+      this.form.hour = target.value || 1
     },
     handleCancel () {
-      this.form.resetFields()
+      this.$refs.formRef && this.$refs.formRef.resetFields()
       this.$router.push('/ansibletemplate')
     },
     async handleConfirm () {

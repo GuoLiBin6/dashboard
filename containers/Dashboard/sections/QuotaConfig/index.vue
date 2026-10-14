@@ -8,9 +8,9 @@
               allowClear
               class="w-100"
               :labelInValue="labelInValue"
-              v-decorator="decorators.cloud_env"
+              :value="fieldValue('cloud_env')"
               :placeholder="$t('dashboard.text_99')"
-              @change="cloudEnvChange"
+              @change="onCloudEnvChange"
               :filterOption="filterOption">
               <a-select-option v-for="item of cloudEnvs" :value="item.key" :key="item.key">{{ item.label }}</a-select-option>
             </a-select>
@@ -22,9 +22,9 @@
               allowClear
               class="w-100"
               :labelInValue="labelInValue"
-              v-decorator="decorators.brand"
+              :value="fieldValue('brand')"
               :placeholder="$t('dashboard.text_99')"
-              @change="brandChange"
+              @change="onBrandChange"
               :filterOption="filterOption">
               <a-select-option v-for="item of brands" :value="item.key" :key="item.key">{{ item.label }}</a-select-option>
             </a-select>
@@ -33,7 +33,7 @@
       </a-row>
     </a-form-item>
     <a-form-item :label="$t('dashboard.text_100')" class="mb-0">
-      <a-radio-group v-decorator="decorators.regionAccountType" @change="regionAccountTypeChange">
+      <a-radio-group :value="regionAccountType" @change="regionAccountTypeChange">
         <a-radio-button value="region">{{$t('dashboard.text_101')}}</a-radio-button>
         <a-radio-button value="account">{{$t('dashboard.text_102')}}</a-radio-button>
         <a-radio-button v-if="showTag" value="schedtag">{{ $t('dictionary.schedtag') }}</a-radio-button>
@@ -43,9 +43,9 @@
           allowClear
           class="w-100"
           :labelInValue="labelInValue"
-          v-decorator="decorators.region"
+          :value="fieldValue('region')"
           :placeholder="$t('dashboard.text_99')"
-          @change="regionChange"
+          @change="onRegionChange"
           :filterOption="filterOption"
           :loading="regionLoading">
           <a-select-option v-for="item of regions" :value="item.key" :key="item.key">{{ item.label }}</a-select-option>
@@ -56,9 +56,9 @@
           allowClear
           class="w-100"
           :labelInValue="labelInValue"
-          v-decorator="decorators.account"
+          :value="fieldValue('account')"
           :placeholder="$t('dashboard.text_99')"
-          @change="accountChange"
+          @change="onAccountChange"
           :filterOption="filterOption"
           :loading="accountLoading">
           <a-select-option v-for="item of accounts" :value="item.key" :key="item.key">{{ item.label }}</a-select-option>
@@ -69,32 +69,25 @@
           allowClear
           class="w-100"
           :labelInValue="labelInValue"
-          v-decorator="decorators.schedtag"
+          :value="fieldValue('schedtag')"
           :placeholder="$t('dashboard.text_99')"
-          @change="schedtagChange"
+          @change="onSchedtagChange"
           :filterOption="filterOption"
           :loading="schedtagLoading">
           <a-select-option v-for="item of schedtags" :value="item.key" :key="item.key">{{ item.label }}</a-select-option>
         </a-select>
       </a-form-item>
     </a-form-item>
-    <!--a-form-item :label="$t('dashboard.host_type')" v-if="showHostType && isOneCloud">
-      <a-radio-group v-decorator="decorators.host_type">
-        <a-radio-button value="all">{{ $t('dashboard.text_99') }}</a-radio-button>
-        <a-radio-button value="hypervisor">{{ $t('dashboard.hypervisor') }}</a-radio-button>
-        <a-radio-button value="baremetal">{{ $t('dashboard.baremetal') }}</a-radio-button>
-      </a-radio-group>
-    </a-form-item-->
-    <a-form-model-item :label="$t('iam.project_tag')" prop="__meta__" v-if="showTag">
-      <pairs-tag v-decorator="decorators.tags" />
-    </a-form-model-item>
-    <a-form-item :label="$t('dashboard.text_96')" class="mb-0" v-if="decorators.all_usage_key">
+    <a-form-item :label="$t('iam.project_tag')" v-if="showTag && hasField('tags')">
+      <pairs-tag :value="fieldValue('tags') || []" @input="onTagsChange" />
+    </a-form-item>
+    <a-form-item :label="$t('dashboard.text_96')" class="mb-0" v-if="hasField('all_usage_key')">
       <a-form-item :wrapperCol="{ span: 24 }">
         <usage-select
           class="w-100"
-          v-decorator="decorators.all_usage_key"
+          :value="fieldValue('all_usage_key')"
           :usages="totalUsageOptions"
-          @change="allUsageChange" />
+          @change="onAllUsageChange" />
         <div slot="extra" v-if="showDocsLink()">
           <i18n path="metricConfig.create_form.all_usage_extra">
             <template #link>
@@ -104,13 +97,13 @@
         </div>
       </a-form-item>
     </a-form-item>
-    <a-form-item :label="usageLabel || $t('dashboard.text_97')" class="mb-0" v-if="decorators.usage_key">
+    <a-form-item :label="usageLabel || $t('dashboard.text_97')" class="mb-0" v-if="hasField('usage_key')">
       <a-form-item :wrapperCol="{ span: 24 }">
         <usage-select
           class="w-100"
-          v-decorator="decorators.usage_key"
+          :value="fieldValue('usage_key')"
           :usages="partUsageOptions"
-          @change="usageChange" />
+          @change="onUsageChange" />
         <div slot="extra">
           <i18n :path="usageLabel?'metricConfig.create_form.metric_extra':'metricConfig.create_form.usage_extra'">
             <template #link>
@@ -120,14 +113,14 @@
         </div>
       </a-form-item>
     </a-form-item>
-    <a-form-item :label="$t('dashboard.usage_metric_name')" class="mb-0" v-if="decorators.usage_label">
+    <a-form-item :label="$t('dashboard.usage_metric_name')" class="mb-0" v-if="hasField('usage_label')">
       <a-form-item :wrapperCol="{ span: 24 }">
-        <a-input class="w-100" v-decorator="decorators.usage_label" />
+        <a-input class="w-100" :value="fieldValue('usage_label')" @change="e => onInputChange('usage_label', e.target.value)" />
       </a-form-item>
     </a-form-item>
-    <a-form-item :label="$t('dashboard.remaining_usage_metric_name')" class="mb-0" v-if="decorators.un_usage_label">
+    <a-form-item :label="$t('dashboard.remaining_usage_metric_name')" class="mb-0" v-if="hasField('un_usage_label')">
       <a-form-item :wrapperCol="{ span: 24 }">
-        <a-input class="w-100" v-decorator="decorators.un_usage_label" />
+        <a-input class="w-100" :value="fieldValue('un_usage_label')" @change="e => onInputChange('un_usage_label', e.target.value)" />
       </a-form-item>
     </a-form-item>
   </div>
@@ -142,6 +135,7 @@ import { typeClouds } from '@/utils/common/hypervisor'
 import { usageMap } from '@/constants/generalUsage'
 import PairsTag from '@/sections/PairsTag'
 import { showDocsLink } from '@/constants/docs'
+import { resolveFieldMeta } from '@/utils/common/ant'
 import UsageSelect from './UsageSelect'
 
 export default {
@@ -154,12 +148,17 @@ export default {
     labelInValue: {
       type: Boolean,
     },
-    decorators: {
+    fieldMap: {
       type: Object,
+    },
+    /** a-form-model：与 fieldMap 字段对齐（通常 form.fd） */
+    model: {
+      type: Object,
+      required: true,
     },
     fc: {
       type: Object,
-      required: true,
+      default: null,
     },
     fd: {
       type: Object,
@@ -183,7 +182,7 @@ export default {
   data () {
     return {
       showDocsLink,
-      regionAccountType: _.get(this.decorators, 'regionAccountType[1].initialValue') || 'region',
+      regionAccountType: _.get(this.model, 'regionAccountType') || _.get(this.fd, 'regionAccountType') || this.fieldMap?.regionAccountType?.initialValue || 'region',
       cloudEnvs: [],
       cloudEnvData: {},
       brands: [],
@@ -201,6 +200,10 @@ export default {
     }
   },
   computed: {
+
+    boundModel () {
+      return this.model || this.fd
+    },
     ...mapGetters(['scope', 'capability']),
     cloudEnv () {
       return R.is(Object, this.cloudEnvData) ? this.cloudEnvData.key : this.cloudEnvData
@@ -219,12 +222,15 @@ export default {
       return this.brand === typeClouds.brandMap.OneCloud.key
     },
   },
+  created () {
+    this.ensureFieldInitials()
+  },
   unmounted () {
     this.am = null
     this.rm = null
   },
   mounted () {
-    this.fc.setFieldsValue({
+    this.setModelFields({
       regionAccountType: this.regionAccountType,
     })
     this.am = new this.$Manager('cloudaccounts')
@@ -233,7 +239,7 @@ export default {
     this.fetchCloudEnvs()
     this.$watch('regionAccountType', {
       handler (val) {
-        this.fc.setFieldsValue({
+        this.setModelFields({
           region: undefined,
           account: undefined,
         })
@@ -257,6 +263,73 @@ export default {
     this.partUsageOptions = this.partUsages(key)
   },
   methods: {
+    hasField (key) {
+      if (!this.fieldMap) return true
+      return !!this.fieldMap[key]
+    },
+    fieldName (key) {
+      return resolveFieldMeta(this.fieldMap?.[key], key)?.name || key
+    },
+    ensureFieldInitials () {
+      Object.keys(this.fieldMap || {}).forEach((key) => {
+        const d = this.fieldMap[key]
+        const meta = resolveFieldMeta(d)
+        if (!meta) return
+        const { name, ...opts } = meta
+        if (this.boundModel && this.boundModel[name] === undefined && opts.initialValue !== undefined) {
+          this.$set(this.boundModel, name, opts.initialValue)
+        }
+      })
+    },
+    setModelFields (values) {
+      if (!this.boundModel || !values) return
+      Object.keys(values).forEach((k) => {
+        this.$set(this.boundModel, k, values[k])
+      })
+    },
+    setFieldByKey (key, value) {
+      this.setModelFields({ [this.fieldName(key)]: value })
+    },
+    fieldValue (key) {
+      const meta = resolveFieldMeta(this.fieldMap?.[key], key) || {}
+      const name = meta.name || key
+      const v = this.boundModel?.[name]
+      return v !== undefined ? v : meta.initialValue
+    },
+    onInputChange (key, value) {
+      this.setFieldByKey(key, value)
+    },
+    onTagsChange (value) {
+      this.setFieldByKey('tags', value)
+    },
+    onCloudEnvChange (cloudEnv) {
+      this.setFieldByKey('cloud_env', cloudEnv)
+      this.cloudEnvChange(cloudEnv)
+    },
+    onBrandChange (brand) {
+      this.setFieldByKey('brand', brand)
+      this.brandChange(brand)
+    },
+    onRegionChange (region) {
+      this.setFieldByKey('region', region)
+      this.regionChange(region)
+    },
+    onAccountChange (account) {
+      this.setFieldByKey('account', account)
+      this.accountChange(account)
+    },
+    onSchedtagChange (schedtag) {
+      this.setFieldByKey('schedtag', schedtag)
+      this.schedtagChange(schedtag)
+    },
+    onAllUsageChange (allUsage) {
+      this.setFieldByKey('all_usage_key', allUsage)
+      this.allUsageChange(allUsage)
+    },
+    onUsageChange (usage) {
+      this.setFieldByKey('usage_key', usage)
+      this.usageChange(usage)
+    },
     filterOption (input, option) {
       return (
         option.componentOptions.children[0].text.toLowerCase().indexOf(input.toLowerCase()) >= 0
@@ -268,11 +341,11 @@ export default {
     _setInitCloudEnv (cloudEnv) {
       if (!R.isNil(cloudEnv) && !R.isEmpty(cloudEnv)) {
         if (this.labelInValue) {
-          this.fc.setFieldsValue({
+          this.setModelFields({
             cloud_env: { key: cloudEnv.key, label: cloudEnv.label },
           })
         } else {
-          this.fc.setFieldsValue({
+          this.setModelFields({
             cloud_env: cloudEnv.key,
           })
         }
@@ -284,11 +357,11 @@ export default {
     _setInitBrand (brand) {
       if (!R.isNil(brand) && !R.isEmpty(brand)) {
         if (this.labelInValue) {
-          this.fc.setFieldsValue({
+          this.setModelFields({
             brand: { key: brand.key, label: brand.label },
           })
         } else {
-          this.fc.setFieldsValue({
+          this.setModelFields({
             brand: brand.key,
           })
         }
@@ -300,11 +373,11 @@ export default {
     _setInitRegion (region) {
       if (!R.isNil(region) && !R.isEmpty(region)) {
         if (this.labelInValue) {
-          this.fc.setFieldsValue({
+          this.setModelFields({
             region: { key: region.key, label: region.label },
           })
         } else {
-          this.fc.setFieldsValue({
+          this.setModelFields({
             region: region.key,
           })
         }
@@ -316,11 +389,11 @@ export default {
     _setInitAccount (account) {
       if (!R.isNil(account) && !R.isEmpty(account)) {
         if (this.labelInValue) {
-          this.fc.setFieldsValue({
+          this.setModelFields({
             account: { key: account.key, label: account.label },
           })
         } else {
-          this.fc.setFieldsValue({
+          this.setModelFields({
             account: account.key,
           })
         }
@@ -339,7 +412,7 @@ export default {
       }
       this.cloudEnvs = cloudEnvs.map(val => ({ ...val, key: val.key, label: val.label }))
       let defaultData
-      const initialValue = _.get(this.decorators, 'cloud_env[1].initialValue')
+      const initialValue = this.fieldMap?.cloud_env?.initialValue
       if (initialValue) {
         const findInitValue = this.cloudEnvs.find(val => val.key === (initialValue.key || initialValue))
         if (findInitValue) {
@@ -359,7 +432,7 @@ export default {
       brands = brands.filter(item => this.capability.brands.includes(item.brand) || this.capability.disabled_brands.includes(item.brand))
       this.brands = brands.map(val => ({ ...val, key: val.key, label: val.label }))
       let defaultData
-      const initialValue = _.get(this.decorators, 'brand[1].initialValue')
+      const initialValue = this.fieldMap?.brand?.initialValue
       if (initialValue) {
         const findInitValue = this.brands.find(val => val.key === (initialValue.key || initialValue))
         if (findInitValue) {
@@ -381,7 +454,7 @@ export default {
         const data = response.data.data
         this.regions = data.map(val => ({ ...val, key: val.id, label: val._i18n && val._i18n.name ? val._i18n.name : val.name })) || []
         let defaultData
-        const initialValue = _.get(this.decorators, 'region[1].initialValue')
+        const initialValue = this.fieldMap?.region?.initialValue
         if (initialValue) {
           const findInitValue = this.regions.find(val => val.key === (initialValue.key || initialValue))
           if (findInitValue) {
@@ -408,7 +481,7 @@ export default {
         const data = response.data.data
         this.accounts = data.map(val => ({ ...val, key: val.id, label: val.name })) || []
         let defaultData
-        const initialValue = _.get(this.decorators, 'account[1].initialValue')
+        const initialValue = this.fieldMap?.account?.initialValue
         if (initialValue) {
           const findInitValue = this.accounts.find(val => val.key === (initialValue.key || initialValue))
           if (findInitValue) {
@@ -427,7 +500,7 @@ export default {
       const cloudEnvId = R.is(Object, cloudEnv) ? cloudEnv.key : cloudEnv
       this.cloudEnvData = cloudEnv
       if (cloudEnvId) {
-        this.fc.setFieldsValue({
+        this.setModelFields({
           brand: undefined,
           region: undefined,
           account: undefined,
@@ -444,7 +517,7 @@ export default {
         }
         this.$emit('update:env', cloudEnvId)
       } else {
-        this.fc.setFieldsValue({
+        this.setModelFields({
           cloud_env: undefined,
           brand: undefined,
           region: undefined,
@@ -457,7 +530,7 @@ export default {
       const brandId = R.is(Object, brand) ? brand.key : brand
       this.brandData = brand
       if (brandId) {
-        this.fc.setFieldsValue({
+        this.setModelFields({
           region: undefined,
           account: undefined,
         })
@@ -468,9 +541,9 @@ export default {
           this.fetchAccounts()
         }
         this.$emit('update:brand', brandId)
-        this.fc.getFieldDecorator('brand', { preserve: true, initialValue: brand })
+        this.setModelFields({ brand: brand })
       } else {
-        this.fc.setFieldsValue({
+        this.setModelFields({
           brand: undefined,
           region: undefined,
           account: undefined,
@@ -488,7 +561,7 @@ export default {
     },
     allUsageChange (allUsage) {
       this.partUsageOptions = this.partUsages(allUsage)
-      this.fc.setFieldsValue({ usage_key: undefined })
+      this.setModelFields({ usage_key: undefined })
       this.$emit('update:all_usage_key', allUsage)
     },
     usageChange (usage) {
@@ -499,6 +572,7 @@ export default {
     },
     regionAccountTypeChange (e) {
       this.regionAccountType = e.target.value
+      this.setFieldByKey('regionAccountType', e.target.value)
     },
     totalKeys () {
       const keys = []
@@ -622,7 +696,7 @@ export default {
         const data = response.data.data
         this.schedtags = data.map(val => ({ ...val, key: val.id, label: val.name })) || []
         let defaultData
-        const initialValue = _.get(this.decorators, 'account[1].initialValue')
+        const initialValue = this.fieldMap?.account?.initialValue
         if (initialValue) {
           const findInitValue = this.schedtags.find(val => val.key === (initialValue.key || initialValue))
           if (findInitValue) {
@@ -644,11 +718,11 @@ export default {
     _setInitSchedtag (schedtag) {
       if (!R.isNil(schedtag) && !R.isEmpty(schedtag)) {
         if (this.labelInValue) {
-          this.fc.setFieldsValue({
+          this.setModelFields({
             schedtag: { key: schedtag.key, label: schedtag.label },
           })
         } else {
-          this.fc.setFieldsValue({
+          this.setModelFields({
             schedtag: schedtag.key,
           })
         }

@@ -2,7 +2,6 @@ import { mount, createLocalVue } from '@vue/test-utils'
 import Vuex from 'vuex'
 import { IMAGES_TYPE_MAP } from '@/constants/compute'
 import { Manager } from '@/utils/manager'
-import i18n from '@/locales'
 import ImageSelect from '../ImageSelect'
 const idcStandardImageList = [
   {
@@ -54,27 +53,13 @@ const $route = {
   query: {},
 }
 let store = null
-let setFieldsValue = null
-let getFieldsValue = null
-let decorator = null
 let localVue = null
+let model = null
 
 beforeEach(() => {
-  setFieldsValue = jest.fn()
-  decorator = {
-    os: [
-      'os',
-      {
-        initialValue: '',
-        rules: [{ required: true, message: i18n.t('compute.text_153') }],
-      },
-    ],
-    image: [
-      'image',
-      {
-        initialValue: { key: '', label: '' },
-      },
-    ],
+  model = {
+    os: '',
+    image: { key: '', label: '' },
   }
   store = new Vuex.Store({
     getters: {
@@ -92,38 +77,14 @@ beforeEach(() => {
 
 describe('OsSelect', () => {
   it('IDC standard', () => {
-    getFieldsValue = jest.fn(() => {
-      return {
-        os: 'Windows',
-        image: {
-          key: '90b59d90-45af-4dad-86ff-c2a19f689834',
-          label: 'windows-server-2012-R2-VL-202008',
-        },
-      }
-    })
     const wrapper = mount(ImageSelect, {
-      provide () {
-        return {
-          form: {
-            fc: {
-              setFieldsValue,
-              getFieldsValue,
-            },
-          },
-        }
-      },
       propsData: {
-        decorator,
+        model,
         type: 'idc',
         hypervisor: 'kvm',
         cloudType: 'idc',
         imageType: IMAGES_TYPE_MAP.standard.key,
-        form: {
-          fc: {
-            setFieldsValue,
-            getFieldsValue,
-          },
-        },
+        form: { fd: model, fi: {} },
       },
       mocks: {
         $route,

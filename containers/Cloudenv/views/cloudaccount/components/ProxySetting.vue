@@ -1,11 +1,11 @@
 <template>
-  <a-form-item :label="$t('cloudenv.text_14')" v-if="isPermission">
+  <a-form-model-item :label="$t('cloudenv.text_14')" prop="proxy_setting" v-if="isPermission">
     <a-switch
       :checkedChildren="$t('cloudenv.text_84')"
       :unCheckedChildren="$t('cloudenv.text_85')"
       v-model:checked="isOpenProxy" />
     <div v-if="isOpenProxy" class="d-flex align-items-center w-50 mt-3">
-      <a-select class="base-select" :loading="loading" showSearch :filterOption="filterOption" v-decorator="decorator">
+      <a-select class="base-select" :loading="loading" showSearch :filterOption="filterOption" v-model:value="form.proxy_setting">
         <a-select-option v-for="item of proxyOpts" :key="item.id" :value="item.id">
           {{item.name}} {{item.id === 'DIRECT' ? $t('cloudenv.text_110') :  null}}
         </a-select-option>
@@ -16,7 +16,7 @@
       <div v-if="!isOpenProxy">{{$t('cloudenv.text_111')}}</div>
       <div v-else>{{$t('cloudenv.text_112')}}<span class="link-color oc-pointer" @click="createProxySetting">{{$t('cloudenv.text_104')}}</span></div>
     </div>
-  </a-form-item>
+  </a-form-model-item>
 </template>
 
 <script>
@@ -31,11 +31,9 @@ export default {
     account: {
       type: Object,
     },
-    fc: {
+    form: {
       type: Object,
-    },
-    fd: {
-      type: Object,
+      required: true,
     },
     cloneData: {
       type: Object,
@@ -52,18 +50,15 @@ export default {
   },
   computed: {
     ...mapGetters(['isAdminMode', 'userInfo', 'l3PermissionEnable']),
-    decorator () {
-      const { proxy_setting_id } = this.cloneData
-      return [
-        'proxy_setting',
-        {
-          initialValue: (!proxy_setting_id || proxy_setting_id === 'DIRECT') ? '' : proxy_setting_id,
-          rules: [{ required: true, message: this.$t('common.tips.select', [this.$t('cloudenv.text_14')]) }],
-        },
-      ]
-    },
     isPermission () {
       return hasPermission({ key: 'proxysettings_list' })
+    },
+  },
+  watch: {
+    isOpenProxy (val) {
+      if (!val) {
+        this.form.proxy_setting = ''
+      }
     },
   },
   created () {
@@ -77,6 +72,11 @@ export default {
         option.componentOptions.children[0].text.toLowerCase().indexOf(input.toLowerCase()) >= 0
       )
     },
+    resolveDomainId () {
+      const domain = this.form.domain
+      if (domain && typeof domain === 'object') return domain.key
+      return domain
+    },
     async fetchQueryProxy () {
       const manager = new this.$Manager('proxysettings')
       if (this.loading) {
@@ -88,7 +88,7 @@ export default {
       if (this.account) {
         params.project_domain = this.account.domain_id
       } else if (this.l3PermissionEnable && this.isAdminMode) {
-        params.project_domain = this.fc.getFieldValue('domain').key
+        params.project_domain = this.resolveDomainId()
       } else {
         params.project_domain = this.userInfo.projectDomainId
       }
@@ -97,13 +97,9 @@ export default {
         const { data } = await manager.list({ params })
         this.proxyOpts = data.data
         if (this.proxyOpts && this.proxyOpts.length > 0 && this.account) {
-          this.fc.setFieldsValue({
-            proxy_setting: this.account.proxy_setting_id,
-          })
+          this.form.proxy_setting = this.account.proxy_setting_id
         } else {
-          this.fc.setFieldsValue({
-            proxy_setting: 'DIRECT',
-          })
+          this.form.proxy_setting = 'DIRECT'
         }
       } catch (err) {
         throw err
@@ -113,11 +109,11 @@ export default {
     },
     createProxySetting () {
       this.createDialog('ProxysettingCreateDialog', {
-        domain: this.account ? this.account.domain_id : this.fd.domain || {},
+        domain: this.account ? this.account.domain_id : this.form.domain || {},
         success: async () => {
           await this.fetchQueryProxy()
           if (this.proxyOpts && this.proxyOpts.length > 0) {
-            this.fc.setFieldsValue({ proxy_setting: this.proxyOpts[0].id })
+            this.form.proxy_setting = this.proxyOpts[0].id
           }
         },
       })

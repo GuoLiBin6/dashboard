@@ -4,12 +4,12 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="$t('compute.text_390')" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
-        <a-form-model-item :label="$t('compute.text_106')" class="mb-0">
-          <a-form-item :help="help">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.text_106')" class="mb-0" prop="network">
+          <a-form-model-item :help="help" prop="network">
             <base-select
               class="w-100"
-              v-decorator="decorators.network"
+              v-model:value="form.network"
               resource="networks"
               :params="networkParams"
               v-model:item="form.fi.network"
@@ -18,22 +18,22 @@
               :remote-fn="q => ({ filter: `name.contains(${q})` })"
               :select-props="{ placeholder: $t('compute.text_195') }"
               :mapper="mapper" />
-          </a-form-item>
+          </a-form-model-item>
           <a-form-model-item v-if="isSupportIPv4 && !(hasIpv6 && ipv6Mode === 'only')">
             <div class="d-flex">
-              <a-form-item class="mb-0">
-                <a-checkbox v-model="ipv4ConfigShow" style="display:inline-block;min-width:200px"><a-button type="link" class="pl-1">{{ $t('compute.text_198') }}</a-button></a-checkbox>
-              </a-form-item>
-              <a-form-item class="mb-0">
-                <ip-select v-if="ipv4ConfigShow" v-decorator="decorators.ip" :value="form.fi.ip" :network="form.fi.network" @change="ipChange" />
-              </a-form-item>
+              <a-form-model-item class="mb-0">
+                <a-checkbox v-model:checked="ipv4ConfigShow" style="display:inline-block;min-width:200px"><a-button type="link" class="pl-1">{{ $t('compute.text_198') }}</a-button></a-checkbox>
+              </a-form-model-item>
+              <a-form-model-item class="mb-0" prop="ip">
+                <ip-select v-if="ipv4ConfigShow" :value="form.ip" :network="form.fi.network" @change="ipChange" />
+              </a-form-model-item>
             </div>
           </a-form-model-item>
           <template v-if="isSupportIPv6">
             <a-form-model-item class="mb-0">
               <div class="d-flex">
                 <div>
-                  <a-checkbox v-if="isSupportIPv4" v-model="hasIpv6" @change="requireIpv6Change" class="mr-1" />
+                  <a-checkbox v-if="isSupportIPv4" v-model:checked="hasIpv6" @change="requireIpv6Change" class="mr-1" />
                   <a-dropdown>
                     <a-menu slot="overlay" @click="triggerIpv6Mode" v-if="isSupportIPv4">
                       <a-menu-item key="all">{{ $t('compute.server_create.require_ipv6_all') }}</a-menu-item>
@@ -46,12 +46,12 @@
                   <template v-if="ipv6InputShow">
                     <div class="mb-0 ml-1" style="display:flex">
                       <span class="mr-1">{{ getIpv6Prefix(form.fi.network?.guest_ip6_start) }}</span>
-                      <a-form-item class="mb-0" style="display:inline-block">
+                      <a-form-model-item class="mb-0" style="display:inline-block" prop="address6">
                         <a-input
                           style="width: 164px"
                           :placeholder="$t('compute.complete_ipv6_address')"
-                          v-decorator="decorators.address6" />
-                      </a-form-item>
+                          v-model:value="form.address6" />
+                      </a-form-model-item>
                       <a-button type="link" class="mt-1" @click="triggerShowIpv6">{{$t('compute.text_135')}}</a-button>
                     </div>
                   </template>
@@ -61,11 +61,11 @@
             </a-form-model-item>
           </template>
         </a-form-model-item>
-        <a-form-item>
-          <a-checkbox v-decorator="decorators.restartNetwork">{{$t('compute.restart_network')}}</a-checkbox>
+        <a-form-model-item prop="restartNetwork">
+          <a-checkbox v-model:checked="form.restartNetwork">{{$t('compute.restart_network')}}</a-checkbox>
           <help-tooltip name="restartNetworkToEffectIp" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -147,54 +147,30 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        network: this.params.data[0].network_id,
+        ip: this.params.data[0].ip_addr,
+        address6: initIpv6Value,
+        restartNetwork: true,
         fi: {
           network: {},
           ip: this.params.data[0].ip_addr,
         },
       },
       hasIpv6,
-      decorators: {
+      rules: {
         network: [
-          'network',
-          {
-            initialValue: this.params.data[0].network_id,
-            rules: [
-              { required: true, message: this.$t('compute.text_1191') },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_1191') },
         ],
         ip: [
-          'ip',
-          {
-            initialValue: this.params.data[0].ip_addr,
-            rules: [
-              { required: true, message: this.$t('common.tips.select', ['IP']), validator: validateIp },
-            ],
-          },
+          { required: true, message: this.$t('common.tips.select', ['IP']), validator: validateIp },
         ],
         address6: [
-          'address6',
           {
-            initialValue: initIpv6Value,
-            validateFirst: true,
-            validateTrigger: ['blur', 'change'],
-            rules: [
-              {
-                required: true,
-                message: this.$t('compute.complete_ipv6_address'),
-              },
-              {
-                validator: validateIpv6,
-              },
-            ],
+            required: true,
+            message: this.$t('compute.complete_ipv6_address'),
           },
-        ],
-        restartNetwork: [
-          'restartNetwork',
           {
-            valuePropName: 'checked',
-            initialValue: true,
+            validator: validateIpv6,
           },
         ],
       },
@@ -261,6 +237,7 @@ export default {
       return label
     },
     ipChange (e) {
+      this.form.ip = e
       this.form.fi.ip = e
     },
     requireIpv6Change (e) {
@@ -287,13 +264,13 @@ export default {
       this.loading = true
       let manager = new this.$Manager('servers')
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         const net_desc = {}
-        if (values.network) {
-          net_desc.network = values.network
+        if (this.form.network) {
+          net_desc.network = this.form.network
         }
-        if (values.ip) {
-          net_desc.address = values.ip
+        if (this.form.ip) {
+          net_desc.address = this.form.ip
         }
         if (this.hasIpv6) {
           net_desc.require_ipv6 = true
@@ -303,7 +280,7 @@ export default {
         if (!this.isSupportIPv4 && net_desc.require_ipv6) {
           net_desc.strict_ipv6 = true
         }
-        const address6 = values.address6
+        const address6 = this.form.address6
         if (address6) {
           const ipv6Last = address6
           const target = this.form.fi.network
@@ -319,7 +296,7 @@ export default {
         const data = {
           ip_addr: this.params.data[0].ip_addr,
           net_desc,
-          restart_network: values.restartNetwork,
+          restart_network: this.form.restartNetwork,
         }
         await manager.performAction({
           id: this.params.resId,

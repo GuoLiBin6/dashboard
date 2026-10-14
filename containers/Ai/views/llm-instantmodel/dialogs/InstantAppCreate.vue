@@ -2,37 +2,34 @@
   <base-dialog :width="900" @cancel="cancelDialog">
     <div slot="header">{{ $t('common.create') }}</div>
     <div slot="body">
-      <a-form :form="form.fc" v-bind="formItemLayout" hideRequiredMark>
-        <a-form-item :label="$t('aice.project')">
-          <domain-project
-            :fc="form.fc"
-            :fd="form.fd"
-            :decorators="{ project: decorators.project, domain: decorators.domain }" />
-        </a-form-item>
-        <a-form-item :label="$t('common.name')">
-          <a-input v-decorator="decorators.name" placeholder="com.ss.android.ugc.aweme-23.0.1" />
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout" hideRequiredMark>
+        <a-form-model-item :label="$t('aice.project')">
+          <domain-project :form="form" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.name')" prop="name">
+          <a-input v-model:value="form.name" placeholder="com.ss.android.ugc.aweme-23.0.1" />
           <template v-slot:extra>
-            <name-repeated res="instant_apps" :name="form.fd.name" :default-text="$t('aice.name_repeat_extra')" />
+            <name-repeated res="instant_apps" :name="form.name" :default-text="$t('aice.name_repeat_extra')" />
           </template>
-        </a-form-item>
-        <a-form-item :label="$t('aice.mounted_apps.package')">
-          <a-input v-decorator="decorators.package" placeholder="com.ss.android.ugc.aweme" />
-        </a-form-item>
-        <a-form-item :label="$t('aice.mounted_apps.version')">
-          <a-input v-decorator="decorators.version" placeholder="23.0.1" />
-        </a-form-item>
-        <a-form-item :label="$t('aice.mounted_apps.mounts')">
-          <a-textarea v-decorator="decorators.mounts" :placeholder="mountsExample" :auto-size="{ minRows: 3, maxRows: 5 }" />
-        </a-form-item>
-        <a-form-item :label="$t('aice.template')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('aice.mounted_apps.package')" prop="package">
+          <a-input v-model:value="form.package" placeholder="com.ss.android.ugc.aweme" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('aice.mounted_apps.version')" prop="version">
+          <a-input v-model:value="form.version" placeholder="23.0.1" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('aice.mounted_apps.mounts')" prop="mounts">
+          <a-textarea v-model:value="form.mounts" :placeholder="mountsExample" :auto-size="{ minRows: 3, maxRows: 5 }" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('aice.template')" prop="image_id">
           <base-select
-            v-decorator="decorators.image_id"
+            v-model:value="form.image_id"
             resource="images"
             :params="templateParams"
             filterable
             :selectProps="{ placeholder: $t('common.tips.select', [$t('aice.template')]) }" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -45,7 +42,7 @@
 import { mapGetters } from 'vuex'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
-import DomainProject from '@/sections/DomainProject'
+import DomainProject from '@/sections/DomainProject/model'
 import NameRepeated from '@/sections/NameRepeated'
 import { isRequired } from '@/utils/validate'
 
@@ -60,71 +57,35 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.$set(this.form.fd, key, values[key])
-            })
-          },
-        }),
-        fd: {},
+        domain: undefined,
+        project: undefined,
+        name: '',
+        package: '',
+        version: '',
+        mounts: '',
+        image_id: undefined,
       },
-      decorators: {
+      rules: {
         domain: [
-          'domain',
-          {
-            rules: [
-              { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
-            ],
-          },
+          { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
         ],
         project: [
-          'project',
-          {
-            rules: [
-              { validator: isRequired(), message: this.$t('rules.project'), trigger: 'change' },
-            ],
-          },
+          { validator: isRequired(), message: this.$t('rules.project'), trigger: 'change' },
         ],
         name: [
-          'name',
-          {
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('common.name')]) },
-            ],
-          },
+          { required: true, message: this.$t('common.tips.input', [this.$t('common.name')]) },
         ],
         package: [
-          'package',
-          {
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('aice.mounted_apps.package')]) },
-            ],
-          },
+          { required: true, message: this.$t('common.tips.input', [this.$t('aice.mounted_apps.package')]) },
         ],
         version: [
-          'version',
-          {
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('aice.mounted_apps.version')]) },
-            ],
-          },
+          { required: true, message: this.$t('common.tips.input', [this.$t('aice.mounted_apps.version')]) },
         ],
         mounts: [
-          'mounts',
-          {
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('aice.mounted_apps.mounts')]) },
-            ],
-          },
+          { required: true, message: this.$t('common.tips.input', [this.$t('aice.mounted_apps.mounts')]) },
         ],
         image_id: [
-          'image_id',
-          {
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('aice.template')]) },
-            ],
-          },
+          { required: true, message: this.$t('common.tips.input', [this.$t('aice.template')]) },
         ],
       },
       formItemLayout: {
@@ -154,16 +115,16 @@ export default {
   methods: {
     async handleConfirm () {
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         const manager = new this.$Manager('instant_apps', '')
-        const mountPaths = values.mounts.split('\n')
+        const mountPaths = this.form.mounts.split('\n')
         const data = {
-          generate_name: values.name,
-          package: values.package,
-          version: values.version,
+          generate_name: this.form.name,
+          package: this.form.package,
+          version: this.form.version,
           mounts: mountPaths,
-          image_id: values.image_id,
-          project_id: values.project?.key || this.userInfo.projectId,
+          image_id: this.form.image_id,
+          project_id: this.form.project?.key || this.userInfo.projectId,
         }
         manager.create({
           data,

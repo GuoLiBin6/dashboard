@@ -5,15 +5,15 @@
       <dialog-selected-tips :count="params.data.length" :action="`${$t('common.text00078')}${$t('dictionary.domain')}`" :name="params.name || $t('common.text00006')" />
       <dialog-table :data="params.data" :columns="columns" :errors="errors" />
       <template v-if="domainLoaded">
-        <a-form :form="form.fc">
-          <a-form-item :label="$t('dictionary.domain')" v-bind="formItemLayout" :extra="extra">
-            <a-select v-decorator="decorators.project_domain" showSearch @search="getCanUseDomains" :filterOption="false">
+        <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+          <a-form-model-item :label="$t('dictionary.domain')" prop="project_domain" :extra="extra">
+            <a-select v-model:value="form.project_domain" showSearch @search="getCanUseDomains" :filterOption="false">
               <template v-for="item of domains" :key="item.id">
                 <a-select-option :value="item.id">{{ item.name }}</a-select-option>
               </template>
             </a-select>
-          </a-form-item>
-        </a-form>
+          </a-form-model-item>
+        </a-form-model>
       </template>
       <template v-else>
         <div class="text-center mt-4">
@@ -43,17 +43,11 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        project_domain: _.get(this.params, 'data[0].domain_id'),
       },
-      decorators: {
+      rules: {
         project_domain: [
-          'project_domain',
-          {
-            initialValue: _.get(this.params, 'data[0].domain_id'),
-            rules: [
-              { required: true, message: this.$t('rules.domain'), trigger: 'change' },
-            ],
-          },
+          { required: true, message: this.$t('rules.domain'), trigger: 'change' },
         ],
       },
       formItemLayout: {
@@ -172,13 +166,13 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         const ids = this.params.data.map(item => item.id)
         const response = await this.params.onManager('batchPerformAction', {
           id: ids,
           managerArgs: {
             action: 'change-owner',
-            data: values,
+            data: this.form,
           },
         })
         this.params.refresh()

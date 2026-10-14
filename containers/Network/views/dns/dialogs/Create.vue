@@ -6,25 +6,28 @@
         <dialog-selected-tips :name="$t('dictionary.dns')" :count="params.data.length" :action="params.type === 'update' ? $t('network.text_130') : $t('network.text_155')" />
         <dialog-table :data="params.data" :columns="params.columns.slice(0, 4)" />
       </template>
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('network.text_156')" v-bind="formItemLayout" v-if="enableType('A/AAAA', 'CNAME', 'SRV')" :extra="$t('network.text_157')">
-          <a-input v-decorator="decorators.name" :placeholder="$t('network.text_158')" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_156')" v-bind="formItemLayout" v-if="enableType('PTR')" :extra="$t('network.text_157')">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('network.text_156')" v-if="enableType('A/AAAA', 'CNAME', 'SRV')" :extra="$t('network.text_157')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('network.text_158')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_156')" v-if="enableType('PTR')" prop="ptrName">
           <template #extra>
             <div>{{$t('network.text_159')}}</div>
           </template>
-          <a-input v-decorator="decorators.ptrName" :placeholder="$t('network.text_158')">
+          <a-input v-model:value="form.ptrName" :placeholder="$t('network.text_158')">
             <div slot="addonAfter">.in-addr.arpa</div>
           </a-input>
-        </a-form-item>
-        <a-form-item :label="$t('network.text_160')" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_160')">
           <a-radio-group @change="recordTypeChange" v-model:value="formMsg.recordType">
             <a-radio-button :key="n" :value="item" v-for="(item, n) in recordTypeOptions">{{item}}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item>
           <span slot="label">{{$t('network.text_152')}}<a-tooltip class="item" effect="dark" placement="top">
                 <icon type="info-circle" />
                 <div slot="title">{{$t('network.text_161')}}<br />{{$t('network.text_162')}}<br />{{$t('network.text_163')}}<br />{{$t('network.text_164')}}</div>
@@ -42,8 +45,8 @@
             class="record-list mb-3"
             v-for="(obj, n) in recordList">
             <a-col :span="10" v-if="enableType('A/AAAA')">
-              <a-form-item>
-                <a-select :placeholder="$t('network.text_167')" v-decorator="recordConfig(n, obj.key)[`key[${n}]`]">
+              <a-form-model-item :prop="'key.' + n">
+                <a-select :placeholder="$t('network.text_167')" v-model:value="form.key[n]">
                   <a-select-option
                     :key="i"
                     :value="item.value"
@@ -51,33 +54,33 @@
                     {{item.label}}
                   </a-select-option>
                 </a-select>
-              </a-form-item>
+              </a-form-model-item>
             </a-col>
             <a-col :span="10" v-if="enableType('A/AAAA', 'CNAME', 'PTR')">
-              <a-form-item>
-                <a-input :placeholder="computeText(obj, n)" v-decorator="recordConfig(n, obj.record)[`record[${n}]`]" />
-              </a-form-item>
+              <a-form-model-item :prop="'record.' + n" :rules="recordFieldRules.record">
+                <a-input :placeholder="computeText(obj, n)" v-model:value="form.record[n]" />
+              </a-form-model-item>
             </a-col>
             <div v-if="enableType('SRV')">
               <a-col :span="10">
-                <a-form-item>
-                  <a-input :placeholder="computeText(obj, n)" v-decorator="recordConfig(n, obj.host)[`host[${n}]`]" />
-                </a-form-item>
+                <a-form-model-item :prop="'host.' + n" :rules="recordFieldRules.host">
+                  <a-input :placeholder="computeText(obj, n)" v-model:value="form.host[n]" />
+                </a-form-model-item>
               </a-col>
               <a-col :span="4">
-                <a-form-item>
-                  <a-input :max="65535" :min="1" type="number" v-decorator="recordConfig(n, obj.port)[`port[${n}]`]" />
-                </a-form-item>
+                <a-form-model-item :prop="'port.' + n" :rules="recordFieldRules.port">
+                  <a-input :max="65535" :min="1" type="number" v-model:value="form.port[n]" />
+                </a-form-model-item>
               </a-col>
               <a-col :span="4">
-                <a-form-item>
-                  <a-input :min="0" type="number" v-decorator="recordConfig(n, obj.weight)[`weight[${n}]`]" />
-                </a-form-item>
+                <a-form-model-item :prop="'weight.' + n" :rules="recordFieldRules.weight">
+                  <a-input :min="0" type="number" v-model:value="form.weight[n]" />
+                </a-form-model-item>
               </a-col>
               <a-col :span="4">
-                <a-form-item>
-                  <a-input :min="0" type="number" v-decorator="recordConfig(n, obj.priority)[`priority[${n}]`]" />
-                </a-form-item>
+                <a-form-model-item :prop="'priority.' + n" :rules="recordFieldRules.priority">
+                  <a-input :min="0" type="number" v-model:value="form.priority[n]" />
+                </a-form-model-item>
               </a-col>
             </div>
             <a-button v-if="enableType('A/AAAA', 'SRV')" shape="circle" icon="minus" size="small" @click="() => removeItem(obj, n)" class="mt-2 ml-1" />
@@ -87,8 +90,8 @@
             <a-button type="link" @click="addItem">{{$t('network.text_168')}}</a-button>
             <span class="network-count-tips">{{$t('network.text_169')}}<span class="remain-num">{{ remain }}</span>{{$t('network.text_170')}}</span>
           </div>
-        </a-form-item>
-        <a-form-item v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item prop="ttl">
           <span slot="label">
             TTL
               <a-tooltip class="item" effect="dark" placement="top">
@@ -97,11 +100,11 @@
               </a-tooltip>
           </span>
           <a-input-number
-            v-decorator="decorators.ttl"
+            v-model:value="form.ttl"
             :placeholder="$t('network.text_172')"
             :min="0"
-            :max="86400" />{{$t('network.text_76')}}</a-form-item>
-      </a-form>
+            :max="86400" />{{$t('network.text_76')}}</a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -132,113 +135,38 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        name: undefined,
+        ptrName: undefined,
+        ttl: this.params.type === 'create' ? 600 : this.params.data[0].ttl,
+        key: ['A'],
+        record: [''],
+        host: [],
+        port: [],
+        weight: [],
+        priority: [],
       },
       formMsg: {
         recordType: 'A/AAAA',
         cacheRecord: {},
       },
-      decorators: {
-        name: [
-          'name',
-          {
-            validateFirst: true,
-            validateTrigger: ['blur'],
-            rules: [
-              { required: true, message: this.$t('network.text_173') },
-              { validator: this.checkName },
-              // { validator: this.$validate('broadName') },
-            ],
-          },
+      recordFieldRules: {
+        record: [
+          { required: true, message: this.$t('network.text_175') },
         ],
-        ptrName: [
-          'ptrName',
-          {
-            validateFirst: true,
-            validateTrigger: ['blur'],
-            rules: [
-              { required: true, message: this.$t('network.text_173') },
-              { validator: this.$validate('IPv4') },
-            ],
-          },
+        host: [
+          { required: true, message: this.$t('network.text_158') },
+          { validator: this.$validate('domain') },
         ],
-        ttl: [
-          'ttl',
-          {
-            initialValue: this.params.type === 'create' ? 600 : this.params.data[0].ttl,
-            validateFirst: true,
-            validateTrigger: ['blur'],
-            rules: [
-              { required: true, message: this.$t('network.text_174') },
-            ],
-          },
+        port: [
+          { required: true, message: this.$t('network.text_176') },
+        ],
+        weight: [
+          { required: true, message: this.$t('network.text_177') },
+        ],
+        priority: [
+          { required: true, message: this.$t('network.text_117') },
         ],
       },
-      recordConfig: (i, recordData) => ({
-        [`key[${i}]`]: [
-          `key[${i}]`,
-          {
-            initialValue: this.recordList[0].key,
-          },
-        ],
-        [`record[${i}]`]: [
-          `record[${i}]`,
-          {
-            validateTrigger: ['blur'],
-            initialValue: this.recordList[0].record,
-            rules: [{
-              required: true,
-              message: this.$t('network.text_175'),
-            }],
-          },
-        ],
-        [`host[${i}]`]: [
-          `host[${i}]`,
-          {
-            validateFirst: true,
-            validateTrigger: ['blur'],
-            rules: [{
-              required: true,
-              message: this.$t('network.text_158'),
-            }, {
-              validator: this.$validate('domain'),
-            }],
-          },
-        ],
-        [`port[${i}]`]: [
-          `port[${i}]`,
-          {
-            initialValue: 1,
-            validateTrigger: ['blur'],
-            rules: [{
-              required: true,
-              message: this.$t('network.text_176'),
-            }],
-          },
-        ],
-        [`weight[${i}]`]: [
-          `weight[${i}]`,
-          {
-            initialValue: 0,
-            validateTrigger: ['blur'],
-            rules: [{
-              required: true,
-              message: this.$t('network.text_177'),
-            }],
-          },
-        ],
-        [`priority[${i}]`]: [
-          `priority[${i}]`,
-          {
-            initialValue: 0,
-            validateTrigger: ['blur'],
-            rules: [{
-              required: true,
-              message: this.$t('network.text_117'),
-            }],
-          },
-        ],
-      }),
       formItemLayout: {
         wrapperCol: {
           span: 20,
@@ -259,6 +187,25 @@ export default {
     ...mapGetters(['isAdminMode', 'scope', 'userInfo']),
     remain () {
       return MAX_ITEMS - this.recordList.length
+    },
+    rules () {
+      const rules = {
+        ttl: [
+          { required: true, message: this.$t('network.text_174') },
+        ],
+      }
+      if (this.enableType('PTR')) {
+        rules.ptrName = [
+          { required: true, message: this.$t('network.text_173') },
+          { validator: this.$validate('IPv4') },
+        ]
+      } else if (this.enableType('A/AAAA', 'CNAME', 'SRV')) {
+        rules.name = [
+          { required: true, message: this.$t('network.text_173') },
+          { validator: this.checkName },
+        ]
+      }
+      return rules
     },
   },
   created () {
@@ -294,19 +241,27 @@ export default {
         this._updateFormValue(this.params.data[0])
       }
     },
+    syncFormArraysFromRecordList () {
+      this.form.key = this.recordList.map(item => item.key)
+      this.form.record = this.recordList.map(item => item.record || '')
+      this.form.host = this.recordList.map(item => item.host || '')
+      this.form.port = this.recordList.map(item => item.port !== undefined ? item.port : 1)
+      this.form.weight = this.recordList.map(item => item.weight !== undefined ? item.weight : 0)
+      this.form.priority = this.recordList.map(item => item.priority !== undefined ? item.priority : 0)
+    },
     _updateFormValue (val) {
       const { recordList, recordType } = this._classify(val.records)
       this.recordList = recordList
       this.formMsg.recordType = recordType
+      this.syncFormArraysFromRecordList()
       if (this.params.type === 'update') {
         if (recordType === 'PTR') {
-          this.form.fc.getFieldDecorator('ptrName', { preserve: true, initialValue: val.name })
+          this.form.ptrName = val.name
         } else {
-          this.form.fc.getFieldDecorator('name', { preserve: true, initialValue: val.name })
+          this.form.name = val.name
         }
       }
-      const ttl = val.ttl
-      this.form.fc.getFieldDecorator('ttl', { preserve: true, initialValue: ttl })
+      this.form.ttl = val.ttl
     },
     _classify (recordStr) {
       const initArr = recordStr.split(',')
@@ -329,7 +284,7 @@ export default {
           return { key, record }
         }
       })
-      const key = recordList[0].key // 拿第一个 key 做判断
+      const key = recordList[0].key
       return {
         recordType: RECORD_TYPE_MAP[key],
         recordList,
@@ -346,53 +301,35 @@ export default {
           this.recordList = this.formMsg.cacheRecord[type] || [
             { key: 'A', record: '' },
           ]
-          this.form.fc.setFieldsValue({
-            key: [
-              { key: 'A', record: '' },
-            ],
-          })
           break
         case 'CNAME':
           this.recordList = this.formMsg.cacheRecord[type] || [
             { key: 'CNAME', record: '' },
           ]
-          this.form.fc.setFieldsValue({
-            key: [
-              { key: 'CNAME', record: '' },
-            ],
-          })
           break
         case 'PTR':
           this.recordList = this.formMsg.cacheRecord[type] || [
             { key: 'PTR', record: '' },
           ]
-          this.form.fc.setFieldsValue({
-            key: [
-              { key: 'PTR', record: '' },
-            ],
-          })
           break
         case 'SRV':
           this.recordList = this.formMsg.cacheRecord[type] || [
             { key: 'SRV', host: '', port: 1, weight: 0, priority: 0 },
           ]
-          this.form.fc.setFieldsValue({
-            key: [
-              { key: 'SRV', host: '', port: 1, weight: 0, priority: 0 },
-            ],
-          })
           break
       }
+      this.syncFormArraysFromRecordList()
       this.$nextTick(() => {
-        // this.form.fc.resetFields()
         if (type === 'SRV') {
-          this.form.fc.validateFields(['name'])
+          this.$refs.formRef && this.$refs.formRef.validateField('name')
         }
       })
     },
     addItem () {
       if (this.formMsg.recordType === 'A/AAAA') {
         this.recordList.push({ key: 'A', record: '' })
+        this.form.key.push('A')
+        this.form.record.push('')
       } else if (this.formMsg.recordType === 'SRV') {
         this.recordList.push({
           key: 'SRV',
@@ -401,23 +338,33 @@ export default {
           weight: 0,
           priority: 0,
         })
+        this.form.host.push('')
+        this.form.port.push(1)
+        this.form.weight.push(0)
+        this.form.priority.push(0)
       }
     },
     removeItem (obj, n) {
       this.recordList.splice(n, 1)
+      if (this.enableType('A/AAAA')) {
+        this.form.key.splice(n, 1)
+        this.form.record.splice(n, 1)
+      } else if (this.enableType('SRV')) {
+        this.form.host.splice(n, 1)
+        this.form.port.splice(n, 1)
+        this.form.weight.splice(n, 1)
+        this.form.priority.splice(n, 1)
+      }
     },
     computeText (obj, n) {
-      const values = this.form.fc.getFieldsValue()
-      if (values.key) {
-        const key = values.key[n]
-        if (key === 'A') {
-          return this.$t('network.text_181')
-        }
-        if (key === 'AAAA') {
-          return this.$t('network.text_182')
-        }
+      const key = this.form.key[n]
+      if (key === 'A') {
+        return this.$t('network.text_181')
       }
-      if (values.host) {
+      if (key === 'AAAA') {
+        return this.$t('network.text_182')
+      }
+      if (this.form.host && this.form.host.length) {
         return this.$t('network.text_158')
       }
       if (this.formMsg.recordType === 'A/AAAA') {
@@ -437,7 +384,7 @@ export default {
     genData (values) {
       let newValues = {}
       const recordList = []
-      if (values.key) {
+      if (values.key && values.key.length) {
         values.key.map((item, index) => {
           const ops = {
             key: item,
@@ -446,7 +393,7 @@ export default {
           recordList.push(ops)
         })
       }
-      if (values.record && !values.key) {
+      if (values.record && !values.key.length) {
         values.record.map((item) => {
           const ops = {
             record: item,
@@ -454,7 +401,7 @@ export default {
           recordList.push(ops)
         })
       }
-      if (values.host) {
+      if (values.host && values.host.length) {
         values.host.map((item, index) => {
           const ops = {
             host: item,
@@ -492,13 +439,14 @@ export default {
           newValues[`SRV.${i}`] = `${obj.host}:${obj.port}:${obj.weight}:${obj.priority}`
         })
       }
-      if (values.key) this._validform(recordList)
+      if (values.key && values.key.length) this._validform(recordList)
       return newValues
     },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         const newValues = this.genData(values)
         await this.doCreate(newValues)
         this.loading = false

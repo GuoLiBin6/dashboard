@@ -1,27 +1,25 @@
 <template>
     <base-dialog @cancel="cancelDialog" :width="900">
         <div slot="header">{{params.title}}</div>
-        <a-form slot="body" :form="form.fc" class="mt-3">
-            <a-form-item  v-bind="formItemLayout" :label="$t('db.text_60')">
-              <a-input :placeholder="$t('validator.dbName')" v-decorator="decorators.name" />
-            </a-form-item>
-            <a-form-item  v-bind="formItemLayout" :label="$t('db.text_344')" v-if="params.rdsItem.provider === 'Qcloud'">
+        <a-form-model ref="formRef" slot="body" :model="form.fd" :rules="rules" class="mt-3" v-bind="formItemLayout">
+            <a-form-model-item :label="$t('db.text_60')" prop="name">
+              <a-input :placeholder="$t('validator.dbName')" v-model:value="form.fd.name" />
+            </a-form-model-item>
+            <a-form-model-item :label="$t('db.text_344')" v-if="params.rdsItem.provider === 'Qcloud'" prop="host">
               <template #extra>
                 <div>
                   <p class="mb-0">{{$t('db.text_345')}}</p>
-                  <!-- <p class="mb-0">{{$t('db.text_346')}}</p> -->
                 </div>
               </template>
-              <a-input v-decorator="decorators.host" />
-              <!-- <a-textarea :auto-size="{ minRows: 3, maxRows: 5 }" v-decorator="decorators.host" /> -->
-            </a-form-item>
-            <a-form-item v-bind="formItemLayout" :label="$t('db.text_28')" v-if="this.params.rdsItem.brand !== 'Google'">
+              <a-input v-model:value="form.fd.host" />
+            </a-form-model-item>
+            <a-form-model-item :label="$t('db.text_28')" v-if="this.params.rdsItem.brand !== 'Google'">
               <account-privileges :rdsItem="params.rdsItem" />
-            </a-form-item>
-            <a-form-item :label="$t('db.text_195')" v-bind="formItemLayout">
-              <server-password :loginTypes="loginTypes" :decorator="decorators.loginConfig" :form="form" />
-            </a-form-item>
-        </a-form>
+            </a-form-model-item>
+            <a-form-model-item :label="$t('db.text_195')">
+              <server-password :loginTypes="loginTypes" :form="form.fd" />
+            </a-form-model-item>
+        </a-form-model>
          <div slot="footer">
             <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
             <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
@@ -32,10 +30,10 @@
 <script>
 import { CreateServerForm } from '@Compute/constants'
 import { RDS_ACCOUNT_PRIVILEGES } from '@DB/constants'
-import ServerPassword from '@Compute/sections/ServerPassword'
+import ServerPassword, { PASSWORD_RULES } from '@Compute/sections/ServerPassword/model'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
-import validateForm, { passwordValidator } from '@/utils/validate'
+import validateForm from '@/utils/validate'
 import AccountPrivileges from '../components/AccountPrivileges'
 export default {
   name: 'RDSAccountCreateDialog',
@@ -45,12 +43,18 @@ export default {
   },
   mixins: [DialogMixin, WindowsMixin],
   data () {
+    const { initialValues = {} } = this.params
     return {
       loginTypes: ['random', 'password'],
       loading: false,
       privileges: RDS_ACCOUNT_PRIVILEGES,
       form: {
-        fc: this.$form.createForm(this),
+        fd: {
+          name: initialValues.name,
+          host: initialValues.host,
+          loginType: 'random',
+          password: undefined,
+        },
       },
       formItemLayout: {
         wrapperCol: { span: CreateServerForm.wrapperCol },
@@ -58,102 +62,37 @@ export default {
       },
     }
   },
+  computed: {
+    rules () {
+      const rules = {
+        name: [
+          { required: true, message: this.$t('db.text_136') },
+          { validator: validateForm('dbName') },
+        ],
+      }
+      if (this.form.fd.loginType === 'password') {
+        rules.password = PASSWORD_RULES
+      }
+      if (this.params.rdsItem.provider === 'Qcloud') {
+        rules.host = [
+          { required: true, message: this.$t('db.text_347') },
+        ]
+      }
+      return rules
+    },
+  },
   provide () {
     return {
       form: this.form,
     }
   },
-  computed: {
-    decorators () {
-      const { initialValues = {} } = this.params
-      const decorators = {
-        name: [
-          'name',
-          {
-            initialValue: initialValues.name,
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('db.text_136') },
-              { validator: validateForm('dbName') },
-            ],
-          },
-        ],
-        host: [
-          'host',
-          {
-            initialValue: initialValues.host,
-            rules: [
-              { required: true, message: this.$t('db.text_347') },
-            ],
-          },
-        ],
-        account_privilege: [
-          'account_privilege',
-          {
-            initialValue: 'read',
-            rules: [{ required: true, message: this.$t('db.text_136') }],
-          },
-        ],
-        password: [
-          'password',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('db.text_207') },
-              { validator: passwordValidator },
-            ],
-          },
-        ],
-        checkPassword: [
-          'checkPassword',
-          {
-            initialValue: initialValues.ip_list,
-            rules: [
-              { required: true, message: this.$t('db.text_208') },
-              { validator: this.rulesCheckPassword },
-            ],
-          },
-        ],
-        loginConfig: {
-          loginType: [
-            'loginType',
-            {
-              initialValue: 'random',
-            },
-          ],
-        },
-      }
-      return decorators
-    },
-  },
-  created () {
-  },
   methods: {
-    rulesCheckPassword (rule, value, callback) {
-      const form = this.form.fc
-      if (value && value !== form.getFieldValue('password')) {
-        callback(new Error(this.$t('db.text_209')))
-      } else {
-        callback()
-      }
-    },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
+        await this.$refs.formRef.validate()
         const params = {
-          ...values,
+          ...this.form.fd,
           dbinstance: this.params.rdsItem.id,
         }
         delete params.checkPassword

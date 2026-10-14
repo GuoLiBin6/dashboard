@@ -1,56 +1,44 @@
 <template>
-  <a-form :form="form.fc" style="wdith: 400px;" v-bind="formItemLayout">
-    <a-form-item :label="$t('compute.text_732')">
-      <a-select v-decorator="decorators.metric" :disabled="metricDisabled" @change="metricChange">
+  <a-form-model ref="formRef" :model="form" :rules="rules" style="wdith: 400px;" v-bind="formItemLayout">
+    <a-form-model-item :label="$t('compute.text_732')" prop="metric">
+      <a-select v-model:value="form.metric" :disabled="metricDisabled" @change="metricChange">
         <a-select-option v-for="item in metricOpts" :key="item.key" :value="item.key">
           {{ item.label }}
         </a-select-option>
       </a-select>
-    </a-form-item>
-    <a-form-item :label="$t('compute.text_733')">
-      <a-input-number v-decorator="decorators.window" :min="windowMin" />{{$t('compute.text_734')}}</a-form-item>
-    <a-form-item :label="$t('compute.text_735')">
-      <a-select v-decorator="decorators.comparator">
+    </a-form-model-item>
+    <a-form-model-item :label="$t('compute.text_733')" prop="window">
+      <a-input-number v-model:value="form.window" :min="windowMin" />{{$t('compute.text_734')}}
+    </a-form-model-item>
+    <a-form-model-item :label="$t('compute.text_735')" prop="comparator">
+      <a-select v-model:value="form.comparator">
         <a-select-option v-for="item in comparatorOpts" :key="item.key" :value="item.key">
           {{ item.label }}
         </a-select-option>
       </a-select>
-    </a-form-item>
-    <a-form-item :label="$t('compute.text_736')">
-      <a-input type="number" :min="0" v-decorator="[
-          'threshold',
-          {
-            initialValue: fdInitailValue.threshold,
-            normalize: value => {
-              if (R.isNil(value) || R.isEmpty(value)) return undefined
-              return Number(value)
-            },
-            rules: [
-              { required: true, message: $t('compute.text_737') },
-              ...thresholdRules
-            ]
-          }
-        ]">
+    </a-form-model-item>
+    <a-form-model-item :label="$t('compute.text_736')" prop="threshold">
+      <a-input type="number" :min="0" v-model:value="form.threshold">
         <div slot="addonAfter" v-if="thresholdUnit">{{ thresholdUnit }}</div>
       </a-input>
-    </a-form-item>
-    <a-form-item :label="$t('monitor.level')">
-      <a-radio-group v-decorator="decorators.level">
+    </a-form-model-item>
+    <a-form-model-item :label="$t('monitor.level')" prop="level">
+      <a-radio-group v-model:value="form.level">
         <a-radio-button v-for="item in levelOpts" :value="item.key" :key="item.key">{{ item.label }}</a-radio-button>
       </a-radio-group>
-    </a-form-item>
-    <a-form-item :label="$t('compute.text_739')">
-      <a-select v-decorator="decorators.channel">
+    </a-form-model-item>
+    <a-form-model-item :label="$t('compute.text_739')" prop="channel">
+      <a-select v-model:value="form.channel">
         <a-select-option v-for="item in channelOpts" :key="item.key" :value="item.key">
           {{ item.label }}
         </a-select-option>
       </a-select>
-    </a-form-item>
-    <a-form-item :label="$t('compute.text_740')">
+    </a-form-model-item>
+    <a-form-model-item :label="$t('compute.text_740')" prop="recipients">
       <a-spin v-show="!recipientsLoaded" />
       <base-select
         v-show="recipientsLoaded"
-        v-decorator="decorators.recipients"
+        v-model="form.recipients"
         class="w-100"
         :filterable="true"
         needParams
@@ -60,8 +48,8 @@
         v-model:resList="recipientOpts"
         v-model:initLoaded="recipientsLoaded"
         :select-props="{ placeholder: $t('common.tips.select', [$t('compute.text_740')]), allowClear: true, mode: 'multiple' }" />
-    </a-form-item>
-  </a-form>
+    </a-form-model-item>
+  </a-form-model>
 </template>
 
 <script>
@@ -74,7 +62,6 @@ export default {
   props: {
     metricOpts: {
       type: Array,
-      // required: true,
     },
     alertType: {
       type: String,
@@ -84,7 +71,7 @@ export default {
     hypervisor: {
       type: String,
     },
-    fdInitailValue: { // 表单初始化数据
+    fdInitailValue: {
       type: Object,
       default: () => {
         return {
@@ -103,55 +90,16 @@ export default {
     const metric = this.monitorMetric || this.fdInitailValue.metric || this.metricOpts[0].key
     return {
       form: {
-        fc: this.$form.createForm(this),
+        metric,
+        window: this.fdInitailValue.window,
+        comparator: this.fdInitailValue.comparator,
+        threshold: this.fdInitailValue.threshold,
+        level: this.fdInitailValue.level,
+        channel: this.fdInitailValue.channel,
+        recipients: this.fdInitailValue.recipients,
       },
       metric,
-      recipientsLoaded: false, // 报警接收人是否加载完成
-      decorators: {
-        metric: [
-          'metric',
-          {
-            initialValue: metric,
-            rules: [
-              { required: true, message: this.$t('compute.text_742') },
-            ],
-          },
-        ],
-        window: [
-          'window',
-          {
-            initialValue: this.fdInitailValue.window,
-          },
-        ],
-        comparator: [
-          'comparator',
-          {
-            initialValue: this.fdInitailValue.comparator,
-          },
-        ],
-        // threshold 是动态表单规则，需在 template 里面写
-        level: [
-          'level',
-          {
-            initialValue: this.fdInitailValue.level,
-          },
-        ],
-        channel: [
-          'channel',
-          {
-            initialValue: this.fdInitailValue.channel,
-          },
-        ],
-        recipients: [
-          'recipients',
-          {
-            initialValue: this.fdInitailValue.recipients,
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('compute.text_740')]), type: 'array' },
-            ],
-          },
-        ],
-      },
+      recipientsLoaded: false,
       formItemLayout: {
         wrapperCol: {
           span: 19,
@@ -163,8 +111,6 @@ export default {
       comparatorOpts: [
         { key: '>=', label: '>=' },
         { key: '<=', label: '<=' },
-        // { key: '=', label: '=' },
-        // { key: '!=', label: '!=' }
       ],
       levelOpts: [
         { key: 'normal', label: LEVEL_CN.normal.label },
@@ -173,26 +119,21 @@ export default {
       ],
       channelOpts: [
         { key: 'email', label: this.$t('compute.text_743') },
-        // { key: 'moblie', label: '短信' },
-        // { key: 'dingtalk', label: '钉钉通知' }
       ],
-      recipientOpts: [], // 由 base-select 组件同步出来
-      thresholdRules: [], // threshold 的规则
+      recipientOpts: [],
+      thresholdRules: [],
       windowMin: 5,
       R,
     }
   },
   computed: {
     domainParams () {
-      // if (this.$store.getters.isAdminMode) {
-      //   return {}
-      // }
       return {
         scope: this.$store.getters.scope,
       }
     },
     metricDisabled () {
-      return R.is(String, this.fdInitailValue.metric) || R.is(String, this.monitorMetric) // 外部传递 metric 或者是 监控指标 则监控项不可变
+      return R.is(String, this.fdInitailValue.metric) || R.is(String, this.monitorMetric)
     },
     thresholdUnit () {
       if (this.metric) {
@@ -202,13 +143,34 @@ export default {
       return ''
     },
     recipientParams () {
-      const params = {
+      return {
         enabled: true,
         limit: 0,
         with_meta: true,
         ...this.domainParams,
       }
-      return params
+    },
+    rules () {
+      return {
+        metric: [
+          { required: true, message: this.$t('compute.text_742') },
+        ],
+        threshold: [
+          { required: true, message: this.$t('compute.text_737') },
+          ...this.thresholdRules,
+          {
+            validator: (rule, value, callback) => {
+              if (R.isNil(value) || R.isEmpty(value)) return callback()
+              const n = Number(value)
+              if (Number.isNaN(n)) return callback(new Error(this.$t('compute.text_737')))
+              return callback()
+            },
+          },
+        ],
+        recipients: [
+          { required: true, message: this.$t('common.tips.select', [this.$t('compute.text_740')]), type: 'array' },
+        ],
+      }
     },
   },
   created () {
@@ -218,9 +180,10 @@ export default {
   methods: {
     metricChange (val) {
       this.metric = val
+      this.form.metric = val
       this.getThresholdRules(val)
       this.$nextTick(() => {
-        this.form.fc.validateFields(['threshold'], { force: true }) // 动态校验规则
+        this.$refs.formRef.validateField('threshold')
       })
     },
     getThresholdRules (metric) {
@@ -245,12 +208,12 @@ export default {
       this.windowMin = min
     },
     async validateForm () {
-      try {
-        const values = await this.form.fc.validateFields()
-        return values
-      } catch (error) {
-        throw error
+      await this.$refs.formRef.validate()
+      const values = { ...this.form }
+      if (!R.isNil(values.threshold) && !R.isEmpty(values.threshold)) {
+        values.threshold = Number(values.threshold)
       }
+      return values
     },
   },
 }

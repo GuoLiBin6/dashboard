@@ -10,38 +10,39 @@
       <dialog-table
         :data="params.data"
         :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" v-bind="formItemLayout" v-if="!isBatch">
-        <a-form-item :label="$t('compute.text_1202')">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout" v-if="!isBatch">
+        <a-form-model-item :label="$t('compute.text_1202')" prop="cloneType">
           <a-radio-group
-            v-decorator="decorators.cloneType">
+            v-model:value="form.cloneType">
             <a-radio value="newSnapshot">{{$t('compute.text_1203')}}</a-radio>
             <a-radio value="oldSnapshot" :disabled="oldSnapshotDisabled">{{$t('compute.text_1204')}}</a-radio>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item
-          :label="$t('compute.text_228')">
+        </a-form-model-item>
+        <a-form-model-item
+          :label="$t('compute.text_228')"
+          prop="name">
           <a-input
-            v-decorator="decorators.name" />
+            v-model:value="form.name" />
           <template #extra>
             <name-repeated
               res="servers"
-              :name="form.fd.name"
+              :name="form.name"
               :default-text="$t('compute.text_893')" />
           </template>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_294')">
-          <a-input-number v-decorator="decorators.count" :max="5" :min="1" :step="1" step-strictly />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_1205')" :extra="$t('compute.text_1206')" v-if="isNewSnapshotClone">
-          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-decorator="decorators.auto_delete_instance_snapshot" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_102')" v-else>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_294')" prop="count">
+          <a-input-number v-model:value="form.count" :max="5" :min="1" :step="1" step-strictly />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_1205')" :extra="$t('compute.text_1206')" v-if="isNewSnapshotClone" prop="auto_delete_instance_snapshot">
+          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-model:checked="form.auto_delete_instance_snapshot" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_102')" v-else prop="snapshot">
           <base-select
             :options="snapshotOptions"
-            v-decorator="decorators.snapshot"
+            v-model:value="form.snapshot"
             :select-props="{ placeholder: $t('compute.text_1207') }" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{
@@ -68,54 +69,21 @@ export default {
       loading: false,
       action: this.$t('compute.text_1208'),
       form: {
-        fc: this.$form.createForm(this, {
-          name: 'clone_deep_create_form',
-          onValuesChange: this.onValuesChange,
-        }),
-        fd: {
-          name: '',
-          cloneType: 'newSnapshot',
-        },
+        name: '',
+        cloneType: 'newSnapshot',
+        count: 1,
+        auto_delete_instance_snapshot: true,
+        snapshot: undefined,
       },
-      decorators: {
-        cloneType: [
-          'cloneType',
-          {
-            initialValue: 'newSnapshot',
-          },
-        ],
+      rules: {
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_1043') },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_1043') },
         ],
         count: [
-          'count',
-          {
-            initialValue: 1,
-            rules: [
-              { required: true, message: this.$t('compute.text_1195') },
-            ],
-          },
-        ],
-        auto_delete_instance_snapshot: [
-          'auto_delete_instance_snapshot',
-          {
-            valuePropName: 'checked',
-            initialValue: true,
-          },
+          { required: true, message: this.$t('compute.text_1195') },
         ],
         snapshot: [
-          'snapshot',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.text_1207'), trigger: 'change' },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_1207'), trigger: 'change' },
         ],
       },
       formItemLayout: {
@@ -132,7 +100,7 @@ export default {
   },
   computed: {
     isNewSnapshotClone () {
-      return this.form.fd.cloneType === 'newSnapshot'
+      return this.form.cloneType === 'newSnapshot'
     },
     manager () {
       return new this.$Manager('servers', 'v2')
@@ -152,7 +120,8 @@ export default {
   },
   methods: {
     async doCreateByNewSnapshot () {
-      const values = await this.form.fc.validateFields()
+      await this.$refs.formRef.validate()
+      const values = this.form
       const params = {
         generate_name: values.name,
         name: values.name,
@@ -190,7 +159,8 @@ export default {
       })
     },
     async doCreateByOldSnapshot () {
-      const values = await this.form.fc.validateFields()
+      await this.$refs.formRef.validate()
+      const values = this.form
       const params = {
         instance_snapshot_id: values.snapshot,
         generate_name: values.name,
@@ -216,18 +186,13 @@ export default {
         setTimeout(() => { // 后端异步任务，需要延迟2s调用 @万垚奇
           this.params.refresh()
         }, 2000)
-        this.loading = false
         this.cancelDialog()
         this.$message.success(this.$t('compute.text_423'))
       } catch (error) {
-        this.loading = false
         throw error
+      } finally {
+        this.loading = false
       }
-    },
-    onValuesChange (props, values) {
-      Object.keys(values).forEach((key) => {
-        this.form.fd[key] = values[key]
-      })
     },
     async fetchSnapshotList () {
       const params = {

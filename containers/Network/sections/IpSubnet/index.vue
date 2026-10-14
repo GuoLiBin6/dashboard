@@ -1,14 +1,17 @@
 <template>
-  <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="label" :required="isRequired">
+  <component :is="itemTag" :labelCol="labelCol" :wrapperCol="wrapperCol" :label="label" :required="isRequired">
     <a-row :gutter="8">
       <a-col :span="showIpConfig ? 8 : 12">
-        <a-form-item
+        <component
+          :is="itemTag"
           :wrapperCol="{ span: 24 }"
-          class="mb-0 mr-1">
+          class="mb-0 mr-1"
+          :prop="vpcField">
           <base-select
             ref="vpcSelect"
             class="w-100"
-            v-decorator="decorator.vpc"
+            :value="fieldVal(resolvedFields.vpc)"
+            @change="v => fieldSet(resolvedFields.vpc, v)"
             :resource="vpcResource"
             remote
             :label-format="vpcLabelFormat"
@@ -19,16 +22,19 @@
             v-model:item="selectedVpc"
             :select-props="{ allowClear: true, placeholder: $t('compute.text_194') }"
             @update:initLoaded="onVpcInitLoaded" />
-        </a-form-item>
+        </component>
       </a-col>
       <a-col :span="showIpConfig ? 8 : 12">
-        <a-form-item
+        <component
+          :is="itemTag"
           :wrapperCol="{ span: 24 }"
-          class="mb-0 mr-1">
+          class="mb-0 mr-1"
+          :prop="networkField">
           <base-select
             ref="networkSelect"
             class="w-100"
-            v-decorator="decorator.network"
+            :value="fieldVal(resolvedFields.network)"
+            @change="v => fieldSet(resolvedFields.network, v)"
             resource="networks"
             remote
             :need-params="true"
@@ -40,17 +46,18 @@
             <div slot="extra" v-if="helplink">
               {{helplink.ipSubnetHelp}}<help-link :href="helplink.ipSubnetHref">{{$t('network.text_26')}}</help-link>
             </div>
-        </a-form-item>
+        </component>
       </a-col>
       <a-col :span="8" v-if="showIpConfig">
         <a-button v-if="!ipShow" type="link" class="mr-1 mt-1" @click="triggerShowIp">{{$t('compute.text_198')}}</a-button>
         <a-row v-else>
           <a-col :span="21">
-            <a-form-item class="mb-0" :wrapperCol="{ span: 24 }">
+            <component :is="itemTag" class="mb-0" :wrapperCol="{ span: 24 }" :prop="ipAddrField">
               <a-input
                 :placeholder="$t('compute.text_197')"
-                v-decorator="decorator.ip_addr" />
-            </a-form-item>
+                :value="fieldVal(resolvedFields.ip_addr)"
+                @update:value="v => fieldSet(resolvedFields.ip_addr, v)" />
+            </component>
           </a-col>
           <a-col :span="3">
             <a-button type="link" class="mt-1" @click="triggerShowIp">{{$t('compute.text_135')}}</a-button>
@@ -58,12 +65,14 @@
         </a-row>
       </a-col>
     </a-row>
-  </a-form-item>
+  </component>
 </template>
 
 <script>
 import i18n from '@/locales'
 import createFormFieldDraftMixin from '@/mixins/createFormFieldDraft'
+import { EIP_SUBNET_FIELDS } from '@/sections/IpSubnet/ipSubnetsFields'
+import { resolveFieldMeta } from '@/utils/common/ant'
 
 export default {
   name: 'IpSubnet',
@@ -76,6 +85,11 @@ export default {
     formDraftKey: {
       type: String,
       default: '',
+    },
+    /** a-form-model：与 fields 字段名对齐的受控对象 */
+    model: {
+      type: Object,
+      default: null,
     },
     labelCol: {
       type: Object,
@@ -101,9 +115,9 @@ export default {
       type: Boolean,
       default: false,
     },
-    decorator: {
+    fields: {
       type: Object,
-      required: true,
+      default: null,
     },
     networkParams: {
       type: Object,
@@ -138,14 +152,20 @@ export default {
     }
   },
   computed: {
+    resolvedFields () {
+      return this.fields || EIP_SUBNET_FIELDS
+    },
+    itemTag () {
+      return 'a-form-model-item'
+    },
     vpcField () {
-      return (Array.isArray(this.decorator.vpc) && this.decorator.vpc[0]) || 'vpc'
+      return (Array.isArray(this.resolvedFields.vpc) && this.resolvedFields.vpc[0]) || 'vpc'
     },
     networkField () {
-      return (Array.isArray(this.decorator.network) && this.decorator.network[0]) || 'network'
+      return (Array.isArray(this.resolvedFields.network) && this.resolvedFields.network[0]) || 'network'
     },
     ipAddrField () {
-      return (Array.isArray(this.decorator.ip_addr) && this.decorator.ip_addr[0]) || 'ip_addr'
+      return (Array.isArray(this.resolvedFields.ip_addr) && this.resolvedFields.ip_addr[0]) || 'ip_addr'
     },
     vpcParmasConcat () {
       return {
@@ -176,7 +196,6 @@ export default {
     vpcParmasConcat: {
       deep: true,
       handler () {
-        this.$nextTick(() => this.restoreFormFieldDraftFields())
         if (this._pendingIpSubnetDraft) {
           this.$nextTick(() => this.tryApplyPendingIpSubnetDraft())
         }
@@ -186,50 +205,82 @@ export default {
   created () {
     this._pendingIpSubnetDraft = null
     this._ipSubnetDraftRestoring = false
-  },
-  mounted () {
-    this.$nextTick(() => this.restoreFormFieldDraftFields())
+    this.initModelFields()
   },
   methods: {
+    fieldVal (fieldTuple) {
+      const meta = resolveFieldMeta(fieldTuple)
+      if (!meta) return undefined
+      const { name, ...opts } = meta
+      const v = this.model[name]
+      return v !== undefined ? v : opts.initialValue
+    },
+    fieldSet (fieldTuple, value) {
+      if (!resolveFieldMeta(fieldTuple)) return
+      this.$set(this.model, resolveFieldMeta(fieldTuple)?.name, value)
+    },
+    runFieldRule (rule, value) {
+      return new Promise((resolve, reject) => {
+        if (rule.required) {
+          const empty = value === undefined || value === null || value === '' ||
+            (Array.isArray(value) && !value.length)
+          if (empty) {
+            reject(new Error(rule.message || 'required'))
+            return
+          }
+        }
+        if (typeof rule.validator === 'function') {
+          rule.validator(rule, value, (err) => {
+            if (err) reject(err instanceof Error ? err : new Error(String(err)))
+            else resolve()
+          })
+          return
+        }
+        resolve()
+      })
+    },
+    async validate () {
+      for (const key of ['vpc', 'network', 'ip_addr']) {
+        const fieldDef = this.resolvedFields[key]
+        if (!resolveFieldMeta(fieldDef)) continue
+        const rules = resolveFieldMeta(fieldDef)?.rules || []
+        for (const rule of rules) {
+          await this.runFieldRule(rule, this.fieldVal(fieldDef))
+        }
+      }
+      return true
+    },
+    initModelFields () {
+      ;['vpc', 'network', 'ip_addr'].forEach((key) => {
+        const fieldDef = this.resolvedFields[key]
+        const meta = resolveFieldMeta(fieldDef)
+        if (!meta) return
+        const { name, ...opts } = meta
+        if (this.model[name] === undefined && opts.initialValue !== undefined) {
+          this.$set(this.model, name, opts.initialValue)
+        } else if (this.model[name] === undefined) {
+          this.$set(this.model, name, undefined)
+        }
+      })
+    },
     getCreateFormFieldDraftSnapshot () {
-      const fc = this.form?.fc
-      if (!fc) return null
-      const vpc = fc.getFieldValue(this.vpcField)
-      const network = fc.getFieldValue(this.networkField)
-      // 指定 IP（输入）不落盘；无 vpc/network 则不写草稿
-      if (!vpc && !network) return null
-      return {
-        vpc,
-        network,
-      }
+      return null
     },
-    applyCreateFormFieldDraft (draft) {
-      if (!draft || typeof draft !== 'object') return
-      const hasAny = draft.vpc || draft.network
-      if (!hasAny) return
-      this._pendingIpSubnetDraft = {
-        vpc: draft.vpc,
-        network: draft.network,
-      }
-      this.$nextTick(() => this.tryApplyPendingIpSubnetDraft())
-    },
+    applyCreateFormFieldDraft () {},
     async tryApplyPendingIpSubnetDraft () {
       const draft = this._pendingIpSubnetDraft
-      if (!draft || !this.form?.fc || this._ipSubnetDraftRestoring) return
+      if (!draft || this._ipSubnetDraftRestoring) return
 
       this._ipSubnetDraftRestoring = true
       try {
         if (draft.vpc) {
           const vpcList = this.$refs.vpcSelect?.sourceList || []
-          // 列表空：不写回；等 onVpcInitLoaded 再试
-          if (!vpcList.length) {
-            return
-          }
+          if (!vpcList.length) return
           if (!vpcList.some(item => item.id === draft.vpc)) {
             this._pendingIpSubnetDraft = null
             return
           }
-          this.form.fc.setFieldsValue({ [this.vpcField]: draft.vpc })
+          this.$set(this.model, this.vpcField, draft.vpc)
           if (!this.selectedVpc?.id || this.selectedVpc.id !== draft.vpc) {
             this.selectedVpc = { ...(this.selectedVpc || {}), id: draft.vpc }
           }
@@ -239,19 +290,17 @@ export default {
         if (draft.network) {
           await this.$nextTick()
           const networkList = this.$refs.networkSelect?.sourceList || []
-          if (!networkList.length) {
-            return
-          }
+          if (!networkList.length) return
           if (!networkList.some(item => item.id === draft.network)) {
             draft.network = undefined
-            this.form.fc.setFieldsValue({ [this.networkField]: undefined })
+            this.$set(this.model, this.networkField, undefined)
           } else {
-            this.form.fc.setFieldsValue({ [this.networkField]: draft.network })
+            this.$set(this.model, this.networkField, draft.network)
           }
         }
 
-        const vpcOk = !draft.vpc || this.form.fc.getFieldValue(this.vpcField) === draft.vpc
-        const networkOk = !draft.network || this.form.fc.getFieldValue(this.networkField) === draft.network
+        const vpcOk = !draft.vpc || this.model[this.vpcField] === draft.vpc
+        const networkOk = !draft.network || this.model[this.networkField] === draft.network
         if (vpcOk && networkOk) {
           this._pendingIpSubnetDraft = null
         } else {
@@ -272,9 +321,7 @@ export default {
       const next = !this.ipShow
       if (!next) {
         // 取消指定 IP：清字段，避免展示关闭但提交仍带 ip
-        if (this.form && this.form.fc) {
-          this.form.fc.setFieldsValue({ [this.ipAddrField]: undefined })
-        }
+        this.$set(this.model, this.ipAddrField, undefined)
         if (this.form && this.form.fd) this.$delete(this.form.fd, this.ipAddrField)
       }
       this.ipShow = next

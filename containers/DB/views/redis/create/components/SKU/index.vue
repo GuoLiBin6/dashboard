@@ -3,8 +3,7 @@
     <item-filters
       ref="FILTERS"
       :getParams="getParams"
-      :disableds="disableds"
-      :decorators="decorators" />
+      :disableds="disableds" />
     <sku-list
       :filterSkuCallback="filterSkuCallback"
       ref="SKU_LIST" />
@@ -24,9 +23,6 @@ export default {
   },
   inject: ['form', 'scopeParams'],
   props: {
-    decorators: {
-      type: Object,
-    },
     filterSkuCallback: {
       type: Function,
     },
@@ -36,7 +32,8 @@ export default {
   },
   methods: {
     getParams (keys) {
-      const values = this.form.getFieldsValue(keys)
+      const values = {}
+      ;(keys || []).forEach((k) => { values[k] = this.form.fd[k] })
       const params = {
         usable: true,
         provider: this.form.fd.provider,

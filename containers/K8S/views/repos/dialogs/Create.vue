@@ -2,34 +2,34 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{ $t('common.create') }}</div>
     <div slot="body">
-      <a-form :form="form.fc" v-bind="formItemLayout" hideRequiredMark>
-        <a-form-item :label="$t('common.name')">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout" hideRequiredMark>
+        <a-form-model-item :label="$t('common.name')" prop="name">
           <a-input
-            v-decorator="decorators.name"
+            v-model:value="form.name"
             :placeholder="$t('validator.resourceName')" />
-        </a-form-item>
-        <a-form-item :label="$t('k8s.text_34')">
-          <a-radio-group v-decorator="decorators.type" buttonStyle="solid">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('k8s.text_34')" prop="type">
+          <a-radio-group v-model:value="form.type" buttonStyle="solid">
             <a-radio-button value="common">{{ $t('k8s.repo.type.common') }}</a-radio-button>
             <a-radio-button value="custom">{{ $t('k8s.repo.type.custom') }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('k8s.repo.url')" :extra="isCustomType ? $t('k8s.repo.url.extra.custom') : $t('k8s.repo.url.extra')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('k8s.repo.url')" :extra="isCustomType ? $t('k8s.repo.url.extra.custom') : $t('k8s.repo.url.extra')" prop="url">
           <a-input
-            v-decorator="decorators.url"
+            v-model:value="form.url"
             :placeholder="$t('common.tips.input', [$t('k8s.repo.url')])" />
-        </a-form-item>
-        <a-form-item :label="$t('k8s.text_54')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('k8s.text_54')">
           <a-input
-            v-decorator="decorators.username"
+            v-model:value="form.username"
             :placeholder="$t('common.tips.input', [$t('k8s.text_54')])" />
-        </a-form-item>
-        <a-form-item :label="$t('k8s.text_56')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('k8s.text_56')">
           <a-input-password
-            v-decorator="decorators.password"
+            v-model:value="form.password"
             :placeholder="$t('common.tips.input', [$t('k8s.text_56')])" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -48,60 +48,24 @@ export default {
   data () {
     return {
       loading: false,
-      decorators: {
+      form: {
+        name: '',
+        type: 'common',
+        url: '',
+        username: '',
+        password: '',
+      },
+      rules: {
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` },
-              { validator: this.$validate('resourceName') },
-            ],
-          },
+          { required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` },
+          { validator: this.$validate('resourceName') },
         ],
         type: [
-          'type',
-          {
-            initialValue: 'common',
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('k8s.text_34')]) },
-            ],
-          },
+          { required: true, message: this.$t('common.tips.select', [this.$t('k8s.text_34')]) },
         ],
         url: [
-          'url',
-          {
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('k8s.repo.url')]) },
-            ],
-          },
+          { required: true, message: this.$t('common.tips.input', [this.$t('k8s.repo.url')]) },
         ],
-        username: [
-          'username',
-          {
-            rules: [
-              { required: false, message: this.$t('common.tips.input', [this.$t('k8s.text_54')]) },
-            ],
-          },
-        ],
-        password: [
-          'password',
-          {
-            rules: [
-              { required: false, message: this.$t('common.tips.input', [this.$t('k8s.text_56')]) },
-            ],
-          },
-        ],
-      },
-      form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.$set(this.form.fd, key, values[key])
-            })
-          },
-        }),
-        fd: {},
       },
       formItemLayout: {
         wrapperCol: {
@@ -115,14 +79,15 @@ export default {
   },
   computed: {
     isCustomType () {
-      return this.form.fd.type === 'custom'
+      return this.form.type === 'custom'
     },
   },
   methods: {
     async handleConfirm () {
       this.loading = true
       try {
-        const { username, password, type, ...rest } = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const { username, password, type, ...rest } = this.form
         const manager = new this.$Manager('container_registries', 'v1')
         const data = {
           ...rest,

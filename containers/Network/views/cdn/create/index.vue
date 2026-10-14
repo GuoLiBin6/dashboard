@@ -2,80 +2,91 @@
   <div>
     <page-header :title="$t('common_628', [$t('dictionary.cdn_domain')])" />
     <page-body>
-      <a-form :form="form.fc" class="mt-3" v-bind="formItemLayout" hideRequiredMark>
-        <a-form-item :label="$t('network.text_205', [$t('dictionary.project')])">
+      <a-form-model
+        ref="formRef"
+        :model="form.fd"
+        :rules="rules"
+        class="mt-3"
+        v-bind="formItemLayout"
+        hideRequiredMark>
+        <a-form-model-item :label="$t('network.text_205', [$t('dictionary.project')])" prop="project">
           <domain-project
-            :fc="form.fc"
+            :form="form.fd"
             :form-layout="formItemLayout"
-            :decorators="{ project: decorators.project, domain: decorators.domain }" />
-        </a-form-item>
-        <a-form-item :label="$t('network.cdn.cloudprovider')">
+            :labelInValue="true" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.cdn.cloudprovider')" prop="cloudprovider">
           <base-select
             resource="cloudproviders"
-            v-decorator="decorators.cloudprovider"
+            v-model:value="form.fd.cloudprovider"
             :params="params.cloudprovider"
             :isDefaultSelect="true"
             :showSync="true"
             :select-props="{ placeholder: $t('compute.text_149') }" />
-        </a-form-item>
-        <a-form-item :label="$t('network.cdn.accelerated_domain')">
-          <a-input v-decorator="decorators.accelerated_domain" />
-        </a-form-item>
-        <a-form-item :label="$t('network.cdn.area')">
-          <a-radio-group v-decorator="decorators.area">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.cdn.accelerated_domain')" prop="accelerated_domain">
+          <a-input v-model:value="form.fd.accelerated_domain" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.cdn.area')" prop="area">
+          <a-radio-group v-model:value="form.fd.area">
             <a-radio-button v-for="item in areaOpts" :value="item.key" :key="item.key">{{ item.label }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('network.cdn.service_type')">
-          <a-select v-decorator="decorators.service_type">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.cdn.service_type')" prop="service_type">
+          <a-select v-model:value="form.fd.service_type">
             <a-select-option v-for="item in serviceTypeOpts" :key="item.key">{{ item.label }}</a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('network.cdn.origin_types')">
-          <a-radio-group v-decorator="decorators.origin_type">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.cdn.origin_types')" prop="origin_type">
+          <a-radio-group v-model:value="form.fd.origin_type">
             <a-radio-button v-for="item in originTypeOpts" :value="item.key" :key="item.key">{{ item.label }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('network.cdn.source_protocol')">
-          <a-radio-group v-decorator="decorators.origin_protocol">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.cdn.source_protocol')" prop="origin_protocol">
+          <a-radio-group v-model:value="form.fd.origin_protocol">
             <a-radio-button v-for="item in originProtocols" :value="item.key" :key="item.key">{{ item.label }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item
-          v-for="(k, index) in form.fc.getFieldValue('keys')"
+        </a-form-model-item>
+        <a-form-model-item
+          v-for="(k, index) in form.fd.keys"
           :key="k"
           v-bind="index === 0 ? formItemLayout : formItemLayoutWithOutLabel"
           :label="index === 0 ? $t('network.cdn.source_origin') : ''"
           :required="false">
           <a-row :gutter="6">
             <a-col :span="8">
-              <a-form-item
+              <a-form-model-item
                 :wrapperCol="{ span: 24 }"
-                class="mb-0 mr-1">
-                <a-input v-decorator="decorators.originAddress.origin(k)" :placeholder="$t('network.cdn.origin')" />
-              </a-form-item>
+                class="mb-0 mr-1"
+                :prop="`origin.${k}`"
+                :rules="originRules">
+                <a-input v-model:value="form.fd.origin[k]" :placeholder="$t('network.cdn.origin')" />
+              </a-form-model-item>
             </a-col>
             <a-col :span="8">
-              <a-form-item
+              <a-form-model-item
                 :wrapperCol="{ span: 24 }"
-                class="mb-0 mr-1">
-                <a-input v-decorator="decorators.originAddress.port(k)"  :placeholder="$t('network.text_165')" />
-              </a-form-item>
+                class="mb-0 mr-1"
+                :prop="`port.${k}`">
+                <a-input v-model:value="form.fd.port[k]" :placeholder="$t('network.text_165')" />
+              </a-form-model-item>
             </a-col>
             <a-col :span="7">
-              <a-form-item
+              <a-form-model-item
                 :wrapperCol="{ span: 24 }"
-                class="mb-0 mr-1">
-                <a-input v-decorator="decorators.originAddress.priority(k)" :placeholder="$t('network.text_166')" />
-              </a-form-item>
+                class="mb-0 mr-1"
+                :prop="`priority.${k}`"
+                :rules="priorityRules">
+                <a-input v-model:value="form.fd.priority[k]" :placeholder="$t('network.text_166')" />
+              </a-form-model-item>
             </a-col>
             <a-col :span="1">
               <a-button v-if="index === 0" type="primary" shape="circle" icon="plus" size="small" @click="add" />
               <a-button v-else shape="circle" icon="minus" size="small" @click="remove(k)" />
             </a-col>
           </a-row>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </page-body>
     <page-footer>
       <div slot="right">
@@ -91,7 +102,7 @@
 <script>
 import { validate, isRequired } from '@/utils/validate'
 import { Manager } from '@/utils/manager'
-import DomainProject from '@/sections/DomainProject'
+import DomainProject from '@/sections/DomainProject/model'
 import { AREAS, SERVICE_TYPES, ORIGIN_TYPES, ORIGIN_PROTOCOLS } from '../constants'
 
 let id = 0
@@ -107,102 +118,48 @@ export default {
       originTypeOpts: ORIGIN_TYPES,
       originProtocols: ORIGIN_PROTOCOLS,
       loading: false,
-      decorators: {
-        domain: [
-          'domain',
-          {
-            rules: [
-              { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
-            ],
-          },
-        ],
-        project: [
-          'project',
-          {
-            rules: [
-              { validator: isRequired(), message: this.$t('dictionary.project'), trigger: 'change' },
-            ],
-          },
-        ],
-        cloudprovider: [
-          'cloudprovider',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_689') },
-            ],
-          },
-        ],
-        accelerated_domain: [
-          'accelerated_domain',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('network.cdn.accelerated_domain')]) },
-              { validator: this.checkDomainHandle },
-            ],
-          },
-        ],
-        area: [
-          'area',
-          {
-            rules: [
-              { required: true, message: this.$t('network.cdn.area_require_message') },
-            ],
-            initialValue: 'mainland',
-          },
-        ],
-        service_type: [
-          'service_type',
-          {
-            initialValue: 'web',
-          },
-        ],
-        origin_type: [
-          'origin_type',
-          {
-            initialValue: 'domain',
-          },
-        ],
-        origin_protocol: [
-          'origin_protocol',
-          {
-            initialValue: 'http',
-          },
-        ],
-        originAddress: {
-          origin: i => [
-            `origin[${i}]`,
-            {
-              validateFirst: true,
-              validateTrigger: ['change', 'blur'],
-              rules: [
-                { required: true, message: this.$t('network.cdn.origin_require_message') },
-                { validator: this.validateIpOrDomain },
-                { validator: this.validateOriginRepeat },
-              ],
-            },
-          ],
-          port: i => [
-            `port[${i}]`,
-            {
-              // validateTrigger: ['change', 'blur'],
-              // rules: [
-              //   { required: true, message: this.$t('network.cdn.port_require_message') },
-              // ],
-            },
-          ],
-          priority: i => [
-            `priority[${i}]`,
-            {
-              validateTrigger: ['change', 'blur'],
-              rules: [
-                // { required: true, message: this.$t('network.cdn.priority_require_message') },
-                { validator: this.validatePriority },
-              ],
-            },
-          ],
+      form: {
+        fd: {
+          domain: undefined,
+          project: undefined,
+          cloudprovider: undefined,
+          accelerated_domain: '',
+          area: 'mainland',
+          service_type: 'web',
+          origin_type: 'domain',
+          origin_protocol: 'http',
+          keys: [id],
+          origin: { [id]: undefined },
+          port: { [id]: undefined },
+          priority: { [id]: undefined },
         },
       },
+      rules: {
+        domain: [
+          { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
+        ],
+        project: [
+          { validator: isRequired(), message: this.$t('dictionary.project'), trigger: 'change' },
+        ],
+        cloudprovider: [
+          { required: true, message: this.$t('network.text_689') },
+        ],
+        accelerated_domain: [
+          { required: true, message: this.$t('common.tips.input', [this.$t('network.cdn.accelerated_domain')]) },
+          { validator: this.checkDomainHandle },
+        ],
+        area: [
+          { required: true, message: this.$t('network.cdn.area_require_message') },
+        ],
+      },
+      originRules: [
+        { required: true, message: this.$t('network.cdn.origin_require_message') },
+        { validator: this.validateIpOrDomain },
+        { validator: this.validateOriginRepeat },
+      ],
+      priorityRules: [
+        { validator: this.validatePriority },
+      ],
       params: {
         domain: {
           scope: this.$store.getters.scope,
@@ -234,11 +191,6 @@ export default {
       },
     }
   },
-  beforeCreate () {
-    this.form = {}
-    this.form.fc = this.$form.createForm(this, { name: 'cdn_create_form' })
-    this.form.fc.getFieldDecorator('keys', { initialValue: [id], preserve: true })
-  },
   methods: {
     handleCancel () {
       this.goBack()
@@ -266,13 +218,12 @@ export default {
       return data
     },
     async handleConfirm () {
-      const { validateFields } = this.form.fc
       const manager = new Manager('cdn_domains')
       try {
-        const values = await validateFields()
+        await this.$refs.formRef.validate()
         this.loading = true
         await manager.create({
-          data: Object.assign({}, this.generateValues(values)),
+          data: Object.assign({}, this.generateValues(this.form.fd)),
         })
         this.goBack()
       } catch (err) {
@@ -288,27 +239,31 @@ export default {
       callback()
     },
     add () {
-      const { form } = this
-      const keys = form.fc.getFieldValue('keys')
-      const nextKeys = keys.concat(++id)
-      form.fc.setFieldsValue({
-        keys: nextKeys,
+      const newKey = ++id
+      this.form.fd.keys = this.form.fd.keys.concat(newKey)
+      this.$set(this.form.fd.origin, newKey, undefined)
+      this.$set(this.form.fd.port, newKey, undefined)
+      this.$set(this.form.fd.priority, newKey, undefined)
+      this.$nextTick(() => {
+        this.$refs.formRef.validateField(
+          this.form.fd.keys.map(k => [`origin.${k}`, `priority.${k}`]).flat(),
+        )
       })
-      form.fc.validateFields(['origin', 'priority'], { force: true })
     },
     remove (k) {
-      const { form } = this
-      const keys = form.fc.getFieldValue('keys')
-      const orgins = form.fc.getFieldValue('origin')
-
+      const keys = this.form.fd.keys
       if (keys.length === 1) {
         return
       }
-      form.fc.setFieldsValue({
-        keys: keys.filter(key => key !== k),
-        origin: orgins.filter(origin => origin !== orgins[k]),
+      this.form.fd.keys = keys.filter(key => key !== k)
+      this.$delete(this.form.fd.origin, k)
+      this.$delete(this.form.fd.port, k)
+      this.$delete(this.form.fd.priority, k)
+      this.$nextTick(() => {
+        this.$refs.formRef.validateField(
+          this.form.fd.keys.map(key => [`origin.${key}`, `priority.${key}`]).flat(),
+        )
       })
-      form.fc.validateFields(['origin', 'priority'], { force: true })
     },
     goBack () {
       this.$router.push({
@@ -316,12 +271,11 @@ export default {
       })
     },
     validateOriginRepeat (rule, value, callback) {
-      const { form } = this
       this.$nextTick(() => {
-        const orgins = form.fc.getFieldValue('origin')
-        const isRepeat = orgins.filter(item => item === value).length > 1
+        const origins = Object.values(this.form.fd.origin || {}).filter(v => v !== undefined && v !== '')
+        const isRepeat = origins.filter(item => item === value).length > 1
 
-        if (value && orgins.length > 1 && isRepeat) {
+        if (value && origins.length > 1 && isRepeat) {
           // eslint-disable-next-line standard/no-callback-literal
           callback(this.$t('network.cdn.origin_repeat_validate'))
         } else {
@@ -330,9 +284,8 @@ export default {
       })
     },
     validatePriority (rule, value, callback) {
-      const { form } = this
       this.$nextTick(() => {
-        const prioritys = form.fc.getFieldValue('priority')
+        const prioritys = Object.values(this.form.fd.priority || {}).filter(v => v !== undefined && v !== '')
         if (value && prioritys.length === 1) {
           // eslint-disable-next-line standard/no-callback-literal
           callback(this.$t('network.cdn.priority_validate'))

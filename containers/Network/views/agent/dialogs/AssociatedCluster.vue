@@ -4,16 +4,16 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('network.text_20')" :count="params.data.length" :action="$t('network.associated_cluster')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('network.associated_cluster')">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('network.associated_cluster')" prop="enable_associated">
           <a-switch
-            v-decorator="decorators.enable_associated"
+            v-model:checked="form.enable_associated"
             :checkedChildren="$t('common.text00062')"
             :unCheckedChildren="$t('common.text00063')" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_19')" v-if="form.fd.enable_associated">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_19')" v-if="form.enable_associated" prop="cluster_id">
           <base-select
-            v-decorator="decorators.cluster_id"
+            v-model:value="form.cluster_id"
             resource="loadbalancerclusters"
             :params="clusterParams"
             remote
@@ -24,8 +24,8 @@
             {{$t('network.text_80')}}
             <a-button type="link" size="small" @click="createCluster">{{$t('network.text_26')}}</a-button>
           </p>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -45,33 +45,12 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-          },
-        }),
-        fd: {
-          enable_associated: !!this.params.data[0].cluster_id,
-        },
+        enable_associated: !!this.params.data[0].cluster_id,
+        cluster_id: this.params.data[0].cluster_id,
       },
-      decorators: {
-        enable_associated: [
-          'enable_associated',
-          {
-            valuePropName: 'checked',
-            initialValue: !!this.params.data[0].cluster_id,
-          },
-        ],
+      rules: {
         cluster_id: [
-          'cluster_id',
-          {
-            initialValue: this.params.data[0].cluster_id,
-            rules: [
-              { required: true, message: this.$t('network.text_79') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_79') },
         ],
       },
       formItemLayout: {
@@ -119,9 +98,9 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         const id = this.params.data[0].id
-        const { enable_associated, cluster_id } = values
+        const { enable_associated, cluster_id } = this.form
 
         if (enable_associated) {
           await this.doAssociated(id, cluster_id)

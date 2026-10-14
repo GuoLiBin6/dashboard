@@ -1,27 +1,29 @@
 <template>
-  <a-form
-    :form="form.fc"
+  <a-form-model
+    ref="formRef"
+    :model="form"
+    :rules="rules"
     v-bind="formItemLayout">
-    <a-form-item :label="$t('system.text_269')">
-      <a-input v-decorator="decorators.hostname" />
-    </a-form-item>
-    <a-form-item label="SSL">
-      <a-switch :checkedChildren="$t('system.text_134')" :unCheckedChildren="$t('system.text_135')" v-decorator="decorators.ssl_global" />
-    </a-form-item>
-    <a-form-item :label="$t('system.text_270')">
-      <a-input-number v-decorator="decorators.hostport" :min="1" :max="65535" />
-    </a-form-item>
-    <a-form-item :label="$t('system.text_126')">
-      <a-input v-decorator="decorators.username" />
-    </a-form-item>
-    <a-form-item :label="$t('system.text_221')">
-      <a-input-password v-decorator="decorators.password" />
-    </a-form-item>
-    <a-form-item :wrapper-col="offsetWrapperCol">
+    <a-form-model-item :label="$t('system.text_269')" prop="hostname">
+      <a-input v-model:value="form.hostname" />
+    </a-form-model-item>
+    <a-form-model-item label="SSL" prop="ssl_global">
+      <a-switch :checkedChildren="$t('system.text_134')" :unCheckedChildren="$t('system.text_135')" v-model:checked="form.ssl_global" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('system.text_270')" prop="hostport">
+      <a-input-number v-model:value="form.hostport" :min="1" :max="65535" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('system.text_126')" prop="username">
+      <a-input v-model:value="form.username" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('system.text_221')" prop="password">
+      <a-input-password v-model:value="form.password" />
+    </a-form-model-item>
+    <a-form-model-item :wrapper-col="offsetWrapperCol">
       <a-button type="primary" @click="handleSubmit" :loading="submiting">{{ $t('common.ok') }}</a-button>
       <test-button v-if="false" class="ml-3" :post="testPost" />
-    </a-form-item>
-  </a-form>
+    </a-form-model-item>
+  </a-form-model>
 </template>
 
 <script>
@@ -46,46 +48,24 @@ export default {
     return {
       submiting: false,
       form: {
-        fc: this.$form.createForm(this),
+        hostname: undefined,
+        ssl_global: false,
+        hostport: undefined,
+        username: undefined,
+        password: undefined,
       },
-      decorators: {
+      rules: {
         hostname: [
-          'hostname',
-          {
-            rules: [
-              { required: true, message: this.$t('system.text_271') },
-            ],
-          },
-        ],
-        ssl_global: [
-          'ssl_global',
-          {
-            valuePropName: 'checked',
-          },
+          { required: true, message: this.$t('system.text_271') },
         ],
         hostport: [
-          'hostport',
-          {
-            rules: [
-              { required: true, message: this.$t('system.text_272') },
-            ],
-          },
+          { required: true, message: this.$t('system.text_272') },
         ],
         username: [
-          'username',
-          {
-            rules: [
-              { required: true, message: this.$t('system.text_238') },
-            ],
-          },
+          { required: true, message: this.$t('system.text_238') },
         ],
         password: [
-          'password',
-          {
-            rules: [
-              { required: true, message: this.$t('system.text_239') },
-            ],
-          },
+          { required: true, message: this.$t('system.text_239') },
         ],
       },
       contactData: null,
@@ -110,7 +90,7 @@ export default {
         const data = response.data.data[0] || {}
         this.contactData = data
         this.$nextTick(() => {
-          this.form.fc.setFieldsValue(data.content)
+          Object.assign(this.form, data.content || {})
         })
       } catch (error) {
         throw error
@@ -119,7 +99,8 @@ export default {
       }
     },
     async handleSubmit () {
-      const values = await this.form.fc.validateFields()
+      await this.$refs.formRef.validate()
+      const values = { ...this.form }
       try {
         this.submiting = true
         if (this.contactData && this.contactData.id) {
@@ -149,7 +130,8 @@ export default {
     },
     async testPost () {
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         await new this.$Manager('notifyconfigs', 'v1').performClassAction({
           action: 'validate',
           data: {

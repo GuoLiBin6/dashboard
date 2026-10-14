@@ -25,7 +25,11 @@ export default {
   components: {
     PriceFetcher,
   },
-  inject: ['form', 'cloudEnv'],
+  inject: {
+    form: { default: undefined },
+    cloudEnv: { default: undefined },
+    validateCreateForm: { default: undefined },
+  },
   props: {
     values: {
       type: Object,
@@ -47,7 +51,9 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        const values = typeof this.validateCreateForm === 'function'
+          ? await this.validateCreateForm()
+          : { ...this.form.fd }
         const cloudregionId = values.sku?.cloudregion_id || values.cloudregion_id ||
           (Array.isArray(values.cloudregion) ? values.cloudregion[0] : values.cloudregion)
         const params = {

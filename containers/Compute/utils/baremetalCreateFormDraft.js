@@ -14,8 +14,6 @@ export const BAREMETAL_CREATE_FORM_DRAFT_FIELD = {
   IS_BONDING: 'isBonding',
 }
 
-export const BAREMETAL_CREATE_FORM_DRAFT_FC_BINDINGS = []
-
 export function getBaremetalCreateFormDraftScope ({ type }) {
   if (!type) return ''
   return `compute.baremetal.${type}`

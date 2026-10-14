@@ -2,41 +2,41 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{ $t('samluser.create_title') }}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc"
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
         v-bind="formItemLayout">
-        <a-form-item :label="$t('cloudenv.clouduser_list_t4')" :extra="$t('common_625')">
+        <a-form-model-item :label="$t('cloudenv.clouduser_list_t4')" :extra="$t('common_625')" prop="owner_id">
           <user-select
-            v-decorator="decorators.owner_id"
+            v-model="form.owner_id"
             :cloudaccount-id="params.cloudaccount.id"
-            v-model:user="form.fi.user"
-            v-model:project="form.fi.project"
-            :cloudprovider-id="form.fi.cloudprovider.id"
+            v-model:user="formFi.user"
+            v-model:project="formFi.project"
+            :cloudprovider-id="formFi.cloudprovider.id"
             :defaultDomainId="params.defaultDomainId"
             :defaultProjectId="params.defaultProjectId"
             :defaultUserId="params.userId" />
-        </a-form-item>
-        <template>
-          <a-form-item :label="$t('dictionary.cloudprovider')">
-            <base-select
-              v-decorator="decorators.cloudprovider_id"
-              resource="cloudproviders"
-              filterable
-              isDefaultSelect
-              :params="cloudproviderParams"
-              v-model:item="form.fi.cloudprovider"
-              @change="cloudproviderChange" />
-          </a-form-item>
-        </template>
-        <a-form-item :label="$t('dictionary.cloudusergroup')" :extra="$t('samluser.create_cloudgroup_extra')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('dictionary.cloudprovider')" prop="cloudprovider_id">
+          <base-select
+            v-model:value="form.cloudprovider_id"
+            resource="cloudproviders"
+            filterable
+            isDefaultSelect
+            :params="cloudproviderParams"
+            v-model:item="formFi.cloudprovider"
+            @change="cloudproviderChange" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('dictionary.cloudusergroup')" :extra="$t('samluser.create_cloudgroup_extra')" prop="cloudgroup_id">
           <list-select
-            v-decorator="decorators.cloudgroup_id"
+            v-model:value="form.cloudgroup_id"
             :listProps="cloudgroupListSelectProps"
             :formatter="formatterLabel"
             :dialog-params="{ mask: false }"
             :multiple="false" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -72,38 +72,24 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-        fi: {
-          user: {},
-          cloudprovider: {},
-          project: {},
-        },
+        owner_id: undefined,
+        cloudprovider_id: undefined,
+        cloudgroup_id: undefined,
       },
-      decorators: {
+      formFi: {
+        user: {},
+        cloudprovider: {},
+        project: {},
+      },
+      rules: {
         owner_id: [
-          'owner_id',
-          {
-            rules: [
-              { required: true, message: this.$t('common.select') },
-            ],
-          },
+          { required: true, message: this.$t('common.select') },
         ],
         cloudprovider_id: [
-          'cloudprovider_id',
-          {
-            rules: [
-              { required: true, message: this.$t('common.select') },
-            ],
-          },
+          { required: true, message: this.$t('common.select') },
         ],
         cloudgroup_id: [
-          'cloudgroup_id',
-          {
-            rules: [
-              { required: true, message: this.$t('common.select') },
-              // { required: this.params.cloudaccount.brand === 'Google', message: this.$t('common.select') },
-            ],
-          },
+          { required: true, message: this.$t('common.select') },
         ],
       },
       cloudgroupListSelectProps: {
@@ -113,7 +99,7 @@ export default {
           apiVersion: 'v1',
           getParams: () => {
             const params = {
-              manager_id: this.form.fi.cloudprovider.id,
+              manager_id: this.formFi.cloudprovider.id,
             }
             if (this.$store.getters.isAdminMode) {
               params.domain_id = this.params.cloudaccount.domain_id
@@ -187,41 +173,21 @@ export default {
     isGoogle () {
       return this.params.cloudaccount.brand === 'Google'
     },
-    namePlaceholder () {
-      if (this.form.fi.user && this.form.fi.user.name) {
-        if (this.isGoogle) {
-          return this.$t('cloudenv.text_377')
-        }
-        return this.form.fi.user.name
-      }
-      return ''
-    },
-    nameRepeatParams () {
-      if (this.isGoogle) {
-        return { cloudprovider_id: this.form.fi.cloudprovider.id }
-      }
-      return { cloudaccount_id: this.params.cloudaccount.id }
-    },
-    nameExtra () {
-      if (this.isGoogle) return null
-      return this.$t('cloudenv.clouduser_text1')
-    },
   },
   methods: {
     cloudproviderChange () {
-      this.form.fc.setFieldsValue({
-        cloudgroup_id: null,
-      })
+      this.form.cloudgroup_id = null
     },
     async handleConfirm () {
       this.loading = true
       try {
-        const { ...values } = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         if (!this.isGoogle) {
           values.cloudaccount_id = this.params.cloudaccount.id
         }
-        values.project_id = this.form.fi.project.id
-        values.project_domain = this.form.fi.project.project_domain
+        values.project_id = this.formFi.project.id
+        values.project_domain = this.formFi.project.project_domain
         await this.params.onManager('create', {
           managerArgs: {
             data: values,

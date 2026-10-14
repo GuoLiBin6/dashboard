@@ -4,20 +4,20 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('compute.disk_backup')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.rollback_type')">
-          <a-radio-group v-decorator="decorators.type">
+      <a-form-model ref="formRef" :model="form" hideRequiredMark v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.rollback_type')" prop="type">
+          <a-radio-group v-model:value="form.type">
             <a-radio-button value="new">
               {{ $t('compute.create_new_disk') }}
             </a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('compute.disk_name')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.disk_name')" prop="name">
           <a-input
-            v-decorator="decorators.name"
+            v-model:value="form.name"
             :placeholder="$t('compute.disk_name_placeholder')" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -38,18 +38,8 @@ export default {
       loading: false,
       action: this.$t('compute.text_478'),
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        type: [
-          'type',
-          {
-            initialValue: 'new',
-          },
-        ],
-        name: [
-          'name',
-        ],
+        type: 'new',
+        name: undefined,
       },
       formItemLayout: {
         wrapperCol: {
@@ -68,9 +58,9 @@ export default {
     },
   },
   methods: {
-    async doRollbackSubmit (values) {
+    async doRollbackSubmit () {
       const params = {
-        name: values.name,
+        name: this.form.name,
       }
       const ids = this.params.data.map(item => item.id)
       await this.params.onManager('performAction', {
@@ -85,13 +75,13 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        await this.doRollbackSubmit(values)
+        await this.$refs.formRef.validate()
+        await this.doRollbackSubmit()
         this.params.refresh()
-        this.loading = false
         this.cancelDialog()
       } catch (error) {
         console.log(error)
+      } finally {
         this.loading = false
       }
     },

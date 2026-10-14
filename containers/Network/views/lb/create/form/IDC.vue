@@ -1,44 +1,44 @@
 <template>
-  <a-form :form="form.fc"  class="mt-3" v-bind="formItemLayout">
-    <a-form-item :label="$t('network.text_205', [$t('dictionary.project')])">
-      <domain-project :fc="form.fc" :decorators="decorators" v-model:domain="domain" v-model:project="project" :labelInValue="false" />
-    </a-form-item>
-    <a-form-item :label="$t('network.text_199')" class="mb-0">
+  <a-form-model ref="formRef" :model="form.fd" :rules="rules" class="mt-3" v-bind="formItemLayout">
+    <a-form-model-item :label="$t('network.text_205', [$t('dictionary.project')])">
+      <domain-project :form="form.fd" v-model:domain="domain" v-model:project="project" :labelInValue="false" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('network.text_199')" class="mb-0">
       <cloudregion-zone
-      :decorator="decorators"
+      :model="form.fd"
       :cloudregionParams="cloudregionParams"
       :zoneParams="zoneParams"
       v-model:zone="zoneObj"
       filterBrandResource="loadbalancer_engine" />
-    </a-form-item>
-    <a-form-item :label="$t('network.text_21')">
-      <a-input v-decorator="decorators.name" :placeholder="$t('validator.resourceName')" />
-    </a-form-item>
-    <a-form-item :label="$t('common.description')">
-      <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-    </a-form-item>
-    <a-form-item :label="$t('compute.text_176')">
+    </a-form-model-item>
+    <a-form-model-item :label="$t('network.text_21')">
+      <a-input v-model:value="form.fd.name" :placeholder="$t('validator.resourceName')" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('common.description')">
+      <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.fd.description" :placeholder="$t('common_367')" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('compute.text_176')">
       <a-radio-group :defaultValue="hypervisorOpts[0].key">
         <a-radio-button v-for="item in hypervisorOpts" :value="item.key" :key="item.key">{{ item.label }}</a-radio-button>
       </a-radio-group>
-    </a-form-item>
-    <a-form-item :label="$t('network.text_19')">
+    </a-form-model-item>
+    <a-form-model-item :label="$t('network.text_19')">
       <base-select
         show-sync
-        v-decorator="decorators.cluster_id"
+        v-model:value="form.fd.cluster_id"
         resource="loadbalancerclusters"
         need-params
         filterable
         :params="clusterParams"
         :select-props="{ placeholder: $t('network.text_79') }" />
       <div slot="extra" v-if="isAdminMode">{{$t('network.text_281')}}<help-link href="/cluster">{{$t('network.text_282')}}</help-link></div>
-    </a-form-item>
-    <a-form-item :label="$t('network.text_211')">
+    </a-form-model-item>
+    <a-form-model-item :label="$t('network.text_211')">
       <a-row :gutter="8">
         <a-col :span="12">
           <oc-select
             width="100%"
-            v-decorator="decorators.vpc"
+            v-model:value="form.fd.vpc"
             show-status
             :status-desc="$t('compute.vpc_status_desc')"
             resource="vpcs"
@@ -49,9 +49,9 @@
             :placeholder="$t('compute.text_194')" />
         </a-col>
         <a-col :span="12">
-          <a-form-item>
+          <a-form-model-item>
             <base-select
-              v-decorator="decorators.network"
+              v-model:value="form.fd.network"
               resource="networks"
               need-params
               filterable
@@ -59,22 +59,24 @@
               :params="networkParams"
               v-model:item="networkObj"
               :select-props="{ placeholder: $t('network.text_212') }" />
-          </a-form-item>
+          </a-form-model-item>
         </a-col>
       </a-row>
-    </a-form-item>
+    </a-form-model-item>
     <eip-config
       v-if="showEip"
-      :decorators="decorators.eip"
+      ref="eipConfigRef"
+
       :eip-params="eipParams"
       hypervisor="kvm"
       cloud-env="idc"
       :form="form"
+      :model="form.fd"
       :formItemLayout="formItemLayout" />
-    <a-form-item :label="$t('table.title.tag')">
-      <tag v-decorator="decorators.__meta__" :allowNoValue="false" />
-    </a-form-item>
-  </a-form>
+    <a-form-model-item :label="$t('table.title.tag')">
+      <tag :value="form.fd.__meta__" @change="v => { form.fd.__meta__ = v }" :allowNoValue="false" />
+    </a-form-model-item>
+  </a-form-model>
 </template>
 
 <script>
@@ -82,7 +84,7 @@ import * as R from 'ramda'
 import _ from 'lodash'
 import { mapGetters } from 'vuex'
 import EipConfig from '@Compute/sections/EipConfig'
-import CloudregionZone from '@/sections/CloudregionZone'
+import CloudregionZone from '@/sections/CloudregionZone/model'
 import { HYPERVISORS_MAP } from '@/constants'
 import lbCreate from './mixin'
 export default {
@@ -157,7 +159,7 @@ export default {
   methods: {
     async submit () {
       try {
-        const values = await this.form.fc.validateFields()
+        const values = await this.validateCreateForm()
         const data = {
           cluster_id: values.cluster_id,
           name: values.name.trim(),

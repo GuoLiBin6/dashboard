@@ -9,7 +9,7 @@ export const EIP_CREATE_FORM_DRAFT_FIELD = {
   CLOUDPROVIDER: 'cloudprovider',
 }
 
-export const EIP_CREATE_FORM_DRAFT_FC_BINDINGS = [
+export const EIP_CREATE_FORM_DRAFT_FD_BINDINGS = [
   { key: EIP_CREATE_FORM_DRAFT_FIELD.CHARGE_TYPE, formField: 'charge_type', kind: 'selection' },
   { key: EIP_CREATE_FORM_DRAFT_FIELD.CLOUDPROVIDER, formField: 'manager', kind: 'selection' },
 ]

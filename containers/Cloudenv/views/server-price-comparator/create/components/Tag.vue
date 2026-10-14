@@ -32,22 +32,12 @@
             :allowNoValue="false" />
           <a-button class="ml-2" v-if="!showForm" @click="() => showForm = true">{{$t('compute.text_1382')}}</a-button>
         </div>
-        <a-form
-          class="ml-2"
-          layout="inline"
-          :form="tagForm.fc"
-          v-if="showForm">
-          <a-form-item>
-            <a-input v-decorator="decorators.key" :placeholder="$t('compute.text_1148')" />
-          </a-form-item>
-          <a-form-item>
-            <a-input v-decorator="decorators.value" :placeholder="$t('compute.text_1149')" />
-          </a-form-item>
-          <a-form-item>
-            <a-button @click="addTag">{{$t('compute.text_822')}}</a-button>
-            <a-button @click="() => showForm = false" class="ml-2">{{$t('compute.text_135')}}</a-button>
-          </a-form-item>
-        </a-form>
+        <div class="ml-2 d-flex align-items-center" v-if="showForm">
+          <a-input v-model:value="customTag.key" :placeholder="$t('compute.text_1148')" />
+          <a-input class="ml-2" v-model:value="customTag.value" :placeholder="$t('compute.text_1149')" />
+          <a-button class="ml-2" @click="addTag">{{$t('compute.text_822')}}</a-button>
+          <a-button @click="() => showForm = false" class="ml-2">{{$t('compute.text_135')}}</a-button>
+        </div>
       </div>
     </a-form-item>
   </div>
@@ -76,26 +66,9 @@ export default {
     return {
       checked: this.defaultChecked || {},
       showForm: false,
-      tagForm: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        key: [
-          'key',
-          {
-            rules: [
-              { required: true, whitespace: true, message: this.$t('compute.text_1150') },
-            ],
-          },
-        ],
-        value: [
-          'value',
-          {
-            rules: [
-              { required: true, whitespace: true, message: this.$t('common.tips.input', [this.$t('common_113')]) },
-            ],
-          },
-        ],
+      customTag: {
+        key: '',
+        value: '',
       },
     }
   },
@@ -140,7 +113,17 @@ export default {
   methods: {
     async addTag () {
       try {
-        const values = await this.tagForm.fc.validateFields()
+        const keyRaw = (this.customTag.key || '').trim()
+        const valueRaw = (this.customTag.value || '').trim()
+        if (!keyRaw) {
+          this.$message.error(this.$t('compute.text_1150'))
+          return
+        }
+        if (!valueRaw) {
+          this.$message.error(this.$t('common.tips.input', [this.$t('common_113')]))
+          return
+        }
+        const values = { key: keyRaw, value: valueRaw }
         const key = `user:${values.key}`
         const newValue = { ...this.checked }
         if (newValue[key]) {
@@ -157,7 +140,7 @@ export default {
           }
         }
         this.checked = newValue
-        this.tagForm.fc.resetFields()
+        this.customTag = { key: '', value: '' }
       } catch (error) {
         throw error
       }

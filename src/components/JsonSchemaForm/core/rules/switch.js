@@ -3,7 +3,7 @@ export default function (def, schema) {
 
   if (type === 'boolean') {
     def.type = 'a-switch'
-    def.decorator = [
+    def.field = [
       {
         initialValue: schema.default,
         rules: [

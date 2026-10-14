@@ -127,10 +127,13 @@ export default {
   data () {
     return {
       pricesList: [],
-      fd: this.form.fc.getFieldsValue(),
     }
   },
   computed: {
+    // end-state：直接读 form.fd，不再靠 updateForm bus 合并
+    fd () {
+      return this.form.fd || {}
+    },
     fi () {
       return this.form.fi
     },
@@ -211,14 +214,6 @@ export default {
     hasCartPermission () {
       return hasServices('billing') && hasPermission({ key: 'resource_order_sets_create' })
     },
-  },
-  created () {
-    this.$bus.$on('updateForm', (values) => {
-      this.fd = {
-        ...this.fd,
-        ...values,
-      }
-    }, this)
   },
   methods: {
     changeErrors (errors) {

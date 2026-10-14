@@ -4,11 +4,17 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.cloudaccount')" :count="params.data.length" :action="$t('cloudenv.read_only')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc"
+      <a-form-model
+        ref="formRef"
+        :model="form"
         v-bind="formItemLayout">
-        <read-only :form="form" :checked="checked" />
-      </a-form>
+        <a-form-model-item :label="$t('cloudenv.read_only')" :extra="$t('cloudenv.read_only_extra')">
+          <a-switch
+            v-model:checked="form.read_only"
+            :checkedChildren="$t('cloudenv.text_84')"
+            :unCheckedChildren="$t('cloudenv.text_85')" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -18,31 +24,18 @@
 </template>
 
 <script>
-import ReadOnly from '@Cloudenv/views/cloudaccount/components/ReadOnly'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 
 export default {
   name: 'CloudaccountSetReadOnlyDialog',
-  components: {
-    ReadOnly,
-  },
   mixins: [DialogMixin, WindowsMixin],
   data () {
     const data = this.params.data[0]
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        read_only: [
-          'read_only',
-          {
-            initialValue: data.read_only,
-            valuePropName: 'checked',
-          },
-        ],
+        read_only: !!data.read_only,
       },
       formItemLayout: {
         wrapperCol: {
@@ -54,27 +47,11 @@ export default {
       },
     }
   },
-  computed: {
-    checked () {
-      return this.params?.data[0]?.read_only || false
-    },
-  },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        const values = { ...this.form }
         const ids = this.params.data.map(item => item.id)
         if (ids.length > 1) {
           await this.params.onManager('batchUpdate', {

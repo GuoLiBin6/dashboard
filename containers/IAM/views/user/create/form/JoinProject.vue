@@ -1,16 +1,15 @@
 <template>
-  <a-form :form="form.fc" v-bind="formItemLayout">
-    <a-form-item :label="$t('dictionary.project')">
+  <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+    <a-form-model-item :label="$t('dictionary.project')">
       <domain-project-select
         :labelInValue="false"
         :form="form"
-        :decorators="decorators"
         :projectDomainId="domainId"
         @domainChange="domainChange" />
-    </a-form-item>
-    <a-form-item :label="`${$t('dictionary.role')}`">
+    </a-form-model-item>
+    <a-form-model-item :label="`${$t('dictionary.role')}`" prop="roles">
       <base-select
-        v-decorator="decorators.roles"
+        v-model="form.roles"
         version="v1"
         resource="roles"
         :params="roleParams"
@@ -19,14 +18,13 @@
         :showSync="true"
         :select-props="{ mode: 'multiple', placeholder: $t('rules.role') }" />
       <div slot="extra">{{$t('system.text_441', [$t('dictionary.role')])}}<help-link :href="roleLink">{{$t('system.text_440')}}</help-link></div>
-    </a-form-item>
-  </a-form>
+    </a-form-model-item>
+  </a-form-model>
 </template>
 
 <script>
 import { mapGetters } from 'vuex'
 import DomainProjectSelect from '../../components/DomainProjectSelect'
-// const defaultDomain = { key: 'default', label: 'Default' }
 
 export default {
   name: 'JoinProject',
@@ -41,9 +39,23 @@ export default {
   },
   data () {
     const domainId = !this.domain || !this.$store.getters.l3PermissionEnable ? 'default' : this.domain.key
+    const initialDomain = this.$store.getters.isAdminMode ? (this.domain || { key: 'default', label: 'Default' }) : domainId
     return {
       form: {
-        fc: this.$form.createForm(this),
+        domain: initialDomain,
+        projects: undefined,
+        roles: undefined,
+      },
+      rules: {
+        roles: [
+          { required: true, message: this.$t('rules.role') },
+        ],
+        projects: [
+          { required: true, message: this.$t('rules.project') },
+        ],
+        domain: [
+          { required: true, message: this.$t('rules.domain') },
+        ],
       },
       formItemLayout: {
         wrapperCol: {
@@ -60,30 +72,6 @@ export default {
         },
       },
       domainId,
-      decorators: {
-        domain: [
-          'domain',
-          {
-            initialValue: this.$store.getters.isAdminMode ? this.domain || { key: 'default', label: 'Default' } : domainId,
-          },
-        ],
-        roles: [
-          'roles',
-          {
-            rules: [
-              { required: true, message: this.$t('rules.role') },
-            ],
-          },
-        ],
-        projects: [
-          'projects',
-          {
-            rules: [
-              { required: true, message: this.$t('rules.project') },
-            ],
-          },
-        ],
-      },
     }
   },
   computed: {
@@ -114,8 +102,9 @@ export default {
     },
   },
   methods: {
-    validateForm () {
-      return this.form.fc.validateFields()
+    async validateForm () {
+      await this.$refs.formRef.validate()
+      return { ...this.form }
     },
     domainChange (val) {
       this.domainId = val

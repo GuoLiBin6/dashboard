@@ -1,35 +1,35 @@
 <template>
   <div class="k8s-deployment-create w-75">
-    <a-form :form="form.fc" v-bind="formItemLayout">
-      <a-form-item :label="$t('k8s.text_41')">
-        <a-input :placeholder="$t('k8s.text_60')" v-decorator="decorators.name" />
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_373')">
+    <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model-item :label="$t('k8s.text_41')" prop="name">
+        <a-input :placeholder="$t('k8s.text_60')" v-model:value="form.name" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('k8s.text_373')" prop="role">
         <base-select
           resource="federatedclusterroles"
           version="v1"
           :params="params"
           need-params
           idKey="name"
-          :select-props="{ placeholder: $t('common.select') }"
-          v-decorator="decorators.role" />
-      </a-form-item>
-      <a-form-item label="Subject">
-        <a-radio-group v-decorator="decorators.subjectType" @change="subjectTypeChange">
+          v-model:value="form.role"
+          :select-props="{ placeholder: $t('common.select') }" />
+      </a-form-model-item>
+      <a-form-model-item label="Subject" prop="subjectType">
+        <a-radio-group v-model:value="form.subjectType" @change="subjectTypeChange">
           <a-radio-button v-for="item in subjectTypeOpts" :value="item.key" :key="item.key">{{ item.label }}</a-radio-button>
         </a-radio-group>
-      </a-form-item>
-      <a-form-item label="Subject Name">
+      </a-form-model-item>
+      <a-form-model-item label="Subject Name" prop="subject">
         <base-select
           v-if="subjectOpts.length"
-          v-decorator="decorators.subject"
+          v-model:value="form.subject"
           :options="subjectOpts"
           version="v1"
           idKey="name"
           :select-props="{ placeholder: $t('common.select') }" />
-        <a-input v-else v-decorator="decorators.subject" :placeholder="$t('common.placeholder')" />
-      </a-form-item>
-    </a-form>
+        <a-input v-else v-model:value="form.subject" :placeholder="$t('common.placeholder')" />
+      </a-form-model-item>
+    </a-form-model>
   </div>
 </template>
 
@@ -40,72 +40,37 @@ const API_GROUP = 'rbac.authorization.k8s.io'
 
 export default {
   name: 'K8sFederatedClusterRolebindingFormCreate',
-  components: {
-  },
   mixins: [k8sCreateMixin],
   data () {
     return {
       form: {
-        fc: this.$form.createForm(this),
+        name: '',
+        role: undefined,
+        subjectType: 'User',
+        subject: undefined,
+      },
+      rules: {
+        name: [
+          { required: true, message: this.$t('k8s.text_60') },
+          { min: 2, max: 24, message: this.$t('k8s.text_132'), trigger: 'blur' },
+          { validator: this.$validate('k8sName') },
+        ],
+        role: [
+          { required: true, message: this.$t('common.select'), trigger: 'blur' },
+        ],
+        subject: [
+          { required: true, message: this.$t('common.select'), trigger: 'blur' },
+        ],
       },
       formItemLayout: {
         labelCol: { span: 4 },
         wrapperCol: { span: 20 },
       },
-      decorators: {
-        name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('k8s.text_60') },
-              { min: 2, max: 24, message: this.$t('k8s.text_132'), trigger: 'blur' },
-              { validator: this.$validate('k8sName') },
-            ],
-          },
-        ],
-        cluster: [
-          'cluster',
-          {
-            initialValue: this.$store.state.common.k8s.cluster,
-            rules: [
-              { required: true, message: this.$t('k8s.text_30'), trigger: 'blur' },
-            ],
-          },
-        ],
-        role: [
-          'role',
-          {
-            rules: [
-              { required: true, message: this.$t('common.select'), trigger: 'blur' },
-            ],
-          },
-        ],
-        subjectType: [
-          'subjectType',
-          {
-            initialValue: 'User',
-          },
-        ],
-        subject: [
-          'subject',
-          {
-            rules: [
-              { required: true, message: this.$t('common.select'), trigger: 'blur' },
-            ],
-          },
-        ],
-      },
-      roleRefOpts: [
-        { key: 'Role', label: this.$t('k8s.text_370') },
-        { key: 'ClusterRole', label: this.$t('k8s.text_373') },
-      ],
       subjectTypeOpts: [
         { key: 'User', label: 'User' },
         { key: 'Group', label: 'Group' },
       ],
       subjectOpts: [],
-      subjectType: 'User',
       params: {
         limit: 0,
         scope: this.$store.getters.scope,
@@ -116,18 +81,15 @@ export default {
     this.getSubjectOpts()
   },
   methods: {
-    subjectTypeChange (e) {
-      this.subjectType = e.target.value
+    subjectTypeChange () {
+      this.form.subject = undefined
       this.getSubjectOpts()
-      this.form.fc.setFieldsValue({
-        [this.decorators.subject[0]]: undefined,
-      })
     },
     async getSubjectOpts () {
       try {
         let spec = ''
-        if (this.subjectType === 'User') spec = 'cluster-users'
-        if (this.subjectType === 'Group') spec = 'cluster-user-groups'
+        if (this.form.subjectType === 'User') spec = 'cluster-users'
+        if (this.form.subjectType === 'Group') spec = 'cluster-user-groups'
         const { data } = await new this.$Manager('federatedclusterroles', 'v1').get({ id: spec, params: { scope: this.$store.getters.scope } })
         this.subjectOpts = data
       } catch (error) {
@@ -136,26 +98,25 @@ export default {
     },
     async validateForm () {
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         const subjects = [{
-          kind: values.subjectType,
-          name: values.subject,
+          kind: this.form.subjectType,
+          name: this.form.subject,
           apiGroup: API_GROUP,
         }]
-        const data = {
-          name: values.name,
+        return {
+          name: this.form.name,
           spec: {
             template: {
               roleRef: {
                 kind: 'ClusterRole',
-                name: values.role,
+                name: this.form.role,
                 apiGroup: API_GROUP,
               },
               subjects,
             },
           },
         }
-        return data
       } catch (error) {
         throw error
       }

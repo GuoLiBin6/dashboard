@@ -4,12 +4,15 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.secgroup')" :count="params.data.length" :action="$t('compute.text_983')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('compute.text_228')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.name" :placeholder="$t('compute.text_210')" />
-        </a-form-item>
-      </a-form>
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.text_228')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('compute.text_210')" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -29,18 +32,11 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        name: '',
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_333') },
-              // { validator: this.$validate('templateName') },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_333') },
         ],
       },
       formItemLayout: {
@@ -69,13 +65,13 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        this.loading = true
-        await this.doCreate(values)
-        this.loading = false
+        await this.$refs.formRef.validate()
+        await this.doCreate(this.form)
         this.cancelDialog()
         this.params.refresh()
       } catch (error) {
+        // validate or submit failed
+      } finally {
         this.loading = false
       }
     },

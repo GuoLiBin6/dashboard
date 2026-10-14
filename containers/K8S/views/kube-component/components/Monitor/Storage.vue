@@ -1,7 +1,7 @@
 <template>
   <div>
     <a-form-model-item :label="$t('k8s.text_269')">
-      <a-switch v-model:value="formData.enabled" />
+      <a-switch v-model:checked="formData.enabled" />
     </a-form-model-item>
     <template v-if="formData.enabled">
       <a-form-model-item :label="$t('k8s.text_270')">

@@ -1,17 +1,17 @@
 <template>
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('db.text_287')}}</div>
-    <a-form slot="body" :form="form.fc" class="mt-3">
-      <a-form-item v-bind="formItemLayout" :label="$t('db.text_60')">
-        <a-input :placeholder="$t('db.text_288')" v-decorator="decorators.name" />
-        <name-repeated v-slot:extra res="dbinstancebackups" :name="form.fc.getFieldValue('name')" />
-      </a-form-item>
-      <a-form-item v-bind="formItemLayout" :label="$t('db.text_219')">
+    <a-form-model ref="formRef" slot="body" :model="form" :rules="rules" class="mt-3" v-bind="formItemLayout">
+      <a-form-model-item :label="$t('db.text_60')" prop="name">
+        <a-input :placeholder="$t('db.text_288')" v-model:value="form.name" />
+        <name-repeated v-slot:extra res="dbinstancebackups" :name="form.name" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('db.text_219')" prop="description">
         <a-textarea :placeholder="$t('db.text_220')"
         :autosize="{ minRows: 4, maxRows: 7 }"
-        v-decorator="decorators.description" />
-      </a-form-item>
-    </a-form>
+        v-model:value="form.description" />
+      </a-form-model-item>
+    </a-form-model>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
@@ -29,11 +29,22 @@ export default {
   name: 'BackupListCreate',
   mixins: [DialogMixin, WindowsMixin],
   data () {
+    const { initialValues = {} } = this.params
     return {
       loading: false,
       privileges: ACCOUNT_PRIVILEGES,
       form: {
-        fc: this.$form.createForm(this),
+        name: initialValues.name,
+        description: initialValues.ip_list,
+      },
+      rules: {
+        name: [
+          { required: true, message: this.$t('db.text_136') },
+          { validator: validateForm('serverName') },
+        ],
+        description: [
+          { max: 200, message: this.$t('db.text_289') },
+        ],
       },
       formItemLayout: {
         wrapperCol: { span: CreateServerForm.wrapperCol },
@@ -41,58 +52,12 @@ export default {
       },
     }
   },
-  computed: {
-    decorators () {
-      const { initialValues = {} } = this.params
-      const decorators = {
-        name: [
-          'name',
-          {
-            initialValue: initialValues.name,
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('db.text_136') },
-              { validator: validateForm('serverName') },
-            ],
-          },
-        ],
-        description: [
-          'description',
-          {
-            initialValue: initialValues.ip_list,
-            rules: [
-              { max: 200, message: this.$t('db.text_289') },
-            ],
-          },
-        ],
-      }
-      return decorators
-    },
-  },
   methods: {
-    rulesCheckPassword (rule, value, callback) {
-      const form = this.form.fc
-      if (value && value !== form.getFieldValue('password')) {
-        callback(new Error(this.$t('db.text_209')))
-      } else {
-        callback()
-      }
-    },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         const params = {
           ...values,
           elasticcache: this.params.redisItem.id,

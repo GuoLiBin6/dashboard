@@ -1,16 +1,16 @@
 <template>
   <div class="k8s-deployment-create">
-    <a-form :form="form.fc" v-bind="formItemLayout">
-      <a-form-item :label="$t('k8s.text_41')">
-        <a-input :placeholder="$t('k8s.text_60')" v-decorator="decorators.name"  class="w-75" />
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_19')">
-        <cluster-select v-decorator="decorators.cluster" @input="setCluster" v-model:clusterObj="clusterObj"  class="w-75" />
-      </a-form-item>
+    <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model-item :label="$t('k8s.text_41')" prop="name">
+        <a-input :placeholder="$t('k8s.text_60')" v-model:value="form.name" class="w-75" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('k8s.text_19')" prop="cluster">
+        <cluster-select v-model:value="form.cluster" @input="setCluster" v-model:clusterObj="clusterObj" class="w-75" />
+      </a-form-model-item>
       <a-form-item :label="$t('k8s.text_386')">
         <role-rule-form-item ref="roleRuleRef" :clusterId="clusterObj.id" />
       </a-form-item>
-    </a-form>
+    </a-form-model>
   </div>
 </template>
 
@@ -29,33 +29,22 @@ export default {
   data () {
     return {
       form: {
-        fc: this.$form.createForm(this),
+        name: '',
+        cluster: this.$store.state.common.k8s.cluster,
+      },
+      rules: {
+        name: [
+          { required: true, message: this.$t('k8s.text_60') },
+          { min: 2, max: 24, message: this.$t('k8s.text_132'), trigger: 'blur' },
+          { validator: this.$validate('k8sName') },
+        ],
+        cluster: [
+          { required: true, message: this.$t('k8s.text_30'), trigger: 'blur' },
+        ],
       },
       formItemLayout: {
         labelCol: { span: 4 },
         wrapperCol: { span: 20 },
-      },
-      decorators: {
-        name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('k8s.text_60') },
-              { min: 2, max: 24, message: this.$t('k8s.text_132'), trigger: 'blur' },
-              { validator: this.$validate('k8sName') },
-            ],
-          },
-        ],
-        cluster: [
-          'cluster',
-          {
-            initialValue: this.$store.state.common.k8s.cluster,
-            rules: [
-              { required: true, message: this.$t('k8s.text_30'), trigger: 'blur' },
-            ],
-          },
-        ],
       },
       clusterObj: {},
     }
@@ -63,8 +52,11 @@ export default {
   methods: {
     async validateForm () {
       try {
-        const [roleRuleData, values] = await Promise.all([this.$refs.roleRuleRef.validateForm(), this.form.fc.validateFields()])
-        return { ...roleRuleData, ...values }
+        const [roleRuleData] = await Promise.all([
+          this.$refs.roleRuleRef.validateForm(),
+          this.$refs.formRef.validate(),
+        ])
+        return { ...roleRuleData, ...this.form }
       } catch (error) {
         throw error
       }

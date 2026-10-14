@@ -24,24 +24,24 @@
       </div>
     </div>
     <base-drawer class="drawer-wrapper" @update:visible="updateVisible" :visible="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit" @cancel="cancel">
-      <a-form
-        hideRequiredMark
-        :form="form.fc"
-        v-bind="formItemLayout">
+      <a-form-model ref="formRef" hideRequiredMark :model="form.fd" :rules="drawerRules" v-bind="formItemLayout">
         <slot />
-        <a-form-item :label="$t('dashboard.text_6')">
-          <a-input v-decorator="decorators.name" />
-        </a-form-item>
-        <quota-config :fc="form.fc" :decorators="decorators" :usage-label="$t('dashboard.text_20')" @update:usage_key="setDefaultName" />
-        <a-form-item v-if="canShowUnitConfig" :label="$t('common_250')">
+        <a-form-model-item :label="$t('dashboard.text_6')" prop="name">
+          <a-input v-model:value="form.fd.name" @change="onNameInput" />
+        </a-form-model-item>
+        <quota-config :model="form.fd" :fd="form.fd" :usage-label="$t('dashboard.text_20')" @update:usage_key="setDefaultName" />
+        <a-form-model-item prop="usage_key" class="d-none">
+          <a-input v-model:value="form.fd.usage_key" />
+        </a-form-model-item>
+        <a-form-model-item v-if="canShowUnitConfig" :label="$t('common_250')" prop="unit">
           <base-select
-              v-decorator="decorators.unit"
+              v-model="form.fd.unit"
               isDefaultSelect
               :filterable="true"
               :options="unitOpts"
               :select-props="{ placeholder: $t('common_618') }" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </base-drawer>
   </div>
 </template>
@@ -55,6 +55,7 @@ import { load } from '@Dashboard/utils/cache'
 import { getRequestT } from '@/utils/utils'
 import { hasPermission } from '@/utils/auth'
 import routes from '@/router/routes'
+import { rollupFormData } from '@/utils/common/ant'
 import mixin from './mixin'
 
 export default {
@@ -76,71 +77,50 @@ export default {
     return {
       data: {},
       loading: false,
+      drawerRules: {
+        name: [
+          { required: true, message: this.$t('dashboard.text_8') },
+        ],
+        usage_key: [
+          { required: true, message: this.$t('dashboard.text_22') },
+        ],
+      },
       form: {
-        fc: this.$form.createForm(this),
         fd: {
           name: initialNameValue,
           usage_key: initialUsageKeyValue,
+          cloud_env: this.params && this.params.cloud_env,
+          brand: this.params && this.params.brand,
+          region: this.params && this.params.region,
+          regionAccountType: initialRegionAccountType,
+          account: this.params && this.params.account,
+          unit: initUnitValue,
         },
         fi: {
           nameTouched: false,
         },
       },
-      decorators: {
-        name: [
-          'name',
-          {
-            initialValue: initialNameValue,
-            rules: [
-              { required: true, message: this.$t('dashboard.text_8') },
-            ],
-          },
-        ],
-        cloud_env: [
-          'cloud_env',
-          {
-            initialValue: this.params && this.params.cloud_env,
-          },
-        ],
-        brand: [
-          'brand',
-          {
-            initialValue: this.params && this.params.brand,
-          },
-        ],
-        region: [
-          'region',
-          {
-            initialValue: this.params && this.params.region,
-          },
-        ],
-        regionAccountType: [
-          'regionAccountType',
-          {
-            initialValue: initialRegionAccountType,
-          },
-        ],
-        account: [
-          'account',
-          {
-            initialValue: this.params && this.params.account,
-          },
-        ],
-        usage_key: [
-          'usage_key',
-          {
-            initialValue: initialUsageKeyValue,
-            rules: [
-              { required: true, message: this.$t('dashboard.text_22') },
-            ],
-          },
-        ],
-        unit: [
-          'unit',
-          {
-            initialValue: initUnitValue,
-          },
-        ],
+      fieldMap: {
+        name: {
+          name: 'name',
+          initialValue: initialNameValue,
+          rules: [
+            { required: true, message: this.$t('dashboard.text_8') },
+          ],
+        },
+        cloud_env: { name: 'cloud_env', initialValue: this.params && this.params.cloud_env },
+        brand: { name: 'brand', initialValue: this.params && this.params.brand },
+        region: { name: 'region', initialValue: this.params && this.params.region },
+        regionAccountType: { name: 'regionAccountType', initialValue: initialRegionAccountType },
+        account: { name: 'account', initialValue: this.params && this.params.account },
+        usage_key: {
+          name: 'usage_key',
+          initialValue: initialUsageKeyValue,
+          rules: [
+            { required: true, message: this.$t('dashboard.text_22') },
+          ],
+        },
+        unit: { name: 'unit', initialValue: initUnitValue },
       },
       showDebuggerInfo: false,
       unitOpts: [
@@ -224,14 +204,7 @@ export default {
   watch: {
     'form.fd' (val) {
       this.fetchUsage()
-      for (const key in this.decorators) {
-        let config = this.decorators[key][1] || {}
-        config = {
-          ...config,
-          initialValue: val[key],
-        }
-        this.decorators[key][1] = config
-      }
+      rollupFormData(val, this.fieldMap)
     },
   },
   created () {
@@ -247,6 +220,9 @@ export default {
     }, this)
   },
   methods: {
+    onNameInput () {
+      this.form.fi.nameTouched = true
+    },
     isPendingDeleteContainerUsageKey (uk) {
       if (!uk) return false
       return uk.split('.').includes('pending_delete_containers')
@@ -303,8 +279,8 @@ export default {
     },
     async handleSubmit () {
       try {
-        const values = await this.form.fc.validateFields()
-        this.form.fd = values
+        await this.$refs.formRef.validate()
+        const values = { ...this.form.fd }
         this.$emit('update', this.options.i, values)
         this.updateVisible(false)
       } catch (error) {

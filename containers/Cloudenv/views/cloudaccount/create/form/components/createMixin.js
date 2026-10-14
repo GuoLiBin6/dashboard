@@ -1,7 +1,12 @@
-import * as R from 'ramda'
 import { keySecretFields } from '@Cloudenv/views/cloudaccount/constants'
 import BlockedResources from '@Cloudenv/views/cloudaccount/components/BlockedResources'
 import { PROVIDER_MAP, EXTRA_HYPERVISORS } from '@/constants'
+import { getDomainProjectExtraRules } from '@Cloudenv/views/cloudaccount/components/domainProjectForm'
+import {
+  applyFieldMapInitialValues,
+  rulesFromFieldMap,
+  trimFormValues,
+} from './createFormModelHelpers'
 
 export default {
   components: {
@@ -39,12 +44,16 @@ export default {
     }
     return {
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: this.handleValuesChange,
-        }),
         fd: {
           domain: '',
           share_mode: 'account_domain',
+          project: initialProject,
+          isOpenBlockedResources: initIsOpenBlockedResources,
+          blockedResources: initBlockedResources,
+          enable_auto_sync: false,
+          sync_interval_seconds: 60,
+          proxy_setting: '',
+          saml_auth: false,
         },
       },
       keySecretFieldInit: keySecretFields[this.provider.toLowerCase()],
@@ -62,32 +71,26 @@ export default {
       },
       domainProjectShow: false,
       samlAuthChecked: false,
-      decorators: {
-        project: [
-          'project',
-          {
-            initialValue: initialProject,
-            rules: [
-              { required: true, message: this.$t('rules.project') },
-            ],
-          },
-        ],
-        isOpenBlockedResources: [
-          'isOpenBlockedResources',
-          {
-            initialValue: initIsOpenBlockedResources,
-            valuePropName: 'checked',
-          },
-        ],
-        blockedResources: [
-          'blockedResources',
-          {
-            initialValue: initBlockedResources,
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('cloudenv.block_resources_type')]) },
-            ],
-          },
-        ],
+      fieldMap: {
+        project: {
+          name: 'project',
+          initialValue: initialProject,
+          rules: [
+            { required: true, message: this.$t('rules.project') },
+          ],
+        },
+        isOpenBlockedResources: {
+          name: 'isOpenBlockedResources',
+          initialValue: initIsOpenBlockedResources,
+          valuePropName: 'checked',
+        },
+        blockedResources: {
+          name: 'blockedResources',
+          initialValue: initBlockedResources,
+          rules: [
+            { required: true, message: this.$t('common.tips.select', [this.$t('cloudenv.block_resources_type')]) },
+          ],
+        },
       },
     }
   },
@@ -98,52 +101,68 @@ export default {
     isAliyun () {
       return this.provider.toLowerCase() === 'aliyun'
     },
-  },
-  watch: {
-    provider (val) {
-      this.decorators = this.getDecorators()
+    formRules () {
+      return {
+        ...rulesFromFieldMap(this.fieldMap),
+        ...getDomainProjectExtraRules(this),
+      }
     },
   },
-  activated () { // 使 DomainProject 组件避免被缓存住
+  watch: {
+    provider () {
+      if (typeof this.getFieldMap === 'function') {
+        this.fieldMap = this.getFieldMap()
+      }
+      this.syncFormFdFromFieldMap()
+    },
+    'form.fd.domain': {
+      deep: true,
+      handler () {
+        this.project_change()
+      },
+    },
+  },
+  activated () {
     this.domainProjectShow = true
   },
   deactivated () {
     this.domainProjectShow = false
     if (this.keepAliveFields) return
-    this.form.fc.resetFields()
+    if (this.$refs.formRef && this.$refs.formRef.resetFields) {
+      this.$refs.formRef.resetFields()
+    }
   },
   created () {
-    const saml = this.decorators && this.decorators.saml_auth
+    this.syncFormFdFromFieldMap()
+    const saml = this.fieldMap && this.fieldMap.saml_auth
     if (saml) {
-      this.samlAuthChecked = !!(saml[1] && saml[1].initialValue)
+      this.samlAuthChecked = !!(saml?.initialValue)
+      this.form.fd.saml_auth = this.samlAuthChecked
     }
   },
   mounted () {
-    if (this.decorators && this.decorators.saml_auth) {
-      this.syncSamlAuthToForm(this.samlAuthChecked)
+    this.syncFormFdFromFieldMap()
+    if (this.fieldMap && this.fieldMap.saml_auth) {
+      this.form.fd.saml_auth = this.samlAuthChecked
     }
   },
   methods: {
-    syncSamlAuthToForm (v) {
-      const fc = this.form && this.form.fc
-      const deco = this.decorators && this.decorators.saml_auth
-      if (!fc || !deco) return
-      const [name, opts] = deco
-      if (typeof fc.__registerField === 'function') fc.__registerField(name, opts || {})
-      fc.setFieldsValue({ [name]: v })
+    syncFormFdFromFieldMap () {
+      applyFieldMapInitialValues(this.form.fd, this.fieldMap)
+      if (this.form.fd.isOpenBlockedResources !== undefined) {
+        // keep blocked resources in sync with mixin defaults
+      }
     },
     onSamlAuthChange (v) {
       this.samlAuthChecked = v
-      this.syncSamlAuthToForm(v)
+      this.form.fd.saml_auth = v
     },
     transformParams (params) {
-      // 处理屏蔽同步资源
       if (params.isOpenBlockedResources) {
         params.skip_sync_resources = params.blockedResources
         delete params.isOpenBlockedResources
         delete params.blockedResources
       }
-      // 针对oracle cloud oracle_private_pem参数做转换处理
       if (params.oracle_private_pem) {
         params.oracle_private_key = params.oracle_private_pem
         delete params.oracle_private_pem
@@ -167,49 +186,35 @@ export default {
       }
       return params
     },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (err) {
-            reject(err)
-          } else {
-            const params = {}
-            R.forEachObjIndexed((value, key) => {
-              if (R.is(String, value)) {
-                params[key] = value.trim()
-              } else {
-                params[key] = value
-              }
-            }, values)
-            if (this.provider === 'Huawei' && !params.environment) {
-              params.environment = 'ChinaCloud'
-            }
-            resolve(this.transformParams(params))
-          }
-        })
-      })
+    async validateSectionRefs () {
+      const refs = [
+        this.$refs.cloudregionZoneRef,
+        this.$refs.cloudregionVpcWireRef,
+        this.$refs.ipSubnetsRef,
+      ]
+      for (const ref of refs) {
+        if (ref && typeof ref.validate === 'function') {
+          await ref.validate()
+        }
+      }
+    },
+    async validateForm () {
+      if (this.$refs.formRef) {
+        await this.$refs.formRef.validate()
+      }
+      await this.validateSectionRefs()
+      const values = { ...this.form.fd }
+      const params = trimFormValues(values)
+      if (this.provider === 'Huawei' && !params.environment) {
+        params.environment = 'ChinaCloud'
+      }
+      return this.transformParams(params)
     },
     project_change () {
       const proxySettingref = this.$refs.proxySetting
       if (proxySettingref && proxySettingref.fetchQueryProxy) {
-        // 根据域获取代理列表信息
         proxySettingref.fetchQueryProxy()
       }
     },
-    async handleValuesChange (vm, changedFields) {
-      // await this.$nextTick()
-      const fields = Object.keys(changedFields)
-      if (changedFields && fields.length > 0) {
-        fields.forEach(field => {
-          this.$set(this.form.fd, field, changedFields[field])
-          // this.form.fd[field] = changedFields[field]
-          const fn = this[`${field}_change`]
-          if (fn && typeof fn === 'function') {
-            fn()
-          }
-        })
-      }
-    },
-
   },
 }

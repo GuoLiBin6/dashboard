@@ -1,3 +1,4 @@
+import _ from 'lodash'
 import classNames from 'classnames'
 import draggable from 'vuedraggable'
 import FormMixin from '../mixins'
@@ -13,35 +14,11 @@ const List = {
     }
   },
   created () {
-    const id = this.id = this.getDecoratorId(this.path)
-    const value = this.getFieldDefaultValue(id)
+    this.id = this.getDecoratorId(this.path)
+    this.syncListFromModel()
 
-    if (value && value.length) {
-      const len = value.length
-      const list = []
-
-      for (let i = 0; i < len; i++) {
-        list.push(i)
-      }
-
-      this.size = len
-      this.list = list
-    }
-
-    this.$watch('model', (newValue) => {
-      const value = this.getFieldDefaultValue(id)
-
-      if (value && value.length) {
-        const len = value.length
-        const list = []
-
-        for (let i = 0; i < len; i++) {
-          list.push(i)
-        }
-
-        this.size = len
-        this.list = list
-      }
+    this.$watch(() => _.get(this.formModel, this.namePath), () => {
+      this.syncListFromModel()
     }, {
       deep: true,
     })
@@ -67,6 +44,36 @@ const List = {
     return h('div', { class: classes }, [header, body, footer].filter(Boolean))
   },
   methods: {
+    syncListFromModel () {
+      const value = _.get(this.formModel, this.namePath)
+      if (!Array.isArray(value)) return
+      const len = value.length
+      const list = []
+      for (let i = 0; i < len; i++) {
+        list.push(i)
+      }
+      this.size = len
+      this.list = list
+    },
+    ensureArray () {
+      let value = _.get(this.formModel, this.namePath)
+      if (!Array.isArray(value)) {
+        value = []
+        this.setModelValue(this.path, value)
+      }
+      return value
+    },
+    revalidate () {
+      const formModel = this.jsonSchemaForm && this.jsonSchemaForm.$refs && this.jsonSchemaForm.$refs.formModel
+      if (!formModel) return
+      this.$nextTick(() => {
+        if (typeof formModel.validateField === 'function') {
+          formModel.validateField(this.namePath)
+        } else if (typeof formModel.validate === 'function') {
+          formModel.validate().catch(() => {})
+        }
+      })
+    },
     renderHeader (h) {
       const { columns, items } = this.definition
 
@@ -148,31 +155,29 @@ const List = {
       ])
     },
     add () {
+      const value = this.ensureArray()
+      value.push({})
       this.list.push(this.size)
       this.size += 1
+      this.revalidate()
     },
     remove (idx) {
-      const { id } = this
-      const value = this.form.getFieldValue(id)
+      const value = this.ensureArray()
       value.splice(idx, 1)
-
-      this.form.setFieldsValue({
-        [id]: value,
-      })
       this.size -= 1
+      const list = []
+      for (let i = 0; i < this.size; i++) {
+        list.push(i)
+      }
+      this.list = list
+      this.revalidate()
     },
     onDrop (e) {
       const { newIndex, oldIndex } = e
-      const { id } = this
-      const value = this.form.getFieldValue(id)
+      const value = this.ensureArray()
       const moveItem = value.splice(oldIndex, 1)
       value.splice(newIndex, 0, moveItem[0])
-
-      this.$nextTick(() => {
-        this.form.setFieldsValue({
-          [id]: value,
-        })
-      })
+      this.revalidate()
     },
   },
   components: {

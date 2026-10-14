@@ -1,15 +1,15 @@
 <template>
   <div>
     <!-- 币种 -->
-    <a-form-model-item :label="$t('scope.text_453')" prop="currency">
-      <a-select v-decorator="decorators.currency">
+    <a-form-item :label="$t('scope.text_453')">
+      <a-select :value="fieldValue('currency')" @change="onCurrencyChange">
         <a-select-option v-for="obj in newCurrencys" :key="obj.item_id" :value="obj.item_id">
           {{ obj.item_name }}
         </a-select-option>
       </a-select>
-    </a-form-model-item>
+    </a-form-item>
     <!-- 云环境和云平台 -->
-    <a-form-item v-if="decorators.cloud_env" :label="$t('dashboard.text_98')">
+    <a-form-item v-if="fieldMap.cloud_env" :label="$t('dashboard.text_98')">
       <a-row :gutter="8">
         <a-col :span="12">
           <a-form-item :wrapperCol="{ span: 24 }" class="mb-0">
@@ -17,9 +17,9 @@
               allowClear
               class="w-100"
               :labelInValue="labelInValue"
-              v-decorator="decorators.cloud_env"
+              :value="fieldValue('cloud_env')"
               :placeholder="$t('dashboard.text_99')"
-              @change="cloudEnvChange"
+              @change="onCloudEnvChange"
               :filterOption="filterOption">
               <a-select-option v-for="item of cloudEnvs" :value="item.key" :key="item.key">{{ item.label }}</a-select-option>
             </a-select>
@@ -31,9 +31,9 @@
               allowClear
               class="w-100"
               :labelInValue="labelInValue"
-              v-decorator="decorators.brand"
+              :value="fieldValue('brand')"
               :placeholder="$t('dashboard.text_99')"
-              @change="brandChange"
+              @change="onBrandChange"
               :filterOption="filterOption">
               <a-select-option v-for="item of brands" :value="item.key" :key="item.key">{{ item.label }}</a-select-option>
             </a-select>
@@ -42,14 +42,14 @@
       </a-row>
     </a-form-item>
     <!-- 云账号 -->
-    <a-form-item v-if="decorators.account" :label="$t('scope.text_568')" class="mb-0">
+    <a-form-item v-if="fieldMap.account" :label="$t('scope.text_568')" class="mb-0">
       <a-select
         allowClear
         class="w-100"
         :labelInValue="labelInValue"
-        v-decorator="decorators.account"
+        :value="fieldValue('account')"
         :placeholder="$t('dashboard.text_99')"
-        @change="accountChange"
+        @change="onAccountChange"
         :filterOption="filterOption">
         <a-select-option v-for="item of accounts" :value="item.key" :key="item.key">{{ item.label }}</a-select-option>
       </a-select>
@@ -59,11 +59,11 @@
 
 <script>
 import * as R from 'ramda'
-import _ from 'lodash'
 import { mapGetters, mapState } from 'vuex'
 import { CURRENCYS } from '@/constants'
 import { currencyUnitMap } from '@/constants/currency'
 import { typeClouds } from '@/utils/common/hypervisor'
+import { resolveFieldMeta } from '@/utils/common/ant'
 
 export default {
   name: 'ConsumptionConfig',
@@ -71,12 +71,17 @@ export default {
     labelInValue: {
       type: Boolean,
     },
-    decorators: {
+    fieldMap: {
       type: Object,
+    },
+    /** a-form-model：与 fieldMap 字段对齐（通常 form.fd） */
+    model: {
+      type: Object,
+      required: true,
     },
     fc: {
       type: Object,
-      required: true,
+      default: null,
     },
     fd: {
       type: Object,
@@ -95,6 +100,10 @@ export default {
     }
   },
   computed: {
+
+    boundModel () {
+      return this.model || this.fd
+    },
     ...mapState('common', {
       currency: state => state.bill.currency,
       currencyOpts: state => state.bill.currencyOpts,
@@ -124,6 +133,9 @@ export default {
       })
     },
   },
+  created () {
+    this.ensureFieldInitials()
+  },
   unmounted () {
     this.am = null
     this.rm = null
@@ -134,54 +146,84 @@ export default {
     this.fetchAccounts()
   },
   methods: {
+    ensureFieldInitials () {
+      Object.keys(this.fieldMap || {}).forEach((key) => {
+        const d = this.fieldMap[key]
+        const meta = resolveFieldMeta(d)
+        if (!meta) return
+        const { name, ...opts } = meta
+        if (this.boundModel && this.boundModel[name] === undefined && opts.initialValue !== undefined) {
+          this.$set(this.boundModel, name, opts.initialValue)
+        }
+      })
+    },
+    setModelFields (values) {
+      if (!this.boundModel || !values) return
+      Object.keys(values).forEach((k) => {
+        this.$set(this.boundModel, k, values[k])
+      })
+    },
+    fieldValue (key) {
+      const d = this.fieldMap[key]
+      if (!d) return undefined
+      const { name, ...opts } = resolveFieldMeta(d) || {}
+      const v = this.boundModel?.[name]
+      return v !== undefined ? v : opts.initialValue
+    },
+    onCurrencyChange (value) {
+      this.setModelFields({ [this.fieldMap.currency.name]: value })
+    },
+    onCloudEnvChange (cloudEnv) {
+      this.setModelFields({ [this.fieldMap.cloud_env.name]: cloudEnv })
+      this.cloudEnvChange(cloudEnv)
+    },
+    onBrandChange (brand) {
+      this.setModelFields({ [this.fieldMap.brand.name]: brand })
+      this.brandChange(brand)
+    },
+    onAccountChange (account) {
+      this.setModelFields({ [this.fieldMap.account.name]: account })
+      this.accountChange(account)
+    },
     filterOption (input, option) {
       return (
         option.componentOptions.children[0].text.toLowerCase().indexOf(input.toLowerCase()) >= 0
       )
     },
-    /*
-     * @params {Object} cloudEnv { key: <cloudEnvId> }
-     */
     _setInitCloudEnv (cloudEnv) {
       if (!R.isNil(cloudEnv) && !R.isEmpty(cloudEnv)) {
         if (this.labelInValue) {
-          this.fc.setFieldsValue({
+          this.setModelFields({
             cloud_env: { key: cloudEnv.key, label: cloudEnv.label },
           })
         } else {
-          this.fc.setFieldsValue({
+          this.setModelFields({
             cloud_env: cloudEnv.key,
           })
         }
       }
     },
-    /*
-     * @params {Object} brand { key: <brandId> }
-     */
     _setInitBrand (brand) {
       if (!R.isNil(brand) && !R.isEmpty(brand)) {
         if (this.labelInValue) {
-          this.fc.setFieldsValue({
+          this.setModelFields({
             brand: { key: brand.key, label: brand.label },
           })
         } else {
-          this.fc.setFieldsValue({
+          this.setModelFields({
             brand: brand.key,
           })
         }
       }
     },
-    /*
-     * @params {Object} account { key: <accountId> }
-     */
     _setInitAccount (account) {
       if (!R.isNil(account) && !R.isEmpty(account)) {
         if (this.labelInValue) {
-          this.fc.setFieldsValue({
+          this.setModelFields({
             account: { key: account.key, label: account.label },
           })
         } else {
-          this.fc.setFieldsValue({
+          this.setModelFields({
             account: account.key,
           })
         }
@@ -200,7 +242,7 @@ export default {
       }
       this.cloudEnvs = cloudEnvs.map(val => ({ ...val, key: val.key, label: val.label }))
       let defaultData
-      const initialValue = _.get(this.decorators, 'cloud_env[1].initialValue')
+      const initialValue = this.fieldMap?.cloud_env?.initialValue
       if (initialValue) {
         const findInitValue = this.cloudEnvs.find(val => val.key === (initialValue.key || initialValue))
         if (findInitValue) {
@@ -220,7 +262,7 @@ export default {
       brands = brands.filter(item => this.capability.brands.includes(item.brand) || this.capability.disabled_brands.includes(item.brand))
       this.brands = brands.map(val => ({ ...val, key: val.key, label: val.label }))
       let defaultData
-      const initialValue = _.get(this.decorators, 'brand[1].initialValue')
+      const initialValue = this.fieldMap?.brand?.initialValue
       if (initialValue) {
         const findInitValue = this.brands.find(val => val.key === (initialValue.key || initialValue))
         if (findInitValue) {
@@ -242,7 +284,7 @@ export default {
         const data = response.data.data
         this.accounts = data.map(val => ({ ...val, key: val.id, label: val.name })) || []
         let defaultData
-        const initialValue = _.get(this.decorators, 'account[1].initialValue')
+        const initialValue = this.fieldMap?.account?.initialValue
         if (initialValue) {
           const findInitValue = this.accounts.find(val => val.key === (initialValue.key || initialValue))
           if (findInitValue) {
@@ -261,7 +303,7 @@ export default {
       const cloudEnvId = R.is(Object, cloudEnv) ? cloudEnv.key : cloudEnv
       this.cloudEnvData = cloudEnv
       if (cloudEnvId) {
-        this.fc.setFieldsValue({
+        this.setModelFields({
           brand: undefined,
           account: undefined,
         })
@@ -269,26 +311,24 @@ export default {
         this.fetchAccounts()
         this.$emit('update:env', cloudEnvId)
       } else {
-        this.fc.setFieldsValue({
+        this.setModelFields({
           cloud_env: undefined,
           brand: undefined,
           account: undefined,
         })
       }
-      // this.updateUsages()
     },
     brandChange (brand) {
       const brandId = R.is(Object, brand) ? brand.key : brand
       this.brandData = brand
       if (brandId) {
-        this.fc.setFieldsValue({
+        this.setModelFields({
           account: undefined,
         })
         this.fetchAccounts()
         this.$emit('update:brand', brandId)
-        this.fc.getFieldDecorator('brand', { preserve: true, initialValue: brand })
       } else {
-        this.fc.setFieldsValue({
+        this.setModelFields({
           brand: undefined,
           account: undefined,
         })

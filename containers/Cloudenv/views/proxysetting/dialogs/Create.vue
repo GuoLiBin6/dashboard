@@ -2,26 +2,28 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('cloudenv.text_411')}}</div>
     <div slot="body">
-      <a-form
-        v-bind="formLayout"
-        :form="form.fc">
-        <a-form-item :label="$t('cloudenv.text_410', [$t('dictionary.domain')])" v-bind="formLayout">
-          <domain-select v-if="isAdminMode && l3PermissionEnable" v-decorator="decorators.project_domain" :params="domainParams" />
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formLayout">
+        <a-form-model-item :label="$t('cloudenv.text_410', [$t('dictionary.domain')])" prop="project_domain" v-bind="formLayout">
+          <domain-select v-if="isAdminMode && l3PermissionEnable" v-model:value="form.project_domain" :params="domainParams" />
           <template v-else> {{userInfo.domain.name}} </template>
-        </a-form-item>
-        <a-form-item :label="$t('cloudenv.text_95')">
-          <a-input v-decorator="decorators.name" :placeholder="$t('validator.resourceName')" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
-        <common-form-items />
-      </a-form>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('cloudenv.text_95')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('validator.resourceName')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" prop="description">
+          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.description" :placeholder="$t('common_367')" />
+        </a-form-model-item>
+        <common-form-items :form="form" />
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <test-button
-        :disabled="!form.fc.getFieldValue('http_proxy') && !form.fc.getFieldValue('https_proxy')"
+        :disabled="!form.http_proxy && !form.https_proxy"
         :post="testPost"
         :isSuccessAlert="false" />
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
@@ -51,28 +53,20 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        name: '',
+        description: '',
+        project_domain: projectDomainInitialValue,
+        https_proxy: '',
+        http_proxy: '',
+        no_proxy: '',
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('cloudenv.text_190') },
-              { validator: this.$validate('resourceName') },
-            ],
-          },
+          { required: true, message: this.$t('cloudenv.text_190') },
+          { validator: this.$validate('resourceName') },
         ],
-        description: ['description'],
         project_domain: [
-          'project_domain',
-          {
-            initialValue: projectDomainInitialValue,
-            rules: [
-              { required: true, message: this.$t('cloudenv.text_284', [this.$t('dictionary.domain')]) },
-            ],
-          },
+          { required: true, message: this.$t('cloudenv.text_284', [this.$t('dictionary.domain')]) },
         ],
       },
       formLayout: {
@@ -81,12 +75,6 @@ export default {
         },
         labelCol: {
           span: 6,
-        },
-      },
-      offsetFormLayout: {
-        wrapperCol: {
-          span: 18,
-          offset: 6,
         },
       },
       domainParams: {
@@ -104,16 +92,15 @@ export default {
       const manager = new this.$Manager('proxysettings')
       try {
         const keys = ['http_proxy', 'https_proxy']
-        const values = await this.form.fc.validateFields(['http_proxy', 'https_proxy'])
         const { data } = await manager.performClassAction({
           action: 'test',
           data: {
-            http_proxy: values.http_proxy,
-            https_proxy: values.https_proxy,
+            http_proxy: this.form.http_proxy,
+            https_proxy: this.form.https_proxy,
           },
         })
         keys.forEach(k => {
-          if (!data[k] || !values[k] || R.type(data[k]) !== 'Object') return false
+          if (!data[k] || !this.form[k] || R.type(data[k]) !== 'Object') return false
           const { ok, reason } = data[k]
           if (ok) {
             this.$notification.success({
@@ -134,8 +121,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        await this.doCreate(values)
+        await this.$refs.formRef.validate()
+        await this.doCreate(this.form)
         this.cancelDialog()
         this.params.refresh && this.params.refresh()
         this.params.success && this.params.success()

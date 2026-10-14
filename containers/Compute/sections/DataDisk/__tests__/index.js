@@ -5,11 +5,11 @@ import Disk from '@Compute/sections/Disk'
 import { isRequired } from '@/utils/validate'
 import i18n from '@/locales'
 import DataDisk from '../index'
-let decorator = null
+let fields = null
 let store = null
-let setFieldsValue = null
-let getFieldsValue = null
 let wrapper = null
+let model = null
+let form = null
 const type = 'idc'
 const hypervisor = 'kvm'
 const sku = {
@@ -107,76 +107,73 @@ const capabilityData = {
   usable: true,
 }
 
+function expectNestedDiskMaps (m, count) {
+  const sizes = m.dataDiskSizes || {}
+  const types = m.dataDiskTypes || {}
+  const keys = Object.keys(sizes)
+  expect(keys.length).toBe(count)
+  keys.forEach((k) => {
+    expect(R.is(Number, sizes[k]) && sizes[k] >= 10).toBe(true)
+    expect(R.is(Object, types[k]) && !R.isEmpty(types[k].key)).toBe(true)
+  })
+}
+
 beforeEach(() => {
-  decorator = {
-    type: i => [
-      `dataDiskTypes[${i}]`,
-      {
-        rules: [
-          { validator: isRequired(), message: i18n.t('compute.text_121') },
-        ],
-      },
-    ],
-    size: i => [
-      `dataDiskSizes[${i}]`,
-      {
-        rules: [
-          { required: true, message: i18n.t('compute.text_122') },
-        ],
-      },
-    ],
-    schedtag: i => [
-      `dataDiskSchedtags[${i}]`,
-      {
-        validateTrigger: ['change', 'blur'],
-        rules: [{
-          required: true,
-          message: i18n.t('compute.text_123'),
-        }],
-      },
-    ],
-    policy: i => [
-      `dataDiskPolicys[${i}]`,
-      {
-        validateTrigger: ['blur', 'change'],
-        rules: [{
-          required: true,
-          message: i18n.t('compute.text_123'),
-        }],
-      },
-    ],
-    snapshot: i => [
-      `dataDiskSnapshots[${i}]`,
-      {
-        validateTrigger: ['blur', 'change'],
-        rules: [{
-          required: true,
-          message: i18n.t('compute.text_124'),
-        }],
-      },
-    ],
-    filetype: i => [
-      `dataDiskFiletypes[${i}]`,
-      {
-        validateTrigger: ['blur', 'change'],
-        rules: [{
-          required: true,
-          message: i18n.t('compute.text_125'),
-        }],
-      },
-    ],
-    mountPath: i => [
-      `dataDiskMountPaths[${i}]`,
-      {
-        validateTrigger: ['blur', 'change'],
-        rules: [{
-          required: true,
-          message: i18n.t('compute.text_126'),
-        }, {
-          validator: diskValidator,
-        }],
-      },
-    ],
+  fields = {
+    type: i => ({
+      name: `dataDiskTypes[${i}]`,
+      rules: [
+        { validator: isRequired(), message: i18n.t('compute.text_121') },
+      ],
+    }),
+    size: i => ({
+      name: `dataDiskSizes[${i}]`,
+      rules: [
+        { required: true, message: i18n.t('compute.text_122') },
+      ],
+    }),
+    schedtag: i => ({
+      name: `dataDiskSchedtags[${i}]`,
+      validateTrigger: ['change', 'blur'],
+      rules: [{
+        required: true,
+        message: i18n.t('compute.text_123'),
+      }],
+    }),
+    policy: i => ({
+      name: `dataDiskPolicys[${i}]`,
+      validateTrigger: ['blur', 'change'],
+      rules: [{
+        required: true,
+        message: i18n.t('compute.text_123'),
+      }],
+    }),
+    snapshot: i => ({
+      name: `dataDiskSnapshots[${i}]`,
+      validateTrigger: ['blur', 'change'],
+      rules: [{
+        required: true,
+        message: i18n.t('compute.text_124'),
+      }],
+    }),
+    filetype: i => ({
+      name: `dataDiskFiletypes[${i}]`,
+      validateTrigger: ['blur', 'change'],
+      rules: [{
+        required: true,
+        message: i18n.t('compute.text_125'),
+      }],
+    }),
+    mountPath: i => ({
+      name: `dataDiskMountPaths[${i}]`,
+      validateTrigger: ['blur', 'change'],
+      rules: [{
+        required: true,
+        message: i18n.t('compute.text_126'),
+      }, {
+        validator: diskValidator,
+      }],
+    }),
   }
   store = {
     getters: {
@@ -184,74 +181,43 @@ beforeEach(() => {
       scope: () => 'system',
     },
   }
-  setFieldsValue = jest.fn()
-  getFieldsValue = jest.fn()
+  model = {
+    dataDiskSizes: {},
+    dataDiskTypes: {},
+  }
+  form = {
+    fd: model,
+    fi: {},
+  }
   wrapper = mount(DataDisk, {
     propsData: {
-      decorator,
+      fields,
       type,
       hypervisor,
       sku,
       capabilityData,
-    },
-    provide () {
-      return {
-        form: {
-          fc: {
-            setFieldsValue,
-            getFieldsValue,
-          },
-        },
-      }
+      form,
+      model,
     },
     store,
   })
 })
 
-expect.extend({
-  haveSizeAndType (obj) {
-    const result = {
-      message: () => '',
-      pass: true,
-    }
-    const keys = Object.keys(obj)
-    const valid = keys.every(k => {
-      const val = obj[k]
-      if (k.startsWith('dataDiskSizes')) {
-        return R.is(Number, val) && val >= 10
-      }
-      if (k.startsWith('dataDiskTypes')) {
-        return R.is(Object, val) && !R.isEmpty(val.key)
-      }
-      return true
-    })
-    if (!valid) {
-      result.pass = false
-      result.message = () => i18n.t('compute.text_127', [JSON.stringify(obj)])
-    }
-    return result
-  },
-})
-
 describe('DataDisk kvm', () => {
-  it('check add once', () => {
+  it('check add once', async () => {
     wrapper.vm.add()
-    wrapper.vm.$nextTick(() => {
-      expect(setFieldsValue.mock.instances[0].setFieldsValue).toHaveBeenCalled()
-      expect(setFieldsValue.mock.calls[0][0]).haveSizeAndType()
-      expect(wrapper.vm.$el).toMatchSnapshot()
-    })
+    await wrapper.vm.$nextTick()
+    expectNestedDiskMaps(model, 1)
+    expect(wrapper.vm.$el).toMatchSnapshot()
   })
 
-  it('check add twice', () => {
+  it('check add twice', async () => {
     wrapper.vm.add()
+    await wrapper.vm.$nextTick()
     wrapper.vm.add()
-    wrapper.vm.$nextTick(() => {
-      expect(setFieldsValue.mock.instances[0].setFieldsValue).toHaveBeenCalled()
-      expect(setFieldsValue.mock.calls[0][0]).haveSizeAndType()
-      expect(setFieldsValue.mock.calls[1][0]).haveSizeAndType()
-      expect(wrapper.vm.$el).toMatchSnapshot()
-    })
+    await wrapper.vm.$nextTick()
+    expectNestedDiskMaps(model, 2)
+    expect(wrapper.vm.$el).toMatchSnapshot()
   })
 
   it('check add twice and decrease once', () => {
@@ -263,17 +229,16 @@ describe('DataDisk kvm', () => {
     expect(wrapper.vm.dataDisks[0].key).toBe(secondKey)
   })
 
-  it('check diskTypeChange', () => {
+  it('check diskTypeChange', async () => {
     wrapper.vm.add()
     wrapper.vm.add()
     wrapper.find(Disk).vm.$emit('diskTypeChange', {
       key: 'rbd',
       label: 'Ceph RBD',
     })
-    wrapper.vm.$nextTick(() => {
-      expect(wrapper.vm.dataDisks[0].diskType.key).toBe('rbd')
-      expect(wrapper.vm.$el).toMatchSnapshot()
-    })
+    await wrapper.vm.$nextTick()
+    expect(wrapper.vm.dataDisks[0].diskType.key).toBe('rbd')
+    expect(wrapper.vm.$el).toMatchSnapshot()
   })
 
   // 如果磁盘类别里面有本地磁盘，优先本地磁盘作为第一项

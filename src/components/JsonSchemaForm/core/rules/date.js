@@ -28,7 +28,7 @@ export default function (def, schema) {
 
     const initialValue = schema.default ? moment(schema.default) : undefined
 
-    def.decorator = [
+    def.field = [
       {
         initialValue,
         rules: [

@@ -1,44 +1,45 @@
 <template>
   <div>
-    <a-form :form="form.fc" v-bind="formLayout" :data-oc-label-min-text="$t('cloudenv.project_mapping_effective_scope')">
+    <a-form-model ref="formRef" :model="form.fd" :rules="formRules" v-bind="formLayout" :data-oc-label-min-text="$t('cloudenv.project_mapping_effective_scope')">
       <a-alert class="my-2" banner>
         <template #message>{{ $t('cloudenv.vmware.message') }}<help-link :href="vmDocLink">{{ $t('cloudenv.vmware.message.doc') }}</help-link></template>
       </a-alert>
-      <a-form-item :label="$t('cloudenv.text_95')">
-        <a-input v-decorator="decorators.name" :placeholder="$t('cloudenv.text_190')" />
-      </a-form-item>
-      <a-form-item :label="$t('common.description')">
-        <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.text_10')" class="mb-0">
+      <a-form-model-item :label="$t('cloudenv.text_95')" prop="name">
+        <a-input v-model:value="form.fd.name" :placeholder="$t('cloudenv.text_190')" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('common.description')" prop="description">
+        <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.fd.description" :placeholder="$t('common_367')" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.text_10')" class="mb-0">
         <cloudregion-zone
+          ref="cloudregionZoneRef"
+          :model="form.fd"
           :zone-params="zoneParams"
-          :cloudregion-params="cloudregionParams"
-          :decorator="decorators.cloudregionZone" />
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.text_264')" :extra="this.$t('common_572')">
-        <a-input v-decorator="decorators.host" />
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.text_266')">
-        <a-input v-decorator="decorators.port" />
-      </a-form-item>
-      <a-form-item :label="keySecretField.label.k">
-        <a-input v-decorator="decorators.username" :placeholder="keySecretField.placeholder.k" />
+          :cloudregion-params="cloudregionParams" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.text_264')" :extra="this.$t('common_572')" prop="host">
+        <a-input v-model:value="form.fd.host" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.text_266')" prop="port">
+        <a-input v-model:value="form.fd.port" />
+      </a-form-model-item>
+      <a-form-model-item :label="keySecretField.label.k" prop="username">
+        <a-input v-model:value="form.fd.username" :placeholder="keySecretField.placeholder.k" />
         <div slot="extra" v-if="showDocsLink()">
            <span class="mr-3">{{$t('cloudenv.text_267')}}</span>
            {{$t('cloudenv.text_236', [keySecretField.text, keySecretField.label.k])}}
            <help-link :href="docs[provider.toLowerCase()]">{{$t('cloudenv.text_237')}}</help-link>
         </div>
-      </a-form-item>
-      <a-form-item :label="keySecretField.label.s">
-        <a-input-password v-decorator="decorators.password" :placeholder="keySecretField.placeholder.s" />
-      </a-form-item>
-      <domain-project :fc="form.fc" :form-layout="formLayout" :decorators="{ project: decorators.project, domain: decorators.domain, auto_create_project: decorators.auto_create_project }" :cloneData="cloneData" />
-      <blocked-resources :decorators="{ isOpenBlockedResources: decorators.isOpenBlockedResources, blockedResources: decorators.blockedResources }" :cloneData="cloneData" />
-      <proxy-setting :fc="form.fc" :fd="form.fd" ref="proxySetting" :cloneData="cloneData" />
-      <auto-sync :fc="form.fc" :form-layout="formLayout" :cloneData="cloneData" />
-      <share-mode :fd="form.fd" :cloneData="cloneData" />
-    </a-form>
+      </a-form-model-item>
+      <a-form-model-item :label="keySecretField.label.s" prop="password">
+        <a-input-password v-model:value="form.fd.password" :placeholder="keySecretField.placeholder.s" />
+      </a-form-model-item>
+      <domain-project :form="form.fd" :form-layout="formLayout" :cloneData="cloneData" />
+      <blocked-resources :form="form.fd" />
+      <proxy-setting :form="form.fd" ref="proxySetting" :cloneData="cloneData" />
+      <auto-sync :form="form.fd" :form-layout="formLayout" />
+      <share-mode :form="form.fd" :cloneData="cloneData" />
+    </a-form-model>
   </div>
 </template>
 
@@ -97,89 +98,70 @@ export default {
     return {
       docs: DOCS_MAP.cloudaccount(),
       showDocsLink,
-      decorators: {
-        name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('cloudenv.text_190') },
-              // { validator: this.$validate('resourceName') },
-            ],
-          },
-        ],
-        description: ['description'],
-        host: [
-          'host',
-          {
-            validateFirst: true,
-            initialValue: initHost,
-            rules: [
-              { required: true, message: this.$t('cloudenv.text_268') },
-              { validator: this.$validate(['domain', 'IPv4'], true, 'some'), trigger: ['blur', 'change'], message: this.$t('cloudenv.text_269') },
-            ],
-          },
-        ],
-        port: [
-          'port',
-          {
-            initialValue: initPort,
-            rules: [
-              { type: 'number', min: 0, max: 65535, message: this.$t('cloudenv.text_270'), trigger: 'blur', transform: (v) => parseFloat(v) },
-            ],
-          },
-        ],
-        username: [
-          keySecretField.k,
-          {
-            rules: [
-              { required: true, message: keySecretField.placeholder.k },
-            ],
-          },
-        ],
-        password: [
-          keySecretField.s,
-          {
-            rules: [
-              { required: true, message: keySecretField.placeholder.s },
-            ],
-          },
-        ],
-        domain: [
-          'domain',
-          {
-            initialValue: initDomain,
-            rules: [
-              { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
-            ],
-          },
-        ],
-        auto_create_project: [
-          'auto_create_project',
-          {
-            initialValue: initAutoCreateProject,
-            valuePropName: 'checked',
-          },
-        ],
+      fieldMap: {
+        name: {
+          name: 'name',
+          validateFirst: true,
+          rules: [
+            { required: true, message: this.$t('cloudenv.text_190') },
+          ],
+        },
+        description: { name: 'description' },
+        host: {
+          name: 'host',
+          validateFirst: true,
+          initialValue: initHost,
+          rules: [
+            { required: true, message: this.$t('cloudenv.text_268') },
+            { validator: this.$validate(['domain', 'IPv4'], true, 'some'), trigger: ['blur', 'change'], message: this.$t('cloudenv.text_269') },
+          ],
+        },
+        port: {
+          name: 'port',
+          initialValue: initPort,
+          rules: [
+            { type: 'number', min: 0, max: 65535, message: this.$t('cloudenv.text_270'), trigger: 'blur', transform: (v) => parseFloat(v) },
+          ],
+        },
+        username: {
+          name: keySecretField.k,
+          rules: [
+            { required: true, message: keySecretField.placeholder.k },
+          ],
+        },
+        password: {
+          name: keySecretField.s,
+          rules: [
+            { required: true, message: keySecretField.placeholder.s },
+          ],
+        },
+        domain: {
+          name: 'domain',
+          initialValue: initDomain,
+          rules: [
+            { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
+          ],
+        },
+        auto_create_project: {
+          name: 'auto_create_project',
+          initialValue: initAutoCreateProject,
+          valuePropName: 'checked',
+        },
         cloudregionZone: {
-          cloudregion: [
-            'cloudregion',
-            {
-              initialValue: { key: '', label: '' },
-              rules: [
-                { validator: isRequired(), message: this.$t('compute.text_212') },
-              ],
-            },
-          ],
-          zone: [
-            'zone',
-            {
-              initialValue: { key: '', label: '' },
-              rules: [
-                { validator: isRequired(), message: this.$t('compute.text_213') },
-              ],
-            },
-          ],
+          cloudregion: {
+            name: 'cloudregion',
+            initialValue: { key: '', label: '' },
+            rules: [
+              { validator: isRequired(), message: this.$t('compute.text_212') },
+            ],
+          },
+          zone: {
+            name: 'zone',
+            initialValue: { key: '', label: '' },
+            rules: [
+              { validator: isRequired(), message: this.$t('compute.text_213') },
+            ],
+          },
         },
       },
       keepAliveFields: true,
@@ -192,14 +174,12 @@ export default {
     cloudregionParams () {
       return {
         cloud_env: 'onpremise',
-        // usable: true,
         show_emulated: false,
         scope: this.$store.getters.scope,
       }
     },
     zoneParams () {
       return {
-        // usable: true,
         show_emulated: false,
         order_by: 'created_at',
         order: 'asc',

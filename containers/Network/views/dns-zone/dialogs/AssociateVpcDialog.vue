@@ -2,14 +2,16 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{params.title}}</div>
     <div slot="body">
-      <a-form
+      <a-form-model
+        ref="formRef"
         class="mt-3"
-        :form="form.fc"
-        @submit.prevent="handleSubmit"
+        :model="form"
+        :rules="rules"
         v-bind="formItemLayout">
         <area-selects
           class="mb-0"
           ref="areaSelects"
+          :model="form"
           :wrapperCol="formItemLayout.wrapperCol"
           :labelCol="formItemLayout.labelCol"
           :names="areaselectsName"
@@ -17,17 +19,17 @@
           :isRequired="true"
           filterBrandResource="network_manage"
           @change="handleRegionChange" />
-        <a-form-item label="VPC" v-bind="formItemLayout">
+        <a-form-model-item label="VPC" prop="vpc">
           <base-select
-            v-decorator="decorators.vpc"
+            v-model="form.vpc"
             resource="vpcs"
             :params="vpcParams"
             :isDefaultSelect="true"
             :needParams="true"
             :labelFormat="vpcLabelFormat"
             :select-props="{ placeholder: $t('common_226') }" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -41,7 +43,7 @@ import { h } from 'vue'
 import { mapGetters } from 'vuex'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
-import AreaSelects from '@/sections/AreaSelects'
+import AreaSelects from '@/sections/AreaSelects/model'
 
 export default {
   name: 'AssociateVpcDialog',
@@ -49,30 +51,20 @@ export default {
     AreaSelects,
   },
   mixins: [DialogMixin, WindowsMixin],
-  provide () {
-    return {
-      form: this.form,
-    }
-  },
   data () {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        cloudregion: undefined,
+        vpc: undefined,
       },
-      decorators: {
+      rules: {
         vpc: [
-          'vpc',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_274') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_274') },
         ],
       },
       areaselectsName: ['cloudregion'],
       regionId: '',
-      associateVpcIds: [],
       formItemLayout: {
         wrapperCol: {
           md: { span: 18 },
@@ -121,13 +113,13 @@ export default {
       this.loading = true
       try {
         const ids = this.params.data.map(item => item.id)
-        const { vpc } = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         const vpcManager = new this.$Manager('dns_zones')
         await vpcManager.batchPerformAction({
           ids: ids,
           action: 'add-vpcs',
           data: {
-            vpc_ids: [vpc],
+            vpc_ids: [this.form.vpc],
           },
         })
         this.params.refresh && this.params.refresh()

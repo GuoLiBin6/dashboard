@@ -6,41 +6,47 @@
         <template #message v-if="showDocsLink()">{{ $t('storage.local_storage.help_alert_message') }}<help-link :href="localStorageUrl">{{ $t('storage.local_storage.help_link') }}</help-link></template>
         <template #message v-else>{{ $t('storage.local_storage.help_alert_message_1') }}</template>
       </a-alert>
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('storage.text_55', [$t('dictionary.domain')])">
-          <domain-select v-if="isAdminMode && l3PermissionEnable" v-decorator="decorators.project_domain" />
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('storage.text_55', [$t('dictionary.domain')])" prop="project_domain">
+          <domain-select v-if="isAdminMode && l3PermissionEnable" v-model:value="form.project_domain" />
           <template v-else> {{userInfo.domain.name}} </template>
-        </a-form-item>
-        <a-form-item :label="$t('storage.text_47')">
-          <cloudregion-zone
-            :cloudregionParams="{cloud_env: 'onpremise'}"
-            :decorator="decorators.regionZone"
-            filterBrandResource="loadbalancer_engine" />
-        </a-form-item>
-        <a-form-item :label="$t('storage.text_40')">
-          <a-input :placeholder="$t('storage.text_56')" v-decorator="decorators.name" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
-        <a-form-item :label="$t('storage.text_39')">
-          <a-radio-group v-decorator="decorators.medium_type" buttonStyle="solid">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('storage.text_40')" prop="name">
+          <a-input :placeholder="$t('storage.text_56')" v-model:value="form.name" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" prop="description">
+          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.description" :placeholder="$t('common_367')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('storage.text_39')" prop="medium_type">
+          <a-radio-group v-model:value="form.medium_type" buttonStyle="solid">
             <a-radio-button v-for="(v, k) in MEDIUM_TYPES" :key="v" :value="k">{{v}}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('storage.text_38')">
-          <a-radio-group v-decorator="decorators.storage_type" buttonStyle="solid">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('storage.text_38')" prop="storage_type">
+          <a-radio-group v-model:value="form.storage_type" buttonStyle="solid">
             <template v-for="(v, k) in STORAGE_TYPES" :key="k">
-              <a-radio-button v-if="storageTypes.indexOf(k) > -1"  :value="k">{{v}}</a-radio-button>
+              <a-radio-button v-if="storageTypes.indexOf(k) > -1" :value="k">{{v}}</a-radio-button>
             </template>
           </a-radio-group>
-        </a-form-item>
-        <form-items :storage_type="getFieldValue('storage_type')" />
-        <a-form-item :label="$t('common.text00012')" class="mb-0">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('storage.text_47')" class="mb-0" prop="cloudregion">
+          <cloudregion-zone
+            :model="form"
+            :cloudregionParams="{cloud_env: 'onpremise'}"
+            filterBrandResource="loadbalancer_engine" />
+        </a-form-model-item>
+        <form-items :storage_type="form.storage_type" :model="form" />
+        <a-form-model-item :label="$t('common.text00012')" class="mb-0" prop="__meta__">
           <tag
-            v-decorator="decorators.__meta__" :allowNoValue="false" />
-        </a-form-item>
-      </a-form>
+            :value="form.__meta__"
+            @change="v => form.__meta__ = v"
+            :allowNoValue="false" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
@@ -55,10 +61,10 @@ import { MEDIUM_TYPES, STORAGE_TYPES, formItemLayout } from '@Storage/constants/
 import FormItems from '@Storage/views/blockstorage/components/FormItems'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
-import CloudregionZone from '@/sections/CloudregionZone'
+import CloudregionZone from '@/sections/CloudregionZone/model'
 import DomainSelect from '@/sections/DomainSelect'
 import Tag from '@/sections/Tag'
-import validateForm from '@/utils/validate'
+import validateForm, { isRequired } from '@/utils/validate'
 import { DOCS_MAP, showDocsLink } from '@/constants/docs'
 
 export default {
@@ -70,11 +76,6 @@ export default {
     Tag,
   },
   mixins: [DialogMixin, WindowsMixin],
-  provide () {
-    return {
-      form: this.form,
-    }
-  },
   data () {
     return {
       showDocsLink,
@@ -82,16 +83,14 @@ export default {
       STORAGE_TYPES,
       loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-          },
-        }),
-        fd: {
-          storage_type: 'rbd',
-        },
+        storage_type: 'rbd',
+        project_domain: this.$store.getters.userInfo.projectDomainId,
+        name: undefined,
+        description: undefined,
+        medium_type: 'rotate',
+        cloudregion: undefined,
+        zone: undefined,
+        __meta__: {},
       },
       formItemLayout,
     }
@@ -101,109 +100,57 @@ export default {
     storageTypes () {
       return this.params.storageTypes || ['rbd', 'slvm', 'nfs', 'gpfs', 'local']
     },
-    getFieldValue () {
-      return this.form.fc.getFieldValue
-    },
-    decorators () {
+    rules () {
       return {
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('storage.text_56') },
-              { validator: this.$validate('blockStorageName') },
-            ],
-          },
+          { required: true, message: this.$t('storage.text_56') },
+          { validator: this.$validate('blockStorageName') },
         ],
-        description: ['description'],
-        regionZone: {
-          cloudregion: [
-            'cloudregion',
-            {
-              initialValue: { key: '', label: '' },
-              rules: [
-                { required: true, message: this.$t('storage.text_57') },
-              ],
-            },
-          ],
-          zone: [
-            'zone',
-            {
-              initialValue: { key: '', label: '' },
-              rules: [
-                { required: true, message: this.$t('storage.text_58') },
-              ],
-            },
-          ],
-        },
-        medium_type: [
-          'medium_type',
-          {
-            initialValue: 'rotate',
-          },
+        cloudregion: [
+          { validator: isRequired(), message: this.$t('storage.text_57'), trigger: 'change' },
         ],
-        storage_type: [
-          'storage_type',
-          {
-            initialValue: 'rbd',
-          },
-        ],
-        project_domain: [
-          'project_domain',
-          {
-            initialValue: this.userInfo.projectDomainId,
-          },
+        zone: [
+          { validator: isRequired(), message: this.$t('storage.text_58'), trigger: 'change' },
         ],
         __meta__: [
-          '__meta__',
-          {
-            rules: [
-              { validator: validateForm('tagName') },
-            ],
-          },
+          { validator: validateForm('tagName') },
         ],
       }
-    },
-    isLocalStorage () {
-      return this.form.fd.storage_type === 'local'
     },
     localStorageUrl () {
       return DOCS_MAP.blockStorage()
     },
   },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (err) return reject(err)
-          // eslint-disable-next-line camelcase
-          const { storage_type, zone, cloudregion, slvm_vg_name } = values
-          const deleteRbdKeys = ['nfs_host', 'nfs_shared_dir']
-          const deleteNfsKeys = ['rbd_mon_host', 'rbd_key', 'rbd_pool']
-          const deleteSlvmKeys = [...deleteRbdKeys, ...deleteNfsKeys]
-          const deleteKeys = {
-            rbd: [...deleteRbdKeys, 'slvm_vg_name'],
-            slvm: deleteSlvmKeys,
-            nfs: [...deleteNfsKeys, 'slvm_vg_name'],
-            gpfs: [...deleteRbdKeys, ...deleteNfsKeys, 'slvm_vg_name'],
-          }
-          if (zone) {
-            values.zone = zone.key
-          }
-          if (cloudregion) {
-            values.area = cloudregion.key
-            delete values.cloudregion
-          }
-          if (slvm_vg_name) {
-            values.lvmlockd = true
-          }
-          deleteKeys[storage_type].forEach(key => {
-            delete values[key]
-          })
-          resolve(Object.assign({}, { capacity: 0 }, values))
-        })
+    async validateForm () {
+      await this.$refs.formRef.validate()
+      const merged = { ...this.form }
+      // eslint-disable-next-line camelcase
+      const { storage_type, zone, cloudregion, slvm_vg_name } = merged
+      const deleteRbdKeys = ['nfs_host', 'nfs_shared_dir']
+      const deleteNfsKeys = ['rbd_mon_host', 'rbd_key', 'rbd_pool']
+      const deleteSlvmKeys = [...deleteRbdKeys, ...deleteNfsKeys]
+      const deleteKeys = {
+        rbd: [...deleteRbdKeys, 'slvm_vg_name'],
+        slvm: deleteSlvmKeys,
+        nfs: [...deleteNfsKeys, 'slvm_vg_name'],
+        gpfs: [...deleteRbdKeys, ...deleteNfsKeys, 'slvm_vg_name'],
+        local: [...deleteRbdKeys, ...deleteNfsKeys, 'slvm_vg_name'],
+      }
+      if (zone) {
+        merged.zone = zone.key
+      }
+      if (cloudregion) {
+        merged.area = cloudregion.key
+        delete merged.cloudregion
+      }
+      if (slvm_vg_name) {
+        merged.lvmlockd = true
+      }
+      ;(deleteKeys[storage_type] || []).forEach(key => {
+        delete merged[key]
       })
+      return Object.assign({}, { capacity: 0 }, merged)
     },
     async handleConfirm () {
       this.loading = true

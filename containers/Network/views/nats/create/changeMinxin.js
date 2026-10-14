@@ -1,25 +1,18 @@
+/** END-STATE：form = { fd }；section 写 fd；原 onValuesChange → watch form.fd */
 import * as R from 'ramda'
 import { getInitialValue } from '@/utils/common/ant'
-import { CAPABILIT_PARAMS, DECORATORS } from '../constants'
+import { CAPABILIT_PARAMS, NATS_CREATE_FIELD_MAP } from '../constants'
 
 export default {
   data () {
-    const fc = this.$form.createForm(this, {
-      onValuesChange: (props, values) => {
-        if (typeof this.handleValuesChange === 'function') {
-          this.handleValuesChange(props, values)
-        }
-      },
-    })
-    const initFd = getInitialValue(DECORATORS)
+    const initFd = {
+      ...getInitialValue(NATS_CREATE_FIELD_MAP),
+      auto_renew: false,
+      enableWorldMap: false,
+    }
     return {
       form: {
-        fc,
         fd: initFd,
-        getFieldDecorator: (...args) => fc.getFieldDecorator(...args),
-        getFieldValue: (...args) => fc.getFieldValue(...args),
-        getFieldsValue: (...args) => fc.getFieldsValue(...args),
-        setFieldsValue: (...args) => fc.setFieldsValue(...args),
       },
     }
   },
@@ -29,12 +22,13 @@ export default {
       scopeParams: this.scopeParams,
       formItemLayout: this.formItemLayout,
       tailFormItemLayout: this.tailFormItemLayout,
+      validateCreateForm: () => this.validateCreateForm(),
     }
   },
   async created () {
-    // 当前选中的sku内部的 cloudregion_id
-    this.form.fc.getFieldDecorator('cloudregion_id', { preserve: true })
-
+    if (this.form.fd.cloudregion_id === undefined) {
+      this.$set(this.form.fd, 'cloudregion_id', undefined)
+    }
     this.keysChange = {
       area: CAPABILIT_PARAMS,
     }
@@ -42,11 +36,25 @@ export default {
     this.skuRef = this.$refs.REF_SKU
     this.networkRef = this.$refs.REF_NETWORK
   },
+  watch: {
+    'form.fd.domain' () { this.domain_change() },
+    'form.fd.billing_type' () { this.billing_type_change() },
+    'form.fd.sku' () { this.sku_change() },
+    'form.fd.cloudregion_id' () { this.cloudregion_id_change() },
+    'form.fd.provider' () { this.runAreaChange() },
+    'form.fd.cloudregion' () { this.runAreaChange() },
+    'form.fd.zone' () { this.runAreaChange() },
+  },
   methods: {
+    runAreaChange () {
+      if (typeof this.area_change === 'function') {
+        this.area_change()
+      }
+    },
     domain_change () {
       if (this.$store.getters.isAdminMode) {
         const { domain } = this.form.fd
-        this.scopeParams.project_domain = domain || this.form.getFieldValue('domain') || this.project_domain
+        this.scopeParams.project_domain = domain || this.project_domain
         delete this.scopeParams.scope
       } else {
         delete this.scopeParams.project_domain
@@ -60,12 +68,9 @@ export default {
       this.refreshSkuByAreaSelection()
     },
     sku_change () {
-      const sku = this.form.fd.sku || this.form.fc.getFieldValue('sku')
+      const sku = this.form.fd.sku
       if (R.is(Object, sku) && sku.cloudregion_id) {
         if (this.form.fd.cloudregion_id !== sku.cloudregion_id) {
-          this.form.fc.setFieldsValue({
-            cloudregion_id: sku.cloudregion_id,
-          })
           this.$set(this.form.fd, 'cloudregion_id', sku.cloudregion_id)
         }
         this.$nextTick(() => {
@@ -78,26 +83,20 @@ export default {
         this.fetchVpc()
       }
     },
-    async handleValuesChange (fc, changedFields) {
-      Object.keys(changedFields).forEach(field => {
-        this.$set(this.form.fd, field, changedFields[field])
-      })
-      await this.$nextTick()
-      const changedFieldsKey = Object.keys(changedFields)
-      for (const field of changedFieldsKey) {
-        // 清空 sku 时不走 sku_change，避免无效联动
-        if (field === 'sku' && changedFields[field] === undefined) continue
-        const handleChange = this[`${field}_change`]
-        if (handleChange) {
-          await handleChange()
-          continue
-        }
-        for (const k in this.keysChange) {
-          if (this.keysChange[k].indexOf(field) > -1 && this[`${k}_change`]) {
-            await this[`${k}_change`]()
-          }
+    async validateCreateForm () {
+      if (this.$refs.formRef?.validate) {
+        await this.$refs.formRef.validate()
+      }
+      const refs = [this.$refs.areaSelects, this.$refs.REF_NETWORK, this.$refs.eipConfigRef]
+      for (const ref of refs) {
+        if (typeof ref?.validate === 'function') {
+          await ref.validate()
         }
       }
+      if (!this.form.fd.sku) {
+        throw new Error(this.$t('network.nat.sku.choose'))
+      }
+      return { ...this.form.fd }
     },
   },
 }

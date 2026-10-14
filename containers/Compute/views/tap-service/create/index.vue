@@ -2,42 +2,47 @@
   <div>
     <page-header :title="$t('compute.create_tap_service')" />
     <page-body>
-      <a-form :form="form.fc" class="mt-3" v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.text_228')">
-          <a-input :placeholder="$t('validator.serverCreateName')" v-decorator="decorators.name" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')">
-          <a-input :placeholder="$t('scope.text_55')" v-decorator="decorators.description" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_175')">
-          <a-radio-group v-decorator="decorators.type">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        class="mt-3"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.text_228')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('validator.serverCreateName')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" prop="description">
+          <a-input v-model:value="form.description" :placeholder="$t('scope.text_55')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_175')" prop="type">
+          <a-radio-group v-model:value="form.type" @change="onTypeChange">
             <a-radio-button value="host">{{ $t('compute.host_port') }}</a-radio-button>
             <a-radio-button value="guest">{{ $t('compute.guest_port') }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('compute.target_server')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.target_server')" prop="target_id">
           <base-select
-              v-decorator="decorators.target_id"
-              class="w-100"
-              :filterable="true"
-              :resource="serverType === 'guest' ? 'servers' : 'hosts'"
-              version="v1"
-              needParams
-              :params="serverParams"
-              isDefaultSelect
-              :select-props="{ placeholder: $t('compute.text_148', [$t('compute.target_server')]) }"
-              @update:item="serverChange" />
-        </a-form-item>
-        <a-form-item v-if="serverType === 'host'" :label="$t('compute.target_mac')">
+            v-model="form.target_id"
+            class="w-100"
+            :filterable="true"
+            :resource="form.type === 'guest' ? 'servers' : 'hosts'"
+            version="v1"
+            needParams
+            :params="serverParams"
+            isDefaultSelect
+            :select-props="{ placeholder: $t('compute.text_148', [$t('compute.target_server')]) }"
+            @update:item="serverChange" />
+        </a-form-model-item>
+        <a-form-model-item v-if="form.type === 'host'" :label="$t('compute.target_mac')" prop="mac_addr">
           <base-select
-            v-decorator="decorators.mac_addr"
+            v-model="form.mac_addr"
             :options="macAddrs"
             idKey="mac"
             nameKey="mac"
             isDefaultSelect
             :select-props="{ placeholder: $t('compute.text_148', [$t('compute.target_mac')]) }" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </page-body>
     <page-footer>
       <div slot="right">
@@ -56,48 +61,13 @@ export default {
   name: 'TapServiceCreate',
   data () {
     return {
+      loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: this.handleValuesChange,
-        }),
-        fd: {
-          type: 'host',
-        },
-      },
-      decorators: {
-        name: [
-          'name',
-          {
-            initialValue: '',
-            validateTrigger: ['change', 'blur'],
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_210') },
-              { validator: validateForm('serverCreateName') },
-            ],
-          },
-        ],
-        description: [
-          'description',
-        ],
-        type: [
-          'type',
-          {
-            initialValue: 'host',
-          },
-        ],
-        target_id: [
-          'target_id',
-          {
-            rules: [{ required: true, message: this.$t('compute.text_148', [this.$t('compute.target_server')]) }],
-          },
-        ],
-        mac_addr: [
-          'mac_addr',
-          {
-            rules: [{ required: true, message: this.$t('compute.text_148', [this.$t('compute.target_mac')]) }],
-          },
-        ],
+        name: '',
+        description: '',
+        type: 'host',
+        target_id: undefined,
+        mac_addr: undefined,
       },
       currentHost: {},
       formItemLayout: {
@@ -116,6 +86,23 @@ export default {
   },
   computed: {
     ...mapGetters(['isAdminMode', 'isDomainMode', 'scope']),
+    rules () {
+      const rules = {
+        name: [
+          { required: true, message: this.$t('compute.text_210'), trigger: 'blur' },
+          { validator: validateForm('serverCreateName'), trigger: 'blur' },
+        ],
+        target_id: [
+          { required: true, message: this.$t('compute.text_148', [this.$t('compute.target_server')]), trigger: 'change' },
+        ],
+      }
+      if (this.form.type === 'host') {
+        rules.mac_addr = [
+          { required: true, message: this.$t('compute.text_148', [this.$t('compute.target_mac')]), trigger: 'change' },
+        ]
+      }
+      return rules
+    },
     serverParams () {
       return {
         scope: this.scope,
@@ -125,30 +112,21 @@ export default {
         system: this.isAdminMode,
       }
     },
-    serverType () {
-      return this.form.fd.type
-    },
     macAddrs () {
       const { nic_info = [] } = this.currentHost
       return nic_info.filter(item => !item.wire_id)
     },
   },
   methods: {
-    async handleValuesChange (vm, changedFields) {
-      this.form.fd = {
-        ...this.form.fd,
-        ...changedFields,
-      }
-      await this.$nextTick()
-      if (changedFields.target_id && this.serverType === 'host') {
-        this.form.fc.setFieldsValue({
-          mac_addr: '',
-        })
-      }
+    onTypeChange () {
+      this.form.target_id = undefined
+      this.form.mac_addr = undefined
+      this.currentHost = {}
     },
     serverChange (data) {
-      if (this.serverType === 'host') {
-        this.currentHost = data
+      if (this.form.type === 'host') {
+        this.currentHost = data || {}
+        this.form.mac_addr = undefined
       } else {
         this.currentHost = {}
       }
@@ -161,11 +139,13 @@ export default {
     async handleConfirm () {
       const manager = new this.$Manager('tap_services', 'v1')
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         this.loading = true
-        await manager.create({
-          data: values,
-        })
+        const data = { ...this.form }
+        if (data.type !== 'host') {
+          delete data.mac_addr
+        }
+        await manager.create({ data })
         this.handleCancel()
       } catch (err) {
         throw err

@@ -1,57 +1,57 @@
 <template>
-  <a-form
-    :form="form.fc"
+  <a-form-model
+    ref="formRef"
+    :model="form"
+    :rules="rules"
     v-bind="formItemLayout">
-    <a-form-item :label="$t('dictionary.policy')">
+    <a-form-model-item :label="$t('dictionary.policy')" prop="policies">
       <list-select
-        v-decorator="decorators.policies"
+        v-model:value="form.policies"
         :listProps="policiesSelectProps"
         :formatter="row => `${row.name} / ${row.description || ''}`"
         :multiple="true"
         :dialog-params="{ mask: false, width: 900, title: $t('common.tips.select', [$t('dictionary.policy')]) }" />
-    </a-form-item>
+    </a-form-model-item>
     <a-collapse accordion :border="false">
       <a-collapse-panel key="1" :header="$t('common.adv_config')">
-        <a-form-item :label="$t('system.text_328')">
+        <a-form-model-item :label="$t('system.text_328')" prop="ips">
           <template v-slot:extra>
             <div>{{$t('system.text_329')}}</div>
             <div>{{$t('system.text_331')}}</div>
           </template>
-          <a-input v-decorator="decorators.ips" />
-        </a-form-item>
-        <a-form-item :label="$t('res.project')">
+          <a-input v-model:value="form.ips" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('res.project')" prop="project">
           <template v-slot:extra>
             <div>{{$t('system.text_585')}}</div>
           </template>
           <base-select
-            v-decorator="decorators.project"
+            v-model="form.project"
             resource="projects"
             version="v1"
             remote
             :params="projectParams"
             :remote-fn="q => ({ filter: `name.contains(${q})` })"
             :select-props="{ mode: 'default' }" />
-        </a-form-item>
-        <a-form-item :label="$t('iam.role_policy_valid_time_range')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('iam.role_policy_valid_time_range')">
           <a-date-picker
-            v-decorator="decorators.valid_since"
+            v-model:value="form.valid_since"
             :disabled-date="dateDisabledStart"
             format="YYYY-MM-DD HH:mm"
             value-format="YYYY-MM-DD HH:mm:ss"
-            :show-time="{ format: 'HH:mm' }"
-            @change="onValidSinceChange" />
+            :show-time="{ format: 'HH:mm' }" />
           <span class="ml-2 mr-2">~</span>
           <a-date-picker
-            v-decorator="decorators.valid_until"
+            v-model:value="form.valid_until"
             :disabled-date="dateDisabledEnd"
             format="YYYY-MM-DD HH:mm"
             value-format="YYYY-MM-DD HH:mm:ss"
-            :show-time="{ format: 'HH:mm' }"
-            @change="onValidUntilChange" />
-        </a-form-item>
+            :show-time="{ format: 'HH:mm' }" />
+        </a-form-model-item>
       </a-collapse-panel>
     </a-collapse>
-  </a-form>
+  </a-form-model>
 </template>
 
 <script>
@@ -72,48 +72,34 @@ export default {
   data () {
     return {
       form: {
-        fc: this.$form.createForm(this),
+        policies: undefined,
+        ips: undefined,
+        project: undefined,
+        valid_since: undefined,
+        valid_until: undefined,
       },
-      decorators: {
+      rules: {
         policies: [
-          'policies',
           {
-            rules: [
-              {
-                required: true,
-                message: this.$t('common.tips.select', [this.$t('dictionary.policy')]),
-              },
-            ],
+            required: true,
+            message: this.$t('common.tips.select', [this.$t('dictionary.policy')]),
           },
         ],
         ips: [
-          'ips',
           {
-            rules: [
-              {
-                validator (rule, value, callback) {
-                  if (value && value.length > 0) {
-                    const ips = value.split(',')
-                    ips.forEach(ip => {
-                      if (!REGEXP.cidr.regexp.test(ip)) {
-                        return callback(new Error(this.$t('system.text_339', [ip])))
-                      }
-                    })
+            validator: (rule, value, callback) => {
+              if (value && value.length > 0) {
+                const ips = value.split(',')
+                for (let i = 0; i < ips.length; i++) {
+                  const ip = ips[i]
+                  if (!REGEXP.cidr.regexp.test(ip)) {
+                    return callback(new Error(this.$t('system.text_339', [ip])))
                   }
-                  callback()
-                },
-              },
-            ],
+                }
+              }
+              callback()
+            },
           },
-        ],
-        project: [
-          'project',
-        ],
-        valid_since: [
-          'valid_since',
-        ],
-        valid_until: [
-          'valid_until',
         ],
       },
       formItemLayout: {
@@ -178,7 +164,8 @@ export default {
   methods: {
     async set (rid, action = 'repace') {
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         const policies = []
         let ips
         if (values.ips) {
@@ -228,21 +215,15 @@ export default {
       if (typeof value.valueOf === 'function') return value.valueOf()
       return this.$moment(value).valueOf()
     },
-    onValidSinceChange (value) {
-      this.form.fc.setFieldsValue({ valid_since: value })
-    },
-    onValidUntilChange (value) {
-      this.form.fc.setFieldsValue({ valid_until: value })
-    },
     dateDisabledStart (current) {
       if (!current) return false
-      const endTs = this.toTs(this.form.fc.getFieldValue('valid_until'))
+      const endTs = this.toTs(this.form.valid_until)
       if (endTs && current.valueOf() > endTs) return true
       return current.valueOf() < this.$moment().startOf('day').valueOf()
     },
     dateDisabledEnd (current) {
       if (!current) return false
-      const startTs = this.toTs(this.form.fc.getFieldValue('valid_since'))
+      const startTs = this.toTs(this.form.valid_since)
       if (startTs && current.valueOf() < startTs) return true
       return current.valueOf() < this.$moment().startOf('day').valueOf()
     },

@@ -7,9 +7,18 @@
       </a-alert>
       <dialog-selected-tips :name="$t('dictionary.host')" :count="params.data.length" :action="title" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" layout="inline" hideRequiredMark>
-        <reserve-resource :decorators="decorators" :label="$t('compute.each_reserved_passthrough')" />
-      </a-form>
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.each_reserved_passthrough')" />
+        <a-form-model-item label="CPU" prop="cpu">
+          <a-input-number v-model:value="form.cpu" :min="1" :step="1" :precision="0" /> {{$t('compute.text_167')}}
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_168')" prop="memory">
+          <a-input-number v-model:value="form.memory" :min="1" :step="1" :precision="0" /> G
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_169')" prop="disk">
+          <a-input-number v-model:value="form.disk" :min="1" :step="1" :precision="0" /> G
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -20,7 +29,6 @@
 
 <script>
 import { h } from 'vue'
-import ReserveResource from '@Compute/sections/ReserveResource'
 import { sizestr } from '@/utils/utils'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
@@ -28,11 +36,9 @@ import {
   getNameDescriptionTableColumn,
 } from '@/utils/common/tableColumn'
 import { getIsolatedDeviceCountColumns } from '../utils/columns'
+
 export default {
   name: 'SetHostReserveResourceDialog',
-  components: {
-    ReserveResource,
-  },
   mixins: [DialogMixin, WindowsMixin],
   data () {
     const initValue = this.params.data[0].reserved_resource_for_gpu
@@ -43,36 +49,18 @@ export default {
       title: this.$t('compute.setup_passthrough_reserve'),
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        cpu: getRsVal(initValue.reserved_cpu),
+        memory: getRsVal(initValue.reserved_memory / 1024),
+        disk: getRsVal(initValue.reserved_storage / 1024),
       },
-      decorators: {
-        cpu: [
-          'cpu',
-          {
-            initialValue: getRsVal(initValue.reserved_cpu),
-            rules: [
-              { required: true, message: ' ' },
-            ],
-          },
-        ],
-        memory: [
-          'memory',
-          {
-            initialValue: getRsVal(initValue.reserved_memory / 1024),
-            rules: [
-              { required: true, message: ' ' },
-            ],
-          },
-        ],
-        disk: [
-          'disk',
-          {
-            initialValue: getRsVal(initValue.reserved_storage / 1024),
-            rules: [
-              { required: true, message: ' ' },
-            ],
-          },
-        ],
+      rules: {
+        cpu: [{ required: true, message: ' ', trigger: 'change' }],
+        memory: [{ required: true, message: ' ', trigger: 'change' }],
+        disk: [{ required: true, message: ' ', trigger: 'change' }],
+      },
+      formItemLayout: {
+        wrapperCol: { span: 20 },
+        labelCol: { span: 4 },
       },
       columns: [
         getNameDescriptionTableColumn({
@@ -109,20 +97,7 @@ export default {
       ],
     }
   },
-  created () {
-  },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     doSubmit (data) {
       const ids = this.params.data.map((item) => { return item.id })
       return new this.$Manager('hosts').batchPerformAction({
@@ -138,9 +113,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
-        this.loading = true
-        await this.doSubmit(values)
+        await this.$refs.formRef.validate()
+        await this.doSubmit(this.form)
         this.loading = false
         this.params.refresh()
         this.cancelDialog()

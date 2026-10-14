@@ -2,31 +2,39 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('cloudenv.text_421')}}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('cloudenv.text_95')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.generate_name" :placeholder="$t('validator.resourceName')" @change="e => { form.fi.name = e.target.value }" />
-            <name-repeated
-              ref="nameRepeated"
-              #extra
-              res="schedtags"
-              :name="form.fi.name" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')" v-bind="formItemLayout">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
-        <a-form-item required :label="$t('cloudenv.text_413')" v-bind="formItemLayout">
-          <strategy-radio :decorator="decorators.default_strategy" />
-        </a-form-item>
-        <a-form-item :label="$t('cloudenv.text_384')" v-bind="formItemLayout">
-          <a-radio-group v-decorator="decorators.resource_type">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('cloudenv.text_95')" prop="generate_name">
+          <a-input v-model:value="form.generate_name" :placeholder="$t('validator.resourceName')" @change="e => { formFi.name = e.target.value }" />
+          <name-repeated
+            ref="nameRepeated"
+            #extra
+            res="schedtags"
+            :name="formFi.name" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" prop="description">
+          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.description" :placeholder="$t('common_367')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('cloudenv.text_413')" prop="default_strategy" required>
+          <a-radio-group v-model:value="form.default_strategy">
+            <a-radio-button
+              v-for="item in strategyOpts"
+              :value="item.key"
+              :key="item.key">{{ item.label }}</a-radio-button>
+          </a-radio-group>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('cloudenv.text_384')" prop="resource_type">
+          <a-radio-group v-model:value="form.resource_type">
             <a-radio-button
               v-for="item in resourceTypeOpts"
               :value="item.key"
               :key="item.key">{{ item.label }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -36,7 +44,7 @@
 </template>
 
 <script>
-import StrategyRadio from '@Cloudenv/sections/StrategyRadio'
+import { STRATEGY_OPT } from '@Cloudenv/constants/sched'
 import NameRepeated from '@/sections/NameRepeated'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
@@ -44,7 +52,6 @@ import WindowsMixin from '@/mixins/windows'
 export default {
   name: 'CreateSchedtagDialog',
   components: {
-    StrategyRadio,
     NameRepeated,
   },
   mixins: [DialogMixin, WindowsMixin],
@@ -52,36 +59,20 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-        fi: {
-          name: '',
-        },
+        generate_name: '',
+        description: '',
+        default_strategy: '',
+        resource_type: 'hosts',
       },
-      decorators: {
+      formFi: {
+        name: '',
+      },
+      rules: {
         generate_name: [
-          'generate_name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('cloudenv.text_190') },
-              // { validator: this.$validate('resourceName') },
-            ],
-          },
-        ],
-        description: ['description'],
-        default_strategy: [
-          'default_strategy',
-          {
-            initialValue: '',
-          },
-        ],
-        resource_type: [
-          'resource_type',
-          {
-            initialValue: 'hosts',
-          },
+          { required: true, message: this.$t('cloudenv.text_190') },
         ],
       },
+      strategyOpts: STRATEGY_OPT,
       resourceTypeOpts: [
         { key: 'hosts', label: this.$t('cloudenv.text_5') },
         { key: 'storages', label: this.$t('cloudenv.text_6') },
@@ -98,17 +89,6 @@ export default {
     }
   },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     doCreate (data) {
       return this.params.onManager('create', {
         managerArgs: {
@@ -119,12 +99,12 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
-        this.loading = true
-        await this.doCreate(values)
-        this.loading = false
+        await this.$refs.formRef.validate()
+        await this.doCreate(this.form)
         this.cancelDialog()
       } catch (error) {
+        // validation or API error
+      } finally {
         this.loading = false
       }
     },

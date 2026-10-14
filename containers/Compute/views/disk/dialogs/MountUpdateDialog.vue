@@ -4,25 +4,22 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="$t('compute.disk_perform_attach')" :name="$t('dictionary.disk')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('dictionary.server')" v-bind="formItemLayout">
-          <!-- <a-select v-decorator="decorators.server">
-            <a-select-option v-for="item in serversOpts" :key="item.id">
-              {{item.name}}
-            </a-select-option>
-          </a-select> -->
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules">
+        <a-form-model-item :label="$t('dictionary.server')" v-bind="formItemLayout" prop="server">
           <base-select
             class="w-100"
             remote
             filterable
-            v-decorator="decorators.server"
+            v-model:value="form.server"
             resource="servers"
             search-key="search"
             :remote-fn="q => ({ search: q })"
             :params="serverParams" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -43,16 +40,11 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        server: undefined,
       },
-      decorators: {
+      rules: {
         server: [
-          'server',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.text_425') },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_425') },
         ],
       },
       formItemLayout: {
@@ -86,21 +78,10 @@ export default {
     },
   },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
-    doUpdate (data) {
+    doUpdate () {
       return new this.$Manager('servers').batchPerformAction({
         action: 'attachdisk',
-        ids: data.server,
+        ids: this.form.server,
         data: {
           disk_id: this.params.data[0].id,
         },
@@ -109,13 +90,13 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
-        this.loading = true
-        await this.doUpdate(values)
-        this.loading = false
+        await this.$refs.formRef.validate()
+        await this.doUpdate()
         this.params.refresh()
         this.cancelDialog()
       } catch (error) {
+        // validate or submit failed
+      } finally {
         this.loading = false
       }
     },

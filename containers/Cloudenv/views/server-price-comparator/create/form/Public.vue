@@ -1,28 +1,30 @@
 <template>
   <div>
-    <a-form
+    <a-form-model
+      ref="formRef"
       class="mt-3"
-      :form="form.fc"
+      :model="form.fd"
+      :rules="rules"
       v-bind="formItemLayout"
       @submit="submit"
       hideRequiredMark>
-      <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-show="false">
+      <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-show="false">
         <domain-project
-          :fc="form.fc"
-          :fd="form.fd"
-          :decorators="{ project: decorators.project, domain: decorators.domain }"
+          ref="domainProjectRef"
+          :form="form.fd"
           @fetchDomainCallback="fetchDomainCallback"
           @fetchProjectCallback="fetchProjectCallback" />
-      </a-form-item>
-      <a-form-item class="mb-0" :label="$t('compute.text_498')">
-        <bill :decorators="decorators.bill" :form="form" :provider-list="form.fi.providerList" :disabledBillType="disabledBillType" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_294')">
-        <a-input-number v-decorator="decorators.count" @blur="countBlur" :min="1" :max="100" />
-      </a-form-item>
+      </a-form-model-item>
+      <a-form-model-item class="mb-0" :label="$t('compute.text_498')">
+        <bill :model="form.fd" :form="form" :provider-list="form.fi.providerList" :disabledBillType="disabledBillType" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_294')" prop="count">
+        <a-input-number v-model:value="form.fd.count" @blur="countBlur" :min="1" :max="100" />
+      </a-form-model-item>
       <area-selects
         class="mb-0"
         v-if="showAreaSelect"
+        :model="form.fd"
         :wrapperCol="formItemLayout.wrapperCol"
         :labelCol="formItemLayout.labelCol"
         ref="areaSelectRef"
@@ -32,45 +34,47 @@
         :defaultActiveFirstOption="['provider']"
         filterBrandResource="compute_engine"
         @providerFetchSuccess="providerFetchSuccess" />
-      <a-form-item :label="$t('compute.text_1058')" class="mb-0">
-        <cpu-radio :decorator="decorators.vcpu" :options="form.fi.cpuMem.cpus || []" @change="cpuChange" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_369')" class="mb-0">
-        <mem-radio :decorator="decorators.vmem" :options="form.fi.cpuMem.mems_mb || []" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_109')">
+      <a-form-model-item :label="$t('compute.text_1058')" class="mb-0">
+        <cpu-radio :model="form.fd" :options="form.fi.cpuMem.cpus || []" @change="cpuChange" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_369')" class="mb-0">
+        <mem-radio :model="form.fd" :options="form.fi.cpuMem.mems_mb || []" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_109')">
         <sku
-          v-decorator="decorators.sku"
+          ref="skuRef"
+          :model="form.fd"
           :priceUnit="skuPriceUnit"
           :type="type"
           :sku-params="skuParam"
           :hypervisor="hypervisor"
           :hasMeterService="hasMeterService" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_49')" class="mb-0">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_49')" class="mb-0">
         <system-disk
           v-if="form.fd.sku"
-          :decorator="decorators.systemDisk"
+          ref="systemDiskRef"
+          :model="form.fd"
           :type="type"
           :form="form"
           :hypervisor="hypervisor"
           :sku="form.fd.sku"
           :capability-data="form.fi.capability"
           :image="form.fi.imageMsg" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_50')">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_50')">
         <data-disk
           v-if="form.fd.sku"
-          :decorator="decorators.dataDisk"
+          ref="dataDiskRef"
+          :model="form.fd"
           :type="type"
           :form="form"
           :hypervisor="hypervisor"
           :sku="form.fd.sku"
           :defaultType="form.fd.systemDiskType"
           :capability-data="form.fi.capability"
-          :simplify="true"
-          ref="dataDiskRef" />
-      </a-form-item>
+          :simplify="true" />
+      </a-form-model-item>
       <bottom-bar
         ref="bottomBarRef"
         :loading="submiting"
@@ -82,17 +86,16 @@
         :isOpenWorkflow="isOpenWorkflow"
         :isServertemplate="isServertemplate"
         :hasMeterService="hasMeterService" />
-    </a-form>
+    </a-form-model>
   </div>
 </template>
 <script>
 import * as R from 'ramda'
 import { LOGIN_TYPES_MAP, BILL_TYPES_MAP } from '@Compute/constants'
-import { resolveValueChangeField } from '@/utils/common/ant'
+import Bill from '@Compute/sections/Bill'
 import { PROVIDER_MAP, HYPERVISORS_MAP, isUcloudLikeHypervisor } from '@/constants'
-import AreaSelects from '@/sections/AreaSelects'
+import AreaSelects from '@/sections/AreaSelects/model'
 import mixin from './mixin'
-import Bill from '../components/Bill'
 
 export default {
   name: 'VMPublicCreate',
@@ -184,7 +187,7 @@ export default {
       const params = {
         public_cloud: true,
         limit: 0,
-        cpu_core_count: this.form.fd.vcpu || this.decorators.vcpu[1].initialValue,
+        cpu_core_count: this.form.fd.vcpu,
         memory_size_mb: this.form.fd.vmem,
         usable: true,
         enabled: true,
@@ -346,26 +349,23 @@ export default {
     },
   },
   watch: {
+    // onValuesChange → form.fd watches（计费切换清区域）
     'form.fd.billType' (val) {
       // 计费方式为包年包月平台不含 azure、aws，这里统一做清空处理
       if (val === BILL_TYPES_MAP.package.key) {
-        this.form.fc.setFieldsValue({
-          provider: undefined,
-          cloudregion: undefined,
-          zone: undefined,
-        })
+        this.form.fd.provider = undefined
+        this.form.fd.cloudregion = undefined
+        this.form.fd.zone = undefined
       }
-      this.$refs.areaSelectRef.fetchs(['provider'])
+      this.$refs.areaSelectRef?.fetchs(['provider'])
     },
     'form.fd.duration' (val, oldVal) {
       if (this.form.fd.billType === BILL_TYPES_MAP.package.key) {
         if (val === '1W' || oldVal === '1W') {
-          this.form.fc.setFieldsValue({
-            provider: undefined,
-            cloudregion: undefined,
-            zone: undefined,
-          })
-          this.$refs.areaSelectRef.fetchs(['provider', 'cloudregion', 'zone'])
+          this.form.fd.provider = undefined
+          this.form.fd.cloudregion = undefined
+          this.form.fd.zone = undefined
+          this.$refs.areaSelectRef?.fetchs(['provider', 'cloudregion', 'zone'])
         }
       }
     },
@@ -380,9 +380,7 @@ export default {
       if (this.form.fd.billType === BILL_TYPES_MAP.package.key) {
         if (this.form.fd.duration === '1W') {
           list = list.filter(item => HYPERVISORS_MAP.aliyun.key === item.name.toLowerCase())
-          this.form.fc.setFieldsValue({
-            provider: HYPERVISORS_MAP.aliyun.provider,
-          })
+          this.form.fd.provider = HYPERVISORS_MAP.aliyun.provider
         } else {
           list = list.filter(item => {
             return ![HYPERVISORS_MAP.azure.key, HYPERVISORS_MAP.aws.key, HYPERVISORS_MAP.google.key].includes(item.name.toLowerCase())
@@ -396,18 +394,11 @@ export default {
       this.$set(this.form.fi, 'providerList', list)
       return list
     },
-    onValuesChange (vm, changedFields) {
-      this.$nextTick(() => {
-        const formValue = this.form.fc.getFieldsValue()
-        const newField = resolveValueChangeField(changedFields)
-        this._setNewFieldToFd(newField, formValue)
-      })
-    },
     async fetchCapability () {
       const params = {
         show_emulated: true,
         scope: 'system',
-        resource_type: this.form.fc.getFieldValue('resourceType'),
+        resource_type: this.form.fd.resourceType,
       }
       let id = this.cloudregionZoneParams.cloudregion
       let resource = 'cloudregions'
@@ -430,10 +421,7 @@ export default {
       try {
         const { data } = await this.serverskusM.get({ id: 'instance-specs', params: this.instanceSpecParams })
         this.form.fi.cpuMem = data
-        const vcpuDecorator = this.decorators.vcpu
-        const vcpuInit = vcpuDecorator[1].initialValue
-        const cpu = this.form.fd.vcpu || vcpuInit
-        this.cpuChange(cpu)
+        this.cpuChange(this.form.fd.vcpu)
       } catch (error) {
         throw error
       }

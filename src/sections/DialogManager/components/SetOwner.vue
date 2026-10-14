@@ -4,37 +4,39 @@
     <template #body>
       <dialog-selected-tips :count="params.data.length" :action="params.action || $t('common.text00104')" :name="params.tipName || ''" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc"
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
         v-bind="formItemLayout">
-        <a-form-item :label="$t('common.text00105')" :extra="$t(`shareScopeDesc.${formScope}`)">
+        <a-form-model-item :label="$t('common.text00105')" :extra="$t(`shareScopeDesc.${formScope}`)">
           <a-radio-group v-model:value="formScope">
             <a-radio-button
               v-for="item in scopeOptions"
               :value="item.key"
               :key="item.key">{{ item.label }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('dictionary.domain')" key="domain" v-if="isDomainScope">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('dictionary.domain')" key="domain" prop="domain" v-if="isDomainScope">
           <base-select
+            v-model="form.domain"
             resource="domains"
-            v-decorator="decorators.domain"
             :params="domainParams"
             filterable
             version="v1"
             :select-props="{ placeholder: `${$t('common.text00106')}${$t('dictionary.domain')}` }" />
-        </a-form-item>
-        <a-form-item :label="$t('dictionary.project')" key="project" v-if="isProjectScope">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('dictionary.project')" key="project" prop="project" v-if="isProjectScope">
           <base-select
+            v-model="form.project"
             resource="projects"
-            v-decorator="decorators.project"
             :params="projectParams"
             filterable
             version="v1"
             :need-params="true"
             :select-props="{ placeholder: `${$t('common.text00106')}${$t('dictionary.project')}` }" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </template>
     <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -78,30 +80,17 @@ export default {
       isDomainMode: this.$store.getters.isDomainMode,
       l3PermissionEnable: this.$store.getters.l3PermissionEnable,
       userInfo: this.$store.getters.userInfo,
-      form: {
-        fc: this.$form.createForm(this),
-      },
       formScope: initValue.scope,
-      decorators: {
+      form: {
+        domain: initValue.domain,
+        project: initValue.project,
+      },
+      rules: {
         domain: [
-          'domain',
-          {
-            initialValue: initValue.domain,
-            validateTrigger: 'blur',
-            rules: [
-              { required: true, message: this.$t('rules.domain') },
-            ],
-          },
+          { required: true, message: this.$t('rules.domain'), trigger: 'blur' },
         ],
         project: [
-          'project',
-          {
-            initialValue: initValue.project,
-            validateTrigger: 'blur',
-            rules: [
-              { required: true, message: this.$t('rules.project') },
-            ],
-          },
+          { required: true, message: this.$t('rules.project'), trigger: 'blur' },
         ],
       },
       formItemLayout: {
@@ -150,17 +139,6 @@ export default {
     },
   },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     doSubmit (values) {
       const data = {
         id: this.params.data[0].id,
@@ -185,9 +163,11 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
+        if (this.isProjectScope || this.isDomainScope) {
+          await this.$refs.formRef.validate()
+        }
         this.loading = true
-        await this.doSubmit(values)
+        await this.doSubmit(this.form)
         this.loading = false
         this.cancelDialog()
       } catch (error) {

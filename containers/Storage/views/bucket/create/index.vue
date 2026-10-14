@@ -2,13 +2,22 @@
   <div>
     <page-header :title="$t('storage.text_95')" :tabs="cloudEnvOptions" v-model:currentTab="cloudEnv" />
     <page-body>
-      <a-form :form="form.fc" v-bind="formItemLayout" hideRequiredMark>
-        <a-form-item :label="$t('storage.text_55', [$t('dictionary.project')])" v-bind="formItemLayout">
-          <domain-project :fc="form.fc" :decorators="{ project: decorators.project, domain: decorators.domain }" @update:domain="handleDomainChange" />
-        </a-form-item>
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout"
+        hideRequiredMark>
+        <a-form-model-item :label="$t('storage.text_55', [$t('dictionary.project')])" prop="project">
+          <domain-project
+            :form="form"
+            :labelInValue="true"
+            @update:domain="handleDomainChange" />
+        </a-form-model-item>
         <area-selects
           class="mb-0"
           ref="areaSelects"
+          :model="form"
           :wrapperCol="formItemLayout.wrapperCol"
           :labelCol="formItemLayout.labelCol"
           :names="areaselectsName"
@@ -18,29 +27,30 @@
           :providerParams="providerParams"
           filterBrandResource="object_storage"
           @change="handleCloudregionChange" />
-        <a-form-item :label="$t('storage.text_40')">
-          <a-input :placeholder="$t('storage.text_56')" v-decorator="decorators.name" />
-          <span slot="extra">{{$t('storage.text_101')}}<template v-if="cloudregion.provider === 'Azure'"><br />{{$t('storage.text_102')}}</template></span>
-        </a-form-item>
-        <a-form-item :label="$t('common.description')">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_15')" required v-bind="formItemLayout">
+        <a-form-model-item :label="$t('storage.text_40')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('storage.text_56')" />
+          <template #extra>
+            {{$t('storage.text_101')}}<template v-if="cloudregion.provider === 'Azure'"><br />{{$t('storage.text_102')}}</template>
+          </template>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" prop="description">
+          <a-textarea v-model:value="form.description" :auto-size="{ minRows: 1, maxRows: 3 }" :placeholder="$t('common_367')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_15')" prop="cloudprovider">
           <base-select
             class="w-50"
-            v-decorator="decorators.cloudprovider"
+            v-model="form.cloudprovider"
             resource="cloudproviders"
             :params="cloudproviderParams"
             :mapper="providerMapper"
             :isDefaultSelect="true"
             :showSync="true"
             :select-props="{ placeholder: $t('compute.text_149') }" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_1154')" class="mb-0">
-          <tag
-            v-decorator="decorators.tag" :allowNoValue="false" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_1154')" class="mb-0" prop="tag">
+          <tag :value="form.tag" @change="v => { form.tag = v || {} }" :allowNoValue="false" />
+        </a-form-model-item>
+      </a-form-model>
     </page-body>
     <page-footer>
       <div slot="right">
@@ -56,10 +66,10 @@ import * as R from 'ramda'
 import { mapGetters } from 'vuex'
 import { formItemLayout } from '@Storage/constants/index.js'
 import Tag from '@/sections/Tag'
-import AreaSelects from '@/sections/AreaSelects'
+import AreaSelects from '@/sections/AreaSelects/model'
 import { isRequired } from '@/utils/validate'
 import i18n from '@/locales'
-import DomainProject from '@/sections/DomainProject'
+import DomainProject from '@/sections/DomainProject/model'
 import { getCloudEnvOptions } from '@/utils/common/hypervisor'
 
 function validateTag (rule, value, callback) {
@@ -84,7 +94,14 @@ export default {
       routerQuery: this.$route.query.type,
       cloudEnv: this.$route.query.type ? this.$route.query.type : cloudEnvOptions[0].key,
       form: {
-        fc: this.$form.createForm(this),
+        domain: undefined,
+        project: undefined,
+        provider: undefined,
+        cloudregion: undefined,
+        name: '',
+        description: '',
+        cloudprovider: undefined,
+        tag: {},
       },
       formItemLayout,
       project_domain: '',
@@ -93,61 +110,29 @@ export default {
   },
   computed: {
     ...mapGetters(['userInfo', 'scope', 'isAdminMode']),
-    getFieldValue () {
-      return this.form.fc.getFieldValue
-    },
-    decorators () {
+    rules () {
       return {
-        domain: [
-          'domain',
-          {
-            rules: [
-              { validator: isRequired(), message: i18n.t('rules.domain'), trigger: 'change' },
-            ],
-          },
-        ],
         project: [
-          'project',
-          {
-            rules: [
-              { validator: isRequired(), message: i18n.t('rules.project'), trigger: 'change' },
-            ],
-          },
+          { validator: isRequired(), message: i18n.t('rules.project'), trigger: 'change' },
         ],
         name: [
-          'name',
+          { required: true, message: this.$t('storage.text_56'), trigger: 'blur' },
           {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('storage.text_56') },
-              {
-                validator: (rule, value, _callback) => {
-                  const isAzure = this.cloudregion.provider === 'Azure'
-                  if (isAzure && (value && value.indexOf('-') > -1)) {
-                    _callback(new Error(this.$t('storage.text_102')))
-                  }
-                  return this.$validate('bucketName')(rule, value, _callback)
-                },
-              },
-            ],
+            validator: (rule, value, callback) => {
+              const isAzure = this.cloudregion.provider === 'Azure'
+              if (isAzure && (value && value.indexOf('-') > -1)) {
+                return callback(new Error(this.$t('storage.text_102')))
+              }
+              return this.$validate('bucketName')(rule, value, callback)
+            },
+            trigger: 'blur',
           },
         ],
-        description: ['description'],
         cloudprovider: [
-          'cloudprovider',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_689') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_689'), trigger: 'change' },
         ],
         tag: [
-          'tag',
-          {
-            rules: [
-              { validator: validateTag },
-            ],
-          },
+          { validator: validateTag, trigger: 'change' },
         ],
       }
     },
@@ -194,76 +179,46 @@ export default {
     },
   },
   watch: {
-    cloudEnv (newValue) {
-      this.$refs.areaSelects.fetchs(this.areaselectsName)
+    cloudEnv () {
+      this.$refs.areaSelects?.fetchs(this.areaselectsName)
     },
     project_domain () {
-      this.$refs.areaSelects.fetchs(this.areaselectsName)
+      this.$refs.areaSelects?.fetchs(this.areaselectsName)
     },
-  },
-  provide () {
-    return {
-      form: this.form,
-    }
   },
   methods: {
     handleDomainChange (val) {
-      this.project_domain = val.key
+      this.project_domain = val?.key || val || ''
     },
     providerMapper (data) {
       if (this.cloudEnv === 'onpremise') data = data.filter(item => item.provider !== 'VMware')
       return data
     },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (err) return reject(err)
-          const { zone, cloudregion } = values
-          if (zone) {
-            values.zone = zone.key
-          }
-          if (cloudregion) {
-            values.cloudregion = cloudregion
-          }
-          resolve(values)
-        })
-      })
-    },
     handleCloudregionChange (data) {
       const hasCloudRegion = R.has('cloudregion')(data)
       if (!hasCloudRegion || R.isEmpty(data.cloudregion)) return
       const cloudregion = data.cloudregion.value
-      const isAzure = cloudregion.provider === 'Azure'
-      const name = this.form.fc.getFieldValue('name')
-      this.cloudregion = cloudregion
-      if (isAzure && (name && name.indexOf('-'))) {
-        this.form.fc.setFields({
-          name: {
-            value: name,
-            errors: [new Error(this.$t('storage.text_102'))],
-          },
-        })
-      } else if (name) {
-        this.form.fc.validateFields(['name'])
+      this.cloudregion = cloudregion || {}
+      if (this.form.name) {
+        this.$refs.formRef?.validateField?.('name')
       }
     },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
-        const { project, domain, tag, ...rest } = values
-        let meta = {}
-        if (tag) {
-          meta = tag
+        await this.$refs.formRef.validate()
+        const { project, domain, tag, zone, cloudregion, ...rest } = this.form
+        const payload = {
+          ...rest,
+          cloudregion,
+          __meta__: tag || {},
+          project_domain: (domain && domain.key) || this.userInfo.projectDomainId,
+          project_id: (project && project.key) || this.userInfo.projectId,
         }
-        await new this.$Manager('buckets').create({
-          data: {
-            ...rest,
-            __meta__: meta,
-            project_domain: (domain && domain.key) || this.userInfo.projectDomainId,
-            project_id: (project && project.key) || this.userInfo.projectId,
-          },
-        })
+        if (zone) {
+          payload.zone = zone.key || zone
+        }
+        await new this.$Manager('buckets').create({ data: payload })
         this.loading = false
         this.$message.success(this.$t('storage.text_62'))
         this.$router.push('/bucket')

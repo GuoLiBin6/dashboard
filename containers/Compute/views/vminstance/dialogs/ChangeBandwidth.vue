@@ -4,32 +4,32 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_1185')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.bandwidth.symmetric.title')">
-          <a-checkbox v-model="symmetricBandwidth" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.bandwidth.title')" v-if="symmetricBandwidth">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.bandwidth.symmetric.title')" prop="symmetricBandwidth">
+          <a-checkbox v-model:checked="symmetricBandwidth" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.bandwidth.title')" v-if="symmetricBandwidth" prop="bandwidth">
           <a-tooltip placement="top" :title="$t('compute.text_1338', [[bandwidthMax]])">
-            <a-input-number v-decorator="decorators.bandwidth" :parser="getParser" :min="0" :max="bandwidthMax" />
+            <a-input-number v-model:value="form.bandwidth" :parser="getParser" :min="0" :max="bandwidthMax" />
             Mbps
           </a-tooltip>
-        </a-form-item>
-        <a-form-item :label="$t('compute.bandwidth.tx.title')" v-if="!symmetricBandwidth">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.bandwidth.tx.title')" v-if="!symmetricBandwidth" prop="tx_bw_limit">
           <a-tooltip placement="top" :title="$t('compute.text_1338', [[bandwidthMax]])">
-            <a-input-number v-decorator="decorators.tx_bw_limit" :parser="getParser" :min="0" :max="bandwidthMax" />
+            <a-input-number v-model:value="form.tx_bw_limit" :parser="getParser" :min="0" :max="bandwidthMax" />
             Mbps
           </a-tooltip>
-        </a-form-item>
-        <a-form-item :label="$t('compute.bandwidth.rx.title')" v-if="!symmetricBandwidth">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.bandwidth.rx.title')" v-if="!symmetricBandwidth" prop="rx_bw_limit">
           <a-tooltip placement="top" :title="$t('compute.text_1338', [[bandwidthMax]])">
-            <a-input-number v-decorator="decorators.rx_bw_limit" :parser="getParser" :min="0" :max="bandwidthMax" />
+            <a-input-number v-model:value="form.rx_bw_limit" :parser="getParser" :min="0" :max="bandwidthMax" />
             Mbps
           </a-tooltip>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_1041')" v-if="isOpenWorkflow">
-          <a-input v-decorator="decorators.reason" :placeholder="$t('compute.text_1105')" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_1041')" v-if="isOpenWorkflow" prop="reason">
+          <a-input v-model:value="form.reason" :placeholder="$t('compute.text_1105')" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -51,35 +51,14 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        bandwidth: this.params.data[0].bw_limit || 0,
+        tx_bw_limit: this.params.data[0].tx_bw_limit || 0,
+        rx_bw_limit: this.params.data[0].rx_bw_limit || 0,
+        reason: '',
       },
-      decorators: {
+      rules: {
         bandwidth: [
-          'bandwidth',
-          {
-            initialValue: this.params.data[0].bw_limit || 0,
-            rules: [
-              { required: true, message: this.$t('compute.text_1188') },
-            ],
-          },
-        ],
-        tx_bw_limit: [
-          'tx_bw_limit',
-          {
-            initialValue: this.params.data[0].tx_bw_limit || 0,
-          },
-        ],
-        rx_bw_limit: [
-          'rx_bw_limit',
-          {
-            initialValue: this.params.data[0].rx_bw_limit || 0,
-          },
-        ],
-        reason: [
-          'reason',
-          {
-            initialValue: '',
-          },
+          { required: true, message: this.$t('compute.text_1188') },
         ],
       },
       formItemLayout: {
@@ -104,13 +83,13 @@ export default {
     },
   },
   methods: {
-    async doChangeBandwidth (values) {
+    async doChangeBandwidth () {
       const manager = new this.$Manager('servers')
       const ids = this.params.data.map(item => item.guest_id)
       const data = {
-        bandwidth: values.bandwidth,
-        tx_bw_limit: values.tx_bw_limit,
-        rx_bw_limit: values.rx_bw_limit,
+        bandwidth: this.form.bandwidth,
+        tx_bw_limit: this.form.tx_bw_limit,
+        rx_bw_limit: this.form.rx_bw_limit,
         mac: this.params.data[0].mac_addr,
       }
       return manager.batchPerformAction({
@@ -119,12 +98,12 @@ export default {
         data,
       })
     },
-    async doChangeBandwidthByWorkflow (values) {
+    async doChangeBandwidthByWorkflow () {
       const curData = this.params.data[0]
       const params = {
-        bandwidth: values.bandwidth,
-        tx_bw_limit: values.tx_bw_limit,
-        rx_bw_limit: values.rx_bw_limit,
+        bandwidth: this.form.bandwidth,
+        tx_bw_limit: this.form.tx_bw_limit,
+        rx_bw_limit: this.form.rx_bw_limit,
         mac: curData.mac_addr,
       }
       const resData = this.params.resData
@@ -139,9 +118,9 @@ export default {
             rx_bw_limit: curData.rx_bw_limit,
           },
           after: {
-            bw_limit: values.bandwidth,
-            tx_bw_limit: values.tx_bw_limit,
-            rx_bw_limit: values.rx_bw_limit,
+            bw_limit: this.form.bandwidth,
+            tx_bw_limit: this.form.tx_bw_limit,
+            rx_bw_limit: this.form.rx_bw_limit,
           },
         }
       })
@@ -156,7 +135,7 @@ export default {
         'change-bandwidth-paramter': JSON.stringify(params),
         ids: resData[0].id,
         serverConf: JSON.stringify(serverConf),
-        description: values.reason,
+        description: this.form.reason,
       }
       await this.createWorkflow(variables)
       this.$message.success(this.$t('common.worflow_tip', [this.$t('compute.text_1185')]))
@@ -165,11 +144,11 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         if (this.isOpenWorkflow) {
-          await this.doChangeBandwidthByWorkflow(values)
+          await this.doChangeBandwidthByWorkflow()
         } else {
-          await this.doChangeBandwidth(values)
+          await this.doChangeBandwidth()
         }
         this.params.refresh()
         this.cancelDialog()

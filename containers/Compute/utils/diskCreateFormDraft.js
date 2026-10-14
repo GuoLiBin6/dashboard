@@ -9,7 +9,7 @@ export const DISK_CREATE_FORM_DRAFT_FIELD = {
   STORAGE_ID: 'storageId',
 }
 
-export const DISK_CREATE_FORM_DRAFT_FC_BINDINGS = [
+export const DISK_CREATE_FORM_DRAFT_FD_BINDINGS = [
   { key: DISK_CREATE_FORM_DRAFT_FIELD.CLOUDPROVIDER, formField: 'manager_id', kind: 'selection' },
 ]
 

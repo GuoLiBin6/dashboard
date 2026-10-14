@@ -4,16 +4,17 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('cloudenv.text_14')" :count="params.data.length" :action="$t('cloudenv.text_406')" />
       <dialog-table class="mb-2" :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc"
-         v-bind="formItemLayout">
-        <common-form-items />
-      </a-form>
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        v-bind="formItemLayout">
+        <common-form-items :form="form" />
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
        <test-button
-            :disabled="!form.fc.getFieldValue('http_proxy') && !form.fc.getFieldValue('https_proxy')"
+            :disabled="!form.http_proxy && !form.https_proxy"
             :post="testPost"
             :isSuccessAlert="false" />
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
@@ -38,7 +39,9 @@ export default {
       formItemLayout,
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        https_proxy: '',
+        http_proxy: '',
+        no_proxy: '',
       },
     }
   },
@@ -48,28 +51,26 @@ export default {
   methods: {
     async _backfill () {
       await this.$nextTick()
-      const { setFieldsValue } = this.form.fc
       const [row] = this.params.data
-      setFieldsValue({
+      this.form = {
         https_proxy: row.https_proxy,
         http_proxy: row.http_proxy,
         no_proxy: row.no_proxy,
-      })
+      }
     },
     async testPost () {
       const manager = new this.$Manager('proxysettings')
       try {
         const keys = ['http_proxy', 'https_proxy']
-        const values = await this.form.fc.validateFields(['http_proxy', 'https_proxy'])
         const { data } = await manager.performClassAction({
           action: 'test',
           data: {
-            http_proxy: values.http_proxy,
-            https_proxy: values.https_proxy,
+            http_proxy: this.form.http_proxy,
+            https_proxy: this.form.https_proxy,
           },
         })
         keys.forEach(k => {
-          if (!data[k] || !values[k] || R.type(data[k]) !== 'Object') return false
+          if (!data[k] || !this.form[k] || R.type(data[k]) !== 'Object') return false
           const { ok, reason } = data[k]
           if (ok) {
             this.$notification.success({
@@ -90,7 +91,7 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        const values = { ...this.form }
         const ids = this.params.data.map(item => item.id)
         await this.params.onManager('update', {
           id: ids[0],

@@ -4,15 +4,17 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.network')" :count="params.data.length" :action="$t('network.text_632')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('network.text_633')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.name" :placeholer="$t('network.text_634')" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_635')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.split_ip" :placeholer="$t('network.text_636')" />
-        </a-form-item>
-      </a-form>
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules">
+        <a-form-model-item :label="$t('network.text_633')" v-bind="formItemLayout" prop="name">
+          <a-input v-model:value="form.name" :placeholer="$t('network.text_634')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_635')" v-bind="formItemLayout" prop="split_ip">
+          <a-input v-model:value="form.split_ip" :placeholer="$t('network.text_636')" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -32,26 +34,16 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        name: undefined,
+        split_ip: undefined,
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_637') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_637') },
         ],
         split_ip: [
-          'split_ip',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('network.text_638') },
-              { validator: this.$validate('IPv4') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_638') },
+          { validator: this.$validate('IPv4') },
         ],
       },
       formItemLayout: {
@@ -77,7 +69,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         if (values.split_ip === this.params.data[0].guest_ip_start || values.split_ip === this.params.data[0].guest_ip_end) {
           this.$message.error(this.$t('network.text_639'))
           return

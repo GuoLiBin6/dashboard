@@ -1,12 +1,5 @@
 <template>
   <div>
-    <a-form
-      v-bind="formItemLayout"
-      :form="form.fc">
-      <!-- <a-form-item :label="$t('common.name')">
-        <a-input v-decorator="decorators.name" :placeholder="$t('common.placeholder')" />
-      </a-form-item> -->
-    </a-form>
     <div v-for="(item, i) in formList" :key="item.key" class="mb-3">
       <monitor-form
         :panel="panel"
@@ -70,9 +63,6 @@ export default {
   data () {
     return {
       formList: [{ key: uuid(), show: true }],
-      form: {
-        fc: this.$form.createForm(this),
-      },
       formItemLayout: {
         wrapperCol: {
           span: 20,
@@ -80,16 +70,6 @@ export default {
         labelCol: {
           span: 4,
         },
-      },
-      decorators: {
-        name: [
-          'name',
-          {
-            rules: [
-              { required: true, message: this.$t('monitor.text_7') },
-            ],
-          },
-        ],
       },
     }
   },

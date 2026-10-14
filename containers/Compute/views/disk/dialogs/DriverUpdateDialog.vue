@@ -2,27 +2,26 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('compute.disk.change_driver')}}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc" v-bind="formItemLayout" hideRequiredMark>
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout" hideRequiredMark>
         <dialog-table :data="dataList" :columns="columns" />
-        <a-form-item label="SSD" :extra="$t('compute.disk.ssd_extra')">
-          <a-switch v-model:value="is_ssd" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.cache_mode')">
-          <a-select v-decorator="decorators.cache_mode">
-            <a-select-option v-for="item in cacheModesOpts" :key="item.value">
+        <a-form-model-item label="SSD" :extra="$t('compute.disk.ssd_extra')" prop="is_ssd">
+          <a-switch v-model:checked="form.is_ssd" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.cache_mode')" prop="cache_mode">
+          <a-select v-model:value="form.cache_mode">
+            <a-select-option v-for="item in cacheModesOpts" :key="item.value" :value="item.value">
               {{item.label}}
             </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_634')">
-          <a-select v-decorator="decorators.driver">
-            <a-select-option v-for="item in driversOpts" :key="item.value">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_634')" prop="driver">
+          <a-select v-model:value="form.driver">
+            <a-select-option v-for="item in driversOpts" :key="item.value" :value="item.value">
               {{item.label}}
             </a-select-option>
           </a-select>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -57,29 +56,17 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-        fd: {},
+        driver: undefined,
+        cache_mode: undefined,
+        is_ssd: false,
+      },
+      guestId: '',
+      rules: {
+        driver: [
+          { required: true, message: this.$t('compute.driver.select_tip') },
+        ],
       },
       dataList: [],
-      decorators: {
-        driver: [
-          'driver',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.driver.select_tip') },
-            ],
-          },
-        ],
-        cache_mode: [
-          'cache_mode',
-          {
-            rules: [
-              { required: false, message: this.$t('compute.disk.cache_mode.select_tip') },
-            ],
-          },
-        ],
-      },
-      is_ssd: false,
       formItemLayout: {
         wrapperCol: {
           span: 21,
@@ -126,7 +113,7 @@ export default {
   computed: {
     ...mapGetters(['isAdminMode', 'isDomainMode', 'scope']),
     driversOpts () {
-      if (this.is_ssd) {
+      if (this.form.is_ssd) {
         return [{ label: 'scsi', value: 'scsi' }]
       }
       return [
@@ -138,14 +125,10 @@ export default {
     },
   },
   watch: {
-    is_ssd: {
-      handler: function (val) {
-        if (val) {
-          this.form.fc.setFieldsValue({
-            driver: 'scsi',
-          })
-        }
-      },
+    'form.is_ssd' (val) {
+      if (val) {
+        this.form.driver = 'scsi'
+      }
     },
   },
   created () {
@@ -163,26 +146,13 @@ export default {
         })
         if (current && current[0]) {
           const driver = current[0].driver
-          this.form.fd = current[0]
+          this.guestId = current[0].guest_id
           this.dataList = current
-          this.form.fc.setFieldsValue({
-            driver,
-            cache_mode: current[0].cache_mode,
-          })
-          this.is_ssd = driver !== 'scsi' ? false : is_ssd
+          this.form.driver = driver
+          this.form.cache_mode = current[0].cache_mode
+          this.form.is_ssd = driver !== 'scsi' ? false : is_ssd
         }
       }
-    },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
     },
     async doUpdate (data) {
       await new this.$Manager('servers', 'v2').performAction({
@@ -198,25 +168,24 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
-        this.loading = true
+        await this.$refs.formRef.validate()
         const params = {
-          driver: values.driver,
-          server: this.form.fd.guest_id,
-          cache_mode: values.cache_mode,
-          is_ssd: this.is_ssd,
+          driver: this.form.driver,
+          server: this.guestId,
+          cache_mode: this.form.cache_mode,
+          is_ssd: this.form.is_ssd,
           disk: this.params.data[0].id,
         }
         if (!params.server || !params.disk) {
-          this.loading = false
           return
         }
-        this.doUpdate(params)
-        this.loading = false
+        await this.doUpdate(params)
         this.$message.success(this.$t('common.success'))
         this.params.ok(this.params.data[0].id)
         this.cancelDialog()
       } catch (error) {
+        // validate / update failed
+      } finally {
         this.loading = false
       }
     },

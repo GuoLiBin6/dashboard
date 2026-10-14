@@ -1,22 +1,22 @@
 <template>
   <base-dialog @cancel="cancelDialog" :width="900">
     <div slot="header">{{params.title}}</div>
-    <a-form slot="body" :form="form.fc" class="mt-3" v-bind="formItemLayout">
-      <a-form-item :label="$t('db.text_232')">
-        <a-input :placeholder="$t('validator.dbName')" v-decorator="decorators.name" />
-      </a-form-item>
-      <a-form-item :label="$t('db.text_233')">
-        <a-select allowClear showSearch :placeholder="$t('db.text_234')" v-decorator="decorators.character_set">
+    <a-form-model ref="formRef" slot="body" :model="form.fd" :rules="rules" class="mt-3" v-bind="formItemLayout">
+      <a-form-model-item :label="$t('db.text_232')" prop="name">
+        <a-input :placeholder="$t('validator.dbName')" v-model:value="form.fd.name" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('db.text_233')" prop="character_set">
+        <a-select allowClear showSearch :placeholder="$t('db.text_234')" v-model:value="form.fd.character_set">
           <a-select-option
             v-for="item in CHARACTER_SET"
             :key="item"
             :value="item">{{ item }}</a-select-option>
         </a-select>
-      </a-form-item>
-      <a-form-item :label="$t('db.text_188')" v-if="this.params.rdsItem.brand !== 'Google'">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('db.text_188')" v-if="this.params.rdsItem.brand !== 'Google'">
         <database-privileges :rdsItem="params.rdsItem" />
-      </a-form-item>
-    </a-form>
+      </a-form-model-item>
+    </a-form-model>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
@@ -38,12 +38,25 @@ export default {
   },
   mixins: [DialogMixin, WindowsMixin],
   data () {
+    const { initialValues = {} } = this.params
     return {
       loading: false,
       CHARACTER_SET,
       privileges: RDS_ACCOUNT_PRIVILEGES,
       form: {
-        fc: this.$form.createForm(this),
+        fd: {
+          name: initialValues.name,
+          character_set: 'utf8',
+        },
+      },
+      rules: {
+        name: [
+          { required: true, message: this.$t('db.text_136') },
+          { validator: validateForm('dbName') },
+        ],
+        character_set: [
+          { required: true, message: this.$t('db.text_234') },
+        ],
       },
       formItemLayout: {
         wrapperCol: { span: 20 },
@@ -56,48 +69,14 @@ export default {
       form: this.form,
     }
   },
-  computed: {
-    decorators () {
-      const { initialValues = {} } = this.params
-      const decorators = {
-        name: [
-          'name',
-          {
-            initialValue: initialValues.name,
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('db.text_136') },
-              { validator: validateForm('dbName') },
-            ],
-          },
-        ],
-        character_set: [
-          'character_set',
-          {
-            initialValue: 'utf8',
-            rules: [{ required: true, message: this.$t('db.text_234') }],
-          },
-        ],
-      }
-      return decorators
-    },
-  },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
+        await this.$refs.formRef.validate()
+        const values = {
+          ...this.form.fd,
+        }
         const params = {
           ...values,
           dbinstance: this.params.rdsItem.id,

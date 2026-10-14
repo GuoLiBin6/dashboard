@@ -130,7 +130,7 @@ export default {
     this.syncValueToBounds()
   },
   methods: {
-    // 供 antdFormLegacyCompat setFieldsValue 同步展示（不走 emit，避免回写循环）
+    // 供父级程序化写回展示（不走 emit，避免回写循环）
     __decoratorSyncValue (v) {
       const next = parseSizeValue(v)
       if (next === undefined) return

@@ -2,17 +2,18 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{ title }}</div>
     <div slot="body">
-      <a-form :form="form.fc" v-bind="formItemLayout" hideRequiredMark>
-        <a-form-item
-          :label="this.$t('common.text00080')">
-          <a-textarea :autoSize="{ minRows: 4, maxRows: 5 }" v-decorator="decorators.comment" />
-        </a-form-item>
-        <a-form-item :label="$t('common.workflow_priority')">
-        <a-radio-group v-decorator="decorators.priority">
-          <a-radio-button v-for="item in PRIORITY_OPTS" :value="item.key" :key="item.key">{{ item.value }}</a-radio-button>
-        </a-radio-group>
-      </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout" hideRequiredMark>
+        <a-form-model-item
+          :label="this.$t('common.text00080')"
+          prop="comment">
+          <a-textarea v-model:value="form.comment" :autoSize="{ minRows: 4, maxRows: 5 }" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.workflow_priority')" prop="priority">
+          <a-radio-group v-model:value="form.priority">
+            <a-radio-button v-for="item in PRIORITY_OPTS" :value="item.key" :key="item.key">{{ item.value }}</a-radio-button>
+          </a-radio-group>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
@@ -46,16 +47,11 @@ export default {
         },
       },
       form: {
-        fc: this.$form.createForm(this),
+        comment: '',
+        priority: 'minor',
       },
-      decorators: {
-        comment: ['comment', { rules: [{ required: true, message: this.$t('common.text00082') }] }],
-        priority: [
-          'priority',
-          {
-            initialValue: 'minor',
-          },
-        ],
+      rules: {
+        comment: [{ required: true, message: this.$t('common.text00082') }],
       },
     }
   },
@@ -84,9 +80,9 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         if (this.isOpenWorkflow) {
-          await this.handleJoinProjectByWorkflowSubmit(values)
+          await this.handleJoinProjectByWorkflowSubmit(this.form)
         }
         this.cancelDialog()
       } finally {

@@ -2,20 +2,24 @@
   <div class="os-image-select-wrapper">
     <a-row :gutter="8">
       <a-col :span="8" v-if="showCloudaccount">
-        <a-form-item :wrapperCol="{ span: 24 }" class="mb-0">
+        <a-form-model-item :wrapperCol="{ span: 24 }" class="mb-0" :prop="fieldProp('prefer_manager')">
           <base-select
-            v-decorator="decorator.prefer_manager"
+            :value="fieldVal(imageOsFieldMap.prefer_manager)"
             resource="cloudproviders"
-            @change="cloudproviderChange"
+            @change="v => { fieldSet(imageOsFieldMap.prefer_manager, v); onPreferManagerChange(v) }"
             :params="cloudproviderParams"
             :isDefaultSelect="true"
             v-model:resList="cloudproviderList"
             :select-props="{ placeholder: $t('compute.text_149'), disabled: imageCloudproviderDisabled }" />
-        </a-form-item>
+        </a-form-model-item>
       </a-col>
       <a-col :span="showCloudaccount ? 5 : 6">
-        <a-form-item :wrapperCol="{ span: 24 }" class="mb-0">
-          <a-select v-decorator="decorator.os" :loading="loading" @change="osChange" :placeholder="$t('compute.text_153')">
+        <a-form-model-item :wrapperCol="{ span: 24 }" class="mb-0" :prop="fieldProp('os')">
+          <a-select
+            :value="fieldVal(imageOsFieldMap.os)"
+            :loading="loading"
+            @change="v => { fieldSet(imageOsFieldMap.os, v); osChange(v) }"
+            :placeholder="$t('compute.text_153')">
             <a-select-option v-for="item in imagesInfo.osOpts" :key="item.key">
               <div :key="item.key" class="d-flex align-items-center">
                 <image-icon v-if="item.key !== 'all'" :image="item.key" />
@@ -23,12 +27,17 @@
               </div>
             </a-select-option>
           </a-select>
-        </a-form-item>
+        </a-form-model-item>
       </a-col>
       <a-col :span="showCloudaccount ? 11 : 18">
-        <a-form-item :wrapperCol="{ span: 24 }" class="mb-0">
-          <image-select-template v-decorator="decorator.image" :imageOpts="imageOptions" @imageChange="imageChange" :loading="loading" :imageType="imageType" />
-        </a-form-item>
+        <a-form-model-item :wrapperCol="{ span: 24 }" class="mb-0" :prop="fieldProp('image')">
+          <image-select-template
+            :value="fieldVal(imageOsFieldMap.image)"
+            :imageOpts="imageOptions"
+            @imageChange="v => { fieldSet(imageOsFieldMap.image, v); imageChange(v) }"
+            :loading="loading"
+            :imageType="imageType" />
+        </a-form-model-item>
       </a-col>
     </a-row>
     <span v-if="isShowErrorInfo" class="error-color">{{$t('compute.text_150')}}</span>
@@ -44,7 +53,10 @@ import { HYPERVISORS_MAP } from '@/constants'
 import { IMAGES_TYPE_MAP, OS_TYPE_OPTION_MAP } from '@/constants/compute'
 import storage from '@/utils/storage'
 import { uuid } from '@/utils/utils'
+import { getBracketValue, setBracketValue } from '@/utils/bracketModel'
+import { resolveFieldMeta } from '@/utils/common/ant'
 import ImageSelectTemplate from './ImageSelectTemplate'
+import { IMAGE_OS_FIELDS, resolveImageOsFieldMap, resolveImageOsFieldMapForKey } from './fields'
 
 const initData = undefined
 
@@ -53,6 +65,7 @@ export default {
   components: {
     ImageSelectTemplate,
   },
+  mixins: [],
   props: {
     imageType: {
       type: String,
@@ -64,10 +77,14 @@ export default {
       default: 'idc',
       validator: val => ['public', 'private', 'idc', 'baremetal'].includes(val),
     },
-    decorator: {
+    field: {
+      type: String,
+      default: '',
+    },
+    /** a-form-model：与字段名对齐的受控对象 */
+    model: {
       type: Object,
-      required: true,
-      validator: val => R.is(Array, val.os) && R.is(Array, val.image),
+      default: null,
     },
     imageParams: {
       type: Object,
@@ -75,7 +92,8 @@ export default {
     form: {
       type: Object,
       required: true,
-      validator: val => !R.isNil(val.fc),
+      // end-state：有 model 时仅写 model；无 model 时读写 form.fd
+      validator: val => !!val && typeof val === 'object',
     },
     cacheImageParams: {
       type: Object,
@@ -135,11 +153,15 @@ export default {
       },
       loading: false,
       imageOpts: [],
-      cloudprovider: _.get(this.decorator, 'prefer_manager[1].initialValue') || '',
+      cloudprovider: '',
       cloudproviderList: [],
     }
   },
   computed: {
+    imageOsFieldMap () {
+      if (this.field) return resolveImageOsFieldMapForKey(this.field)
+      return resolveImageOsFieldMap()
+    },
     apiCacheImgParams () {
       return IMAGES_TYPE_MAP[this.imageType].cacheImgParams || {}
     },
@@ -184,7 +206,7 @@ export default {
       return storage.get(`${this.cloudType}${SELECT_IMAGE_KEY_SUFFIX}`)
     },
     showCloudaccount () {
-      if (!this.decorator.prefer_manager) return false
+      if (!this.imageOsFieldMap.prefer_manager) return false
       const imageMsg = IMAGES_TYPE_MAP[this.imageType]
       return imageMsg && imageMsg.enable_cloudaccount
     },
@@ -205,8 +227,8 @@ export default {
       return params
     },
     storageImage () {
-      const initImageOs = this.decorator.os[1].initialValue
-      const initImage = this.decorator.image[1].initialValue
+      const initImageOs = this.imageOsFieldMap.os.initialValue
+      const initImage = this.imageOsFieldMap.image.initialValue
       if (initImageOs && initImage) {
         return {
           os: initImageOs,
@@ -225,7 +247,7 @@ export default {
       return false
     },
     imageOptions () {
-      const { os } = this.form.fc.getFieldsValue(['os'])
+      const os = this.readField(this.imageOsFieldMap.os.name)
       let imageOptions = this.imageOpts
       // 所选镜像容量最小磁盘要求需小于虚拟机系统盘大小
       if (this.sysDiskSize) {
@@ -249,7 +271,7 @@ export default {
         })
         const arr = imageOpts.filter((item) => { return !item.hidden })
         if (arr.length === 0 && os === OS_TYPE_OPTION_MAP.Windows.value) {
-          this.form.fc.setFieldsValue({ [this.decorator.image[0]]: initData })
+          this.writeFields({ [this.imageOsFieldMap.image.name]: initData })
         }
         return imageOpts
       }
@@ -280,13 +302,13 @@ export default {
       this.fetchData()
     },
     showCloudaccount (val) {
-      if (!val) { // 如果不显示云账号，清空 fd 中的 prefer_manager
-        if (this.form && this.form.fd && this.form.fd.prefer_manager) {
-          this.form.fd.prefer_manager = ''
+      if (!val) { // 如果不显示云账号，清空 model 中的 prefer_manager
+        if (this.imageOsFieldMap.prefer_manager) {
+          this.fieldSet(this.imageOsFieldMap.prefer_manager, '')
         }
       } else { // 如果显示查看是否有初始化云订阅，如果有则请求 cacheImage-list
         this.$nextTick(() => {
-          const { prefer_manager: preferManager } = this.form.fc.getFieldsValue([this.decorator.prefer_manager[0]])
+          const preferManager = this.readField(this.imageOsFieldMap.prefer_manager.name)
           this.cloudproviderChange(preferManager)
         })
       }
@@ -294,7 +316,8 @@ export default {
     'form.fd.vmem' (val, oldVal) {
       if (R.equals(val, oldVal)) return
       if (this.imagesInfo.osOpts && this.imagesInfo.osOpts.length) {
-        const { os, image } = this.form.fc.getFieldsValue([this.decorator.os[0], this.decorator.image[0]])
+        const os = this.readField(this.imageOsFieldMap.os.name)
+        const image = this.readField(this.imageOsFieldMap.image.name)
         this.defaultSelect(os, image)
       }
     },
@@ -322,6 +345,7 @@ export default {
     },
   },
   created () {
+    this.initModelFields()
     this.imagesM = new Manager('images', 'v1')
     this.cachedimagesM = new Manager('cachedimages', 'v2')
     this.guestimagesM = new Manager('guestimages', 'v1')
@@ -334,6 +358,91 @@ export default {
     }
   },
   methods: {
+    fieldProp (key) {
+      return IMAGE_OS_FIELDS[key] || this.imageOsFieldMap[key]?.[0]
+    },
+    fieldVal (fieldTuple) {
+      const meta = resolveFieldMeta(fieldTuple)
+      if (!meta) return undefined
+      const { name, ...opts } = meta
+      const v = getBracketValue(this.model, name)
+      return v !== undefined ? v : opts.initialValue
+    },
+    fieldSet (fieldTuple, value) {
+      if (!resolveFieldMeta(fieldTuple)) return
+      setBracketValue(this, this.model, resolveFieldMeta(fieldTuple)?.name, value)
+    },
+    initModelFields () {
+      ;['os', 'image', 'prefer_manager'].forEach((key) => {
+        const fieldDef = this.imageOsFieldMap[key]
+        const meta = resolveFieldMeta(fieldDef)
+        if (!meta) return
+        const { name, ...opts } = meta
+        if (getBracketValue(this.model, name) === undefined && opts.initialValue !== undefined) {
+          setBracketValue(this, this.model, name, opts.initialValue)
+        }
+      })
+    },
+    runFieldRule (rule, value) {
+      return new Promise((resolve, reject) => {
+        if (rule.required) {
+          const empty = value === undefined || value === null || value === '' ||
+            (Array.isArray(value) && !value.length)
+          if (empty) {
+            reject(new Error(rule.message || 'required'))
+            return
+          }
+        }
+        if (typeof rule.validator === 'function') {
+          let settled = false
+          const finish = (err) => {
+            if (settled) return
+            settled = true
+            if (err) reject(err instanceof Error ? err : new Error(String(err)))
+            else resolve()
+          }
+          let ret
+          try {
+            ret = rule.validator(rule, value, finish)
+          } catch (e) {
+            finish(e)
+            return
+          }
+          if (ret && typeof ret.then === 'function') {
+            ret.then(() => finish()).catch(finish)
+          }
+          return
+        }
+        resolve()
+      })
+    },
+    async runFieldMapRules (fieldTuple, value) {
+      const meta = resolveFieldMeta(fieldTuple)
+      if (!meta) return
+      const rules = meta.rules || []
+      for (const rule of rules) {
+        await this.runFieldRule(rule, value)
+      }
+    },
+    async validate () {
+      if (this.showCloudaccount && this.imageOsFieldMap.prefer_manager) {
+        await this.runFieldMapRules(this.imageOsFieldMap.prefer_manager, this.fieldVal(this.imageOsFieldMap.prefer_manager))
+      }
+      await this.runFieldMapRules(this.imageOsFieldMap.os, this.fieldVal(this.imageOsFieldMap.os))
+      await this.runFieldMapRules(this.imageOsFieldMap.image, this.fieldVal(this.imageOsFieldMap.image))
+      return true
+    },
+    /** 读 os/image 等 */
+    readField (name) {
+      return this.model[name]
+    },
+    /** 写多字段到 model */
+    writeFields (vals) {
+      if (!vals || typeof vals !== 'object') return
+      Object.keys(vals).forEach((key) => {
+        this.$set(this.model, key, vals[key])
+      })
+    },
     fetchData () {
       this.images.list = []
       let params = {}
@@ -357,6 +466,7 @@ export default {
       }
     },
     imageChange (imageObj, isAuto = false) {
+      this.fieldSet(this.imageOsFieldMap.image, imageObj)
       let imageMsg = {}
       if (imageObj && R.is(Object, imageObj)) {
         const list = this.imageOptions
@@ -364,14 +474,19 @@ export default {
       }
       this.$emit('updateImageMsg', { imageMsg, isAuto })
     },
+    onPreferManagerChange (val) {
+      this.fieldSet(this.imageOsFieldMap.prefer_manager, val)
+      this.cloudproviderChange(val)
+    },
     osChange (osValue, imageValue) {
+      this.fieldSet(this.imageOsFieldMap.os, osValue)
       this.defaultSelect(osValue, imageValue)
     },
     _resetImage () {
-      const { os, image } = this.form.fc.getFieldsValue(['os', 'image'])
+      const os = this.readField('os')
+      const image = this.readField('image')
       if (os && image) {
-        this.form.fc.setFieldsValue({ os: undefined })
-        this.form.fc.setFieldsValue({ image: initData })
+        this.writeFields({ os: undefined, image: initData })
       }
     },
     async fetchImages () {
@@ -704,7 +819,7 @@ export default {
         let os = imageOptsMap[osValue] ? osValue : osOpts[0].key
         let imageOpts = this.getImageOpts(imageOptsMap[os])
         if (!imageOpts || !imageOpts.length) {
-          this.form.fc.setFieldsValue({ image: initData })
+          this.writeFields({ image: initData })
         } else {
           const isEsxit = imageValue && !!imageOpts.find(val => val.id === imageValue.key)
           let image = isEsxit ? imageValue : { key: imageOpts[0].id, label: imageOpts[0].name }
@@ -720,19 +835,19 @@ export default {
           }
           this.imageOpts = imageOpts
           if (this.imageOptions.find(val => val.id === image.key)) {
-            this.form.fc.setFieldsValue({ image })
+            this.writeFields({ image })
           } else {
-            this.form.fc.setFieldsValue({ image: initData })
+            this.writeFields({ image: initData })
           }
-          const currentImage = this.form.fc.getFieldValue(this.decorator.image[0])
+          const currentImage = this.readField(this.imageOsFieldMap.image.name)
           if (currentImage && imageValue && currentImage.key === imageValue.key) {
           } else {
             this.imageChange(image, true)
           }
         }
-        this.form.fc.setFieldsValue({ os })
+        this.writeFields({ os })
       } else {
-        this.form.fc.setFieldsValue({ os: undefined, image: initData })
+        this.writeFields({ os: undefined, image: initData })
       }
     },
     getImageOpts (imageOpts = []) {
@@ -762,7 +877,7 @@ export default {
       return images || []
     },
     fillImageOpts () {
-      // 回填互斥：query → 草稿 → 工单(decorator) → storage，不同时混用
+      // 回填互斥：query → 草稿 → 工单 → storage，不同时混用
       const query = this.$route?.query || {}
       const hasQueryPrefer = !!(query.imageType || query.imageOs || query.imageId)
       let preferInfo = {}
@@ -784,8 +899,8 @@ export default {
           }
         }
       } else if (this.ignoreStorage || this.edit) {
-        const osInit = this.decorator.os[1].initialValue
-        const imageInit = this.decorator.image[1].initialValue
+        const osInit = this.imageOsFieldMap.os.initialValue
+        const imageInit = this.imageOsFieldMap.image.initialValue
         if (osInit && imageInit) {
           preferInfo = {
             imageOs: osInit,
@@ -812,7 +927,7 @@ export default {
           }
         }
         if (images?.length > 0) {
-          this.form.fc.setFieldsValue({ os })
+          this.writeFields({ os })
         }
         let image = images.find((item) => { return item.id === imageId })
         // 草稿/记忆的 os key 可能大小写或 nfs 特例
@@ -826,9 +941,9 @@ export default {
         if (image) {
           image = { key: image.id, label: image.name }
           if (this.imageOptions.length === 0) {
-            this.form.fc.setFieldsValue({ image: initData })
+            this.writeFields({ image: initData })
           } else {
-            this.form.fc.setFieldsValue({ image })
+            this.writeFields({ image })
           }
           this.imageChange(image, true)
         }

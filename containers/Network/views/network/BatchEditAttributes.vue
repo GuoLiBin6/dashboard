@@ -9,21 +9,22 @@
         <dialog-table :data="networks" :columns="renderColumns" />
       </a-card>
       <div class="form-wrapper">
-        <a-form v-bind="formItemLayout" :form="form.fc" @submit.prevent="handleSubmit">
-          <a-form-item :label="$t('network.text_551')" :validate-status="ipSubnetsValidateStatus" :help="ipSubnetsHelp" required>
+        <a-form-model ref="formRef" v-bind="formItemLayout" :model="form.fd" @submit.prevent="handleSubmit">
+          <a-form-model-item :label="$t('network.text_551')" :validate-status="ipSubnetsValidateStatus" :help="ipSubnetsHelp" required>
             <ip-subnets
               ref="ipSubnetsRef"
-              :decorator="decorators.ipSubnets"
+              factory-preset="batchEdit"
+              :model="form.fd"
               :hiddenAddAction="true"
               :hiddenDeleteAction="true"
               @clear-error="clearIpSubnetsError" />
-          </a-form-item>
+          </a-form-model-item>
           <page-footer>
             <template v-slot:right>
               <a-button type="primary" html-type="submit" class="ml-3" :loading="submiting">{{$t('network.text_606')}}</a-button>
             </template>
           </page-footer>
-        </a-form>
+        </a-form-model>
       </div>
     </a-spin>
   </div>
@@ -32,19 +33,8 @@
 <script>
 import * as R from 'ramda'
 import { uuid } from '@/utils/utils'
-import i18n from '@/locales'
 import ColumnsMixin from './mixins/columns'
 import IpSubnets from './components/IpSubnets'
-
-const validateGateway = function (rule, value, callback) {
-  const ipItems = value.split('.')
-  const msg = i18n.t('network.text_591')
-  if (ipItems[ipItems.length - 1] === '0') {
-    callback(msg)
-  } else {
-    callback()
-  }
-}
 
 export default {
   name: 'BatchEditAttributes',
@@ -52,6 +42,11 @@ export default {
     IpSubnets,
   },
   mixins: [ColumnsMixin],
+  provide () {
+    return {
+      form: this.form,
+    }
+  },
   data () {
     return {
       loading: false,
@@ -60,73 +55,15 @@ export default {
       networkIds: [],
       ipSubnetsValidateStatus: '',
       ipSubnetsHelp: '',
-      decorators: {
-        ipSubnets: {
-          name: i => [
-            `name[${i}]`,
-            {
-              initialValue: '',
-              validateTrigger: ['change', 'blur'],
-              validateFirst: true,
-              rules: [
-                { required: true, message: this.$t('network.text_116') },
-                { validator: this.$validate('resourceName') },
-              ],
-            },
-          ],
-          startip: i => [
-            `startip[${i}]`,
-            {
-              initialValue: '',
-              validateFirst: true,
-              rules: [
-                { required: true, message: this.$t('network.text_593') },
-                { validator: this.$validate('IPv4') },
-              ],
-            },
-          ],
-          endip: i => [
-            `endip[${i}]`,
-            {
-              initialValue: '',
-              validateFirst: true,
-              rules: [
-                { required: true, message: this.$t('network.text_594') },
-                { validator: this.$validate('IPv4') },
-              ],
-            },
-          ],
-          netmask: i => [
-            `netmask[${i}]`,
-            {
-              initialValue: '24',
-              rules: [
-                { required: true, message: this.$t('network.text_595') },
-              ],
-            },
-          ],
-          gateway: i => [
-            `gateway[${i}]`,
-            {
-              initialValue: '',
-              validateTrigger: ['change', 'blur'],
-              validateFirst: true,
-              rules: [
-                { validator: this.$validate('IPv4') },
-                { validator: validateGateway },
-              ],
-            },
-          ],
-          vlan: i => [
-            `vlan[${i}]`,
-            {
-              initialValue: '',
-            },
-          ],
-        },
-      },
       form: {
-        fc: this.$form.createForm(this),
+        fd: {
+          name: {},
+          startip: {},
+          endip: {},
+          netmask: {},
+          gateway: {},
+          vlan: {},
+        },
       },
       formItemLayout: {
         wrapperCol: {
@@ -162,25 +99,25 @@ export default {
           const key = uuid()
           this.networkIds.push(item.id)
           this.$refs.ipSubnetsRef.ipSubnets.push({ key })
-          const fieldKeys = Object.keys(this.decorators.ipSubnets)
-
-          fieldKeys.forEach(field => {
-            this.form.fc.getFieldDecorator(`[${field}][${key}]`, this.decorators.ipSubnets[field](key)[1])
-          })
-
           this.$nextTick(() => {
-            this.form.fc.setFieldsValue({ [`name[${key}]`]: item.name })
-            this.form.fc.setFieldsValue({ [`startip[${key}]`]: item.guest_ip_start })
-            this.form.fc.setFieldsValue({ [`endip[${key}]`]: item.guest_ip_end })
-            this.form.fc.setFieldsValue({ [`netmask[${key}]`]: item.guest_ip_mask + '' })
-            this.form.fc.setFieldsValue({ [`gateway[${key}]`]: item.guest_gateway })
-            this.form.fc.setFieldsValue({ [`vlan[${key}]`]: item.vlan_id })
+            this.setNestedField('name', key, item.name)
+            this.setNestedField('startip', key, item.guest_ip_start)
+            this.setNestedField('endip', key, item.guest_ip_end)
+            this.setNestedField('netmask', key, item.guest_ip_mask + '')
+            this.setNestedField('gateway', key, item.guest_gateway)
+            this.setNestedField('vlan', key, item.vlan_id)
           })
         })
       }
     })
   },
   methods: {
+    setNestedField (root, key, value) {
+      if (!this.form.fd[root] || typeof this.form.fd[root] !== 'object') {
+        this.$set(this.form.fd, root, {})
+      }
+      this.$set(this.form.fd[root], key, value)
+    },
     fetchData () {
       const m = new this.$Manager('networks')
       let ids = [this.$route.query.id]
@@ -228,7 +165,13 @@ export default {
     async handleSubmit () {
       this.submiting = true
       try {
-        const values = await this.form.fc.validateFields()
+        if (this.$refs.formRef?.validate) {
+          await this.$refs.formRef.validate()
+        }
+        if (typeof this.$refs.ipSubnetsRef?.validate === 'function') {
+          await this.$refs.ipSubnetsRef.validate()
+        }
+        const values = { ...this.form.fd }
         const data = this.genData(values)
         await this.doUpdate(data)
         this.$store.commit('keepAlive/ADD_DELAY_EVENT', { name: 'ResourceListSingleRefresh', params: this.networkIds })

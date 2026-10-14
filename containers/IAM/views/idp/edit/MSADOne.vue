@@ -1,24 +1,24 @@
 <template>
-  <div>
-    <a-form-item :label="$t('system.text_217')" :extra="$t('system.text_218')">
-      <a-input v-decorator="decorators.url" />
-    </a-form-item>
-    <a-form-item :label="$t('system.text_219')" :extra="$t('system.text_220')">
-      <a-input v-decorator="decorators.suffix" />
-    </a-form-item>
-    <a-form-item :label="$t('system.text_227', [$t('dictionary.user')])">
-      <a-input v-decorator="decorators.user" />
-    </a-form-item>
-    <a-form-item :label="$t('system.text_221')">
-      <a-input-password v-decorator="decorators.password" />
-    </a-form-item>
-    <a-form-item :label="`${$t('dictionary.user')}DN`" :extra="$t('system.text_222')">
-      <a-input v-decorator="decorators.user_tree_dn" />
-    </a-form-item>
-    <a-form-item :label="`${$t('dictionary.group')}DN`" :extra="$t('system.text_222')">
-      <a-input v-decorator="decorators.group_tree_dn" />
-    </a-form-item>
-  </div>
+  <a-form-model ref="formRef" :model="fd" :rules="rules">
+    <a-form-model-item :label="$t('system.text_217')" :extra="$t('system.text_218')" prop="url">
+      <a-input v-model:value="fd.url" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('system.text_219')" :extra="$t('system.text_220')" prop="suffix">
+      <a-input v-model:value="fd.suffix" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('system.text_227', [$t('dictionary.user')])" prop="user">
+      <a-input v-model:value="fd.user" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('system.text_221')" prop="password">
+      <a-input-password v-model:value="fd.password" />
+    </a-form-model-item>
+    <a-form-model-item :label="`${$t('dictionary.user')}DN`" :extra="$t('system.text_222')" prop="user_tree_dn">
+      <a-input v-model:value="fd.user_tree_dn" />
+    </a-form-model-item>
+    <a-form-model-item :label="`${$t('dictionary.group')}DN`" :extra="$t('system.text_222')" prop="group_tree_dn">
+      <a-input v-model:value="fd.group_tree_dn" />
+    </a-form-model-item>
+  </a-form-model>
 </template>
 
 <script>
@@ -36,57 +36,32 @@ export default {
   },
   data () {
     return {
-      decorators: {
+      rules: {
         url: [
-          'url',
-          {
-            rules: [
-              { required: true, message: this.$t('system.text_236') },
-            ],
-          },
+          { required: true, message: this.$t('system.text_236') },
         ],
         suffix: [
-          'suffix',
-          {
-            rules: [
-              { required: true, message: this.$t('system.text_237') },
-            ],
-          },
+          { required: true, message: this.$t('system.text_237') },
         ],
         user: [
-          'user',
-          {
-            rules: [
-              { required: true, message: this.$t('scope.text_331') },
-            ],
-          },
+          { required: true, message: this.$t('scope.text_331') },
         ],
         password: [
-          'password',
-          {
-            rules: [
-              { required: true, message: this.$t('scope.text_333') },
-            ],
-          },
+          { required: true, message: this.$t('scope.text_333') },
         ],
         user_tree_dn: [
-          'user_tree_dn',
-          {
-            rules: [
-              { required: false, message: this.$t('system.text_240') },
-            ],
-          },
+          { required: false, message: this.$t('system.text_240') },
         ],
         group_tree_dn: [
-          'group_tree_dn',
-          {
-            rules: [
-              { required: false, message: this.$t('system.text_241') },
-            ],
-          },
+          { required: false, message: this.$t('system.text_241') },
         ],
       },
     }
+  },
+  methods: {
+    async validateForm () {
+      await this.$refs.formRef.validate()
+    },
   },
 }
 </script>

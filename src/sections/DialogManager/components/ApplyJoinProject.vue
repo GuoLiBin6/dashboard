@@ -2,13 +2,13 @@
   <base-dialog @cancel="cancelDialog">
     <template #header>{{ title }}</template>
     <template #body>
-      <a-form :form="form.fc">
-        <a-form-item
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item
           :label="$t('common.description')"
-          v-bind="formItemLayout">
-          <a-input v-decorator="decorators.desc" />
-        </a-form-item>
-      </a-form>
+          prop="desc">
+          <a-input v-model:value="form.desc" />
+        </a-form-model-item>
+      </a-form-model>
     </template>
     <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
@@ -41,10 +41,10 @@ export default {
         },
       },
       form: {
-        fc: this.$form.createForm(this),
+        desc: formData.description || '',
       },
-      decorators: {
-        desc: ['desc', { initialValue: formData.description || '', rules: [{ required: true, message: this.$t('common.text00074') }] }],
+      rules: {
+        desc: [{ required: true, message: this.$t('common.text00074') }],
       },
     }
   },
@@ -79,9 +79,9 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         if (this.isOpenWorkflow) {
-          await this.handleJoinProjectByWorkflowSubmit(values)
+          await this.handleJoinProjectByWorkflowSubmit(this.form)
         }
         this.cancelDialog()
       } finally {

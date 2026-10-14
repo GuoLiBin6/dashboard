@@ -2,30 +2,29 @@
   <div>
     <page-header :title="$t('network.text_724')" :tabs="cloudEnvOptions" v-model:current-tab="cloudEnv" />
     <page-body needMarginBottom>
-      <a-form
-        :form="form.fc"
+      <a-form-model
+        ref="formRef"
+        :model="form.fd"
+        :rules="rules"
         hideRequiredMark>
-        <a-form-item :label="$t('network.text_205', [$t('dictionary.project')])" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('network.text_205', [$t('dictionary.project')])" v-bind="formItemLayout" prop="project">
           <domain-project
-            :fc="form.fc"
-            :fd="form.fd"
+            :form="form.fd"
             :form-layout="formItemLayout"
-            :decorators="{ project: decorators.project, domain: decorators.domain }"
-            :form-draft-key="eipDraftFields.domainProject"
             @update:domain="domainChange"
             @fetchDomainCallback="fetchDomainCallback"
             @fetchProjectCallback="fetchProjectCallback" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_21')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.name" :placeholder="$t('network.text_44')" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')" v-bind="formItemLayout">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
-        <a-form-item v-if="isPublic" :label="$t('regionMap.enable_world_map')" v-bind="formItemLayout">
-          <a-switch v-decorator="decorators.enableWorldMap" />
-        </a-form-item>
-        <a-form-item v-if="isPublic && form.fd.enableWorldMap" :label="$t('compute.region_map')" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_21')" v-bind="formItemLayout" prop="name">
+          <a-input v-model:value="form.fd.name" :placeholder="$t('network.text_44')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" v-bind="formItemLayout" prop="description">
+          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.fd.description" :placeholder="$t('common_367')" />
+        </a-form-model-item>
+        <a-form-model-item v-if="isPublic" :label="$t('regionMap.enable_world_map')" v-bind="formItemLayout" prop="enableWorldMap">
+          <a-switch v-model:checked="form.fd.enableWorldMap" />
+        </a-form-model-item>
+        <a-form-model-item v-if="isPublic && form.fd.enableWorldMap" :label="$t('compute.region_map')" v-bind="formItemLayout">
           <region-map
             :region-filter-params="regionMapParams"
             filter-brand-resource="network_manage"
@@ -33,11 +32,12 @@
             split-key="provider"
             @select="onRegionSelect"
             @params-change="onRegionMapParamsChange" />
-        </a-form-item>
+        </a-form-model-item>
         <area-selects
           class="mb-0"
           ref="areaSelects"
           :key="`eip-area-${cloudEnv}`"
+          :model="form.fd"
           :wrapperCol="formItemLayout.wrapperCol"
           :labelCol="formItemLayout.labelCol"
           :names="areaselectsName"
@@ -52,18 +52,18 @@
           filterBrandResource="network_manage"
           @change="cloudregionChange"
           @fetchsDone="onAreaSelectsFetchsDone" />
-        <a-form-item :label="$t('network.text_743')" v-bind="formItemLayout" v-if="showBgpTypes">
-          <a-select v-decorator="decorators.bgp_type" @change="handleBgpTypeChange">
+        <a-form-model-item :label="$t('network.text_743')" v-bind="formItemLayout" v-if="showBgpTypes" prop="bgp_type">
+          <a-select v-model:value="form.fd.bgp_type" @change="v => handleBgpTypeChange(v)">
             <a-select-option v-for="item in bgpTypeOptions" :value="item" :key="item">{{ item === '' ? $t('network.text_749') : BGP_TYPES_MAP[item] ? BGP_TYPES_MAP[item].label : item }}</a-select-option>
           </a-select>
-        </a-form-item>
+        </a-form-model-item>
         <template v-if="showIpSubnet">
           <ip-subnet
             :label="$t('network.text_211')"
             :isRequired="true"
             :labelCol="formItemLayout.labelCol"
             :wrapperCol="formItemLayout.wrapperCol"
-            :decorator="decorators"
+            :model="form.fd"
             :vpcParams="vpcParams"
             :networkParams="networkParams"
             :vpcResourceMapper="vpcResourceMapper"
@@ -72,14 +72,14 @@
             :helplink="{ipSubnetHelp: $t('network.eip.tip'), ipSubnetHref: '/network/create'}" />
         </template>
         <template v-if="cloudEnv !== 'private' || isHCSO || isHCS">
-          <a-form-item :label="$t('network.text_192')" v-bind="formItemLayout">
-            <a-radio-group v-decorator="decorators.charge_type" @change="chargeTypeChange">
+          <a-form-model-item :label="$t('network.text_192')" v-bind="formItemLayout" prop="charge_type">
+            <a-radio-group v-model:value="form.fd.charge_type" @change="e => chargeTypeChange(e)">
               <a-radio-button v-for="item in chargeTypeOptions" :value="item.value" :key="item.value">
                 {{item.label}}
               </a-radio-button>
             </a-radio-group>
-          </a-form-item>
-          <a-form-item :label="$t('network.text_484')" v-bind="formItemLayout">
+          </a-form-model-item>
+          <a-form-model-item :label="$t('network.text_484')" v-bind="formItemLayout" prop="bandwidth">
             <div class="d-flex align-items-center">
               <a-tooltip placement="top" :title="$t('network.eip.text_725', [maxBandwidth])">
                 <a-input-number
@@ -89,16 +89,17 @@
                   :step="cloudEnv === 'onpremise' ? 1 : 50"
                   :formatter="format"
                   :parse="format"
-                  v-decorator="decorators.bandwidth" />
+                  v-model:value="form.fd.bandwidth"
+                  @update:value="v => { form.fd.bandwidth = v; bandwidth = v }" />
               </a-tooltip>
               <span class="ml-2">Mbps</span>
             </div>
-          </a-form-item>
+          </a-form-model-item>
         </template>
-        <a-form-item :label="$t('compute.text_15')" v-bind="formItemLayout" v-if="showCloudprovider" key="manager">
+        <a-form-model-item :label="$t('compute.text_15')" v-bind="formItemLayout" v-if="showCloudprovider" key="manager" prop="manager">
           <base-select
             :remote="true"
-            v-decorator="decorators.manager"
+            v-model:value="form.fd.manager"
             resource="cloudproviders"
             :params="providerParams"
             :mapper="providerMapper"
@@ -108,15 +109,16 @@
             :isDefaultSelect="true"
             :select-props="{ placeholder: $t('compute.text_1387') }"
             style="width: 320px" />
-        </a-form-item>
-        <a-form-item :label="$t('common.text00012')" class="mb-0" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.text00012')" class="mb-0" v-bind="formItemLayout" prop="__meta__">
           <tag
             :key="`eip-tag-${cloudEnv}`"
-            v-decorator="decorators.__meta__"
+            :value="form.fd.__meta__"
+            @change="v => { form.fd.__meta__ = v }"
             :allowNoValue="false"
             :default-checked="tagDefaultChecked" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </page-body>
     <bottom-bar
       :isHCSO="isHCSO || isHCS"
@@ -133,8 +135,8 @@ import * as R from 'ramda'
 import { mapGetters } from 'vuex'
 import IpSubnet from '@Network/sections/IpSubnet'
 import RegionMap from '@Compute/sections/RegionMap'
-import AreaSelects from '@/sections/AreaSelects'
-import DomainProject from '@/sections/DomainProject'
+import AreaSelects from '@/sections/AreaSelects/model'
+import DomainProject from '@/sections/DomainProject/model'
 import validateForm, { isRequired } from '@/utils/validate'
 import { getCloudEnvOptions } from '@/utils/common/hypervisor'
 import { cloudregionFilterByCapability } from '@/utils/common/capability'
@@ -145,7 +147,7 @@ import createFormDraftMixin from '@/mixins/createFormDraft'
 import {
   EIP_CREATE_FORM_DRAFT_FIELD,
   EIP_CREATE_FORM_DRAFT_FIELDS,
-  EIP_CREATE_FORM_DRAFT_FC_BINDINGS,
+  EIP_CREATE_FORM_DRAFT_FD_BINDINGS,
   getEipCreateFormDraftScope,
 } from '../utils/eipCreateFormDraft'
 import BottomBar from './components/BottomBar'
@@ -178,113 +180,50 @@ export default {
       cloudEnv,
       routerQuery,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-            if (values.hasOwnProperty('cloudregion')) {
-              const regionId = this.pickSingleAreaValue(values.cloudregion)
-              this.selectedRegionItem = regionId ? (this.regionList[regionId] || {}) : {}
-            }
-            if (values.bandwidth) {
-              this.bandwidth = values.bandwidth
-            }
-            this.syncEipCreateFormFcDrafts(values)
-          },
-        }),
         fd: {
           enableWorldMap: false,
+          domain: undefined,
+          project: undefined,
+          name: undefined,
+          description: undefined,
+          provider: undefined,
+          cloudregion: undefined,
+          bgp_type: undefined,
+          vpc: undefined,
+          network: undefined,
+          ip_addr: undefined,
+          charge_type: cloudEnv === 'onpremise' ? 'bandwidth' : 'traffic',
+          bandwidth: cloudEnv !== 'private' ? 30 : 0,
+          manager: undefined,
+          __meta__: undefined,
         },
       },
-      decorators: {
-        domain: [
-          'domain',
-          {
-            rules: [
-              { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
-            ],
-          },
-        ],
-        project: [
-          'project',
-          {
-            rules: [
-              { validator: isRequired(), message: this.$t('dictionary.project'), trigger: 'change' },
-            ],
-          },
-        ],
-        enableWorldMap: [
-          'enableWorldMap',
-          {
-            valuePropName: 'checked',
-            initialValue: false,
-          },
+      rules: {
+        name: [
+          { required: true, message: this.$t('network.text_218') },
+          { validator: this.$validate('serverName') },
         ],
         manager: [
-          'manager',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_215') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_215') },
         ],
         vpc: [
-          'vpc',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_212') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_212') },
         ],
         network: [
-          'network',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_212') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_212') },
         ],
         ip_addr: [
-          'ip_addr',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('network.text_217') },
-              { validator: this.$validate('IPv4') },
-            ],
-          },
-        ],
-        bandwidth: [
-          'bandwidth',
-          {
-            initialValue: 30,
-          },
-        ],
-        name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('network.text_218') },
-              { validator: this.$validate('serverName') },
-            ],
-          },
-        ],
-        description: ['description'],
-        charge_type: [
-          'charge_type',
-        ],
-        bgp_type: [
-          'bgp_type',
+          { required: true, message: this.$t('network.text_217') },
+          { validator: this.$validate('IPv4') },
         ],
         __meta__: [
-          '__meta__',
-          {
-            rules: [
-              { validator: validateForm('tagName') },
-            ],
-          },
+          { validator: validateForm('tagName') },
+        ],
+        domain: [
+          { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
+        ],
+        project: [
+          { validator: isRequired(), message: this.$t('dictionary.project'), trigger: 'change' },
         ],
       },
       formItemLayout: {
@@ -531,19 +470,13 @@ export default {
   },
   watch: {
     async cloudEnv (newValue) {
-      this.bindEipCreateFormFcDrafts()
-      // 跨 tab 共用 form.fc：清掉平台/区域/订阅，避免本地区域 default 残留到公有云
+      this.bindEipCreateFormFdDrafts()
       const isPublic = newValue === 'public'
-      this.form.fc.resetFields(['manager', 'provider', 'cloudregion', 'enableWorldMap'])
-      this.form.fc.setFieldsValue({
-        provider: isPublic ? [] : undefined,
-        cloudregion: isPublic ? [] : undefined,
-        manager: undefined,
-        enableWorldMap: false,
-      })
       this.form.fd.provider = isPublic ? [] : undefined
       this.form.fd.cloudregion = isPublic ? [] : undefined
+      this.form.fd.manager = undefined
       this.form.fd.enableWorldMap = false
+      this.form.fd.__meta__ = undefined
       this.manager = ''
       this.providerC = ''
       this.cloudproviderItem = null
@@ -551,22 +484,22 @@ export default {
       this.selectedRegionItem = {}
       this.regionList = {}
       this.tagDefaultChecked = {}
-      this.form.fc.setFieldsValue({ __meta__: undefined })
       this.charge_type = newValue === 'onpremise' ? 'bandwidth' : 'traffic'
+      this.form.fd.charge_type = this.charge_type
       this.$nextTick(() => {
         this.$refs.areaSelects && this.$refs.areaSelects.fetchs(this.areaselectsName)
-        this.form.fc.getFieldDecorator('charge_type', { initialValue: newValue === 'onpremise' ? 'bandwidth' : 'traffic' })
         this.restoreEipBandwidthAndBgpDraft()
       })
       this.bandwidth = newValue === 'private' && !this.isHCSO && !this.isHCS ? 0 : 30
+      this.form.fd.bandwidth = this.bandwidth
     },
     isAliyun (newValue) {
       if (newValue) {
         this.bgpTypeOptions = BGP_TYPES.map(item => item.value)
         this.$nextTick(() => {
           // 无草稿时默认 BGP；有草稿由 restoreEipBandwidthAndBgpDraft 覆盖
-          if (this.form.fc.getFieldValue('bgp_type') == null && this.bgp_type == null) {
-            this.form.fc.setFieldsValue({ bgp_type: 'BGP' })
+          if (this.form.fd.bgp_type == null && this.bgp_type == null) {
+            this.form.fd.bgp_type = 'BGP'
             this.bgp_type = 'BGP'
           }
           this.restoreEipBandwidthAndBgpDraft()
@@ -582,10 +515,27 @@ export default {
       this.clampEipBgpTypeToOptions()
       this.$nextTick(() => this.restoreEipBandwidthAndBgpDraft())
     },
+    'form.fd.cloudregion' (val) {
+      const regionId = this.pickSingleAreaValue(val)
+      this.selectedRegionItem = regionId ? (this.regionList[regionId] || {}) : {}
+    },
+    'form.fd.bandwidth' (val) {
+      if (val != null) this.bandwidth = val
+    },
+    'form.fd.charge_type' (val) {
+      if (val != null) {
+        this.charge_type = val
+        this.syncEipCreateFormFdDrafts({ charge_type: val })
+      }
+    },
+    'form.fd.manager' (val) {
+      this.syncEipCreateFormFdDrafts({ manager: val })
+    },
   },
   provide () {
     return {
       form: this.form,
+      validateCreateForm: () => this.validateCreateForm(),
       // 勿直接传 this.cloudEnv 字符串：provide 只取一次快照，tab 切换后 BottomBar 仍是旧值
       getCloudEnv: () => this.cloudEnv,
       getCreateFormDraftScope: () => this.getCreateFormDraftScope(),
@@ -608,29 +558,49 @@ export default {
   created () {
     this._eipAreaApplying = false
     this.fetchBgpType()
-    this.$nextTick(() => {
-      this.form.fc.getFieldDecorator('charge_type', { initialValue: this.cloudEnv === 'onpremise' ? 'bandwidth' : 'traffic' })
-    })
-    this.bindEipCreateFormFcDrafts()
+    this.bindEipCreateFormFdDrafts()
   },
   mounted () {
     this.$nextTick(() => this.restoreEipBandwidthAndBgpDraft())
   },
   methods: {
-    bindEipCreateFormFcDrafts () {
-      this._eipCreateFormFcDraftMap = Object.create(null)
+    async validateCreateForm () {
+      if (this.$refs.formRef?.validate) {
+        await this.$refs.formRef.validate()
+      }
+      return { ...this.form.fd }
+    },
+    /** 批量写 form.fd，并同步本地镜像字段 / 草稿 */
+    setEipFdFields (vals = {}) {
+      Object.keys(vals).forEach((k) => {
+        this.$set(this.form.fd, k, vals[k])
+      })
+      if (Object.prototype.hasOwnProperty.call(vals, 'cloudregion')) {
+        const regionId = this.pickSingleAreaValue(vals.cloudregion)
+        this.selectedRegionItem = regionId ? (this.regionList[regionId] || {}) : {}
+      }
+      if (vals.bandwidth != null) this.bandwidth = vals.bandwidth
+      if (vals.charge_type != null) this.charge_type = vals.charge_type
+      if (vals.bgp_type != null) this.bgp_type = vals.bgp_type
+      this.syncEipCreateFormFdDrafts(vals)
+    },
+    bindEipCreateFormFdDrafts () {
+      this._eipCreateFormFdDraftMap = Object.create(null)
       const type = this.cloudEnv === 'onpremise' ? 'idc' : this.cloudEnv
-      ;(EIP_CREATE_FORM_DRAFT_FC_BINDINGS || []).forEach((item) => {
+      ;(EIP_CREATE_FORM_DRAFT_FD_BINDINGS || []).forEach((item) => {
         if (!item?.key || !item.formField) return
         if (item.types && !item.types.includes(type)) return
-        this._eipCreateFormFcDraftMap[item.formField] = item.key
-        this.bindFormFcFieldDraft(item.key, {
-          formField: item.formField,
+        this._eipCreateFormFdDraftMap[item.formField] = item.key
+        const formField = item.formField
+        this.bindCreateFormFieldDraft({
+          key: item.key,
           kind: item.kind,
+          get: () => this.form.fd[formField],
+          set: (val) => { this.$set(this.form.fd, formField, val) },
         })
       })
       // 线路类型：flush 落盘；回填等 bgpTypeOptions 就绪后由 restoreEipBandwidthAndBgpDraft 处理
-      this._eipCreateFormFcDraftMap.bgp_type = EIP_CREATE_FORM_DRAFT_FIELD.BGP_TYPE
+      this._eipCreateFormFdDraftMap.bgp_type = EIP_CREATE_FORM_DRAFT_FIELD.BGP_TYPE
       this.bindEipBgpTypeDraft()
     },
     /**
@@ -640,8 +610,6 @@ export default {
     bindEipBgpTypeDraft () {
       const key = EIP_CREATE_FORM_DRAFT_FIELD.BGP_TYPE
       const get = () => {
-        const fromFc = this.form?.fc?.getFieldValue?.('bgp_type')
-        if (fromFc !== undefined && fromFc !== null) return fromFc
         const fromFd = this.form?.fd?.bgp_type
         if (fromFd !== undefined && fromFd !== null) return fromFd
         if (this.bgp_type !== undefined && this.bgp_type !== null) return this.bgp_type
@@ -668,44 +636,41 @@ export default {
     },
     /** 草稿 bgp 对照 options；bandwidth 为输入字段不回填 */
     restoreEipBandwidthAndBgpDraft () {
-      if (!this.canUseCreateFormDraft || !this.form?.fc) return
+      if (!this.canUseCreateFormDraft || !this.form?.fd) return
       if (this.createFormDraftUserInteracted) return
       if (!this.showBgpTypes) return
       const bgpDraft = this.readCreateFormFieldDraft(EIP_CREATE_FORM_DRAFT_FIELD.BGP_TYPE)
       if (bgpDraft === null || bgpDraft === undefined) return
       if (!Array.isArray(this.bgpTypeOptions) || !this.bgpTypeOptions.length) return
       if (!this.bgpTypeOptions.includes(bgpDraft)) return
-      this.form.fc.setFieldsValue({ bgp_type: bgpDraft })
+      this.form.fd.bgp_type = bgpDraft
       this.bgp_type = bgpDraft
     },
     clampEipBandwidthToMax () {
-      if (!this.form?.fc) return
-      const cur = this.form.fc.getFieldValue('bandwidth')
+      if (!this.form?.fd) return
+      const cur = this.form.fd.bandwidth
       if (cur == null || cur === '') return
       const max = this.maxBandwidth
       if (max != null && Number(cur) > max) {
-        this.form.fc.setFieldsValue({ bandwidth: max })
-        this.bandwidth = max
+        this.setEipFdFields({ bandwidth: max })
       }
     },
     clampEipBgpTypeToOptions () {
-      if (!this.form?.fc) return
+      if (!this.form?.fd) return
       const opts = this.bgpTypeOptions
       if (!Array.isArray(opts) || !opts.length) return
-      const cur = this.form.fc.getFieldValue('bgp_type')
+      const cur = this.form.fd.bgp_type
       if (cur == null || cur === '') return
       if (!opts.includes(cur)) {
-        const next = opts[0]
-        this.form.fc.setFieldsValue({ bgp_type: next })
-        this.bgp_type = next
+        this.setEipFdFields({ bgp_type: opts[0] })
       }
     },
-    syncEipCreateFormFcDrafts (newField) {
+    syncEipCreateFormFdDrafts (newField) {
       if (!this.canUseCreateFormDraft || !newField || typeof newField !== 'object') return
       if (this._eipAreaApplying) return
       // 仅用户交互后落盘，避免程序化 setFieldsValue 污染草稿
       if (!this.createFormDraftUserInteracted) return
-      const map = this._eipCreateFormFcDraftMap || {}
+      const map = this._eipCreateFormFdDraftMap || {}
       Object.keys(newField).forEach((formField) => {
         const draftKey = map[formField]
         if (!draftKey) return
@@ -807,7 +772,7 @@ export default {
       }) || null
     },
     clearPublicLocationFields () {
-      this.form.fc.setFieldsValue({
+      this.setEipFdFields({
         provider: [],
         cloudregion: [],
         manager: undefined,
@@ -843,7 +808,7 @@ export default {
         return matched ? matched.name : hvKey
       }).filter(Boolean))]
       const cloudregionIds = regions.map(item => item.id).filter(Boolean)
-      this.form.fc.setFieldsValue({
+      this.setEipFdFields({
         manager: undefined,
       })
       this.manager = ''
@@ -897,7 +862,7 @@ export default {
     },
     cloudregionChange () {
       if (this.isPublic && this.manager) {
-        const values = this.form.fc.getFieldsValue()
+        const values = { ...this.form.fd }
         const { cloudregionId } = this.resolvePublicSubmitLocation({
           ...values,
           cloudregion: values.cloudregion || this.form.fd.cloudregion,
@@ -906,9 +871,7 @@ export default {
         this.selectedRegionItem = cloudregionId ? (this.regionList[cloudregionId] || {}) : {}
         return
       }
-      const regionId = this.pickSingleAreaValue(
-        this.form.fc.getFieldValue('cloudregion') || this.form.fd.cloudregion,
-      )
+      const regionId = this.pickSingleAreaValue(this.form.fd.cloudregion)
       this.selectedRegionItem = regionId ? (this.regionList[regionId] || {}) : {}
     },
     providerMapper (data) {
@@ -920,7 +883,7 @@ export default {
         this.manager = e.id
         this.cloudproviderItem = e
         if (this.isPublic) {
-          const values = this.form.fc.getFieldsValue()
+          const values = { ...this.form.fd }
           const { cloudregionId } = this.resolvePublicSubmitLocation({
             ...values,
             cloudregion: values.cloudregion || this.form.fd.cloudregion,
@@ -929,9 +892,9 @@ export default {
           this.selectedRegionItem = cloudregionId ? (this.regionList[cloudregionId] || {}) : {}
         }
         if (e.provider.toLowerCase() === 'azure') {
-          this.form.fc.setFieldsValue({ bandwidth: 0 })
+          this.setEipFdFields({ bandwidth: 0 })
         } else {
-          this.form.fc.setFieldsValue({ bandwidth: 30 })
+          this.setEipFdFields({ bandwidth: 30 })
         }
         this.hiddenBrandwidthHandle(e.provider)
         this.providerC = e.provider.toLowerCase()
@@ -947,10 +910,10 @@ export default {
     hiddenBrandwidthHandle (selectedProvider) {
       const providers = ['Azure', 'Aws', 'Google']
       if (providers.some(v => v === selectedProvider)) {
-        this.form.fc.setFieldsValue({ bandwidth: 1 })
+        this.setEipFdFields({ bandwidth: 1 })
         this.showBandwidth = false
       } else {
-        this.form.fc.setFieldsValue({ bandwidth: 30 })
+        this.setEipFdFields({ bandwidth: 30 })
         this.showBandwidth = true
       }
     },
@@ -958,7 +921,7 @@ export default {
       const domain = this.$route.query.domain_id
       if (domain) {
         this.domain_id = domain
-        this.form.fc.setFieldsValue({
+        this.setEipFdFields({
           domain: { key: domain },
         })
       }
@@ -966,7 +929,7 @@ export default {
     fetchProjectCallback () {
       const project = this.$route.query.tenant_id
       if (project) {
-        this.form.fc.setFieldsValue({
+        this.setEipFdFields({
           project: { key: project },
         })
       }

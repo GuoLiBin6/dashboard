@@ -1,32 +1,33 @@
 <template>
-  <a-form
-    :form="form.fc"
+  <a-form-model
+    ref="formRef"
+    :model="form"
+    :rules="rules"
     v-bind="formItemLayout">
-    <!-- <a-alert type="warning" :message="$t('system.text_278')" class="mb-2" /> -->
     <contact-tips
       :before="$t('system.feishu.before')"
       :after="$t('system.feishu.after')"
       :href="href"
       :hrefText="$t('system.detail')" />
-    <a-form-item label="AppId">
+    <a-form-model-item label="AppId" prop="app_id">
       <template v-slot:extra>
         <div>{{$t('system.text_279')}}</div>
         <div class="mb-0">{{ $t('system.text_571') }}</div>
       </template>
-      <a-input v-decorator="decorators.app_id" />
-    </a-form-item>
-    <a-form-item label="AppSecret">
+      <a-input v-model:value="form.app_id" />
+    </a-form-model-item>
+    <a-form-model-item label="AppSecret" prop="app_secret">
       <template v-slot:extra>
         <div>{{$t('system.text_280')}}</div>
         <div class="mb-0">{{ $t('system.text_571') }}</div>
       </template>
-      <a-input-password v-decorator="decorators.app_secret" />
-    </a-form-item>
-    <a-form-item :wrapper-col="offsetWrapperCol">
+      <a-input-password v-model:value="form.app_secret" />
+    </a-form-model-item>
+    <a-form-model-item :wrapper-col="offsetWrapperCol">
       <a-button type="primary" @click="handleSubmit" :loading="submiting">{{ $t('common.ok') }}</a-button>
       <test-button v-if="false" class="ml-3" :post="testPost" />
-    </a-form-item>
-  </a-form>
+    </a-form-model-item>
+  </a-form-model>
 </template>
 
 <script>
@@ -52,24 +53,15 @@ export default {
     return {
       submiting: false,
       form: {
-        fc: this.$form.createForm(this),
+        app_id: undefined,
+        app_secret: undefined,
       },
-      decorators: {
+      rules: {
         app_id: [
-          'app_id',
-          {
-            rules: [
-              { required: true, message: this.$t('system.text_281') },
-            ],
-          },
+          { required: true, message: this.$t('system.text_281') },
         ],
         app_secret: [
-          'app_secret',
-          {
-            rules: [
-              { required: true, message: this.$t('system.text_263') },
-            ],
-          },
+          { required: true, message: this.$t('system.text_263') },
         ],
       },
       contactData: null,
@@ -95,7 +87,7 @@ export default {
         const data = response.data.data[0] || {}
         this.contactData = data
         this.$nextTick(() => {
-          this.form.fc.setFieldsValue(data.content)
+          Object.assign(this.form, data.content || {})
         })
       } catch (error) {
         throw error
@@ -104,7 +96,8 @@ export default {
       }
     },
     async handleSubmit () {
-      const values = await this.form.fc.validateFields()
+      await this.$refs.formRef.validate()
+      const values = { ...this.form }
       try {
         this.submiting = true
         if (this.contactData && this.contactData.id) {
@@ -134,7 +127,8 @@ export default {
     },
     async testPost () {
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         await new this.$Manager('notifyconfigs', 'v1').performClassAction({
           action: 'validate',
           data: {

@@ -2,31 +2,35 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('compute.text_189')}}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-bind="formItemLayout">
-          <domain-project :fc="form.fc" :form-layout="formItemLayout" :decorators="{ project: decorators.project, domain: decorators.domain }" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_1016')" v-bind="formItemLayout">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules">
+        <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-bind="formItemLayout">
+          <domain-project :form="form" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_1016')" v-bind="formItemLayout" prop="template">
           <a-select
-            v-decorator="decorators.template"
+            v-model:value="form.template"
             @change="handleSelectChange">
             <a-select-option v-for="(v, k) in templateOps" :key="k" :value="k">
               {{v}}
             </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_228')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.name" :placeholder="$t('compute.text_210')" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')" v-bind="formItemLayout">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_1154')" class="mb-0" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_228')" v-bind="formItemLayout" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('compute.text_210')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" v-bind="formItemLayout" prop="description">
+          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.description" :placeholder="$t('common_367')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_1154')" class="mb-0" v-bind="formItemLayout" prop="tag">
           <tag
-            v-decorator="decorators.tag" :allowNoValue="false" />
-        </a-form-item>
-      </a-form>
+            :value="form.tag"
+            @change="v => form.tag = v"
+            :allowNoValue="false" />
+        </a-form-model-item>
+      </a-form-model>
       <a-tabs v-model:activeKey="checkedTab">
         <a-tab-pane :tab="$t('compute.text_993')" key="in">
           <a-table
@@ -52,7 +56,7 @@
 <script>
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
-import DomainProject from '@/sections/DomainProject'
+import DomainProject from '@/sections/DomainProject/model'
 import validateForm, { isRequired } from '@/utils/validate'
 import Tag from '@/sections/Tag'
 
@@ -69,53 +73,26 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        domain: domain || this.$store.getters.userInfo.projectDomainId,
+        project: tenant || this.$store.getters.userInfo.projectId,
+        template: '1',
+        name: undefined,
+        description: undefined,
+        tag: {},
       },
-      decorators: {
+      rules: {
         domain: [
-          'domain',
-          {
-            initialValue: domain || this.$store.getters.userInfo.projectDomainId,
-            rules: [
-              { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
-            ],
-          },
+          { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
         ],
         project: [
-          'project',
-          {
-            initialValue: tenant || this.$store.getters.userInfo.projectId,
-            rules: [
-              { validator: isRequired(), message: this.$t('rules.project'), trigger: 'change' },
-            ],
-          },
-        ],
-        template: [
-          'template',
-          {
-            initialValue: '1',
-          },
+          { validator: isRequired(), message: this.$t('rules.project'), trigger: 'change' },
         ],
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_333') },
-              // { validator: this.$validate('templateName') },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_333') },
         ],
-        description: ['description'],
         tag: [
-          'tag',
-          {
-            initialValue: {},
-            rules: [
-              { required: false, message: this.$t('cloudenv.text_451') },
-              { validator: validateForm('tagName') },
-            ],
-          },
+          { required: false, message: this.$t('cloudenv.text_451') },
+          { validator: validateForm('tagName') },
         ],
       },
       formItemLayout: {
@@ -247,25 +224,13 @@ export default {
     handleSelectChange (e) {
       this.templateType = e
     },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     doCreate (data) {
       return new this.$Manager('secgroups').create({ data: data })
     },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
-        this.loading = true
+        await this.$refs.formRef.validate()
         const rules = []
         const key = this.templateType || '1'
         if (key && key !== '3' && this.ruleData[key]) {
@@ -273,9 +238,6 @@ export default {
             const items = this.ruleData[key][k]
             for (let i = 0; i < items.length; i++) {
               const obj = { ...items[i] }
-              if (obj.protocol === 'ALL') {
-                obj.protocol = 'any'
-              }
               if (obj.protocol === 'ALL') {
                 obj.protocol = 'any'
               }
@@ -290,21 +252,22 @@ export default {
             }
           })
         }
+        const project = this.form.project
         const newValues = {
-          name: values.name,
-          description: values.description,
+          name: this.form.name,
+          description: this.form.description,
           rules,
-          tenant: values.project && values.project.key,
-          __meta__: values.tag,
+          tenant: project && (project.key || project),
+          __meta__: this.form.tag,
         }
         await this.doCreate(newValues)
-        this.loading = false
         this.cancelDialog()
         this.params.refresh && this.params.refresh()
         this.params.success && this.params.success()
       } catch (error) {
-        this.loading = false
         throw error
+      } finally {
+        this.loading = false
       }
     },
   },

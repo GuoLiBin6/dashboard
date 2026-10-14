@@ -5,11 +5,13 @@
       <!-- <a-alert class="mb-2" type="warning" :message="message" /> -->
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_199')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc">
+      <a-form-model :model="form.fd">
         <network-config
+          ref="networkConfigRef"
           :form="form"
+          :model="form.fd"
           :count="params.total"
-          :decorator="networkConfig"
+          field-map-preset="setNetwork"
           :networkParams="networkParams"
           :limit="networkLimit"
           :networkLimit="networkLimit"
@@ -20,12 +22,12 @@
           :showMacConfig="isKvm"
           :showDeviceConfig="isKvm"
           :showSecgroupConfig="isKvm" />
-      </a-form>
-      <a-form-item>
-        <a-checkbox v-model="syncConfigImmediately">
-          {{ $t('compute.nics.sync_config_immediately') }}
-        </a-checkbox>
-      </a-form-item>
+        <a-form-model-item>
+          <a-checkbox v-model:checked="form.fd.syncConfigImmediately">
+            {{ $t('compute.nics.sync_config_immediately') }}
+          </a-checkbox>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -36,12 +38,11 @@
 <script>
 import * as R from 'ramda'
 import NetworkConfig from '@Compute/sections/ServerNetwork/NetworkConfig'
-import { checkIpInSegment, checkIpV6, getIpv6Start } from '@Compute/utils/createServer'
+import { getIpv6Start } from '@Compute/utils/createServer'
 import { HYPERVISORS_MAP, EXTRA_HYPERVISORS } from '@/constants'
 import expectStatus from '@/constants/expectStatus'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
-import validateForm from '@/utils/validate'
 const hypervisorMap = Object.assign({}, HYPERVISORS_MAP, EXTRA_HYPERVISORS)
 
 export default {
@@ -50,13 +51,21 @@ export default {
     NetworkConfig,
   },
   mixins: [DialogMixin, WindowsMixin],
+  provide () {
+    return {
+      form: this.form,
+    }
+  },
   data () {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        fd: {
+          syncConfigImmediately: true,
+        },
         fi: {
           capability: {}, // 可用区下的可用资源
+          networkList: [],
         },
       },
       formItemLayout: {
@@ -70,117 +79,10 @@ export default {
       secgroupsInitLoaded: false,
       bindedSecgroups: [],
       bindedSecgroupsLoaded: false,
-      networkConfig: {
-        vpcs: i => [
-          `vpcs[${i}]`,
-          {
-            validateTrigger: ['change', 'blur'],
-            rules: [{
-              required: true,
-              message: this.$t('compute.text_194'),
-            }],
-          },
-        ],
-        networks: i => [
-          `networks[${i}]`,
-          {
-            validateTrigger: ['change', 'blur'],
-            rules: [{
-              required: true,
-              message: this.$t('compute.text_217'),
-            }],
-          },
-        ],
-        ips: (i, networkData) => [
-          `networkIps[${i}]`,
-          {
-            validateFirst: true,
-            validateTrigger: ['blur', 'change'],
-            rules: [
-              {
-                required: true,
-                message: this.$t('compute.text_218'),
-              },
-              {
-                validator: this.$validate('IPv4'),
-              },
-              {
-                validator: checkIpInSegment(i, networkData),
-              },
-            ],
-          },
-        ],
-        ips6: (i, networkData) => [
-          `networkIpsAddress6[${i}]`,
-          {
-            validateFirst: true,
-            validateTrigger: ['blur', 'change'],
-            rules: [
-              {
-                required: true,
-                message: this.$t('compute.complete_ipv6_address'),
-              },
-              {
-                validator: checkIpV6(i, networkData),
-              },
-            ],
-          },
-        ],
-        ipv6_mode: (i, networkData) => [
-          `networkIPv6Modes[${i}]`,
-          {
-            validateTrigger: ['change', 'blur'],
-          },
-        ],
-        macs: (i, networkData) => [
-          `networkMacs[${i}]`,
-          {
-            validateFirst: true,
-            validateTrigger: ['blur', 'change'],
-            rules: [
-              {
-                required: true,
-                message: this.$t('compute.text_806'),
-              },
-              {
-                validator: validateForm('mac'),
-              },
-            ],
-          },
-        ],
-        ipv6s: (i, networkData) => [
-          `networkIPv6s[${i}]`,
-          {
-            validateFirst: true,
-            validateTrigger: ['blur', 'change'],
-          },
-        ],
-        devices: i => [
-          `networkDevices[${i}]`,
-          {
-            validateTrigger: ['change', 'blur'],
-            rules: [{
-              required: true,
-              message: this.$t('compute.sriov_device_tips'),
-            }],
-          },
-        ],
-        secgroups: (i, networkData) => [
-          `networkSecgroups[${i}]`,
-          {
-            validateTrigger: ['change', 'blur'],
-            rules: [{
-              required: true,
-              message: this.$t('compute.text_193'),
-            }],
-          },
-        ],
-      },
       vpcObj: {
         id: this.params.data[0].vpc_id,
         name: this.params.data[0].vpc,
       },
-      syncConfigImmediately: true,
     }
   },
   computed: {
@@ -258,8 +160,20 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
+        if (typeof this.$refs.networkConfigRef?.validate === 'function') {
+          await this.$refs.networkConfigRef.validate()
+        }
         const nets = []
-        const { networks, networkIps, networkMacs, networkIPv6s, networkDevices, networkIpsAddress6, networkIPv6Modes, networkSecgroups } = await this.form.fc.validateFields()
+        const {
+          networks,
+          networkIps,
+          networkMacs,
+          networkIPv6s,
+          networkDevices,
+          networkIpsAddress6,
+          networkIPv6Modes,
+          networkSecgroups,
+        } = this.form.fd
         if (!networks || R.isEmpty(networks)) {
           this.cancelDialog()
           return false
@@ -277,7 +191,7 @@ export default {
           if (networkIPv6s && networkIPv6s[key]) {
             o.require_ipv6 = true
           }
-          const target = this.form.fi.networkList.filter(item => item.key === key)
+          const target = (this.form.fi.networkList || []).filter(item => item.key === key)
           if (networkIpsAddress6 && networkIpsAddress6[key]) {
             const ipv6Last = networkIpsAddress6[key]
             const ipv6First = getIpv6Start(target[0]?.network?.guest_ip6_start)
@@ -306,7 +220,7 @@ export default {
           id: this.params.data[0].id,
           action: 'attachnetwork',
           data: {
-            disable_sync_config: !this.syncConfigImmediately,
+            disable_sync_config: !this.form.fd.syncConfigImmediately,
             nets,
           },
         })

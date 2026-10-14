@@ -1,6 +1,6 @@
 // 全局配置 ant-design-vue
-import { h, defineComponent, mergeProps, shallowRef, watch } from 'vue'
-import { Spin, Form, Button, Input, InputNumber, Alert } from 'ant-design-vue'
+import { h, defineComponent, mergeProps, shallowRef, watch, triggerRef } from 'vue'
+import { Spin, Form, Button, Input, InputNumber, Alert, Radio } from 'ant-design-vue'
 import InfoCircleFilled from '@ant-design/icons-vue/es/icons/InfoCircleFilled'
 import Icon from '@/components/Icon'
 
@@ -287,8 +287,9 @@ function normalizeTextInputValue (v) {
 }
 
 /**
- * antdv4 Input 受控时只认 props.value；v-decorator 只改 DOM 会在 focus/重渲染后被清空。
- * 包装本地值 + __decoratorSyncValue，与 InputNumber 同思路。
+ * antdv4 Input 受控时只认 props.value；在 a-form-model / v-model 下若父级未及时回写，
+ * focus/重渲染会清空展示。包装本地值保持受控同步；
+ * expose __decoratorSyncValue 供程序化回填（不派发事件）。
  */
 function createLegacyInput (RawInput) {
   const LegacyInput = defineComponent({
@@ -367,8 +368,74 @@ function createLegacyInput (RawInput) {
 }
 
 /**
- * antdv4 InputNumber 用内部 mergedValue，v-decorator 在挂载后写入 props 往往不刷新展示。
- * 包装一层本地值 + __decoratorSyncValue，供兼容层安全同步 initialValue（不派发 DOM 事件）。
+ * antdv4 Radio.Group：声明 value 后点选只 emit、不改内部 stateValue，表现为「点了不选中」。
+ * 在 a-form-model / v-model 下用本地值：点选先更新再向上 emit；
+ * expose __decoratorSyncValue 供程序化回填。
+ */
+function createLegacyRadioGroup (RawRadioGroup) {
+  const LegacyRadioGroup = defineComponent({
+    name: 'ARadioGroup',
+    inheritAttrs: false,
+    props: {
+      value: { default: undefined },
+      defaultValue: { default: undefined },
+    },
+    emits: ['change', 'update:value'],
+    setup (props, { attrs, slots, emit, expose }) {
+      const localValue = shallowRef(
+        props.value !== undefined ? props.value : props.defaultValue,
+      )
+
+      watch(
+        () => props.value,
+        (v) => {
+          // 与 AInput 一致：忽略 undefined，避免父级重渲染把点选冲掉
+          if (v !== undefined) localValue.value = v
+        },
+      )
+
+      expose({
+        __decoratorSyncValue: (v) => {
+          if (v === undefined) return
+          localValue.value = v
+        },
+      })
+
+      return () => {
+        const {
+          onChange,
+          'onUpdate:value': onUpdateValue,
+          ...restAttrs
+        } = attrs
+        return h(RawRadioGroup, mergeProps(restAttrs, {
+          value: localValue.value,
+          onChange: (e) => {
+            const next = e && e.target ? e.target.value : e
+            localValue.value = next
+            triggerRef(localValue)
+            emit('change', e)
+            emit('update:value', next)
+            if (typeof onChange === 'function') onChange(e)
+          },
+          'onUpdate:value': (v) => {
+            if (v !== undefined) {
+              localValue.value = v
+              triggerRef(localValue)
+            }
+            emit('update:value', v)
+            if (typeof onUpdateValue === 'function') onUpdateValue(v)
+          },
+        }), slots)
+      }
+    },
+  })
+  return LegacyRadioGroup
+}
+
+/**
+ * antdv4 InputNumber 用内部 mergedValue；挂载后仅靠 props 写入有时不刷新展示。
+ * 包装本地值保持受控同步（a-form-model / v-model）；
+ * expose __decoratorSyncValue 供程序化回填（不派发 DOM 事件）。
  */
 function createLegacyInputNumber (RawInputNumber) {
   return defineComponent({
@@ -460,9 +527,9 @@ export default {
     ensurePrimaryButtonThemeStyle()
     ensureFormExtraFontStyle()
     app.component('AAlert', createThemedAlert(Alert))
-    // Input：兼容 v-decorator initialValue，避免 focus 后清空
+    // Input / InputNumber / Radio.Group：修 antdv4 受控怪癖（a-form-model / v-model），非 createForm
     app.component('AInput', createLegacyInput(Input))
-    // InputNumber：兼容 v-decorator initialValue 展示
     app.component('AInputNumber', createLegacyInputNumber(InputNumber))
+    app.component('ARadioGroup', createLegacyRadioGroup(Radio.Group))
   },
 }

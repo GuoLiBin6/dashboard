@@ -9,24 +9,24 @@
       </a-alert>
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_1236')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.text_1237')" v-if="isKvm">
-          <a-radio-group v-decorator="decorators.type" @change="handleTypeChange">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.text_1237')" prop="type" v-if="isKvm">
+          <a-radio-group v-model:value="form.type">
             <a-radio-button :value="types.system.key">{{ types.system.label }}</a-radio-button>
             <a-radio-button :value="types.host.key">{{ types.host.label }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_228')">
-          <a-input v-decorator="decorators.generate_name" :placeholder="$t('validator.imageName')" @change="e => {form.fi.generate_name = e.target.value}" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_494')">
-          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-decorator="decorators.auto_start" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_228')" prop="generate_name">
+          <a-input v-model:value="form.generate_name" :placeholder="$t('validator.imageName')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_494')" prop="auto_start">
+          <a-switch v-model:checked="form.auto_start" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
           <template v-slot:extra>
             <div>{{$t('compute.text_1238')}}</div>
-            <div v-if="form.fi.type === types.host.key" class="mt-2">{{$t('compute.text_1239', [ diskCount ])}}</div>
+            <div v-if="form.type === types.host.key" class="mt-2">{{$t('compute.text_1239', [ diskCount ])}}</div>
           </template>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -58,42 +58,19 @@ export default {
         label: this.$t('compute.text_1241'),
       },
     }
-    const typeInitialValue = types.system.key
     return {
       loading: false,
       types,
-      images: [],
       form: {
-        fc: this.$form.createForm(this),
-        fi: {
-          type: typeInitialValue,
-          generate_name: '',
-        },
+        type: types.system.key,
+        generate_name: '',
+        auto_start: true,
       },
-      decorators: {
-        type: [
-          'type',
-          {
-            initialValue: typeInitialValue,
-          },
-        ],
+      rules: {
         generate_name: [
-          'generate_name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_210') },
-              { validator: this.$validate('imageName') },
-              { validator: this.checkTemplateName },
-            ],
-          },
-        ],
-        auto_start: [
-          'auto_start',
-          {
-            initialValue: true,
-            valuePropName: 'checked',
-          },
+          { required: true, message: this.$t('compute.text_210') },
+          { validator: this.$validate('imageName') },
+          { validator: this.checkTemplateName },
         ],
       },
       formItemLayout: {
@@ -121,32 +98,6 @@ export default {
     },
   },
   methods: {
-    async handleConfirm () {
-      this.loading = true
-      try {
-        const values = await this.form.fc.validateFields()
-        const ids = this.params.data.map(item => item.id)
-        const action = values.type === this.types.host.key ? 'save-guest-image' : 'save-image'
-        values.id = ids
-        values.is_public = false
-        values.name = values.generate_name
-        delete values.type
-        await this.params.onManager('batchPerformAction', {
-          id: ids,
-          steadyStatus: ['running', 'ready'],
-          managerArgs: {
-            action,
-            data: values,
-          },
-        })
-        this.cancelDialog()
-      } finally {
-        this.loading = false
-      }
-    },
-    handleTypeChange (e) {
-      this.form.fi.type = e.target.value
-    },
     checkTemplateName (rule, value, callback) {
       if (!value) {
         return callback(new Error(this.$t('compute.text_660')))
@@ -164,6 +115,32 @@ export default {
           callback()
         }
       })
+    },
+    async handleConfirm () {
+      this.loading = true
+      try {
+        await this.$refs.formRef.validate()
+        const ids = this.params.data.map(item => item.id)
+        const action = this.form.type === this.types.host.key ? 'save-guest-image' : 'save-image'
+        const data = {
+          id: ids,
+          is_public: false,
+          name: this.form.generate_name,
+          generate_name: this.form.generate_name,
+          auto_start: this.form.auto_start,
+        }
+        await this.params.onManager('batchPerformAction', {
+          id: ids,
+          steadyStatus: ['running', 'ready'],
+          managerArgs: {
+            action,
+            data,
+          },
+        })
+        this.cancelDialog()
+      } finally {
+        this.loading = false
+      }
     },
   },
 }

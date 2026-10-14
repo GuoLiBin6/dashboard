@@ -3,7 +3,7 @@
     <div class="dashboard-card-wrap">
       <div class="dashboard-card-header">
         <div class="dashboard-card-header-left">
-          {{ form.fd.name }}<icon class="ml-2" type="loading" v-if="loading" />
+          {{ fd.name }}<icon class="ml-2" type="loading" v-if="loading" />
           <span v-if="isResDeny" class="ml-2"><icon class="warning-color mr-1" type="warning" />{{ $t('common.permission.403') }}</span>
         </div>
         <div class="dashboard-card-header-right">
@@ -35,29 +35,26 @@
       </div>
     </div>
     <base-drawer v-model:visible="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit">
-      <a-form
-        hideRequiredMark
-        :form="form.fc"
-        v-bind="formItemLayout">
-        <a-form-item :label="$t('dashboard.text_6')">
-          <a-input v-decorator="decorators.name" />
-        </a-form-item>
-        <a-form-item :label="$t('dashboard.text_56')">
-          <a-radio-group v-decorator="decorators.resType" @change="handleResTypeChange">
+      <a-form-model ref="formRef" hideRequiredMark :model="fd" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('dashboard.text_6')" prop="name">
+          <a-input v-model:value="fd.name" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('dashboard.text_56')" prop="resType">
+          <a-radio-group v-model:value="fd.resType" @change="handleResTypeChange">
             <a-radio-button value="server">{{$t('dashboard.text_57')}}</a-radio-button>
             <a-radio-button value="host">{{$t('dashboard.text_58')}}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('dashboard.text_55')">
-          <a-select v-decorator="decorators.brand" allowClear :placeholder="$t('dashboard.text_99')" mode="multiple">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('dashboard.text_55')" prop="brand">
+          <a-select v-model:value="fd.brand" allowClear :placeholder="$t('dashboard.text_99')" mode="multiple">
             <template v-for="item of brands" :key="item.key">
               <a-select-option :value="item.key">{{ item.label }}</a-select-option>
             </template>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('dashboard.text_20')">
-          <a-select v-decorator="decorators.usage">
-            <template v-for="item of usageOptions[form.fd.resType]" :key="item.key">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('dashboard.text_20')" prop="usage">
+          <a-select v-model:value="fd.usage">
+            <template v-for="item of usageOptions[fd.resType]" :key="item.key">
               <a-select-option :value="item.key">{{ item.label }}</a-select-option>
             </template>
           </a-select>
@@ -68,29 +65,29 @@
               </template>
             </i18n>
           </div>
-        </a-form-item>
-        <a-form-item :label="$t('monitor.overview.aggregate')">
-          <a-select v-decorator="decorators.dimensionId">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('monitor.overview.aggregate')" prop="dimensionId">
+          <a-select v-model:value="fd.dimensionId">
             <a-select-option v-for="item in dimentions" :value="item.id" :key="item.id">{{ item.label }}</a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item label="TOP/Bottom">
-          <a-select v-decorator="decorators.order">
+        </a-form-model-item>
+        <a-form-model-item label="TOP/Bottom" prop="order">
+          <a-select v-model:value="fd.order">
             <a-select-option value="TOP">TOP</a-select-option>
             <a-select-option value="BOTTOM">BOTTOM</a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('dashboard.text_59')">
-          <a-input-number :min="1" :max="100" v-decorator="decorators.limit" />
-        </a-form-item>
-        <a-form-item :label="$t('dashboard.text_60')">
-          <a-select v-decorator="decorators.time">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('dashboard.text_59')" prop="limit">
+          <a-input-number :min="1" :max="100" v-model:value="fd.limit" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('dashboard.text_60')" prop="time">
+          <a-select v-model:value="fd.time">
             <template v-for="item of timeOptions" :key="item.key">
               <a-select-option :value="item.key">{{ item.label }}</a-select-option>
             </template>
           </a-select>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </base-drawer>
   </div>
 </template>
@@ -101,7 +98,6 @@ import { mapGetters } from 'vuex'
 import BaseDrawer from '@Dashboard/components/BaseDrawer'
 import { load } from '@Dashboard/utils/cache'
 import { getMetricDocs } from '@Dashboard/constants'
-import { resolveValueChangeField } from '@/utils/common/ant'
 import { findPlatform, typeClouds } from '@/utils/common/hypervisor'
 import { getRequestT } from '@/utils/utils'
 import { hasPermission } from '@/utils/auth'
@@ -148,25 +144,38 @@ export default {
       visible: false,
       loading: false,
       seriesData: [],
-      form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            const newField = resolveValueChangeField(values)
-            R.forEachObjIndexed((item, key) => {
-              this.$set(this.form.fd, key, item)
-            }, newField)
-          },
-        }),
-        fd: {
-          name: initialNameValue,
-          brand: initialBrandValue,
-          resType: initialResTypeValue,
-          usage: initialUsage,
-          order: initialOrderValue,
-          limit: initialLimit,
-          time: initialTime,
-          dimensionId: initialDimensionId,
-        },
+      fd: {
+        name: initialNameValue,
+        brand: initialBrandValue,
+        resType: initialResTypeValue,
+        usage: initialUsage,
+        order: initialOrderValue,
+        limit: initialLimit,
+        time: initialTime,
+        dimensionId: initialDimensionId,
+      },
+      rules: {
+        name: [
+          { required: true, message: this.$t('dashboard.text_8') },
+        ],
+        resType: [
+          { required: true, message: this.$t('dashboard.text_73') },
+        ],
+        usage: [
+          { required: true, message: this.$t('dashboard.text_22') },
+        ],
+        order: [
+          { required: true, message: this.$t('dashboard.text_74') },
+        ],
+        limit: [
+          { required: true, message: this.$t('dashboard.text_75') },
+        ],
+        time: [
+          { required: true, message: this.$t('dashboard.text_76') },
+        ],
+        dimensionId: [
+          { required: true, message: '' },
+        ],
       },
       usageOptions: {
         server: serverUsageOptions,
@@ -181,78 +190,6 @@ export default {
         { label: this.$t('timeselect.days', [14]), key: 14 * 24 * 60 * 60 },
         { label: this.$t('timeselect.months', [1]), key: 30 * 24 * 60 * 60 },
       ],
-      decorators: {
-        name: [
-          'name',
-          {
-            initialValue: initialNameValue,
-            rules: [
-              { required: true, message: this.$t('dashboard.text_8') },
-            ],
-          },
-        ],
-        brand: [
-          'brand',
-          {
-            initialValue: initialBrandValue,
-            // rules: [
-            //   { required: true, message: this.$t('dashboard.text_72') },
-            // ],
-          },
-        ],
-        resType: [
-          'resType',
-          {
-            initialValue: initialResTypeValue,
-            rules: [
-              { required: true, message: this.$t('dashboard.text_73') },
-            ],
-          },
-        ],
-        usage: [
-          'usage',
-          {
-            initialValue: initialUsage,
-            rules: [
-              { required: true, message: this.$t('dashboard.text_22') },
-            ],
-          },
-        ],
-        order: [
-          'order',
-          {
-            initialValue: initialOrderValue,
-            rules: [
-              { required: true, message: this.$t('dashboard.text_74') },
-            ],
-          },
-        ],
-        limit: [
-          'limit',
-          {
-            initialValue: initialLimit,
-            rules: [
-              { required: true, message: this.$t('dashboard.text_75') },
-            ],
-          },
-        ],
-        time: [
-          'time',
-          {
-            initialValue: initialTime,
-            rules: [
-              { required: true, message: this.$t('dashboard.text_76') },
-            ],
-          },
-        ],
-        dimensionId: [
-          'dimensionId',
-          {
-            initialValue: initialDimensionId,
-            rules: [{ required: true, message: '' }],
-          },
-        ],
-      },
       formItemLayout: {
         wrapperCol: {
           span: 18,
@@ -267,7 +204,7 @@ export default {
   computed: {
     ...mapGetters(['scope', 'capability', 'isAdminMode', 'isDomainMode', 'isProjectMode', 'userInfo', 'permission']),
     brandEnvs () {
-      const brand = this.form.fd.brand
+      const brand = this.fd.brand
       return brand.map(key => findPlatform(key))
     },
     maxSeriesData () {
@@ -276,7 +213,7 @@ export default {
       return maxData > 100 ? maxData : 100
     },
     brands () {
-      const isServer = this.form.fd.resType === 'server'
+      const isServer = this.fd.resType === 'server'
       const brands = (this.capability.brands || []).map(item => {
         const opt = typeClouds.brandMap[item]
         if (opt) {
@@ -305,7 +242,7 @@ export default {
       const curScope = this.scope
       const scopeLevel = Math.max(['project', 'domain', 'system'].indexOf(curScope) + 1, 0)
       const ret = []
-      if (this.form.fd.resType === 'server') {
+      if (this.fd.resType === 'server') {
         ret.push({ scope: curScope, id: 'vm_id', name: 'vm_name', label: this.$t('cloudenv.text_99') })
       } else {
         ret.push({ scope: curScope, id: 'host_id', name: 'host', label: this.$t('cloudenv.text_101') })
@@ -316,7 +253,7 @@ export default {
         name: 'project_domain',
         label: this.$t('dictionary.domain'),
       })
-      scopeLevel > 1 && this.form.fd.resType === 'server' && ret.push({
+      scopeLevel > 1 && this.fd.resType === 'server' && ret.push({
         scope: curScope,
         id: 'tenant_id',
         name: 'tenant',
@@ -328,7 +265,7 @@ export default {
       return ret
     },
     dimension () {
-      return this.dimentions.filter((d) => { return d.id === this.form.fd.dimensionId })[0]
+      return this.dimentions.filter((d) => { return d.id === this.fd.dimensionId })[0]
     },
     isResDeny () {
       const usage = this.params?.usage || ''
@@ -339,28 +276,23 @@ export default {
     },
   },
   watch: {
-    'form.fd' (val) {
-      const newVal = { ...val }
-      for (const key in newVal) {
-        this.decorators[key][1].initialValue = newVal[key]
-      }
-      this.form.fc.setFieldsValue(newVal)
-      this.$nextTick(() => {
-        this.fetchData()
-      })
-      // this.changeName(val)
-    },
-    'form.fd.resType' (val) {
-      if (this.dimentions.filter(item => item.id === this.form.fd.dimensionId).length === 0) {
-        this.form.fc.setFieldsValue({
-          dimensionId: this.dimentions[0].id,
+    fd: {
+      handler () {
+        this.$nextTick(() => {
+          this.fetchData()
         })
-      }
-      this.changeName(val, this.form.fd.usage)
+      },
+      deep: true,
     },
-    'form.fd.usage': {
+    'fd.resType' (val) {
+      if (this.dimentions.filter(item => item.id === this.fd.dimensionId).length === 0) {
+        this.fd.dimensionId = this.dimentions[0].id
+      }
+      this.changeName(val, this.fd.usage)
+    },
+    'fd.usage': {
       handler (val) {
-        this.changeName(this.form.fd.resType, val)
+        this.changeName(this.fd.resType, val)
       },
     },
     'dataRangeParams.scope': {
@@ -383,7 +315,7 @@ export default {
     },
   },
   created () {
-    const values = { ...this.form.fd }
+    const values = { ...this.fd }
     values.brand = R.join(',', values.brand || [])
     this.$emit('update', this.options.i, values)
     this.fetchData()
@@ -393,7 +325,7 @@ export default {
       return this.fetchData()
     },
     async fetchData () {
-      // if (!this.form.fd.brand) return
+      // if (!this.fd.brand) return
       if (this.isResDeny) return
       this.loading = true
       try {
@@ -419,7 +351,7 @@ export default {
       }
     },
     toHistogramChartData (series) {
-      const { order, limit } = this.form.fd
+      const { order, limit } = this.fd
       let rows = series.map((item) => {
         const lastPoint = item.points ? item.points[item.points.length - 1] : undefined
         if (lastPoint) {
@@ -445,7 +377,7 @@ export default {
       return rows
     },
     filterByOem (name) {
-      if (this.form.fd.dimensionId === 'brand') {
+      if (this.fd.dimensionId === 'brand') {
         if (name === 'OneCloud') {
           return setting.brand[setting.language] || name
         } else if (name === 'Cloudpods') {
@@ -460,9 +392,8 @@ export default {
     },
     async handleSubmit () {
       try {
-        const values = await this.form.fc.validateFields()
-        this.form.fd = values
-        const updateValues = { ...values }
+        await this.$refs.formRef.validate()
+        const updateValues = { ...this.fd }
         updateValues.brand = updateValues.brand.join(',')
         this.$emit('update', this.options.i, updateValues)
         this.visible = false
@@ -471,16 +402,15 @@ export default {
       }
     },
     handleResTypeChange (e) {
-      this.form.fc.setFieldsValue({
-        usage: this.usageOptions[e.target.value][0].key,
-        brand: [],
-      })
+      const resType = e?.target?.value ?? this.fd.resType
+      this.fd.usage = this.usageOptions[resType][0].key
+      this.fd.brand = []
     },
     genQueryData () {
-      const fd = this.form.fd
+      const fd = this.fd
       let ret = ''
       const brandKey = 'brand'
-      const brand = this.form.fd.brand
+      const brand = this.fd.brand
       const usageKeys = fd.usage.split(',')
       const min = fd.time / 60
       const condition = this.getDomainOrProjectQuery()
@@ -717,7 +647,7 @@ export default {
     },
     getLabel (val) {
       const fixedVal = isNaN(Number(val)) ? 0 : Number(val).toFixed(2)
-      const formatter = usageConfig[this.form.fd.usage] && usageConfig[this.form.fd.usage].formatter
+      const formatter = usageConfig[this.fd.usage] && usageConfig[this.fd.usage].formatter
       if (formatter) return formatter(fixedVal)
       return fixedVal
     },
@@ -744,7 +674,7 @@ export default {
       return null
     },
     groupInput () {
-      if (this.form.fd.resType === 'host') {
+      if (this.fd.resType === 'host') {
         return 'project_domain'
       }
       switch (this.dimension.scope) {
@@ -776,9 +706,7 @@ export default {
       if (resType === 'host') {
         usage_label = hostUsageOptions.find(item => item.key === usage)?.label
       }
-      this.form.fc.setFieldsValue({
-        name: `${usage_label}TOP5`,
-      })
+      this.fd.name = `${usage_label}TOP5`
     },
   },
 }

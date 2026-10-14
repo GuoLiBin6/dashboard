@@ -19,7 +19,7 @@
             :placeholder="$t('common.search')"
             class="mb-2" />
           <div class="provider-model-list">
-            <a-checkbox-group v-model="selectedModelKeys" class="d-flex flex-column">
+            <a-checkbox-group v-model:value="selectedModelKeys" class="d-flex flex-column">
               <a-checkbox
                 v-for="opt in filteredModelOptions"
                 :key="opt.value"

@@ -2,12 +2,12 @@
   <base-dialog :width="900" @cancel="cancelDialog">
     <div slot="header">{{ $t('aice.llm_spec_update') }}</div>
     <div slot="body">
-      <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
+      <a-form-model :model="form.fd" hideRequiredMark v-bind="formItemLayout">
         <template v-if="isOpenclaw">
-          <a-form-item :label="$t('aice.openclaw.manual_config')">
-            <a-switch v-decorator="decorators.openclaw_manual_config" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
+          <a-form-model-item :label="$t('aice.openclaw.manual_config')">
+            <a-switch v-model:checked="form.fd.openclaw_manual_config" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
             <div class="text-color-secondary mt-1" style="font-size: 13px;">{{ $t('aice.openclaw.manual_config_tip') }}</div>
-          </a-form-item>
+          </a-form-model-item>
           <template v-if="!form.fd.openclaw_manual_config">
           <a-divider orientation="left" class="openclaw-section-divider">{{ $t('aice.openclaw.section.ai_providers') }}</a-divider>
           <a-form-item :label="$t('aice.openclaw.provider_filter')" :extra="$t('aice.openclaw.provider_select_tip')">
@@ -143,9 +143,9 @@
           </div>
 
           <a-divider orientation="left" class="openclaw-section-divider">{{ $t('aice.openclaw.section.chat_channels') }}</a-divider>
-          <a-form-item :label="$t('aice.openclaw.channels')" :extra="$t('aice.openclaw.channels_extra')">
+          <a-form-model-item :label="$t('aice.openclaw.channels')" :extra="$t('aice.openclaw.channels_extra')">
             <a-select
-              v-decorator="decorators.openclaw_channels"
+              v-model:value="form.fd.openclaw_channels"
               mode="multiple"
               :placeholder="$t('aice.openclaw.channel_select_placeholder')"
               allow-clear
@@ -156,7 +156,7 @@
                 {{ opt.label }}
               </a-select-option>
             </a-select>
-          </a-form-item>
+          </a-form-model-item>
           <template v-if="filteredChannelSections.length > 0">
             <div class="openclaw-channel-config-hint text-color-secondary mb-2">
               {{ $t('aice.openclaw.channel_config_hint') }}
@@ -389,7 +389,7 @@
         <template v-else>
           <a-alert type="warning" :message="$t('aice.llm_spec_update')" :description="$t('aice.llm_spec')" show-icon />
         </template>
-      </a-form>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -416,30 +416,10 @@ export default {
       row,
       credentialNameMap: {},
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.$set(this.form.fd, key, values[key])
-            })
-          },
-        }),
         fd: {
-          openclaw_channels: [],
+          openclaw_channels: (row?.llm_spec?.openclaw?.channels || []).map(item => item.name),
           openclaw_manual_config: !!(row?.llm_spec?.openclaw?.manual_config),
         },
-      },
-      decorators: {
-        openclaw_manual_config: [
-          'openclaw_manual_config',
-          {
-            valuePropName: 'checked',
-            initialValue: !!(row?.llm_spec?.openclaw?.manual_config),
-          },
-        ],
-        openclaw_channels: [
-          'openclaw_channels',
-          { initialValue: (row?.llm_spec?.openclaw?.channels || []).map(item => item.name), rules: [] },
-        ],
       },
       formItemLayout: {
         wrapperCol: {
@@ -662,7 +642,6 @@ export default {
             this.$set(this.openclawChannelCredentialMode, key, 'new')
           }
         })
-        this.form.fc.setFieldsValue({ openclaw_channels: channelKeys })
         this.$set(this.form.fd, 'openclaw_channels', channelKeys)
         if (!this.openclawChannelActiveTab && channelKeys.length > 0) {
           this.openclawChannelActiveTab = channelKeys[0]
@@ -694,7 +673,6 @@ export default {
             this.$set(this.openclawChannelCredentialMode, key, 'new')
           }
         })
-        this.form.fc.setFieldsValue({ openclaw_channels: channelKeys })
         this.$set(this.form.fd, 'openclaw_channels', channelKeys)
         if (!this.openclawChannelActiveTab && channelKeys.length > 0) {
           this.openclawChannelActiveTab = channelKeys[0]
@@ -827,7 +805,6 @@ export default {
     },
     closeChannelTab (sectionKey) {
       const channels = (this.form.fd.openclaw_channels || []).filter(k => k !== sectionKey)
-      this.form.fc.setFieldsValue({ openclaw_channels: channels })
       this.$set(this.form.fd, 'openclaw_channels', channels)
       if (this.openclawChannelActiveTab === sectionKey && channels.length > 0) {
         this.openclawChannelActiveTab = channels[0]

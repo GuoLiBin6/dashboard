@@ -2,30 +2,38 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('compute.image_cache.perform_batch_precache')}}</div>
     <div slot="body">
-      <a-form :form="form.fc">
-        <a-form-item :label="$t('compute.text_111')" v-bind="formItemLayout">
-          <a-select v-decorator="decorators.hypervisor" @change="handleHypervisorChange" :placeholder="$t('compute.text_219')" :allow-clear="true">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
+        <a-form-model-item :label="$t('compute.text_111')" v-bind="formItemLayout" prop="hypervisor">
+          <a-select v-model:value="form.hypervisor" @change="handleHypervisorChange" :placeholder="$t('compute.text_219')" :allow-clear="true">
             <a-select-option v-for="item in hostOptions" :key="item.key" :value="item.value">
               {{ item.value }}
             </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('compute.host_tag')" class="mb-0" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.host_tag')" class="mb-0" v-bind="formItemLayout" prop="host_tags">
           <tag
-            v-decorator="decorators.host_tags" :params="{ resources: 'host', with_cloud_meta: false }" extra="" multiple />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_99')" v-bind="formItemLayout">
-          <a-select v-decorator="decorators.storage" :placeholder="$t('compute.text_219')" :allow-clear="true">
+            :value="form.host_tags"
+            @change="v => form.host_tags = v"
+            :params="{ resources: 'host', with_cloud_meta: false }"
+            extra=""
+            multiple />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_99')" v-bind="formItemLayout" prop="storage">
+          <a-select v-model:value="form.storage" :placeholder="$t('compute.text_219')" :allow-clear="true">
             <a-select-option v-for="item in storageOptions" :key="item.key" :value="item.value">
               {{ item.value }}
             </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('compute.storage_tag')" class="mb-0" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.storage_tag')" class="mb-0" v-bind="formItemLayout" prop="storage_tags">
           <tag
-            v-decorator="decorators.storage_tags" :params="{ resources: 'storage', with_cloud_meta: false }" multiple extra="" />
-        </a-form-item>
-      </a-form>
+            :value="form.storage_tags"
+            @change="v => form.storage_tags = v"
+            :params="{ resources: 'storage', with_cloud_meta: false }"
+            multiple
+            extra="" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -51,37 +59,17 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.$set(this.form.fd, key, values[key])
-            })
-          },
-        }),
-        fd: {},
+        hypervisor: undefined,
+        storage: undefined,
+        host_tags: undefined,
+        storage_tags: undefined,
       },
-      decorators: {
-        hypervisor: [
-          'hypervisor',
-        ],
-        storage: [
-          'storage',
-        ],
+      rules: {
         host_tags: [
-          'host_tags',
-          {
-            rules: [
-              { validator: validateForm('tagName') },
-            ],
-          },
+          { validator: validateForm('tagName') },
         ],
         storage_tags: [
-          'storage_tags',
-          {
-            rules: [
-              { validator: validateForm('tagName') },
-            ],
-          },
+          { validator: validateForm('tagName') },
         ],
       },
       formItemLayout: {
@@ -140,9 +128,7 @@ export default {
     },
     handleHypervisorChange (v) {
       this.hypervisor = v
-      this.$nextTick(() => {
-        this.form.fc.setFieldsValue({ storage: null })
-      })
+      this.form.storage = null
     },
     formatTags (tags) {
       const filters = [{}]
@@ -166,7 +152,8 @@ export default {
           image_id: this.params.imageId,
           auto_cache: true,
         }
-        const { hypervisor, storage, host_tags, storage_tags } = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const { hypervisor, storage, host_tags, storage_tags } = this.form
         if (hypervisor) {
           const hostType = []
           if (hypervisor === 'kvm') {
@@ -195,12 +182,12 @@ export default {
           action: 'cache-image',
           data: data,
         })
-        this.loading = false
         this.params.refresh()
         this.cancelDialog()
       } catch (error) {
-        this.loading = false
         throw error
+      } finally {
+        this.loading = false
       }
     },
   },

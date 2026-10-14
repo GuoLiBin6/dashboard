@@ -2,38 +2,33 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{action}}</div>
     <div slot="body">
-      <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])">
-          <domain-project
-            :fc="form.fc"
-            :form-layout="formLayout"
-            :decorators="{
-              project: decorators.project,
-              domain: decorators.domain
-            }" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.instance_backup_name')">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])">
+          <domain-project :form="form" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.instance_backup_name')" prop="name">
           <a-input
-            v-decorator="decorators.name"
+            v-model:value="form.name"
             :placeholder="$t('common.tips.input', [$t('compute.instance_backup_name')])" />
-        </a-form-item>
-        <a-form-item
-          :label="$t('compute.backup_storage')">
+        </a-form-model-item>
+        <a-form-model-item
+          :label="$t('compute.backup_storage')"
+          prop="storage">
           <base-select
             style="width: 100%"
-            v-decorator="decorators.storage"
+            v-model:value="form.storage"
             :params="storageParams"
             :select-props="{ placeholder: $t('compute.text_1022', [$t('compute.backup_storage')]) }"
             resource="backupstorages"
             :filterable="true"
             :isDefaultSelect="true" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.unpack_name')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.unpack_name')" prop="package_name">
           <a-input
-            v-decorator="decorators.package_name"
+            v-model:value="form.package_name"
             :placeholder="$t('common.tips.input', [$t('compute.unpack_name')])" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -45,7 +40,7 @@
 <script>
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
-import DomainProject from '@/sections/DomainProject'
+import DomainProject from '@/sections/DomainProject/model'
 import { isRequired } from '@/utils/validate'
 
 export default {
@@ -59,50 +54,27 @@ export default {
       loading: false,
       action: this.$t('compute.text_679'),
       form: {
-        fc: this.$form.createForm(this),
+        domain: { key: this.$store.getters.userInfo.projectDomainId, label: this.$store.getters.userInfo.projectDomain },
+        project: { key: this.$store.getters.userInfo.projectId, label: this.$store.getters.userInfo.projectName },
+        name: undefined,
+        storage: undefined,
+        package_name: undefined,
       },
-      decorators: {
+      rules: {
         domain: [
-          'domain',
-          {
-            initialValue: this.$store.getters.userInfo.projectDomainId,
-            rules: [
-              { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
-            ],
-          },
+          { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
         ],
         project: [
-          'project',
-          {
-            initialValue: this.$store.getters.userInfo.projectId,
-            rules: [
-              { validator: isRequired(), message: this.$t('rules.project'), trigger: 'change' },
-            ],
-          },
+          { validator: isRequired(), message: this.$t('rules.project'), trigger: 'change' },
         ],
         name: [
-          'name',
-          {
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('compute.instance_backup_name')]) },
-            ],
-          },
+          { required: true, message: this.$t('common.tips.input', [this.$t('compute.instance_backup_name')]) },
         ],
         storage: [
-          'storage',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.text_1022', [this.$t('compute.backup_storage')]), trigger: 'change' },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_1022', [this.$t('compute.backup_storage')]), trigger: 'change' },
         ],
         package_name: [
-          'package_name',
-          {
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('compute.unpack_name')]) },
-            ],
-          },
+          { required: true, message: this.$t('common.tips.input', [this.$t('compute.unpack_name')]) },
         ],
       },
       formItemLayout: {
@@ -117,8 +89,8 @@ export default {
     }
   },
   methods: {
-    doImportUnpackSubmit (values) {
-      const { name, package_name, storage, project } = values
+    doImportUnpackSubmit () {
+      const { name, package_name, storage, project } = this.form
       const params = {
         package_name,
         name,
@@ -132,10 +104,10 @@ export default {
       })
     },
     async handleConfirm () {
-      this.loading = false
+      this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        await this.doImportUnpackSubmit(values)
+        await this.$refs.formRef.validate()
+        await this.doImportUnpackSubmit()
         this.params.refresh && this.params.refresh()
         this.cancelDialog()
       } catch (error) {

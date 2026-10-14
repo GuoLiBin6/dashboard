@@ -2,14 +2,16 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{params.title}}</div>
     <div slot="body">
-      <a-form
+      <a-form-model
+        ref="formRef"
         class="mt-3"
-        :form="form.fc"
-        @submit.prevent="handleSubmit"
+        :model="form"
+        :rules="rules"
         v-bind="formItemLayout">
         <area-selects
           class="mb-0"
           ref="areaSelects"
+          :model="form"
           :wrapperCol="formItemLayout.wrapperCol"
           :labelCol="formItemLayout.labelCol"
           :names="areaselectsName"
@@ -18,17 +20,17 @@
           :isRequired="true"
           filterBrandResource="network_manage"
           @change="handleRegionChange" />
-        <a-form-item label="VPC">
+        <a-form-model-item label="VPC" prop="vpc">
           <base-select
-            v-decorator="decorators.vpc"
+            v-model="form.vpc"
             resource="vpcs"
             :params="vpcParams"
             :isDefaultSelect="true"
             :needParams="true"
             :labelFormat="vpcLabelFormat"
             :select-props="{ placeholder: $t('common_226') }" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -42,7 +44,7 @@ import { mapGetters } from 'vuex'
 import { h } from 'vue'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
-import AreaSelects from '@/sections/AreaSelects'
+import AreaSelects from '@/sections/AreaSelects/model'
 
 export default {
   name: 'AssociateVpcForVpcNetworkDialog',
@@ -50,41 +52,22 @@ export default {
     AreaSelects,
   },
   mixins: [DialogMixin, WindowsMixin],
-  provide () {
-    return {
-      form: this.form,
-    }
-  },
   data () {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        provider: undefined,
+        cloudregion: undefined,
+        vpc: undefined,
       },
-      decorators: {
-        account: [
-          'account',
-          {
-            rules: [{
-              required: true,
-              message: this.$t('network.text_215'),
-            }],
-          },
-        ],
+      rules: {
         vpc: [
-          'vpc',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_274') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_274') },
         ],
       },
       areaselectsName: ['provider', 'cloudregion'],
       regionProvider: '',
       regionId: '',
-      cloudaccountId: '',
-      associateVpcIds: [],
       formItemLayout: {
         wrapperCol: {
           md: { span: 18 },
@@ -105,7 +88,6 @@ export default {
       return this.params.data[0]
     },
     vpcParams () {
-      // const accountId = this.curItem.account_id
       const brand = this.curItem.brand
       const params = {
         limit: 0,
@@ -120,12 +102,6 @@ export default {
         delete params.scope
       }
       if (!this.regionId) return {}
-      // if (accountId) {
-      //   return {
-      //     ...params,
-      //     cloudaccount_id: accountId,
-      //   }
-      // }
       return params
     },
     providerParams () {
@@ -150,13 +126,13 @@ export default {
       this.loading = true
       try {
         const ids = this.params.data.map(item => item.id)
-        const { vpc } = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         const vpcManager = new this.$Manager('inter_vpc_networks')
         await vpcManager.batchPerformAction({
           ids: ids,
           action: 'addvpc',
           data: {
-            vpc_id: vpc,
+            vpc_id: this.form.vpc,
           },
         })
         this.params.refresh && this.params.refresh(2)
@@ -170,7 +146,7 @@ export default {
     handleRegionChange (data) {
       const { cloudregion } = data
       if (cloudregion) {
-        const { provider } = cloudregion.value
+        const { provider } = cloudregion.value || {}
         this.regionProvider = provider
         this.regionId = cloudregion.id
       }

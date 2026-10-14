@@ -4,11 +4,11 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('network.ssh-proxy.endpoints')" :count="params.data.length" :action="$t('network.text_349')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 4)" />
-      <a-form :form="form">
-        <a-form-item :label="$t('network.ssh-proxy.port')" v-bind="formItemLayout">
-          <a-input-number v-decorator="decorators.port" />
-        </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" :model="form" :rules="rules">
+        <a-form-model-item :label="$t('network.ssh-proxy.port')" v-bind="formItemLayout" prop="port">
+          <a-input-number v-model:value="form.port" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -37,17 +37,13 @@ export default {
     return {
       loading: false,
       scope: this.$store.getters.scope,
-      form: this.$form.createForm(this),
-      decorators: {
+      form: {
+        port: defaultPort,
+      },
+      rules: {
         port: [
-          'port',
-          {
-            initialValue: defaultPort,
-            rules: [
-              { required: true, message: this.$t('network.text_176') },
-              { type: 'number', min: 1, max: 65535, message: this.$t('network.text_347') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_176') },
+          { type: 'number', min: 1, max: 65535, message: this.$t('network.text_347') },
         ],
       },
       formItemLayout: {
@@ -64,7 +60,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         const ids = this.params.data.map(item => item.id)
         await this.params.onManager('batchUpdate', {
           id: ids,

@@ -4,35 +4,39 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_359')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.text_228')">
-          <a-input v-decorator="decorators.name" @change="e => { form.fi.generate_name = e.target.value }" />
+      <a-form-model ref="formRef" :model="form.fd" :rules="rules" hideRequiredMark v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.text_228')" prop="name">
+          <a-input v-model:value="form.fd.name" @change="e => { form.fi.generate_name = e.target.value }" />
           <template #extra>
             <name-repeated
               res="servers"
               :name="form.fi.generate_name"
               :default-text="$t('compute.text_893')" />
           </template>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_294')">
-          <a-input-number v-decorator="decorators.__count__" :min="1" :max="10" :step="1" :parser="Math.round" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_267')" v-if="isPublic">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_294')" prop="__count__">
+          <a-input-number v-model:value="form.fd.__count__" :min="1" :max="10" :step="1" :parser="Math.round" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_1041')" v-if="isOpenWorkflow" prop="reason">
+          <a-input v-model:value="form.fd.reason" :placeholder="$t('compute.text_1105')" />
+        </a-form-model-item>
+      </a-form-model>
+      <!-- OsSelect end-state（:model + validate），公有云克隆时单独挂载 -->
+      <div v-if="isPublic" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.text_267')" :labelCol="formItemLayout.labelCol" :wrapperCol="formItemLayout.wrapperCol">
           <os-select
+            ref="osSelectRef"
             :type="type"
             :form="form"
+            :model="form.fd"
             :types="osTypes"
             :osType="osType"
             :hypervisor="firstData.hypervisor"
             :image-params="imageParams"
             :cache-image-params="cacheImageParams"
-            :cloudproviderParamsExtra="cloudproviderParamsExtra"
-            :decorator="decorators.imageOS" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_1041')" v-if="isOpenWorkflow">
-          <a-input v-decorator="decorators.reason" :placeholder="$t('compute.text_1105')" />
-        </a-form-item>
-      </a-form>
+            :cloudproviderParamsExtra="cloudproviderParamsExtra" />
+        </a-form-model-item>
+      </div>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ confirmText }}</a-button>
@@ -71,75 +75,23 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            if (values.hasOwnProperty('imageType')) {
-              this.form.fi.imageType = values.imageType
-            }
-          },
-        }),
         fi: {
           generate_name: '',
           imageType: IMAGES_TYPE_MAP.public.key,
         },
-        fd: {},
+        fd: {
+          name: undefined,
+          __count__: 1,
+          reason: '',
+          imageType: IMAGES_TYPE_MAP.public.key,
+        },
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_210') },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_210') },
         ],
         __count__: [
-          '__count__',
-          {
-            initialValue: 1,
-            rules: [
-              { required: true, message: this.$t('compute.text_1195') },
-            ],
-          },
-        ],
-        imageOS: {
-          prefer_manager: [
-            'prefer_manager',
-            {
-              rules: [
-                { required: true, message: this.$t('compute.text_149') },
-              ],
-            },
-          ],
-          os: [
-            'os',
-            {
-              rules: [
-                { required: true, message: this.$t('compute.text_153') },
-              ],
-            },
-          ],
-          image: [
-            'image',
-            {
-              rules: [
-                { required: true, message: this.$t('compute.text_214') },
-              ],
-            },
-          ],
-          imageType: [
-            'imageType',
-            {
-              initialValue: IMAGES_TYPE_MAP.public.key,
-            },
-          ],
-        },
-        reason: [
-          'reason',
-          {
-            initialValue: '',
-          },
+          { required: true, message: this.$t('compute.text_1195') },
         ],
       },
       formItemLayout: {
@@ -251,7 +203,11 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        if (this.isPublic && typeof this.$refs.osSelectRef?.validate === 'function') {
+          await this.$refs.osSelectRef.validate()
+        }
+        const values = { ...this.form.fd }
         const data = this.genCloneData(values)
         if (this.params.type === 'baremetal') {
           if (this.specificationList.length) {

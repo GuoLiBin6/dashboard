@@ -2,8 +2,7 @@
   <div>
     <item-filters
       :getParams="getParams"
-      :disableds="disableds"
-      :decorators="decorators" />
+      :disableds="disableds" />
     <sku-list
       @update:options="skuChanged"
       :filterSkuCallback="filterSkuCallback"
@@ -21,9 +20,6 @@ export default {
   },
   inject: ['form'],
   props: {
-    decorators: {
-      type: Object,
-    },
     filterSkuCallback: {
       type: Function,
     },
@@ -36,12 +32,13 @@ export default {
       this.$emit('update:options', options)
     },
     getParams (keys) {
-      const values = this.form.fc.getFieldsValue(keys)
+      const values = {}
+      ;(keys || []).forEach((k) => { values[k] = this.form.fd[k] })
       const params = {
         ...values,
         scope: 'domain',
       }
-      if (this.form.fc.getFieldValue('billing_type') === 'postpaid') {
+      if (this.form.fd.billing_type === 'postpaid') {
         params.postpaid_status = 'available'
       } else {
         params.prepaid_status = 'available'

@@ -4,26 +4,28 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.eip')" :count="params.data.length" :action="$t('network.text_202')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
+      <a-form-model
         v-bind="formItemLayout"
-        :form="form.fc">
-        <a-form-item :label="$t('network.eip.instance_type')">
-          <a-radio-group v-decorator="decorators.instance_type" @change="onAssociateTypeChanged">
+        ref="formRef"
+        :model="form"
+        :rules="rules">
+        <a-form-model-item :label="$t('network.eip.instance_type')" prop="instance_type">
+          <a-radio-group v-model:value="form.instance_type" @change="onAssociateTypeChanged">
             <a-radio-button value="server">{{$t('network.eip.instance_type.server')}}</a-radio-button>
             <a-radio-button value="natgateway" :disabled="isNatDisabled">{{$t('network.eip.instance_type.nat')}}</a-radio-button>
             <a-radio-button value="loadbalancer" :disabled="isLbDisabled">{{$t('network.eip.instance_type.lb')}}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="resource_label" :extra="resource === 'servers' && $t('network.eip_bind_server_tip')">
+        </a-form-model-item>
+        <a-form-model-item :label="resource_label" :extra="resource === 'servers' && $t('network.eip_bind_server_tip')" prop="instance_id">
           <base-select
             :remote="true"
-            v-decorator="decorators.instance_id"
+            v-model:value="form.instance_id"
             :resource="resource"
             :params="instanceParams"
             :remote-fn="q => ({ search: q })"
             :select-props="{ placeholder: $t('network.text_203') }" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -44,24 +46,14 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        instance_type: 'server',
+        instance_id: undefined,
       },
       resource: 'servers',
       resource_label: this.$t('dictionary.server'),
-      decorators: {
-        instance_type: [
-          'instance_type',
-          {
-            initialValue: 'server',
-          },
-        ],
+      rules: {
         instance_id: [
-          'instance_id',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_204') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_204') },
         ],
       },
       formItemLayout: {
@@ -114,16 +106,18 @@ export default {
   },
   methods: {
     onAssociateTypeChanged (e) {
-      if (e.target.value === 'server') {
+      const val = (e && e.target) ? e.target.value : e
+      if (val === 'server') {
         this.resource = 'servers'
         this.resource_label = this.$t('dictionary.server')
-      } else if (e.target.value === 'natgateway') {
+      } else if (val === 'natgateway') {
         this.resource = 'natgateways'
         this.resource_label = this.$t('dictionary.nat')
-      } else if (e.target.value === 'loadbalancer') {
+      } else if (val === 'loadbalancer') {
         this.resource = 'loadbalancers'
         this.resource_label = 'LB'
       }
+      this.form.instance_id = undefined
     },
     doBind (data) {
       return this.params.onManager('performAction', {
@@ -137,9 +131,9 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        let values = await this.form.fc.validateFields()
-        values = {
-          ...values,
+        await this.$refs.formRef.validate()
+        const values = {
+          ...this.form,
           id: this.params.data[0].id,
         }
         this.loading = true

@@ -2,55 +2,55 @@
   <base-dialog @cancel="cancelDialog">
     <template #header>{{this.params.title}}</template>
     <template #body>
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('storage.text_55', [$t('dictionary.domain')])">
-          <domain-select v-if="isAdminMode && l3PermissionEnable" v-decorator="decorators.project_domain" />
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('storage.text_55', [$t('dictionary.domain')])" prop="project_domain">
+          <domain-select v-if="isAdminMode && l3PermissionEnable" v-model:value="form.project_domain" />
           <template v-else> {{userInfo.domain.name}} </template>
-        </a-form-item>
-        <a-form-item :label="$t('common.name')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.name')" prop="name">
           <a-input
-            v-decorator="decorators.name"
+            v-model:value="form.name"
             :placeholder="$t('common.tips.input', [$t('common.name')])" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" prop="description">
           <a-input
-            v-decorator="decorators.description"
+            v-model:value="form.description"
             :placeholder="$t('common.tips.optional_input', [$t('common.description')])" />
-        </a-form-item>
-        <a-form-item :label="$t('storage.text_38')">
-          <a-radio-group v-decorator="decorators.storage_type" @change="onStorageTypeChange">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('storage.text_38')" prop="storage_type">
+          <a-radio-group v-model:value="form.storage_type">
               <a-radio-button v-for="obj in STORAGE_TYPES" :key="obj.key" :value="obj.key">{{ obj.value }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item label="NFS Host" v-if="isNfs">
-          <a-input :placeholder="$t('storage.host.input.place_holder')" v-decorator="decorators.nfs_host" />
-        </a-form-item>
-        <a-form-item label="NFS Shared Dir" v-if="isNfs">
-          <a-input :placeholder="$t('storage.path.input.place_holder')" v-decorator="decorators.nfs_shared_dir" />
-        </a-form-item>
-        <a-form-item label="Bucket URL" v-if="isObjectStorage">
-          <a-input :placeholder="$t('storage.url.input.place_holder')" v-decorator="decorators.object_bucket_url" />
-        </a-form-item>
-        <a-form-item label="Access Key" v-if="isObjectStorage">
-          <a-input :placeholder="$t('storage.access_key.input.place_holder')" v-decorator="decorators.object_access_key" />
-        </a-form-item>
-        <a-form-item label="Secret" v-if="isObjectStorage">
-          <a-input-password :placeholder="$t('storage.access_secret.input.place_holder')" v-decorator="decorators.object_secret" />
-        </a-form-item>
-        <a-form-item label="Signing Version" v-if="isObjectStorage">
-          <a-radio-group v-decorator="decorators.object_sign_ver">
+        </a-form-model-item>
+        <a-form-model-item label="NFS Host" v-if="isNfs" prop="nfs_host">
+          <a-input :placeholder="$t('storage.host.input.place_holder')" v-model:value="form.nfs_host" />
+        </a-form-model-item>
+        <a-form-model-item label="NFS Shared Dir" v-if="isNfs" prop="nfs_shared_dir">
+          <a-input :placeholder="$t('storage.path.input.place_holder')" v-model:value="form.nfs_shared_dir" />
+        </a-form-model-item>
+        <a-form-model-item label="Bucket URL" v-if="isObjectStorage" prop="object_bucket_url">
+          <a-input :placeholder="$t('storage.url.input.place_holder')" v-model:value="form.object_bucket_url" />
+        </a-form-model-item>
+        <a-form-model-item label="Access Key" v-if="isObjectStorage" prop="object_access_key">
+          <a-input :placeholder="$t('storage.access_key.input.place_holder')" v-model:value="form.object_access_key" />
+        </a-form-model-item>
+        <a-form-model-item label="Secret" v-if="isObjectStorage" prop="object_secret">
+          <a-input-password :placeholder="$t('storage.access_secret.input.place_holder')" v-model:value="form.object_secret" />
+        </a-form-model-item>
+        <a-form-model-item label="Signing Version" v-if="isObjectStorage" prop="object_sign_ver">
+          <a-radio-group v-model:value="form.object_sign_ver">
             <a-radio-button value="">{{ $t('common_712') }}</a-radio-button>
             <a-radio-button value="v2">V2</a-radio-button>
             <a-radio-button value="v4">V4</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('storage.capacity')" v-show="false">
-          <a-input-number :min="0" v-decorator="decorators.capacity_mb" /> GB
-        </a-form-item>
-        <a-form-item label="Public Bucket URL" v-if="isObjectStorage">
-          <a-input :placeholder="$t('storage.url.input.place_holder')" v-decorator="decorators.object_bucket_url_ext" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('storage.capacity')" v-show="false" prop="capacity_mb">
+          <a-input-number :min="0" v-model:value="form.capacity_mb" /> GB
+        </a-form-model-item>
+        <a-form-model-item label="Public Bucket URL" v-if="isObjectStorage" prop="object_bucket_url_ext">
+          <a-input :placeholder="$t('storage.url.input.place_holder')" v-model:value="form.object_bucket_url_ext" />
+        </a-form-model-item>
+      </a-form-model>
     </template>
     <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
@@ -73,6 +73,18 @@ export default {
   },
   mixins: [WindowsMixin, DialogMixin],
   data () {
+    const hostCheckValid = (rule, value, _callback) => {
+      let isValid = true
+      if (!value || value === '') isValid = false
+      const parts = value.split(',')
+      if (parts.some(part => {
+        const trimmedPart = part.trim()
+        return !REGEXP.IPv4.regexp.test(trimmedPart) && !REGEXP.IPv6.regexp.test(trimmedPart)
+      })) {
+        isValid = false
+      }
+      return isValid ? _callback() : _callback(new Error(this.$t('storage.host.input.place_holder')))
+    }
     return {
       loading: false,
       STORAGE_TYPES: [
@@ -86,7 +98,42 @@ export default {
         },
       ],
       form: {
-        fc: this.$form.createForm(this),
+        project_domain: this.$store.getters.userInfo.projectDomainId,
+        name: undefined,
+        description: undefined,
+        storage_type: 'nfs',
+        nfs_host: undefined,
+        nfs_shared_dir: undefined,
+        object_bucket_url: undefined,
+        object_access_key: undefined,
+        object_secret: undefined,
+        object_sign_ver: '',
+        capacity_mb: 0,
+        object_bucket_url_ext: undefined,
+      },
+      rules: {
+        name: [
+          { required: true, message: this.$t('storage.text_56') },
+          { validator: this.$validate('blockStorageName') },
+        ],
+        nfs_host: [
+          { required: true, validator: hostCheckValid, trigger: 'blur' },
+        ],
+        nfs_shared_dir: [
+          { required: true, message: this.$t('storage.nfs_shared_dir.validate.prompt'), trigger: 'blur' },
+        ],
+        object_bucket_url: [
+          { required: true, message: this.$t('storage.object_bucket_url.validate.prompt'), trigger: 'blur' },
+        ],
+        object_access_key: [
+          { required: true, message: this.$t('storage.object_access_key.validate.prompt'), trigger: 'blur' },
+        ],
+        object_secret: [
+          { required: true, message: this.$t('storage.object_secret.validate.prompt'), trigger: 'blur' },
+        ],
+        object_bucket_url_ext: [
+          { required: false, message: this.$t('storage.object_bucket_url_ext.validate.prompt'), trigger: 'blur' },
+        ],
       },
       formItemLayout: {
         wrapperCol: {
@@ -96,138 +143,29 @@ export default {
           span: 4,
         },
       },
-      storage_type: 'nfs',
     }
   },
   computed: {
     ...mapGetters(['isAdminMode', 'userInfo', 'l3PermissionEnable']),
-    decorators () {
-      const hostCheckValid = (rule, value, _callback) => {
-        let isValid = true
-        if (!value || value === '') isValid = false
-        const parts = value.split(',')
-        if (parts.some(part => {
-          const trimmedPart = part.trim()
-          return !REGEXP.IPv4.regexp.test(trimmedPart) && !REGEXP.IPv6.regexp.test(trimmedPart)
-        })) {
-          isValid = false
-        }
-        return isValid ? _callback() : _callback(new Error(this.$t('storage.host.input.place_holder')))
-      }
-
-      return {
-        project_domain: [
-          'project_domain',
-          {
-            initialValue: this.userInfo.projectDomainId,
-          },
-        ],
-        name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('storage.text_56') },
-              { validator: this.$validate('blockStorageName') },
-            ],
-          },
-        ],
-        description: [
-          'description',
-        ],
-        storage_type: [
-          'storage_type',
-          {
-            initialValue: 'nfs',
-          },
-        ],
-        nfs_host: [
-          'nfs_host',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, validator: hostCheckValid, trigger: 'blur' },
-            ],
-          },
-        ],
-        nfs_shared_dir: [
-          'nfs_shared_dir',
-          {
-            rules: [
-              { required: true, message: this.$t('storage.nfs_shared_dir.validate.prompt'), trigger: 'blur' },
-            ],
-          },
-        ],
-        object_bucket_url: [
-          'object_bucket_url',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('storage.object_bucket_url.validate.prompt'), trigger: 'blur' },
-            ],
-          },
-        ],
-        object_access_key: [
-          'object_access_key',
-          {
-            rules: [
-              { required: true, message: this.$t('storage.object_access_key.validate.prompt'), trigger: 'blur' },
-            ],
-          },
-        ],
-        object_secret: [
-          'object_secret',
-          {
-            rules: [
-              { required: true, message: this.$t('storage.object_secret.validate.prompt'), trigger: 'blur' },
-            ],
-          },
-        ],
-        object_sign_ver: [
-          'object_sign_ver',
-          {
-            initialValue: '',
-          },
-        ],
-        capacity_mb: [
-          'capacity_mb',
-          {
-            initialValue: 0,
-          },
-        ],
-        object_bucket_url_ext: [
-          'object_bucket_url_ext',
-          {
-            validateFirst: true,
-            rules: [
-              { required: false, message: this.$t('storage.object_bucket_url_ext.validate.prompt'), trigger: 'blur' },
-            ],
-          },
-        ],
-      }
-    },
     isNfs () {
-      return this.storage_type === 'nfs'
+      return this.form.storage_type === 'nfs'
     },
     isObjectStorage () {
-      return this.storage_type === 'object'
+      return this.form.storage_type === 'object'
     },
   },
   methods: {
     async handleConfirm () {
       const manager = new this.$Manager('backupstorages')
       try {
-        const values = await this.form.fc.validateFields(Object.keys(this.decorators))
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         await manager.create({ data: { ...values, capacity_mb: values.capacity_mb * 1024 } })
         this.cancelDialog()
         this.params.refresh && this.params.refresh()
       } catch (error) {
         throw error
       }
-    },
-    onStorageTypeChange (e) {
-      console.log(e, e.target.value)
-      this.storage_type = e.target.value
     },
   },
 }

@@ -94,176 +94,115 @@ export const SPECS_PARAMS = ['billing_type', 'engine', 'engine_version', 'local_
 // elasticcacheskus接口所需要的参数
 export const SKU_PARAMS = ['project_domian', 'memory_size_mb', ...CAPABILIT_PARAMS, ...SPECS_PARAMS]
 
-export const DECORATORS = {
+/** Redis 创建 field-map（initialValue 唯一来源） */
+export const REDIS_CREATE_FIELD_MAP = {
   duration: {
-    durationStandard: [
-      'durationStandard',
-      {
-        initialValue: 'none',
-      },
-    ],
-    duration: [
-      'duration',
-      {
-        initialValue: '1h',
-      },
-    ],
+    durationStandard: { name: 'durationStandard', initialValue: 'none' },
+    duration: { name: 'duration', initialValue: '1h' },
   },
   projectDomain: {
-    project: [
-      'project',
-      {
-        initialValue: undefined,
-        rules: [
-          { required: true, message: i18n.t('db.text_134'), trigger: 'change' },
-        ],
-      },
-    ],
-    domain: [
-      'domain',
-      {
-        initialValue: undefined,
-        rules: [
-          { required: true, message: i18n.t('db.text_135'), trigger: 'change' },
-        ],
-      },
+    project: {
+      name: 'project',
+      initialValue: undefined,
+      rules: [
+        { required: true, message: i18n.t('db.text_134'), trigger: 'change' },
+      ],
+    },
+    domain: {
+      name: 'domain',
+      initialValue: undefined,
+      rules: [
+        { required: true, message: i18n.t('db.text_135'), trigger: 'change' },
+      ],
+    },
+  },
+  generate_name: {
+    name: 'generate_name',
+    initialValue: '',
+    validateTrigger: ['change', 'blur'],
+    validateFirst: true,
+    rules: [
+      { required: true, message: i18n.t('db.text_136') },
+      { validator: validateForm('resourceCreateName') },
     ],
   },
-  generate_name: [
-    'generate_name',
-    {
-      initialValue: '',
-      validateTrigger: ['change', 'blur'],
-      validateFirst: true,
-      rules: [
-        { required: true, message: i18n.t('db.text_136') },
-        { validator: validateForm('resourceCreateName') },
-      ],
-    },
-  ],
-  description: ['description'],
-  count: [
-    'count',
-    {
-      initialValue: 1,
-      rules: [
-        { required: true, message: i18n.t('db.text_257') },
-      ],
-    },
-  ],
-  billing_type: [
-    'billing_type',
-    {
-      initialValue: 'postpaid',
-    },
-  ],
-  sku: [
-    'sku',
-    {
-      rules: [
-        { required: true, message: i18n.t('db.text_258') },
-      ],
-    },
-  ],
+  description: { name: 'description' },
+  count: {
+    name: 'count',
+    initialValue: 1,
+    rules: [
+      { required: true, message: i18n.t('db.text_257') },
+    ],
+  },
+  billing_type: { name: 'billing_type', initialValue: 'postpaid' },
+  sku: {
+    name: 'sku',
+    rules: [
+      { required: true, message: i18n.t('db.text_258') },
+    ],
+  },
   regionZone: {
-    cloudregion: [
-      'region',
-      {
-        initialValue: { key: '', label: '' },
-        rules: [
-          { validator: isRequired(), message: i18n.t('db.text_259') },
-        ],
-      },
-    ],
-    zone: [
-      'zone',
-      {
-        initialValue: { key: '', label: '' },
-        rules: [
-          { validator: isRequired(), message: i18n.t('db.text_260') },
-        ],
-      },
-    ],
-  },
-  slaveZones: [
-    'slave_zones',
-    {
-      initialValue: '',
+    cloudregion: {
+      name: 'region',
+      initialValue: { key: '', label: '' },
+      rules: [
+        { validator: isRequired(), message: i18n.t('db.text_259') },
+      ],
     },
-  ],
+    zone: {
+      name: 'zone',
+      initialValue: { key: '', label: '' },
+      rules: [
+        { validator: isRequired(), message: i18n.t('db.text_260') },
+      ],
+    },
+  },
+  slaveZones: { name: 'slave_zones', initialValue: '' },
   cityProviderRegion: {
-    city: ['city', {
-      initialValue: undefined,
-    }],
-    provider: ['provider', {
-      initialValue: undefined,
-    }],
-    region: ['region', {
-      initialValue: undefined,
-    }],
-    zone: ['zone', {
-      initialValue: undefined,
-    }],
+    city: { name: 'city', initialValue: undefined },
+    provider: { name: 'provider', initialValue: undefined },
+    region: { name: 'region', initialValue: undefined },
+    zone: { name: 'zone', initialValue: undefined },
   },
   loginConfig: {
-    loginType: [
-      'loginType',
-      {
-        initialValue: 'random',
-      },
-    ],
-    keypair: [
-      'loginKeypair',
-      {
-        initialValue: undefined, // { key: '', label: '' }
-        rules: [
-          { validator: true, message: i18n.t('db.text_137') },
-        ],
-      },
-    ],
-  },
-  vpcNetwork: {
-    vpc: [
-      'vpc',
-      {
-        initialValue: undefined,
-        rules: [
-          { required: true, message: i18n.t('db.text_261') },
-        ],
-      },
-    ],
-    network: [
-      'network',
-      {
-        initialValue: undefined,
-        rules: [
-          { required: true, message: i18n.t('db.text_262') },
-        ],
-      },
-    ],
-  },
-  secgroup: {
-    type: [
-      'secgroup_type',
-      {
-        initialValue: 'default',
-      },
-    ],
-    secgroup: [
-      'secgroup',
-      {
-        rules: [
-          { required: true, message: i18n.t('db.text_138') },
-        ],
-      },
-    ],
-  },
-  __meta__: [
-    '__meta__',
-    {
+    loginType: { name: 'loginType', initialValue: 'random' },
+    keypair: {
+      name: 'loginKeypair',
+      initialValue: undefined, // { key: '', label: '' }
       rules: [
-        { validator: validateForm('tagName') },
+        { validator: true, message: i18n.t('db.text_137') },
       ],
     },
-  ],
+  },
+  vpcNetwork: {
+    vpc: {
+      name: 'vpc',
+      initialValue: undefined,
+      rules: [
+        { required: true, message: i18n.t('db.text_261') },
+      ],
+    },
+    network: {
+      name: 'network',
+      initialValue: undefined,
+      rules: [
+        { required: true, message: i18n.t('db.text_262') },
+      ],
+    },
+  },
+  secgroup: {
+    type: { name: 'secgroup_type', initialValue: 'default' },
+    secgroup: {
+      name: 'secgroup',
+      rules: [
+        { required: true, message: i18n.t('db.text_138') },
+      ],
+    },
+  },
+  __meta__: {
+    name: '__meta__',
+    rules: [
+      { validator: validateForm('tagName') },
+    ],
+  },
 }

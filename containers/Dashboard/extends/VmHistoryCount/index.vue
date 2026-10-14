@@ -3,7 +3,7 @@
     <div class="dashboard-card-wrap">
       <div class="dashboard-card-header">
         <div class="dashboard-card-header-left">
-          {{ form.fd.name }}<icon class="ml-2" type="loading" v-if="loading" />
+          {{ fd.name }}<icon class="ml-2" type="loading" v-if="loading" />
           <span v-if="isResDeny" class="ml-2"><icon class="warning-color mr-1" type="warning" />{{ $t('common.permission.403') }}</span>
         </div>
         <div class="dashboard-card-header-right">
@@ -27,33 +27,28 @@
       </div>
     </div>
     <base-drawer v-model:visible="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit">
-      <a-form
-        hideRequiredMark
-        :form="form.fc"
-        v-bind="formItemLayout">
-        <a-form-item :label="$t('dashboard.text_6')">
-          <a-input v-decorator="decorators.name" />
-        </a-form-item>
-        <a-form-item :label="$t('dashboard.near')">
-          <a-select v-decorator="decorators.from">
+      <a-form-model ref="formRef" hideRequiredMark :model="fd" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('dashboard.text_6')" prop="name">
+          <a-input v-model:value="fd.name" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('dashboard.near')" prop="from">
+          <a-select v-model:value="fd.from">
             <a-select-option :value="7">{{$t('dashboard.vm_count_near', [7])}}</a-select-option>
             <a-select-option :value="14">{{$t('dashboard.vm_count_near', [14])}}</a-select-option>
             <a-select-option :value="21">{{$t('dashboard.vm_count_near', [21])}}</a-select-option>
             <a-select-option :value="30">{{$t('dashboard.vm_count_near', [30])}}</a-select-option>
           </a-select>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </base-drawer>
   </div>
 </template>
 
 <script lang="jsx">
-import * as R from 'ramda'
 import { mapGetters } from 'vuex'
 import { load } from '@Dashboard/utils/cache'
 import BaseDrawer from '@Dashboard/components/BaseDrawer'
 import { chartColors } from '@/constants'
-import { resolveValueChangeField } from '@/utils/common/ant'
 import { getSignature } from '@/utils/crypto'
 import { getRequestT } from '@/utils/utils'
 import { hasPermission } from '@/utils/auth'
@@ -81,35 +76,13 @@ export default {
       visible: false,
       loading: false,
       seriesData: [],
-      form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            const newField = resolveValueChangeField(values)
-            R.forEachObjIndexed((item, key) => {
-              this.$set(this.form.fd, key, item)
-            }, newField)
-          },
-        }),
-        fd: {
-          name: initialNameValue,
-          from: initialFromValue,
-        },
+      fd: {
+        name: initialNameValue,
+        from: initialFromValue,
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            initialValue: initialNameValue,
-            rules: [
-              { required: true, message: this.$t('dashboard.text_8') },
-            ],
-          },
-        ],
-        from: [
-          'from',
-          {
-            initialValue: initialFromValue,
-          },
+          { required: true, message: this.$t('dashboard.text_8') },
         ],
       },
       formItemLayout: {
@@ -178,16 +151,11 @@ export default {
     },
   },
   watch: {
-    'form.fd' (val) {
-      this.fetchData()
-      for (const key in this.decorators) {
-        let config = this.decorators[key][1] || {}
-        config = {
-          ...config,
-          initialValue: val[key],
-        }
-        this.decorators[key][1] = config
-      }
+    fd: {
+      handler () {
+        this.fetchData()
+      },
+      deep: true,
     },
     'dataRangeParams.scope': {
       handler (val) {
@@ -209,7 +177,7 @@ export default {
     },
   },
   created () {
-    const values = { ...this.form.fd }
+    const values = { ...this.fd }
     this.$emit('update', this.options.i, values)
     this.fetchData()
   },
@@ -273,7 +241,7 @@ export default {
         ],
         scope: this.scope,
         show_meta: true,
-        from: `${this.form.fd.from * 24}h`,
+        from: `${this.fd.from * 24}h`,
         interval: '24h',
         unit: true,
       }
@@ -313,10 +281,8 @@ export default {
     },
     async handleSubmit () {
       try {
-        const values = await this.form.fc.validateFields()
-        this.form.fd = values
-        const updateValues = { ...values }
-        this.$emit('update', this.options.i, updateValues)
+        await this.$refs.formRef.validate()
+        this.$emit('update', this.options.i, { ...this.fd })
         this.visible = false
       } catch (error) {
         throw error

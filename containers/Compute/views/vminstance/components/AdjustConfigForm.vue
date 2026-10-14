@@ -9,12 +9,15 @@
     </a-card>
     <page-body>
       <div class="form-wrapper">
-        <a-form
+        <!-- end-state: a-form-model + form.fd；无 createForm / fc -->
+        <a-form-model
+          ref="formRef"
           v-bind="formItemLayout"
-          :form="form.fc">
-          <a-form-item v-if="isShowCpu" :label="$t('compute.text_1058')" class="mb-0">
+          :model="form.fd"
+          :rules="modelRules">
+          <a-form-model-item v-if="isShowCpu" :label="$t('compute.text_1058')" class="mb-0">
             <cpu-radio
-              :decorator="decorators.vcpu"
+              :model="form.fd"
               :options="form.fi.cpuMem.cpus || []"
               :disable-options="[]"
               :max="form.fd.vcpu < 32 ? 32 : 128"
@@ -24,13 +27,16 @@
               :cpuSocketsInit="selectedItem.vcpu_count / selectedItem.cpu_sockets"
               :serverStatus="selectedItem.status"
               @change="cpuChange" />
-          </a-form-item>
-          <a-form-item :label="$t('compute.text_369')" class="mb-0">
-            <mem-radio :decorator="decorators.vmem" :options="form.fi.cpuMem.mems_mb || []" :disable-options="[]" />
-          </a-form-item>
-          <a-form-item :label="$t('compute.text_109')">
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.text_369')" class="mb-0">
+            <mem-radio :model="form.fd" :options="form.fi.cpuMem.mems_mb || []" :disable-options="[]" />
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.text_109')" prop="sku">
             <sku
-              v-decorator="decorators.sku"
+              ref="skuRef"
+              :model="form.fd"
+
+              @change="onSkuChange"
               :type="type"
               :priceUnit="skuPriceUnit"
               :sku-params="skuParam"
@@ -46,11 +52,12 @@
               :supportSkuTypes="supportSkuTypes"
               :disableSkuType="disableSkuTypeValue"
               isAdjustConfig />
-          </a-form-item>
-          <a-form-item :label="$t('compute.text_49')" v-show="selectedItems.length === 1 && form.fd.defaultType">
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.text_49')" v-show="selectedItems.length === 1 && form.fd.defaultType">
             <system-disk
               v-if="isRenderSystemDisk"
-              :decorator="decorators.systemDisk"
+              ref="systemDiskRef"
+              :model="form.fd"
               :type="type"
               :hypervisor="hypervisor"
               :sku="form.fd.sku"
@@ -65,12 +72,12 @@
               :ignoreStorageStatus="true"
               is-iops-show
               is-throughput-show />
-          </a-form-item>
-          <a-form-item :label="$t('compute.text_50')" v-show="selectedItems.length === 1 && selectedItems[0].hypervisor !== 'zettakit'">
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.text_50')" v-show="selectedItems.length === 1 && selectedItems[0].hypervisor !== 'zettakit'">
             <data-disk
               v-if="isRenderDataDisk"
               ref="dataDiskRef"
-              :decorator="decorators.dataDisk"
+              :model="form.fd"
               :type="type"
               :form="form"
               :hypervisor="hypervisor"
@@ -83,14 +90,14 @@
               :storageParams="dataDiskStorageParams"
               is-iops-show
               is-throughput-show />
-          </a-form-item>
-          <a-form-item :label="$t('compute.text_1041')" v-if="isOpenWorkflow || isOpenOrderSetWorkflow">
-            <a-input v-decorator="decorators.reason" :placeholder="$t('compute.text_1105')" />
-          </a-form-item>
-          <a-form-item :label="$t('compute.text_494')" :extra="$t('compute.text_1106')">
-            <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-decorator="decorators.autoStart" :disabled="isSomeRunning" />
-          </a-form-item>
-        </a-form>
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.text_1041')" v-if="isOpenWorkflow || isOpenOrderSetWorkflow" prop="reason">
+            <a-input v-model:value="form.fd.reason" :placeholder="$t('compute.text_1105')" />
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.text_494')" :extra="$t('compute.text_1106')" prop="autoStart">
+            <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-model:checked="form.fd.autoStart" :disabled="isSomeRunning" />
+          </a-form-model-item>
+        </a-form-model>
       </div>
     </page-body>
     <page-footer>
@@ -186,9 +193,11 @@ import { mapGetters } from 'vuex'
 import * as R from 'ramda'
 import _ from 'lodash'
 import { h } from 'vue'
+import { VM_FORM_DEFAULTS } from '@Compute/utils/createServer'
 import CpuRadio from '@Compute/sections/CpuRadio'
 import MemRadio from '@Compute/sections/MemRadio'
 import DataDisk from '@Compute/sections/DataDisk'
+import { SYSTEM_DISK_FIELDS } from '@Compute/sections/Disk/fields'
 import SystemDisk from '@Compute/views/vminstance/create/components/SystemDisk'
 import sku from '@Compute/sections/SKU'
 import { SERVER_TYPE, EIP_TYPES_MAP, MEDIUM_MAP } from '@Compute/constants'
@@ -252,18 +261,6 @@ export default {
     }
   },
   data () {
-    function diskValidator (rule, value, callback) {
-      if (R.isNil(value) || R.isEmpty(value)) {
-        return callback(new Error(this.$t('compute.text_206')))
-      }
-      if (!value.startsWith('/')) {
-        return callback(new Error(this.$t('compute.text_207')))
-      }
-      if (value === '/') {
-        return callback(new Error(this.$t('compute.text_208')))
-      }
-      callback()
-    }
     const dataList = [...this.params.data]
     dataList.sort((a, b) => b.vcpu_count - a.vcpu_count)
     const itemData = dataList[0]
@@ -275,16 +272,17 @@ export default {
       action: this.$t('compute.text_1100'),
       dataList,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: this.onValuesChange,
-        }),
+        // end-state：无 createForm；Disk/Cpu/Mem/SKU 已 :model="form.fd"
         fd: {
-          vcpu: 2,
-          vmem: 2048,
+          vcpu: itemData.vcpu_count || VM_FORM_DEFAULTS.vcpu,
+          vmem: itemData.vmem_size || VM_FORM_DEFAULTS.vmem,
           diskType: null,
           dataDiskSizes: {},
-          dataDiskTypes: [],
+          dataDiskTypes: {},
           hypervisor: itemData.hypervisor,
+          sku: undefined,
+          reason: '',
+          autoStart,
         },
         fi: {
           cpuMem: {}, // cpu 和 内存 的关联关系
@@ -295,198 +293,12 @@ export default {
           modificationTypes: [], // 多选实例时，各主机 modification_types.name 的交集
         },
       },
-      beforeDataDisks: [],
-      decorators: {
-        vcpu: [
-          'vcpu',
-          {
-            initialValue: itemData.vcpu_count,
-          },
-        ],
-        vmem: [
-          'vmem',
-          {
-            initialValue: itemData.vmem_size,
-          },
-        ],
+      modelRules: {
         sku: [
-          'sku',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.text_216') },
-            ],
-          },
-        ],
-        systemDisk: {
-          type: [
-            'systemDiskType',
-            {
-              rules: [
-                { validator: isRequired(), message: this.$t('compute.text_121') },
-              ],
-            },
-          ],
-          size: [
-            'systemDiskSize',
-            {
-              rules: [
-                { required: true, message: this.$t('compute.text_122') },
-              ],
-            },
-          ],
-          schedtag: [
-            'systemDiskSchedtag',
-            {
-              validateTrigger: ['change', 'blur'],
-              rules: [{
-                required: true,
-                message: this.$t('compute.text_123'),
-              }],
-            },
-          ],
-          policy: [
-            'systemDiskPolicy',
-            {
-              validateTrigger: ['blur', 'change'],
-              rules: [{
-                required: true,
-                message: this.$t('compute.text_123'),
-              }],
-            },
-          ],
-          iops: [
-            'systemDiskIops',
-            {
-              rules: [{
-                required: true,
-                message: this.$t('compute.iops_input_tip'),
-              }],
-            },
-          ],
-          throughput: [
-            'systemDiskThroughput',
-            {
-              rules: [{
-                required: true,
-                message: this.$t('compute.throuthput_input_tip'),
-              }],
-            },
-          ],
-        },
-        dataDisk: {
-          type: i => [
-            `dataDiskTypes[${i}]`,
-            {
-              rules: [
-                { validator: isRequired(), message: this.$t('compute.text_121') },
-              ],
-            },
-          ],
-          size: i => [
-            `dataDiskSizes[${i}]`,
-            {
-              rules: [
-                { required: true, message: this.$t('compute.text_122') },
-              ],
-            },
-          ],
-          schedtag: i => [
-            `dataDiskSchedtags[${i}]`,
-            {
-              validateTrigger: ['change', 'blur'],
-              rules: [{
-                required: true,
-                message: this.$t('compute.text_123'),
-              }],
-            },
-          ],
-          policy: i => [
-            `dataDiskPolicys[${i}]`,
-            {
-              validateTrigger: ['blur', 'change'],
-              rules: [{
-                required: true,
-                message: this.$t('compute.text_123'),
-              }],
-            },
-          ],
-          snapshot: i => [
-            `dataDiskSnapshots[${i}]`,
-            {
-              validateTrigger: ['blur', 'change'],
-              rules: [{
-                required: true,
-                message: this.$t('compute.text_124'),
-              }],
-            },
-          ],
-          filetype: i => [
-            `dataDiskFiletypes[${i}]`,
-            {
-              validateTrigger: ['blur', 'change'],
-              rules: [{
-                required: true,
-                message: this.$t('compute.text_125'),
-              }],
-            },
-          ],
-          mountPath: i => [
-            `dataDiskMountPaths[${i}]`,
-            {
-              validateTrigger: ['blur', 'change'],
-              rules: [{
-                required: true,
-                message: this.$t('compute.text_126'),
-              }, {
-                validator: diskValidator,
-              }],
-            },
-          ],
-          storage: i => [
-            `dataDiskStorages[${i}]`,
-            {
-              rules: [{
-                required: true,
-                message: this.$t('compute.text_1351'),
-              }],
-            },
-          ],
-          preallocation: i => [
-            `dataDiskPreallocation[${i}]`,
-          ],
-          iops: i => [
-            `dataDiskIops[${i}]`,
-            {
-              rules: [{
-                required: true,
-                message: this.$t('compute.iops_input_tip'),
-              }],
-            },
-          ],
-          throughput: i => [
-            `dataDiskThroughputs[${i}]`,
-            {
-              rules: [{
-                required: true,
-                message: this.$t('compute.throughput_input_tip'),
-              }],
-            },
-          ],
-        },
-        reason: [
-          'reason',
-          {
-            initialValue: '',
-          },
-        ],
-        autoStart: [
-          'autoStart',
-          {
-            valuePropName: 'checked',
-            initialValue: autoStart,
-          },
+          { validator: isRequired(true, 'name'), message: this.$t('compute.text_216'), trigger: 'change' },
         ],
       },
+      beforeDataDisks: [],
       formItemLayout: {
         wrapperCol: {
           span: 20,
@@ -585,8 +397,8 @@ export default {
         limit: 0,
         usable: true,
         enabled: true,
-        cpu_core_count: this.form.fd.vcpu || this.decorators.vcpu[1].initialValue,
-        memory_size_mb: this.form.fd.vmem || this.decorators.vmem[1].initialValue,
+        cpu_core_count: this.form.fd.vcpu || VM_FORM_DEFAULTS.vcpu,
+        memory_size_mb: this.form.fd.vmem || VM_FORM_DEFAULTS.vmem,
       }
       if (this.type === SERVER_TYPE.idc) {
         params.provider = HYPERVISORS_MAP.kvm.provider
@@ -825,6 +637,17 @@ export default {
         this.getPriceList()
       }
     },
+    // 原 onValuesChange：dataDiskTypes → 计价用 dataDiskType
+    'form.fd.dataDiskTypes': {
+      deep: true,
+      handler (types) {
+        if (!R.is(Object, types) || Array.isArray(types)) return
+        const keys = Object.keys(types)
+        if (!keys.length) return
+        const item = types[keys[0]]
+        if (item && item.key) this.dataDiskType = item.key
+      },
+    },
   },
   created () {
     this.serversManager = new Manager('servers', 'v2')
@@ -909,7 +732,7 @@ export default {
           diskKey = `${diskKey}/${medium_type}`
         }
         this.form.fd.defaultType = {
-          [this.decorators.systemDisk.type[0]]: { key: diskKey, label: diskLabel },
+          [SYSTEM_DISK_FIELDS.type]: { key: diskKey, label: diskLabel },
         }
       }
 
@@ -923,7 +746,8 @@ export default {
       }
       this.$nextTick(() => {
         this.diskLoaded = true
-        this.form.fc.setFieldsValue({ vcpu: this.form.fd.vcpu_count, vmem: this.form.fd.vmem })
+        this.form.fd.vcpu = this.form.fd.vcpu_count
+        // vmem 已在 form.fd；Cpu/Mem end-state 只写 fd
 
         this.dataDiskInterval = setInterval(() => {
           if (this.isRenderDataDisk) {
@@ -974,7 +798,7 @@ export default {
       if (ids.length === 1) {
         params.disks = this.genDiskData(values)
       }
-      const datadisks = this.form.fc.getFieldValue('dataDiskSizes')
+      const datadisks = this.form.fd.dataDiskSizes
       let diskSize = 0
       if (datadisks) {
         R.forEachObjIndexed((value, key) => {
@@ -1076,7 +900,7 @@ export default {
     },
     getChangeConfigAfterDisk (values, server) {
       if (this.dataList.length !== 1) return server.disk
-      const datadisks = this.form.fc.getFieldValue('dataDiskSizes')
+      const datadisks = this.form.fd.dataDiskSizes
       let diskSize = 0
       if (datadisks) {
         R.forEachObjIndexed((value) => { diskSize += value }, datadisks)
@@ -1101,7 +925,7 @@ export default {
         size: item.size,
         type: item.storage_type,
       }))
-      const datadisks = this.form.fc.getFieldValue('dataDiskSizes')
+      const datadisks = this.form.fd.dataDiskSizes
       let diskSize = 0
       if (datadisks) {
         R.forEachObjIndexed((value) => { diskSize += value }, datadisks)
@@ -1196,13 +1020,30 @@ export default {
       this.$message.success(this.$t('compute.text_1109'))
       this.$router.push('/workflow')
     },
+    async validateAdjustForm () {
+      if (this.$refs.formRef?.validate) {
+        await this.$refs.formRef.validate()
+      }
+      if (typeof this.$refs.skuRef?.validate === 'function') {
+        await this.$refs.skuRef.validate()
+      }
+      if (typeof this.$refs.systemDiskRef?.validate === 'function') {
+        await this.$refs.systemDiskRef.validate()
+      }
+      if (typeof this.$refs.dataDiskRef?.validate === 'function') {
+        await this.$refs.dataDiskRef.validate()
+      }
+      return { ...this.form.fd }
+    },
+    onSkuChange (v) {
+      // :model="form.fd" 时 SKU 已写 fd.sku；此处仅兼容无 model 调用方
+      if (!this.form?.fd) return
+      if (this.form.fd.sku !== v) this.form.fd.sku = v
+    },
     async addShopCart () {
       this.loading = true
       try {
-        if (!this.form.fd.sku?.name) {
-          this.form.fc.setFieldsValue({ sku: null })
-        }
-        const values = await this.form.fc.validateFields()
+        const values = await this.validateAdjustForm()
         const cartValues = this.needForceStopConfirm ? { ...values, force_stop: true } : values
         const shopCarts = this.$store.state.shopcart?.shopCarts || []
         const duplicates = this.dataList.filter(server => shopCarts.some(item => {
@@ -1264,10 +1105,7 @@ export default {
     async openRunningAdjustPopconfirmAfterValidate () {
       if (this.runningAdjustPopVisible) return
       try {
-        if (!this.form.fd.sku?.name) {
-          this.form.fc.setFieldsValue({ sku: null })
-        }
-        const values = await this.form.fc.validateFields()
+        const values = await this.validateAdjustForm()
         this.pendingAdjustValues = values
         await this.$nextTick()
         setTimeout(() => {
@@ -1301,10 +1139,7 @@ export default {
     async handleConfirmClick () {
       this.loading = true
       try {
-        if (!this.form.fd.sku?.name) {
-          this.form.fc.setFieldsValue({ sku: null })
-        }
-        const values = await this.form.fc.validateFields()
+        const values = await this.validateAdjustForm()
         await this.performAdjustSubmit(values)
       } catch (error) {
         // 避免点击事件触发的 async 函数产生 Uncaught(in promise)；表单校验失败等场景无需额外提示
@@ -1319,10 +1154,9 @@ export default {
           this.form.fi.cpuMem.mems_mb = memOpts
           const curVmem = this.form.fd.vmem
           const vmem = memOpts.includes(curVmem) ? curVmem : memOpts[0]
-          this.form.fc.setFieldsValue({
-            vmem,
-            vcpu: cpu,
-          })
+          // end-state：Cpu/Mem 只写 form.fd
+          this.form.fd.vmem = vmem
+          this.form.fd.vcpu = cpu
         }
       }
     },
@@ -1358,27 +1192,9 @@ export default {
       this.serverskusM.get({ id: 'instance-specs', params })
         .then(({ data }) => {
           this.form.fi.cpuMem = data
-          const vcpuDecorator = this.decorators.vcpu
-          const vcpuInit = vcpuDecorator[1].initialValue
-          this.cpuChange(vcpuInit)
+          this.cpuChange(this.form.fd.vcpu || VM_FORM_DEFAULTS.vcpu)
         })
         .catch(() => {})
-    },
-    onValuesChange (props, values) {
-      Object.keys(values).forEach((key) => {
-        let value = values[key]
-        if (key === 'dataDiskSizes' && R.is(Object, values[key]) && R.is(Object, this.form.fd.dataDiskSizes)) {
-          value = { ...this.form.fd.dataDiskSizes, ...values[key] }
-        }
-        this.$set(this.form.fd, key, value)
-        if (~key.indexOf('dataDiskTypes') && R.is(Object, values)) {
-          this.dataDiskType = values[key].key
-        }
-        if (~key.indexOf('dataDiskSizes[')) {
-          const uid = key.replace(/dataDiskSizes\[(.+)\]/, '$1')
-          this.$set(this.form.fd.dataDiskSizes, uid, values[key])
-        }
-      })
     },
     async capability (v) { // 可用区查询
       const params = {

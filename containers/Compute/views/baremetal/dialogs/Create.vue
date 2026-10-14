@@ -3,21 +3,23 @@
     <div slot="header">{{$t('compute.text_323')}}</div>
     <div slot="body">
       <a-alert class="mb-3" :message="$t('compute.baremetal_raid_tip')" type="warning" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('compute.text_295')" v-bind="formItemLayout">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules">
+        <a-form-model-item :label="$t('compute.text_295')" v-bind="formItemLayout" prop="option">
           <a-row :gutter="8">
             <a-col :span="22">
-              <a-cascader :options="disksOptions" v-decorator="decorators.option" :placeholder="$t('compute.text_219')" @change="cascaderChange" />
+              <a-cascader :options="disksOptions" v-model:value="form.option" :placeholder="$t('compute.text_219')" @change="cascaderChange" />
             </a-col>
             <a-col :span="2">
               <a-tooltip :title="coutTitle">
-                <a-input-number :min="mincount" :max="maxcount" v-decorator="decorators.count" :step="step" />
+                <a-input-number :min="mincount" :max="maxcount" v-model:value="form.count" :step="step" />
               </a-tooltip>
             </a-col>
           </a-row>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -39,25 +41,15 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        option: undefined,
+        count: 0,
       },
-      decorators: {
+      rules: {
         option: [
-          'option',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.text_324') },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_324') },
         ],
         count: [
-          'count',
-          {
-            initialValue: 0,
-            rules: [
-              { required: true, message: this.$t('compute.text_324') },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_324') },
         ],
       },
       formItemLayout: {
@@ -469,19 +461,9 @@ export default {
         this.endIndex = diskOpt.end_index
       }
     },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     async handleConfirm () {
-      const values = await this.validateForm()
+      await this.$refs.formRef.validate()
+      const values = { ...this.form }
       values.computeCount = values.count
       values.start_index = this.startIndex
       values.end_index = this.endIndex

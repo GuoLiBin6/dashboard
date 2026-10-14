@@ -4,16 +4,14 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="$t('system.text_142')" :name="$t('system.text_317')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 5)" />
-      <a-form
-        :form="form.fc"
-        v-bind="formItemLayout">
-        <a-form-item :label="$t('system.text_131')">
-          <mobile-input v-decorator="decorators.international_mobile" />
-        </a-form-item>
-        <a-form-item :label="$t('system.text_132')">
-          <a-input v-decorator="decorators.email" />
-        </a-form-item>
-        <a-form-item>
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('system.text_131')" prop="international_mobile">
+          <mobile-input :value="form.international_mobile" @change="v => { form.international_mobile = v }" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('system.text_132')" prop="email">
+          <a-input v-model:value="form.email" />
+        </a-form-model-item>
+        <a-form-model-item prop="enabled_contact_types">
           <template #label>
             {{ $t('common_599') }}
             <a-tooltip placement="top">
@@ -22,10 +20,10 @@
             </a-tooltip>
           </template>
           <a-checkbox-group
-            v-decorator="decorators.enabled_contact_types"
+            v-model:value="form.enabled_contact_types"
             :options="contactArrOpts" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -46,51 +44,37 @@ export default {
   components: { MobileInput },
   mixins: [DialogMixin, WindowsMixin],
   data () {
+    const row = this.params.data[0] || {}
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        international_mobile: row.international_mobile || { mobile: '', area_code: '86' },
+        email: row.email || '',
+        enabled_contact_types: row.enabled_contact_types || [],
       },
-      contactArrOpts: [],
-      decorators: {
+      rules: {
         international_mobile: [
-          'international_mobile',
           {
-            initialValue: { mobile: '', area_code: '86' },
-            rules: [
-              {
-                type: 'object',
-                required: true,
-              },
-              { validator: this.checkInternationalMobile },
-            ],
+            type: 'object',
+            required: true,
           },
+          { validator: this.checkInternationalMobile },
         ],
         email: [
-          'email',
           {
-            rules: [
-              {
-                required: true,
-                message: this.$t('system.text_139'),
-                whitespace: true,
-              },
-              {
-                validator: this.$validate('email'),
-                message: this.$t('system.text_140'),
-                whitespace: true,
-              },
-            ],
+            required: true,
+            message: this.$t('system.text_139'),
+            whitespace: true,
           },
-        ],
-        enabled_contact_types: [
-          'enabled_contact_types',
           {
-            initialValue: [],
+            validator: this.$validate('email'),
+            message: this.$t('system.text_140'),
+            whitespace: true,
           },
         ],
       },
-      formItemLayout: { // 兼容英文版
+      contactArrOpts: [],
+      formItemLayout: {
         wrapperCol: {
           span: 18,
         },
@@ -108,25 +92,14 @@ export default {
     this.manager = new this.$Manager('receivers', 'v1')
     this.generateContactArrOpts({ domain_ids: [domain_id] })
   },
-  mounted () {
-    this.$nextTick(() => {
-      const { international_mobile, email, enabled_contact_types } = this.params.data[0]
-      this.form.fc.setFieldsValue({
-        international_mobile,
-        email,
-        enabled_contact_types,
-      })
-    })
-  },
   methods: {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        const { domain, email, international_mobile, enabled_contact_types } = values
+        await this.$refs.formRef.validate()
+        const { email, international_mobile, enabled_contact_types } = this.form
         const data = {
           email,
-          domain,
           international_mobile,
           enabled_contact_types,
           force_verified: true,

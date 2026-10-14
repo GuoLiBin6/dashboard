@@ -10,7 +10,7 @@
           class="mb-0 mr-1 network-vpc-item">
           <oc-select
             v-if="i === 0"
-            v-decorator="decorator.vpcs(item.key)"
+            :value="fieldVal(networkFieldMap.vpcs(item.key))"
             show-status
             show-group
             :status-desc="$t('compute.vpc_status_desc')"
@@ -20,7 +20,7 @@
             :mapper="vpcResourceMapper"
             :sort="(arr) => arr.sort((a, b) => a.network_count > b.network_count ? -1 : 1)"
             :placeholder="$t('compute.text_194')"
-            @selectChange="(curObjArr) => vpcSelectChange(curObjArr, i, item)"
+            @selectChange="(curObjArr) => { fieldSet(networkFieldMap.vpcs(item.key), curObjArr?.[0]?.id); vpcSelectChange(curObjArr, i, item) }"
             @fetchSuccess="(data) => fetchVpcSuccessHandle(data, item)" />
           <a-tag v-else class="network-vpc-tag">{{ getVpcTag(networkList[0].vpc) }}</a-tag>
         </a-form-item>
@@ -30,7 +30,8 @@
           class="mb-0 mr-1 network-item">
           <base-select
             class="w-100"
-            v-decorator="decorator.networks(item.key)"
+            :value="fieldVal(networkFieldMap.networks(item.key))"
+            @change="v => { fieldSet(networkFieldMap.networks(item.key), v); networkChange(v, item, i) }"
             resource="networks"
             remote
             show-sync
@@ -41,7 +42,6 @@
             :mapper="networkResourceMapper"
             :remote-fn="q => ({ search: q })"
             :beforeDefaultSelectCallBack="beforeDefaultSelectCallBack"
-            @change="v => networkChange(v, item, i)"
             @update:resList="list => resolveNetworkFromFetchedList(list, item)"
             :select-props="{ allowClear: true, placeholder: $t('compute.text_195') }"
             :min-width="isDialog ? '200px' : '500px'" />
@@ -57,7 +57,7 @@
           <template v-if="isSupportIPv4(item) && !(isSupportIPv6(item) && item.ipv6Mode === 'only' && item.requireIpv6)">
             <template v-if="item.ipShow">
               <a-form-item class="mb-0" style="display:inline-block" :wrapperCol="{ span: 24 }">
-                <ip-select v-decorator="decorator.ips(item.key, item.network)" :value="item.ip" :network="item.network" @change="e => ipChange(e, i)" />
+                <ip-select :value="fieldVal(networkFieldMap.ips(item.key, item.network))" :network="item.network" @change="e => { fieldSet(networkFieldMap.ips(item.key, item.network), e); ipChange(e, i) }" />
               </a-form-item>
               <a-button type="link" @click="triggerShowIp(item)">{{$t('compute.text_135')}}</a-button>
             </template>
@@ -72,8 +72,8 @@
                 <a-input
                   style="width: 164px"
                   :placeholder="$t('compute.text_806')"
-                  @change="e => macChange(e, i)"
-                  v-decorator="decorator.macs(item.key, item.network)" />
+                  :value="fieldVal(networkFieldMap.macs(item.key, item.network))"
+                  @change="e => { fieldSet(networkFieldMap.macs(item.key, item.network), e.target.value); macChange(e, i) }" />
               </a-form-item>
               <a-button type="link" @click="triggerShowMac(item)">{{$t('compute.text_135')}}</a-button>
             </template>
@@ -87,7 +87,8 @@
               <a-form-item class="mb-0" style="display:inline-block" :wrapperCol="{ span: 24 }">
                 <oc-select
                   style="width: 164px"
-                  v-decorator="decorator.devices(item.key)"
+                  :value="fieldVal(networkFieldMap.devices(item.key))"
+                  @change="v => fieldSet(networkFieldMap.devices(item.key), v)"
                   :data="gpuOptions"
                   :placeholder="$t('compute.sriov_device_tips')" />
               </a-form-item>
@@ -100,7 +101,8 @@
           <template v-if="item.secgroupShow">
             <a-form-item class="mb-0" style="display:inline-block" :wrapperCol="{ span: 24 }">
               <base-select
-                v-decorator="decorator.secgroups(item.key)"
+                :value="fieldVal(networkFieldMap.secgroups(item.key))"
+                @change="v => fieldSet(networkFieldMap.secgroups(item.key), v)"
                 resource="secgroups"
                 :params="secgroupParams"
                 :select-props="{ allowClear: true, placeholder: $t('compute.secgroup_tips'), mode: 'multiple' }" />
@@ -112,7 +114,7 @@
           <template>
             <a-form-item class="mb-0 network-ipv6-item" style="display:inline-block" :wrapperCol="{ span: 24 }" v-if="isSupportIPv6(item) && isSupportIPv4(item)">
               <div class="d-flex align-items-center network-ipv6-switch">
-                <a-checkbox style="width: max-content" v-decorator="decorator.ipv6s(item.key, item.network)" @change="(e) => triggerRequireIpv6(item, e)" />
+                <a-checkbox style="width: max-content" :checked="fieldVal(networkFieldMap.ipv6s(item.key, item.network))" @change="(e) => { fieldSet(networkFieldMap.ipv6s(item.key, item.network), e.target.checked); triggerRequireIpv6(item, e) }" />
                 <a-dropdown :trigger="['click']">
                   <a class="ant-dropdown-link network-ipv6-dropdown-link" @click.prevent>
                     {{ item.ipv6Mode === 'only' ? $t('compute.server_create.require_ipv6_only') : $t('compute.server_create.require_ipv6_all') }}
@@ -126,7 +128,7 @@
                   </template>
                 </a-dropdown>
                 <!-- 保留表单字段，供提交 / setFieldsValue -->
-                <a-input type="hidden" v-decorator="decorator.ipv6_mode(item.key, item.network)" />
+                <a-input type="hidden" :value="fieldVal(networkFieldMap.ipv6_mode(item.key, item.network))" />
               </div>
             </a-form-item>
             <template v-if="(isSupportIPv6(item) && item.requireIpv6) || (!isSupportIPv4(item) && isSupportIPv6(item))">
@@ -138,8 +140,8 @@
                       <a-input
                         style="width: 164px"
                         :placeholder="$t('compute.complete_ipv6_address')"
-                        @change="e => ipv6Change(e, i)"
-                        v-decorator="decorator.ips6(item.key, item.network)" />
+                        :value="fieldVal(networkFieldMap.ips6(item.key, item.network))"
+                        @change="e => { fieldSet(networkFieldMap.ips6(item.key, item.network), e.target.value); ipv6Change(e, i) }" />
                     </a-form-item>
                     <a-button type="link" class="network-ipv6-cancel" @click="triggerShowIpv6(item)">{{$t('compute.text_135')}}</a-button>
                   </div>
@@ -149,7 +151,7 @@
             </template>
           </template>
         </template>
-        <a-button type="link" @click="() => showAdvanced = !showAdvanced">{{ showAdvanced ? $t('compute.hide_advanced') : $t('compute.advanced') }}</a-button>
+        <a-button type="link" @click="toggleAdvanced">{{ showAdvanced ? $t('compute.hide_advanced') : $t('compute.advanced') }}</a-button>
         <span v-if="i !== 0" class="network-row-remove-wrap">
           <a-button shape="circle" icon="minus" size="small" @click="decrease(item.key, i)" />
         </span>
@@ -167,13 +169,24 @@
 import * as R from 'ramda'
 import ipaddr from 'ipaddr.js'
 import { uuid } from '@/utils/utils'
+import { checkIpInSegment, checkIpV6 } from '@Compute/utils/createServer'
+import validateForm from '@/utils/validate'
+import { buildSetNetworkDialogFieldMap, resolveNetworkConfigFieldMap } from './fields'
 import IpSelect from './IpSelect.vue'
+import nicModelMixin, { parseNicFieldName } from './nicModelMixin'
+
+const NIC_MAP_ROOTS = [
+  'vpcs', 'networks', 'networkIps', 'networkMacs', 'networkIPv6s',
+  'networkIPv6Modes', 'networkIpsAddress6', 'networkDevices',
+  'networkSecgroups', 'networkExits',
+]
 
 export default {
   name: 'NetworkConfig',
   components: {
     IpSelect,
   },
+  mixins: [nicModelMixin],
   props: {
     count: {
       type: Number,
@@ -191,10 +204,14 @@ export default {
       type: Object,
       required: true,
     },
-    decorator: {
+    /** a-form-model end-state：嵌套 maps 写在 form.fd（model）上 */
+    model: {
       type: Object,
-      required: true,
-      validator: val => R.is(Function, val.vpcs) && R.is(Function, val.networks) && R.is(Function, val.ips) && R.is(Function, val.macs) && R.is(Function, val.ips6) && R.is(Function, val.secgroups),
+      default: null,
+    },
+    fieldMapPreset: {
+      type: String,
+      default: '',
     },
     isBonding: {
       type: Boolean,
@@ -264,6 +281,10 @@ export default {
     }
   },
   computed: {
+    networkFieldMap () {
+      if (this.fieldMapPreset === 'setNetwork') return buildSetNetworkDialogFieldMap(this)
+      return resolveNetworkConfigFieldMap()
+    },
     networkCountRemaining () {
       if (this.hiddenAdd) return 0
       return this.limit - this.networkList.length
@@ -305,9 +326,7 @@ export default {
     vpcObj (val) {
       if (val && val.id && val.name) {
         this.networkList[0].vpc = val
-        this.form.fc.setFieldsValue({
-          [this.decorator.vpcs(this.networkList[0].key)[0]]: this.vpcObj.id,
-        })
+        this.fieldSet(this.networkFieldMap.vpcs(this.networkList[0].key), this.vpcObj.id)
       }
     },
     networkList (val) {
@@ -315,6 +334,7 @@ export default {
     },
   },
   created () {
+    NIC_MAP_ROOTS.forEach(root => this.ensureMap(root))
     this.add()
   },
   mounted () {
@@ -324,6 +344,73 @@ export default {
     window.removeEventListener('resize', this.onResize)
   },
   methods: {
+
+    fieldVal (fieldTuple) {
+      return this.nicFieldVal(fieldTuple)
+    },
+    fieldSet (fieldTuple, value) {
+      this.nicFieldSet(fieldTuple, value)
+    },
+    readField (name) {
+      if (!name) return undefined
+      const parsed = parseNicFieldName(name)
+      if (parsed?.key) return this.nicField(parsed.root, parsed.key)
+      return this.model[name]
+    },
+    writeFields (vals) {
+      this.nicWriteFields(vals)
+    },
+    clearNicMapsForKey (key) {
+      if (!key) return
+      NIC_MAP_ROOTS.forEach((root) => {
+        if (this.model[root] && Object.prototype.hasOwnProperty.call(this.model[root], key)) {
+          this.$delete(this.model[root], key)
+        }
+      })
+    },
+    toggleAdvanced () {
+      this.showAdvanced = !this.showAdvanced
+      this.$emit('advancedChange', this.showAdvanced)
+    },
+    async validate () {
+      for (let i = 0; i < this.networkList.length; i++) {
+        const item = this.networkList[i]
+        const key = item.key
+        if (this.showVpc) {
+          const vpc = this.nicField('vpcs', key)
+          if (!vpc) throw new Error(this.$t('compute.text_194'))
+        }
+        const networkId = this.nicField('networks', key)
+        if (!networkId) throw new Error(this.$t('compute.text_217'))
+        const networkData = item.network || {}
+        if (item.ipShow) {
+          const ip = this.nicField('networkIps', key)
+          await this.runFieldRule({ required: true, message: this.$t('compute.text_218') }, ip)
+          await this.runFieldRule({ validator: validateForm('IPv4') }, ip)
+          await this.runFieldRule({ validator: checkIpInSegment(i, networkData) }, ip)
+        }
+        if (item.macShow) {
+          const mac = this.nicField('networkMacs', key)
+          await this.runFieldRule({ required: true, message: this.$t('compute.text_806') }, mac)
+          await this.runFieldRule({ validator: validateForm('mac') }, mac)
+        }
+        if (item.ipv6Show) {
+          const ipv6 = this.nicField('networkIpsAddress6', key)
+          await this.runFieldRule({ required: true, message: this.$t('compute.complete_ipv6_address') }, ipv6)
+          await this.runFieldRule({ validator: checkIpV6(i, networkData) }, ipv6)
+        }
+        if (item.deviceShow) {
+          const device = this.nicField('networkDevices', key)
+          await this.runFieldRule({ required: true, message: this.$t('compute.sriov_device_tips') }, device)
+        }
+        if (item.secgroupShow) {
+          const secgroups = this.nicField('networkSecgroups', key)
+          await this.runFieldRule({ required: true, message: this.$t('compute.secgroup_tips') }, secgroups)
+        }
+      }
+      return true
+    },
+
     initData (data) {
       this.canDefaultSelect = false
       this.networkList = data.map(item => {
@@ -391,11 +478,11 @@ export default {
         })
       }
       const applyAllNetworkFields = () => {
-        if (!this.form || !this.form.fc || !this.networkList.length) return
+        if (!this.model || !this.networkList.length) return
         const first = this.networkList[0]
         if (first.vpc && first.vpc.id) {
-          this.form.fc.setFieldsValue({
-            [this.decorator.vpcs(first.key)[0]]: first.vpc.id,
+          this.writeFields({
+            [this.networkFieldMap.vpcs(first.key)[0]]: first.vpc.id,
           })
         }
         this.networkList.forEach((item) => {
@@ -403,29 +490,29 @@ export default {
           // 子网：仅写已在列表中 resolve 且可用的 id，禁止盲种草稿无效 id
           const netId = item.network && item.network.id
           if (netId && this.isNetworkAvailable(item.network)) {
-            value[this.decorator.networks(item.key)[0]] = netId
+            value[this.networkFieldMap.networks(item.key)[0]] = netId
           }
-          const netKeyForDecorators = (netId && this.isNetworkAvailable(item.network)) ? netId : null
-          if (item.address && netKeyForDecorators) {
-            value[this.decorator.ips(item.key, netKeyForDecorators)[0]] = item.address
+          const netKeyForFields = (netId && this.isNetworkAvailable(item.network)) ? netId : null
+          if (item.address && netKeyForFields) {
+            value[this.networkFieldMap.ips(item.key, netKeyForFields)[0]] = item.address
           }
-          if (item.mac && netKeyForDecorators) {
-            value[this.decorator.macs(item.key, netKeyForDecorators)[0]] = item.mac
+          if (item.mac && netKeyForFields) {
+            value[this.networkFieldMap.macs(item.key, netKeyForFields)[0]] = item.mac
           }
-          if (netKeyForDecorators) {
-            value[this.decorator.ipv6s(item.key, netKeyForDecorators)[0]] = item.requireIpv6
-            value[this.decorator.ipv6_mode(item.key, netKeyForDecorators)[0]] = item.ipv6Mode
+          if (netKeyForFields) {
+            value[this.networkFieldMap.ipv6s(item.key, netKeyForFields)[0]] = item.requireIpv6
+            value[this.networkFieldMap.ipv6_mode(item.key, netKeyForFields)[0]] = item.ipv6Mode
           }
-          if (item.address6 && netKeyForDecorators) {
-            value[this.decorator.ips6(item.key, netKeyForDecorators)[0]] = item.address6.replace(this.getIpv6Prefix(item.address6), '')
+          if (item.address6 && netKeyForFields) {
+            value[this.networkFieldMap.ips6(item.key, netKeyForFields)[0]] = item.address6.replace(this.getIpv6Prefix(item.address6), '')
           }
           if (item.sriov_device && item.sriov_device.model) {
-            value[this.decorator.devices(item.key)[0]] = item.sriov_device.model
+            value[this.networkFieldMap.devices(item.key)[0]] = item.sriov_device.model
           }
           if (item.secgroups && item.secgroups.length > 0) {
-            value[this.decorator.secgroups(item.key)[0]] = item.secgroups
+            value[this.networkFieldMap.secgroups(item.key)[0]] = item.secgroups
           }
-          this.form.fc.setFieldsValue(value)
+          this.writeFields(value)
         })
       }
       this.$nextTick(() => {
@@ -494,42 +581,42 @@ export default {
       if (this.vpcObj) {
         data.vpc = this.vpcObj
       }
+      NIC_MAP_ROOTS.forEach(root => this.ensureMap(root))
       this.networkList.push(data)
       this.$nextTick(() => {
         if (this.vpcObj) {
-          this.form.fc.setFieldsValue({
-            [this.decorator.vpcs(uid)[0]]: this.vpcObj.id,
-          })
+          this.fieldSet(this.networkFieldMap.vpcs(uid), this.vpcObj.id)
         }
       })
     },
     triggerShowIp (item, i) {
       item.ipShow = !item.ipShow
+      this.$emit('optionalChange', { flag: 'ip', key: item.key, show: item.ipShow })
     },
     triggerShowIpv6 (item, i) {
       item.ipv6Show = !item.ipv6Show
+      this.$emit('optionalChange', { flag: 'ipv6', key: item.key, show: item.ipv6Show })
     },
     triggerIpv6Mode (item, e, i) {
       item.ipv6Mode = e.key
       this.$nextTick(() => {
-        this.form.fc.setFieldsValue({
-          [`networkIPv6Modes[${item.key}]`]: e.key,
-        })
+        this.setNicField('networkIPv6Modes', item.key, e.key)
       })
-    },
-    triggerRequireIpv6 (item, e) {
-      item.requireIpv6 = e.target.checked
     },
     triggerShowMac (item, i) {
       item.macShow = !item.macShow
+      this.$emit('optionalChange', { flag: 'mac', key: item.key, show: item.macShow })
     },
     triggerShowDevice (item, i) {
       item.deviceShow = !item.deviceShow
+      this.$emit('optionalChange', { flag: 'device', key: item.key, show: item.deviceShow })
     },
     triggerShowSecgroup (item, i) {
       item.secgroupShow = !item.secgroupShow
+      this.$emit('optionalChange', { flag: 'secgroup', key: item.key, show: item.secgroupShow })
     },
     decrease (uid, index) {
+      this.clearNicMapsForKey(uid)
       this.networkList.splice(index, 1)
     },
     reset (ipsDisabled) { // 重置成不可手动输入IP，并且仅保留1条数据
@@ -548,18 +635,10 @@ export default {
     },
     networkChange (val, item, i) {
       this.$nextTick(() => {
-        const fieldKey = `networkExits[${item.key}]`
-        this.form.fc.getFieldDecorator(fieldKey, {
-          preserve: true,
-        })
-        this.form.fc.setFieldsValue({
-          [fieldKey]: item.network.exit,
-        })
+        this.setNicField('networkExits', item.key, item.network?.exit)
         if (item.network.guest_ip_start && item.network.guest_ip_end) {
-          this.form.fc.setFieldsValue({
-            [`networkIPv6Modes[${item.key}]`]: 'all',
-            [`networkIPv6s[${item.key}]`]: false,
-          })
+          this.setNicField('networkIPv6Modes', item.key, 'all')
+          this.setNicField('networkIPv6s', item.key, false)
           this.networkList[i].ipv6Mode = 'all'
           this.networkList[i].requireIpv6 = false
         }
@@ -568,13 +647,7 @@ export default {
     networkSelectChange (curObjArr, item) {
       item.network = curObjArr[0]
       this.$nextTick(() => {
-        const fieldKey = `networkExits[${item.key}]`
-        this.form.fc.getFieldDecorator(fieldKey, {
-          preserve: true,
-        })
-        this.form.fc.setFieldsValue({
-          [fieldKey]: item.network?.exit,
-        })
+        this.setNicField('networkExits', item.key, item.network?.exit)
       })
     },
     vpcChange (v, i) {
@@ -622,9 +695,9 @@ export default {
       // 供 VPC 稳定后再用同一份 opts 重跑回填（params clear 后可能不再 emit）
       item._lastNetworkResList = list
 
-      const field = this.decorator.networks(item.key)[0]
+      const field = this.networkFieldMap.networks(item.key)[0]
       const preferId = item._draftNetworkId || ''
-      const curId = this.form?.fc?.getFieldValue(field) || item.network?.id || item.network?.key
+      const curId = this.readField(field) || item.network?.id || item.network?.key
 
       let target = null
       const preferHit = preferId ? this.findNetworkInList(list, preferId) : null
@@ -639,7 +712,7 @@ export default {
         const curHit = this.findNetworkInList(list, curId)
         if (curId && (!curHit || !this.isNetworkAvailable(curHit))) {
           item.network = {}
-          if (this.form?.fc) this.form.fc.setFieldsValue({ [field]: undefined })
+          this.writeFields({ [field]: undefined })
         }
         return
       }
@@ -647,8 +720,8 @@ export default {
       // opts 每次变化都写回，不因 curId===target 而跳过
       item.network = target
       this.$nextTick(() => {
-        if (!this.form?.fc) return
-        this.form.fc.setFieldsValue({ [field]: target.id })
+        if (!this.model) return
+        this.setNicField('networks', item.key, target.id)
         const idx = this.networkList.indexOf(item)
         if (idx >= 0) this.networkChange(target.id, item, idx)
       })
@@ -660,14 +733,13 @@ export default {
       }
       item.vpc = target
       this.$nextTick(() => {
-        this.form.fc.setFieldsValue({ [`vpcs[${item.key}]`]: target?.key, vpcs: { [item.key]: target?.key } })
+        this.setNicField('vpcs', item.key, target?.key || target?.id)
         // VPC 写回后 params 可能 clear 网卡：用最近一次子网 opts 再回填一次
         if (item._lastNetworkResList && item._lastNetworkResList.length) {
           this.resolveNetworkFromFetchedList(item._lastNetworkResList, item)
         }
       })
       this.vpcSelectChange([target], 0, item)
-      // this.fetchNetworkOpts(this.networkParamsC, item)
     },
     fetchNetworkSuccessHandle (data, item) {
       this.resolveNetworkFromFetchedList(data || [], item)
@@ -678,14 +750,14 @@ export default {
       if (!params.vpc) {
         this.networkOpts = []
         item.network = {}
-        this.form.fc.setFieldsValue({ [`networks[${item.key}]`]: '' })
+        this.writeFields({ [this.networkFieldMap.networks(item.key)[0]]: '' })
         this.networkLoading = false
       } else {
         this.networkOpts = []
         new this.$Manager('networks').list({ params }).then((res) => {
           this.networkOpts = res.data.data || []
           this.$nextTick(() => {
-            this.form.fc.setFieldsValue({ [`networks[${item.key}]`]: this.networkOpts?.[0]?.id })
+            this.writeFields({ [this.networkFieldMap.networks(item.key)[0]]: this.networkOpts?.[0]?.id })
           })
           item.network = this.networkOpts[0]
           this.networkLoading = false

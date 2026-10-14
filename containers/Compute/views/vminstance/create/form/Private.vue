@@ -1,101 +1,110 @@
 <template>
   <div>
-    <a-form
+    <a-form-model
+      ref="formRef"
       class="mt-3"
-      :form="form.fc"
+      :model="form.fd"
+      :rules="rules"
       v-bind="formItemLayout"
       @submit="submit"
       hideRequiredMark>
-      <servertemplate v-if="isServertemplate" :decorators="decorators.servertemplate">
-        <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])">
+      <servertemplate v-if="isServertemplate" :form="form">
+        <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])">
           <domain-project
-            :fc="form.fc"
-            :fd="form.fd"
-            :decorators="{ project: decorators.project, domain: decorators.domain }"
+            ref="domainProjectRef"
+            :form="form.fd"
             :form-draft-key="vmDraftFields.domainProject"
             :ignoreStorage="ignoreLocalFormStorage"
             @fetchDomainCallback="fetchDomainCallback"
             @fetchProjectCallback="fetchProjectCallback" />
-        </a-form-item>
+        </a-form-model-item>
       </servertemplate>
       <!-- <a-divider orientation="left">{{$t('compute.text_300')}}</a-divider> -->
-      <a-form-item v-if="!isServertemplate" :label="$t('compute.text_297', [$t('dictionary.project')])">
+      <a-form-model-item v-if="!isServertemplate" :label="$t('compute.text_297', [$t('dictionary.project')])">
         <domain-project
-          :fc="form.fc"
-          :fd="form.fd"
-          :decorators="{ project: decorators.project, domain: decorators.domain }"
+          ref="domainProjectRef"
+          :form="form.fd"
           :form-draft-key="vmDraftFields.domainProject"
           :ignoreStorage="ignoreLocalFormStorage"
           @fetchDomainCallback="fetchDomainCallback"
           @fetchProjectCallback="fetchProjectCallback" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_177')" class="mb-0">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_177')" class="mb-0">
         <cloudregion-zone
+          ref="cloudregionZoneRef"
+          :model="form.fd"
           :zone-params="zoneParams"
           :cloudregion-params="cloudregionParams"
-          :decorator="decorators.cloudregionZone"
           :form-draft-key="vmDraftFields.cloudregionZone"
           filterBrandResource="compute_engine" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_15')" v-if="isHCSO || isHCS">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_15')" v-if="isHCSO || isHCS" prop="cloudprovider">
         <base-select
           resource="cloudproviders"
-          v-decorator="decorators.cloudprovider"
+          v-model:value="form.fd.cloudprovider"
           :params="policycloudproviderParams"
           :isDefaultSelect="true"
           :showSync="true"
           :select-props="{ placeholder: $t('compute.text_149') }" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_228')" v-if="!isServertemplate">
-        <a-input v-decorator="decorators.name" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_228')" v-if="!isServertemplate" prop="name">
+        <a-input v-model:value="form.fd.name" />
         <template v-slot:extra>
           <name-repeated
             res="servers"
             :name="form.fd.name"
             :default-text="$t('compute.text_893')" />
         </template>
-      </a-form-item>
-      <a-form-item :label="$t('common.description')" v-if="!isServertemplate">
-        <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_1041')" v-if="showReason">
-        <a-input v-decorator="decorators.reason" :placeholder="$t('compute.text_1042')" />
-      </a-form-item>
-      <a-form-item v-show="!isServertemplate" :label="$t('compute.text_1132')">
-        <duration useServerDuration :decorators="decorators.duration" :form="form" :form-draft-key="vmDraftFields.duration" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_294')" v-show="!isServertemplate">
-        <a-input-number v-decorator="decorators.count" @blur="countBlur" :min="1" :max="100" />
-      </a-form-item>
-      <a-form-item v-if="form.fd.hypervisor === 'zettakit' || form.fd.hypervisor === 'kvm'">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('common.description')" v-if="!isServertemplate" prop="description">
+        <a-textarea v-model:value="form.fd.description" :auto-size="{ minRows: 1, maxRows: 3 }" :placeholder="$t('common_367')" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_1041')" v-if="showReason">
+        <a-input v-model:value="form.fd.reason" :placeholder="$t('compute.text_1042')" />
+      </a-form-model-item>
+      <a-form-model-item v-show="!isServertemplate" :label="$t('compute.text_1132')">
+        <duration
+          useServerDuration
+          :model="form.fd"
+          v-model:durationStandard="form.fd.durationStandard"
+          v-model:duration="form.fd.duration"
+          :form="form"
+          :form-draft-key="vmDraftFields.duration" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_294')" v-show="!isServertemplate" prop="count">
+        <a-input-number v-model:value="form.fd.count" @blur="countBlur" :min="1" :max="100" />
+      </a-form-model-item>
+      <a-form-model-item v-if="form.fd.hypervisor === 'zettakit' || form.fd.hypervisor === 'kvm'">
         <template #label>
           {{ $t('compute.text_1152') }}&nbsp;
           <a-tooltip :title="$t('compute.vgpu_check.tooltip')">
             <a-icon type="question-circle-o" />
           </a-tooltip>
         </template>
-        <pci :decorators="decorators.pci" :pciDevTypeOptions="pciDevTypeOptions" :form="form" :pci-options="pciOptions" :form-draft-key="vmDraftFields.pci" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_1058')" class="mb-0">
-        <cpu-radio :decorator="decorators.vcpu" :options="form.fi.cpuMem.cpus || []" :showUnlimited="true" :form="form" :form-draft-key="vmDraftFields.vcpu" @change="cpuChange" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_369')" class="mb-0">
-        <mem-radio :decorator="decorators.vmem" :options="form.fi.cpuMem.mems_mb || []" :showUnlimited="true" :form-draft-key="vmDraftFields.vmem" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_109')" v-if="showSku">
+        <pci ref="pciRef" :pciDevTypeOptions="pciDevTypeOptions" :form="form" :model="form.fd" :pci-options="pciOptions" :form-draft-key="vmDraftFields.pci" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_1058')" class="mb-0">
+        <cpu-radio :model="form.fd" :options="form.fi.cpuMem.cpus || []" :showUnlimited="true" :form="form" :form-draft-key="vmDraftFields.vcpu" @change="cpuChange" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_369')" class="mb-0">
+        <mem-radio :model="form.fd" :options="form.fi.cpuMem.mems_mb || []" :showUnlimited="true" :form-draft-key="vmDraftFields.vmem" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_109')" v-if="showSku">
         <sku
-          v-decorator="decorators.sku"
+          ref="skuRef"
+          :model="form.fd"
           :type="type"
           :sku-params="skuParam"
           :hypervisor="form.fd.hypervisor"
           :form-draft-key="vmDraftFields.sku" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_267')" :extra="$t('compute.text_302')">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_267')" :extra="$t('compute.text_302')">
         <os-select
+          ref="osSelectRef"
           :type="type"
           :form="form"
+          :model="form.fd"
           :hypervisor="form.fd.hypervisor"
-          :decorator="decorators.imageOS"
           :os-arch="osArch"
           :image-params="imageParams"
           :cacheImageParams="cacheImageParams"
@@ -104,11 +113,11 @@
           :ignore-storage="ignoreLocalFormStorage"
           :form-draft-key="vmDraftFields.osSelect"
           @updateImageMsg="updateFi" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_49')" class="mb-0">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_49')" class="mb-0">
         <system-disk
           ref="systemDiskRef"
-          :decorator="decorators.systemDisk"
+          :model="form.fd"
           :type="type"
           :form="form"
           :hypervisor="form.fd.hypervisor"
@@ -117,11 +126,11 @@
           :image="form.fi.imageMsg"
           :sizeDisabled="disabledSysDiskSize"
           :form-draft-key="vmDraftFields.systemDisk" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_50')" v-if="form.fd.hypervisor && form.fd.hypervisor !== 'zettakit' && !isCNware">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_50')" v-if="form.fd.hypervisor && form.fd.hypervisor !== 'zettakit' && !isCNware">
         <data-disk
           :isInitForm="isFormBackfill"
-          :decorator="decorators.dataDisk"
+          :model="form.fd"
           :type="type"
           :form="form"
           :hypervisor="form.fd.hypervisor"
@@ -130,18 +139,18 @@
           :capability-data="form.fi.capability"
           ref="dataDiskRef"
           :form-draft-key="vmDraftFields.dataDisk" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_1372')" v-if="showServerAccount">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_1372')" v-if="showServerAccount">
         <server-account :form="form" :hypervisor="form.fd.hypervisor" :instance_capabilities="form.fi.capability.instance_capabilities" :osType="osType" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_308')">
-        <server-password :decorator="decorators.loginConfig" :login-types="loginTypes" :form="form" :form-draft-key="vmDraftFields.loginConfig" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_104')" class="mb-0">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_308')">
+        <server-password ref="passwordRef" :login-types="loginTypes" :form="form" :model="form.fd" :form-draft-key="vmDraftFields.loginConfig" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_104')" class="mb-0">
         <server-network
           ref="networkRef"
+          :model="form.fd"
           :form="form"
-          :decorator="decorators.network"
           :network-list-params="networkParam"
           :schedtag-params="schedtagParams"
           :networkVpcParams="networkVpcParams"
@@ -153,50 +162,56 @@
           :showMacConfig="form.fd.hypervisor === 'kvm'"
           :ignore-auto-network-type="ignoreAutoNetworkTypeForDraft"
           :form-draft-key="vmDraftFields.serverNetwork" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_1154')" class="mb-0">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_1154')" class="mb-0" prop="__meta__">
         <tag
-          v-decorator="decorators.tag" :default-checked="tagDefaultChecked" />
-      </a-form-item>
+          v-model:value="form.fd.__meta__"
+          :default-checked="tagDefaultChecked" />
+      </a-form-model-item>
       <advance-config-block ref="advanceConfigBlock" collapsible>
-        <a-form-item v-if="!isServertemplate">
+        <a-form-model-item v-if="!isServertemplate">
           <template #label>
             {{ $t('common_388') }}&nbsp;
             <a-tooltip :title="hostNameTips">
               <a-icon type="question-circle-o" />
             </a-tooltip>
           </template>
-          <host-name v-decorator="decorators.hostName" :isWindows="isWindows" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_105')" v-if="showSecgroup">
+          <host-name ref="hostNameRef" :model="form.fd" :isWindows="isWindows" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_105')" v-if="showSecgroup">
           <secgroup-config
-            ref="secgroupConfigRef"
-            :decorators="decorators.secgroup"
+            ref="secgroupRef"
+            :form="form"
+            :model="form.fd"
+
             :secgroup-params="secgroupParams"
             :hypervisor="form.fd.hypervisor"
             :showSecgroupBind="showSecgroupBind"
             :ignore-auto-type-reset="preserveAdvanceInitProps"
             :init-secgroups="workflowInitSecgroups" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_311')" v-show="!isServertemplate" class="mb-0">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_311')" v-show="!isServertemplate" class="mb-0">
           <sched-policy
             ref="schedPolicyRef"
+            :model="form.fd"
+            :form="form"
             :provider="cloudprovider"
             :server-type="form.fi.createType"
             :disabled-host="policyHostDisabled"
             :policy-host-params="policyHostParams"
-            :decorators="decorators.schedPolicy"
+
             :policy-schedtag-params="policySchedtagParams"
             :init-prefer-host="workflowInitPreferHost"
             :preserve-init-prefer-host="preserveAdvanceInitProps"
             :init-schedtags="workflowInitSchedtags"
             :form-draft-key="vmDraftFields.schedPolicy" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.repo.port_mapping')" v-if="showPortMapping">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.repo.port_mapping')" v-if="showPortMapping">
           <labels
             ref="labelRef"
+            :model="form.fd"
             :create-form="form"
-            :decorators="decorators.portMapping"
+
             :disableConf="portMappingDisableConf"
             :init-pairs="workflowInitPortMappings"
             :title="$t('compute.repo.port_mapping')"
@@ -204,9 +219,9 @@
             :valueLabel="$t('compute.repo.host_port')"
             :keyPlaceholder="$t('compute.repo.example', ['443'])"
             :valuePlaceholder="$t('compute.repo.example', ['443'])" />
-        </a-form-item>
-        <custom-data v-if="showCustomData" ref="customData" :decorators="decorators" :form="form" />
-        <bastion-host ref="bastionHostRef" v-if="!isOpenSourceVersion && hasBastionService" :decorator="decorators.bastion_host" :form="form" :form-draft-key="vmDraftFields.bastionHost" />
+        </a-form-model-item>
+        <custom-data v-if="showCustomData" ref="customData" :model="form.fd" :form="form" />
+        <bastion-host ref="bastionHostRef" v-if="!isOpenSourceVersion && hasBastionService" :form="form" :model="form.fd" :form-draft-key="vmDraftFields.bastionHost" />
       </advance-config-block>
       <bottom-bar
         :loading="submiting"
@@ -221,14 +236,13 @@
         :hasMeterService="hasMeterService"
         @add-cart="addShopCart"
         @cancel="handleCancel" />
-    </a-form>
+    </a-form-model>
   </div>
 </template>
 <script>
 import _ from 'lodash'
 import * as R from 'ramda'
 import SecgroupConfig from '@Compute/sections/SecgroupConfig'
-import { resolveValueChangeField } from '@/utils/common/ant'
 import { HYPERVISORS_MAP } from '@/constants'
 import { getOsArchParam, isOsArch } from '@/constants/compute'
 import { uuid } from '@/utils/utils'
@@ -441,31 +455,28 @@ export default {
       return []
     },
   },
-  methods: {
-    onValuesChange (vm, changedFields) {
-      this.$nextTick(() => {
-        const formValue = this.form.fc.getFieldsValue()
-        const newField = resolveValueChangeField(changedFields)
-        this._setNewFieldToFd(newField, formValue)
-        const keys = Object.keys(newField)
-        if (keys.includes('zone')) {
-          this.fetchCapability()
-        }
-        if (keys.includes('project')) {
-          this.fetchCapability()
-        }
-        if (changedFields.schedPolicyType === 'host') {
-          const keepHost = this.isFormBackfill ||
-            this.form?.fi?.advanceDraftRestoring ||
-            Object.prototype.hasOwnProperty.call(changedFields, 'schedPolicyHost') ||
-            this.$refs.schedPolicyRef?.pendingPreferHost ||
-            this.$refs.schedPolicyRef?._draftApplying
-          if (!keepHost) {
-            this.form.fd.schedPolicyHost = undefined
-          }
-        }
-      })
+  watch: {
+    // onValuesChange → form.fd watches
+    'form.fd.zone' (val, oldVal) {
+      if (R.equals(val, oldVal)) return
+      this.fetchCapability()
     },
+    'form.fd.project' (val, oldVal) {
+      if (R.equals(val, oldVal)) return
+      this.fetchCapability()
+    },
+    'form.fd.schedPolicyType' (val) {
+      if (val !== 'host') return
+      const keepHost = this.isFormBackfill ||
+        this.form?.fi?.advanceDraftRestoring ||
+        this.$refs.schedPolicyRef?.pendingPreferHost ||
+        this.$refs.schedPolicyRef?._draftApplying
+      if (!keepHost) {
+        this.form.fd.schedPolicyHost = undefined
+      }
+    },
+  },
+  methods: {
     fetchCapability () {
       const params = {
         show_emulated: true,
@@ -497,18 +508,17 @@ export default {
             ...data,
             hypervisors,
           }
-          this.form.fc.getFieldDecorator('hypervisor', { preserve: true })
           // 草稿/工单回填：优先 init / 草稿 hypervisor；否则保留当前；最后默认第一项
+          // Hypervisor end-state：只写 form.fd
           const draftHyper = !this.isFormBackfill && this.canUseCreateFormDraft
             ? this.readCreateFormFieldDraftForRestore(this.vmDraftFields.hypervisor)
             : null
           const preferHyper = this.isFormBackfill
-            ? (this.effectiveInitFormData?.hypervisor || this.decorators.hypervisor?.[1]?.initialValue)
-            : (draftHyper || this.form.fd.hypervisor || this.decorators.hypervisor?.[1]?.initialValue)
+            ? (this.effectiveInitFormData?.hypervisor || this.form.fd.hypervisor)
+            : (draftHyper || this.form.fd.hypervisor)
           const hypervisor = (preferHyper && hypervisors.includes(preferHyper))
             ? preferHyper
             : hypervisors[0]
-          this.form.fc.setFieldsValue({ hypervisor })
           this.form.fd.hypervisor = hypervisor
           this.$nextTick(() => {
             this.fetchInstanceSpecs()
@@ -523,10 +533,7 @@ export default {
       this.serverskusM.get({ id: 'instance-specs', params: this.instanceSpecParmas })
         .then(({ data }) => {
           this.form.fi.cpuMem = data
-          const vcpuDecorator = this.decorators.vcpu
-          const vcpuInit = vcpuDecorator[1].initialValue
-          const cpu = this.form.fd.vcpu || vcpuInit
-          this.cpuChange(cpu)
+          this.cpuChange(this.form.fd.vcpu)
         })
     },
   },

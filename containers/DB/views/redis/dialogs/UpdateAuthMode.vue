@@ -7,15 +7,17 @@
       </div>
       <dialog-selected-tips :name="$t('dictionary.elasticcaches')" :count="params.data.length" :action="params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" class="mt-3">
-        <a-form-item
-          :label="$t('db.text_286')"
-          v-bind="formItemLayout"
-          v-if="params.data[0].provider === 'Qcloud' && params.data[0].auth_mode === 'off'"
-          :extra="$t('db.text_359')">
-          <server-password :loginTypes="['random', 'password']" :decorator="decorators.loginConfig" />
-        </a-form-item>
-      </a-form>
+      <a-form-model
+        v-if="needPassword"
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        class="mt-3"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('db.text_286')" :extra="$t('db.text_359')">
+          <server-password :loginTypes="['random', 'password']" :form="form" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button :loading="loading" @click="handleConfirm" type="primary">{{ $t('dialog.ok') }}</a-button>
@@ -25,72 +27,65 @@
 </template>
 
 <script>
-import { CreateServerForm } from '@Compute/constants'
-import ServerPassword from '@Compute/sections/ServerPassword'
+import ServerPassword, { PASSWORD_RULES } from '@Compute/sections/ServerPassword/model'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
-import { BUY_DURATIONS_OPTIONS } from '../constants/index.js'
+
 export default {
   name: 'RedisUpdateAuthModeDialog',
   components: {
     ServerPassword,
   },
   mixins: [DialogMixin, WindowsMixin],
-  provide () {
-    return {
-      form: this.form,
-    }
-  },
   data () {
     return {
-      BUY_DURATIONS_OPTIONS,
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        loginType: 'random',
+        password: undefined,
       },
       formItemLayout: {
-        wrapperCol: { span: CreateServerForm.wrapperCol },
-        labelCol: { span: CreateServerForm.labelCol },
-      },
-      decorators: {
-        loginConfig: {
-          loginType: [
-            'loginType',
-            {
-              initialValue: 'random',
-            },
-          ],
-        },
+        wrapperCol: { span: 19 },
+        labelCol: { span: 5 },
       },
     }
   },
   computed: {
+    needPassword () {
+      return this.params.data[0].provider === 'Qcloud' && this.params.data[0].auth_mode === 'off'
+    },
     alertMsg () {
       const data = this.params.data[0]
       if (data.auth_mode !== 'on') {
         return this.$t('db.text_292')
-      } else {
-        return this.$t('db.text_293')
       }
+      return this.$t('db.text_293')
+    },
+    rules () {
+      const rules = {}
+      if (this.needPassword && this.form.loginType === 'password') {
+        rules.password = PASSWORD_RULES
+      }
+      return rules
     },
   },
   methods: {
     async handleConfirm () {
       this.loading = true
       try {
-        if (this.params.data[0].provider === 'Qcloud' && this.params.data[0].auth_mode === 'off') {
-          const values = await this.form.fc.validateFields()
+        if (this.needPassword) {
+          await this.$refs.formRef.validate()
+          const values = { ...this.form }
           if (values.loginType === 'random') {
             values.reset_password = true
           }
+          delete values.loginType
           await this.params.onManager('performAction', {
             id: this.params.data[0].id,
             steadyStatus: 'running',
             managerArgs: {
               action: 'reset-password',
-              data: {
-                ...values,
-              },
+              data: values,
             },
           })
         } else {

@@ -2,7 +2,8 @@
   <div>
     <a-form-item :label="$t('common.name')">
       <a-input
-        v-decorator="decorators.name"
+        :value="fieldVal(containerFieldMap.name)"
+        @change="e => fieldSet(containerFieldMap.name, e.target.value)"
         :placeholder="$t('common.tips.input', [$t('common.name')])" />
     </a-form-item>
     <a-form-item :label="$t('compute.repo.image.source')">
@@ -14,21 +15,22 @@
     </a-form-item>
     <a-form-item v-if="source === 'custom'" :label="$t('compute.repo.container_image')">
       <a-input
-        v-decorator="decorators.image"
+        :value="fieldVal(containerFieldMap.image)"
+        @change="e => fieldSet(containerFieldMap.image, e.target.value)"
         :placeholder="$t('common.tips.input', [$t('compute.repo.container_image')])" />
     </a-form-item>
     <a-form-item v-else-if="source === 'registry'" :label="$t('compute.repo.container_image')">
-      <mirror-registry v-decorator="decorators.registryImage" @credential-change="handleCredentialChange" />
-      <a-input v-show="false" v-decorator="decorators.imageCredentialId" />
+      <mirror-registry @change="v => fieldSet(containerFieldMap.registryImage, v)" @credential-change="handleCredentialChange" />
+      <a-input v-show="false" :value="fieldVal(containerFieldMap.imageCredentialId)" />
     </a-form-item>
     <a-form-item v-else :label="$t('compute.repo.container_image')">
       <a-select
-        v-decorator="decorators.containerImageId"
+        :value="fieldVal(containerFieldMap.containerImageId)"
+        @change="v => { fieldSet(containerFieldMap.containerImageId, v); handleContainerImageChange(v) }"
         showSearch
         :filterOption="filterOption"
         :loading="containerImageLoading"
         :placeholder="$t('common.tips.select', [$t('compute.repo.image.container_image')])"
-        @change="handleContainerImageChange"
         allowClear>
         <a-select-option
           v-for="img in containerImages"
@@ -52,14 +54,16 @@
       <a-input
         :placeholder="$t('common.tips.input', [$t('compute.repo.cpu_cores')])"
         type="number"
-        v-decorator="decorators.cpu"
+        :value="fieldVal(containerFieldMap.cpu)"
+        @change="e => fieldSet(containerFieldMap.cpu, e.target.value)"
         :addonAfter="$t('compute.repo.cpu_cores.unit')"
         :min="1"
         @blur="e => formatInput(e, 'cpu')" />
     </a-form-item>
     <a-form-item :label="$t('compute.repo.memory')" v-show="false">
       <a-input
-        v-decorator="decorators.memory"
+        :value="fieldVal(containerFieldMap.memory)"
+        @change="e => fieldSet(containerFieldMap.memory, e.target.value)"
         :placeholder="$t('common.tips.input', [$t('compute.repo.memory')])"
         type="number"
         addonAfter="G"
@@ -67,17 +71,17 @@
         @blur="e => formatInput(e, 'memory')" />
     </a-form-item>
     <a-form-item :label="$t('compute.repo.command')">
-      <a-input v-decorator="decorators.command" :disabled="imageHasCommand" :placeholder="$t('compute.repo.command.placeholder')" />
+      <a-input :value="fieldVal(containerFieldMap.command)" @change="e => fieldSet(containerFieldMap.command, e.target.value)" :disabled="imageHasCommand" :placeholder="$t('compute.repo.command.placeholder')" />
       <div v-if="imageHasCommand" class="ant-form-explain">{{ $t('compute.repo.image.container_image.locked_tip') }}</div>
     </a-form-item>
     <a-form-item :label="$t('compute.repo.command.params')">
-      <a-input v-decorator="decorators.arg" :disabled="imageHasArgs" :placeholder="$t('compute.repo.command.params.placeholder')" />
+      <a-input :value="fieldVal(containerFieldMap.arg)" @change="e => fieldSet(containerFieldMap.arg, e.target.value)" :disabled="imageHasArgs" :placeholder="$t('compute.repo.command.params.placeholder')" />
       <div v-if="imageHasArgs" class="ant-form-explain">{{ $t('compute.repo.image.container_image.locked_tip') }}</div>
     </a-form-item>
     <a-form-item :label="$t('compute.repo.data_volume')">
       <labels
         ref="volumeMountRef"
-        :decorators="decorators.volumeMount"
+        :fields="volumeMountFields"
         :title="$t('compute.repo.storage_statement')"
         :keyLabel="$t('compute.repo.storage_statement')"
         :valueLabel="$t('compute.repo.mount_point')"
@@ -85,17 +89,26 @@
         :valuePlaceholder="$t('compute.repo.mount_point.example')"
         :keyBaseSelectProps="keyBaseSelectProps"
         :checkedValues="checkedValues"
+        :model="resolvedModel"
         @label-change="labelChangeHandle" />
     </a-form-item>
     <a-form-item :label="$t('compute.repo.env_variables')">
-      <labels ref="envRef" :decorators="decorators.env" :title="$t('compute.repo.variables')" :keyLabel="$t('compute.repo.variables')" :readonly-keys="lockedEnvKeys" />
+      <labels
+        ref="envRef"
+        :fields="envFields"
+        :key-rules="envKeyRules"
+        :value-rules="envValueRules"
+        :title="$t('compute.repo.variables')"
+        :keyLabel="$t('compute.repo.variables')"
+        :readonly-keys="lockedEnvKeys"
+        :model="resolvedModel" />
       <div v-if="lockedEnvKeys.length" class="ant-form-explain">{{ $t('compute.repo.image.container_image.env_locked_tip') }}</div>
     </a-form-item>
     <a-form-item label="">
-      <a-checkbox v-decorator="decorators.enableLxcfs">{{$t('compute.repo.enable_lxcfs')}}</a-checkbox>
+      <a-checkbox :checked="fieldVal(containerFieldMap.enableLxcfs)" @change="e => fieldSet(containerFieldMap.enableLxcfs, e.target.checked)">{{$t('compute.repo.enable_lxcfs')}}</a-checkbox>
     </a-form-item>
     <a-form-item label="">
-      <a-checkbox v-decorator="decorators.enableSysDiskOverlay" @change="handleOverlayChange">{{$t('compute.repo.enable_sys_disk_overlay')}}</a-checkbox>
+      <a-checkbox :checked="fieldVal(containerFieldMap.enableSysDiskOverlay)" @change="e => { fieldSet(containerFieldMap.enableSysDiskOverlay, e.target.checked); handleOverlayChange(e) }">{{$t('compute.repo.enable_sys_disk_overlay')}}</a-checkbox>
     </a-form-item>
     <a-form-item v-if="overlayEnabled" :label="$t('compute.repo.overlay_disk')">
       <data-disk
@@ -104,14 +117,14 @@
         type="idc"
         :hypervisor="form.fd.hypervisor"
         :capabilityData="form.fi.capability || {}"
-        :decorator="decorators.overlayDisk"
+        :fields="containerFieldMap.overlayDisk"
         :defaultType="form.fd.systemDiskType"
         :isVminstanceContainer="true"
         :isAddDiskShow="false"
         fieldPrefix="overlayDisk" />
     </a-form-item>
     <a-form-item v-if="overlayEnabled" label="">
-      <a-checkbox v-decorator="decorators.rootfsPersistent">
+      <a-checkbox :checked="fieldVal(containerFieldMap.rootfsPersistent)" @change="e => fieldSet(containerFieldMap.rootfsPersistent, e.target.checked)">
         {{$t('compute.repo.rootfs_persistent')}}
         <a-tooltip :title="$t('compute.repo.rootfs_persistent.tips')">
           <a-icon type="question-circle-o" />
@@ -120,7 +133,8 @@
     </a-form-item>
     <a-form-item :label="$t('compute.repo.capabilities.add')">
       <a-select
-        v-decorator="decorators.capAdd"
+        :value="fieldVal(containerFieldMap.capAdd)"
+        @change="v => fieldSet(containerFieldMap.capAdd, v)"
         mode="multiple"
         :placeholder="$t('compute.repo.capabilities.add.placeholder')"
         optionLabelProp="label"
@@ -133,7 +147,8 @@
     </a-form-item>
     <a-form-item :label="$t('compute.repo.capabilities.drop')">
       <a-select
-        v-decorator="decorators.capDrop"
+        :value="fieldVal(containerFieldMap.capDrop)"
+        @change="v => fieldSet(containerFieldMap.capDrop, v)"
         mode="multiple"
         :placeholder="$t('compute.repo.capabilities.drop.placeholder')"
         optionLabelProp="label"
@@ -145,7 +160,7 @@
       </a-select>
     </a-form-item>
     <a-form-item label="">
-      <a-checkbox v-decorator="decorators.privileged">{{$t('compute.repo.privileged_mode')}}</a-checkbox>
+      <a-checkbox :checked="fieldVal(containerFieldMap.privileged)" @change="e => fieldSet(containerFieldMap.privileged, e.target.checked)">{{$t('compute.repo.privileged_mode')}}</a-checkbox>
     </a-form-item>
   </div>
 </template>
@@ -156,6 +171,8 @@ import Labels from '@Compute/sections/Labels'
 import MirrorRegistry from '@Compute/sections/MirrorRegistry'
 import DataDisk from '@Compute/sections/DataDisk'
 import { CAPABILITY_OPTIONS } from '@Compute/views/vminstance-container/constants'
+import { resolveFieldMeta } from '@/utils/common/ant'
+import { resolveContainerPaneFieldMap } from './fields'
 
 export default {
   name: 'SpecContainerForm',
@@ -165,18 +182,18 @@ export default {
     DataDisk,
   },
   props: {
-    decorators: {
-      type: Object,
-      required: true,
-    },
     cluster: String,
     namespace: String,
     form: {
-      tpye: Object,
-      validator: val => val.fc,
+      type: Object,
     },
     paneKey: String,
     initItem: {
+      type: Object,
+      default: null,
+    },
+    /** a-form-model：与字段名对齐（通常为 form.fd） */
+    model: {
       type: Object,
       default: null,
     },
@@ -197,15 +214,22 @@ export default {
     }
   },
   computed: {
+    containerFieldMap () {
+      return resolveContainerPaneFieldMap(this.paneKey)
+    },
+    resolvedModel () {
+      return this.model || this.form?.fd
+    },
     keyBaseSelectProps () {
-      const { fd } = this.form
+      const fd = this.resolvedModel || {}
       const props = {
         options: [],
       }
       if (fd.dataDiskSizes) {
         for (const k in fd.dataDiskSizes) {
-          const label = fd[`dataDiskTypes[${k}]`].label
-          const idx = fd[`dataDiskTypes[${k}]`].index
+          const typeObj = fd.dataDiskTypes?.[k] || fd[`dataDiskTypes[${k}]`]
+          const label = typeObj?.label
+          const idx = typeObj?.index
           props.options.push({
             id: `${idx}`,
             name: `${this.$t('compute.text_376')}${idx + 1}: ${fd.dataDiskSizes[k]}G${label}`,
@@ -215,11 +239,9 @@ export default {
       return props
     },
     checkedValues () {
-      const { fc } = this.form
       let checkedValues = []
-
       if (this.labelList) {
-        const mountNames = fc.getFieldValue('containerVolumeMountNames')
+        const mountNames = this.resolvedModel?.containerVolumeMountNames
         if (mountNames && mountNames[this.paneKey]) {
           checkedValues = Object.values(mountNames[this.paneKey])
         }
@@ -231,6 +253,18 @@ export default {
     },
     imageHasArgs () {
       return !!(this.selectedImage && (this.selectedImage.args || []).filter(Boolean).length)
+    },
+    envFields () {
+      return this.unwrapLabelFields(this.containerFieldMap?.env, 0)
+    },
+    volumeMountFields () {
+      return this.unwrapLabelFields(this.containerFieldMap?.volumeMount, 0)
+    },
+    envKeyRules () {
+      return [{ required: true, message: this.$t('common.tips.input', [this.$t('compute.repo.variables')]) }]
+    },
+    envValueRules () {
+      return [{ required: true, message: this.$t('common.tips.input', [this.$t('compute.repo.value')]) }]
     },
   },
   watch: {
@@ -248,12 +282,108 @@ export default {
       }
     },
   },
+  created () {
+    const m = this.resolvedModel
+    if (!m) return
+    const keys = [
+      'name', 'image', 'registryImage', 'imageCredentialId', 'containerImageId',
+      'cpu', 'memory', 'command', 'arg', 'enableLxcfs', 'enableSysDiskOverlay',
+      'rootfsPersistent', 'capAdd', 'capDrop', 'privileged',
+    ]
+    keys.forEach(k => {
+      const fieldDef = this.containerFieldMap[k]
+      const meta = resolveFieldMeta(fieldDef)
+      if (!meta) return
+      const { name, ...opts } = meta
+      if (m[name] === undefined && opts.initialValue !== undefined) {
+        this.$set(m, name, opts.initialValue)
+      }
+    })
+  },
   mounted () {
     if (this.initItem) {
       this.$nextTick(() => this.applyInitData(this.initItem))
     }
   },
   methods: {
+    fieldVal (fieldTuple) {
+      const key = resolveFieldMeta(fieldTuple)?.name
+      const { name: _n, ...opts } = resolveFieldMeta(fieldTuple) || {}
+      if (!key) return undefined
+      const m = this.resolvedModel
+      if (!m) return opts.initialValue
+      const v = m[key]
+      return v !== undefined ? v : opts.initialValue
+    },
+    fieldSet (fieldTuple, value) {
+      const key = resolveFieldMeta(fieldTuple)?.name
+      const m = this.resolvedModel
+      if (!key || !m) return
+      this.$set(m, key, value)
+    },
+    writeFields (values) {
+      if (!values || typeof values !== 'object') return
+      const m = this.resolvedModel
+      if (!m) return
+      Object.keys(values).forEach((key) => {
+        this.$set(m, key, values[key])
+      })
+    },
+    dualWriteFields (values) {
+      this.writeFields(values)
+    },
+    runFieldRule (rule, value) {
+      return new Promise((resolve, reject) => {
+        if (rule.required) {
+          const empty = value === undefined || value === null || value === '' ||
+            (Array.isArray(value) && !value.length)
+          if (empty) {
+            reject(new Error(rule.message || 'required'))
+            return
+          }
+        }
+        if (typeof rule.validator === 'function') {
+          let settled = false
+          const finish = (err) => {
+            if (settled) return
+            settled = true
+            if (err) reject(err instanceof Error ? err : new Error(String(err)))
+            else resolve()
+          }
+          let ret
+          try {
+            ret = rule.validator(rule, value, finish)
+          } catch (e) {
+            finish(e)
+            return
+          }
+          if (ret && typeof ret.then === 'function') {
+            ret.then(() => finish()).catch(finish)
+          }
+          return
+        }
+        resolve()
+      })
+    },
+    async validate () {
+      const m = this.resolvedModel
+      if (!m) return true
+      const keys = [
+        'name', 'image', 'registryImage', 'imageCredentialId', 'containerImageId',
+        'cpu', 'memory', 'command', 'arg', 'enableLxcfs', 'enableSysDiskOverlay',
+        'rootfsPersistent', 'capAdd', 'capDrop', 'privileged',
+      ]
+      for (const k of keys) {
+        const fieldDef = this.containerFieldMap[k]
+        if (!resolveFieldMeta(fieldDef)) continue
+        const rules = resolveFieldMeta(fieldDef)?.rules || []
+        const value = m[fieldDef[0]]
+        for (const rule of rules) {
+          await this.runFieldRule(rule, value)
+        }
+      }
+      return true
+    },
     filterOption (input, option) {
       const label = option.componentOptions?.propsData?.label || ''
       return label.toLowerCase().indexOf((input || '').toLowerCase()) >= 0
@@ -287,25 +417,26 @@ export default {
     findContainerImage (imageId) {
       return this.containerImages.find(img => img.value === imageId) || null
     },
-    /** env 行的 decorator 定义（create 表单里是已求值的对象，Update 弹窗里是函数） */
-    envDecorators () {
-      const env = this.decorators && this.decorators.env
-      if (!env) return null
-      return typeof env === 'function' ? env(0) : env
+    /** env/volumeMount：从字段工厂解出字段名函数 */
+    unwrapLabelFields (factoryOrObj, index = 0) {
+      const raw = typeof factoryOrObj === 'function' ? factoryOrObj(index) : factoryOrObj
+      if (!raw?.key || !raw?.value) return null
+      const nameOf = (fn) => (j) => {
+        const t = fn(j)
+        return Array.isArray(t) ? t[0] : t
+      }
+      return { key: nameOf(raw.key), value: nameOf(raw.value) }
     },
     /** 读取当前表单里已填写的环境变量行 */
     readEnvRows () {
       const envRef = this.$refs.envRef
-      const fc = this.form && this.form.fc
-      const d = this.envDecorators
-      if (!envRef || !fc || !d) return []
+      if (!envRef?.fieldVal || !envRef?.fieldName) return []
       const rows = []
       ;(envRef.labelList || []).forEach((row) => {
-        const keyField = d.key(row.key) && d.key(row.key)[0]
-        const valueField = d.value(row.key) && d.value(row.key)[0]
-        const key = keyField ? fc.getFieldValue(keyField) : undefined
+        const key = envRef.fieldVal(envRef.fieldName(row.key, 'key'))
         if (key == null || key === '') return
-        rows.push({ key, value: valueField ? fc.getFieldValue(valueField) : undefined })
+        const value = envRef.fieldVal(envRef.fieldName(row.key, 'value'))
+        rows.push({ key, value })
       })
       return rows
     },
@@ -350,16 +481,15 @@ export default {
       this.selectedImage = image || null
       const envs = (image && image.envs) || []
       this.lockedEnvKeys = envs.map(env => env.key).filter(Boolean)
-      const fc = this.form && this.form.fc
-      if (image && refillCommand && fc) {
+      if (image && refillCommand) {
         const values = {}
-        const commandField = this.decorators.command && this.decorators.command[0]
-        const argField = this.decorators.arg && this.decorators.arg[0]
+        const commandField = this.containerFieldMap.command && this.containerFieldMap.command[0]
+        const argField = this.containerFieldMap.arg && this.containerFieldMap.arg[0]
         const command = (image.command || []).filter(Boolean)
         const args = (image.args || []).filter(Boolean)
         if (command.length && commandField) values[commandField] = command.join(' ')
         if (args.length && argField) values[argField] = args.join(' ')
-        if (Object.keys(values).length) fc.setFieldsValue(values)
+        if (Object.keys(values).length) this.dualWriteFields(values)
       }
       if (!refreshEnvs) return
       const envRef = this.$refs.envRef
@@ -377,14 +507,12 @@ export default {
       this.applyImageDefaults(this.findContainerImage(value), { keepExistingEnvs: true })
     },
     formatInput (e, field) {
-      if (this.form && this.form.fc) {
-        const val = Number(e.target.value)
-        if (R.is(Number, val) && !Number.isNaN(val) && val >= 0) {
-        } else {
-          this.form.fc.setFieldsValue({
-            [this.decorators[field][0]]: 1, // 不合法直接设置为初始值 1
-          })
-        }
+      const val = Number(e.target.value)
+      if (R.is(Number, val) && !Number.isNaN(val) && val >= 0) {
+        return
+      }
+      if (this.containerFieldMap[field]) {
+        this.fieldSet(this.containerFieldMap[field], 1)
       }
     },
     handleSourceChange (e) {
@@ -392,14 +520,12 @@ export default {
       // 离开容器镜像来源时，清空锁定状态
       this.selectedImage = null
       this.lockedEnvKeys = []
-      if (this.form && this.form.fc) {
-        const values = {}
-        if (this.decorators.image) values[this.decorators.image[0]] = undefined
-        if (this.decorators.registryImage) values[this.decorators.registryImage[0]] = undefined
-        if (this.decorators.imageCredentialId) values[this.decorators.imageCredentialId[0]] = undefined
-        if (this.decorators.containerImageId) values[this.decorators.containerImageId[0]] = undefined
-        this.form.fc.setFieldsValue(values)
-      }
+      const values = {}
+      if (this.containerFieldMap.image) values[this.containerFieldMap.image[0]] = undefined
+      if (this.containerFieldMap.registryImage) values[this.containerFieldMap.registryImage[0]] = undefined
+      if (this.containerFieldMap.imageCredentialId) values[this.containerFieldMap.imageCredentialId[0]] = undefined
+      if (this.containerFieldMap.containerImageId) values[this.containerFieldMap.containerImageId[0]] = undefined
+      this.dualWriteFields(values)
     },
     handleOverlayChange (e) {
       this.overlayEnabled = e.target.checked
@@ -412,10 +538,8 @@ export default {
       }
     },
     handleCredentialChange (credentialId) {
-      if (this.form && this.form.fc && this.decorators.imageCredentialId) {
-        this.form.fc.setFieldsValue({
-          [this.decorators.imageCredentialId[0]]: credentialId,
-        })
+      if (this.containerFieldMap.imageCredentialId) {
+        this.fieldSet(this.containerFieldMap.imageCredentialId, credentialId)
       }
     },
     labelChangeHandle (val) {
@@ -438,23 +562,22 @@ export default {
       if (item.rootfs) {
         this.overlayEnabled = true
       }
-      const fc = this.form && this.form.fc
-      if (!fc || !this.decorators) return
-      const field = (decorator) => (decorator && decorator[0]) || ''
+      if (!this.containerFieldMap) return
+      const field = (fieldTuple) => resolveFieldMeta(fieldTuple)?.name || ''
       const values = {}
-      const nameField = field(this.decorators.name)
-      const imageField = field(this.decorators.image)
-      const registryField = field(this.decorators.registryImage)
-      const credentialField = field(this.decorators.imageCredentialId)
-      const containerImageIdField = field(this.decorators.containerImageId)
-      const commandField = field(this.decorators.command)
-      const argField = field(this.decorators.arg)
-      const privilegedField = field(this.decorators.privileged)
-      const lxcfsField = field(this.decorators.enableLxcfs)
-      const capAddField = field(this.decorators.capAdd)
-      const capDropField = field(this.decorators.capDrop)
-      const overlayField = field(this.decorators.enableSysDiskOverlay)
-      const rootfsPersistentField = field(this.decorators.rootfsPersistent)
+      const nameField = field(this.containerFieldMap.name)
+      const imageField = field(this.containerFieldMap.image)
+      const registryField = field(this.containerFieldMap.registryImage)
+      const credentialField = field(this.containerFieldMap.imageCredentialId)
+      const containerImageIdField = field(this.containerFieldMap.containerImageId)
+      const commandField = field(this.containerFieldMap.command)
+      const argField = field(this.containerFieldMap.arg)
+      const privilegedField = field(this.containerFieldMap.privileged)
+      const lxcfsField = field(this.containerFieldMap.enableLxcfs)
+      const capAddField = field(this.containerFieldMap.capAdd)
+      const capDropField = field(this.containerFieldMap.capDrop)
+      const overlayField = field(this.containerFieldMap.enableSysDiskOverlay)
+      const rootfsPersistentField = field(this.containerFieldMap.rootfsPersistent)
       if (nameField) values[nameField] = item.name || ''
       if (item.container_image_id) {
         if (containerImageIdField) values[containerImageIdField] = item.container_image_id
@@ -472,9 +595,9 @@ export default {
       if (capDropField) values[capDropField] = item.capabilities?.drop || []
       if (overlayField) values[overlayField] = !!item.rootfs
       if (rootfsPersistentField) values[rootfsPersistentField] = !!item.rootfs?.persistent
-      // 延迟一拍，确保 v-decorator 已注册；再重试一次防止被 tabs 延迟渲染吞掉
+      // 延迟一拍，确保字段已注册；再重试一次防止被 tabs 延迟渲染吞掉
       const doSet = () => {
-        fc.setFieldsValue(values)
+        this.dualWriteFields(values)
       }
       this.$nextTick(() => {
         doSet()

@@ -5,18 +5,18 @@
       <a-alert class="mb-2" :message="$t('compute.text_1354')" banner />
       <dialog-selected-tips :count="params.data.length" :action="$t('compute.text_1355')" :name="params.name" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('compute.text_494')" :extra="$t('compute.text_1356')" v-bind="formItemLayout">
-          <a-switch v-decorator="decorators.auto_start" :checked-children="$t('compute.text_115')" :un-checked-children="$t('compute.text_116')" />
-        </a-form-item>
-        <a-form-item v-if="hasMemorySnapshot">
-          <a-checkbox
-            v-decorator="decorators.with_memory">
+      <a-form-model
+        ref="formRef"
+        :model="form">
+        <a-form-model-item :label="$t('compute.text_494')" :extra="$t('compute.text_1356')" v-bind="formItemLayout" prop="auto_start">
+          <a-switch v-model:checked="form.auto_start" :checked-children="$t('compute.text_115')" :un-checked-children="$t('compute.text_116')" />
+        </a-form-model-item>
+        <a-form-model-item v-if="hasMemorySnapshot" prop="with_memory">
+          <a-checkbox v-model:checked="form.with_memory">
             {{$t('compute.rollback_mem_snapshot_same_time')}}
           </a-checkbox>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -37,19 +37,8 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        auto_start: [
-          'auto_start',
-          {
-            valuePropName: 'checked',
-            initialValue: true,
-          },
-        ],
-        with_memory: [
-          'with_memory',
-        ],
+        auto_start: true,
+        with_memory: undefined,
       },
       formItemLayout: {
         wrapperCol: {
@@ -83,16 +72,17 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        this.loading = true
-        values.instance_snapshot = this.params.data[0].id
+        const values = {
+          ...this.form,
+          instance_snapshot: this.params.data[0].id,
+        }
         await this.doRollback(values)
-        this.loading = false
         this.params.refresh()
         this.cancelDialog()
       } catch (error) {
-        this.loading = false
         throw error
+      } finally {
+        this.loading = false
       }
     },
   },

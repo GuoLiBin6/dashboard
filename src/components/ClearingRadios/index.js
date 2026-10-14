@@ -13,8 +13,14 @@ const BILL_TYPES_MAP = {
 
 export default {
   name: 'ClearingRadios',
-  inject: ['form'],
   props: {
+    /**
+     * a-form-model：父级 form 对象，读写 billing_type / duration / auto_renew（必传）。
+     */
+    model: {
+      type: Object,
+      required: true,
+    },
     billing_type: {
       type: String,
       default: 'postpaid',
@@ -45,54 +51,95 @@ export default {
     },
   },
   computed: {
-    FC () {
-      if (this.form && this.form.fc) {
-        return this.form.fc
-      }
-      return this.$form.createForm(this)
-    },
     formItemLayout () {
       return {
         labelCol: this.labelCol,
         wrapperCol: this.wrapperCol,
       }
     },
+    modelBillingType: {
+      get () {
+        return this.model?.billing_type ?? this.billing_type
+      },
+      set (v) {
+        if (this.model) this.model.billing_type = v
+      },
+    },
+    modelDuration: {
+      get () {
+        return this.model?.duration ?? this.duration
+      },
+      set (v) {
+        if (this.model) this.model.duration = v
+      },
+    },
+    modelAutoRenew: {
+      get () {
+        return this.model?.auto_renew ?? this.auto_renew
+      },
+      set (v) {
+        if (this.model) this.model.auto_renew = v
+      },
+    },
+  },
+  created () {
+    if (!this.model || typeof this.model !== 'object') {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[ClearingRadios] prop `model` is required')
+      }
+      return
+    }
+    if (this.model.billing_type === undefined) this.model.billing_type = this.billing_type
+    if (this.model.duration === undefined) this.model.duration = this.duration
+    if (this.model.auto_renew === undefined) this.model.auto_renew = this.auto_renew
   },
   render (h) {
-    const { getFieldDecorator, getFieldValue } = this.FC
-    const isPrepaid = getFieldValue('billing_type') === 'prepaid'
-    const RenderDuration = () => {
-      if (!isPrepaid) return null
-      const durationOptions = Object.keys(this.$t('buyDurations')).map(k => {
-        return h('a-radio-button', { key: k, attrs: { value: k } }, [this.$t('buyDurations')[k]])
-      })
-      const durationGroup = h('a-radio-group', durationOptions)
-      const durationField = getFieldDecorator('duration', {
-        initialValue: this.duration,
-      })(durationGroup)
-      const autoRenewField = getFieldDecorator('auto_renew', {
-        initialValue: this.auto_renew,
-        valuePropName: 'checked',
-      })(h('a-checkbox', {
-        class: 'ml-4',
-      }, [this.$t('common_728')]))
-      return h('div', [durationField, autoRenewField])
-    }
+    const isPrepaid = this.modelBillingType === 'prepaid'
     const billingOptions = Object.keys(BILL_TYPES_MAP).map(k => {
-      return h('a-radio-button', { key: k, attrs: { value: k } }, [BILL_TYPES_MAP[k].label])
+      return h('a-radio-button', { key: k, props: { value: k } }, [BILL_TYPES_MAP[k].label])
     })
-    const billingGroup = h('a-radio-group', billingOptions)
-    const billingField = getFieldDecorator('billing_type', {
-      initialValue: this.billing_type,
-    })(billingGroup)
+    const billingGroup = h('a-radio-group', {
+      props: { value: this.modelBillingType },
+      on: {
+        change: (e) => {
+          this.modelBillingType = e?.target?.value ?? e
+        },
+      },
+    }, billingOptions)
+
+    let durationNode = null
+    if (isPrepaid) {
+      const durationOptions = Object.keys(this.$t('buyDurations')).map(k => {
+        return h('a-radio-button', { key: k, props: { value: k } }, [this.$t('buyDurations')[k]])
+      })
+      const durationGroup = h('a-radio-group', {
+        props: { value: this.modelDuration },
+        on: {
+          change: (e) => {
+            this.modelDuration = e?.target?.value ?? e
+          },
+        },
+      }, durationOptions)
+      const autoRenewField = h('a-checkbox', {
+        class: 'ml-4',
+        props: { checked: this.modelAutoRenew },
+        on: {
+          change: (e) => {
+            this.modelAutoRenew = !!(e?.target?.checked ?? e)
+          },
+        },
+      }, [this.$t('common_728')])
+      durationNode = h('div', [durationGroup, autoRenewField])
+    }
+
     return h('div', [
       h('a-form-item', {
-        attrs: {
+        props: {
           labelCol: this.labelCol,
           wrapperCol: this.wrapperCol,
           label: i18n.t('table.title.bill_type'),
         },
-      }, [billingField, RenderDuration()]),
+      }, [billingGroup, durationNode]),
     ])
   },
 }

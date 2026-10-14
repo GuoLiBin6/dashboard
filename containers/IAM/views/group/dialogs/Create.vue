@@ -2,26 +2,24 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('system.text_130', [$t('dictionary.group')])}}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc"
-        v-bind="formItemLayout">
-        <a-form-item :label="$t('system.text_101')">
-          <a-input v-decorator="decorators.name" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
-        <a-form-item :label="$t('dictionary.domain')" v-if="isAdminMode">
+      <a-form-model ref="formRef" :model="form" :rules="formRules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('system.text_101')" prop="name">
+          <a-input v-model:value="form.name" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" prop="description">
+          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.description" :placeholder="$t('common_367')" />
+        </a-form-model-item>
+        <a-form-model-item v-if="isAdminMode" :label="$t('dictionary.domain')" prop="domain_id">
           <base-select
-            v-decorator="decorators.domain_id"
+            v-model:value="form.domain_id"
             resource="domains"
             version="v1"
             remote
             :params="{ enabled: true }"
             :remote-fn="q => ({ filter: `name.contains(${q})` })"
             :select-props="{ mode: 'default' }" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -42,34 +40,17 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        name: '',
+        description: '',
+        domain_id: undefined,
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
           {
-            rules: [
-              {
-                required: true,
-                message: this.$t('system.text_194'),
-                whitespace: true,
-              },
-            ],
+            required: true,
+            message: this.$t('system.text_194'),
+            whitespace: true,
           },
-        ],
-        domain_id: [
-          'domain_id',
-          {
-            rules: [
-              {
-                required: true,
-                message: this.$t('rules.domain'),
-              },
-            ],
-          },
-        ],
-        description: [
-          'description',
         ],
       },
       formItemLayout: {
@@ -82,7 +63,21 @@ export default {
       },
     }
   },
-  computed: mapGetters(['isAdminMode']),
+  computed: {
+    ...mapGetters(['isAdminMode']),
+    formRules () {
+      const rules = { ...this.rules }
+      if (this.isAdminMode) {
+        rules.domain_id = [
+          {
+            required: true,
+            message: this.$t('rules.domain'),
+          },
+        ]
+      }
+      return rules
+    },
+  },
   unmounted () {
     this.manager = null
   },
@@ -93,9 +88,9 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         await this.manager.create({
-          data: values,
+          data: this.form,
         })
         this.loading = false
         this.params.success()

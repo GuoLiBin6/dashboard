@@ -5,7 +5,7 @@
       {{ $t('common.no_data_start_month_tip') }}
     </template>
     <template #footer>
-      <a-checkbox v-model="no_tip" style="float:left">{{ $t('common.no_tip_in_this_month') }}</a-checkbox>
+      <a-checkbox v-model:checked="no_tip" style="float:left">{{ $t('common.no_tip_in_this_month') }}</a-checkbox>
       <a-button type="primary" @click="handleConfirm">{{ $t('common.switch_to_last_month') }}</a-button>
       <a-button @click="cancel">{{ $t('dialog.cancel') }}</a-button>
     </template>

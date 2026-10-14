@@ -5,19 +5,26 @@
     </template>
     <a-row :gutter="8" v-else>
       <a-col :span="12">
-        <a-form-item :class="{ 'mb-0': mb0 }" v-if="isAdminMode && l3PermissionEnable" :wrapperCol="{ span: 24 }">
+        <component
+          :is="itemTag"
+          :class="{ 'mb-0': mb0 }"
+          v-if="isAdminMode && l3PermissionEnable"
+          :wrapperCol="{ span: 24 }"
+          :prop="domainProp">
           <base-select
             ref="domain"
-            v-decorator="decorators.domain"
-            resource="domains"
-            remote
+            v-model="boundModel[domainProp]"
+            :resource="getDomainList ? undefined : 'domains'"
+            :options="getDomainList ? domains : undefined"
+            :remote="!getDomainList"
             :is-default-select="isDefaultSelect"
-            :params="domainParams"
+            :params="getDomainList ? undefined : domainParams"
             :select-props="{
               allowClear,
               labelInValue,
               placeholder: $t('rules.domain'),
               dropdownClassName: 'oc-select-dropdown',
+              popupClassName: 'oc-select-dropdown',
               labelInValueKeyName: 'key',
             }"
             :beforeDefaultSelectCallBack="beforeDomainDefaultSelectCallBack"
@@ -27,13 +34,17 @@
               <span class="text-color-secondary option-prefix">{{ $t('dictionary.domain') }}: </span>{{ item.name }}
             </template>
           </base-select>
-        </a-form-item>
+        </component>
       </a-col>
       <a-col :span="(isAdminMode && l3PermissionEnable) ? 12 : 24">
-        <a-form-item :class="{ 'mb-0': mb0 }" :wrapperCol="{ span: 24 }">
+        <component
+          :is="itemTag"
+          :class="{ 'mb-0': mb0 }"
+          :wrapperCol="{ span: 24 }"
+          :prop="projectProp">
           <base-select
             ref="project"
-            v-decorator="decorators.project"
+            v-model="boundModel[projectProp]"
             resource="projects"
             remote
             :is-default-select="isDefaultSelect"
@@ -43,6 +54,7 @@
               labelInValue,
               placeholder: $t('rules.project'),
               dropdownClassName: 'oc-select-dropdown',
+              popupClassName: 'oc-select-dropdown',
               labelInValueKeyName: 'key',
             }"
             :beforeDefaultSelectCallBack="beforeProjectDefaultSelectCallBack"
@@ -52,7 +64,7 @@
               <span class="text-color-secondary option-prefix">{{ $t('dictionary.project') }}: </span>{{ item.name }}
             </template>
           </base-select>
-        </a-form-item>
+        </component>
       </a-col>
     </a-row>
   </div>
@@ -60,10 +72,13 @@
 
 <script>
 import * as R from 'ramda'
-import _ from 'lodash'
 import { mapGetters, mapState } from 'vuex'
 import createFormFieldDraftMixin from '@/mixins/createFormFieldDraft'
+import { domainProjectFieldMeta } from './fields'
 
+/**
+ * END STATE：:model / :form（fd）只写 model；草稿读 model；validate() 跑 field rules。
+ */
 export default {
   name: 'DomainProject',
   mixins: [createFormFieldDraftMixin],
@@ -72,18 +87,29 @@ export default {
       type: Boolean,
       default: true,
     },
-    decorators: {
+    /** a-form-model：与 domainProp/projectProp 对齐的受控对象（优先） */
+    model: {
       type: Object,
-      validator: val => R.is(Array, val.domain) && R.is(Array, val.project),
+      default: null,
     },
-    fc: {
+    /**
+     * DomainProject/model API：传入 fd 对象（如 :form="form.fd"）。
+     * 有 model/form 时不依赖 createForm。
+     */
+    form: {
       type: Object,
-      required: true,
+      default: null,
     },
-    fd: {
-      type: Object,
-      default: () => ({}),
+    domainProp: {
+      type: String,
+      default: 'domain',
     },
+    projectProp: {
+      type: String,
+      default: 'project',
+    },
+    /** 自定义域列表（如 change-owner-candidate-domains） */
+    getDomainList: Function,
     allowClear: Boolean,
     isDefaultSelect: {
       type: Boolean,
@@ -128,6 +154,15 @@ export default {
       domain: state => state.domain,
       project: state => state.project,
     }),
+    boundModel () {
+      return this.model || this.form
+    },
+    fieldMeta () {
+      return domainProjectFieldMeta(this.domainProp, this.projectProp)
+    },
+    itemTag () {
+      return 'a-form-model-item'
+    },
     projectParams () {
       const ret = {
         scope: this.scope,
@@ -158,6 +193,12 @@ export default {
     },
   },
   created () {
+    if (this.boundModel[this.domainProp] === undefined) {
+      this.$set(this.boundModel, this.domainProp, undefined)
+    }
+    if (this.boundModel[this.projectProp] === undefined) {
+      this.$set(this.boundModel, this.projectProp, undefined)
+    }
     // 进页互斥：有可回填草稿则不用 storage；无草稿才用 storage；最后 BaseSelect 兜底
     this._domainProjectPreferDraft = this.resolvePreferDraft()
   },
@@ -165,6 +206,13 @@ export default {
     this.initDefaultData()
   },
   methods: {
+    /** 自管 snapshot，不走 mixin 默认 fd pick */
+    resolveFormDraftStore () {
+      return null
+    },
+    resolveFormRef () {
+      return null
+    },
     /** 从草稿/表单值取出 id（兼容 string | { key } | { id }） */
     pickId (val) {
       if (val == null || val === '') return ''
@@ -195,6 +243,18 @@ export default {
       if (!id) return null
       return { key: id, label: this.pickLabel(val) }
     },
+    readCurrentDomain () {
+      return this.boundModel[this.domainProp]
+    },
+    readCurrentProject () {
+      return this.boundModel[this.projectProp]
+    },
+    writeDomainField (formVal) {
+      this.$set(this.boundModel, this.domainProp, formVal)
+    },
+    writeProjectField (formVal) {
+      this.$set(this.boundModel, this.projectProp, formVal)
+    },
     /**
      * 是否存在可回填的 domainProject 草稿
      */
@@ -210,7 +270,7 @@ export default {
     },
     /** 草稿或 storage 偏好域（用于占位 + 远端插入） */
     getPreferDomainForSelect () {
-      const cur = this.fc?.getFieldValue?.('domain')
+      const cur = this.readCurrentDomain()
       const curKey = this.pickId(cur)
       if (this._domainProjectPreferDraft) {
         const prefer = this.toPrefer(this.readFormFieldDraft()?.domain)
@@ -234,7 +294,7 @@ export default {
     },
     /** 草稿或 storage 偏好项目（域不一致时不占用） */
     getPreferProjectForSelect () {
-      const cur = this.fc?.getFieldValue?.('project')
+      const cur = this.readCurrentProject()
       const curKey = this.pickId(cur)
       if (this._domainProjectPreferDraft) {
         const draft = this.readFormFieldDraft()
@@ -295,7 +355,32 @@ export default {
       }
       return true
     },
+    async fetchDomainsByGetter () {
+      try {
+        const params = {
+          scope: this.scope,
+          limit: 0,
+          filter: 'enabled.equals(1)',
+        }
+        const response = await this.getDomainList(params)
+        const data = response?.data?.data || []
+        this.domains = data.map(val => ({ ...val, id: val.id, name: val.name, key: val.id, label: val.name }))
+      } catch (error) {
+        this.domains = []
+        throw error
+      }
+    },
     async initDefaultData () {
+      this._domainProjectWriting = true
+      try {
+        await this._initDefaultDataInner()
+      } finally {
+        this.$nextTick(() => {
+          this._domainProjectWriting = false
+        })
+      }
+    },
+    async _initDefaultDataInner () {
       // 再读一次：父级 provide / scope 在 created 时可能尚未完全就绪
       this._domainProjectPreferDraft = this.resolvePreferDraft()
       // 必须在任何 domainChange/_resetProject 之前拷贝，否则 storage 项目会被清掉
@@ -303,13 +388,24 @@ export default {
         ? { key: this.project.key, label: this.project.label }
         : null
       if (this.isAdminMode && this.l3PermissionEnable) { // 系统视图
+        if (this.getDomainList) {
+          await this.fetchDomainsByGetter()
+        }
         let defaultDomain = { key: this.userInfo.projectDomainId, label: this.userInfo.projectDomain }
         let defaultProject = { key: this.userInfo.projectId, label: this.userInfo.projectName }
-        const initialValue = _.get(this.decorators, 'domain[1].initialValue')
+        const initialValue = this.boundModel[this.domainProp] || this.fieldMeta.domain?.initialValue
         if (R.is(Object, initialValue) && initialValue.key) {
           defaultDomain = { key: initialValue.key, label: initialValue.label }
         } else if (R.is(String, initialValue) && initialValue) {
           defaultDomain = { key: initialValue }
+        }
+        if (this.getDomainList && this.domains.length) {
+          const findInit = this.domains.find(val => val.id === (defaultDomain.key || defaultDomain))
+          if (findInit) {
+            defaultDomain = { key: findInit.id, label: findInit.name }
+          } else {
+            defaultDomain = { key: this.domains[0].id, label: this.domains[0].name }
+          }
         }
         // 草稿 / storage 互斥预填域（未在首页时由 loadDefaultSelectedOpts 远端插入）
         if (this._domainProjectPreferDraft) {
@@ -323,7 +419,7 @@ export default {
             defaultDomain = { key: domainData.id, label: domainData.name }
           }
         }
-        const projectInitialValue = _.get(this.decorators, 'project[1].initialValue')
+        const projectInitialValue = this.boundModel[this.projectProp] || this.fieldMeta.project?.initialValue
         // 进页初始化：切域不清项目，避免清掉刚要回填的 storage / 草稿
         const applyDomain = () => {
           this.domainChange(defaultDomain || {}, { keepProject: true })
@@ -385,7 +481,7 @@ export default {
           this.isDomainFirstLoadData = false
         }
         await this.$nextTick()
-        if (this.$refs.domain && this.$refs.domain.loadDefaultSelectedOpts) {
+        if (!this.getDomainList && this.$refs.domain && this.$refs.domain.loadDefaultSelectedOpts) {
           this.$refs.domain.loadDefaultSelectedOpts()
         }
         if (this.$refs.project && this.$refs.project.loadDefaultSelectedOpts) {
@@ -401,7 +497,7 @@ export default {
           this.domainChange(data[0], { keepProject: true })
 
           let defaultProject = { key: this.userInfo.projectId, label: this.userInfo.projectName }
-          const initialProject = _.get(this.decorators, 'project[1].initialValue')
+          const initialProject = this.boundModel[this.projectProp] || this.fieldMeta.project?.initialValue
           if (R.is(Object, initialProject) && initialProject.key) {
             defaultProject = { key: initialProject.key, label: initialProject.label }
           } else if (R.is(String, initialProject) && initialProject) {
@@ -478,12 +574,12 @@ export default {
     _setInitDomain (domain) {
       const formVal = this.toFormValue(domain)
       if (formVal == null || formVal === '') return
-      this.fc.setFieldsValue({ domain: formVal })
+      this.writeDomainField(formVal)
     },
     _setInitProject (project) {
       const formVal = this.toFormValue(project)
       if (formVal == null || formVal === '') return
-      this.fc.setFieldsValue({ project: formVal })
+      this.writeProjectField(formVal)
     },
     updateDomainList (resList) {
       this.domains = resList
@@ -500,6 +596,9 @@ export default {
      */
     domainChange (domain, options = {}) {
       const formVal = this.toFormValue(domain)
+      if (formVal !== this.boundModel[this.domainProp]) {
+        this.writeDomainField(formVal)
+      }
       const domainId = this.pickId(formVal != null ? formVal : domain)
       const domainChanged = domainId !== this.domainId
       // storage 仍用 { key, label }，与历史一致
@@ -513,11 +612,14 @@ export default {
       if (domainChanged && !options.keepProject) {
         this._resetProject()
       }
+      if (!this._domainProjectWriting) {
+        this.markFormFieldDraftTouched()
+      }
     },
     _resetProject () {
       this.$store.commit('storage/SET_PROJECT', {})
       this.projectData = {}
-      this.fc.setFieldsValue({ project: undefined })
+      this.writeProjectField(undefined)
       this.$emit('update:project', undefined)
     },
     /**
@@ -525,6 +627,9 @@ export default {
      */
     projectChange (project) {
       const formVal = this.toFormValue(project)
+      if (formVal !== this.boundModel[this.projectProp]) {
+        this.writeProjectField(formVal)
+      }
       const projectId = this.pickId(formVal != null ? formVal : project)
       const prefer = this.toPrefer(project)
       this.$store.commit('storage/SET_PROJECT', prefer || {})
@@ -534,11 +639,15 @@ export default {
       } else {
         this.$emit('update:project', projectId)
       }
+      if (!this._domainProjectWriting) {
+        this.markFormFieldDraftTouched()
+      }
     },
     /**
      * 草稿 / storage 偏好域：不在首页时勿改第一项，交给 loadDefaultSelectedOpts
      */
     beforeDomainDefaultSelectCallBack (list) {
+      if (this.getDomainList) return true
       return this.holdPreferSelect(
         list,
         this.getPreferDomainForSelect(),
@@ -569,24 +678,29 @@ export default {
       const hit = this.matchFormFieldDraftInOptions(resList, prefer, {
         getId: item => item.id || item.key,
       })
-      if (!hit) {
-        if (this._domainDraftRemoteTried) return
-        this._domainDraftRemoteTried = true
-        await this.applyPreferViaRemote(
-          this.$refs.domain,
-          prefer,
-          (val) => {
-            this.domainChange(val, { keepProject: true })
-            this._setInitDomain(val)
-          },
-        )
-        return
+      this._domainProjectWriting = true
+      try {
+        if (!hit) {
+          if (this._domainDraftRemoteTried) return
+          this._domainDraftRemoteTried = true
+          await this.applyPreferViaRemote(
+            this.$refs.domain,
+            prefer,
+            (val) => {
+              this.domainChange(val, { keepProject: true })
+              this._setInitDomain(val)
+            },
+          )
+          return
+        }
+        const currentOk = this.domainId && String(this.domainId) === String(hit.id || hit.key)
+        if (currentOk) return
+        const val = { key: hit.id || hit.key, label: hit.name || hit.label }
+        this.domainChange(val, { keepProject: true })
+        this._setInitDomain(val)
+      } finally {
+        this.$nextTick(() => { this._domainProjectWriting = false })
       }
-      const currentOk = this.domainId && String(this.domainId) === String(hit.id || hit.key)
-      if (currentOk) return
-      const val = { key: hit.id || hit.key, label: hit.name || hit.label }
-      this.domainChange(val, { keepProject: true })
-      this._setInitDomain(val)
     },
     /**
      * opts 拉取完成后回填草稿项目：首页命中直接回填；未命中则远端校验插入（同 storage）
@@ -604,30 +718,35 @@ export default {
       const hit = this.matchFormFieldDraftInOptions(resList, prefer, {
         getId: item => item.id || item.key,
       })
-      if (!hit) {
-        if (this._projectDraftRemoteTried) return
-        this._projectDraftRemoteTried = true
-        await this.applyPreferViaRemote(
-          this.$refs.project,
-          prefer,
-          (val) => {
-            this.projectChange(val)
-            this._setInitProject(val)
-          },
-        )
-        return
+      this._domainProjectWriting = true
+      try {
+        if (!hit) {
+          if (this._projectDraftRemoteTried) return
+          this._projectDraftRemoteTried = true
+          await this.applyPreferViaRemote(
+            this.$refs.project,
+            prefer,
+            (val) => {
+              this.projectChange(val)
+              this._setInitProject(val)
+            },
+          )
+          return
+        }
+        const currentId = this.pickId(this.projectData)
+        const currentOk = currentId && String(currentId) === String(hit.id || hit.key)
+        if (currentOk) return
+        const val = { key: hit.id || hit.key, label: hit.name || hit.label }
+        this.projectChange(val)
+        this._setInitProject(val)
+      } finally {
+        this.$nextTick(() => { this._domainProjectWriting = false })
       }
-      const currentId = this.pickId(this.projectData)
-      const currentOk = currentId && String(currentId) === String(hit.id || hit.key)
-      if (currentOk) return
-      const val = { key: hit.id || hit.key, label: hit.name || hit.label }
-      this.projectChange(val)
-      this._setInitProject(val)
     },
-    /** 落盘：按表单当前值原样存（id 存 id，object 存 object） */
+    /** 落盘：按表单当前值原样存（id 存 id，object 存 object）；不依赖 fc */
     serializeFormFieldDraft () {
-      const domain = this.fc?.getFieldValue?.('domain')
-      const project = this.fc?.getFieldValue?.('project')
+      const domain = this.readCurrentDomain()
+      const project = this.readCurrentProject()
       const domainVal = this.pickId(domain)
         ? (typeof domain === 'object' ? { key: domain.key, label: domain.label } : this.pickId(domain))
         : (this.domainId || null)
@@ -636,6 +755,51 @@ export default {
         : (this.pickId(this.projectData) ? this.toPrefer(this.projectData) : null)
       if (!domainVal && !projectVal) return undefined
       return { domain: domainVal, project: projectVal }
+    },
+    runFieldRule (rule, value) {
+      return new Promise((resolve, reject) => {
+        if (rule.required) {
+          const empty = value === undefined || value === null || value === '' ||
+            (Array.isArray(value) && !value.length) ||
+            (typeof value === 'object' && !this.pickId(value))
+          if (empty) {
+            reject(new Error(rule.message || 'required'))
+            return
+          }
+        }
+        if (typeof rule.validator === 'function') {
+          let settled = false
+          const finish = (err) => {
+            if (settled) return
+            settled = true
+            if (err) reject(err instanceof Error ? err : new Error(String(err)))
+            else resolve()
+          }
+          let ret
+          try {
+            ret = rule.validator(rule, value, finish)
+          } catch (e) {
+            finish(e)
+            return
+          }
+          if (ret && typeof ret.then === 'function') {
+            ret.then(() => finish()).catch(finish)
+          }
+          return
+        }
+        resolve()
+      })
+    },
+    async validate () {
+      const domainRules = this.fieldMeta?.domain?.rules || []
+      const projectRules = this.fieldMeta?.project?.rules || []
+      for (const rule of domainRules) {
+        await this.runFieldRule(rule, this.boundModel[this.domainProp])
+      }
+      for (const rule of projectRules) {
+        await this.runFieldRule(rule, this.boundModel[this.projectProp])
+      }
+      return true
     },
   },
 }

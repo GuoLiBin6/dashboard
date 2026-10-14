@@ -98,7 +98,7 @@ export default {
         }
         window.addEventListener('scroll', onScroll, false)
         window.addEventListener('resize', onResize, { passive: true })
-        instance.$once('hook:beforeDestroy', () => {
+        instance.$once('hook:beforeUnmount', () => {
           window.removeEventListener('scroll', onScroll, false)
           window.removeEventListener('resize', onResize)
           if (instance._resizeRaf) cancelAnimationFrame(instance._resizeRaf)

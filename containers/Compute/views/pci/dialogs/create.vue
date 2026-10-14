@@ -2,43 +2,45 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{ $t('common.create') }}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc"
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
         v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.pci.dev_type')">
-          <a-input v-decorator="decorators.dev_type" :placeholder="$t('compute.pci.dev_type.placeholder')" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.pci.model')">
-          <a-input v-decorator="decorators.model" :placeholder="$t('compute.pci.model.placeholder')" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.pci.vendor_id')">
+        <a-form-model-item :label="$t('compute.pci.dev_type')" prop="dev_type">
+          <a-input v-model:value="form.dev_type" :placeholder="$t('compute.pci.dev_type.placeholder')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.pci.model')" prop="model">
+          <a-input v-model:value="form.model" :placeholder="$t('compute.pci.model.placeholder')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.pci.vendor_id')" prop="vendor_id">
           <template #extra v-if="showDocsLink()">
             {{ $t('compute.pci.vendor_id.extra') }}<help-link v-if="vendorAndDeviceLink" :href="vendorAndDeviceLink">{{ $t('compute.pci.document') }}</help-link>
           </template>
-          <a-input v-decorator="decorators.vendor_id" :placeholder="$t('compute.pci.vendor_id.placeholder')" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.pci.device_id')">
+          <a-input v-model:value="form.vendor_id" :placeholder="$t('compute.pci.vendor_id.placeholder')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.pci.device_id')" prop="device_id">
           <template #extra v-if="showDocsLink()">
             {{ $t('compute.pci.device_id.extra') }}<help-link v-if="vendorAndDeviceLink" :href="vendorAndDeviceLink">{{ $t('compute.pci.document') }}</help-link>
           </template>
-          <a-input v-decorator="decorators.device_id" :placeholder="$t('compute.pci.device_id.placeholder')" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.pci.disable_auto_detect')">
-          <a-switch v-decorator="decorators.disable_auto_detect" :checked-children="$t('table.title.on')" :un-checked-children="$t('table.title.off')" />
-        </a-form-item>
-        <a-form-item v-if="!form.fd.disable_auto_detect" :label="$t('compute.pci.host')" :extra="$t('compute.pci.host.extra')">
+          <a-input v-model:value="form.device_id" :placeholder="$t('compute.pci.device_id.placeholder')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.pci.disable_auto_detect')" prop="disable_auto_detect">
+          <a-switch v-model:checked="form.disable_auto_detect" :checked-children="$t('table.title.on')" :un-checked-children="$t('table.title.off')" />
+        </a-form-model-item>
+        <a-form-model-item v-if="!form.disable_auto_detect" :label="$t('compute.pci.host')" :extra="$t('compute.pci.host.extra')" prop="hosts">
           <list-select
-            v-decorator="decorators.hosts"
+            v-model:value="form.hosts"
             :list-props="resourceProps"
             :formatter="v => v.name"
             :multiple="true"
             :placeholder="$t('compute.pci.host.placeholder')"
             :dialog-params="{ title: $t('compute.text_111'), width: 1060 }" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.pci.hot_pluggable')" :extra="$t('compute.pci.hot_pluggable.tips')">
-          <a-switch v-decorator="decorators.hot_pluggable" :checked-children="$t('table.title.on')" :un-checked-children="$t('table.title.off')" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.pci.hot_pluggable')" :extra="$t('compute.pci.hot_pluggable.tips')" prop="hot_pluggable">
+          <a-switch v-model:checked="form.hot_pluggable" :checked-children="$t('table.title.on')" :un-checked-children="$t('table.title.off')" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -66,66 +68,28 @@ export default {
       showDocsLink,
       loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-          },
-        }),
-        fd: {},
+        dev_type: undefined,
+        model: undefined,
+        vendor_id: undefined,
+        device_id: undefined,
+        hosts: undefined,
+        hot_pluggable: false,
+        disable_auto_detect: false,
       },
-      decorators: {
+      rules: {
         dev_type: [
-          'dev_type',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.pci.dev_type.placeholder') },
-            ],
-          },
+          { required: true, message: this.$t('compute.pci.dev_type.placeholder') },
         ],
         model: [
-          'model',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.pci.model.placeholder') },
-            ],
-          },
+          { required: true, message: this.$t('compute.pci.model.placeholder') },
         ],
         vendor_id: [
-          'vendor_id',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.pci.vendor_id.placeholder') },
-              { validator: this.validateVendorId(), trigger: 'blur' },
-            ],
-          },
+          { required: true, message: this.$t('compute.pci.vendor_id.placeholder') },
+          { validator: this.validateVendorId(), trigger: 'blur' },
         ],
         device_id: [
-          'device_id',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.pci.device_id.placeholder') },
-              { validator: this.validateDeviceId(), trigger: 'blur' },
-            ],
-          },
-        ],
-        hosts: [
-          'hosts',
-        ],
-        hot_pluggable: [
-          'hot_pluggable',
-          {
-            initialValue: false,
-          },
-        ],
-        disable_auto_detect: [
-          'disable_auto_detect',
-          {
-            initialValue: false,
-          },
+          { required: true, message: this.$t('compute.pci.device_id.placeholder') },
+          { validator: this.validateDeviceId(), trigger: 'blur' },
         ],
       },
       formItemLayout: {
@@ -173,26 +137,25 @@ export default {
       })
     },
     async handleConfirm () {
-      const { validateFields } = this.form.fc
       try {
         this.loading = true
-        const values = await validateFields()
+        await this.$refs.formRef.validate()
         const data = {
-          dev_type: values.dev_type.trim(),
-          model: values.model.trim(),
-          vendor_id: values.vendor_id.trim(),
-          device_id: values.device_id.trim(),
-          hosts: values.hosts,
-          hot_pluggable: values.hot_pluggable,
-          disable_auto_detect: values.disable_auto_detect,
+          dev_type: this.form.dev_type.trim(),
+          model: this.form.model.trim(),
+          vendor_id: this.form.vendor_id.trim(),
+          device_id: this.form.device_id.trim(),
+          hosts: this.form.hosts,
+          hot_pluggable: this.form.hot_pluggable,
+          disable_auto_detect: this.form.disable_auto_detect,
         }
         await this.doSubmit(data)
-        this.loading = false
         this.cancelDialog()
         this.params.refresh && this.params.refresh()
       } catch (error) {
-        this.loading = false
         throw error
+      } finally {
+        this.loading = false
       }
     },
   },

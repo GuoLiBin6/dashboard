@@ -19,10 +19,11 @@ import {
 import { IMAGES_TYPE_MAP, HOST_CPU_ARCHS } from '@/constants/compute'
 
 import { HYPERVISORS_MAP } from '@/constants'
-import validateForm, { isRequired, isWithinRange } from '@/utils/validate'
+import { isWithinRange } from '@/utils/validate'
 import store from '@/store'
 import i18n from '@/locales'
 import { diskSupportTypeMedium, getOriginDiskKey } from '@/utils/common/hypervisor'
+import { getInitialValue } from '@/utils/common/ant'
 
 export function checkIpInSegment (i, networkData) {
   return (rule, value, cb) => {
@@ -75,17 +76,17 @@ export function checkIpV6 (i, networkData) {
   }
 }
 
-export function diskValidator (rule, value, callback) {
+export function diskValidator (rule, value) {
   if (R.isNil(value) || R.isEmpty(value)) {
-    return callback(new Error(i18n.t('compute.text_206')))
+    return Promise.reject(new Error(i18n.t('compute.text_206')))
   }
   if (!value.startsWith('/')) {
-    return callback(new Error(i18n.t('compute.text_207')))
+    return Promise.reject(new Error(i18n.t('compute.text_207')))
   }
   if (value === '/') {
-    return callback(new Error(i18n.t('compute.text_208')))
+    return Promise.reject(new Error(i18n.t('compute.text_208')))
   }
-  callback()
+  return Promise.resolve()
 }
 
 /** 将字符串/数组/对象形式的 zone 规范为 id 数组 */
@@ -149,7 +150,8 @@ export function getPreferZoneFromParam (params = {}) {
   return zones[0] || ''
 }
 
-export const createVmDecorators = (type, initData = {}) => {
+/** @private field-map 元数据（供 createVmFormDefaults；可读 { name, initialValue, rules }） */
+function createVmFieldMap (type, initData = {}) {
   let imageTypeInitValue = IMAGES_TYPE_MAP.standard.key
   if (type === SERVER_TYPE.public) {
     imageTypeInitValue = IMAGES_TYPE_MAP.public.key // 公有云机器默认选择公有云镜像
@@ -229,1001 +231,272 @@ export const createVmDecorators = (type, initData = {}) => {
     initLoginType = 'password'
   }
   return {
-    domain: [
-      'domain',
-      {
-        initialValue: initData.extraData?.domain_id,
-        rules: [
-          { validator: isRequired(), message: i18n.t('rules.domain'), trigger: 'change' },
-        ],
-      },
-    ],
-    project: [
-      'project',
-      {
-        initialValue: initData.project_id,
-        rules: [
-          { validator: isRequired(), message: i18n.t('rules.project'), trigger: 'change' },
-        ],
-      },
-    ],
-    name: [
-      'name',
-      {
-        initialValue: initData.generate_name || '',
-        validateTrigger: 'blur',
-        validateFirst: true,
-        rules: [
-          { required: true, message: i18n.t('compute.text_210') },
-          { validator: validateForm('resourceCreateName') },
-        ],
-      },
-    ],
-    description: [
-      'description',
-      {
-        initialValue: initData.description || '',
-      },
-    ],
-    reason: [
-      'reason',
-      {
-        initialValue: initData.extraData?.reason || '',
-      },
-    ],
-    count: [
-      'count',
-      {
-        initialValue: initData.__count__ || 1,
-        rules: [
-          { required: true, message: i18n.t('compute.text_211') },
-        ],
-      },
-    ],
-    enableWorldMap: [
-      'enableWorldMap',
-      {
+    domain: { name: 'domain', initialValue: initData.extraData?.domain_id },
+    project: { name: 'project', initialValue: initData.project_id },
+    name: { name: 'name', initialValue: initData.generate_name || '' },
+    description: { name: 'description', initialValue: initData.description || '' },
+    reason: { name: 'reason', initialValue: initData.extraData?.reason || '' },
+    count: { name: 'count', initialValue: initData.__count__ || 1 },
+    enableWorldMap: {
+      name: 'enableWorldMap',
+      valuePropName: 'checked',
+      initialValue: false,
+    },
+    cloudregionZone: {
+      cloudregion: { name: 'cloudregion', initialValue: { key: initData.prefer_region || '', label: '' } },
+      zone: { name: 'zone', initialValue: { key: resolveInitPreferZone(initData, false), label: '' } },
+    },
+    imageOS: {
+      prefer_manager: { name: 'prefer_manager', initialValue: initData.prefer_manager || '' },
+      os: { name: 'os', initialValue: initData.extraData?.os || '' },
+      image: { name: 'image', initialValue: { key: initImage, label: '' } },
+      imageType: { name: 'imageType', initialValue: initData.extraData?.image_type || imageTypeInitValue },
+    },
+    kickstart: {
+      kickstart_enabled: { name: 'kickstart_enabled', initialValue: false },
+      kickstart_config: { name: 'kickstart_config', initialValue: '' },
+    },
+    loginConfig: {
+      loginType: { name: 'loginType', initialValue: initLoginType },
+      keypair: { name: 'loginKeypair', initialValue: initData.keypair || '' }, // { key: '', label: '' }
+      password: { name: 'loginPassword', initialValue: initData.password || '' },
+    },
+    hypervisor: { name: 'hypervisor', initialValue: initData.hypervisor || '' },
+    cloudprovider: { name: 'cloudprovider' },
+    // 废弃数据，使用 pci 数据代替
+    gpu: {
+      gpuEnable: {
+        name: 'gpuEnable',
         valuePropName: 'checked',
         initialValue: false,
       },
-    ],
-    cloudregionZone: {
-      cloudregion: [
-        'cloudregion',
-        {
-          initialValue: { key: initData.prefer_region || '', label: '' },
-          rules: [
-            { validator: isRequired(), message: i18n.t('compute.text_212') },
-          ],
-        },
-      ],
-      zone: [
-        'zone',
-        {
-          initialValue: { key: resolveInitPreferZone(initData, false), label: '' },
-          rules: [
-            { validator: isRequired(), message: i18n.t('compute.text_213') },
-          ],
-        },
-      ],
-    },
-    imageOS: {
-      prefer_manager: [
-        'prefer_manager',
-        {
-          initialValue: initData.prefer_manager || '',
-          rules: [
-            { required: true, message: i18n.t('compute.text_149') },
-          ],
-        },
-      ],
-      os: [
-        'os',
-        {
-          initialValue: initData.extraData?.os || '',
-          rules: [
-            { required: true, message: i18n.t('compute.text_153') },
-          ],
-        },
-      ],
-      image: [
-        'image',
-        {
-          initialValue: { key: initImage, label: '' },
-          rules: [
-            { validator: isRequired(), message: i18n.t('compute.text_214') },
-          ],
-        },
-      ],
-      imageType: [
-        'imageType',
-        {
-          initialValue: initData.extraData?.image_type || imageTypeInitValue,
-        },
-      ],
-    },
-    kickstart: {
-      kickstart_enabled: [
-        'kickstart_enabled',
-        {
-          initialValue: false,
-        },
-      ],
-      kickstart_config: [
-        'kickstart_config',
-        {
-          initialValue: '',
-        },
-      ],
-    },
-    loginConfig: {
-      loginType: [
-        'loginType',
-        {
-          initialValue: initLoginType,
-        },
-      ],
-      keypair: [
-        'loginKeypair',
-        {
-          initialValue: initData.keypair || '', // { key: '', label: '' }
-          rules: [
-            { required: true, message: i18n.t('compute.text_203') },
-          ],
-        },
-      ],
-      password: [
-        'loginPassword',
-        {
-          initialValue: initData.password || '',
-          validateFirst: true,
-          rules: [
-            { required: true, message: i18n.t('compute.text_204') },
-            { validator: validateForm('sshPassword') },
-          ],
-        },
-      ],
-    },
-    hypervisor: [
-      'hypervisor',
-      {
-        initialValue: initData.hypervisor || '',
-        rules: [
-          { required: true, message: i18n.t('compute.text_215') },
-        ],
-      },
-    ],
-    cloudprovider: [
-      'cloudprovider',
-      {
-        rules: [
-          { required: true, message: i18n.t('compute.text_149') },
-        ],
-      },
-    ],
-    // 废弃数据，使用 pci 数据代替
-    gpu: {
-      gpuEnable: [
-        'gpuEnable',
-        {
-          valuePropName: 'checked',
-          initialValue: false,
-        },
-      ],
-      gpu: [
-        'gpu',
-        {
-          rules: [
-            { required: true, message: i18n.t('compute.text_147') },
-          ],
-        },
-      ],
-      gpuCount: [
-        'gpuCount',
-        {
-          initialValue: 1,
-        },
-      ],
-      gpuType: [
-        'gpuType',
-        {
-          initialValue: GPU_TYPE_OPTION_MAP.HPC.value,
-        },
-      ],
+      gpu: { name: 'gpu' },
+      gpuCount: { name: 'gpuCount', initialValue: 1 },
+      gpuType: { name: 'gpuType', initialValue: GPU_TYPE_OPTION_MAP.HPC.value },
     },
     pci: {
-      pciEnable: [
-        'pciEnable',
-        {
-          valuePropName: 'checked',
-          initialValue: false,
-        },
-      ],
-      pciDevType: i => [
-        `pciDevType[${i}]`,
-      ],
-      pciGpuType: i => [
-        `pciGpuType[${i}]`,
-        {
-          initialValue: GPU_TYPE_OPTION_MAP.HPC.value,
-        },
-      ],
-      pciModel: i => [
-        `pciModel[${i}]`,
-        {
-          rules: [
-            { required: true, message: i18n.t('compute.text_147') },
-          ],
-        },
-      ],
-      pciCount: i => [
-        `pciCount[${i}]`,
-        {
-          initialValue: 1,
-        },
-      ],
-      memoryRequest: i => [
-        `memory_request[${i}]`,
-        {
-          rules: [
-            { required: true, message: i18n.t('compute.pci.memory_request.required') },
-            {
-              validator: (rule, value, callback) => {
-                if (value === undefined || value === null || value === '') {
-                  callback()
-                  return
-                }
-                if (!Number.isInteger(Number(value)) || Number(value) <= 0) {
-                  callback(new Error(i18n.t('compute.pci.memory_request.invalid')))
-                  return
-                }
-                callback()
-              },
-            },
-          ],
-        },
-      ],
+      pciEnable: {
+        name: 'pciEnable',
+        valuePropName: 'checked',
+        initialValue: false,
+      },
+      pciDevType: i => ({ name: `pciDevType[${i}]` }),
+      pciGpuType: i => ({ name: `pciGpuType[${i}]`, initialValue: GPU_TYPE_OPTION_MAP.HPC.value }),
+      pciModel: i => ({ name: `pciModel[${i}]` }),
+      pciCount: i => ({ name: `pciCount[${i}]`, initialValue: 1 }),
+      memoryRequest: i => ({ name: `memory_request[${i}]` }),
     },
-    vcpu: [
-      'vcpu',
-      {
-        initialValue: initData.vcpu_count || 2,
-      },
-    ],
-    vmem: [
-      'vmem',
-      {
-        initialValue: initData.vmem_size || 2048,
-      },
-    ],
-    sku: [
-      'sku',
-      {
-        // sku 选中后为对象；勿用 ''，否则 SystemDisk/DataDisk 的 Object 类型 prop 会告警
-        initialValue: initData.sku || undefined,
-        rules: [
-          { validator: isRequired(true, 'id'), message: i18n.t('compute.text_216') },
-        ],
-      },
-    ],
+    vcpu: { name: 'vcpu', initialValue: initData.vcpu_count || 2 },
+    vmem: { name: 'vmem', initialValue: initData.vmem_size || 2048 },
+    sku: {
+      name: 'sku', // sku 选中后为对象；勿用 ''，否则 SystemDisk/DataDisk 的 Object 类型 prop 会告警
+      initialValue: initData.sku || undefined,
+    },
     systemDisk: {
-      type: [
-        'systemDiskType',
-        {
-          rules: [
-            { validator: isRequired(), message: i18n.t('compute.text_121') },
-          ],
-        },
-      ],
-      size: [
-        'systemDiskSize',
-        {
-          rules: [
-            { required: true, message: i18n.t('compute.text_122') },
-          ],
-        },
-      ],
-      schedtag: [
-        'systemDiskSchedtag',
-        {
-          validateTrigger: ['change', 'blur'],
-          rules: [{
-            required: true,
-            message: i18n.t('compute.text_123'),
-          }],
-        },
-      ],
-      policy: [
-        'systemDiskPolicy',
-        {
-          initialValue: '',
-          validateTrigger: ['blur', 'change'],
-          rules: [{
-            required: true,
-            message: i18n.t('compute.text_123'),
-          }],
-        },
-      ],
-      storage: [
-        'systemDiskStorage',
-        {
-          rules: [{
-            required: true,
-            message: i18n.t('compute.text_1351'),
-          }],
-        },
-      ],
-      iops: [
-        'systemDiskIops',
-        {
-          initialValue: initSystemDiskIops,
-          rules: [{
-            required: true,
-            message: i18n.t('compute.iops_input_tip'),
-          }],
-        },
-      ],
-      throughput: [
-        'systemDiskThroughput',
-        {
-          initialValue: initSystemDiskThroughput,
-          rules: [{
-            required: true,
-            message: i18n.t('compute.throuthput_input_tip'),
-          }],
-        },
-      ],
-      preallocation: [
-        'systemDiskPreallocation',
-      ],
-      auto_reset: [
-        'systemDiskAutoReset',
-        {
-          valuePropName: 'checked',
-          initialValue: false,
-        },
-      ],
+      type: { name: 'systemDiskType' },
+      size: { name: 'systemDiskSize' },
+      schedtag: { name: 'systemDiskSchedtag' },
+      policy: { name: 'systemDiskPolicy', initialValue: '' },
+      storage: { name: 'systemDiskStorage' },
+      iops: { name: 'systemDiskIops', initialValue: initSystemDiskIops },
+      throughput: { name: 'systemDiskThroughput', initialValue: initSystemDiskThroughput },
+      preallocation: { name: 'systemDiskPreallocation' },
+      auto_reset: {
+        name: 'systemDiskAutoReset',
+        valuePropName: 'checked',
+        initialValue: false,
+      },
     },
     dataDisk: {
-      type: i => [
-        `dataDiskTypes[${i}]`,
-        {
-          rules: [
-            { validator: isRequired(), message: i18n.t('compute.text_121') },
-          ],
-        },
-      ],
-      size: i => [
-        `dataDiskSizes[${i}]`,
-        {
-          rules: [
-            { required: true, message: i18n.t('compute.text_122') },
-          ],
-        },
-      ],
-      schedtag: i => [
-        `dataDiskSchedtags[${i}]`,
-        {
-          validateTrigger: ['change', 'blur'],
-          rules: [{
-            required: true,
-            message: i18n.t('compute.text_123'),
-          }],
-        },
-      ],
-      policy: i => [
-        `dataDiskPolicys[${i}]`,
-        {
-          initialValue: '',
-          validateTrigger: ['blur', 'change'],
-          rules: [{
-            required: true,
-            message: i18n.t('compute.text_123'),
-          }],
-        },
-      ],
-      snapshot: i => [
-        `dataDiskSnapshots[${i}]`,
-        {
-          validateTrigger: ['blur', 'change'],
-          rules: [{
-            required: true,
-            message: i18n.t('compute.text_124'),
-          }],
-        },
-      ],
-      filetype: i => [
-        `dataDiskFiletypes[${i}]`,
-        {
-          validateTrigger: ['blur', 'change'],
-          rules: [{
-            required: true,
-            message: i18n.t('compute.text_125'),
-          }],
-        },
-      ],
-      mountPath: i => [
-        `dataDiskMountPaths[${i}]`,
-        {
-          validateTrigger: ['blur', 'change'],
-          rules: [{
-            required: true,
-            message: i18n.t('compute.text_126'),
-          }, {
-            validator: diskValidator,
-          }],
-        },
-      ],
-      storage: i => [
-        `dataDiskStorages[${i}]`,
-        {
-          rules: [{
-            required: true,
-            message: i18n.t('compute.text_1351'),
-          }],
-        },
-      ],
-      iops: i => [
-        `dataDiskIops[${i}]`,
-        {
-          rules: [{
-            required: true,
-            message: i18n.t('compute.iops_input_tip'),
-          }],
-        },
-      ],
-      throughput: i => [
-        `dataDiskThroughputs[${i}]`,
-        {
-          rules: [{
-            required: true,
-            message: i18n.t('compute.throughput_input_tip'),
-          }],
-        },
-      ],
-      preallocation: i => [
-        `dataDiskPreallocation[${i}]`,
-      ],
-      auto_reset: i => [
-        `dataDiskAutoReset[${i}]`,
-        {
-          valuePropName: 'checked',
-          initialValue: false,
-        },
-      ],
+      type: i => ({ name: `dataDiskTypes[${i}]` }),
+      size: i => ({ name: `dataDiskSizes[${i}]` }),
+      schedtag: i => ({ name: `dataDiskSchedtags[${i}]` }),
+      policy: i => ({ name: `dataDiskPolicys[${i}]`, initialValue: '' }),
+      snapshot: i => ({ name: `dataDiskSnapshots[${i}]` }),
+      filetype: i => ({ name: `dataDiskFiletypes[${i}]` }),
+      mountPath: i => ({ name: `dataDiskMountPaths[${i}]` }),
+      storage: i => ({ name: `dataDiskStorages[${i}]` }),
+      iops: i => ({ name: `dataDiskIops[${i}]` }),
+      throughput: i => ({ name: `dataDiskThroughputs[${i}]` }),
+      preallocation: i => ({ name: `dataDiskPreallocation[${i}]` }),
+      auto_reset: i => ({
+        name: `dataDiskAutoReset[${i}]`,
+        valuePropName: 'checked',
+        initialValue: false,
+      }),
     },
     network: {
-      networkType: [
-        'networkType',
-        {
-          initialValue: initNetworkType,
-        },
-      ],
+      networkType: { name: 'networkType', initialValue: initNetworkType },
       networkConfig: {
-        vpcs: i => [
-          `vpcs[${i}]`,
-          {
-            validateTrigger: ['change', 'blur'],
-            initialValue: ['default', 'default'],
-            rules: [{
-              required: true,
-              message: i18n.t('compute.text_194'),
-            }],
-          },
-        ],
-        networks: i => [
-          `networks[${i}]`,
-          {
-            validateTrigger: ['change', 'blur'],
-            rules: [{
-              required: true,
-              message: i18n.t('compute.text_217'),
-            }],
-          },
-        ],
-        ips: (i, networkData) => [
-          `networkIps[${i}]`,
-          {
-            validateFirst: true,
-            validateTrigger: ['blur', 'change'],
-            rules: [
-              {
-                required: true,
-                message: i18n.t('compute.text_218'),
-              },
-              {
-                validator: validateForm('IPv4'),
-              },
-              {
-                validator: checkIpInSegment(i, networkData),
-              },
-            ],
-          },
-        ],
-        ips6: (i, networkData) => [
-          `networkIpsAddress6[${i}]`,
-          {
-            validateFirst: true,
-            validateTrigger: ['blur', 'change'],
-            rules: [
-              {
-                required: true,
-                message: i18n.t('compute.complete_ipv6_address'),
-              },
-              {
-                validator: checkIpV6(i, networkData),
-              },
-            ],
-          },
-        ],
-        ipv6_mode: (i, networkData) => [
-          `networkIPv6Modes[${i}]`,
-          {
-            initialValue: 'all',
-          },
-        ],
-        macs: (i, networkData) => [
-          `networkMacs[${i}]`,
-          {
-            validateFirst: true,
-            validateTrigger: ['blur', 'change'],
-            rules: [
-              {
-                required: true,
-                message: i18n.t('compute.text_806'),
-              },
-              {
-                validator: validateForm('mac'),
-              },
-            ],
-          },
-        ],
-        ipv6s: (i, networkData) => [
-          `networkIPv6s[${i}]`,
-          {
-            validateFirst: true,
-            valuePropName: 'checked',
-            validateTrigger: ['blur', 'change'],
-          },
-        ],
-        devices: i => [
-          `networkDevices[${i}]`,
-          {
-            validateTrigger: ['change', 'blur'],
-            rules: [{
-              required: true,
-              message: i18n.t('compute.sriov_device_tips'),
-            }],
-          },
-        ],
-        secgroups: i => [
-          `networkSecgroups[${i}]`,
-          {
-            validateTrigger: ['change', 'blur'],
-            rules: [{
-              required: true,
-              message: i18n.t('compute.secgroup_tips'),
-            }],
-          },
-        ],
+        vpcs: i => ({ name: `vpcs[${i}]`, initialValue: ['default', 'default'] }),
+        networks: i => ({ name: `networks[${i}]` }),
+        ips: (i, networkData) => ({ name: `networkIps[${i}]` }),
+        ips6: (i, networkData) => ({ name: `networkIpsAddress6[${i}]` }),
+        ipv6_mode: (i, networkData) => ({ name: `networkIPv6Modes[${i}]`, initialValue: 'all' }),
+        macs: (i, networkData) => ({ name: `networkMacs[${i}]` }),
+        ipv6s: (i, networkData) => ({ name: `networkIPv6s[${i}]`, valuePropName: 'checked' }),
+        devices: i => ({ name: `networkDevices[${i}]` }),
+        secgroups: i => ({ name: `networkSecgroups[${i}]` }),
       },
       networkSchedtag: {
-        schedtags: i => [
-          `networkSchedtags[${i}]`,
-          {
-            validateTrigger: ['change', 'blur'],
-            rules: [{
-              required: true,
-              message: i18n.t('compute.text_123'),
-            }],
-          },
-        ],
-        policys: (i, networkData) => [
-          `networkPolicys[${i}]`,
-          {
-            validateTrigger: ['blur', 'change'],
-            rules: [{
-              required: true,
-              message: i18n.t('common_256'),
-            }],
-          },
-        ],
-        devices: i => [
-          `networkDevices[${i}]`,
-          {
-            validateTrigger: ['change', 'blur'],
-            rules: [{
-              required: true,
-              message: i18n.t('compute.sriov_device_tips'),
-            }],
-          },
-        ],
+        schedtags: i => ({ name: `networkSchedtags[${i}]` }),
+        policys: (i, networkData) => ({ name: `networkPolicys[${i}]` }),
+        devices: i => ({ name: `networkDevices[${i}]` }),
       },
     },
     schedPolicy: {
-      schedPolicyType: [
-        'schedPolicyType',
-        {
-          initialValue: initSchedPolicyType,
-        },
-      ],
-      schedPolicyHost: [
-        'schedPolicyHost',
-        {
-          initialValue: initData.prefer_host,
-          rules: [
-            { required: true, message: i18n.t('compute.text_219') },
-          ],
-        },
-      ],
+      schedPolicyType: { name: 'schedPolicyType', initialValue: initSchedPolicyType },
+      schedPolicyHost: { name: 'schedPolicyHost', initialValue: initData.prefer_host },
       policySchedtag: {
-        schedtags: i => [
-          `policySchedtagSchedtags[${i}]`,
-          {
-            validateTrigger: ['change', 'blur'],
-            rules: [{
-              required: true,
-              message: i18n.t('compute.text_123'),
-            }],
-          },
-        ],
-        policys: (i, networkData) => [
-          `policySchedtagPolicys[${i}]`,
-          {
-            validateTrigger: ['blur', 'change'],
-            rules: [{
-              required: true,
-              message: i18n.t('common_256'),
-            }],
-          },
-        ],
+        schedtags: i => ({ name: `policySchedtagSchedtags[${i}]` }),
+        policys: (i, networkData) => ({ name: `policySchedtagPolicys[${i}]` }),
       },
     },
-    bios: [
-      'bios',
-      {
-        initialValue: initData.bios || '',
-      },
-    ],
-    vdi: [
-      'vdi',
-      {
-        initialValue: initData.vdi || '',
-      },
-    ],
-    vga: [
-      'vga',
-      {
-        initialValue: initData.vga || '',
-      },
-    ],
-    machine: [
-      'machine',
-      {
-        initialValue: initData.machine || '',
-      },
-    ],
+    bios: { name: 'bios', initialValue: initData.bios || '' },
+    vdi: { name: 'vdi', initialValue: initData.vdi || '' },
+    vga: { name: 'vga', initialValue: initData.vga || '' },
+    machine: { name: 'machine', initialValue: initData.machine || '' },
     backup: {
-      backupEnable: [
-        'backupEnable',
-        {
-          valuePropName: 'checked',
-          initialValue: !!initData.prefer_backup_host || false,
-        },
-      ],
-      backup: [
-        'backup',
-        {
-          initialValue: initData.prefer_backup_host || '',
-        },
-      ],
+      backupEnable: {
+        name: 'backupEnable',
+        valuePropName: 'checked',
+        initialValue: !!initData.prefer_backup_host || false,
+      },
+      backup: { name: 'backup', initialValue: initData.prefer_backup_host || '' },
     },
     duration: {
-      durationStandard: [
-        'durationStandard',
-        {
-          initialValue: initData.duration ? 'custom' : 'none',
-        },
-      ],
-      duration: [
-        'duration',
-        {
-          initialValue: initData.duration === '1w' ? '7d' : initData.duration || '1h',
-        },
-      ],
+      durationStandard: { name: 'durationStandard', initialValue: initData.duration ? 'custom' : 'none' },
+      duration: { name: 'duration', initialValue: initData.duration === '1w' ? '7d' : initData.duration || '1h' },
     },
     groups: {
-      groupsEnable: [
-        'groupsEnable',
-        {
-          valuePropName: 'checked',
-          initialValue: !!(initData.groups && initData.groups.length),
-        },
-      ],
-      groups: [
-        'groups',
-        {
-          initialValue: initData.groups || [],
-        },
-      ],
+      groupsEnable: {
+        name: 'groupsEnable',
+        valuePropName: 'checked',
+        initialValue: !!(initData.groups && initData.groups.length),
+      },
+      groups: { name: 'groups', initialValue: initData.groups || [] },
     },
     bill: {
-      billType: [
-        'billType',
-        {
-          initialValue: initData.extraData?.billType || 'quantity',
-        },
-      ],
-      duration: [
-        'duration',
-        {
-          // 包年包月时长 key 为大写（1M/1Y）；勿与按量 Duration 的小写 duration 混用初始值
-          initialValue: initData.duration || '1M',
-        },
-      ],
-      autoRenew: [
-        'autoRenew',
-        {
-          initialValue: initData.auto_renew || false,
-          valuePropName: 'checked',
-        },
-      ],
-    },
-    resourceType: [
-      'resourceType',
-      {
-        preserve: true,
-        initialValue: RESOURCE_TYPES_MAP.shared.key,
+      billType: { name: 'billType', initialValue: initData.extraData?.billType || 'quantity' },
+      duration: {
+        name: 'duration', // 包年包月时长 key 为大写（1M/1Y）；勿与按量 Duration 的小写 duration 混用初始值
+        initialValue: initData.duration || '1M',
       },
-    ],
+      autoRenew: {
+        name: 'autoRenew',
+        initialValue: initData.auto_renew || false,
+        valuePropName: 'checked',
+      },
+    },
+    resourceType: {
+      name: 'resourceType',
+      preserve: true,
+      initialValue: RESOURCE_TYPES_MAP.shared.key,
+    },
     eip: {
-      type: [
-        'eip_type',
-        {
-          initialValue: initEipType,
-        },
-      ],
-      charge_type: [
-        'eip_charge_type',
-        {
-          initialValue: initData.eip_charge_type || initData.public_ip_charge_type,
-        },
-      ],
-      bgp_type: [
-        'eip_bgp_type',
-        {
-          initialValue: initData.eip_bgp_type || initData.public_ip_bgp_type,
-        },
-      ],
-      bandwidth: [
-        'eip_bw',
-        {
-          initialValue: initData.eip_bw || initData.public_ip_bw || 30,
-        },
-      ],
-      eip: [
-        'eip',
-        {
-          rules: [
-            { required: true, message: i18n.t('compute.text_145') },
-          ],
-        },
-      ],
+      type: { name: 'eip_type', initialValue: initEipType },
+      charge_type: { name: 'eip_charge_type', initialValue: initData.eip_charge_type || initData.public_ip_charge_type },
+      bgp_type: { name: 'eip_bgp_type', initialValue: initData.eip_bgp_type || initData.public_ip_bgp_type },
+      bandwidth: { name: 'eip_bw', initialValue: initData.eip_bw || initData.public_ip_bw || 30 },
+      eip: { name: 'eip' },
     },
     secgroup: {
-      type: [
-        'secgroup_type',
-        {
-          initialValue: initSecgroupType,
-        },
-      ],
-      secgroup: [
-        'secgroup',
-        {
-          validateFirst: true,
-          initialValue: initData.secgroups || [],
-          rules: [
-            { required: true, message: i18n.t('compute.text_190') },
-            // { validator: secgroupValidator }, // Azure和Ucloud的安全组最大关联一个，动态效验放在组件内部
-          ],
-        },
-      ],
-      network_tags: [
-        'network_tags',
-        {
-          initialValue: initData.network_tags || [],
-        },
-      ],
+      type: { name: 'secgroup_type', initialValue: initSecgroupType },
+      secgroup: { name: 'secgroup', initialValue: initData.secgroups || [] },
+      network_tags: { name: 'network_tags', initialValue: initData.network_tags || [] },
     },
-    tag: [
-      'tag',
-      {
-        initialValue: initData.__meta__ || {},
-        rules: [
-          { validator: validateForm('tagName') },
-        ],
-      },
-    ],
+    tag: { name: 'tag', initialValue: initData.__meta__ || {} },
     servertemplate: {
-      servertemplate_name: [
-        'servertemplate_name',
-        {
-          validateFirst: true,
-          rules: [
-            { required: true, message: i18n.t('compute.text_220') },
-            { validator: validateForm('resourceName') },
-          ],
-        },
-      ],
-      description: [
-        'description',
-      ],
+      servertemplate_name: { name: 'servertemplate_name' },
+      description: { name: 'description' },
     },
-    os_arch: [
-      'os_arch',
-      {
-        initialValue: initData.os_arch || '',
-        rules: [
-          { required: true, message: i18n.t('compute.text_1363') },
-        ],
-      },
-    ],
-    hostName: [
-      'hostName',
-      {
-        initialValue: initData.hostname || '',
-      },
-    ],
+    os_arch: { name: 'os_arch', initialValue: initData.os_arch || '' },
+    hostName: { name: 'hostName', initialValue: initData.hostname || '' },
     portMapping: {
-      key: i => [
-        `containerPorts[${i}]`,
-        {
-          rules: [
-            { required: true, message: i18n.t('common.tips.input', [i18n.t('compute.repo.container_port')]) },
-          ],
-        },
-      ],
-      value: i => [
-        `hostPorts[${i}]`,
-      ],
+      key: i => ({ name: `containerPorts[${i}]` }),
+      value: i => ({ name: `hostPorts[${i}]` }),
     },
     encrypt_keys: {
-      encryptEnable: [
-        'encryptEnable',
-        {
-          initialValue: initEncryptEnable || '',
-        },
-      ],
-      encrypt_key_alg: [
-        'encrypt_key_alg',
-        {
-          initialValue: initData.encrypt_key_alg || '',
-        },
-      ],
-      encrypt_key_id: [
-        'encrypt_key_id',
-        {
-          initialValue: initData.encrypt_key_id || '',
-        },
-      ],
+      encryptEnable: { name: 'encryptEnable', initialValue: initEncryptEnable || '' },
+      encrypt_key_alg: { name: 'encrypt_key_alg', initialValue: initData.encrypt_key_alg || '' },
+      encrypt_key_id: { name: 'encrypt_key_id', initialValue: initData.encrypt_key_id || '' },
     },
-    custom_data_type: [
-      'custom_data_type',
-      {
-        initialValue: initData.user_data ? 'input' : '',
-      },
-    ],
-    deploy_telegraf: [
-      'deploy_telegraf',
-      {
-        valuePropName: 'checked',
-        initialValue: !(initData && initData.extraData && !initData.deploy_telegraf),
-      },
-    ],
+    custom_data_type: { name: 'custom_data_type', initialValue: initData.user_data ? 'input' : '' },
+    deploy_telegraf: {
+      name: 'deploy_telegraf',
+      valuePropName: 'checked',
+      initialValue: !(initData && initData.extraData && !initData.deploy_telegraf),
+    },
     bastion_host: {
-      bastion_host_enable: [
-        'bastion_host_enable',
-        {
-          valuePropName: 'checked',
-          initialValue: !!initData.bastion_server,
-        },
-      ],
-      bastion_host_id: [
-        'bastion_host_id',
-        {
-          // 勿用 ''：Select 有空字符串时不展示 placeholder
-          initialValue: initData.bastion_server?.bastion_host_id || undefined,
-          rules: [
-            { required: true, message: i18n.t('compute.bastionHost.bastion_host.placeholder') },
-          ],
-        },
-      ],
-      bastion_org_id: [
-        'bastion_org_id',
-        {
-          initialValue: initData.bastion_server?.bastion_org_id || undefined,
-          rules: [
-            { required: true, message: i18n.t('compute.bastionHost.bastion_org.placeholder') },
-          ],
-        },
-      ],
-      nodes: [
-        'nodes',
-        {
-          initialValue: initData.bastion_server?.nodes || [],
-          rules: [
-            { required: true, message: i18n.t('compute.bastionHost.node.placeholder') },
-          ],
-        },
-      ],
-      port: [
-        'port',
-        {
-          initialValue: initData.bastion_server?.port || 22,
-          rules: [
-            { type: 'number', min: 0, max: 65535, message: i18n.t('compute.bastionHost.port.placeholder'), trigger: 'blur', transform: (v) => parseInt(v) },
-          ],
-        },
-      ],
-      privileged_accounts: [
-        'privileged_accounts',
-        {
-          rules: [
-            { required: true, message: i18n.t('compute.bastionHost.privileged_account.placeholder') },
-          ],
-        },
-      ],
-      accounts: [
-        'accounts',
-        {
-          rules: [
-            { required: true, message: i18n.t('compute.bastionHost.account.placeholder') },
-          ],
-        },
-      ],
-      bastion_domain_id: [
-        'bastion_domain_id',
-        {
-          // 勿用 ''：Select 有空字符串时不展示 placeholder
-          initialValue: initData.bastion_server?.bastion_domain_id || undefined,
-        },
-      ],
-    },
-    is_daemon: [
-      'is_daemon',
-      {
+      bastion_host_enable: {
+        name: 'bastion_host_enable',
         valuePropName: 'checked',
-        initialValue: initData.is_daemon || false,
+        initialValue: !!initData.bastion_server,
       },
-    ],
+      bastion_host_id: {
+        name: 'bastion_host_id', // 勿用 ''：Select 有空字符串时不展示 placeholder
+        initialValue: initData.bastion_server?.bastion_host_id || undefined,
+      },
+      bastion_org_id: { name: 'bastion_org_id', initialValue: initData.bastion_server?.bastion_org_id || undefined },
+      nodes: { name: 'nodes', initialValue: initData.bastion_server?.nodes || [] },
+      port: { name: 'port', initialValue: initData.bastion_server?.port || 22 },
+      privileged_accounts: { name: 'privileged_accounts' },
+      accounts: { name: 'accounts' },
+      bastion_domain_id: {
+        name: 'bastion_domain_id', // 勿用 ''：Select 有空字符串时不展示 placeholder
+        initialValue: initData.bastion_server?.bastion_domain_id || undefined,
+      },
+    },
+    is_daemon: {
+      name: 'is_daemon',
+      valuePropName: 'checked',
+      initialValue: initData.is_daemon || false,
+    },
   }
 }
 
-const decoratorGroup = {
+const fieldMapGroup = {
   idc: ['domain', 'project', 'cloudregionZone', 'name', 'description', 'reason', 'count', 'imageOS', 'loginConfig', 'hypervisor', 'gpu', 'vcpu', 'vmem', 'sku', 'kickstart', 'systemDisk', 'dataDisk', 'network', 'secgroup', 'schedPolicy', 'bios', 'vdi', 'vga', 'machine', 'backup', 'duration', 'groups', 'tag', 'servertemplate', 'eip', 'os_arch', 'hostName', 'portMapping', 'encrypt_keys', 'custom_data_type', 'deploy_telegraf', 'pci', 'bastion_host', 'is_daemon'],
   public: ['domain', 'project', 'name', 'description', 'count', 'enableWorldMap', 'imageOS', 'reason', 'loginConfig', 'vcpu', 'vmem', 'sku', 'systemDisk', 'dataDisk', 'network', 'schedPolicy', 'bill', 'eip', 'secgroup', 'resourceType', 'tag', 'servertemplate', 'duration', 'cloudprovider', 'hostName', 'custom_data_type', 'bastion_host'],
   private: ['domain', 'project', 'cloudregionZone', 'name', 'description', 'reason', 'count', 'imageOS', 'loginConfig', 'hypervisor', 'vcpu', 'vmem', 'sku', 'systemDisk', 'dataDisk', 'network', 'secgroup', 'schedPolicy', 'duration', 'tag', 'servertemplate', 'cloudprovider', 'hostName', 'portMapping', 'custom_data_type', 'bastion_host', 'pci'],
 }
 
-export class Decorator {
-  decorators = {}
-  constructor (type) {
-    this.type = type
+function pickVmFieldMapByType (type, initData = {}) {
+  const all = createVmFieldMap(type, initData)
+  const keys = fieldMapGroup[type]
+  const ret = {}
+  if (keys) {
+    keys.forEach((fieldKey) => {
+      if (all[fieldKey]) {
+        ret[fieldKey] = all[fieldKey]
+      } else {
+        console.error(i18n.t('compute.text_221', [fieldKey]))
+      }
+    })
   }
+  return ret
+}
 
-  createDecorators (initData) {
-    const decoratorArr = decoratorGroup[this.type]
-    if (decoratorArr) {
-      decoratorArr.forEach(dec => {
-        const decorators = createVmDecorators(this.type, initData)
-        if (decorators[dec]) {
-          this.decorators[dec] = decorators[dec]
-        } else {
-          console.error(i18n.t('compute.text_221', [dec]))
-        }
-      })
+/** 调整配置等场景的 vcpu/vmem 回落默认值（与 field-map initialValue 一致） */
+export const VM_FORM_DEFAULTS = {
+  vcpu: 2,
+  vmem: 2048,
+}
+
+/**
+ * 创建页 form.fd 默认值（从 field-map 元数据抽 initialValue）
+ * @returns {{ defaults: Object }}
+ */
+export function createVmFormDefaults (type, initData = {}) {
+  const fieldMap = pickVmFieldMapByType(type, initData)
+  if (!fieldMap.groups) {
+    fieldMap.groups = {
+      groupsEnable: { name: 'groupsEnable', valuePropName: 'checked', initialValue: false },
+      groups: { name: 'groups', initialValue: [] },
     }
-    return this.decorators
+  }
+  return {
+    defaults: getInitialValue(fieldMap),
   }
 }
 
@@ -1995,9 +1268,10 @@ export class GenCreateData {
     if (this.fd.groupsEnable && this.fd.groups && this.fd.groups.length) {
       data.groups = this.fd.groups
     }
-    // 标签
-    if (this.fd.tag) {
-      data.__meta__ = this.fd.tag
+    // 标签（end-state：form.fd.__meta__；兼容旧 fd.tag）
+    const meta = this.fd.__meta__ || this.fd.tag
+    if (meta && typeof meta === 'object' && Object.keys(meta).length) {
+      data.__meta__ = meta
     }
     // 主机加密
     if (this.fd.encryptEnable === 'existing' && this.fd.encrypt_key_id) {

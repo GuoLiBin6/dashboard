@@ -4,25 +4,27 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.clouduser')" :count="params.data.length" :action="$t('cloudenv.clouduser_list_a2')" />
       <dialog-table class="mb-2" :data="params.data" :columns="columns" />
-      <a-form
-        :form="form.fc"
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
         v-bind="formItemLayout">
-        <a-form-item :label="$t('cloudenv.clouduser_list_t4')">
+        <a-form-model-item :label="$t('cloudenv.clouduser_list_t4')" prop="user_id">
           <template v-if="userLoading">
             <a-spin />
           </template>
           <template v-else>
             <user-select
-              v-decorator="decorators.user_id"
-              v-model:project="form.fi.project"
+              v-model="form.user_id"
+              v-model:project="formFi.project"
               :cloudaccount-id="params.cloudaccount.id"
               :default-domain-id="userInfo.projectDomainId"
               :default-user-id="userInfo.id"
               :default-project-id="userInfo.projectId"
               :cloudprovider-id="params.data[0].cloudprovider_id" />
           </template>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -48,19 +50,14 @@ export default {
       loading: false,
       userLoading: false,
       form: {
-        fc: this.$form.createForm(this),
-        fi: {
-          project: {},
-        },
+        user_id: undefined,
       },
-      decorators: {
+      formFi: {
+        project: {},
+      },
+      rules: {
         user_id: [
-          'user_id',
-          {
-            rules: [
-              { required: false, message: this.$t('common.select') },
-            ],
-          },
+          { required: false, message: this.$t('common.select') },
         ],
       },
       formItemLayout: {
@@ -92,8 +89,11 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        values.project_id = this.form.fi.project.id
+        await this.$refs.formRef.validate()
+        const values = {
+          user_id: this.form.user_id,
+          project_id: this.formFi.project.id,
+        }
         await this.params.onManager('performAction', {
           id: this.params.data[0].id,
           steadyStatus: 'available',

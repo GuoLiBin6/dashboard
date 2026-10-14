@@ -4,11 +4,11 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_1209')" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" hideRequiredMark>
-        <a-form-item :label="$t('compute.text_1210')" v-bind="formItemLayout" :extra="$t('compute.text_1211')">
-          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" :disabled="disableAutoPurge" v-decorator="decorators.purge" />
-        </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" :model="form" hideRequiredMark>
+        <a-form-model-item :label="$t('compute.text_1210')" v-bind="formItemLayout" :extra="$t('compute.text_1211')" prop="purge">
+          <a-switch v-model:checked="form.purge" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" :disabled="disableAutoPurge" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -29,16 +29,7 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        purge: [
-          'purge',
-          {
-            initialValue: false,
-            valuePropName: 'checked',
-          },
-        ],
+        purge: false,
       },
       formItemLayout: {
         wrapperCol: {
@@ -73,23 +64,20 @@ export default {
   mounted () {
     const isOnline = this.params.data.some((obj) => { return obj.backup_host_status === 'online' })
     if (!isOnline) {
-      this.form.fc.setFieldsValue({
-        purge: true,
-      })
+      this.form.purge = true
     }
   },
   methods: {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
         const ids = this.params.data.map(item => item.id)
         await this.params.onManager('batchPerformAction', {
           id: ids,
           steadyStatus: ['running', 'ready'],
           managerArgs: {
             action: 'delete-backup',
-            data: values,
+            data: this.form,
           },
         })
         this.cancelDialog()

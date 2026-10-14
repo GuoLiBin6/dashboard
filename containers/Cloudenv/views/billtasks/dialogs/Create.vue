@@ -24,7 +24,7 @@
           <a-form-model-item style="display:inline-block" prop="end_day">
             <a-month-picker v-model:value="form.end_day" :disabled-date="dateDisabledEnd" :disabled="ignore_time" />
           </a-form-model-item>
-          <a-checkbox class="ml-2" v-model="ignore_time">{{$t('cloudenv.run_all_bills')}}</a-checkbox>
+          <a-checkbox class="ml-2" v-model:checked="ignore_time">{{$t('cloudenv.run_all_bills')}}</a-checkbox>
         </a-form-model-item>
       </a-form-model>
     </div>
@@ -186,15 +186,7 @@ export default {
       return false
     },
     validateForm () {
-      return new Promise((resolve, reject) => {
-        this.$refs.form.validate((valid, err) => {
-          if (valid) {
-            resolve(valid)
-          } else {
-            reject(err)
-          }
-        })
-      })
+      return this.$refs.form.validate().then(() => true)
     },
     async handleConfirm () {
       this.loading = true

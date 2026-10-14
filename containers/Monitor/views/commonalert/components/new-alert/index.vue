@@ -171,7 +171,7 @@ export default {
       this.$router.push('/commonalerts')
     },
     reset () {
-      this.$refs.alertFormRef.form.fc.resetFields()
+      this.$refs.alertFormRef?.$refs?.formRef?.resetFields?.()
     },
     resetChart () {
       this.series = []

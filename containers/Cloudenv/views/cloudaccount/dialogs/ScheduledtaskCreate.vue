@@ -4,18 +4,18 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('cloudenv.text_12')" class="mt-3" :count="params.data.length" :action="$t('cloudenv.text_432')" />
       <dialog-table v-if="columns && columns.length" :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" v-bind="formItemLayout" hideRequiredMark>
-        <a-form-item :label="$t('cloudenv.text_95')">
-          <a-input :placeholder="$t('cloudenv.text_190')" v-decorator="decorators.name" />
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout" hideRequiredMark>
+        <a-form-model-item :label="$t('cloudenv.text_95')" prop="name">
+          <a-input :placeholder="$t('cloudenv.text_190')" v-model:value="form.name" />
           <template v-slot:extra>
-            <name-repeated res="scheduledtasks" :name="form.fd.name" />
+            <name-repeated res="scheduledtasks" :name="form.name" />
           </template>
-        </a-form-item>
-        <a-form-item :label="$t('cloudenv.text_360')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('cloudenv.text_360')">
           {{ $t('cloudenv.sync_account') }}
-        </a-form-item>
-        <scheduled-task-time ref="taskTime" :form="form" />
-      </a-form>
+        </a-form-model-item>
+        <scheduled-task-time ref="taskTime" :model="form" />
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
@@ -44,27 +44,13 @@ export default {
   data () {
     return {
       loading: false,
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            rules: [
-              { required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` },
-            ],
-          },
+          { required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` },
         ],
       },
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-          },
-        }),
-        fd: {
-          name: '',
-        },
+        name: '',
       },
       columns: [
         {
@@ -92,12 +78,6 @@ export default {
           xxl: { span: 3 },
         },
       },
-      cycleTypeOpts: [
-        { key: 'hour', label: this.$t('cloudenv.cycle_type.hour') },
-        { key: 'day', label: this.$t('cloudenv.cycle_type.day') },
-        { key: 'week', label: this.$t('cloudenv.cycle_type.week') },
-        { key: 'month', label: this.$t('cloudenv.cycle_type.month') },
-      ],
     }
   },
   methods: {
@@ -115,8 +95,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        const params = this.generateData(values)
+        await this.$refs.formRef.validate()
+        const params = this.generateData(this.form)
         await new this.$Manager('scheduledtasks', 'v1').create({ data: params })
         this.params.callback && this.params.callback()
         this.cancelDialog()

@@ -1,15 +1,15 @@
 <template>
   <div>
     <a-alert :showIcon="false" :message="$t('cloudenv.text_194')" banner />
-    <a-form class="pt-3" :form="form.fc" v-bind="formLayout">
+    <a-form-model ref="formRef" class="pt-3" :model="form.fd" :rules="billRules" v-bind="formLayout">
       <a-divider orientation="left">{{$t('cloudenv.text_199')}}</a-divider>
-      <a-form-item :label="$t('cloudenv.text_200')">
+      <a-form-model-item :label="$t('cloudenv.text_200')">
         <a-radio-group v-model:value="billingType">
           <a-radio-button :value="1">{{$t('cloudenv.text_201')}}</a-radio-button>
           <a-radio-button :value="2">{{$t('cloudenv.text_202')}}</a-radio-button>
         </a-radio-group>
-      </a-form-item>
-      <a-form-item
+      </a-form-model-item>
+      <a-form-model-item
         :label="$t('cloudenv.text_201')"
         v-if="billingType === 2"
         :extra="$t('cloudenv.text_203')">
@@ -17,43 +17,43 @@
           :filterOption="filterOption"
           showSearch
           :loading="cloudAccountLoading"
-          v-decorator="decorators.billing_bigquery_account">
+          v-model:value="form.fd.billing_bigquery_account">
           <template v-for="item in cloudAccounts" :key="item.id">
             <a-select-option v-if="id !== item.id" :value="item.id">{{item.name}}</a-select-option>
           </template>
         </a-select>
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.text_2041')">
-        <a-input v-decorator="decorators.billing_bigquery_table" />
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.billing_scope')">
-        <a-radio-group v-decorator="decorators.billing_scope">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.text_2041')">
+        <a-input v-model:value="form.fd.billing_bigquery_table" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.billing_scope')">
+        <a-radio-group v-model:value="form.fd.billing_scope">
           <a-radio-button value="managed" key="managed">{{ $t('cloudenv.billing_scope.managed') }}</a-radio-button>
           <a-radio-button value="all" key="all">{{ $t('cloudenv.billing_scope.all') }}</a-radio-button>
         </a-radio-group>
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.text_210')" :extra="$t('cloudenv.text_211')">
-        <a-switch v-decorator="decorators.sync_info" />
-      </a-form-item>
-      <a-form-item
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.text_210')" :extra="$t('cloudenv.text_211')">
+        <a-switch v-model:checked="form.fd.sync_info" />
+      </a-form-model-item>
+      <a-form-model-item
         :label="$t('cloudenv.text_212')"
-        v-if="form.fc.getFieldValue('sync_info')"
+        v-if="form.fd.sync_info"
         :extra="$t('cloudenv.text_213')">
-        <a-form-item style="display:inline-block">
+        <a-form-model-item style="display:inline-block">
           <a-month-picker
-            v-decorator="decorators.start_day"
+            v-model:value="form.fd.start_day"
             :disabled-date="dateDisabledStart"
             format="YYYY-MM" />
-        </a-form-item>
+        </a-form-model-item>
         <span class="ml-2 mr-2">~</span>
-        <a-form-item style="display:inline-block">
+        <a-form-model-item style="display:inline-block">
           <a-month-picker
-            v-decorator="decorators.end_day"
+            v-model:value="form.fd.end_day"
             :disabled-date="dateDisabledEnd"
             format="YYYY-MM" />
-        </a-form-item>
-      </a-form-item>
-    </a-form>
+        </a-form-model-item>
+      </a-form-model-item>
+    </a-form-model>
   </div>
 </template>
 
@@ -61,6 +61,7 @@
 import * as R from 'ramda'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
+import { applyFieldMapInitialValues, rulesFromFieldMap } from './components/createFormModelHelpers'
 
 export default {
   name: 'BigQueryBillForm',
@@ -78,7 +79,7 @@ export default {
       cloudAccount: {},
       billingType: 1,
       form: {
-        fc: this.$form.createForm(this),
+        fd: {},
       },
       billTasks: {
         '7 days': this.$t('cloudenv.text_214'),
@@ -118,49 +119,51 @@ export default {
     isGoogle () {
       return this.provider === 'Google'
     },
-    decorators () {
+    billRules () {
+      return rulesFromFieldMap(this.fieldMap)
+    },
+    fieldMap () {
       const { options = {} } = this.cloudAccount
       return {
-        billing_bigquery_account: [
-          'billing_bigquery_account',
-          {
-            initialValue: options.billing_bigquery_account,
-          },
-        ],
-        billing_bigquery_table: [
-          'billing_bigquery_table',
-          {
-            initialValue: options.billing_bigquery_table,
-            rules: [
-              { required: true, message: this.$t('cloudenv.text_220') },
-            ],
-          },
-        ],
-        sync_info: [
-          'sync_info',
-          {
-            initialValue: false,
-            valuePropName: 'checked',
-          },
-        ],
-        start_day: ['start_day', {
+        billing_bigquery_account: { name: 'billing_bigquery_account', initialValue: options.billing_bigquery_account },
+        billing_bigquery_table: {
+          name: 'billing_bigquery_table',
+          initialValue: options.billing_bigquery_table,
+          rules: [
+            { required: true, message: this.$t('cloudenv.text_220') },
+          ],
+        },
+        sync_info: {
+          name: 'sync_info',
+          initialValue: false,
+          valuePropName: 'checked',
+        },
+        start_day: {
+          name: 'start_day',
           initialValue: this.$moment().startOf('month'),
           rules: [{ required: true, message: this.$t('common.tips.select', [this.$t('cloudenv.text_461')]) }],
-        }],
-        end_day: ['end_day', {
+        },
+        end_day: {
+          name: 'end_day',
           initialValue: this.$moment(),
           rules: [{ required: true, message: this.$t('common.tips.select', [this.$t('cloudenv.text_462')]) }],
-        }],
-        billing_scope: [
-          'billing_scope',
-          {
-            initialValue: options.billing_scope || 'managed',
-            rules: [
-              { required: true, message: this.$t('cloudenv.billing_scope.prompt') },
-            ],
-          },
-        ],
+        },
+        billing_scope: {
+          name: 'billing_scope',
+          initialValue: options.billing_scope || 'managed',
+          rules: [
+            { required: true, message: this.$t('cloudenv.billing_scope.prompt') },
+          ],
+        },
       }
+    },
+  },
+  watch: {
+    fieldMap: {
+      immediate: true,
+      handler (deco) {
+        applyFieldMapInitialValues(this.form.fd, deco)
+      },
     },
   },
   created () {
@@ -224,13 +227,13 @@ export default {
       }
     },
     dateDisabledStart (value) {
-      const dateEnd = this.form.fc.getFieldValue('end_day')
+      const dateEnd = this.form.fd.end_day
       if (dateEnd && value > dateEnd) return true
       if (value > this.$moment()) return true
       return false
     },
     dateDisabledEnd (value) {
-      const dateStart = this.form.fc.getFieldValue('start_day')
+      const dateStart = this.form.fd.start_day
       if (dateStart && value < dateStart) return true
       if (value > this.$moment()) return true
       return false
@@ -254,7 +257,8 @@ export default {
     },
     async doSubmit ({ id } = this.cloudAccount, isGoCloudaccount = true) {
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form.fd }
         if (values.sync_info) {
           this.postBillTasks(id, values)
         }
@@ -288,7 +292,8 @@ export default {
       }
     },
     async testPost () {
-      const values = await this.form.fc.validateFields()
+      await this.$refs.formRef.validate()
+      const values = { ...this.form.fd }
       values.cloudaccount_id = this.id
       delete values.sync_info
       delete values.month

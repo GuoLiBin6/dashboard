@@ -2,70 +2,74 @@
   <div>
     <page-header :title="$t('common_661')" :tabs="cloudEnvOptions" v-model:currentTab="cloudEnv" />
     <page-body>
-      <a-form
+      <a-form-model
+        ref="formRef"
         class="mt-3"
-        :form="form.fc"
-        @submit.prevent="handleSubmit"
+        :model="form"
+        :rules="rules"
         v-bind="formItemLayout"
         hideRequiredMark>
-        <a-form-item :label="$t('network.text_205', [$t('dictionary.project')])" v-if="isAdminMode">
-          <domain-project :decorators="decorators.projectDomain" :fc="form.fc" :labelInValue="false" @update:domain="domainChange" />
-        </a-form-item>
-        <a-form-item v-if="cloudEnv === 'public'" :label="$t('dictionary.cloudaccount')" class="mb-0">
+        <a-form-model-item :label="$t('network.text_205', [$t('dictionary.project')])" v-if="isAdminMode" prop="project">
+          <domain-project
+            :form="form"
+            :labelInValue="false"
+            @update:domain="domainChange" />
+        </a-form-model-item>
+        <a-form-model-item v-if="cloudEnv === 'public'" :label="$t('dictionary.cloudaccount')" class="mb-0">
           <a-row :gutter="8" class="w-100">
             <a-col :span="12">
-              <a-form-item :wrapperCol="{ span: 24 }">
+              <a-form-model-item :wrapperCol="{ span: 24 }" prop="brand">
                 <a-select
+                  v-model:value="form.brand"
                   :allowClear="allowClear"
                   class="w-100"
                   style="width:100%"
-                  v-decorator="decorators.brand"
                   :placeholder="$t('rules.provider')"
-                  @change="brandChange"
-                  showSearch>
+                  showSearch
+                  @change="brandChange">
                   <a-select-option v-for="item of brandOpts" :value="item.key" :key="item.key">{{ item.label }}</a-select-option>
                 </a-select>
-              </a-form-item>
+              </a-form-model-item>
             </a-col>
             <a-col :span="12">
-              <a-form-item :wrapperCol="{ span: 24 }">
+              <a-form-model-item :wrapperCol="{ span: 24 }" prop="account">
                 <base-select
+                  v-model="form.account"
                   :remote="true"
                   class="w-100"
                   :needParams="true"
-                  v-decorator="decorators.account"
                   resource="cloudaccounts"
                   isDefaultSelect
                   :params="accountParams"
                   :remote-fn="q => ({ filter: `name.contains(${q})` })"
                   :select-props="{ placeholder: $t('rules.cloudaccount') }"
                   @update:item="handleAccountChange" />
-              </a-form-item></a-col>
+              </a-form-model-item>
+            </a-col>
           </a-row>
-        </a-form-item>
-        <a-form-item v-if="cloudEnv=== 'public'" :label="$t('compute.text_15')">
+        </a-form-model-item>
+        <a-form-model-item v-if="cloudEnv === 'public'" :label="$t('compute.text_15')" prop="cloudprovider">
           <base-select
+            v-model="form.cloudprovider"
             resource="cloudproviders"
-            v-decorator="decorators.cloudprovider"
             :params="cloudproviderParams"
             :isDefaultSelect="true"
             :showSync="true"
             :select-props="{ placeholder: $t('common_588') }" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_717')">
-          <a-select
-            v-decorator="decorators.zoneType" @change="zoneTypeChangeHandle">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_717')" prop="zoneType">
+          <a-select v-model:value="form.zoneType" @change="zoneTypeChangeHandle">
             <a-select-option v-for="v in zoneTypes" :value="v.value" :key="v.value">
               <div>{{ v.label }}<span class="ml-2">{{ v.desc }}</span></div>
             </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('network.text_156')">
-          <a-input v-decorator="decorators.name" :placeholder="$t('network.text_157')" />
-        </a-form-item>
-        <a-form-item label="VPC" v-if="cloudEnv === 'public' && currentZoneType === 'PrivateZone'">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_156')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('network.text_157')" />
+        </a-form-model-item>
+        <a-form-model-item label="VPC" v-if="cloudEnv === 'public' && form.zoneType === 'PrivateZone'" prop="vpc_ids">
           <base-select
-            v-decorator="decorators.vpc_ids"
+            v-model="form.vpc_ids"
             resource="vpcs"
             remote
             :params="vpcParams"
@@ -73,20 +77,19 @@
             :labelFormat="vpcLabelFormat"
             :select-props="{ placeholder: $t('common_226'), mode: 'multiple' }"
             :remote-fn="q => ({ filter: `name.contains(${q})` })" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
-        <a-form-item :label="$t('common.text00012')" class="mb-0">
-          <tag
-            v-decorator="decorators.__meta__" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" prop="description">
+          <a-textarea v-model:value="form.description" :auto-size="{ minRows: 1, maxRows: 3 }" :placeholder="$t('common_367')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.text00012')" class="mb-0" prop="__meta__">
+          <tag :value="form.__meta__" @change="v => { form.__meta__ = v }" />
+        </a-form-model-item>
+      </a-form-model>
     </page-body>
     <page-footer>
       <template #right>
         <a-button class="mr-3" type="primary" :loading="loading" @click="handleConfirm">{{ $t('dialog.ok') }}</a-button>
-        <a-button @click="cancel">{{ this.$t('dialog.cancel') }}</a-button>
+        <a-button @click="cancel">{{ $t('dialog.cancel') }}</a-button>
       </template>
     </page-footer>
   </div>
@@ -96,7 +99,7 @@
 import _ from 'lodash'
 import { mapGetters } from 'vuex'
 import { HYPERVISORS_MAP } from '@/constants'
-import DomainProject from '@/sections/DomainProject'
+import DomainProject from '@/sections/DomainProject/model'
 import validateForm, { validate } from '@/utils/validate'
 import { getCloudEnvOptions } from '@/utils/common/hypervisor'
 import Tag from '@/sections/Tag'
@@ -116,97 +119,18 @@ export default {
       loading: false,
       cloudEnvOptions,
       cloudEnv,
+      allowClear: true,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-          },
-        }),
-        fd: {
-          brand: '',
-          account: '',
-          cloudprovider: '',
-          zoneType,
-        },
-      },
-      decorators: {
-        projectDomain: {
-          project: [
-            'project',
-            {
-              initialValue: undefined,
-            },
-          ],
-          domain: [
-            'domain',
-            {
-              initialValue: undefined,
-            },
-          ],
-        },
-        brand: [
-          'brand',
-          {
-            rules: [
-              { required: true, message: this.$t('rules.brand') },
-            ],
-          },
-        ],
-        account: [
-          'account',
-          {
-            rules: [
-              { required: true, message: this.$t('rules.cloudaccount') },
-            ],
-          },
-        ],
-        cloudprovider: [
-          'cloudprovider',
-          {
-            rules: [
-              { required: true, message: this.$t('common_588') },
-            ],
-          },
-        ],
-        vpc_ids: [
-          'vpc_ids',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_274') },
-            ],
-          },
-        ],
-        name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('network.text_157') },
-              { validator: this.checkDomainHandle },
-            ],
-          },
-        ],
-        description: ['description'],
-        zoneType: [
-          'zoneType',
-          {
-            initialValue: zoneType,
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('network.text_717') },
-            ],
-          },
-        ],
-        __meta__: [
-          '__meta__',
-          {
-            rules: [
-              { validator: validateForm('tagName') },
-            ],
-          },
-        ],
+        domain: undefined,
+        project: undefined,
+        brand: '',
+        account: '',
+        cloudprovider: '',
+        zoneType,
+        name: '',
+        description: '',
+        vpc_ids: undefined,
+        __meta__: {},
       },
       formItemLayout: {
         wrapperCol: {
@@ -218,11 +142,33 @@ export default {
       },
       brandOpts: [],
       domainId: '',
-      currentZoneType: zoneTypes[0].value,
     }
   },
   computed: {
     ...mapGetters(['isAdminMode', 'scope', 'capability']),
+    rules () {
+      const rules = {
+        name: [
+          { required: true, message: this.$t('network.text_157'), trigger: 'blur' },
+          { validator: this.checkDomainHandle, trigger: 'blur' },
+        ],
+        zoneType: [
+          { required: true, message: this.$t('network.text_717'), trigger: 'change' },
+        ],
+        __meta__: [
+          { validator: validateForm('tagName'), trigger: 'change' },
+        ],
+      }
+      if (this.cloudEnv === 'public') {
+        rules.brand = [{ required: true, message: this.$t('rules.brand'), trigger: 'change' }]
+        rules.account = [{ required: true, message: this.$t('rules.cloudaccount'), trigger: 'change' }]
+        rules.cloudprovider = [{ required: true, message: this.$t('common_588'), trigger: 'change' }]
+        if (this.form.zoneType === 'PrivateZone') {
+          rules.vpc_ids = [{ required: true, message: this.$t('network.text_274'), trigger: 'change' }]
+        }
+      }
+      return rules
+    },
     vpcParams () {
       const params = {
         limit: 20,
@@ -233,8 +179,8 @@ export default {
         params.project_domain = this.domainId
         delete params.scope
       }
-      if (this.form.fd.brand) {
-        params.brand = this.form.fd.brand
+      if (this.form.brand) {
+        params.brand = this.form.brand
       }
       return params
     },
@@ -250,7 +196,7 @@ export default {
     accountParams () {
       return {
         scope: this.$store.getters.scope,
-        provider: this.form?.fd?.brand,
+        provider: this.form.brand,
         limit: 20,
       }
     },
@@ -258,31 +204,25 @@ export default {
       return {
         scope: this.$store.getters.scope,
         read_only: false,
-        cloudaccount_id: this.form?.fd?.account,
+        cloudaccount_id: this.form.account,
       }
     },
     isCloudflare () {
-      return this.form.fd.brand === 'Cloudflare'
+      return this.form.brand === 'Cloudflare'
     },
   },
   watch: {
-    cloudEnv: function (val) {
+    cloudEnv (val) {
       if (val === 'onpremise') {
-        this.form.fc.setFieldsValue({
-          zoneType: 'PrivateZone',
-        })
-        this.form.fd.zoneType = 'PrivateZone'
-        this.currentZoneType = 'PrivateZone'
+        this.form.zoneType = 'PrivateZone'
       } else {
         this.initBrands()
       }
     },
-    zoneTypes (val, oldval) {
-      this.form.fc.setFieldsValue({
-        zoneType: val[0].value,
-      })
-      this.form.fd.zoneType = val[0].value
-      this.currentZoneType = val[0].value
+    zoneTypes (val) {
+      if (val?.[0]?.value) {
+        this.form.zoneType = val[0].value
+      }
     },
   },
   mounted () {
@@ -299,14 +239,14 @@ export default {
         ret.push({ key: target.provider, label: target.label })
       })
       const brand = ret[0] ? ret[0].key : ''
-      this.form.fd.brand = brand
+      this.form.brand = brand
       this.brandOpts = ret
-      this.$nextTick(() => {
-        this.form.fc.setFieldsValue({
-          brand,
-        })
-      })
     },
+    brandChange () {
+      this.form.account = ''
+      this.form.cloudprovider = ''
+    },
+    handleAccountChange () {},
     domainChange (domainId) {
       this.domainId = domainId
     },
@@ -316,20 +256,20 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        const { domain, project, name, zoneType, description, cloudprovider } = values
+        await this.$refs.formRef.validate()
+        const { domain, project, name, zoneType, description, cloudprovider } = this.form
         const data = {
           domain: domain || this.$store.getters.userInfo.project_domain,
           project: project,
           name,
           description,
           zone_type: zoneType,
-          __meta__: values.__meta__,
+          __meta__: this.form.__meta__,
         }
         if (this.cloudEnv === 'public') {
           data.cloudprovider_id = cloudprovider
           if (zoneType === 'PrivateZone') {
-            data.vpc_ids = values.vpc_ids
+            data.vpc_ids = this.form.vpc_ids
           }
         }
         await this.doCreate(data)
@@ -346,17 +286,16 @@ export default {
       }
     },
     checkDomainHandle (rule, value, callback) {
-      if (this.form.fd.zoneType === 'PublicZone') {
+      if (this.form.zoneType === 'PublicZone') {
         if (validate(value, 'domain') === false || validate(value, 'domain').result === false) {
-          callback(new Error(this.$t('network.text_178')))
+          return callback(new Error(this.$t('network.text_178')))
         }
       }
-      callback()
+      return callback()
     },
-    zoneTypeChangeHandle (value) {
-      this.currentZoneType = value
+    zoneTypeChangeHandle () {
       this.$nextTick(() => {
-        this.form.fc.validateFields(['name'], { force: true })
+        this.$refs.formRef?.validateField?.('name')
       })
     },
     vpcLabelFormat (item) {

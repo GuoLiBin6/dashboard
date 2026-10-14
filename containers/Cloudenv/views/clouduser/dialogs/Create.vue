@@ -2,48 +2,48 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{ $t('common.create') }}{{ $t('dictionary.clouduser') }}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc"
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
         v-bind="formItemLayout">
-        <a-form-item :label="$t('cloudenv.text_375')" :extra="nameExtra">
-          <a-input v-decorator="decorators.generate_name" :placeholder="namePlaceholder"  @change="e => { form.fi.generate_name = e.target.value }" />
+        <a-form-model-item :label="$t('cloudenv.text_375')" :extra="nameExtra" prop="generate_name">
+          <a-input v-model:value="form.generate_name" :placeholder="namePlaceholder" @change="e => { formFi.generate_name = e.target.value }" />
           <template v-slot:extra>
             <name-repeated
               res="cloudusers"
               version="v1"
-              :name="form.fi.generate_name"
+              :name="formFi.generate_name"
               :params="nameRepeatParams" />
           </template>
-        </a-form-item>
-        <template>
-          <a-form-item :label="$t('dictionary.cloudprovider')">
-            <base-select
-              v-decorator="decorators.manager_id"
-              resource="cloudproviders"
-              filterable
-              isDefaultSelect
-              :params="cloudproviderParams"
-              v-model:item="form.fi.cloudprovider" />
-          </a-form-item>
-        </template>
-        <a-form-item :label="$t('cloudenv.clouduser_list_t4')" :extra="$t('common_625')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('dictionary.cloudprovider')" prop="manager_id">
+          <base-select
+            v-model:value="form.manager_id"
+            resource="cloudproviders"
+            filterable
+            isDefaultSelect
+            :params="cloudproviderParams"
+            v-model:item="formFi.cloudprovider" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('cloudenv.clouduser_list_t4')" :extra="$t('common_625')" prop="owner_id">
           <user-select
-            v-decorator="decorators.owner_id"
+            v-model="form.owner_id"
             :cloudaccount-id="params.cloudaccount.id"
-            v-model:user="form.fi.user"
-            v-model:project="form.fi.project"
-            :cloudprovider-id="form.fi.cloudprovider.id"
+            v-model:user="formFi.user"
+            v-model:project="formFi.project"
+            :cloudprovider-id="formFi.cloudprovider.id"
             :defaultDomainId="params.defaultDomainId"
             :defaultProjectId="params.defaultProjectId"
             :defaultUserId="params.userId" />
-        </a-form-item>
-        <a-form-item :label="$t('system.text_146')" class="mb-0" :extra="isEnableMail ? '' : $t('system.is_config_mail_tips')">
-          <a-input v-decorator="decorators.email" :disabled="!isEnableMail" :placeholder="$t('system.email_placeholder')" />
-        </a-form-item>
-        <a-form-item :wrapperCol="{ offset: 4 }">
-          <a-checkbox v-decorator="decorators.notify" :disabled="!isCanSendNotify">{{ $t('system.email_checkbox_text') }}</a-checkbox>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('system.text_146')" class="mb-0" :extra="isEnableMail ? '' : $t('system.is_config_mail_tips')" prop="email">
+          <a-input v-model:value="form.email" :disabled="!isEnableMail" :placeholder="$t('system.email_placeholder')" />
+        </a-form-model-item>
+        <a-form-model-item :wrapperCol="{ offset: 4 }" prop="notify">
+          <a-checkbox v-model:checked="form.notify" :disabled="!isCanSendNotify">{{ $t('system.email_checkbox_text') }}</a-checkbox>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -55,13 +55,9 @@
 <script>
 import * as R from 'ramda'
 import { mapGetters } from 'vuex'
-import { h } from 'vue'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import NameRepeated from '@/sections/NameRepeated'
-// import ListSelect from '@/sections/ListSelect'
-import { getNameFilter } from '@/utils/common/tableFilter'
-import { getNameDescPopoverColumns } from '@/utils/common/listBodyCellPopover'
 import UserSelect from '../components/UserSelect'
 
 export default {
@@ -69,7 +65,6 @@ export default {
   components: {
     NameRepeated,
     UserSelect,
-    // ListSelect,
   },
   mixins: [DialogMixin, WindowsMixin],
   props: {
@@ -79,138 +74,37 @@ export default {
     },
   },
   data () {
+    const googleNameRules = this.params.cloudaccount.brand === 'Google' ? [
+      { required: true, message: this.$t('common.text00042') },
+      { validator: this.$validate('email'), message: this.$t('cloudenv.text_376') },
+    ] : []
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            if (values.email && this.isEnableMail) {
-              this.$nextTick(() => {
-                const isError = this.form.fc.getFieldError('email')
-                if (R.isNil(isError) || R.isEmpty(isError)) {
-                  this.isCanSendNotify = true
-                } else {
-                  this.isCanSendNotify = false
-                }
-              })
-            } else {
-              this.isCanSendNotify = false
-            }
-          },
-        }),
-        fi: {
-          generate_name: '',
-          user: {},
-          cloudprovider: {},
-          project: {},
-        },
+        generate_name: '',
+        owner_id: undefined,
+        manager_id: undefined,
+        email: '',
+        notify: false,
       },
-      decorators: {
-        generate_name: [
-          'generate_name',
-          {
-            validateFirst: true,
-            rules: this.params.cloudaccount.brand === 'Google' ? [
-              { required: true, message: this.$t('common.text00042') },
-              { validator: this.$validate('email'), message: this.$t('cloudenv.text_376') },
-            ] : [],
-          },
-        ],
+      formFi: {
+        generate_name: '',
+        user: {},
+        cloudprovider: {},
+        project: {},
+      },
+      rules: {
+        generate_name: googleNameRules.length
+          ? [{ validateFirst: true }, ...googleNameRules]
+          : [],
         owner_id: [
-          'owner_id',
-          {
-            rules: [
-              { required: true, message: this.$t('common.select') },
-            ],
-          },
+          { required: true, message: this.$t('common.select') },
         ],
         manager_id: [
-          'manager_id',
-          {
-            rules: [
-              { required: true, message: this.$t('common.select') },
-            ],
-          },
-        ],
-        cloudgroup_ids: [
-          'cloudgroup_ids',
-          {
-            rules: [
-              { required: this.params.cloudaccount.brand === 'Google', message: this.$t('common.select') },
-            ],
-          },
+          { required: true, message: this.$t('common.select') },
         ],
         email: [
-          'email',
-          {
-            rules: [
-              { validator: this.emailValidator },
-            ],
-          },
-        ],
-        notify: [
-          'notify',
-        ],
-      },
-      cloudgroupListSelectProps: {
-        list: this.$list.createList(this, {
-          id: this.id,
-          resource: 'cloudgroups',
-          apiVersion: 'v1',
-          getParams: () => {
-            const params = {
-              provider: this.params.cloudaccount.provider,
-            }
-            if (this.$store.getters.isAdminMode) {
-              params.domain_id = this.params.cloudaccount.domain_id
-            } else {
-              params.scope = this.$store.getters.scope
-            }
-            return params
-          },
-          filterOptions: {
-            name: getNameFilter(),
-          },
-        }),
-        columns: [
-          {
-            field: 'name',
-            title: this.$t('table.title.name'),
-            showOverflow: 'title',
-          },
-          {
-            field: 'description',
-            title: this.$t('cloudenv.text_327'),
-            showOverflow: 'title',
-          },
-          {
-            field: 'cloudpolicies',
-            title: this.$t('cloudenv.text_329'),
-            slots: {
-              default: ({ row }) => {
-                if (R.isNil(row.cloudpolicies) || R.isEmpty(row.cloudpolicies)) return this.$t('cloudenv.text_330')
-                return [
-                  h('list-body-cell-popover', {
-                    text: this.$t('cloudenv.text_245', [(row.cloudpolicies && row.cloudpolicies.length) || 0]),
-                  }, {
-                    default: () => [
-                      h('table-lite-grid', {
-                        showOverflow: 'title',
-                        rowConfig: { isHover: true },
-                        columnConfig: { resizable: false },
-                        data: row.cloudpolicies,
-                        columns: getNameDescPopoverColumns({
-                          nameTitle: this.$t('common.name'),
-                          descTitle: this.$t('table.title.desc'),
-                          rows: row.cloudpolicies,
-                        }),
-                      }),
-                    ],
-                  }),
-                ]
-              },
-            },
-          },
+          { validator: this.emailValidator },
         ],
       },
       formItemLayout: {
@@ -237,17 +131,17 @@ export default {
       return this.params.cloudaccount.brand === 'Google'
     },
     namePlaceholder () {
-      if (this.form.fi.user && this.form.fi.user.name) {
+      if (this.formFi.user && this.formFi.user.name) {
         if (this.isGoogle) {
           return this.$t('cloudenv.text_377')
         }
-        return this.form.fi.user.name
+        return this.formFi.user.name
       }
       return ''
     },
     nameRepeatParams () {
       if (this.isGoogle) {
-        return { manager_id: this.form.fi.cloudprovider.id }
+        return { manager_id: this.formFi.cloudprovider.id }
       }
       return { cloudaccount_id: this.params.cloudaccount.id }
     },
@@ -257,19 +151,37 @@ export default {
     },
   },
   watch: {
-    'form.fi.user': {
-      handler (val, oldVal) {
+    'formFi.user': {
+      handler (val) {
         if (val.id) {
           this.isEnableMail && this.fetchEmail(val.id)
         }
       },
       deep: true,
     },
+    'form.email' () {
+      this.updateCanSendNotify()
+    },
   },
   created () {
     this.fetchConfigEmail()
   },
   methods: {
+    updateCanSendNotify () {
+      if (this.form.email && this.isEnableMail) {
+        this.$nextTick(() => {
+          this.$refs.formRef.validateField('email', (err) => {
+            if (!err) {
+              this.isCanSendNotify = true
+            } else {
+              this.isCanSendNotify = false
+            }
+          })
+        })
+      } else {
+        this.isCanSendNotify = false
+      }
+    },
     async fetchEmail (userId) {
       const { data } = await new this.$Manager('receivers', 'v1').performClassAction({
         action: 'intellij-get',
@@ -278,7 +190,7 @@ export default {
           user_id: userId,
         },
       })
-      this.form.fc.setFieldsValue({ email: data.email || '' })
+      this.form.email = data.email || ''
     },
     emailValidator (rule, value, callback) {
       if (R.isEmpty(value) || R.isNil(value)) {
@@ -289,11 +201,12 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const { ...values } = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         if (!this.isGoogle) {
           values.cloudaccount_id = this.params.cloudaccount.id
         }
-        values.project_id = this.form.fi.project.id
+        values.project_id = this.formFi.project.id
         await this.params.onManager('create', {
           managerArgs: {
             data: values,
@@ -303,9 +216,6 @@ export default {
       } finally {
         this.loading = false
       }
-    },
-    formatterLabel (row) {
-      return row.description ? `${row.name} / ${row.description}` : row.name
     },
     async fetchConfigEmail () {
       this.isEnableMail = false

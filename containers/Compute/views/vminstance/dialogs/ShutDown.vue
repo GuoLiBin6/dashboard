@@ -10,23 +10,23 @@
       </a-alert>
       <dialog-selected-tips :name="params.name || $t('dictionary.server')" :count="dataList.length" :action="action" />
       <dialog-table :data="dataList" :columns="columns" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('compute.text_1041')" v-bind="formItemLayout" v-if="isOpenWorkflow">
-          <a-input v-decorator="decorators.reason" :placeholder="$t('compute.text_1105')" />
-        </a-form-item>
-        <a-form-item class="mb-0" v-show="canStopPaying">
+      <a-form-model
+        ref="formRef"
+        :model="form">
+        <a-form-model-item :label="$t('compute.text_1041')" v-bind="formItemLayout" v-if="isOpenWorkflow" prop="reason">
+          <a-input v-model:value="form.reason" :placeholder="$t('compute.text_1105')" />
+        </a-form-model-item>
+        <a-form-model-item class="mb-0" v-show="canStopPaying" prop="stopPaying">
           <a-checkbox
-          v-model:value="form.fd.stopPaying"
-          @change="stopPayingChange">
+          v-model:checked="form.stopPaying">
             {{$t('compute.shutdown_stop_paying')}}
           </a-checkbox>
           <help-tooltip name="shutdownStopCharging" />
-        </a-form-item>
-        <a-form-item v-if="isSupportForce" :label="$t('compute.force_shutdown')" v-bind="formItemLayout">
-          <a-switch v-model:value="form.fd.is_force" :disabled="forceLocked" @change="isForceChange" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+        <a-form-model-item v-if="isSupportForce" :label="$t('compute.force_shutdown')" v-bind="formItemLayout" prop="is_force">
+          <a-switch v-model:checked="form.is_force" :disabled="forceLocked" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -54,35 +54,11 @@ export default {
       forceLocked,
       action: type === 'modifyWorkflow' ? this.$t('common.modify_workflow') + `(${this.$t('compute.text_273')})` : this.$t('compute.text_273'),
       form: {
-        fc: this.$form.createForm(this),
-        fd: {
-          stopPaying: formData.stop_charging || false,
-          is_force: formData.is_force || forceLocked || false,
-        },
+        reason: formData.reason || '',
+        stopPaying: formData.stop_charging || false,
+        is_force: formData.is_force || forceLocked || false,
       },
       type,
-      decorators: {
-        reason: [
-          'reason',
-          {
-            initialValue: formData.reason || '',
-          },
-        ],
-        stopPaying: [
-          'stopPaying',
-          {
-            valuePropName: 'checked',
-            initialValue: formData.stop_charging || false,
-          },
-        ],
-        is_force: [
-          'is_force',
-          {
-            initialValue: formData.is_force || forceLocked || false,
-            valuePropName: 'checked',
-          },
-        ],
-      },
       formItemLayout: {
         wrapperCol: {
           span: 21,
@@ -149,7 +125,10 @@ export default {
       })
       this.dataList = list.data?.data || []
       this.$nextTick(() => {
-        this.form.fc.setFieldsValue(this.params.formData || {})
+        const formData = this.params.formData || {}
+        if (formData.reason !== undefined) this.form.reason = formData.reason
+        if (formData.stop_charging !== undefined) this.form.stopPaying = formData.stop_charging
+        if (formData.is_force !== undefined) this.form.is_force = formData.is_force
       })
     } else {
       this.dataList = this.params.data || []
@@ -158,9 +137,9 @@ export default {
   methods: {
     async doShutDownSubmit () {
       const data = {
-        is_force: this.form.fd.is_force,
+        is_force: this.form.is_force,
       }
-      if (this.form.fd.stopPaying) {
+      if (this.form.stopPaying) {
         data.stop_charging = true
       }
       const ids = this.dataList.map(item => item.id)
@@ -192,26 +171,19 @@ export default {
         } else {
           await this.doShutDownSubmit()
         }
-        this.loading = false
         this.cancelDialog()
       } catch (error) {
-        this.loading = false
         throw error
+      } finally {
+        this.loading = false
       }
-    },
-    isForceChange (val) {
-      this.form.fd.is_force = val
-    },
-    stopPayingChange (val) {
-      const { checked } = val.target
-      this.form.fd.stopPaying = checked
     },
     async handleShutDownByWorkflowSubmit () {
       const ids = this.dataList.map(item => item.id)
-      const values = await this.form.fc.validateFields()
+      await this.$refs.formRef.validate()
       const params = {
-        stop_charging: this.form.fd.stopPaying,
-        is_force: this.form.fd.is_force,
+        stop_charging: this.form.stopPaying,
+        is_force: this.form.is_force,
       }
       const variables = {
         project: this.dataList[0].tenant_id,
@@ -219,7 +191,7 @@ export default {
         process_definition_key: this.WORKFLOW_TYPES.APPLY_SERVER_STOP,
         initiator: this.userInfo.id,
         ids: ids.join(','),
-        description: values.reason,
+        description: this.form.reason,
         paramter: JSON.stringify(params),
       }
       if (this.type === 'modifyWorkflow') {

@@ -5,7 +5,7 @@
           <span v-if="selectedSku">{{$t('db.text_117', [numberProps.min,numberProps.max])}}</span>
           <span v-else>{{$t('db.text_118')}}</span>
         </template>
-      <a-input-number  v-bind="numberProps" @blur="handleBlurDiskSize" v-decorator="['disk_size_gb', { initialValue: numberProps.min }]" /> GB
+      <a-input-number v-bind="numberProps" :value="diskSizeGb" @change="onDiskSizeChange" @blur="handleBlurDiskSize" /> GB
     </a-tooltip>
   </a-form-item>
 </template>
@@ -20,6 +20,11 @@ export default {
     min: {
       type: Number,
     },
+  },
+  data () {
+    return {
+      diskSizeGb: undefined,
+    }
   },
   computed: {
     numberProps () {
@@ -49,15 +54,31 @@ export default {
       immediate: true,
     },
   },
+  created () {
+    const opts = { initialValue: this.numberProps?.min }
+    if (this.form?.fd && this.form.fd.disk_size_gb === undefined && opts.initialValue !== undefined) {
+      this.$set(this.form.fd, 'disk_size_gb', opts.initialValue)
+    }
+    this.diskSizeGb = opts.initialValue
+  },
   methods: {
+    writeDiskSize (val) {
+      if (this.form?.fd) this.$set(this.form.fd, 'disk_size_gb', val)
+    },
+    readDiskSize () {
+      if (this.form?.fd && this.form.fd.disk_size_gb !== undefined) return this.form.fd.disk_size_gb
+      return undefined
+    },
+    onDiskSizeChange (val) {
+      this.diskSizeGb = val
+      this.writeDiskSize(val)
+    },
     clampDiskSizeToSku (props = this.numberProps) {
       if (!this.form || props.disabled || props.min == null || props.max == null) return
-      const setter = this.form.setFieldsValue || this.form.fc?.setFieldsValue
-      const getter = this.form.getFieldValue || this.form.fc?.getFieldValue
-      if (!setter || !getter) return
-      const val = Number(getter.call(this.form.fc || this.form, 'disk_size_gb'))
+      const val = Number(this.readDiskSize())
       if (Number.isNaN(val) || val == null) {
-        setter.call(this.form.fc || this.form, { disk_size_gb: props.min })
+        this.writeDiskSize(props.min)
+        this.diskSizeGb = props.min
         return
       }
       let next = val
@@ -70,15 +91,15 @@ export default {
         if (next > props.max) next = props.max - ((props.max - props.min) % step)
       }
       if (next !== val) {
-        setter.call(this.form.fc || this.form, { disk_size_gb: next })
+        this.writeDiskSize(next)
+        this.diskSizeGb = next
       }
     },
     handleBlurDiskSize (e, step = this.numberProps.step) {
       const val = parseFloat(e.target.value)
       if (!val) {
-        this.form.setFieldsValue({
-          disk_size_gb: this.numberProps.min,
-        })
+        this.writeDiskSize(this.numberProps.min)
+        this.diskSizeGb = this.numberProps.min
         return
       }
       if (val > 0) {
@@ -92,9 +113,8 @@ export default {
             next = this.numberProps.max - ((this.numberProps.max - this.numberProps.min) % step)
           }
         }
-        this.form.setFieldsValue({
-          disk_size_gb: next,
-        })
+        this.writeDiskSize(next)
+        this.diskSizeGb = next
       }
     },
   },

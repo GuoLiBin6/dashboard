@@ -3,16 +3,18 @@
     <div slot="header">{{ $t('commpute.sku_sync_title') }}</div>
     <div slot="body">
       <a-alert :message="$t('commpute.sku_sync_label')" banner />
-      <a-form
+      <a-form-model
         class="mt-3"
+        ref="formRef"
         v-bind="formItemLayout"
-        :form="form.fc">
-        <a-form-item :label="$t('compute.text_176')">
-          <a-select v-decorator="decorators.provider">
-            <a-select-option v-for="item in providerList" :key="item.key">{{ item.label }}</a-select-option>
+        :model="form"
+        :rules="rules">
+        <a-form-model-item :label="$t('compute.text_176')" prop="provider">
+          <a-select v-model:value="form.provider">
+            <a-select-option v-for="item in providerList" :key="item.key" :value="item.key">{{ item.label }}</a-select-option>
           </a-select>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -38,26 +40,16 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        provider: _.get(providerList, '[0].key'),
       },
-      decorators: {
+      rules: {
         provider: [
-          'provider',
-          {
-            initialValue: _.get(providerList, '[0].key'),
-            rules: [
-              { required: true, message: this.$t('compute.text_215') },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_215') },
         ],
       },
       formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
+        wrapperCol: { span: 21 },
+        labelCol: { span: 3 },
       },
       providerList,
     }
@@ -77,21 +69,22 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        const { data } = await this.doAction(values)
+        await this.$refs.formRef.validate()
+        const { data } = await this.doAction(this.form)
         const { timeUnit, tasksTime } = this.getTime(data)
-        this.loading = false
         this.cancelDialog()
         this.$message.success(this.$t('commpute.sku_sync_result', [`${tasksTime}${timeUnit}`]))
       } catch (error) {
+        // validate / sync failed
+      } finally {
         this.loading = false
       }
     },
     getTime (data) {
       const tasksLen = data.tasks.length
       let timeUnit = this.$t('common_time.second')
-      let tasksTime = tasksLen * 2 // 一个任务2秒的时间
-      if (tasksTime >= 60) { // 够60s换算成分钟
+      let tasksTime = tasksLen * 2
+      if (tasksTime >= 60) {
         timeUnit = this.$t('common_time.minute')
         tasksTime = Math.round(tasksTime / 60)
       }

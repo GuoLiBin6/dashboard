@@ -1,5 +1,5 @@
 /**
- * 虚拟机创建页草稿：scope + 页面零散 FC 绑定。组件传 form-draft-key 自管回填。
+ * 虚拟机创建页草稿：scope + 页面零散 fd 绑定。组件传 form-draft-key 自管回填。
  */
 export const VM_CREATE_FORM_DRAFT_FIELD = {
   DOMAIN_PROJECT: 'domainProject',
@@ -31,8 +31,8 @@ export const VM_CREATE_FORM_DRAFT_FIELD = {
   BASTION_HOST: 'bastionHost',
 }
 
-/** 页面零散 form.fc 选择类字段 */
-export const VM_CREATE_FORM_DRAFT_FC_BINDINGS = [
+/** 页面零散 form.fd 选择类字段 */
+export const VM_CREATE_FORM_DRAFT_FD_BINDINGS = [
   { key: VM_CREATE_FORM_DRAFT_FIELD.CLOUDPROVIDER, formField: 'cloudprovider', kind: 'selection' },
   { key: VM_CREATE_FORM_DRAFT_FIELD.DEPLOY_TELEGRAF, formField: 'deploy_telegraf', types: ['idc'], kind: 'selection' },
   { key: VM_CREATE_FORM_DRAFT_FIELD.IS_DAEMON, formField: 'is_daemon', types: ['idc'], kind: 'selection' },

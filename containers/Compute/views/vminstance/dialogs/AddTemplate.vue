@@ -4,15 +4,15 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_1166')" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc"  v-bind="formItemLayout">
-        <a-form-item :label="$t('common.name')">
-          <a-input v-decorator="decorators.name" :placeholder="$t('compute.text_210')" />
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('common.name')" prop="generate_name">
+          <a-input v-model:value="form.generate_name" :placeholder="$t('compute.text_210')" />
           <name-repeated
             v-slot:extra
             res="servertemplates"
-            :name="form.fc.getFieldValue('generate_name')" />
-        </a-form-item>
-      </a-form>
+            :name="form.generate_name" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -36,16 +36,11 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        generate_name: '',
       },
-      decorators: {
-        name: [
-          'generate_name',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.text_210') },
-            ],
-          },
+      rules: {
+        generate_name: [
+          { required: true, message: this.$t('compute.text_210') },
         ],
       },
       formItemLayout: {
@@ -71,13 +66,13 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         await this.params.onManager('performAction', {
           id: this.params.data[0].id,
           steadyStatus: ['running', 'ready'],
           managerArgs: {
             action: 'save-template',
-            data: values,
+            data: this.form,
           },
         })
         this.cancelDialog()

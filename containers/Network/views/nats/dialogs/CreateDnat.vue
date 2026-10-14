@@ -2,26 +2,28 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{params.title}}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('network.text_21')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.name" :placeholder="$t('network.text_44')" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_539')" v-bind="formItemLayout">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules">
+        <a-form-model-item :label="$t('network.text_21')" v-bind="formItemLayout" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('network.text_44')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_539')" v-bind="formItemLayout" prop="ip">
           <template #extra>{{$t('network.text_540')}}<router-link :to="{ path: '/eip' }" target="_blank">{{$t('dictionary.eip')}}</router-link>
           </template>
           <base-select
-            v-decorator="decorators.ip"
+            v-model:value="form.ip"
             :params="eipParams"
             :select-props="{ placeholder: $t('network.text_541') }"
             resource="eips"
             :showSync="true"
             :labelFormat="eiplabelFormat"
             v-model:resList="eipOptions" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_542')" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_542')" v-bind="formItemLayout" prop="server">
           <base-select
-            v-decorator="decorators.server"
+            v-model:value="form.server"
             :params="serverParams"
             :select-props="{ placeholder: $t('network.text_543') }"
             resource="servers"
@@ -29,20 +31,20 @@
             :labelFormat="serverlabelFormat"
             v-model:resList="serverOptions"
             :mapper="serversMapper" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_544')" v-bind="formItemLayout" :extra="$t('network.text_545')">
-          <a-input-number :min="1" :max="65535" v-decorator="decorators.externalPort" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_546')" v-bind="formItemLayout" :extra="$t('network.text_545')">
-          <a-input-number :min="1" :max="65535" v-decorator="decorators.internalPort" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_547')" v-bind="formItemLayout">
-          <a-select v-decorator="decorators.protocol">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_544')" v-bind="formItemLayout" :extra="$t('network.text_545')" prop="externalPort">
+          <a-input-number :min="1" :max="65535" v-model:value="form.externalPort" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_546')" v-bind="formItemLayout" :extra="$t('network.text_545')" prop="internalPort">
+          <a-input-number :min="1" :max="65535" v-model:value="form.internalPort" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_547')" v-bind="formItemLayout" prop="protocol">
+          <a-select v-model:value="form.protocol">
             <a-select-option value="tcp">TCP</a-select-option>
             <a-select-option value="udp">UDP</a-select-option>
           </a-select>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -63,63 +65,32 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        name: undefined,
+        ip: undefined,
+        server: undefined,
+        externalPort: undefined,
+        internalPort: undefined,
+        protocol: undefined,
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            validateTrigger: ['change', 'blur'],
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('network.text_116') },
-              { validator: this.$validate('serverCreateName') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_116') },
+          { validator: this.$validate('serverCreateName') },
         ],
         ip: [
-          'ip',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_541') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_541') },
         ],
         server: [
-          'server',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_543') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_543') },
         ],
         externalPort: [
-          'externalPort',
-          {
-            validateTrigger: ['blur'],
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('network.text_548') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_548') },
         ],
         internalPort: [
-          'internalPort',
-          {
-            validateTrigger: ['blur'],
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('network.text_549') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_549') },
         ],
         protocol: [
-          'protocol',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_550') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_550') },
         ],
       },
       formItemLayout: {
@@ -185,7 +156,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         const eipObj = R.indexBy(R.prop('id'), this.eipOptions)
         const serverObj = R.indexBy(R.prop('id'), this.serverOptions)
         const params = {

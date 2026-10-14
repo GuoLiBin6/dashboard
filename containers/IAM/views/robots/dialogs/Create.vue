@@ -2,51 +2,55 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{ headerTitle }}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc"
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
         v-bind="formItemLayout"
         hideRequiredMark>
-          <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-show="!isEdit">
-          <domain-project :fc="form.fc" :form-layout="formItemLayout" :decorators="{ project: decorators.project, domain: decorators.domain }" />
-        </a-form-item>
-        <a-form-item :label="$t('common.name')">
-          <a-input v-decorator="decorators.name" :placeholder="$t('validator.resourceName')" />
+        <a-form-model-item v-show="!isEdit" :label="$t('compute.text_297', [$t('dictionary.project')])">
+          <domain-project
+            :model="form"
+            :form="form" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.name')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('validator.resourceName')" />
           <template v-slot:extra>
             <name-repeated
               res="robots"
               version="v1"
-              :name="form.fd.name" />
+              :name="form.name" />
           </template>
-        </a-form-item>
-        <a-form-item :label="$t('system.text_48')">
-          <a-radio-group v-decorator="decorators.type" :disabled="isEdit">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('system.text_48')" prop="type">
+          <a-radio-group v-model:value="form.type" :disabled="isEdit">
             <a-radio-button
               v-for="item in typesOpts"
               :value="item.key"
               :key="item.key">{{ item.label }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="form.fc.getFieldValue('type') === 'webhook' ? 'URL' : 'Webhook'">
-          <a-input v-decorator="decorators.address" />
-          <div slot="extra" v-show="form.fc.getFieldValue('type') !== 'webhook'">
-            {{ $t('iam.get_params_help') }} ，{{ $t('iam.help') }} <help-link :href="DOCS_MAP.webhook(form.fd.type)">{{ $t('common_386') }}</help-link>
+        </a-form-model-item>
+        <a-form-model-item :label="form.type === 'webhook' ? 'URL' : 'Webhook'" prop="address">
+          <a-input v-model:value="form.address" />
+          <div slot="extra" v-show="form.type !== 'webhook'">
+            {{ $t('iam.get_params_help') }} ，{{ $t('iam.help') }} <help-link :href="DOCS_MAP.webhook(form.type)">{{ $t('common_386') }}</help-link>
           </div>
-        </a-form-item>
-        <template v-if="form.fc.getFieldValue('type') === 'webhook'">
-          <a-form-item label="header">
-            <a-input v-decorator="decorators.header" />
-          </a-form-item>
-          <a-form-item label="body">
-            <a-input v-decorator="decorators.body" />
-          </a-form-item>
-          <a-form-item label="msg_key">
-            <a-input v-decorator="decorators.msg_key" />
-          </a-form-item>
-          <a-form-item label="secret_key">
-            <a-input v-decorator="decorators.secret_key" />
-          </a-form-item>
+        </a-form-model-item>
+        <template v-if="form.type === 'webhook'">
+          <a-form-model-item label="header" prop="header">
+            <a-input v-model:value="form.header" />
+          </a-form-model-item>
+          <a-form-model-item label="body" prop="body">
+            <a-input v-model:value="form.body" />
+          </a-form-model-item>
+          <a-form-model-item label="msg_key" prop="msg_key">
+            <a-input v-model:value="form.msg_key" />
+          </a-form-model-item>
+          <a-form-model-item label="secret_key" prop="secret_key">
+            <a-input v-model:value="form.secret_key" />
+          </a-form-model-item>
         </template>
-      </a-form>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -58,7 +62,7 @@
 <script>
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
-import DomainProject from '@/sections/DomainProject'
+import DomainProject from '@/sections/DomainProject/model'
 import NameRepeated from '@/sections/NameRepeated/index'
 import { isRequired } from '@/utils/validate'
 import { DOCS_MAP, showDocsLink } from '@/constants/docs'
@@ -81,94 +85,38 @@ export default {
       typesOpts: ROBOT_TYPES,
       loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-          },
-        }),
-        fd: {
-          name: '',
-          type: initType,
-        },
+        domain: domain_id || projectDomainId,
+        project: tenant_id || projectId,
+        name: name || '',
+        type: initType,
+        address: address || '',
+        header: header ? JSON.stringify(header) : '',
+        body: body ? JSON.stringify(body) : '',
+        msg_key: msg_key || '',
+        secret_key: secret_key || '',
       },
-      decorators: {
+      rules: {
         domain: [
-          'domain',
-          {
-            initialValue: domain_id || projectDomainId,
-            rules: [
-              { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
-            ],
-          },
+          { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
         ],
         project: [
-          'project',
-          {
-            initialValue: tenant_id || projectId,
-            rules: [
-              { validator: isRequired(), message: this.$t('rules.project'), trigger: 'change' },
-            ],
-          },
+          { validator: isRequired(), message: this.$t('rules.project'), trigger: 'change' },
         ],
         name: [
-          'name',
-          {
-            initialValue: name,
-            rules: [
-              { required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` },
-              { validator: this.$validate('resourceName') },
-            ],
-          },
+          { required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` },
+          { validator: this.$validate('resourceName') },
         ],
         type: [
-          'type',
-          {
-            initialValue: initType,
-            rules: [
-              { required: true, message: `${this.$t('common.select')}` },
-            ],
-          },
+          { required: true, message: `${this.$t('common.select')}` },
         ],
         address: [
-          'address',
-          {
-            initialValue: address,
-            rules: [
-              { required: true, message: `${this.$t('common.placeholder')}Webhook` },
-            ],
-          },
+          { required: true, message: `${this.$t('common.placeholder')}Webhook` },
         ],
         header: [
-          'header',
-          {
-            initialValue: header ? JSON.stringify(header) : '',
-            rules: [
-              { validator: this.checkHeader },
-            ],
-          },
+          { validator: this.checkHeader },
         ],
         body: [
-          'body',
-          {
-            initialValue: body ? JSON.stringify(body) : '',
-            rules: [
-              { validator: this.checkBody },
-            ],
-          },
-        ],
-        msg_key: [
-          'msg_key',
-          {
-            initialValue: msg_key || '',
-          },
-        ],
-        secret_key: [
-          'secret_key',
-          {
-            initialValue: secret_key || '',
-          },
+          { validator: this.checkBody },
         ],
       },
       formItemLayout: {
@@ -193,17 +141,6 @@ export default {
     },
   },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     doCreate (data) {
       return new this.$Manager('robots', 'v1').create({ data: data })
     },
@@ -213,8 +150,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
-        const { domain, project, name, header, body, msg_key, ...rest } = values
+        await this.$refs.formRef.validate()
+        const { domain, project, name, header, body, msg_key, ...rest } = this.form
         this.loading = true
 
         if (this.isEdit) {
@@ -250,7 +187,7 @@ export default {
     },
     checkHeader (rule, value, callback) {
       try {
-        const v = value.trim()
+        const v = (value || '').trim()
         if (v) {
           JSON.parse(v)
         }
@@ -262,7 +199,7 @@ export default {
     },
     checkBody (rule, value, callback) {
       try {
-        const v = value.trim()
+        const v = (value || '').trim()
         if (v) {
           JSON.parse(v)
         }

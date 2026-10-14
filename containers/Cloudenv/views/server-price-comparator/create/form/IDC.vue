@@ -1,61 +1,65 @@
 <template>
   <div>
-    <a-form
+    <a-form-model
+      ref="formRef"
       class="mt-3"
-      :form="form.fc"
+      :model="form.fd"
+      :rules="rules"
       v-bind="formItemLayout"
       @submit="submit"
       hideRequiredMark>
-      <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-show="false">
+      <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-show="false">
         <domain-project
-          :fc="form.fc"
-          :fd="form.fd"
-          :decorators="{ project: decorators.project, domain: decorators.domain }"
+          ref="domainProjectRef"
+          :form="form.fd"
           @fetchDomainCallback="fetchDomainCallback"
           @fetchProjectCallback="fetchProjectCallback" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_177')" class="mb-0" v-show="false">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_177')" class="mb-0" v-show="false">
         <cloudregion-zone
+          ref="cloudregionZoneRef"
+          :model="form.fd"
           :zone-params="zoneParams"
           :cloudregion-params="cloudregionParams"
-          :decorator="decorators.cloudregionZone"
           filterBrandResource="compute_engine" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_294')">
-        <a-input-number v-decorator="decorators.count" @blur="countBlur" :min="1" :max="100" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_176')" :extra="$t('compute.text_1151')">
-        <hypervisor-radio :decorator="decorators.hypervisor" :type="form.fi.createType" :hypervisors="hypervisors" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_1365')" v-if="isKvm && form.fi.capability.host_cpu_archs">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_294')" prop="count">
+        <a-input-number v-model:value="form.fd.count" @blur="countBlur" :min="1" :max="100" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_176')" :extra="$t('compute.text_1151')">
+        <hypervisor-radio ref="hypervisorRadioRef" :model="form.fd" :type="form.fi.createType" :hypervisors="hypervisors" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_1365')" v-if="isKvm && form.fi.capability.host_cpu_archs">
         <os-arch
-          v-decorator="decorators.os_arch"
+          v-model:value="form.fd.os_arch"
           :form="form"
           :options="archOptions" />
-      </a-form-item>
-      <a-form-item v-if="form.fd.hypervisor === 'kvm'" :label="$t('compute.text_1152')">
-        <gpu :decorators="decorators.gpu" :gpu-options="gpuOptions" @change="gpuChange" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_1058')" class="mb-0">
-        <cpu-radio :decorator="decorators.vcpu" :options="form.fi.cpuMem.cpus || []" @change="cpuChange" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_369')" class="mb-0">
-        <mem-radio :decorator="decorators.vmem" :options="form.fi.cpuMem.mems_mb || []" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_109')" v-if="showSku">
+      </a-form-model-item>
+      <a-form-model-item v-if="form.fd.hypervisor === 'kvm'" :label="$t('compute.text_1152')">
+        <gpu :model="form.fd" :form="form" :gpu-options="gpuOptions" @change="gpuChange" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_1058')" class="mb-0">
+        <cpu-radio :model="form.fd" :options="form.fi.cpuMem.cpus || []" @change="cpuChange" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_369')" class="mb-0">
+        <mem-radio :model="form.fd" :options="form.fi.cpuMem.mems_mb || []" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_109')" v-if="showSku">
         <sku
-          v-decorator="decorators.sku"
+          ref="skuRef"
+          :model="form.fd"
           :type="type"
           :sku-params="skuParam"
           :hypervisor="form.fd.hypervisor" />
         <template v-if="showSkuCreateTip" #extra>
           {{ $t('compute.text_196') }}<help-link href="/sku">{{ $t('compute.perform_create') }}</help-link>
         </template>
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_49')" class="mb-0">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_49')" class="mb-0">
         <system-disk
           v-if="form.fd.hypervisor"
-          :decorator="decorators.systemDisk"
+          ref="systemDiskRef"
+          :model="form.fd"
           :isServertemplate="isServertemplate"
           :type="type"
           :form="form"
@@ -72,12 +76,12 @@
           :domain="project_domain"
           :isStorageShow="isStorageShow"
           @storageHostChange="storageHostChange" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_50')">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_50')">
         <data-disk
           v-if="form.fd.hypervisor"
           ref="dataDiskRef"
-          :decorator="decorators.dataDisk"
+          :model="form.fd"
           :form="form"
           :type="type"
           :hypervisor="form.fd.hypervisor"
@@ -96,7 +100,7 @@
           :storageHostParams="storageHostParams"
           @storageHostChange="storageHostChange" />
         <div slot="extra" class="warning-color" v-if="isStorageShow">{{ $t('compute.select_storage_no_schetag') }}</div>
-      </a-form-item>
+      </a-form-model-item>
       <bottom-bar
         ref="bottomBarRef"
         :loading="submiting"
@@ -108,14 +112,13 @@
         :isServertemplate="isServertemplate"
         :hasMeterService="hasMeterService"
         @getOriginPrice="getOriginPrice" />
-    </a-form>
+    </a-form-model>
   </div>
 </template>
 <script>
 import _ from 'lodash'
 import * as R from 'ramda'
 import { HYPERVISORS_MAP } from '@/constants'
-import { resolveValueChangeField } from '@/utils/common/ant'
 import { IMAGES_TYPE_MAP, STORAGE_TYPES, getOsArchParam, isOsArch, mapHostCpuArchOptions } from '@/constants/compute'
 import OsArch from '@/sections/OsArch'
 import { diskSupportTypeMedium, getOriginDiskKey } from '@/utils/common/hypervisor'
@@ -206,7 +209,7 @@ export default {
         limit: 0,
         public_cloud: false,
         postpaid_status: 'available',
-        cpu_core_count: this.form.fd.vcpu || this.decorators.vcpu[1].initialValue,
+        cpu_core_count: this.form.fd.vcpu,
         memory_size_mb: this.form.fd.vmem,
         cloudregion: _.get(this.form, 'fd.cloudregion.key'),
         provider: 'OneCloud',
@@ -225,8 +228,8 @@ export default {
     //       ...this.scopeParams,
     //     }
     //     if (params.hypervisor === HYPERVISORS_MAP.esxi.key) {
-    //       if (this.form.fd[this.decorators.systemDisk.storage[0]]) {
-    //         params.storage_id = this.form.fd[this.decorators.systemDisk.storage[0]]
+    //       if (this.form.fd.systemDiskStorage) {
+    //         params.storage_id = this.form.fd.systemDiskStorage
     //       }
     //       params.cloudprovider = this.form.fd.prefer_manager
     //     }
@@ -250,8 +253,8 @@ export default {
         params.host_type = 'proxmox'
       }
       if ([HYPERVISORS_MAP.esxi.key, HYPERVISORS_MAP.kvm.key].includes(this.form.fd.hypervisor)) {
-        if (this.form.fd[this.decorators.systemDisk.storage[0]]) {
-          params.storage_id = this.form.fd[this.decorators.systemDisk.storage[0]]
+        if (this.form.fd.systemDiskStorage) {
+          params.storage_id = this.form.fd.systemDiskStorage
         }
         if (this.storageHostParams.disk &&
         this.storageHostParams.disk !== 'system' &&
@@ -380,7 +383,7 @@ export default {
     },
     isStorageShow () { // 是否开启了指定存储
       if ([HYPERVISORS_MAP.esxi.key, HYPERVISORS_MAP.kvm.key].includes(this.form.fd.hypervisor)) {
-        if (this.form.fd[this.decorators.systemDisk.storage[0]]) {
+        if (this.form.fd.systemDiskStorage) {
           return true
         }
         if (this.storageHostParams.disk &&
@@ -430,7 +433,7 @@ export default {
               key: STORAGE_TYPES[HYPERVISORS_MAP.kvm.key].local.key,
               label: STORAGE_TYPES[HYPERVISORS_MAP.kvm.key].local.label,
             }
-            this.form.fc.setFieldsValue({
+            this.setFormFieldsAndSyncFd({
               systemDiskSize,
               systemDiskType,
             })
@@ -461,12 +464,12 @@ export default {
             if (val && R.is(Object, val.server_config)) {
               if (val.server_config.vcpu_count) {
                 const cpuValue = val.server_config.vcpu_count
-                data[this.decorators.vcpu[0]] = cpuValue
+                data.vcpu = cpuValue
                 this.cpuChange(cpuValue)
-                if (val.server_config.vmem_size) data[this.decorators.vmem[0]] = val.server_config.vmem_size
+                if (val.server_config.vmem_size) data.vmem = val.server_config.vmem_size
               }
             }
-            this.form.fc.setFieldsValue(data)
+            this.setFormFieldsAndSyncFd(data)
             // 重置数据盘数据
             this._resetDataDisk()
             dataDisks.forEach(val => {
@@ -476,16 +479,39 @@ export default {
             this.form.fi.sysDiskDisabled = true
           } else {
             if (oldVal && R.is(Object, oldVal.server_config)) { // 说明是从主机快照切换过去的
-              const vcpuDecorator = this.decorators.vcpu
-              const vcpuInit = vcpuDecorator[1].initialValue
-              this.form.fc.setFieldsValue({
-                [vcpuDecorator[0]]: vcpuInit,
-              })
-              this.cpuChange(vcpuInit)
+              this.cpuChange(this.form.fd.vcpu)
             }
           }
         })
       },
+    },
+    // onValuesChange → form.fd watches
+    'form.fd.zone' (val, oldVal) {
+      if (R.equals(val, oldVal)) return
+      this.fetchCapability()
+    },
+    'form.fd.cloudregion' (val, oldVal) {
+      if (R.equals(val, oldVal)) return
+      this.fetchCapability()
+      this.$nextTick(this.fetchInstanceSpecs)
+    },
+    'form.fd.schedPolicyType' (val) {
+      if (val === 'host') {
+        this.form.fd.schedPolicyHost = undefined
+      }
+    },
+    'form.fd.backupEnable' (val) {
+      if (val) {
+        this.form.fd.backup = undefined
+      }
+    },
+    'form.fd.systemDiskType': {
+      deep: true,
+      handler () { this.setIsLocalDisk() },
+    },
+    'form.fd.dataDiskTypes': {
+      deep: true,
+      handler () { this.setIsLocalDisk() },
     },
     uefi (val) {
       this.setBios(val)
@@ -501,33 +527,14 @@ export default {
       }
       return list
     },
-    onValuesChange (vm, changedFields) {
-      this.$nextTick(() => {
-        const formValue = this.form.fc.getFieldsValue()
-        const newField = resolveValueChangeField(changedFields)
-        this._setNewFieldToFd(newField, formValue)
-        const keys = Object.keys(newField)
-        if (keys.includes('zone') || keys.includes('cloudregion')) {
-          this.fetchCapability()
-        }
-        if (keys.includes('cloudregion')) {
-          this.$nextTick(this.fetchInstanceSpecs)
-        }
-        if (changedFields.schedPolicyType === 'host') {
-          this.$set(this.form.fd, 'schedPolicyHost', undefined)
-        }
-        if (changedFields.backupEnable) {
-          this.$set(this.form.fd, 'backup', undefined)
-        }
-        this.setIsLocalDisk()
-      })
-    },
     setIsLocalDisk () {
       const isSysLocal = _.get(this.form, 'fd.systemDiskType.key') === 'local'
-      const fd = this.form.fc.getFieldsValue()
       let isDiskLocal = true
-      const { dataDiskTypes } = fd
-      if (!R.is(Object, dataDiskTypes)) return
+      const { dataDiskTypes } = this.form.fd || {}
+      if (!R.is(Object, dataDiskTypes)) {
+        this.isLocalDisk = isSysLocal && isDiskLocal
+        return
+      }
       const diskTypeItem = dataDiskTypes[Object.keys(dataDiskTypes)[0]]
       if (diskTypeItem && diskTypeItem.key) {
         isDiskLocal = diskTypeItem.key === 'local'
@@ -561,9 +568,7 @@ export default {
             ...data,
             hypervisors,
           }
-          this.form.fc.setFieldsValue({
-            hypervisor: hypervisors[0], // 赋值默认第一个平台
-          })
+          this.form.fd.hypervisor = hypervisors[0] // 赋值默认第一个平台
         })
     },
     fetchInstanceSpecs () {
@@ -571,22 +576,16 @@ export default {
       this.serverskusM.get({ id: 'instance-specs', params: this.instanceSpecParmas })
         .then(({ data }) => {
           this.form.fi.cpuMem = data
-          const vcpuDecorator = this.decorators.vcpu
-          const vcpuInit = vcpuDecorator[1].initialValue
-          this.cpuChange(vcpuInit)
+          this.cpuChange(this.form.fd.vcpu)
         })
     },
     setBios (val) {
-      if (val) {
-        this.form.fc.getFieldDecorator(this.decorators.bios[0], { preserve: true })
-        this.form.fc.setFieldsValue({ [this.decorators.bios[0]]: 'UEFI' })
-      } else {
-        this.form.fc.setFieldsValue({ [this.decorators.bios[0]]: 'BIOS' })
-      }
+      const biosKey = 'bios'
+      this.form.fd[biosKey] = val ? 'UEFI' : 'BIOS'
     },
     gpuChange (val) {
       if (!val) {
-        this.form.fc.setFieldsValue({ gpu: '' })
+        this.form.fd.gpu = ''
       }
     },
 

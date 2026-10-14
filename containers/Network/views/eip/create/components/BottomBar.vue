@@ -48,6 +48,7 @@ export default {
   },
   inject: {
     form: { default: undefined },
+    validateCreateForm: { default: undefined },
     flushCreateFormFieldDrafts: { default: undefined },
     persistEipDraftAfterValidate: { default: undefined },
     resolvePublicSubmitLocation: { default: undefined },
@@ -185,7 +186,9 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        const values = typeof this.validateCreateForm === 'function'
+          ? await this.validateCreateForm()
+          : { ...this.form.fd }
         if (typeof this.flushCreateFormFieldDrafts === 'function') {
           this.flushCreateFormFieldDrafts()
         }

@@ -6,36 +6,23 @@ import OsSelect from '@Compute/sections/OsSelect'
 import ServerPassword from '@Compute/sections/ServerPassword'
 import ServerNetwork from '@Compute/sections/ServerNetwork'
 import SchedPolicy from '@Compute/sections/SchedPolicy'
-import { checkIpV6, getIpv6Start } from '@Compute/utils/createServer'
-import {
-  resolveDraftLoginType,
-} from '@Compute/utils/baremetalCreateDraft'
+import { getIpv6Start } from '@Compute/utils/createServer'
+import { createBaremetalFormDefaults } from '@Compute/utils/baremetalCreateFormDefaults'
+import { resolveBaremetalNetworkSeed } from '@Compute/utils/baremetalCreateDraft'
 import {
   BAREMETAL_CREATE_FORM_DRAFT_FIELD,
   BAREMETAL_CREATE_FORM_DRAFT_FIELDS,
-  BAREMETAL_CREATE_FORM_DRAFT_FC_BINDINGS,
   getBaremetalCreateFormDraftScope,
 } from '@Compute/utils/baremetalCreateFormDraft'
-import DomainProject from '@/sections/DomainProject'
-import CloudregionZone from '@/sections/CloudregionZone'
+import DomainProject from '@/sections/DomainProject/model'
+import CloudregionZone from '@/sections/CloudregionZone/model'
 import Tag from '@/sections/Tag'
-import validateForm, { isRequired, isWithinRange } from '@/utils/validate'
-import { IMAGES_TYPE_MAP } from '@/constants/compute'
+import validateForm, { isRequired } from '@/utils/validate'
 import { sizestr, uuid } from '@/utils/utils'
 import { WORKFLOW_TYPES } from '@/constants/workflow'
 import i18n from '@/locales'
 import createFormDraftMixin from '@/mixins/createFormDraft'
 import BottomBar from './BottomBar'
-function checkIpInSegment (i, networkData) {
-  return (rule, value, cb) => {
-    const isIn = isWithinRange(value, networkData.guest_ip_start, networkData.guest_ip_end)
-    if (isIn) {
-      cb()
-    } else {
-      cb(new Error(i18n.t('compute.text_205')))
-    }
-  }
-}
 
 export default {
   mixins: [createFormDraftMixin],
@@ -64,52 +51,15 @@ export default {
     Tag,
   },
   data () {
-    const initData = (this.isInitForm && this.initFormData) || {}
-    const initPreferZone = (Array.isArray(initData.prefer_zones) && initData.prefer_zones[0]) ||
-      initData.prefer_zone ||
-      initData.prefer_zone_id ||
-      ''
-    const imageTypeInitValue = initData.extraData?.image_type || IMAGES_TYPE_MAP.standard.key
-    let initImage = ''
-    if (initData.disks) {
-      initData.disks.forEach(item => {
-        if (item.image_id) {
-          initImage = item.image_id
-        }
-      })
-    }
-    if (initData.extraData?.image) {
-      initImage = initData.extraData.image
-    }
-    const initLoginType = this.isInitForm ? resolveDraftLoginType(initData) : 'random'
-    let initNetworkType = NETWORK_OPTIONS_MAP.default.key
-    let initBonding = !!(initData.extraData && initData.extraData.isBonding)
-    if (initData.nets) {
-      if (initData.nets[0] && initData.nets[0].hasOwnProperty('exit') && !initData.nets[0].exit) {
-        if (initData.nets[0].require_teaming) {
-          initBonding = true
-        }
-        initNetworkType = NETWORK_OPTIONS_MAP.default.key
-      } else if (initData.nets[0] && initData.nets[0].hasOwnProperty('network') && initData.extraData?.extraNets && initData.extraData?.extraNets[0] && initData.extraData?.extraNets[0].hasOwnProperty('network')) {
-        initNetworkType = NETWORK_OPTIONS_MAP.manual.key
-        if (initData.nets[0].require_teaming) {
-          initBonding = true
-        }
-      } else if (initData.nets.length) {
-        initNetworkType = NETWORK_OPTIONS_MAP.schedtag.key
-        if (initData.nets[0].schedtags && initData.nets[0].schedtags.length && initData.nets[0].schedtags[0].require_teaming) {
-          initBonding = true
-        }
-      }
-    }
-    let initSchedPolicyType = 'default'
-    if (initData.prefer_host) {
-      initSchedPolicyType = 'host'
-    }
-    const seedSchedtags = initData.schedtags || initData.extraData?.schedtags
-    if (seedSchedtags && seedSchedtags.length) {
-      initSchedPolicyType = 'schedtag'
-    }
+    const { defaults: fd, seed } = createBaremetalFormDefaults({
+      initFormData: this.initFormData,
+      isInitForm: this.isInitForm,
+      routeQuery: this.$route.query,
+    })
+    const {
+      imageTypeInitValue,
+      initBonding,
+    } = seed
     return {
       _initFormPromise: null,
       _initFormDone: false,
@@ -135,309 +85,13 @@ export default {
         },
       },
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            this.$bus.$emit('updateForm', values)
-            if (values.hasOwnProperty('cloudregion') && values.cloudregion.key) {
-              this.cloudregion = values.cloudregion.key
-            }
-            if (values.hasOwnProperty('zone') && values.zone.key) {
-              this.capability(values.zone.key)
-              this.zone = values.zone.key
-            }
-            if (values.hasOwnProperty('imageType')) {
-              if (values.imageType === 'iso') {
-                this.capability(this.zone, true)
-              } else {
-                this.capability(this.zone)
-              }
-            }
-            if (values.domain) {
-              this.project_domain = values.domain.key
-              this.params.region = {
-                ...this.params.region,
-                project_domain: values.domain.key,
-              }
-            }
-            this.syncBaremetalCreateFormFcDrafts(values)
-          },
-        }),
         fi: {
           capability: {},
           imageMsg: {},
           networkList: [],
           createType: 'baremetal',
         },
-      },
-      decorators: {
-        domain: [
-          'domain',
-          {
-            initialValue: initData.extraData?.domain_id || this.$route.query.domain_id || '',
-            rules: [
-              { validator: isRequired(), message: i18n.t('rules.domain'), trigger: 'change' },
-            ],
-          },
-        ],
-        project: [
-          'project',
-          {
-            initialValue: initData.project_id || '',
-            rules: [
-              { validator: isRequired(), message: i18n.t('rules.project'), trigger: 'change' },
-            ],
-          },
-        ],
-        name: [
-          'name',
-          {
-            initialValue: initData.generate_name || '',
-            validateTrigger: 'blur',
-            validateFirst: true,
-            rules: [
-              { required: true, message: i18n.t('compute.text_210') },
-              { validator: this.$validate('resourceCreateName') },
-            ],
-          },
-        ],
-        regionZone: {
-          cloudregion: [
-            'cloudregion',
-            {
-              initialValue: { key: initData.prefer_region || '', label: '' },
-              rules: [
-                { required: true, message: i18n.t('compute.text_212') },
-              ],
-            },
-          ],
-          zone: [
-            'zone',
-            {
-              initialValue: { key: initPreferZone || '', label: '' },
-              rules: [
-                { required: true, message: i18n.t('compute.text_213') },
-              ],
-            },
-          ],
-        },
-        count: [
-          'count',
-          {
-            initialValue: initData.__count__ || initData.count || 1,
-          },
-        ],
-        imageOS: {
-          os: [
-            'os',
-            {
-              initialValue: initData.extraData?.os || '',
-              rules: [
-                { required: true, message: i18n.t('compute.text_153') },
-              ],
-            },
-          ],
-          image: [
-            'image',
-            {
-              initialValue: { key: initImage || '', label: '' },
-              rules: [
-                { validator: isRequired(), message: i18n.t('compute.text_214') },
-              ],
-            },
-          ],
-          imageType: [
-            'imageType',
-            {
-              initialValue: imageTypeInitValue,
-            },
-          ],
-        },
-        specifications: [
-          'specifications',
-          {
-            initialValue: initData.extraData?.specifications || '',
-            rules: [
-              { required: true, message: i18n.t('compute.text_313') },
-            ],
-          },
-        ],
-        loginConfig: {
-          loginType: [
-            'loginType',
-            {
-              initialValue: initLoginType,
-            },
-          ],
-          keypair: [
-            'loginKeypair',
-            {
-              initialValue: initData.keypair || '',
-              rules: [
-                { required: true, message: i18n.t('compute.text_203') },
-              ],
-            },
-          ],
-          password: [
-            'loginPassword',
-            {
-              // 草稿不回填明文密码
-              initialValue: (this.isInitForm && initData.password) || '',
-              validateFirst: true,
-              rules: [
-                { required: true, message: i18n.t('compute.text_204') },
-                { validator: validateForm('sshPassword') },
-              ],
-            },
-          ],
-        },
-        network: {
-          networkType: [
-            'networkType',
-            {
-              initialValue: initNetworkType,
-            },
-          ],
-          networkConfig: {
-            vpcs: i => [
-              `vpcs[${i}]`,
-              {
-                validateTrigger: ['change', 'blur'],
-                rules: [{
-                  required: true,
-                  message: i18n.t('compute.text_194'),
-                }],
-              },
-            ],
-            networks: i => [
-              `networks[${i}]`,
-              {
-                validateTrigger: ['change', 'blur'],
-                rules: [{
-                  required: true,
-                  message: i18n.t('compute.text_217'),
-                }],
-              },
-            ],
-            ips: (i, networkData) => [
-              `networkIps[${i}]`,
-              {
-                validateFirst: true,
-                validateTrigger: ['blur', 'change'],
-                rules: [{
-                  required: true,
-                  message: this.$t('compute.text_218'),
-                }, {
-                  validator: checkIpInSegment(i, networkData),
-                }],
-              },
-            ],
-            ips6: (i, networkData) => [
-              `networkIpsAddress6[${i}]`,
-              {
-                validateFirst: true,
-                validateTrigger: ['blur', 'change'],
-                rules: [
-                  {
-                    required: true,
-                    message: this.$t('compute.complete_ipv6_address'),
-                  },
-                  {
-                    validator: checkIpV6(i, networkData),
-                  },
-                ],
-              },
-            ],
-            ipv6_mode: (i, networkData) => [
-              `networkIPv6Modes[${i}]`,
-              {
-                initialValue: 'all',
-              },
-            ],
-            ipv6s: (i, networkData) => [
-              `networkIPv6s[${i}]`,
-              {
-                validateFirst: true,
-                validateTrigger: ['blur', 'change'],
-              },
-            ],
-          },
-          networkSchedtag: {
-            schedtags: i => [
-              `networkSchedtags[${i}]`,
-              {
-                validateTrigger: ['change', 'blur'],
-                rules: [{
-                  required: true,
-                  message: i18n.t('compute.text_123'),
-                }],
-              },
-            ],
-            policys: (i, networkData) => [
-              `networkPolicys[${i}]`,
-              {
-                validateTrigger: ['blur', 'change'],
-                rules: [{
-                  required: true,
-                  message: i18n.t('compute.text_123'),
-                }],
-              },
-            ],
-          },
-        },
-        schedPolicy: {
-          schedPolicyType: [
-            'schedPolicyType',
-            {
-              initialValue: initSchedPolicyType,
-            },
-          ],
-          schedPolicyHost: [
-            'schedPolicyHost',
-            {
-              initialValue: initData.prefer_host,
-              rules: [
-                { required: true, message: i18n.t('compute.text_314') },
-              ],
-            },
-          ],
-          policySchedtag: {
-            schedtags: i => [
-              `policySchedtagSchedtags[${i}]`,
-              {
-                validateTrigger: ['change', 'blur'],
-                rules: [{
-                  required: true,
-                  message: i18n.t('compute.text_123'),
-                }],
-              },
-            ],
-            policys: (i, networkData) => [
-              `policySchedtagPolicys[${i}]`,
-              {
-                validateTrigger: ['blur', 'change'],
-                rules: [{
-                  required: true,
-                  message: i18n.t('compute.text_123'),
-                }],
-              },
-            ],
-          },
-        },
-        description: [
-          'description',
-          {
-            initialValue: initData.description || '',
-          },
-        ],
-        __meta__: [
-          '__meta__',
-          {
-            initialValue: initData.__meta__ || {},
-            rules: [
-              { validator: validateForm('tagName') },
-            ],
-          },
-        ],
+        fd,
       },
       zone: '',
       cloudregion: '',
@@ -535,6 +189,26 @@ export default {
     },
     ignoreLocalFormStorage () {
       return this.shouldDisableCreateFormDraft
+    },
+    modelRules () {
+      const rules = {
+        name: [
+          { required: true, message: i18n.t('compute.text_210') },
+          { validator: this.$validate('resourceCreateName') },
+        ],
+        __meta__: [
+          { validator: validateForm('tagName') },
+        ],
+      }
+      if (!this.isInstallOperationSystem) {
+        rules.cloudregion = [
+          { validator: isRequired(), message: i18n.t('compute.text_212'), trigger: 'change' },
+        ]
+        rules.zone = [
+          { validator: isRequired(), message: i18n.t('compute.text_213'), trigger: 'change' },
+        ]
+      }
+      return rules
     },
     ...mapGetters([
       'isAdminMode',
@@ -735,6 +409,40 @@ export default {
       if (this.isInstallOperationSystem) this.fetchSpec()
       this.capability(this.zone)
     },
+    // onValuesChange → form.fd watches（capability / domain / imageType）
+    'form.fd.cloudregion' (val, oldVal) {
+      if (R.equals(val, oldVal)) return
+      this.cloudregion = val?.key || ''
+    },
+    'form.fd.zone' (val, oldVal) {
+      if (R.equals(val, oldVal)) return
+      const zoneId = val?.key || ''
+      this.zone = zoneId
+      if (zoneId) this.capability(zoneId, this.osSelectImageType === 'iso' || this.form.fd.imageType === 'iso')
+    },
+    'form.fd.imageType' (val, oldVal) {
+      if (val === oldVal) return
+      if (val != null && this.osSelectImageType !== val) this.osSelectImageType = val
+      if (!this.zone) return
+      this.capability(this.zone, val === 'iso')
+    },
+    osSelectImageType (val, oldVal) {
+      // 模板 v-model:imageType 入口：同步到 fd，capability 由 form.fd.imageType watch 触发
+      if (val === oldVal) return
+      if (this.form?.fd && this.form.fd.imageType !== val) {
+        this.form.fd.imageType = val
+      }
+    },
+    'form.fd.domain' (val, oldVal) {
+      if (R.equals(val, oldVal)) return
+      const domainKey = typeof val === 'object' ? val?.key : val
+      if (!domainKey) return
+      this.project_domain = domainKey
+      this.params.region = {
+        ...this.params.region,
+        project_domain: domainKey,
+      }
+    },
   },
   created () {
     this.zonesM2 = new this.$Manager('zones')
@@ -767,8 +475,11 @@ export default {
       key: BAREMETAL_CREATE_FORM_DRAFT_FIELD.SPECIFICATIONS,
       kind: 'selection',
       get: () => {
-        const v = this.form?.fc?.getFieldValue?.('specifications')
+        const v = this.form?.fd?.specifications
         return (v === undefined || v === null || v === '') ? undefined : v
+      },
+      set: (val) => {
+        if (this.form?.fd) this.form.fd.specifications = val
       },
     })
     // 磁盘：composite 仅 session → 同 tab 落盘/回填；跨 tab 无 local，保持不回填
@@ -785,7 +496,6 @@ export default {
       },
     })
     this.rememberAllCreateFormFieldDraftLocalOrigins()
-    this.bindBaremetalCreateFormFcDrafts()
   },
   mounted () {
     this.initForm()
@@ -817,13 +527,14 @@ export default {
       const initData = this.isInitForm ? this.initFormData : null
       let cData = {}
       const canInit = !!(this.isInitForm && initData?.extraData)
-      if (!canInit || !this.form?.fc) return
+      if (!canInit || !this.form?.fd) return
       if (this._initFormDone) return
       this._initFormDone = true
       const preferZone = (Array.isArray(initData.prefer_zones) && initData.prefer_zones[0]) ||
         initData.prefer_zone ||
         initData.prefer_zone_id
       // 尽早写入 zone，保证调度标签列表 params（zone_id）正确，避免回填后被清空
+      // 不写 form.fd.zone（defaults 已种值），避免 watch 再打一遍 capability
       if (preferZone) {
         this.zone = preferZone
       }
@@ -868,19 +579,10 @@ export default {
             })
           }
         }
-        // 初始化网络
+        // 初始化网络（只写 form.fd + section refs）
         if (this.$refs.networkRef && initData.nets) {
-          let initNetworkType = NETWORK_OPTIONS_MAP.default.key
-          if (initData.nets[0] && initData.nets[0].hasOwnProperty('exit') && !initData.nets[0].exit) {
-            initNetworkType = NETWORK_OPTIONS_MAP.default.key
-          } else if (initData.nets[0] && initData.nets[0].hasOwnProperty('network') && initData.extraData?.extraNets && initData.extraData?.extraNets[0] && initData.extraData?.extraNets[0].hasOwnProperty('network')) {
-            initNetworkType = NETWORK_OPTIONS_MAP.manual.key
-          } else if (initData.nets.length) {
-            initNetworkType = NETWORK_OPTIONS_MAP.schedtag.key
-          }
-          this.form.fc.setFieldsValue({
-            networkType: initNetworkType,
-          })
+          const { initNetworkType } = resolveBaremetalNetworkSeed(initData)
+          this.form.fd.networkType = initNetworkType
           this.$refs.networkRef.change({ target: { value: initNetworkType }, name: 'default' })
           if (initNetworkType === NETWORK_OPTIONS_MAP.manual.key) {
             this.$nextTick(() => {
@@ -906,6 +608,7 @@ export default {
             ret[key] = R.is(Array, value) ? value : [value]
           }, initData.__meta__)
           this.tagDefaultChecked = ret
+          this.form.fd.__meta__ = { ...initData.__meta__ }
         }
       })
     },
@@ -913,18 +616,15 @@ export default {
      * 回填调度策略：等待 PolicySchedtag 挂载后再 initData（只调一次，避免反复换 key）
      */
     backfillSchedPolicyFromInitData (initData) {
-      if (!initData || !this.$refs.schedPolicyRef) return
+      if (!initData || !this.$refs.schedPolicyRef || !this.form?.fd) return
       if (initData.prefer_host) {
-        this.form.fc.setFieldsValue({ schedPolicyType: 'host' })
+        this.form.fd.schedPolicyType = 'host'
         this.$refs.schedPolicyRef.change({ target: { value: 'host' }, name: 'default' })
         const preferHost = initData.prefer_host
         const applyHost = () => {
-          if (!this.form?.fc || !preferHost) return
-          this.form.fc.setFieldsValue({
-            schedPolicyType: 'host',
-            schedPolicyHost: preferHost,
-          })
-          if (this.form.fd) this.form.fd.schedPolicyHost = preferHost
+          if (!this.form?.fd || !preferHost) return
+          this.form.fd.schedPolicyType = 'host'
+          this.form.fd.schedPolicyHost = preferHost
         }
         applyHost()
         ;[500, 1500, 3000].forEach(ms => setTimeout(applyHost, ms))
@@ -938,7 +638,7 @@ export default {
           return
         }
       }
-      this.form.fc.setFieldsValue({ schedPolicyType: 'schedtag' })
+      this.form.fd.schedPolicyType = 'schedtag'
       this.$refs.schedPolicyRef.change({ target: { value: 'schedtag' }, name: 'default' })
       let applied = false
       const tryInit = () => {
@@ -960,14 +660,12 @@ export default {
     vpcResourceMapper (list) {
       return list.filter(val => val.id === 'default')
     },
-    // CloudregionZone 程序化 setFieldsValue 不走 onValuesChange，用 update 事件同步
+    // CloudregionZone update：fd watch 已处理 capability；此处仅兜底同步本地 zone/region id
     onCloudregionUpdate (item) {
       this.cloudregion = item?.id || ''
     },
     onZoneUpdate (item) {
-      const zoneId = item?.id || ''
-      this.zone = zoneId
-      if (zoneId) this.capability(zoneId)
+      this.zone = item?.id || ''
     },
     setSelectedImage ({ imageMsg }) {
       this.selectedImage = imageMsg
@@ -1049,7 +747,7 @@ export default {
           this.specOptions = []
           // 清空选中规格
           this.$nextTick(() => {
-            this.form.fc.setFieldsValue({ specifications: '' })
+            this.setSpecifications('')
           })
         }
       })
@@ -1089,11 +787,14 @@ export default {
             this.specOptions = []
             // 清空选中规格
             this.$nextTick(() => {
-              this.form.fc.setFieldsValue({ specifications: '' })
+              this.setSpecifications('')
             })
           }
         }
       })
+    },
+    setSpecifications (value) {
+      this.form.fd.specifications = value
     },
     _loadSpecificationOptions (data) {
       const specs = {}
@@ -1120,17 +821,17 @@ export default {
         let preferSpec = ''
         if (this.isFormBackfill) {
           preferSpec = this.effectiveInitFormData?.extraData?.specifications ||
-            this.form.fc.getFieldValue('specifications') || ''
+            this.form.fd.specifications || ''
         } else if (this.canRestoreCreateFormDraft) {
           const draftSpec = this.readCreateFormFieldDraft(BAREMETAL_CREATE_FORM_DRAFT_FIELD.SPECIFICATIONS)
-          preferSpec = draftSpec || this.form.fc.getFieldValue('specifications') || ''
+          preferSpec = draftSpec || this.form.fd.specifications || ''
         }
         const matched = preferSpec
           ? this.specOptions.find(o => o.value === preferSpec)
           : null
         const selectedOption = matched || this.specOptions[0]
         this.$nextTick(() => {
-          this.form.fc.setFieldsValue({ specifications: selectedOption.value })
+          this.setSpecifications(selectedOption.value)
         })
         // 存储选中规格中的信息
         this.diskData = this.form.fi.capability.specs.hosts[selectedOption.value].disk
@@ -1432,16 +1133,29 @@ export default {
       }
       return schedtags
     },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
+    async validateForm () {
+      if (this.$refs.formRef) {
+        await this.$refs.formRef.validate()
+      }
+      if (typeof this.$refs.domainProjectRef?.validate === 'function') {
+        await this.$refs.domainProjectRef.validate()
+      }
+      if (typeof this.$refs.cloudregionZoneRef?.validate === 'function') {
+        await this.$refs.cloudregionZoneRef.validate()
+      }
+      if (typeof this.$refs.networkRef?.validate === 'function') {
+        await this.$refs.networkRef.validate()
+      }
+      if (typeof this.$refs.osSelectRef?.validate === 'function') {
+        await this.$refs.osSelectRef.validate()
+      }
+      if (typeof this.$refs.passwordRef?.validate === 'function') {
+        await this.$refs.passwordRef.validate()
+      }
+      if (typeof this.$refs.schedPolicyRef?.validate === 'function') {
+        await this.$refs.schedPolicyRef.validate()
+      }
+      return { ...this.form.fd }
     },
     // raid计算大小公式
     raidUtil (n, raid, m) {
@@ -1892,25 +1606,6 @@ export default {
     },
     handleCancel () {
       this.$router.push({ name: 'Baremetal' })
-    },
-    bindBaremetalCreateFormFcDrafts () {
-      this._baremetalCreateFormFcDraftMap = Object.create(null)
-      ;(BAREMETAL_CREATE_FORM_DRAFT_FC_BINDINGS || []).forEach((item) => {
-        if (!item?.key || !item.formField) return
-        this._baremetalCreateFormFcDraftMap[item.formField] = item.key
-        this.bindFormFcFieldDraft(item.key, { formField: item.formField })
-      })
-    },
-    syncBaremetalCreateFormFcDrafts (newField) {
-      if (!this.canUseCreateFormDraft || !newField || typeof newField !== 'object') return
-      // 仅用户交互后落盘，避免程序化 setFieldsValue 污染草稿
-      if (!this.createFormDraftUserInteracted) return
-      const map = this._baremetalCreateFormFcDraftMap || {}
-      Object.keys(newField).forEach((formField) => {
-        const draftKey = map[formField]
-        if (!draftKey) return
-        this.writeCreateFormFieldDraft(draftKey, newField[formField])
-      })
     },
   },
 }

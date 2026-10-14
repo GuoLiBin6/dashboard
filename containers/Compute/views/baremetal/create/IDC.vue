@@ -1,61 +1,67 @@
 <template>
   <div>
-    <a-form
+    <a-form-model
+      ref="formRef"
       class="mt-3"
-      :form="form.fc"
+      :model="form.fd"
+      :rules="modelRules"
       @submit="handleConfirm">
-      <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-bind="formItemLayout">
+      <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-bind="formItemLayout">
         <domain-project
-          :fc="form.fc"
-          :decorators="{ project: decorators.project, domain: decorators.domain }"
+          ref="domainProjectRef"
+          :form="form.fd"
           v-model:project="projectId"
           v-model:domain="domainId"
           :ignoreStorage="ignoreLocalFormStorage"
           :form-draft-key="baremetalDraftFields.domainProject" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_177')" class="mb-0" v-bind="formItemLayout" v-if="!isInstallOperationSystem">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_177')" class="mb-0" v-bind="formItemLayout" v-if="!isInstallOperationSystem" prop="zone">
         <cloudregion-zone
+          ref="cloudregionZoneRef"
+          :model="form.fd"
           :zone-params="params.zone"
           :cloudregion-params="params.region"
-          :decorator="decorators.regionZone"
           :form-draft-key="baremetalDraftFields.cloudregionZone"
           filterBrandResource="compute_engine"
           @update:cloudregion="onCloudregionUpdate"
           @update:zone="onZoneUpdate" />
-      </a-form-item>
-      <a-form-item
+      </a-form-model-item>
+      <a-form-model-item
         :label="$t('compute.text_228')"
         v-bind="formItemLayout"
-        :extra="$t('compute.text_301')">
-        <a-input v-decorator="decorators.name" :placeholder="$t('validator.resourceCreateName')" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_312')" v-bind="formItemLayout" v-if="!isInstallOperationSystem">
-        <a-input v-decorator="decorators.description" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_294')" v-bind="formItemLayout">
-        <a-input-number v-decorator="decorators.count" :min="1" :max="100" :disabled="isInstallOperationSystem" />
-      </a-form-item>
-      <a-form-item v-bind="formItemLayout" :label="$t('compute.text_267')" :extra="$t('compute.text_302')">
+        :extra="$t('compute.text_301')"
+        prop="name">
+        <a-input v-model:value="form.fd.name" :placeholder="$t('validator.resourceCreateName')" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_312')" v-bind="formItemLayout" v-if="!isInstallOperationSystem" prop="description">
+        <a-input v-model:value="form.fd.description" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_294')" v-bind="formItemLayout" prop="count">
+        <a-input-number v-model:value="form.fd.count" :min="1" :max="100" :disabled="isInstallOperationSystem" />
+      </a-form-model-item>
+      <!-- ServerPassword / ServerNetwork / OsSelect 已 end-state（:model + validate） -->
+      <a-form-model-item v-bind="formItemLayout" :label="$t('compute.text_267')" :extra="$t('compute.text_302')">
         <os-select
+          ref="osSelectRef"
           type="baremetal"
           :form="form"
+          :model="form.fd"
           :types="osSelectTypes"
           hypervisor="baremetal"
           :image-params="imageParams"
-          :decorator="decorators.imageOS"
           :ignore-storage="ignoreLocalFormStorage"
           :form-draft-key="baremetalDraftFields.osSelect"
           @updateImageMsg="setSelectedImage"
           v-model:imageType="osSelectImageType" />
-      </a-form-item>
-      <a-form-item v-bind="formItemLayout" :label="$t('compute.text_178')">
-        <a-select v-decorator="decorators.specifications" :disabled="isInstallOperationSystem" @change="specificationChange">
+      </a-form-model-item>
+      <a-form-model-item v-bind="formItemLayout" :label="$t('compute.text_178')" prop="specifications">
+        <a-select v-model:value="form.fd.specifications" @change="specificationChange" :disabled="isInstallOperationSystem">
           <a-select-option v-for="i in specOptions" :key="i.value" :value="i.value">
             {{i.text}}
           </a-select-option>
         </a-select>
-      </a-form-item>
-      <a-form-item v-bind="formItemLayout" :label="$t('compute.text_303')">
+      </a-form-model-item>
+      <a-form-model-item v-bind="formItemLayout" :label="$t('compute.text_303')">
         <div class="d-flex flex-wrap">
           <template v-for="(item, idx) of diskOptionsDate" :key="idx">
             <div class="disk-option-item">
@@ -88,23 +94,25 @@
             </div>
           </template>
         </div>
-      </a-form-item>
-      <a-form-item v-bind="offsetFormItemLayout">
+      </a-form-model-item>
+      <a-form-model-item v-bind="offsetFormItemLayout">
         <a-button type="primary" @click="addDisk" :disabled="specOptions.length === 0">{{$t('compute.text_307')}}</a-button>
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_308')" v-bind="formItemLayout" v-if="!isCheckedIso">
-        <server-password :form="form" :login-types="loginTypes" :isSnapshotImageType="false" :decorator="decorators.loginConfig" :form-draft-key="baremetalDraftFields.loginConfig" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_1154')" class="mb-0" v-bind="formItemLayout">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_308')" v-bind="formItemLayout" v-if="!isCheckedIso">
+        <server-password ref="passwordRef" :form="form" :model="form.fd" :login-types="loginTypes" :isSnapshotImageType="false" :form-draft-key="baremetalDraftFields.loginConfig" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_1154')" class="mb-0" v-bind="formItemLayout" prop="__meta__">
         <tag
-          v-decorator="decorators.__meta__" :allowNoValue="false" :default-checked="tagDefaultChecked" />
-      </a-form-item>
+          v-model:value="form.fd.__meta__"
+          :allowNoValue="false"
+          :default-checked="tagDefaultChecked" />
+      </a-form-model-item>
       <a-divider orientation="left">{{$t('compute.text_309')}}</a-divider>
-      <a-form-item :label="$t('compute.text_104')" v-bind="formItemLayout" class="mb-0">
+      <a-form-model-item :label="$t('compute.text_104')" v-bind="formItemLayout" class="mb-0">
         <server-network
           ref="networkRef"
+          :model="form.fd"
           :form="form"
-          :decorator="decorators.network"
           :isBonding="isBonding"
           :network-list-params="networkParam"
           :network-resource-mapper="networkResourceMapper"
@@ -114,18 +122,19 @@
           :vpcResourceMapper="vpcResourceMapper"
           :ignore-auto-network-type="isFormBackfill"
           :form-draft-key="baremetalDraftFields.serverNetwork" />
-      </a-form-item>
-      <a-form-item v-bind="offsetFormItemLayout">
-        <a-checkbox v-model="isBonding">{{$t('compute.text_310')}}</a-checkbox>
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_311')" v-bind="formItemLayout" class="mb-0" v-if="!isInstallOperationSystem">
+      </a-form-model-item>
+      <a-form-model-item v-bind="offsetFormItemLayout">
+        <a-checkbox v-model:checked="isBonding">{{$t('compute.text_310')}}</a-checkbox>
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_311')" v-bind="formItemLayout" class="mb-0" v-if="!isInstallOperationSystem">
         <sched-policy
           ref="schedPolicyRef"
           server-type="baremetal"
+          :model="form.fd"
           :form="form"
           :disabled-host="policyHostDisabled"
           :policy-host-params="params.policyHostParams"
-          :decorators="decorators.schedPolicy"
+
           :policy-schedtag-params="policySchedtagParams"
           :init-schedtags="schedPolicyInitSchedtags"
           :init-prefer-host="workflowInitPreferHost"
@@ -133,10 +142,10 @@
           :form-draft-key="baremetalDraftFields.schedPolicy"
           @change="hostChange"
           :hostData="filterHostData" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_312')" v-bind="formItemLayout" v-if="isInstallOperationSystem">
-        <a-input v-decorator="decorators.description" />
-      </a-form-item>
+      </a-form-model-item>
+      <a-form-model-item :label="$t('compute.text_312')" v-bind="formItemLayout" v-if="isInstallOperationSystem" prop="description">
+        <a-input v-model:value="form.fd.description" />
+      </a-form-model-item>
       <bottom-bar
         :loading="submiting"
         :form="form"
@@ -151,7 +160,7 @@
         :isModifyWorkflow="isModifyWorkflow"
         @add-cart="addShopCart"
         @cancel="handleCancel" />
-    </a-form>
+    </a-form-model>
   </div>
 </template>
 <script>
@@ -162,6 +171,7 @@ import CreateMixin from './mixins'
 export default {
   name: 'BaremetalCreateIDC',
   mixins: [WindowsMixin, workflowMixin, CreateMixin],
+  // onValuesChange → CreateMixin watch form.fd.*（zone/cloudregion/imageType/domain）
 }
 </script>
 

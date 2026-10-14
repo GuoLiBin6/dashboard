@@ -1855,6 +1855,16 @@ export function matchPciDevice (item, devType) {
 }
 
 export function hasVgaGpuInPciForm (formFd) {
+  if (!formFd || typeof formFd !== 'object') return false
+  // nested maps（end-state）：pciDevType[key] / pciGpuType[key]
+  if (formFd.pciDevType && typeof formFd.pciDevType === 'object' && !Array.isArray(formFd.pciDevType)) {
+    return Object.keys(formFd.pciDevType).some((index) => {
+      const pureDevType = String(formFd.pciDevType[index] || '').split('/')[0]
+      const gpuType = formFd.pciGpuType?.[index] ?? formFd[`pciGpuType[${index}]`]
+      return pureDevType === 'GPU' && gpuType === 'VGA'
+    })
+  }
+  // legacy flat bracket keys
   const devTypeKeys = Object.keys(formFd).filter(key => key.startsWith('pciDevType['))
   return devTypeKeys.some(key => {
     const index = key.match(/\[(\d+)\]/)?.[1]
@@ -1884,51 +1894,37 @@ export const PREALLOCATION_OPTIONS = [
 ]
 export const PREALLOCATION_OPTION_MAP = arrayToObj(PREALLOCATION_OPTIONS, 'value')
 
-export const SMART_SSH_FORM_DECORATORS = {
-  username: [
-    'username',
-    {
-      rules: [
-        { required: true, message: i18n.t('common.tips.input', [i18n.t('scope.text_406')]) },
-      ],
-    },
-    {
-      label: i18n.t('scope.text_406'),
-      placeholder: i18n.t('common.tips.input', [i18n.t('scope.text_406')]),
-    },
-  ],
-  password: [
-    'password',
-    {
-      rules: [
-        { required: true, message: i18n.t('common.tips.input', [i18n.t('common_328')]) },
-      ],
-    },
-    {
-      label: i18n.t('common_328'),
-      placeholder: i18n.t('common.tips.input', [i18n.t('common_328')]),
-    },
-  ],
-  port: [
-    'port',
-    {
-      validateFirst: true,
-      rules: [
-        { required: true, message: i18n.t('compute.text_347') },
-        {
-          validator: (rule, value, _callback) => {
-            const num = parseFloat(value)
-            if (!/^\d+$/.test(value) || !num || num > 65535) {
-              _callback(i18n.t('compute.text_348'))
-            }
-            _callback()
-          },
+/** SmartForm 字段：可读 meta（name 默认等于 key） */
+export const SMART_SSH_FORM_FIELDS = {
+  username: {
+    label: i18n.t('scope.text_406'),
+    placeholder: i18n.t('common.tips.input', [i18n.t('scope.text_406')]),
+    rules: [
+      { required: true, message: i18n.t('common.tips.input', [i18n.t('scope.text_406')]) },
+    ],
+  },
+  password: {
+    label: i18n.t('common_328'),
+    placeholder: i18n.t('common.tips.input', [i18n.t('common_328')]),
+    rules: [
+      { required: true, message: i18n.t('common.tips.input', [i18n.t('common_328')]) },
+    ],
+  },
+  port: {
+    label: i18n.t('compute.text_349'),
+    placeholder: i18n.t('compute.text_350'),
+    validateFirst: true,
+    rules: [
+      { required: true, message: i18n.t('compute.text_347') },
+      {
+        validator: (rule, value, _callback) => {
+          const num = parseFloat(value)
+          if (!/^\d+$/.test(value) || !num || num > 65535) {
+            _callback(i18n.t('compute.text_348'))
+          }
+          _callback()
         },
-      ],
-    },
-    {
-      label: i18n.t('compute.text_349'),
-      placeholder: i18n.t('compute.text_350'),
-    },
-  ],
+      },
+    ],
+  },
 }

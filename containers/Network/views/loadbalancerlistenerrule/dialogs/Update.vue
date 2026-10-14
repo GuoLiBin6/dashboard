@@ -4,28 +4,41 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('network.text_141')" :count="params.data.length" :action="$t('network.text_532')" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <redirect-form-items v-if="isOneCloud" :form="form" @redirectChange="handleRedirectChange" />
-        <template v-if="!isRedirect">
-          <a-form-item :label="$t('network.text_139')">
-            <base-select
-              resource="loadbalancerbackendgroups"
-              need-params
-              :params="bgParams"
-              filterable
-              v-decorator="decorators.backend_group"
-              :select-props="{ placeholder: $t('network.text_394') }" />
-          </a-form-item>
-          <a-form-item v-if="isOneCloud" :label="$t('network.text_527')">
-            <div slot="extra">{{$t('network.text_438')}}</div>
-            <a-input :min="0" v-decorator="decorators.http_request_rate" :addonAfter="$t('network.text_439')" type="number" />
-          </a-form-item>
-          <a-form-item v-if="isOneCloud" :label="$t('network.text_440')">
-            <div slot="extra">{{$t('network.text_528')}}</div>
-            <a-input :min="0" v-decorator="decorators.http_request_rate_per_src" :addonAfter="$t('network.text_439')" type="number" />
-          </a-form-item>
-        </template>
-      </a-form>
+      <a-form-model
+        v-if="isOneCloud"
+        ref="redirectFormRef"
+        :model="redirectForm"
+        v-bind="formItemLayout">
+        <redirect-form-items
+          :form="redirectForm"
+          modelMode
+          :listenerType="params.lbListenerData.listener_type"
+          @redirectChange="handleRedirectChange" />
+      </a-form-model>
+      <a-form-model
+        v-if="!isRedirect"
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('network.text_139')" prop="backend_group">
+          <base-select
+            v-model:value="form.backend_group"
+            resource="loadbalancerbackendgroups"
+            need-params
+            :params="bgParams"
+            filterable
+            :select-props="{ placeholder: $t('network.text_394') }" />
+        </a-form-model-item>
+        <a-form-model-item v-if="isOneCloud" :label="$t('network.text_527')" prop="http_request_rate">
+          <template #extra>{{$t('network.text_438')}}</template>
+          <a-input :min="0" v-model:value="form.http_request_rate" :addonAfter="$t('network.text_439')" type="number" />
+        </a-form-model-item>
+        <a-form-model-item v-if="isOneCloud" :label="$t('network.text_440')" prop="http_request_rate_per_src">
+          <template #extra>{{$t('network.text_528')}}</template>
+          <a-input :min="0" v-model:value="form.http_request_rate_per_src" :addonAfter="$t('network.text_439')" type="number" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -35,7 +48,6 @@
 </template>
 
 <script>
-// import * as R from 'ramda'
 import RedirectFormItems from '@Network/views/loadbalancerlistener/components/RedirectFormItems'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
@@ -51,31 +63,21 @@ export default {
       loading: false,
       isRedirect: false,
       form: {
-        fc: this.$form.createForm(this, { onValuesChange: this.onValuesChange }),
+        backend_group: undefined,
+        http_request_rate: 0,
+        http_request_rate_per_src: 0,
       },
-      decorators: {
+      redirectForm: {
+        redirect: false,
+        redirect_code: 301,
+        redirect_scheme: 'http',
+        redirect_host: undefined,
+        redirect_path: undefined,
+        listener_type: this.params.lbListenerData.listener_type,
+      },
+      rules: {
         backend_group: [
-          'backend_group',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('network.text_394') },
-            ],
-          },
-        ],
-        http_request_rate: [
-          'http_request_rate',
-          {
-            normalize: v => Number(v),
-            initialValue: 0,
-          },
-        ],
-        http_request_rate_per_src: [
-          'http_request_rate_per_src',
-          {
-            normalize: v => Number(v),
-            initialValue: 0,
-          },
+          { required: true, message: this.$t('network.text_394') },
         ],
       },
       formItemLayout: {
@@ -107,12 +109,6 @@ export default {
       return params
     },
   },
-  created () {
-    this.form.fc.getFieldDecorator('listener_type', {
-      preserve: true,
-      initialValue: this.params.lbListenerData.listener_type,
-    })
-  },
   mounted () {
     this.backfill()
   },
@@ -124,41 +120,45 @@ export default {
         const rowData = data[0]
         this.isRedirect = rowData.redirect === 'raw'
         if (this.isRedirect) {
-          this.form.fc.setFieldsValue({
-            redirect: this.isRedirect,
-          }, () => {
-            this.form.fc.setFieldsValue({
-              redirect_code: rowData.redirect_code,
-              redirect_scheme: rowData.redirect_scheme,
-              redirect_host: rowData.redirect_host,
-              redirect_path: rowData.redirect_path,
-            })
-          })
+          this.redirectForm.redirect = true
+          this.redirectForm.redirect_code = rowData.redirect_code
+          this.redirectForm.redirect_scheme = rowData.redirect_scheme
+          this.redirectForm.redirect_host = rowData.redirect_host
+          this.redirectForm.redirect_path = rowData.redirect_path
         } else {
-          this.form.fc.setFieldsValue({
-            backend_group: rowData.backend_group,
-            http_request_rate: rowData.http_request_rate,
-            http_request_rate_per_src: rowData.http_request_rate_per_src,
-          })
+          this.form.backend_group = rowData.backend_group
+          this.form.http_request_rate = rowData.http_request_rate
+          this.form.http_request_rate_per_src = rowData.http_request_rate_per_src
         }
-      }
-    },
-    async onValuesChange (props, values) {
-      await this.$nextTick()
-      const redirectKeys = ['redirect', 'redirect_scheme', 'redirect_host', 'redirect_path']
-      if (redirectKeys.indexOf(Object.keys(values)[0]) > -1) {
-        this.form.fc.resetFields(['check'])
-        this.form.fc.validateFields(['check'])
       }
     },
     handleRedirectChange (bool) {
       this.isRedirect = bool
     },
+    async collectValues () {
+      const values = { ...this.form }
+      if (this.isOneCloud) {
+        if (this.$refs.redirectFormRef) {
+          await this.$refs.redirectFormRef.validate()
+        }
+        Object.assign(values, { ...this.redirectForm })
+      }
+      if (!this.isRedirect) {
+        values.http_request_rate = Number(values.http_request_rate)
+        values.http_request_rate_per_src = Number(values.http_request_rate_per_src)
+      }
+      return values
+    },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        if (!this.isRedirect) {
+          await this.$refs.formRef.validate()
+        }
+        const values = await this.collectValues()
         values.redirect = values.redirect ? 'raw' : 'off'
+        delete values.listener_type
+        delete values.check
         await this.params.onManager('update', {
           id: this.params.data[0].id,
           managerArgs: {

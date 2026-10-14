@@ -2,28 +2,31 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{params.title}}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('network.text_205', [$t('dictionary.project')])" v-bind="formItemLayout" v-if="params.type === 'create'">
-          <domain-project :fc="form.fc" :decorators="decorators" :labelInValue="false" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_291')" v-bind="formItemLayout" v-if="params.type === 'create'">
-          <a-input v-decorator="decorators.name" :placeholder="$t('network.text_44')" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')" v-bind="formItemLayout" v-if="params.type === 'create'">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
-        <a-form-item v-bind="formItemLayout">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('network.text_205', [$t('dictionary.project')])" v-if="params.type === 'create'">
+          <domain-project :form="form" :labelInValue="false" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_291')" v-if="params.type === 'create'" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('network.text_44')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" v-if="params.type === 'create'" prop="description">
+          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.description" :placeholder="$t('common_367')" />
+        </a-form-model-item>
+        <a-form-model-item prop="acl_entries">
           <span slot="label">{{$t('network.text_292')}}<a-tooltip>
               <div slot="title">{{$t('network.text_293')}}<br />{{$t('network.text_294')}}<br />{{$t('network.text_295')}}<br />{{$t('network.text_296')}}<br />{{$t('network.text_297')}}</div>
               <icon type="info-circle" />
             </a-tooltip>
           </span>
-          <a-textarea v-decorator="decorators.acl_entries"
+          <a-textarea v-model:value="form.acl_entries"
             :placeholder="$t('network.text_298')"
             rows="8" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -35,7 +38,7 @@
 <script>
 import { mapGetters } from 'vuex'
 import { REGEXP } from '@/utils/validate'
-import DomainProject from '@/sections/DomainProject'
+import DomainProject from '@/sections/DomainProject/model'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import i18n from '@/locales'
@@ -74,6 +77,18 @@ const ipsValidate = (rule, value, cb) => {
   }
 }
 
+const parseAclEntries = (str) => {
+  if (!str) return []
+  const cidrs = str.split(/[\s\n]/).filter(v => !!v)
+  return cidrs.map(s => {
+    const [cidr, comment = ''] = s.split('|')
+    return {
+      cidr,
+      comment,
+    }
+  })
+}
+
 export default {
   name: 'LbaclsCreateDialog',
   components: {
@@ -81,66 +96,40 @@ export default {
   },
   mixins: [DialogMixin, WindowsMixin],
   data () {
+    const userInfo = this.$store.getters.userInfo
+    let aclEntriesInitial = ''
+    if (this.params.type === 'update') {
+      aclEntriesInitial = this.params.data[0].acl_entries.map(v => {
+        if (v.comment) {
+          return `${v.cidr}|${v.comment}`
+        }
+        return v.cidr
+      }).join(`
+`)
+    }
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            if (values.acl_entries) {
-              const str = values.acl_entries
-              const cidrs = str.split(/[\s\n]/).filter(v => !!v)
-              this.aclEntries = cidrs.map(str => {
-                const [cidr, comment = ''] = str.split('|')
-                return {
-                  cidr,
-                  comment,
-                }
-              })
-            }
-          },
-        }),
+        domain: userInfo.projectDomainId,
+        project: userInfo.projectId,
+        name: undefined,
+        description: undefined,
+        acl_entries: aclEntriesInitial,
       },
-      decorators: {
+      rules: {
         domain: [
-          'domain',
-          {
-            initialValue: this.$store.getters.userInfo.projectDomainId,
-            rules: [
-              { required: true, message: this.$t('rules.domain'), trigger: 'change' },
-            ],
-          },
+          { required: true, message: this.$t('rules.domain'), trigger: 'change' },
         ],
         project: [
-          'project',
-          {
-            initialValue: this.$store.getters.userInfo.projectId,
-            rules: [
-              { required: true, message: this.$t('rules.project'), trigger: 'change' },
-            ],
-          },
+          { required: true, message: this.$t('rules.project'), trigger: 'change' },
         ],
         name: [
-          'name',
-          {
-            validateFirst: true,
-            validateTrigger: ['blur'],
-            rules: [
-              { required: true, message: this.$t('network.text_116') },
-              { validator: this.$validate('serverName') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_116') },
+          { validator: this.$validate('serverName') },
         ],
-        description: ['description'],
         acl_entries: [
-          'acl_entries',
-          {
-            validateFirst: true,
-            validateTrigger: ['blur'],
-            rules: [
-              { required: true, message: this.$t('network.text_302') },
-              { validator: ipsValidate },
-            ],
-          },
+          { required: true, message: this.$t('network.text_302') },
+          { validator: ipsValidate },
         ],
       },
       formItemLayout: {
@@ -151,23 +140,16 @@ export default {
           span: 6,
         },
       },
-      aclEntries: [],
+      aclEntries: parseAclEntries(aclEntriesInitial),
     }
   },
   computed: {
     ...mapGetters(['isAdminMode', 'scope', 'isDomainMode', 'userInfo', 'l3PermissionEnable']),
   },
-  created () {
-    if (this.params.type === 'update') {
-      const initialValue = this.params.data[0].acl_entries.map(v => {
-        if (v.comment) {
-          return `${v.cidr}|${v.comment}`
-        }
-        return v.cidr
-      }).join(`
-`)
-      this.form.fc.getFieldDecorator('acl_entries', { preserve: true, initialValue })
-    }
+  watch: {
+    'form.acl_entries' (str) {
+      this.aclEntries = parseAclEntries(str)
+    },
   },
   methods: {
     doCreate (data) {
@@ -201,7 +183,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         if (this.params.type === 'create') {
           await this.doCreate(values)
         } else {

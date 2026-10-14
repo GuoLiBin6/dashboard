@@ -2,11 +2,11 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{this.params.title}}</div>
     <div slot="body" v-loading="loading">
-     <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('common_633')">
-          <a-input :placeholder="$t('common_634')" v-decorator="decorators.redirect_uri" />
-        </a-form-item>
-      </a-form>
+     <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('common_633')" prop="redirect_uri">
+          <a-input :placeholder="$t('common_634')" v-model:value="form.redirect_uri" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm">{{ $t("dialog.ok") }}</a-button>
@@ -25,7 +25,13 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        redirect_uri: '',
+      },
+      rules: {
+        redirect_uri: [
+          { required: true, message: this.$t('common_634') },
+          { validator: this.$validate('url') },
+        ],
       },
       formItemLayout: {
         wrapperCol: {
@@ -34,18 +40,6 @@ export default {
         labelCol: {
           span: 5,
         },
-      },
-      decorators: {
-        redirect_uri: [
-          'redirect_uri',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('common_634') },
-              { validator: this.$validate('url') },
-            ],
-          },
-        ],
       },
     }
   },
@@ -58,10 +52,10 @@ export default {
   methods: {
     async handleConfirm () {
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         await this.manager.performClassAction({
           action: 'create-oidc-secret',
-          data: values,
+          data: { ...this.form },
         })
         this.params.refresh()
         this.cancelDialog()

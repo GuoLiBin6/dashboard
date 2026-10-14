@@ -6,29 +6,30 @@
         <div style="margin-left: 68px">{{$t('cloudenv.text_226')}}</div>
       </template>
    </a-alert>
-    <a-form class="mt-3" :form="form.fc">
+    <a-form-model ref="formRef" class="mt-3" :model="form.fd" :rules="formRules" v-bind="formLayout">
       <a-divider orientation="left">{{$t('cloudenv.text_227')}}</a-divider>
-      <a-form-item :label="$t('cloudenv.text_228')" v-bind="formLayout">
+      <a-form-model-item :label="$t('cloudenv.text_228')" v-bind="formLayout">
         <a-switch :checkedChildren="$t('cloudenv.text_84')" :unCheckedChildren="$t('cloudenv.text_85')" v-model:checked="configNetwork" />
-      </a-form-item>
+      </a-form-model-item>
       <template v-if="configNetwork">
-        <a-form-item :label="$t('cloudenv.text_184')" v-bind="formLayout">
-          <a-input v-decorator="decorators.name" :placeholder="$t('validator.resourceName')" />
-        </a-form-item>
-        <a-form-item :label="$t('cloudenv.text_229')" class="mb-0" v-bind="formLayout">
+        <a-form-model-item :label="$t('cloudenv.text_184')" v-bind="formLayout" prop="name">
+          <a-input v-model:value="form.fd.name" :placeholder="$t('validator.resourceName')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('cloudenv.text_229')" class="mb-0" v-bind="formLayout">
           <cloudregion-vpc-wire
+            ref="cloudregionVpcWireRef"
+            :model="form.fd"
             :vpc-params="params.vpc"
             :cloudregion-params="params.cloudregion"
             :wire-params="params.wire"
-            :vpcMapper="vpcMapper"
-            :decorator="decorators.cloudregionVpcWire" />
-        </a-form-item>
-        <a-form-item v-bind="formLayout">
-          <span slot="label">{{$t('cloudenv.text_181')}}<help-tooltip class="ml-1" name="networkIpSubnets" /></span>
-          <ip-subnets :decorator="decorators.ipSubnets" />
-        </a-form-item>
+            :vpcMapper="vpcMapper" />
+        </a-form-model-item>
+        <a-form-model-item v-bind="formLayout">
+          <template #label>{{$t('cloudenv.text_181')}}<help-tooltip class="ml-1" name="networkIpSubnets" /></template>
+          <ip-subnets ref="ipSubnetsRef" :model="form.fd" />
+        </a-form-model-item>
       </template>
-    </a-form>
+    </a-form-model>
   </div>
 </template>
 
@@ -39,7 +40,6 @@ import createMixin from './components/createMixin'
 import IpSubnets from './components/IpSubnets'
 
 function validateGateway (rule, value, callback) {
-  // 只需要查看是否是以 0 结尾
   const ipItems = value.split('.')
   const msg = this.$t('cloudenv.text_230')
   if (ipItems[ipItems.length - 1] === '0') {
@@ -64,89 +64,73 @@ export default {
   data () {
     return {
       configNetwork: true,
-      decorators: {
-        name: [
-          'name',
-          {
+      fieldMap: {
+        name: {
+          name: 'name',
+          validateTrigger: ['change', 'blur'],
+          validateFirst: true,
+          rules: [
+            { required: true, message: this.$t('cloudenv.text_190') },
+            { validator: this.$validate('resourceName') },
+          ],
+        },
+        cloudregionVpcWire: {
+          cloudregion: {
+            name: 'cloudregion',
+            rules: [
+              { validator: isRequired(), message: this.$t('cloudenv.text_231') },
+            ],
+          },
+          vpc: {
+            name: 'vpc',
+            rules: [
+              { validator: isRequired(), message: this.$t('cloudenv.text_232') },
+            ],
+          },
+          wire: {
+            name: 'wire',
+            rules: [
+              { validator: isRequired(), message: this.$t('cloudenv.text_233') },
+            ],
+          },
+        },
+        ipSubnets: {
+          startip: i => ({
+            name: `startip[${i}]`,
             validateTrigger: ['change', 'blur'],
             validateFirst: true,
             rules: [
-              { required: true, message: this.$t('cloudenv.text_190') },
-              { validator: this.$validate('resourceName') },
+              { required: true, message: this.$t('cloudenv.text_191') },
+              { validator: this.$validate('IPv4') },
             ],
-          },
-        ],
-        cloudregionVpcWire: {
-          cloudregion: [
-            'cloudregion',
-            {
-              rules: [
-                { validator: isRequired(), message: this.$t('cloudenv.text_231') },
-              ],
-            },
-          ],
-          vpc: [
-            'vpc',
-            {
-              rules: [
-                { validator: isRequired(), message: this.$t('cloudenv.text_232') },
-              ],
-            },
-          ],
-          wire: [
-            'wire',
-            {
-              rules: [
-                { validator: isRequired(), message: this.$t('cloudenv.text_233') },
-              ],
-            },
-          ],
-        },
-        ipSubnets: {
-          startip: i => [
-            `startip[${i}]`,
-            {
-              validateTrigger: ['change', 'blur'],
-              validateFirst: true,
-              rules: [
-                { required: true, message: this.$t('cloudenv.text_191') },
-                { validator: this.$validate('IPv4') },
-              ],
-            },
-          ],
-          endip: i => [
-            `endip[${i}]`,
-            {
-              validateTrigger: ['change', 'blur'],
-              validateFirst: true,
-              rules: [
-                { required: true, message: this.$t('cloudenv.text_192') },
-                { validator: this.$validate('IPv4') },
-              ],
-            },
-          ],
-          netmask: i => [
-            `netmask[${i}]`,
-            {
-              initialValue: '24',
-              validateTrigger: ['change', 'blur'],
-              rules: [
-                { required: true, message: this.$t('cloudenv.text_234') },
-              ],
-            },
-          ],
-          gateway: i => [
-            `gateway[${i}]`,
-            {
-              validateTrigger: ['change', 'blur'],
-              validateFirst: true,
-              rules: [
-                { required: true, message: this.$t('cloudenv.text_235') },
-                { validator: this.$validate('IPv4') },
-                { validator: validateGateway },
-              ],
-            },
-          ],
+          }),
+          endip: i => ({
+            name: `endip[${i}]`,
+            validateTrigger: ['change', 'blur'],
+            validateFirst: true,
+            rules: [
+              { required: true, message: this.$t('cloudenv.text_192') },
+              { validator: this.$validate('IPv4') },
+            ],
+          }),
+          netmask: i => ({
+            name: `netmask[${i}]`,
+            initialValue: '24',
+            validateTrigger: ['change', 'blur'],
+            rules: [
+              { required: true, message: this.$t('cloudenv.text_234') },
+            ],
+          }),
+          gateway: i => ({
+            name: `gateway[${i}]`,
+            validateTrigger: ['change', 'blur'],
+            validateFirst: true,
+            rules: [
+              { required: true, message: this.$t('cloudenv.text_235') },
+              { validator: this.$validate('IPv4') },
+              { validator: validateGateway },
+            ],
+          }),
           vlan: i => [
             `vlan[${i}]`,
           ],

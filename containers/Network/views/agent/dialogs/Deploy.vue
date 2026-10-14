@@ -5,12 +5,14 @@
       <dialog-selected-tips :name="$t('dictionary.loadbalanceragent')" :count="params.data.length" :action="$t('network.text_41')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 2)" />
       <a-divider orientation="left">{{$t('network.text_42')}}</a-divider>
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('network.text_43')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.proj" disabled :placeholder="$t('network.text_44')" />
-        </a-form-item>
-        <a-form-item v-bind="formItemLayout">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules">
+        <a-form-model-item :label="$t('network.text_43')" v-bind="formItemLayout" prop="proj">
+          <a-input v-model:value="form.proj" disabled :placeholder="$t('network.text_44')" />
+        </a-form-model-item>
+        <a-form-model-item v-bind="formItemLayout" prop="user">
           <template slot="label">
             <span>{{$t('network.text_45')}}<a-tooltip placement="topLeft">
                 <template slot="title">
@@ -22,7 +24,7 @@
             </span>
           </template>
           <base-select
-            v-decorator="decorators.user"
+            v-model:value="form.user"
             resource="users"
             version="v1"
             :params="userParams"
@@ -31,12 +33,12 @@
             idKey="name"
             :select-props="{ placeholder: $t('network.text_47') }"
             style="width: 320px" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_48')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.pass" type="password" :placeholder="$t('network.text_49')" />
-        </a-form-item>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_48')" v-bind="formItemLayout" prop="pass">
+          <a-input v-model:value="form.pass" type="password" :placeholder="$t('network.text_49')" />
+        </a-form-model-item>
         <a-divider orientation="left">{{$t('network.text_50')}}</a-divider>
-        <a-form-item v-bind="formItemLayout">
+        <a-form-model-item v-bind="formItemLayout" prop="hostName">
           <template slot="label">
             <span>{{$t('network.text_51')}}<a-tooltip placement="topLeft" :overlayStyle="{'max-width': '400px'}">
                  <div slot="title" style="width: 400px">{{$t('network.text_52')}}<br />{{$t('network.text_53')}}<br />{{$t('network.text_54')}}<br />{{$t('network.text_55')}}<div class="pl-2">{{$t('network.text_56')}}</div>
@@ -47,15 +49,15 @@
               </a-tooltip>
             </span>
           </template>
-          <a-radio-group v-decorator="decorators.hostName" @change="hostChange">
+          <a-radio-group v-model:value="form.hostName" @change="hostChange">
             <a-radio-button v-for="(item, index) in nameServers" :value="item.value" :key="index">{{item.label}}</a-radio-button>
           </a-radio-group>
-          <a-form-item v-if="this.hostName === ''">
-            <a-input v-decorator="decorators.ip" :placeholder="$t('network.text_59')" />
-          </a-form-item>
-          <a-form-item class="mb-0" v-if="this.hostName === 'server'">
+          <a-form-model-item v-if="hostName === ''" prop="ip" class="mt-2 mb-0">
+            <a-input v-model:value="form.ip" :placeholder="$t('network.text_59')" />
+          </a-form-model-item>
+          <a-form-model-item class="mb-0 mt-2" v-if="hostName === 'server'" prop="server">
             <base-select
-              v-decorator="decorators.server"
+              v-model:value="form.server"
               resource="servers"
               style="width: 320px"
               :mapper="serverMapper"
@@ -67,10 +69,10 @@
               @change="handleServerChange"
               @update:resList="serversSuccess" />
               <a-alert v-if="isOut" :message="$t('network.text_61')" banner />
-          </a-form-item>
-          <a-form-item v-if="this.hostName === 'host'">
+          </a-form-model-item>
+          <a-form-model-item v-if="hostName === 'host'" prop="host" class="mt-2 mb-0">
             <base-select
-              v-decorator="decorators.host"
+              v-model:value="form.host"
               resource="hosts"
               :params="hostsParams"
               :label-format="labelFormat"
@@ -78,15 +80,15 @@
               :remote-fn="q => ({ search: q })"
               :select-props="{ placeholder: $t('network.text_62') }"
               style="width: 320px" />
-          </a-form-item>
-        </a-form-item>
-        <a-form-item :label="$t('network.text_63')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.repo_base_url" :placeholder="$t('network.text_64')" />
-        </a-form-item>
-        <a-form-item v-bind="tailFormItemLayout">
-          <a-checkbox v-decorator="decorators.repo_sslverify">{{$t('network.text_65')}}</a-checkbox>
-        </a-form-item>
-      </a-form>
+          </a-form-model-item>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_63')" v-bind="formItemLayout" prop="repo_base_url">
+          <a-input v-model:value="form.repo_base_url" :placeholder="$t('network.text_64')" />
+        </a-form-model-item>
+        <a-form-model-item v-bind="tailFormItemLayout" prop="repo_sslverify">
+          <a-checkbox v-model:checked="form.repo_sslverify">{{$t('network.text_65')}}</a-checkbox>
+        </a-form-model-item>
+      </a-form-model>
       <a-alert v-if="isRunning">
         <template #message>{{$t('network.text_66')}}<a @click="openAsbook(ansiblePlaybookId)">{{$t('network.text_67')}}</a>
         </template>
@@ -114,92 +116,57 @@ export default {
       isRunning: false,
       isDeleteServer: false,
       form: {
-        fc: this.$form.createForm(this),
+        proj: 'system',
+        user: undefined,
+        pass: undefined,
+        hostName: 'server',
+        ip: undefined,
+        host: undefined,
+        server: undefined,
+        deploy_method: 'yum',
+        repo_base_url: undefined,
+        repo_sslverify: false,
       },
-      decorators: {
+      rules: {
         proj: [
-          'proj',
-          {
-            validateTrigger: ['blur', 'change'],
-            initialValue: 'system',
-            rules: [
-              { required: true, message: this.$t('network.text_68') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_68') },
         ],
         user: [
-          'user',
-          {
-            validateTrigger: ['blur', 'change'],
-            rules: [
-              { required: true, message: this.$t('network.text_69') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_69') },
         ],
         pass: [
-          'pass',
-          {
-            validateTrigger: ['blur', 'change'],
-            rules: [
-              { required: true, message: this.$t('network.text_49') },
-            ],
-          },
-        ],
-        hostName: [
-          'hostName',
-          {
-            initialValue: 'server',
-          },
+          { required: true, message: this.$t('network.text_49') },
         ],
         ip: [
-          'ip',
           {
-            validateTrigger: ['blur'],
-            rules: [
-              { required: true, message: this.$t('network.text_59') },
-            ],
+            validator: (rule, value, callback) => {
+              if (this.hostName !== '') return callback()
+              if (!value) return callback(new Error(this.$t('network.text_59')))
+              callback()
+            },
           },
         ],
         host: [
-          'host',
           {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('network.text_62') },
-            ],
+            validator: (rule, value, callback) => {
+              if (this.hostName !== 'host') return callback()
+              if (!value) return callback(new Error(this.$t('network.text_62')))
+              callback()
+            },
           },
         ],
         server: [
-          'server',
           {
-            validateFirst: true,
-            validateTrigger: ['blur', 'change'],
-            rules: [
-              { required: true, message: this.$t('network.text_60') },
-              { validator: this.serverOldCheck },
-            ],
+            validator: (rule, value, callback) => {
+              if (this.hostName !== 'server') return callback()
+              if (!value) return callback(new Error(this.$t('network.text_60')))
+              this.serverOldCheck(rule, value, callback)
+            },
           },
-        ],
-        deploy_method: [
-          'deploy_method',
         ],
         repo_base_url: [
-          'repo_base_url',
-          {
-            validateFirst: true,
-            validateTrigger: ['blur'],
-            // initialValue: `${location.protocol}//${location.host}/yumrepo`,
-            rules: [
-              { required: true, message: this.$t('network.text_64') },
-              { validator: this.$validate('url') },
-            ],
-          },
-        ],
-        repo_sslverify: [
-          'repo_sslverify',
-          {
-            valuePropName: 'checked',
-          },
+          { required: true, message: this.$t('network.text_64') },
+          { validator: this.$validate('url') },
         ],
       },
       formItemLayout: {
@@ -262,7 +229,6 @@ export default {
   },
   created () {
     this.backfill()
-    this.form.fc.getFieldDecorator('deploy_method', { preserve: true, initialValue: 'yum' })
   },
   methods: {
     getUpdateInfo () {
@@ -282,27 +248,24 @@ export default {
                 baseURL = `https://yunioniso.oss-cn-beijing.aliyuncs.com/iso/${majorV}/rpms`
               }
             }
-            this.form.fc.setFieldsValue({
-              repo_base_url: baseURL,
-            })
+            this.form.repo_base_url = baseURL
           }
         }
       })
     },
     serversSuccess (list = []) {
       const { deployment } = this.params.data[0] || {}
-      const { getFieldValue, validateFields } = this.form.fc
-      if (getFieldValue('hostName') === 'server' && deployment && deployment.host) {
+      if (this.form.hostName === 'server' && deployment && deployment.host) {
         const [, id] = deployment.host.split(':')
         this.isDeleteServer = !list.find(item => {
           return item.id === id || item.name === id
         })
-        validateFields(['server'])
+        this.$refs.formRef && this.$refs.formRef.validateField('server')
       }
     },
     handleServerChange () {
       this.isDeleteServer = false
-      this.form.fc.validateFields(['server'])
+      this.$refs.formRef && this.$refs.formRef.validateField('server')
     },
     serverMapper (retList) {
       return retList.filter(item => findPlatform(item.brand) !== 'public')
@@ -321,10 +284,6 @@ export default {
     hostChange (e) {
       this.hostName = e.target.value
     },
-    deployMethodChange (e) {
-      this.deployMethod = e.target.value
-    },
-    // 更改云主机时与旧的云主机校验
     serverOldCheck (rule, value, callback) {
       if (this.isDeleteServer) {
         return callback(new Error(this.$t('network.text_72')))
@@ -341,26 +300,19 @@ export default {
             if (data && data.playbook && data.playbook.inventory && data.playbook.inventory.hosts && data.playbook.inventory.hosts.length > 0) {
               const { vars } = data.playbook.inventory.hosts[0] || {}
               if (vars) {
-                this.form.fc.setFieldsValue({
-                  user: vars.user,
-                  pass: vars.pass,
-                  deploy_method: vars.repo_base_url ? 'yum' : 'copy',
-                })
-                this.form.fc.getFieldDecorator('repo_base_url', {
-                  preserve: true,
-                  initialValue: vars.repo_base_url,
-                })
+                this.form.user = vars.user
+                this.form.pass = vars.pass
+                this.form.deploy_method = vars.repo_base_url ? 'yum' : 'copy'
+                this.form.repo_base_url = vars.repo_base_url
                 this.deployMethod = vars.repo_base_url ? 'yum' : 'copy'
                 this.$nextTick(() => {
-                  this.form.fc.setFieldsValue({ repo_sslverify: !!parseInt(vars.repo_sslverify) })
+                  this.form.repo_sslverify = !!parseInt(vars.repo_sslverify)
                 })
               }
             }
-            // 是否为部署中
             this.isRunning = data.status === 'running'
           })
 
-        /* 处理云主机start */
         const arrHost = deployment.host.split(':') || []
         if (arrHost && arrHost.length === 2) {
           const obj = {
@@ -368,7 +320,12 @@ export default {
           }
           obj[arrHost[0]] = arrHost[1]
           this.$nextTick(() => {
-            this.form.fc.setFieldsValue(obj)
+            this.form.hostName = obj.hostName
+            if (obj.hostName === 'server') {
+              this.form.server = obj.server
+            } else if (obj.hostName === 'host') {
+              this.form.host = obj.host
+            }
           })
           this.deploymentHost = {
             hostName: arrHost[0],
@@ -376,12 +333,9 @@ export default {
           this.deploymentHost[arrHost[0]] = arrHost[1]
           this.hostName = arrHost[0]
         } else {
-          // 外部主机
           this.$nextTick(() => {
-            this.form.fc.setFieldsValue({
-              hostName: '',
-              ip: arrHost[0],
-            })
+            this.form.hostName = ''
+            this.form.ip = arrHost[0]
           })
           this.deploymentHost = {
             hostName: '',
@@ -389,7 +343,6 @@ export default {
           }
           this.hostName = ''
         }
-        /* 处理云主机end */
       } else {
         this.getUpdateInfo()
       }
@@ -411,7 +364,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         values.repo_sslverify = values.repo_sslverify ? 1 : 0
         const { hostName, ip, host, proj, pass, server, user } = values
         let name = ''

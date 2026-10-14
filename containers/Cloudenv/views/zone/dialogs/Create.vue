@@ -2,25 +2,28 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('cloudenv.text_480')}}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('cloudenv.text_95')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.name" :placeholder="$t('cloudenv.text_190')" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')" v-bind="formItemLayout">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
-        <a-form-item :label="$t('cloudenv.text_10')" v-bind="formItemLayout">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('cloudenv.text_95')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('cloudenv.text_190')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" prop="description">
+          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.description" :placeholder="$t('common_367')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('cloudenv.text_10')" prop="region">
           <base-select
+            v-model:value="form.region"
             resource="cloudregions"
-            v-decorator="decorators.region"
             :selectProps="{ 'placeholder': $t('cloudenv.text_231') }"
             :params="{ 'cloud_env': 'private_or_onpremise', 'brand': 'OneCloud' }" />
-        </a-form-item>
-        <a-form-item :label="$t('cloudenv.text_374')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.location" :placeholder="$t('cloudenv.text_481')" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('cloudenv.text_374')" prop="location">
+          <a-input v-model:value="form.location" :placeholder="$t('cloudenv.text_481')" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -40,35 +43,20 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        name: '',
+        description: '',
+        region: undefined,
+        location: '',
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('cloudenv.text_190') },
-              // { validator: this.$validate('resourceName') },
-            ],
-          },
+          { required: true, message: this.$t('cloudenv.text_190') },
         ],
-        description: ['description'],
         region: [
-          'region',
-          {
-            rules: [
-              { required: true, message: this.$t('cloudenv.text_231') },
-            ],
-          },
+          { required: true, message: this.$t('cloudenv.text_231') },
         ],
         location: [
-          'location',
-          {
-            rules: [
-              { required: true, message: this.$t('cloudenv.text_482') },
-            ],
-          },
+          { required: true, message: this.$t('cloudenv.text_482') },
         ],
       },
       formItemLayout: {
@@ -82,17 +70,6 @@ export default {
     }
   },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     doCreate (data) {
       return this.params.onManager('create', {
         managerArgs: {
@@ -103,12 +80,12 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
-        this.loading = true
-        await this.doCreate(values)
-        this.loading = false
+        await this.$refs.formRef.validate()
+        await this.doCreate(this.form)
         this.cancelDialog()
       } catch (error) {
+        // validation or API error
+      } finally {
         this.loading = false
       }
     },

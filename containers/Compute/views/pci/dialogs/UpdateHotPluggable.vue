@@ -2,13 +2,11 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{ $t('common.edit') }}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc"
-        v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.pci.hot_pluggable')" :extra="$t('compute.pci.hot_pluggable.tips')">
-          <a-switch v-decorator="decorators.hot_pluggable" :checked-children="$t('table.title.on')" :un-checked-children="$t('table.title.off')" />
-        </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.pci.hot_pluggable')" :extra="$t('compute.pci.hot_pluggable.tips')" prop="hot_pluggable">
+          <a-switch v-model:checked="form.hot_pluggable" :checked-children="$t('table.title.on')" :un-checked-children="$t('table.title.off')" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -25,29 +23,14 @@ export default {
   name: 'UpdateHotPluggableDialog',
   mixins: [DialogMixin, WindowsMixin],
   data () {
-    const initHotPluggable = this.params.data[0].hot_pluggable
-
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        hot_pluggable: [
-          'hot_pluggable',
-          {
-            initialValue: initHotPluggable,
-            valuePropName: 'checked',
-          },
-        ],
+        hot_pluggable: this.params.data[0].hot_pluggable,
       },
       formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
+        wrapperCol: { span: 20 },
+        labelCol: { span: 4 },
       },
     }
   },
@@ -63,15 +46,8 @@ export default {
     },
     async handleConfirm () {
       this.loading = true
-      const { validateFields } = this.form.fc
       try {
-        this.loading = true
-        const values = await validateFields()
-        const data = {
-          hot_pluggable: values.hot_pluggable,
-        }
-        await this.doSubmit(data)
-        this.loading = false
+        await this.doSubmit({ hot_pluggable: this.form.hot_pluggable })
         this.cancelDialog()
         this.$message.success(this.$t('common.success'))
         this.params.refresh && this.params.refresh()

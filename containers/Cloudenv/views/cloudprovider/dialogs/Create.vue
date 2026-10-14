@@ -8,30 +8,33 @@
             {{$t('cloudenv.text_341')}}
           </div>
           <div>{{$t('cloudenv.text_342')}} </div>
-          <!-- <div>2.录入的APP必须被授予Owner的权限，操作步骤请点击查看帮助  <help-link href="/">详情</help-link></div> -->
           <div>{{$t('cloudenv.text_343')}}</div>
         </template>
       </a-alert>
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('cloudenv.text_344')">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('cloudenv.text_344')" prop="enrollment_account_id">
           <base-select
+            v-model:value="form.enrollment_account_id"
             showSync
             isDefaultSelect
             :resource="`cloudaccounts/${params.data.id}/enrollment-accounts`"
-            v-decorator="decorators.enrollmentAccountId"
             :selectProps="{ 'placeholder': $t('cloudenv.text_345') }" />
-            <div slot="extra">{{$t('cloudenv.text_346')}}</div>
-        </a-form-item>
-        <a-form-item :label="$t('cloudenv.text_347')">
-          <a-input v-decorator="decorators.name" :placeholder="$t('cloudenv.text_348')" />
-        </a-form-item>
-        <a-form-item :label="$t('cloudenv.text_349')">
-          <a-select v-decorator="decorators.offerType" :placeholder="$t('cloudenv.text_350')">
+          <div slot="extra">{{$t('cloudenv.text_346')}}</div>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('cloudenv.text_347')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('cloudenv.text_348')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('cloudenv.text_349')" prop="offer_type">
+          <a-select v-model:value="form.offer_type" :placeholder="$t('cloudenv.text_350')">
             <a-select-option value="MS-AZR-0017P">{{$t('cloudenv.text_351')}}</a-select-option>
             <a-select-option value="MS-AZR-0148P">{{$t('cloudenv.text_352')}}</a-select-option>
           </a-select>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -51,34 +54,19 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        name: '',
+        enrollment_account_id: undefined,
+        offer_type: 'MS-AZR-0017P',
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('cloudenv.text_190') },
-            ],
-          },
+          { required: true, message: this.$t('cloudenv.text_190') },
         ],
-        enrollmentAccountId: [
-          'enrollment_account_id',
-          {
-            rules: [
-              { required: true, message: this.$t('cloudenv.text_345') },
-            ],
-          },
+        enrollment_account_id: [
+          { required: true, message: this.$t('cloudenv.text_345') },
         ],
-        offerType: [
-          'offer_type',
-          {
-            initialValue: 'MS-AZR-0017P',
-            rules: [
-              { required: true, message: this.$t('cloudenv.text_350') },
-            ],
-          },
+        offer_type: [
+          { required: true, message: this.$t('cloudenv.text_350') },
         ],
       },
       formItemLayout: {
@@ -95,11 +83,11 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         await new this.$Manager('cloudaccounts').performAction({
           id: this.params.data.id,
           action: 'create-subscription',
-          data: values,
+          data: this.form,
         })
         this.params.refresh()
         this.cancelDialog()

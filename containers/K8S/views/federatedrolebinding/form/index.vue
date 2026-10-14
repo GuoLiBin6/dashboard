@@ -1,48 +1,48 @@
 <template>
   <div class="k8s-deployment-create w-75">
-    <a-form :form="form.fc" v-bind="formItemLayout">
-      <a-form-item :label="$t('k8s.text_41')">
-        <a-input :placeholder="$t('k8s.text_60')" v-decorator="decorators.name" />
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_23')">
+    <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model-item :label="$t('k8s.text_41')" prop="name">
+        <a-input :placeholder="$t('k8s.text_60')" v-model:value="form.name" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('k8s.text_23')" prop="federatednamespace">
         <base-select
           resource="federatednamespaces"
           version="v1"
+          v-model:value="form.federatednamespace"
           @change="v => federatednamespaceId = v"
-          v-decorator="decorators.federatednamespace"
           :params="federatednamespaceParams" />
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_389')">
-        <a-radio-group v-decorator="decorators.roleRefType" @change="e => roleRefType = e.target.value">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('k8s.text_389')" prop="roleRefType">
+        <a-radio-group v-model:value="form.roleRefType" @change="onRoleRefTypeChange">
           <a-radio-button v-for="item in roleRefOpts" :value="item.key" :key="item.key">{{ item.label }}</a-radio-button>
         </a-radio-group>
-      </a-form-item>
-      <a-form-item :label="roleLabel">
+      </a-form-model-item>
+      <a-form-model-item :label="roleLabel" prop="role">
         <base-select
-          :resource="roleRefType === 'Role' ? 'federatedroles' : 'federatedclusterroles'"
+          :resource="form.roleRefType === 'Role' ? 'federatedroles' : 'federatedclusterroles'"
           version="v1"
           :params="params"
           need-params
           idKey="name"
-          :select-props="{ placeholder: $t('common.select') }"
-          v-decorator="decorators.role" />
-      </a-form-item>
-      <a-form-item label="Subject">
-        <a-radio-group v-decorator="decorators.subjectType" @change="subjectTypeChange">
+          v-model:value="form.role"
+          :select-props="{ placeholder: $t('common.select') }" />
+      </a-form-model-item>
+      <a-form-model-item label="Subject" prop="subjectType">
+        <a-radio-group v-model:value="form.subjectType" @change="subjectTypeChange">
           <a-radio-button v-for="item in subjectTypeOpts" :value="item.key" :key="item.key">{{ item.label }}</a-radio-button>
         </a-radio-group>
-      </a-form-item>
-      <a-form-item label="Subject Name">
+      </a-form-model-item>
+      <a-form-model-item label="Subject Name" prop="subject">
         <base-select
           v-if="subjectOpts.length"
-          v-decorator="decorators.subject"
+          v-model:value="form.subject"
           :options="subjectOpts"
           version="v1"
           idKey="name"
           :select-props="{ placeholder: $t('common.select') }" />
-        <a-input v-else v-decorator="decorators.subject" :placeholder="$t('common.placeholder')" />
-      </a-form-item>
-    </a-form>
+        <a-input v-else v-model:value="form.subject" :placeholder="$t('common.placeholder')" />
+      </a-form-model-item>
+    </a-form-model>
   </div>
 </template>
 
@@ -53,75 +53,36 @@ const API_GROUP = 'rbac.authorization.k8s.io'
 
 export default {
   name: 'K8sFederatedrolebindingFormCreate',
-  components: {
-  },
   mixins: [k8sCreateMixin],
   data () {
     return {
       form: {
-        fc: this.$form.createForm(this),
+        name: '',
+        federatednamespace: undefined,
+        roleRefType: 'Role',
+        role: undefined,
+        subjectType: 'User',
+        subject: undefined,
+      },
+      rules: {
+        name: [
+          { required: true, message: this.$t('k8s.text_60') },
+          { min: 2, max: 24, message: this.$t('k8s.text_132'), trigger: 'blur' },
+          { validator: this.$validate('k8sName') },
+        ],
+        federatednamespace: [
+          { required: true, message: this.$t('k8s.text_61'), trigger: 'blur' },
+        ],
+        role: [
+          { required: true, message: this.$t('common.select'), trigger: 'blur' },
+        ],
+        subject: [
+          { required: true, message: this.$t('common.select'), trigger: 'blur' },
+        ],
       },
       formItemLayout: {
         labelCol: { span: 4 },
         wrapperCol: { span: 20 },
-      },
-      decorators: {
-        name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('k8s.text_60') },
-              { min: 2, max: 24, message: this.$t('k8s.text_132'), trigger: 'blur' },
-              { validator: this.$validate('k8sName') },
-            ],
-          },
-        ],
-        cluster: [
-          'cluster',
-          {
-            initialValue: this.$store.state.common.k8s.cluster,
-            rules: [
-              { required: true, message: this.$t('k8s.text_30'), trigger: 'blur' },
-            ],
-          },
-        ],
-        federatednamespace: [
-          'federatednamespace',
-          {
-            rules: [
-              { required: true, message: this.$t('k8s.text_61'), trigger: 'blur' },
-            ],
-          },
-        ],
-        roleRefType: [
-          'roleRefType',
-          {
-            initialValue: 'Role',
-          },
-        ],
-        role: [
-          'role',
-          {
-            rules: [
-              { required: true, message: this.$t('common.select'), trigger: 'blur' },
-            ],
-          },
-        ],
-        subjectType: [
-          'subjectType',
-          {
-            initialValue: 'User',
-          },
-        ],
-        subject: [
-          'subject',
-          {
-            rules: [
-              { required: true, message: this.$t('common.select'), trigger: 'blur' },
-            ],
-          },
-        ],
       },
       roleRefOpts: [
         { key: 'Role', label: this.$t('k8s.text_370') },
@@ -132,26 +93,23 @@ export default {
         { key: 'Group', label: 'Group' },
       ],
       subjectOpts: [],
-      roleRefType: 'Role',
-      subjectType: 'User',
       federatednamespaceParams: {
         scope: this.$store.getters.scope,
         limit: 0,
       },
-
       federatednamespaceId: undefined,
     }
   },
   computed: {
     roleLabel () {
-      return this.roleRefType === 'Role' ? this.$t('k8s.text_370') : this.$t('k8s.text_373')
+      return this.form.roleRefType === 'Role' ? this.$t('k8s.text_370') : this.$t('k8s.text_373')
     },
     params () {
       const params = {
         limit: 0,
         scope: this.$store.getters.scope,
       }
-      if (this.roleRefType === 'Role' && this.federatednamespaceId) {
+      if (this.form.roleRefType === 'Role' && this.federatednamespaceId) {
         params.federatednamespace_id = this.federatednamespaceId
       }
       return params
@@ -161,48 +119,47 @@ export default {
     this.getSubjectOpts()
   },
   methods: {
+    onRoleRefTypeChange () {
+      this.form.role = undefined
+    },
     async getSubjectOpts () {
       try {
         let spec = ''
-        if (this.subjectType === 'User') spec = 'cluster-users'
-        if (this.subjectType === 'Group') spec = 'cluster-user-groups'
+        if (this.form.subjectType === 'User') spec = 'cluster-users'
+        if (this.form.subjectType === 'Group') spec = 'cluster-user-groups'
         const { data } = await new this.$Manager('federatedroles', 'v1').get({ id: spec, params: { scope: this.$store.getters.scope } })
         this.subjectOpts = data
       } catch (error) {
         throw error
       }
     },
-    subjectTypeChange (e) {
-      this.subjectType = e.target.value
+    subjectTypeChange () {
+      this.form.subject = undefined
       this.getSubjectOpts()
-      this.form.fc.setFieldsValue({
-        [this.decorators.subject[0]]: undefined,
-      })
     },
     async validateForm () {
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         const subjects = [{
-          kind: values.subjectType,
-          name: values.subject,
+          kind: this.form.subjectType,
+          name: this.form.subject,
           apiGroup: API_GROUP,
-          namespace: values.federatednamespace,
+          namespace: this.form.federatednamespace,
         }]
-        const data = {
-          name: values.name,
-          federatednamespace_id: values.federatednamespace,
+        return {
+          name: this.form.name,
+          federatednamespace_id: this.form.federatednamespace,
           spec: {
             template: {
               roleRef: {
-                kind: values.roleRefType,
-                name: values.role,
+                kind: this.form.roleRefType,
+                name: this.form.role,
                 apiGroup: API_GROUP,
               },
               subjects,
             },
           },
         }
-        return data
       } catch (error) {
         throw error
       }

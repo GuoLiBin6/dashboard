@@ -4,25 +4,29 @@
     <div v-if="fetchError" class="mt-3 px-3">
       <a-button @click="goBack">{{ $t('compute.text_135') }}</a-button>
     </div>
-    <a-spin v-else :spinning="!decoratorsReady">
-      <a-form v-if="decoratorsReady" :form="form.fc" class="mt-3" v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])">
+    <a-spin v-else :spinning="!templateReady">
+      <a-form-model
+        v-if="templateReady"
+        ref="formRef"
+        class="mt-3"
+        :model="form.fd"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])" prop="project">
           <domain-project
-            :fc="form.fc"
-            :fd="formFd"
-            :decorators="{ project: decorators.project, domain: decorators.domain }"
-            :restrict-domain-id="templateDomainFilterId"
+            :form="form.fd"
+            :get-domain-list="templateDomainFilterId ? fetchRestrictDomains : undefined"
             :ignore-storage="true" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_228')" :extra="$t('compute.text_1040')">
-          <a-input v-decorator="decorators.generate_name" :placeholder="$t('validator.resourceCreateName')" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_294')">
-          <a-input-number v-decorator="decorators.count" :min="1" :max="100" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_1041')" v-if="isOpenWorkflow">
-          <a-input v-decorator="decorators.reason" :placeholder="$t('compute.text_1042')" />
-        </a-form-item>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_228')" prop="generate_name" :extra="$t('compute.text_1040')">
+          <a-input v-model:value="form.fd.generate_name" :placeholder="$t('validator.resourceCreateName')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_294')" prop="count">
+          <a-input-number v-model:value="form.fd.count" :min="1" :max="100" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_1041')" v-if="isOpenWorkflow" prop="reason">
+          <a-input v-model:value="form.fd.reason" :placeholder="$t('compute.text_1042')" />
+        </a-form-model-item>
         <page-footer>
           <template v-slot:right>
             <a-button
@@ -35,19 +39,19 @@
             <side-errors :error-title="$t('compute.text_290')" v-model:errors="errors" />
           </template>
         </page-footer>
-      </a-form>
+      </a-form-model>
     </a-spin>
   </div>
 </template>
 
 <script>
-import { GenCreateData, Decorator } from '@Compute/utils/createServer'
-import { SERVER_TYPE } from '@Compute/constants'
-import DomainProject from '@/sections/DomainProject'
+import { GenCreateData } from '@Compute/utils/createServer'
+import DomainProject from '@/sections/DomainProject/model'
 import WindowsMixin from '@/mixins/windows'
 import workflowMixin from '@/mixins/workflow'
 import { WORKFLOW_TYPES } from '@/constants/workflow'
 import SideErrors from '@/sections/SideErrors'
+import { isRequired } from '@/utils/validate'
 
 export default {
   name: 'ServertemplateCreateServer',
@@ -67,13 +71,29 @@ export default {
       templateProjectId: '',
       /** 用于域下拉接口过滤，与模板数据中的域一致 */
       templateDomainFilterId: '',
-      decoratorsReady: false,
+      templateReady: false,
       errors: {},
-      formFd: {},
       form: {
-        fc: this.$form.createForm(this),
+        fd: {
+          generate_name: '',
+          count: 1,
+          reason: '',
+          domain: undefined,
+          project: undefined,
+        },
       },
-      decorators: {},
+      rules: {
+        project: [
+          { validator: isRequired(), message: this.$t('rules.project'), trigger: 'change' },
+        ],
+        generate_name: [
+          { required: true, message: this.$t('compute.text_1043') },
+          { validator: this.$validate('resourceCreateName') },
+        ],
+        count: [
+          { required: true, message: this.$t('compute.text_211') },
+        ],
+      },
     }
   },
   computed: {
@@ -99,48 +119,12 @@ export default {
     this.fetchServerConfig()
   },
   methods: {
-    makeBaseDecorators () {
-      return {
-        generate_name: [
-          'generate_name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_1043') },
-              { validator: this.$validate('resourceCreateName') },
-            ],
-          },
-        ],
-        count: [
-          'count',
-          {
-            initialValue: 1,
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_211') },
-            ],
-          },
-        ],
-        reason: [
-          'reason',
-        ],
+    fetchRestrictDomains (params) {
+      const p = { ...params }
+      if (this.templateDomainFilterId) {
+        p.id = String(this.templateDomainFilterId).replace(/'/g, "\\'")
       }
-    },
-    applyTemplateDecorators (content, tenantId, projectDomain) {
-      const init = {
-        ...(content || {}),
-        project_id: tenantId,
-        extraData: {
-          ...(content?.extraData || {}),
-          domain_id: projectDomain || content?.extraData?.domain_id,
-        },
-      }
-      const d = new Decorator(SERVER_TYPE.idc).createDecorators(init)
-      this.decorators = {
-        ...this.makeBaseDecorators(),
-        domain: d.domain,
-        project: d.project,
-      }
+      return new this.$Manager('domains', 'v1').list({ params: p })
     },
     fetchServerConfig () {
       new this.$Manager('servertemplates', 'v2')
@@ -151,8 +135,7 @@ export default {
           this.project_domain = data.project_domain
           this.templateProjectId = data.tenant_id
           this.templateDomainFilterId = data.project_domain || data.content?.extraData?.domain_id || ''
-          this.applyTemplateDecorators(data.content, data.tenant_id, data.project_domain)
-          this.decoratorsReady = true
+          this.templateReady = true
         })
         .catch(() => {
           this.$message.error(this.$t('compute.text_1044'))
@@ -222,7 +205,7 @@ export default {
       delete data.vcpu_count
       delete data.vmem_size
       new this.$Manager('servers', 'v2').create({ data })
-        .then(res => {
+        .then(() => {
           this.$message.success(this.$t('compute.text_322'))
           this.goVminstance()
         })
@@ -230,7 +213,8 @@ export default {
     async submit () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form.fd }
         if (this.isOpenWorkflow) {
           await this.doCreateWorkflow(values)
         } else {

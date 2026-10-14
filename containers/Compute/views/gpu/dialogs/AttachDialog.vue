@@ -4,28 +4,31 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('compute.text_113')" :count="params.data.length" :action="params.title" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('compute.text_492', [params.resourceType === 'server_container' ? this.$t('dictionary.server_container') : this.$t('dictionary.server')])" v-bind="formItemLayout" :extra="$t('compute.text_493')">
-          <a-select v-decorator="decorators.guest">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules">
+        <a-form-model-item :label="$t('compute.text_492', [params.resourceType === 'server_container' ? this.$t('dictionary.server_container') : this.$t('dictionary.server')])" v-bind="formItemLayout" :extra="$t('compute.text_493')" prop="guest">
+          <a-select v-model:value="form.guest">
             <a-select-option v-for="item in guestesOpts" :key="item.id">
               {{item.name}}
             </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item v-if="showGpuType" :label="$t('gpu.device_type')" v-bind="formItemLayout">
-          <base-select v-decorator="decorators.gpuType" :options="gpuTypeOptions" />
-        </a-form-item>
-        <a-form-item
+        </a-form-model-item>
+        <a-form-model-item v-if="showGpuType" :label="$t('gpu.device_type')" v-bind="formItemLayout" prop="gpu_type">
+          <base-select v-model:value="form.gpu_type" :options="gpuTypeOptions" />
+        </a-form-model-item>
+        <a-form-model-item
           v-if="showMemoryRequest"
           :label="$t('compute.pci.memory_request')"
-          v-bind="formItemLayout">
+          v-bind="formItemLayout"
+          prop="memory_request">
           <a-tooltip
             :title="memoryRangeTooltip"
             placement="top"
             :get-popup-container="getTooltipContainer">
             <disk-size-input
-              v-decorator="decorators.memoryRequest"
+              v-model:value="form.memory_request"
               :min="1"
               :max="memorySizeMb || Infinity"
               :step="1"
@@ -35,11 +38,11 @@
               @change="onMemoryRequestChange"
               @unitChange="onMemoryUnitChange" />
           </a-tooltip>
-        </a-form-item>
-        <a-form-item v-if="isShowAutoStart" :label="$t('compute.text_494')" v-bind="formItemLayout" :extra="$t('compute.text_495')">
-          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-decorator="decorators.autoStart" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+        <a-form-model-item v-if="isShowAutoStart" :label="$t('compute.text_494')" v-bind="formItemLayout" :extra="$t('compute.text_495')" prop="autoStart">
+          <a-switch v-model:checked="form.autoStart" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -69,53 +72,26 @@ export default {
       loading: false,
       scope: this.$store.getters.scope,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.$set(this.form.fd, key, values[key])
-            })
-          },
-        }),
-        fd: {},
+        guest: undefined,
+        gpu_type: resolveGpuTypeBySharingMode(
+          GPU_TYPE_OPTION_MAP.HPC.value,
+          this.params.data[0]?.sharing_mode,
+        ),
+        memory_request: undefined,
+        autoStart: true,
       },
-      decorators: {
+      rules: {
         guest: [
-          'guest',
           {
-            rules: [
-              {
-                required: true,
-                message: this.$t('compute.text_496', [
-                  this.$t('dictionary.server'),
-                ]),
-              },
-            ],
+            required: true,
+            message: this.$t('compute.text_496', [
+              this.$t('dictionary.server'),
+            ]),
           },
         ],
-        gpuType: [
-          'gpu_type',
-          {
-            initialValue: resolveGpuTypeBySharingMode(
-              GPU_TYPE_OPTION_MAP.HPC.value,
-              this.params.data[0]?.sharing_mode,
-            ),
-          },
-        ],
-        memoryRequest: [
-          'memory_request',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.pci.memory_request.required') },
-              { validator: this.validateMemoryRequest },
-            ],
-          },
-        ],
-        autoStart: [
-          'autoStart',
-          {
-            valuePropName: 'checked',
-            initialValue: true,
-          },
+        memory_request: [
+          { required: true, message: this.$t('compute.pci.memory_request.required') },
+          { validator: this.validateMemoryRequest },
         ],
       },
       guestesOpts: [],
@@ -144,7 +120,7 @@ export default {
       return ret
     },
     curGuest () {
-      return this.guestesOpts.find(o => o.id === this.form.fd.guest)
+      return this.guestesOpts.find(o => o.id === this.form.guest)
     },
     isGuestRunning () {
       return this.curGuest?.status === 'running'
@@ -217,40 +193,27 @@ export default {
       return Math.round(num)
     },
     onMemoryRequestChange (val) {
-      const next = this.clampMemoryRequest(val)
-      this.form.fc.setFieldsValue({ memory_request: next })
-      this.$set(this.form.fd, 'memory_request', next)
+      this.form.memory_request = this.clampMemoryRequest(val)
     },
     onMemoryUnitChange (unit) {
       this.memoryUnit = unit
     },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
-    doAttach (data) {
+    doAttach () {
       const attachData = {
-        auto_start: this.isShowAutoStart ? data.autoStart : false,
+        auto_start: this.isShowAutoStart ? this.form.autoStart : false,
         device: this.params.data[0].id,
       }
       if (this.currentDevice.sharing_mode) {
         attachData.sharing_mode = this.currentDevice.sharing_mode
       }
-      if (this.showGpuType && data.gpu_type) {
-        attachData.gpu_type = data.gpu_type
+      if (this.showGpuType && this.form.gpu_type) {
+        attachData.gpu_type = this.form.gpu_type
       }
-      if (this.showMemoryRequest && data.memory_request) {
-        attachData.memory_request = data.memory_request
+      if (this.showMemoryRequest && this.form.memory_request) {
+        attachData.memory_request = this.form.memory_request
       }
       return new this.$Manager('servers').performAction({
-        id: data.guest,
+        id: this.form.guest,
         action: 'attach-isolated-device',
         data: attachData,
       })
@@ -258,13 +221,13 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
-        this.loading = true
-        await this.doAttach(values)
-        this.loading = false
+        await this.$refs.formRef.validate()
+        await this.doAttach()
         this.params.refresh()
         this.cancelDialog()
       } catch (error) {
+        // validate or submit failed
+      } finally {
         this.loading = false
       }
     },

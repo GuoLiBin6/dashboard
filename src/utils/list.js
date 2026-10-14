@@ -312,6 +312,8 @@ class CreateList {
       isTemplate: isTemplate,
       showTagKeys: [],
       showProjectTagKeys: [],
+      // 左右固定列 field 列表；勾选列/操作列由 Table 强制固定，不在此配置
+      fixedColumns: { left: [], right: [] },
     }
     // 列表配置是否已经加载过
     this.configLoaded = false

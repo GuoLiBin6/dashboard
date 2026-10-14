@@ -6,11 +6,11 @@
       <dialog-table :data="params.data" :columns="params.columns" />
     </div>
     <div slot="footer">
-      <a-form :form="form" v-bind="formItemLayout">
-        <a-form-item :label="$t('common.name')">
-          <a-input v-decorator="decorators.name" :placeholder="$t('monitor.text_7')" />
-        </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('common.name')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('monitor.text_7')" />
+        </a-form-model-item>
+      </a-form-model>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
     </div>
@@ -27,21 +27,17 @@ export default {
   data () {
     return {
       loading: false,
-      form: this.$form.createForm(this),
+      form: {
+        name: this.params.data[0].name,
+      },
+      rules: {
+        name: [
+          { required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` },
+        ],
+      },
       formItemLayout: {
         wrapperCol: { span: 20 },
         labelCol: { span: 3 },
-      },
-      decorators: {
-        name: [
-          'name',
-          {
-            initialValue: this.params.data[0].name,
-            rules: [
-              { required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` },
-            ],
-          },
-        ],
       },
     }
   },
@@ -49,14 +45,14 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.validateFields()
+        await this.$refs.formRef.validate()
         await new this.$Manager('alertdashboards', 'v1').update({
           id: this.params.data[0].id,
-          data: values,
+          data: { name: this.form.name },
         })
         this.loading = false
         this.cancelDialog()
-        this.params.ok(values.name)
+        this.params.ok(this.form.name)
       } catch (error) {
         this.loading = false
         throw error

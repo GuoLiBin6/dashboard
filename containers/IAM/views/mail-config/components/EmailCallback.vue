@@ -1,15 +1,17 @@
 <template>
-  <a-form
-    :form="form.fc"
+  <a-form-model
+    ref="formRef"
+    :model="form"
+    :rules="rules"
     v-bind="formItemLayout">
     <a-alert type="warning" :message="$t('system.text_274')" class="mb-2" />
-    <a-form-item :label="$t('system.text_275')">
-      <a-input v-decorator="decorators.address" />
-    </a-form-item>
-    <a-form-item :wrapper-col="offsetWrapperCol">
+    <a-form-model-item :label="$t('system.text_275')" prop="address">
+      <a-input v-model:value="form.address" />
+    </a-form-model-item>
+    <a-form-model-item :wrapper-col="offsetWrapperCol">
       <a-button type="primary" @click="handleSubmit" :loading="submiting">{{ $t('common.ok') }}</a-button>
-    </a-form-item>
-  </a-form>
+    </a-form-model-item>
+  </a-form-model>
 </template>
 
 <script>
@@ -31,16 +33,11 @@ export default {
       submiting: false,
       mailCallbackId: null,
       form: {
-        fc: this.$form.createForm(this),
+        address: '',
       },
-      decorators: {
+      rules: {
         address: [
-          'address',
-          {
-            rules: [
-              { required: true, message: this.$t('system.text_276') },
-            ],
-          },
+          { required: true, message: this.$t('system.text_276') },
         ],
       },
     }
@@ -64,11 +61,8 @@ export default {
           },
         })
         this.mailCallbackId = response.data && response.data.id
-        this.$nextTick(() => {
-          this.form.fc.setFieldsValue({
-            ...response.data.value || {},
-          })
-        })
+        const value = response.data?.value || {}
+        this.form.address = value.address || ''
       } catch (error) {
         throw error
       } finally {
@@ -78,7 +72,8 @@ export default {
     async handleSubmit () {
       this.submiting = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         if (this.mailCallbackId) {
           await this.manager.update({
             id: this.mailCallbackId,

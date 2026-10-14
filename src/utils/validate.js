@@ -386,20 +386,57 @@ export const REGEXP = {
  * @return {Function} validator: vue-ant-design 要求的自定义规则校验函数
  */
 export const isRequired = (isObj = true, valueKey = 'key') => {
-  return function (rule, value, callback) {
-    const fail = () => callback(new Error(rule.message))
-    if (isObj && R.is(Object, value)) {
-      if (value[valueKey]) {
-        callback()
-      } else {
-        fail()
-      }
-    } else if (value) {
-      callback()
-    } else {
-      fail()
-    }
+  // antdv4：返回 Promise，勿调 callback（会 warning 且易触发 outOfDate）
+  return function (rule, value) {
+    const ok = (isObj && R.is(Object, value))
+      ? !!value[valueKey]
+      : !!value
+    if (ok) return Promise.resolve()
+    return Promise.reject(new Error(rule.message))
   }
+}
+
+/**
+ * 执行单条 rule（兼容 callback 旧校验器与 Promise 新校验器）
+ * @param {Object} rule
+ * @param {*} value
+ * @param {Object} [opts]
+ * @param {Function} [opts.isEmpty] 自定义必填空值判断
+ */
+export function runRuleValidator (rule, value, opts = {}) {
+  return new Promise((resolve, reject) => {
+    if (rule.required) {
+      const empty = typeof opts.isEmpty === 'function'
+        ? opts.isEmpty(value)
+        : (value === undefined || value === null || value === '' ||
+          (Array.isArray(value) && !value.length))
+      if (empty) {
+        reject(new Error(rule.message || 'required'))
+        return
+      }
+    }
+    if (typeof rule.validator !== 'function') {
+      resolve()
+      return
+    }
+    let settled = false
+    const finish = (err) => {
+      if (settled) return
+      settled = true
+      if (err) reject(err instanceof Error ? err : new Error(String(err)))
+      else resolve()
+    }
+    let ret
+    try {
+      ret = rule.validator(rule, value, finish)
+    } catch (e) {
+      finish(e)
+      return
+    }
+    if (ret && typeof ret.then === 'function') {
+      ret.then(() => finish()).catch(finish)
+    }
+  })
 }
 
 /**
@@ -442,10 +479,11 @@ export const passwordValidator = (rule, value, _callback) => {
  * @param {String} checkMethod: 默认是 every, 既有一个规则不合格则失败，some 表示 有一个规则合格则成功
  * @return {Function} validator: vue-ant-design 要求的自定义规则校验函数
  */
-const validateForm = (rules, isRequired = true, checkMethod = 'every') => {
+const validateForm = (rules, isRequiredFlag = true, checkMethod = 'every') => {
   rules = R.unless(R.is(Array), R.of)(rules)
-  return (rule, value, callback) => {
-    if (!isRequired && (R.isNil(value) || R.isEmpty(value))) return callback()
+  // antdv4：返回 Promise，勿调 callback
+  return (rule, value) => {
+    if (!isRequiredFlag && (R.isNil(value) || R.isEmpty(value))) return Promise.resolve()
     let msg = i18n.t('validator.validateForm')
     const everyIsTrue = rules[checkMethod](r => {
       const result = validate(value, r)
@@ -453,11 +491,8 @@ const validateForm = (rules, isRequired = true, checkMethod = 'every') => {
       msg = result.msg
       return false
     })
-    if (everyIsTrue) {
-      callback()
-    } else {
-      callback(msg)
-    }
+    if (everyIsTrue) return Promise.resolve()
+    return Promise.reject(typeof msg === 'string' ? new Error(msg) : msg)
   }
 }
 

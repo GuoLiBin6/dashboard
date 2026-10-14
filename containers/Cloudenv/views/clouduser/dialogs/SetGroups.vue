@@ -4,17 +4,18 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.clouduser')" :count="params.data.length" :action="$t('cloudenv.clouduser_list_a1')" />
       <dialog-table class="mb-2" :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc"
+      <a-form-model
+        ref="formRef"
+        :model="form"
         v-bind="formItemLayout">
-        <a-form-item :label="$t('dictionary.cloudgroup')" :extra="$t('cloudenv.clouduser_text2')">
+        <a-form-model-item :label="$t('dictionary.cloudgroup')" :extra="$t('cloudenv.clouduser_text2')" prop="cloudgroup_ids">
           <list-select
-            v-decorator="decorators.cloudgroup_ids"
+            v-model:value="form.cloudgroup_ids"
             :listProps="cloudgroupListSelectProps"
             :formatter="formatterLabel"
             :dialog-params="{ mask: false }" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -42,15 +43,7 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        cloudgroup_ids: [
-          'cloudgroup_ids',
-          {
-            initialValue: this.params.data[0].cloudgroups && this.params.data[0].cloudgroups.map(item => item.id),
-          },
-        ],
+        cloudgroup_ids: this.params.data[0].cloudgroups && this.params.data[0].cloudgroups.map(item => item.id),
       },
       formItemLayout: {
         wrapperCol: {
@@ -117,29 +110,6 @@ export default {
             },
           },
         ],
-        // expandConfig: {
-        //   lazy: true,
-        //   loadMethod: async ({ row }) => {
-        //     let manager = new this.$Manager('cloudpolicies', 'v1')
-        //     try {
-        //       const response = await manager.list({
-        //         params: {
-        //           cloudgroup_id: row.id,
-        //           scope: this.$store.getters.scope,
-        //         },
-        //       })
-        //       row.feCloudpolicies = response.data.data || []
-        //       return response
-        //     } catch (error) {
-        //       throw error
-        //     } finally {
-        //       manager = null
-        //     }
-        //   },
-        //   // visibleMethod: ({ row }) => {
-        //   //   return row.cloudpolicies && row.cloudpolicies.length > 0
-        //   // },
-        // },
       },
     }
   },
@@ -150,13 +120,13 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         await this.params.onManager('performAction', {
           id: this.params.data[0].id,
           steadyStatus: 'available',
           managerArgs: {
             action: 'set-groups',
-            data: values,
+            data: this.form,
           },
         })
         if (this.params.success) {

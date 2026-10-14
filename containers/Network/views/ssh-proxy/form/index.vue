@@ -4,8 +4,8 @@
     <page-body>
       <steps class="my-3" v-model="step" />
       <div class="step1" v-show="isSetpOne">
-        <a-form :form="endpointForm" ref="endpointFormRef" v-bind="formItemLayout">
-          <a-form-item :label="$t('dictionary.domain')" key="domain" v-show="showDomainSelect">
+        <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+          <a-form-model-item :label="$t('dictionary.domain')" key="domain" v-show="showDomainSelect">
             <base-select
               v-model="filters.project_domain"
               v-if="showDomainSelect"
@@ -16,17 +16,20 @@
               version="v1"
               @change="handleDomainChange"
               :select-props="{ placeholder: `${$t('common.text00106')}${$t('dictionary.domain')}` }" />
-          </a-form-item>
-          <a-form-item :label="$t('common.name')">
-            <a-input v-decorator="decorators.generate_name" :placeholder="$t('common.placeholder')" @change="handleNameChange" />
-            <name-repeated v-slot:extra res="proxy_endpoints" :name="generate_name" />
-          </a-form-item>
-          <a-form-item :label="$t('common.description')">
-            <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-          </a-form-item>
+          </a-form-model-item>
+          <a-form-model-item :label="$t('common.name')" prop="generate_name">
+            <a-input v-model:value="form.generate_name" :placeholder="$t('common.placeholder')" />
+            <template #extra>
+              <name-repeated res="proxy_endpoints" :name="form.generate_name" />
+            </template>
+          </a-form-model-item>
+          <a-form-model-item :label="$t('common.description')" prop="description">
+            <a-textarea v-model:value="form.description" :auto-size="{ minRows: 1, maxRows: 3 }" :placeholder="$t('common_367')" />
+          </a-form-model-item>
           <area-selects
             class="mb-0"
             ref="areaSelects"
+            :model="form"
             @change="handleAreaChange"
             :allowClear="false"
             :wrapperCol="formItemLayout.wrapperCol"
@@ -36,7 +39,7 @@
             :providerParams="renderOrders.brand.params"
             :cloudregionParamsMapper="cloudregionParamsMapper"
             filterBrandResource="compute_engine" />
-          <a-form-item :label="$t('cloudenv.text_7')">
+          <a-form-model-item :label="$t('cloudenv.text_7')">
             <a-row :gutter="9">
               <a-col :span="12">
                 <base-select
@@ -68,16 +71,15 @@
                   :select-props="{ placeholder: $t('common_227') }" />
               </a-col>
             </a-row>
-          </a-form-item>
-          <a-form-item :label="$t('network.text_226')">
+          </a-form-model-item>
+          <a-form-model-item :label="$t('network.text_226')" prop="server_id">
             <div>
               <search-box :options="options" v-model="searchValue" @input="search" />
               <detect-ssh-table :params="params" :key="table1Key" :showRadioSelect="true" @radio-change="handleRadioChange" :maxColumns="3" :remote="false" style="padding-top: 15px;" />
-              <a-input v-decorator="decorators.server_id" v-show="false" />
               <div v-if="showDocsLink()">{{$t('compute.text_196')}}<help-link href="/vminstance">{{$t('compute.perform_create')}}</help-link>,{{$t('network.ssh-proxy.endpoints.create.vminstance.tips')}}<help-link :href="vmConfigurationLink">{{$t('network.ssh-proxy.endpoints.create.vminstance.tips.link')}}</help-link></div>
             </div>
-          </a-form-item>
-        </a-form>
+          </a-form-model-item>
+        </a-form-model>
       </div>
       <div class="step2" v-if="!isSetpOne">
         <detect-ssh-table :params="t2Params" :key="table2Key" :ansibleTasks="ansibleTasks" :remote="true" :maxColumns="3" @onDetecting="handleDetectStatusChange" />
@@ -96,10 +98,9 @@
 </template>
 
 <script>
-import _ from 'lodash'
 import { DetectSshTable } from '@Compute/views/vminstance/dialogs/DetectSSH'
 import SetupSshForm from '@Compute/views/vminstance/create/form/SetupSSHForm'
-import AreaSelects from '@/sections/AreaSelects'
+import AreaSelects from '@/sections/AreaSelects/model'
 import NameRepeated from '@/sections/NameRepeated'
 import {
   getStatusTableColumn,
@@ -155,14 +156,19 @@ export default {
       }),
       getIpsTableColumn({ field: 'ip', title: 'IP', vm: this }),
     ]
-    this.handleNameChange = _.debounce(this.handleNameChange, 500)
     return {
       showDocsLink,
       loading: false,
       detecting: false,
       title: this.$t('network.ssh-proxy.endpoints.create'),
       networkTitle: JSON.stringify(`${this.$t('network.text_565')}: `),
-      generate_name: '',
+      form: {
+        generate_name: '',
+        description: '',
+        server_id: undefined,
+        provider: undefined,
+        cloudregion: undefined,
+      },
       step: {
         steps: [
           { title: this.$t('network.ssh-proxy.endpoint.create.step1'), key: 'select-endpoint' },
@@ -170,25 +176,13 @@ export default {
         ],
         currentStep: 0,
       },
-      endpointForm: this.$form.createForm(this.$refs.endpointFormRef),
-      decorators: {
+      rules: {
         generate_name: [
-          'generate_name',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_116') },
-              { validator: this.$validate('resourceName') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_116'), trigger: 'blur' },
+          { validator: this.$validate('resourceName'), trigger: 'blur' },
         ],
-        description: ['description'],
         server_id: [
-          'server_id',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_60') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_60'), trigger: 'change' },
         ],
       },
       servers: [],
@@ -357,11 +351,11 @@ export default {
       if (row) {
         this.t2Params.data = [row]
         this.servers = [row.id]
-        this.endpointForm.setFieldsValue({ server_id: row.id })
+        this.form.server_id = row.id
       } else {
         this.t2Params.data = []
         this.servers = []
-        this.endpointForm.setFieldsValue({ server_id: undefined })
+        this.form.server_id = undefined
       }
 
       this.table2Key += 1
@@ -369,9 +363,6 @@ export default {
     handleSetupSSHTasks (tasks) {
       this.ansibleTasks = tasks
       this.table2Key += 1
-    },
-    handleNameChange (e) {
-      this.generate_name = e.target.value
     },
     lastStep () {
       this.sshableStatus = ''
@@ -413,24 +404,21 @@ export default {
     handleCancel () {
       this.$router.push('/ssh-proxy')
     },
-    validateForm (form) {
-      return new Promise((resolve, reject) => {
-        form.validateFieldsAndScroll({ scroll: { alignWithTop: true, offsetTop: 100 } }, (err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
+    async validateForm () {
+      await this.$refs.formRef.validate()
+      return {
+        generate_name: this.form.generate_name,
+        description: this.form.description,
+        server_id: this.form.server_id,
+      }
     },
     async submitEndpoint () {
-      const values = await this.validateForm(this.endpointForm)
+      const values = await this.validateForm()
       await new this.$Manager('proxy_endpoints').performClassAction({ action: 'create-from-server', data: values })
       this.handleCancel()
     },
     async submitNextStep () {
-      await this.validateForm(this.endpointForm)
+      await this.validateForm()
       this.step.currentStep = 1
     },
     async submitMakeSshable () {

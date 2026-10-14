@@ -2,16 +2,19 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('compute.text_202')}}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('compute.text_727')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.name" :placeholder="$t('compute.text_728')" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')" v-bind="formItemLayout">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_1379')" v-bind="formItemLayout" :extra="extra">
-          <a-radio-group v-decorator="decorators.createType" @change="handleCreateTypeChange">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.text_727')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('compute.text_728')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" prop="description">
+          <a-textarea v-model:value="form.description" :auto-size="{ minRows: 1, maxRows: 3 }" :placeholder="$t('common_367')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_1379')" prop="createType" :extra="extra">
+          <a-radio-group v-model:value="form.createType" @change="handleCreateTypeChange">
             <a-radio-button value="new">
               {{ $t('compute.text_1380') }}
             </a-radio-button>
@@ -19,18 +22,18 @@
               {{ $t('compute.text_1381') }}
             </a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_725')" v-bind="formItemLayout" v-if="createType === 'old'">
-          <a-textarea v-decorator="decorators.public_key" :placeholder="$t('compute.text_729')" :rows="4" />
-        </a-form-item>
-        <a-form-item :label="$t('common_56')" v-bind="formItemLayout" v-if="createType !== 'old'">
-          <a-radio-group v-decorator="decorators.scheme">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_725')" prop="public_key" v-if="form.createType === 'old'">
+          <a-textarea v-model:value="form.public_key" :placeholder="$t('compute.text_729')" :rows="4" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common_56')" prop="scheme" v-if="form.createType !== 'old'">
+          <a-radio-group v-model:value="form.scheme">
             <a-radio-button value="RSA">RSA</a-radio-button>
             <a-radio-button value="ECDSA">ECDSA</a-radio-button>
             <a-radio-button value="ED25519">ED25519</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -54,58 +57,36 @@ export default {
         params: { filter: `name.equals(${value})` },
       }).then((res) => {
         const len = res.data.data.length
-        let msg
         if (len === 0) {
           callback()
         } else {
-          msg = this.$t('compute.text_730')
-          callback(msg)
+          callback(this.$t('compute.text_730'))
         }
-      }).catch((e) => {
-        // 忽略服务器端错误。直接在页面显示错误提示即可
+      }).catch(() => {
         callback()
       })
     }, 500)
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        name: '',
+        description: '',
+        createType: 'new',
+        public_key: '',
+        scheme: 'RSA',
       },
-      decorators: {
-        createType: [
-          'createType',
-          {
-            initialValue: 'new',
-          },
-        ],
+      rules: {
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_728') },
-              { validator: this.$validate('secretKeyName') },
-              { validator: publicKeyNameDuplicate },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_728') },
+          { validator: this.$validate('secretKeyName') },
+          { validator: publicKeyNameDuplicate },
         ],
-        description: ['description'],
         public_key: [
-          'public_key',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_729') },
-              { validator: this.$validate('publicKey') },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_729') },
+          { validator: this.$validate('publicKey') },
         ],
         scheme: [
-          'scheme',
-          {
-            initialValue: 'RSA',
-            rules: [{ required: true }],
-          },
+          { required: true },
         ],
       },
       formItemLayout: {
@@ -116,7 +97,6 @@ export default {
           span: 5,
         },
       },
-      createType: 'new',
       extra: this.$t('compute.keypair_create_method'),
     }
   },
@@ -135,24 +115,12 @@ export default {
       this.fake_click(save_link)
     },
     handleCreateTypeChange (e) {
-      const type = e.target.value
-      this.createType = type
+      const type = e?.target ? e.target.value : e
       if (type === 'new') {
         this.extra = this.$t('compute.keypair_create_method')
       } else {
         this.extra = ''
       }
-    },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
     },
     doCreate (data) {
       return this.params.onManager('create', {
@@ -171,18 +139,18 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         delete values.createType
-        this.loading = true
         const { data } = await this.doCreate(values)
-        if (this.createType === 'new') {
-          // 调用方法
+        if (this.form.createType === 'new') {
           const { data: ret } = await this.doDownload(values, data.id)
           this.download(`${ret.name}.pem`, ret.private_key)
         }
-        this.loading = false
         this.cancelDialog()
       } catch (error) {
+        // validate / create failed
+      } finally {
         this.loading = false
       }
     },

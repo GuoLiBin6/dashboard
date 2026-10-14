@@ -19,7 +19,7 @@
         </a-form-model-item>
         <a-divider orientation="left">{{ $t('aice.aiproxy.visual') }}</a-divider>
         <a-form-model-item :label="$t('aice.aiproxy.visual_enabled')">
-          <a-switch v-model:value="form.visual_enabled" />
+          <a-switch v-model:checked="form.visual_enabled" />
         </a-form-model-item>
         <template v-if="form.visual_enabled">
           <a-form-model-item :label="$t('aice.aiproxy.visual_provider_id')" prop="visual_provider_id">

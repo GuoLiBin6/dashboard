@@ -10,7 +10,7 @@
 
 <script>
 import LlmGpuDevicesEditor from '@Ai/sections/LlmGpuDevicesEditor.vue'
-import { aggregateDevicesToRows, expandRowsToDevices } from '@Ai/utils/deviceFormUtils'
+import { aggregateDevicesToRows } from '@Ai/utils/deviceFormUtils'
 
 export default {
   name: 'LlmGpuDeviceSelect',

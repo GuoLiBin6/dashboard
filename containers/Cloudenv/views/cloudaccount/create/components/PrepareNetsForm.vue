@@ -12,30 +12,47 @@
       </template>
     </a-alert>
     <a-form-item :label="$t('cloudenv.text_181')" v-if="!allSuccess">
-      <a-radio-group v-if="type !== 'host'" v-decorator="['isCreate', { initialValue: true }]" button-style="solid">
+      <a-radio-group v-if="type !== 'host'" v-model:value="isCreate" button-style="solid">
         <a-radio-button :value="true">{{$t('cloudenv.text_182')}}</a-radio-button>
         <a-radio-button :value="false">{{$t('cloudenv.text_183')}}</a-radio-button>
       </a-radio-group>
-      <div v-show="form.fc.getFieldValue('isCreate') || form.fc.getFieldValue('isCreate') === undefined">
-        <a-row :gutter="8" v-for="k in form.fc.getFieldValue('keys')" :key="k">
+      <div v-show="isCreate">
+        <a-row :gutter="8" v-for="k in netKeys" :key="k">
           <a-col :span="4" :xxl="4" :xl="9" :xs="9">
             <a-form-item>
-              <a-input :addon-before="$t('db.text_60')"  v-decorator="formatDecorator(k, 'name')" :placeholder="$t('cloudenv.text_184')" />
+              <a-input
+                :addon-before="$t('db.text_60')"
+                :value="rowValue(k, 'name')"
+                @change="e => setRowValue(k, 'name', e.target.value)"
+                :placeholder="$t('cloudenv.text_184')" />
             </a-form-item>
           </a-col>
           <a-col :span="4" :xxl="4" :xl="6" :xs="6">
             <a-form-item>
-              <a-input :addon-before="$t('network.text_607')" @change="handleIpChange" v-decorator="formatDecorator(k, 'guest_ip_start')" :placeholder="$t('cloudenv.text_185')" />
+              <a-input
+                :addon-before="$t('network.text_607')"
+                :value="rowValue(k, 'guest_ip_start')"
+                @change="e => { setRowValue(k, 'guest_ip_start', e.target.value); handleIpChange() }"
+                :placeholder="$t('cloudenv.text_185')" />
             </a-form-item>
           </a-col>
           <a-col :span="4" :xxl="4" :xl="6" :xs="6">
             <a-form-item>
-              <a-input :addon-before="$t('network.text_608')" @change="handleIpChange" v-decorator="formatDecorator(k, 'guest_ip_end')" :placeholder="$t('cloudenv.text_186')" />
+              <a-input
+                :addon-before="$t('network.text_608')"
+                :value="rowValue(k, 'guest_ip_end')"
+                @change="e => { setRowValue(k, 'guest_ip_end', e.target.value); handleIpChange() }"
+                :placeholder="$t('cloudenv.text_186')" />
             </a-form-item>
           </a-col>
           <a-col :span="3" :xxl="3" :xl="3" :xs="3">
             <a-form-item>
-              <a-select class="w-100" :placeholder="$t('network.text_595')" v-decorator="formatDecorator(k, 'guest_ip_mask')" dropdownClassName="oc-select-dropdown">
+              <a-select
+                class="w-100"
+                :value="rowValue(k, 'guest_ip_mask')"
+                @change="val => setRowValue(k, 'guest_ip_mask', val)"
+                :placeholder="$t('network.text_595')"
+                dropdownClassName="oc-select-dropdown">
                 <a-select-option v-for="item in netMaskOptions" :key="item.value" :value="item.value">
                   <span class="text-color-secondary option-prefix">{{$t('common_600')}}: </span>{{item.value}}
                 </a-select-option>
@@ -44,12 +61,20 @@
           </a-col>
           <a-col :span="4" :xxl="4" :xl="6" :xs="6">
             <a-form-item>
-              <a-input :addon-before="$t('network.text_610')" v-decorator="formatDecorator(k, 'guest_gateway')" :placeholder="$t('cloudenv.text_187')" />
+              <a-input
+                :addon-before="$t('network.text_610')"
+                :value="rowValue(k, 'guest_gateway')"
+                @change="e => setRowValue(k, 'guest_gateway', e.target.value)"
+                :placeholder="$t('cloudenv.text_187')" />
             </a-form-item>
           </a-col>
           <a-col :span="3" :xxl="3" :xl="6" :xs="6">
             <a-form-item>
-              <a-input addon-before="VLAN ID" v-decorator="formatDecorator(k, 'vlan', 'vlan_id')" placeholder="VLAN ID" />
+              <a-input
+                addon-before="VLAN ID"
+                :value="rowValue(k, 'vlan', 'vlan_id')"
+                @change="e => setRowValue(k, 'vlan', e.target.value, 'vlan_id')"
+                placeholder="VLAN ID" />
             </a-form-item>
           </a-col>
           <a-col :span="2" :xxl="2" :xl="4" :xs="4">
@@ -61,7 +86,7 @@
           <a-button type="link" @click="handleAdd">{{$t('cloudenv.text_188')}}</a-button>
         </div>
       </div>
-      <div v-show="!form.fc.getFieldValue('isCreate') && form.fc.getFieldValue('isCreate') !== undefined" class="mt-2">
+      <div v-show="!isCreate" class="mt-2">
         <a-alert :message="$t('cloudenv.text_189')" type="warning" show-icon />
       </div>
     </a-form-item>
@@ -93,6 +118,8 @@ export default {
       loading: false,
       netInit: {},
       noSuitableIps: [],
+      netKeys: [],
+      isCreate: true,
       netMaskOptions: [
         { label: '16', value: '16' },
         { label: '17', value: '17' },
@@ -188,20 +215,78 @@ export default {
         this.initNets()
       }
     },
+    isCreate (val) {
+      this.syncMetaFields()
+    },
+    netKeys: {
+      handler () {
+        this.syncMetaFields()
+      },
+      deep: true,
+    },
   },
   created () {
-    this.form.fc.getFieldDecorator('keys', { initialValue: [], preserve: true })
+    this.registerMetaFields()
     this.initNets()
+    this.isCreate = this.list && this.list.length > 0
     this.$nextTick(() => {
-      this.form.fc.setFieldsValue({
-        isCreate: this.list && this.list.length > 0,
-      })
+      this.syncMetaFields()
     })
   },
   mounted () {
     this.noSuitableIps = this.getNoSuitableIps()
   },
   methods: {
+    fieldPath (k, id) {
+      return `${k}.${id}`
+    },
+    registerMetaFields () {},
+    registerRowFields (k) {
+      const fd = this.form.fd
+      const row = {}
+      Object.keys(this.options).forEach((id) => {
+        const initialValue = this.netInit[k] ? (id === 'vlan' ? this.netInit[k].vlan_id : this.netInit[k][id]) : this.options[id].initialValue
+        const field = this.fieldPath(k, id)
+        row[id] = initialValue
+        if (fd && fd[field] === undefined) {
+          this.$set(fd, field, initialValue)
+        }
+      })
+      if (fd && !fd[k]) {
+        this.$set(fd, k, row)
+      }
+    },
+    syncMetaFields () {
+      const fd = this.form.fd
+      if (fd) {
+        this.$set(fd, 'keys', this.netKeys)
+        this.$set(fd, 'isCreate', this.isCreate)
+      }
+    },
+    rowValue (k, id, initialValueKey) {
+      const fd = this.form.fd
+      const field = this.fieldPath(k, id)
+      if (fd) {
+        if (fd[field] !== undefined) return fd[field]
+        if (fd[k] && fd[k][id] !== undefined) return fd[k][id]
+      }
+      if (initialValueKey) {
+        return this.netInit[k] ? this.netInit[k][initialValueKey] : undefined
+      }
+      return this.netInit[k] ? this.netInit[k][id] : this.options[id]?.initialValue
+    },
+    setRowValue (k, id, val, initialValueKey) {
+      const fd = this.form.fd
+      const field = this.fieldPath(k, id)
+      if (fd) {
+        this.$set(fd, field, val)
+        const row = { ...(fd[k] || {}), [id]: val }
+        if (initialValueKey) {
+          row[initialValueKey] = val
+        }
+        this.$set(fd, k, row)
+      }
+    },
     getNoSuitableIps () {
       const ips = []
       for (let i = 0; i < this.list.length; i++) {
@@ -217,18 +302,6 @@ export default {
       }
       return ips
     },
-    formatDecorator (k, id, initialValueKey) {
-      let initialValue
-      if (initialValueKey) {
-        initialValue = this.netInit[k] ? this.netInit[k][initialValueKey] : undefined
-      } else {
-        initialValue = this.netInit[k] ? this.netInit[k][id] : undefined
-      }
-      return [`${k}.${id}`, {
-        ...this.options[id],
-        initialValue,
-      }]
-    },
     initNets () {
       const keys = []
       if (this.suggestedNetworks && this.suggestedNetworks.length > 0) {
@@ -236,22 +309,23 @@ export default {
           const key = uuid()
           keys.push(key)
           this.netInit[key] = net
+          this.registerRowFields(key)
         })
       }
-      this.form.fc.setFieldsValue({
-        keys,
-      })
+      this.netKeys = keys
+      this.$nextTick(() => this.syncMetaFields())
     },
     setSuitable () {
-      const values = this.form.fc.getFieldsValue()
+      const values = { ...(this.form.fd || {}) }
       if (this.list && this.list.length > 0) {
         this.list.forEach(item => {
           for (let i = 0; i < item.ips.length; i++) {
             const ip = item.ips[i]
             let isSuitable = false
-            for (let i = 0; i < values.keys.length; i++) {
-              const k = values.keys[i]
-              const { guest_ip_start, guest_ip_end } = values[k]
+            for (let j = 0; j < this.netKeys.length; j++) {
+              const k = this.netKeys[j]
+              const row = values[k] || {}
+              const { guest_ip_start, guest_ip_end } = row
               if (isWithinRange(ip, guest_ip_start, guest_ip_end)) {
                 isSuitable = true
                 break
@@ -265,26 +339,31 @@ export default {
         })
       }
     },
-    async handleIpChange (e) {
+    async handleIpChange () {
       await this.$nextTick()
       this.setSuitable()
     },
     handleAdd () {
-      const { fc } = this.form
-      const keys = fc.getFieldValue('keys')
-      const nextKeys = keys.concat(uuid())
-      fc.setFieldsValue({
-        keys: nextKeys,
-      })
+      const key = uuid()
+      this.netKeys = this.netKeys.concat(key)
+      this.registerRowFields(key)
+      this.$nextTick(() => this.syncMetaFields())
     },
     handleRemove (k) {
-      const { fc } = this.form
-      const keys = fc.getFieldValue('keys')
-      fc.setFieldsValue({
-        keys: keys.filter(_ => _ !== k),
-      }, () => {
+      this.netKeys = this.netKeys.filter(_ => _ !== k)
+      this.$nextTick(() => {
+        this.syncMetaFields()
         this.setSuitable()
       })
+    },
+    validateGateway (rule, value, callback) {
+      const ipItems = String(value || '').split('.')
+      const msg = this.$t('cloudenv.text_230')
+      if (ipItems[ipItems.length - 1] === '0') {
+        callback(msg)
+      } else {
+        callback()
+      }
     },
   },
 }

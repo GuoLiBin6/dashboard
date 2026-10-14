@@ -1,6 +1,6 @@
 export default function (def, schema) {
   def.type = 'j-checkbox'
-  def.decorator = [
+  def.field = [
     {
       initialValue: schema.default,
       rules: [

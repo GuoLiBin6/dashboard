@@ -1,11 +1,11 @@
 <template>
-  <a-form-item :label="$t('compute.text_827')">
-    <a-radio-group v-decorator="decorators.mode">
+  <a-form-model-item :label="$t('compute.text_827')" prop="mode">
+    <a-radio-group v-model:value="modeValue">
       <template v-for="(item, key) of modes" :key="key">
         <a-radio-button :value="key" v-if="!ignores.includes(key)">{{ item }}</a-radio-button>
       </template>
     </a-radio-group>
-  </a-form-item>
+  </a-form-model-item>
 </template>
 
 <script>
@@ -15,10 +15,9 @@ export default {
   name: 'ModeSelect',
   props: {
     ignoreMode: [String, Array],
-    decorators: {
-      type: Object,
-      required: true,
-    },
+  },
+  inject: {
+    form: { default: undefined },
   },
   data () {
     return {
@@ -26,6 +25,16 @@ export default {
     }
   },
   computed: {
+    modeValue: {
+      get () {
+        return this.form?.fd?.mode
+      },
+      set (val) {
+        if (this.form?.fd) {
+          this.$set(this.form.fd, 'mode', val)
+        }
+      },
+    },
     ignores () {
       return R.is(String, this.ignoreMode) ? [this.ignoreMode] : (this.ignoreMode || [])
     },

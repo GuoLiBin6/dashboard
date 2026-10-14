@@ -4,22 +4,24 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.physicalmachine')" :count="params.data.length" :action="$t('compute.text_843')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 5)" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('compute.text_844')" v-bind="formItemLayout" v-if="!selectWire">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules">
+        <a-form-model-item :label="$t('compute.text_844')" v-bind="formItemLayout" v-if="!selectWire" prop="wire">
           <base-select
             :filterable="true"
-            v-decorator="decorators.wire"
+            v-model:value="form.wire"
             resource="wires"
             version="v1"
             :params="wireParams"
             :value="selectWire"
             :select-props="{ placeholder: $t('compute.text_845') }" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_844')" v-if="!!selectWire">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_844')" v-if="!!selectWire">
           {{ params.data[0].wire }}
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button v-if="!selectWire" type="primary" @click="handleConfirm(true)" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -40,16 +42,11 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        wire: undefined,
       },
-      decorators: {
+      rules: {
         wire: [
-          'wire',
-          {
-            rules: [
-              { required: true },
-            ],
-          },
+          { required: true },
         ],
       },
       formItemLayout: {
@@ -87,8 +84,8 @@ export default {
       try {
         this.loading = true
         if (add) {
-          const values = await this.form.fc.validateFields()
-          await this.doUpdate(values)
+          await this.$refs.formRef.validate()
+          await this.doUpdate(this.form)
         } else {
           await this.unsetWire()
         }

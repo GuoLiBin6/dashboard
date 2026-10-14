@@ -8,7 +8,7 @@ import MemRadio from '@Compute/sections/MemRadio'
 import sku from '@Compute/sections/SKU'
 import gpu from '@Compute/sections/GPU/index'
 import pci from '@Compute/sections/PCI'
-import { Decorator, GenCreateData, resolveInitPreferZone } from '@Compute/utils/createServer'
+import { createVmFormDefaults, GenCreateData, resolveInitPreferZone } from '@Compute/utils/createServer'
 import {
   resolveDraftNetworkType,
   resolveDraftLoginType,
@@ -19,7 +19,7 @@ import {
 import {
   VM_CREATE_FORM_DRAFT_FIELD,
   VM_CREATE_FORM_DRAFT_FIELDS,
-  VM_CREATE_FORM_DRAFT_FC_BINDINGS,
+  VM_CREATE_FORM_DRAFT_FD_BINDINGS,
   getVmCreateFormDraftScope,
 } from '@Compute/utils/vminstanceCreateFormDraft'
 import ServerNetwork from '@Compute/sections/ServerNetwork'
@@ -38,12 +38,12 @@ import { isSuccess } from '@/utils/http'
 import NameRepeated from '@/sections/NameRepeated'
 import CloudregionZone from '@/sections/CloudregionZone'
 import HypervisorRadio from '@/sections/HypervisorRadio'
-import DomainProject from '@/sections/DomainProject'
-import { getInitialValue } from '@/utils/common/ant'
+import DomainProject from '@/sections/DomainProject/model'
 import { IMAGES_TYPE_MAP } from '@/constants/compute'
 import { HYPERVISORS_MAP } from '@/constants'
 import i18n from '@/locales'
 import { deleteInvalid, uuid } from '@/utils/utils'
+import validateForm from '@/utils/validate'
 import { diskSupportTypeMedium } from '@/utils/common/hypervisor'
 import { hasSetupKey, isLicense2 } from '@/utils/auth'
 import createFormDraftMixin from '@/mixins/createFormDraft'
@@ -116,17 +116,9 @@ export default {
     },
   },
   data () {
-    // 组件级草稿：不再整表种 Decorator；工单仍用 initFormData
+    // 组件级草稿：工单仍用 initFormData；defaults 由 createVmFormDefaults 种 fd
     const seedFormData = this.initFormData
-    const decorators = new Decorator(SERVER_TYPE[this.type]).createDecorators(seedFormData)
-    // 兜底：部分类型/覆盖包可能缺 groups，反亲和组仍需可渲染
-    if (!decorators.groups) {
-      decorators.groups = {
-        groupsEnable: ['groupsEnable', { valuePropName: 'checked', initialValue: false }],
-        groups: ['groups', { initialValue: [] }],
-      }
-    }
-    const initFd = getInitialValue(decorators)
+    const { defaults: initFd } = createVmFormDefaults(SERVER_TYPE[this.type], seedFormData)
     return {
       _initFormPromise: null,
       // 磁盘回填进行中：挡住 imageMsg / typesMap 的清盘逻辑
@@ -142,26 +134,35 @@ export default {
         wrapperCol: CreateServerForm.wrapperCol,
         labelCol: CreateServerForm.labelCol,
       },
-      form: {
-        fc: this.$form.createForm(this, { onValuesChange: this.onValuesChange }),
-        fi: { // formInfo 存储着和表单相关的数据
-          capability: {}, // 可用区下的可用资源
-          imageMsg: {}, // 当前选中的 image
-          imageType: '',
-          cpuMem: {}, // cpu 和 内存 的关联关系
-          createType: SERVER_TYPE[this.type],
-          dataDiskDisabled: false, // 数据盘是否禁用
-          sysDiskDisabled: false, // 系统盘是否禁用
-          cpuDisabled: false,
-          memDisabled: false,
-          dataDiskMedium: '',
-          networkVpcObj: {},
-          showCpuSockets: false,
-          cpuSockets: 1,
-        },
-        fd: { hypervisor: '', ...initFd, project: {}, os: '' },
-      },
-      decorators,
+      form: (() => {
+        // createForm / fc shim 已移除：form 仅 { fd, fi }；onValuesChange → 各页 watch form.fd
+        const fd = {
+          hypervisor: '',
+          ...initFd,
+          project: {},
+          os: '',
+          // Tag end-state：写 __meta__
+          __meta__: initFd.__meta__ || initFd.tag || {},
+        }
+        return {
+          fi: { // formInfo 存储着和表单相关的数据
+            capability: {}, // 可用区下的可用资源
+            imageMsg: {}, // 当前选中的 image
+            imageType: '',
+            cpuMem: {}, // cpu 和 内存 的关联关系
+            createType: SERVER_TYPE[this.type],
+            dataDiskDisabled: false, // 数据盘是否禁用
+            sysDiskDisabled: false, // 系统盘是否禁用
+            cpuDisabled: false,
+            memDisabled: false,
+            dataDiskMedium: '',
+            networkVpcObj: {},
+            showCpuSockets: false,
+            cpuSockets: 1,
+          },
+          fd,
+        }
+      })(),
       capabilityParams: {}, // 防止 capability 反复调用，这里对当前的接口参数做记录
       price: null,
       hostNameValidate: {
@@ -171,6 +172,26 @@ export default {
       custom_data: [],
       dataDiskInterval: null,
       tagDefaultChecked: {},
+      // a-form-model shell rules（端态 section 走 *Ref.validate）
+      rules: {
+        name: [
+          { required: true, message: i18n.t('compute.text_210') },
+          { validator: validateForm('resourceCreateName') },
+        ],
+        count: [
+          { required: true, message: i18n.t('compute.text_211') },
+        ],
+        __meta__: [
+          { validator: validateForm('tagName') },
+        ],
+        cloudprovider: [
+          { required: true, message: i18n.t('compute.text_149') },
+        ],
+        servertemplate_name: [
+          { required: true, message: i18n.t('compute.text_220') },
+          { validator: validateForm('resourceName') },
+        ],
+      },
     }
   },
   provide () {
@@ -603,8 +624,8 @@ export default {
     this.$store.dispatch('app/fetchWorkflowEnabledKeys')
     // 扫描 scope 内已有草稿，固化跨 tab 来源（不必枚举组件）
     this.rememberAllCreateFormFieldDraftLocalOrigins()
-    // 页面零散 form.fc 选择类字段
-    this.bindVmCreateFormFcDrafts()
+    // 页面零散 fd 选择类字段草稿（get/set 走 form.fd）
+    this.bindVmCreateFormFdDrafts()
   },
   mounted () {
     // 工单走 initForm；普通新建控件草稿走各组件 + restoreAdvance*
@@ -707,7 +728,7 @@ export default {
   },
   methods: {
     /**
-     * 高级配置区：页面零散 FC（is_daemon 等 v-if=isKvm 晚挂载）再补一次。
+     * 高级配置区：页面零散字段（is_daemon 等 v-if=isKvm 晚挂载）再补一次。
      * 组件日常回填已改为自管 watch；此处仅补晚挂载时序。折叠用 v-show，字段仍挂载。
      */
 
@@ -828,12 +849,10 @@ export default {
       const disk = sysRef.$refs?.disk
       if (!disk?.showAdvanced) return false
       const adv = sysRef.pickSysDiskAdvancedDraft?.(sysDraft) || {}
-      if ((adv.systemDiskStorage || adv[sysRef.decorator?.storage?.[0]]) && !disk.showStorage) return false
-      if ((adv.systemDiskSchedtag || adv.systemDiskPolicy ||
-        adv[sysRef.decorator?.schedtag?.[0]] || adv[sysRef.decorator?.policy?.[0]]) &&
-        !disk.showSchedtag) return false
-      if ((adv.systemDiskSnapshot || adv[sysRef.decorator?.snapshot?.[0]]) && !disk.showSnapshot) return false
-      if ((adv.systemDiskPreallocation || adv[sysRef.decorator?.preallocation?.[0]]) && !disk.showPreallocation) {
+      if (adv.systemDiskStorage && !disk.showStorage) return false
+      if ((adv.systemDiskSchedtag || adv.systemDiskPolicy) && !disk.showSchedtag) return false
+      if (adv.systemDiskSnapshot && !disk.showSnapshot) return false
+      if (adv.systemDiskPreallocation && !disk.showPreallocation) {
         return false
       }
       return true
@@ -917,7 +936,7 @@ export default {
       }
     },
     async restoreSystemDiskFromFieldDraft (draft, { waitRef, waitTypesMap, fromLocal } = {}) {
-      if (!draft || !this.form?.fc) return
+      if (!draft || !this.form?.fd) return
       const sysRef = await waitRef(() => this.$refs.systemDiskRef)
       if (sysRef) await waitTypesMap(() => sysRef.typesMap)
       // 输入子字段（大小/iops/throughput 等）不回填，由组件白名单过滤
@@ -928,7 +947,7 @@ export default {
       const isLocal = fromLocal != null
         ? !!fromLocal
         : this.isCreateFormFieldDraftFromLocal(VM_CREATE_FORM_DRAFT_FIELD.SYSTEM_DISK)
-      const typeVal = draft.systemDiskType || draft[sysRef?.decorator?.type?.[0]]
+      const typeVal = draft.systemDiskType
       if (!typeVal?.key) {
         if (sysRef?.tryApplySessionDiskDraft) {
           sysRef.tryApplySessionDiskDraft({ draft, fromLocal: isLocal })
@@ -956,7 +975,7 @@ export default {
       if (typeof sysRef?.ensureSysDiskDefaultSize === 'function') sysRef.ensureSysDiskDefaultSize()
     },
     async restoreDataDiskFromFieldDraft (draft, { waitRef, waitTypesMap }) {
-      if (!draft || !this.form?.fc) return
+      if (!draft || !this.form?.fd) return
       const dataRef0 = await waitRef(() => this.$refs.dataDiskRef)
       // 输入子字段（大小/iops/throughput/挂载路径 等）不回填，由组件白名单过滤
       if (dataRef0 && typeof dataRef0.sanitizeDraftForRestore === 'function') {
@@ -1032,7 +1051,8 @@ export default {
       }
       const reapplyDataDisks = () => {
         const cur = this.$refs.dataDiskRef
-        if (!cur || !cur.dataDisks || !this.form || !this.form.fc) return
+        if (!cur || !cur.dataDisks || !this.form) return
+        if (!this.form.fd && !cur.useModel) return
         const typesMap = cur.typesMap || {}
         const values = {}
         cur.dataDisks.forEach((disk, idx) => {
@@ -1133,7 +1153,7 @@ export default {
     },
     async _runInitForm () {
       const initData = this.initFormData
-      if (!(this.isInitForm && initData && initData.extraData && this.form && this.form.fc)) {
+      if (!(this.isInitForm && initData && initData.extraData && this.form && this.form.fd)) {
         return
       }
       if (this._initFormDone) return
@@ -1142,7 +1162,6 @@ export default {
 
       if (initData.hypervisor) {
         this.form.fd.hypervisor = initData.hypervisor
-        this.form.fc.setFieldsValue({ hypervisor: initData.hypervisor })
       }
 
       try {
@@ -1167,9 +1186,7 @@ export default {
           : systemDisk.backend
         const systemDiskType = { key: typeKey, label: '' }
         const systemDiskSize = systemDisk.size / 1024
-        this.form.fd.systemDiskType = systemDiskType
-        this.form.fd.systemDiskSize = systemDiskSize
-        this.form.fc.setFieldsValue({ systemDiskType, systemDiskSize })
+        this.setFormFieldsAndSyncFd({ systemDiskType, systemDiskSize })
         if (systemDisk.medium) this.form.fi.systemDiskMedium = systemDisk.medium
       }
 
@@ -1210,20 +1227,16 @@ export default {
       const loginType = resolveDraftLoginType(initData)
       if (loginType) {
         this.form.fd.loginType = loginType
-        this.form.fc.setFieldsValue({ loginType })
       }
       const loginPassword = (initData.extraData && initData.extraData.loginPassword) || initData.password || ''
       if (loginType === 'password' && loginPassword) {
         this.form.fd.loginPassword = loginPassword
         // 密码输入框随 loginType 才挂载，延迟再写一次
         this.$nextTick(() => {
-          this.form.fc.setFieldsValue({ loginPassword })
+          if (this.form?.fd) this.form.fd.loginPassword = loginPassword
         })
         setTimeout(() => {
-          if (this.form && this.form.fc) {
-            this.form.fc.setFieldsValue({ loginPassword })
-            this.form.fd.loginPassword = loginPassword
-          }
+          if (this.form?.fd) this.form.fd.loginPassword = loginPassword
         }, 500)
       }
 
@@ -1249,6 +1262,7 @@ export default {
           ret[key] = R.is(Array, value) ? value : [value]
         }, initData.__meta__)
         this.tagDefaultChecked = ret
+        this.form.fd.__meta__ = { ...initData.__meta__ }
       }
 
       // 延迟结束保护：公有云磁盘/网络可能更晚回填，勿过早放开
@@ -1263,7 +1277,7 @@ export default {
      * 有高级字段时：进页自动展开一次（之后跟用户）；内容始终挂载
      */
     async backfillAdvanceConfigFromInitData (initData, { waitRef } = {}) {
-      if (!initData || !this.form?.fc) return
+      if (!initData || !this.form?.fd) return
       if (!hasAdvanceConfigInitFields(initData)) return
       const advanceRef = this.$refs.advanceConfigBlock
       if (advanceRef && typeof advanceRef.tryAutoOpenOnce === 'function') {
@@ -1290,7 +1304,7 @@ export default {
       await this.$nextTick()
       await this.$nextTick()
 
-      this.form.fc.setFieldsValue({ hostName: initData.hostname })
+      if (initData.hostname) this.form.fd.hostName = initData.hostname
 
       if (initData.eip_charge_type || initData.public_ip_charge_type) {
         const eipRef = await doWaitRef(() => this.$refs.eipConfigRef, 8000)
@@ -1307,7 +1321,8 @@ export default {
 
       if (initData.network_tags && initData.network_tags.length) {
         setTimeout(() => {
-          this.form.fc.setFieldsValue({ secgroup_type: 'networkTag', network_tags: initData.network_tags })
+          this.form.fd.secgroup_type = 'networkTag'
+          this.form.fd.network_tags = initData.network_tags
         }, 2000)
       } else if (initData.secgroups && initData.secgroups.length) {
         const secgroupIds = initData.secgroups.map((item) => {
@@ -1315,10 +1330,11 @@ export default {
           if (typeof item === 'string' || typeof item === 'number') return String(item)
           return item.id || item.key || item.value || null
         }).filter(Boolean)
-        if (this.$refs.secgroupConfigRef?.initData) {
-          this.$refs.secgroupConfigRef.initData(secgroupIds)
+        if (this.$refs.secgroupRef?.initData) {
+          this.$refs.secgroupRef.initData(secgroupIds)
         } else {
-          this.form.fc.setFieldsValue({ secgroup_type: 'bind', secgroup: secgroupIds })
+          this.form.fd.secgroup_type = 'bind'
+          this.form.fd.secgroup = secgroupIds
         }
       }
 
@@ -1328,10 +1344,8 @@ export default {
             this.$refs.schedPolicyRef.initPreferHostData(initData.prefer_host)
           } else {
             this.$refs.schedPolicyRef.change({ target: { value: 'host' }, name: 'default' })
-            this.form.fc.setFieldsValue({
-              schedPolicyType: 'host',
-              schedPolicyHost: initData.prefer_host,
-            })
+            this.form.fd.schedPolicyType = 'host'
+            this.form.fd.schedPolicyHost = initData.prefer_host
           }
         }
         if (initData.schedtags && initData.schedtags.length) {
@@ -1358,7 +1372,6 @@ export default {
             customRef.restoreFromDraft(customType, userDataText)
           } else if (userDataText && customRef.handleMirrorDataChange) {
             this.form.fd.custom_data_type = customType
-            this.form.fc.setFieldsValue({ custom_data_type: customType })
             customRef.handleMirrorDataChange(userDataText)
           }
           if (userDataText) {
@@ -1395,7 +1408,7 @@ export default {
      * 回填指定 IP 子网 / 调度标签网络
      */
     async backfillNetworksFromInitData (initData, { waitRef } = {}) {
-      if (!initData || !initData.nets || !this.form?.fc) return
+      if (!initData || !initData.nets || !this.form?.fd) return
       const doWaitRef = waitRef || ((getter, timeout = 10000) => new Promise(resolve => {
         const startAt = Date.now()
         const tick = () => {
@@ -1415,8 +1428,7 @@ export default {
       const networkRef = await doWaitRef(() => this.$refs.networkRef, 8000)
       if (!networkRef) return
       const initNetworkType = resolveDraftNetworkType(initData)
-      this.form.fc.setFieldsValue({ networkType: initNetworkType })
-      if (this.form.fd) this.form.fd.networkType = initNetworkType
+      this.form.fd.networkType = initNetworkType
       networkRef.change({ target: { value: initNetworkType }, name: 'default' })
       await this.$nextTick()
       if (initNetworkType === NETWORK_OPTIONS_MAP.manual.key) {
@@ -1444,7 +1456,7 @@ export default {
      * 回填系统盘/数据盘。公有云需等 sku 挂载且 typesMap 就绪后再写，否则类型/大小会被默认值盖掉。
      */
     async backfillDisksFromInitData (initData, { waitRef } = {}) {
-      if (!initData || !this.form?.fc) return
+      if (!initData || !this.form?.fd) return
       if (this._diskBackfilling) return
       this._diskBackfilling = true
       this._diskBackfillPending = true
@@ -1494,9 +1506,7 @@ export default {
             : systemDisk.backend
           const systemDiskType = { key: typeKey, label: '' }
           const systemDiskSize = systemDisk.size / 1024
-          this.form.fd.systemDiskType = systemDiskType
-          this.form.fd.systemDiskSize = systemDiskSize
-          this.form.fc.setFieldsValue({ systemDiskType, systemDiskSize })
+          this.setFormFieldsAndSyncFd({ systemDiskType, systemDiskSize })
           if (systemDisk.medium) this.form.fi.systemDiskMedium = systemDisk.medium
 
           const sysRef = await doWaitRef(() => this.$refs.systemDiskRef)
@@ -1508,10 +1518,8 @@ export default {
             diskComp.initData(systemDisk, hyper)
           }
           const reapplySys = () => {
-            if (!this.form || !this.form.fc) return
-            this.form.fd.systemDiskType = systemDiskType
-            this.form.fd.systemDiskSize = systemDiskSize
-            this.form.fc.setFieldsValue({ systemDiskType, systemDiskSize })
+            if (!this.form) return
+            this.setFormFieldsAndSyncFd({ systemDiskType, systemDiskSize })
           }
           setTimeout(reapplySys, 1500)
           setTimeout(reapplySys, 2800)
@@ -1552,7 +1560,8 @@ export default {
               }
               const reapplyDataDisks = () => {
                 const cur = this.$refs.dataDiskRef
-                if (!cur || !cur.dataDisks || !this.form || !this.form.fc) return
+                if (!cur || !cur.dataDisks || !this.form) return
+                if (!this.form.fd && !cur.useModel) return
                 const typesMap = cur.typesMap || {}
                 const hyperKey = (cur.getHypervisor && cur.getHypervisor()) || hyper
                 const isAliyun = hyperKey === HYPERVISORS_MAP.aliyun.key
@@ -1577,9 +1586,7 @@ export default {
                   disk.diskType = diskType
                   values[`dataDiskTypes[${disk.key}]`] = diskType
                 })
-                if (Object.keys(values).length) {
-                  this.form.fc.setFieldsValue(values)
-                }
+                if (Object.keys(values).length) this.setFormFieldsAndSyncFd(values)
               }
               setTimeout(reapplyDataDisks, 500)
               setTimeout(reapplyDataDisks, 1500)
@@ -1628,8 +1635,7 @@ export default {
         cloudprovider: undefined,
         sku: undefined,
       }
-      this.form.fc.setFieldsValue(areaFields)
-      this._setNewFieldToFd(areaFields, this.form.fc.getFieldsValue())
+      Object.assign(this.form.fd, areaFields)
       if (Object.prototype.hasOwnProperty.call(this.$data, 'cloudaccountId')) {
         this.cloudaccountId = ''
       }
@@ -1694,6 +1700,8 @@ export default {
           }
         })
         .catch(error => {
+          // 表单校验失败（含 outOfDate）不向上抛，避免 unhandledrejection 卡住提交
+          if (error?.errorFields || error?.outOfDate) return
           throw error
         })
         .finally(() => {
@@ -1703,7 +1711,7 @@ export default {
     doCreateServertemplate (data) {
       const { project_id, description, ...rest } = data
       const templateData = {
-        name: this.form.fc.getFieldValue('servertemplate_name'),
+        name: this.form.fd.servertemplate_name,
         project: project_id,
         description,
         content: {
@@ -1834,21 +1842,107 @@ export default {
           throw error
         })
     },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFieldsAndScroll({ scroll: { alignWithTop: true, offsetTop: 100 } }, (err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
+    async validateForm () {
+      const run = async () => {
+        const formRef = this.$refs.formRef
+        if (formRef?.validate) {
+          try {
+            await formRef.validate()
+          } catch (error) {
+            // antdv4：校验过程中 model 变更会抛 outOfDate 且无字段错误，忽略后继续分区校验
+            if (!(error?.outOfDate && !(error.errorFields && error.errorFields.length))) {
+              throw error
+            }
           }
-        })
-      })
+        }
+        // end-state sections：字段走组件 validate，不依赖 fc.validateFields
+        if (typeof this.$refs.domainProjectRef?.validate === 'function') {
+          await this.$refs.domainProjectRef.validate()
+        }
+        if (typeof this.$refs.cloudregionZoneRef?.validate === 'function') {
+          await this.$refs.cloudregionZoneRef.validate()
+        }
+        if (typeof this.$refs.areaSelectRef?.validate === 'function') {
+          await this.$refs.areaSelectRef.validate()
+        }
+        if (typeof this.$refs.networkRef?.validate === 'function') {
+          await this.$refs.networkRef.validate()
+        }
+        if (typeof this.$refs.osSelectRef?.validate === 'function') {
+          await this.$refs.osSelectRef.validate()
+        }
+        if (typeof this.$refs.systemDiskRef?.validate === 'function') {
+          await this.$refs.systemDiskRef.validate()
+        }
+        if (typeof this.$refs.dataDiskRef?.validate === 'function') {
+          await this.$refs.dataDiskRef.validate()
+        }
+        if (typeof this.$refs.skuRef?.validate === 'function') {
+          await this.$refs.skuRef.validate()
+        }
+        if (typeof this.$refs.secgroupRef?.validate === 'function') {
+          await this.$refs.secgroupRef.validate()
+        }
+        if (typeof this.$refs.passwordRef?.validate === 'function') {
+          await this.$refs.passwordRef.validate()
+        }
+        if (typeof this.$refs.schedPolicyRef?.validate === 'function') {
+          await this.$refs.schedPolicyRef.validate()
+        }
+        if (typeof this.$refs.hypervisorRadioRef?.validate === 'function') {
+          await this.$refs.hypervisorRadioRef.validate()
+        }
+        if (typeof this.$refs.pciRef?.validate === 'function') {
+          await this.$refs.pciRef.validate()
+        }
+        if (typeof this.$refs.eipConfigRef?.validate === 'function') {
+          await this.$refs.eipConfigRef.validate()
+        }
+        if (typeof this.$refs.hostNameRef?.validate === 'function') {
+          await this.$refs.hostNameRef.validate()
+        }
+        if (typeof this.$refs.instanceGroupsRef?.validate === 'function') {
+          await this.$refs.instanceGroupsRef.validate()
+        }
+        if (typeof this.$refs.encryptKeysRef?.validate === 'function') {
+          await this.$refs.encryptKeysRef.validate()
+        }
+        if (typeof this.$refs.customData?.validate === 'function') {
+          await this.$refs.customData.validate()
+        }
+        if (typeof this.$refs.bastionHostRef?.validate === 'function') {
+          await this.$refs.bastionHostRef.validate()
+        }
+        if (typeof this.$refs.osArchRef?.validate === 'function') {
+          await this.$refs.osArchRef.validate([
+            { required: true, message: i18n.t('compute.text_1363') },
+          ])
+        }
+        if (typeof this.$refs.labelRef?.validate === 'function') {
+          await this.$refs.labelRef.validate()
+        }
+        return { ...this.form.fd }
+      }
+      try {
+        return await run()
+      } catch (error) {
+        // 分区校验过程同样可能 outOfDate：下一 tick 重试一次
+        if (error?.outOfDate && !(error.errorFields && error.errorFields.length)) {
+          await this.$nextTick()
+          return await run()
+        }
+        throw error
+      }
     },
     cpuChange (cpu) {
+      // end-state：Cpu/Mem 只写 form.fd（组件 :model="form.fd"）
+      const setCpuMem = (vals) => {
+        if (!vals || typeof vals !== 'object') return
+        Object.keys(vals).forEach((k) => { this.form.fd[k] = vals[k] })
+      }
       // 不限：只设 CPU，不改内存（用户未动内存应保留原值）
       if (Number(cpu) === 0) {
-        this.form.fc.setFieldsValue({ vcpu: 0 })
+        setCpuMem({ vcpu: 0 })
         return
       }
       const memOpts = this.form.fi.cpuMem.cpu_mems_mb[cpu] || this.form.fi.cpuMem.cpu_mems_mb[String(cpu)]
@@ -1861,18 +1955,13 @@ export default {
             vcpu = 0
           }
         }
-        this.form.fc.setFieldsValue({
-          vcpu,
-          vmem: 0,
-        })
+        setCpuMem({ vcpu, vmem: 0 })
         return
-      } else if (this.form.fc.getFieldValue('vcpu') !== cpu && String(this.form.fc.getFieldValue('vcpu')) !== String(cpu)) { // 因之前未获取cpu设置为0，这一步设置回来
-        this.form.fc.setFieldsValue({
-          vcpu: cpu,
-        })
+      } else if (this.form.fd.vcpu !== cpu && String(this.form.fd.vcpu) !== String(cpu)) { // 因之前未获取cpu设置为0，这一步设置回来
+        setCpuMem({ vcpu: cpu })
       }
       this.form.fi.cpuMem.mems_mb = memOpts
-      const currentMem = this.form.fc.getFieldValue('vmem')
+      const currentMem = this.form.fd.vmem
       if (currentMem != null && currentMem !== '' && Number(currentMem) !== 0 && memOpts.some(m => Number(m) === Number(currentMem))) {
         return
       }
@@ -1881,7 +1970,7 @@ export default {
         ? this.readCreateFormFieldDraft(VM_CREATE_FORM_DRAFT_FIELD.VMEM)
         : null
       if (draftMem === 0 || draftMem === '0') {
-        this.form.fc.setFieldsValue({ vmem: 0 })
+        setCpuMem({ vmem: 0 })
         return
       }
       let defaultMem = 2048
@@ -1890,9 +1979,7 @@ export default {
       } else if (!memOpts.some(m => Number(m) === 2048)) {
         defaultMem = memOpts[0]
       }
-      this.form.fc.setFieldsValue({
-        vmem: defaultMem,
-      })
+      setCpuMem({ vmem: defaultMem })
     },
     _getProjectDomainInfo (variables) {
       variables.project = this.form.fd.project.key
@@ -1905,66 +1992,56 @@ export default {
       }
     },
     _resetDataDisk () { // 重置数据盘
-      const formValue = this.form.fc.getFieldsValue()
-      if (formValue.dataDiskSizes) {
-        const dataDiskKeys = Object.keys(formValue.dataDiskSizes)
-        dataDiskKeys.forEach(key => this.$refs.dataDiskRef.decrease(key))
+      const sizes = this.form.fd?.dataDiskSizes
+      if (sizes && this.$refs.dataDiskRef) {
+        Object.keys(sizes).forEach(key => this.$refs.dataDiskRef.decrease(key))
       }
     },
-    _setNewFieldToFd (newField, formValue) { // vue-ant-form change 后赋值 fd
-      const changeKeys = Object.keys(newField)
-      R.forEachObjIndexed((item, key) => {
-        this.form.fd[key] = item
-      }, newField)
-      if (changeKeys.some(val => val.includes('dataDiskSizes'))) { // 动态赋值默认值的表单需要单独处理
-        this.form.fd.dataDiskSizes = formValue.dataDiskSizes
-      }
-      // 端口映射：字段名是 containerPorts[uuid]，需从 getFieldsValue 取嵌套对象写入 fd
-      if (changeKeys.some(val => val.includes('containerPorts') || val.includes('hostPorts'))) {
-        if (formValue.containerPorts) {
-          this.$set(this.form.fd, 'containerPorts', formValue.containerPorts)
-        }
-        if (formValue.hostPorts) {
-          this.$set(this.form.fd, 'hostPorts', formValue.hostPorts)
-        }
-      }
-    },
-    /** setFieldsValue 后同步 fd（程序化赋值不走 onValuesChange） */
+    /** 程序化写 form.fd（bracket 盘字段走 Disk refs） */
     setFormFieldsAndSyncFd (values) {
-      if (!this.form?.fc || !values || typeof values !== 'object') return
-      this.form.fc.setFieldsValue(values)
-      const formValue = this.form.fc.getFieldsValue()
-      this._setNewFieldToFd(values, formValue)
+      if (!values || typeof values !== 'object' || !this.form?.fd) return
+      const sysRef = this.$refs.systemDiskRef
+      const dataRef = this.$refs.dataDiskRef
+      const sysVals = {}
+      const dataVals = {}
+      const other = {}
+      Object.keys(values).forEach((k) => {
+        if (k.startsWith('dataDisk')) dataVals[k] = values[k]
+        else if (k.startsWith('systemDisk')) sysVals[k] = values[k]
+        else other[k] = values[k]
+      })
+      if (Object.keys(sysVals).length && sysRef?.setFormDiskFields) {
+        sysRef.setFormDiskFields(sysVals)
+      } else {
+        Object.keys(sysVals).forEach((k) => { this.form.fd[k] = sysVals[k] })
+      }
+      if (Object.keys(dataVals).length && dataRef?.setFormDiskFields) {
+        dataRef.setFormDiskFields(dataVals)
+      } else {
+        Object.keys(dataVals).forEach((k) => { this.form.fd[k] = dataVals[k] })
+      }
+      Object.keys(other).forEach((k) => {
+        if (other[k] !== undefined) this.form.fd[k] = other[k]
+      })
     },
     /**
-     * 草稿回填完成后：系统盘与数据盘 fc/fd 对齐并 clamp。
+     * 草稿回填完成后：系统盘与数据盘 model/fd 对齐并 clamp。
      * 勿在 submit/addShopCart 调用——写回会触发盘组件 watch 清盘。
      */
     reconcileDiskFormStateBeforeSubmit () {
-      if (!this.form?.fc) return
+      if (!this.form?.fd) return
       const sysRef = this.$refs.systemDiskRef
       if (sysRef) {
-        const typeKey = sysRef.decorator?.type?.[0] || 'systemDiskType'
-        const sizeKey = sysRef.decorator?.size?.[0] || 'systemDiskSize'
-        let typeVal = this.form.fc.getFieldValue(typeKey) || this.form.fd?.[typeKey] || this.form.fd?.systemDiskType
-        const fcSize = this.form.fc.getFieldValue(sizeKey)
-        const fdSize = this.form.fd?.[sizeKey] ?? this.form.fd?.systemDiskSize
+        const typeKey = 'systemDiskType'
+        const sizeKey = 'systemDiskSize'
+        let typeVal = (sysRef.useModel ? sysRef.getDiskField(typeKey) : null) ||
+          this.form.fd?.[typeKey] || this.form.fd?.systemDiskType
+        const fdSize = (sysRef.useModel ? sysRef.getDiskField(sizeKey) : null) ??
+          this.form.fd?.[sizeKey] ?? this.form.fd?.systemDiskSize
         typeVal = sysRef.resolveSysDiskTypeFromDraft(typeVal)
         const typeKeyForClamp = typeVal?.key
-        let sizeVal = fcSize
-        if (sizeVal == null || sizeVal === '') sizeVal = fdSize
-        if (fdSize != null && fcSize != null && Number(fdSize) !== Number(fcSize)) {
-          const clampedFc = sysRef.clampSysDiskDraftSize(fcSize, typeKeyForClamp)
-          const clampedFd = sysRef.clampSysDiskDraftSize(fdSize, typeKeyForClamp)
-          const diskMsg = (typeKeyForClamp && sysRef.typesMap?.[typeKeyForClamp]) || {}
-          const minDefault = Math.max(sysRef.imageMinDisk || 0, diskMsg.sysMin || 10, 0)
-          if (Number(clampedFd) > Number(clampedFc) && Number(clampedFc) <= minDefault) {
-            sizeVal = clampedFd
-          } else {
-            sizeVal = clampedFc
-          }
-        }
-        // 无论 fc/fd 是否一致，最终都按当前镜像/类型下限 clamp（修复 value<min 仅展示抬升的情况）
+        let sizeVal = fdSize
+        // 按当前镜像/类型下限 clamp（修复 value<min 仅展示抬升的情况）
         sizeVal = sysRef.clampSysDiskDraftSize(sizeVal, typeKeyForClamp)
         const values = {}
         if (typeVal) values[typeKey] = typeVal
@@ -1978,8 +2055,12 @@ export default {
           if (!disk?.key) return
           const typeField = dataRef._fp('Types', disk.key)
           const sizeField = dataRef._fp('Sizes', disk.key)
-          const typeVal = this.form.fc.getFieldValue(typeField) || disk.diskType
-          const sizeVal = this.form.fc.getFieldValue(sizeField)
+          const typeVal = (dataRef.useModel
+            ? dataRef.getDiskField(typeField)
+            : this.form.fd?.[typeField]) || disk.diskType
+          const sizeVal = dataRef.useModel
+            ? dataRef.getDiskField(sizeField)
+            : this.form.fd?.[sizeField]
           const resolvedType = dataRef.resolveDataDiskTypeFromDraft(typeVal, index)
           const nextSize = dataRef.clampDataDiskDraftSize(sizeVal, dataRef.min(index), dataRef.max(index))
           if (resolvedType) flat[typeField] = resolvedType
@@ -1989,26 +2070,20 @@ export default {
       }
     },
     /**
-     * 系统盘/数据盘字段变更时落盘（setFieldsValue 不会走此路径）
+     * 批量绑定 VM_CREATE_FORM_DRAFT_FD_BINDINGS（进页回填 + flush）
      */
-
-    /**
-     * 批量绑定 VM_CREATE_FORM_DRAFT_FC_BINDINGS（进页回填 + flush）
-     */
-    bindVmCreateFormFcDrafts () {
-      this._vmCreateFormFcDraftMap = Object.create(null)
-      ;(VM_CREATE_FORM_DRAFT_FC_BINDINGS || []).forEach((item) => {
+    bindVmCreateFormFdDrafts () {
+      this._vmCreateFormFdDraftMap = Object.create(null)
+      ;(VM_CREATE_FORM_DRAFT_FD_BINDINGS || []).forEach((item) => {
         if (!item?.key || !item.formField) return
         if (item.types && !item.types.includes(this.type)) return
-        this._vmCreateFormFcDraftMap[item.formField] = item.key
-        this.bindFormFcFieldDraft(item.key, { formField: item.formField, kind: item.kind })
+        this._vmCreateFormFdDraftMap[item.formField] = item.key
+        this.bindFormFdFieldDraft(item.key, {
+          formField: item.formField,
+          kind: item.kind,
+        })
       })
     },
-    /**
-     * form.fc 字段变更时同步对应控件草稿
-     * @param {object} newField
-     */
-
     networkResourceMapper (list) {
       return list
         .map(val => {
@@ -2024,11 +2099,9 @@ export default {
         .sort((a, b) => (b.ports - b.ports_used) - (a.ports - a.ports_used))
     },
     countBlur () {
-      const count = this.form.fc.getFieldValue(this.decorators.count[0])
+      const count = this.form.fd.count
       if (!count) {
-        this.form.fc.setFieldsValue({
-          [this.decorators.count[0]]: 1,
-        })
+        this.form.fd.count = 1
       }
     },
     fetchDomainCallback () {
@@ -2038,9 +2111,7 @@ export default {
         domain = this.effectiveInitFormData?.extraData?.domain_id
       }
       if (!R.isNil(domain) && !R.isEmpty(domain)) {
-        this.form.fc.setFieldsValue({
-          domain: { key: domain },
-        })
+        this.form.fd.domain = { key: domain }
         if (this.type === 'public') {
           this.$nextTick(() => {
             this.refreshAreaSelects()
@@ -2055,9 +2126,7 @@ export default {
         project = this.effectiveInitFormData?.project_id
       }
       if (!R.isNil(project) && !R.isEmpty(project)) {
-        this.form.fc.setFieldsValue({
-          project: { key: project },
-        })
+        this.form.fd.project = { key: project }
       }
     },
     validateHostNameChange (v) {
@@ -2087,12 +2156,12 @@ export default {
           error.errorMsg = this.$t('compute.validate.others')
           return error
         }
-        if (/^(?=(-)).*/.test(v)) { // 不能以连字符开头
+        if (/^-/.test(v)) { // 不能以连字符开头
           error.validateStatus = 'error'
           error.errorMsg = this.$t('compute.validate.others')
           return error
         }
-        if (/.*?(-)$/.test(v)) { // 不能以连字符结尾
+        if (/-$/.test(v)) { // 不能以连字符结尾
           error.validateStatus = 'error'
           error.errorMsg = this.$t('compute.validate.others')
           return error
@@ -2112,12 +2181,12 @@ export default {
           error.errorMsg = this.$t('compute.validate.others')
           return error
         }
-        if (/^(?=(\.|-)).*/.test(v)) { // 不能以点号或连字符开头
+        if (/^[.-]/.test(v)) { // 不能以点号或连字符开头
           error.validateStatus = 'error'
           error.errorMsg = this.$t('compute.validate.others')
           return error
         }
-        if (/.*?(\.|-)$/.test(v)) { // 不能以点号或连字符结尾
+        if (/[.-]$/.test(v)) { // 不能以点号或连字符结尾
           error.validateStatus = 'error'
           error.errorMsg = this.$t('compute.validate.others')
           return error
@@ -2186,6 +2255,7 @@ export default {
           }
         })
         .catch(error => {
+          if (error?.errorFields || error?.outOfDate) return
           throw error
         })
     },

@@ -5,51 +5,45 @@
       <a-alert class="mb-2" type="warning">
         <template #message>{{$t('compute.text_1087')}}<br />{{$t('compute.text_1088')}}<br />{{$t('compute.text_1089')}}</template>
       </a-alert>
-      <a-form :form="form.fc" hideRequiredMark>
-        <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-bind="formItemLayout">
-          <domain-project :fc="form.fc" :form-layout="formItemLayout" isDefaultSelect :decorators="{ project: decorators.project, domain: decorators.domain }" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_428')" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
+        <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-bind="formItemLayout">
+          <domain-project
+            :form="form"
+            :form-layout="formItemLayout"
+            isDefaultSelect />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_428')" v-bind="formItemLayout" prop="generate_name">
           <a-input
-            v-decorator="decorators.generate_name"
+            v-model:value="form.generate_name"
             :placeholder="$t('compute.text_1090')"
             @change="nameChangeHandle" />
           <div slot="extra" v-if="showRepeatTips">
             <div>{{$t('compute.text_1091')}}</div>
           </div>
-        </a-form-item>
-        <a-form-item :label="$t('common.description')" v-bind="formItemLayout">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
-        <a-form-item :label="$t('common.resource_type')" v-bind="formItemLayout">
-          <a-select v-decorator="decorators.type" :disabled="params.type === 'update'">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" v-bind="formItemLayout" prop="description">
+          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.description" :placeholder="$t('common_367')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.resource_type')" v-bind="formItemLayout" prop="type">
+          <a-select v-model:value="form.type" :disabled="params.type === 'update'">
             <a-select-option value="server" v-if="types.includes('server')">{{$t('dictionary.server')}}</a-select-option>
             <a-select-option value="disk" v-if="types.includes('disk')">{{$t('dictionary.disk')}}</a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_431')" v-bind="formItemLayout">
-          <a-checkbox-group class="snapshot-policy-weekdays" v-decorator="decorators.repeat_weekdays">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_431')" v-bind="formItemLayout" prop="repeat_weekdays">
+          <a-checkbox-group class="snapshot-policy-weekdays" v-model:value="form.repeat_weekdays">
             <a-checkbox
               v-for="(week, idx) of weekOptions"
               :key="idx + 1"
               :value="idx + 1">{{ week }}</a-checkbox>
             </a-checkbox-group>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_432')" v-bind="formItemLayout">
-          <!-- <a-button-group v-decorator="decorators.time_points">
-            <a-button
-                class="select-btn"
-                v-for="(time, idx) of timeOptions"
-                size="small"
-                :key="idx"
-                :type="form.fd.time_points.includes(idx) ? 'primary' : ''"
-                @click="timeSelectHandle(idx)">{{ time }}</a-button>
-          </a-button-group> -->
-          <a-select v-decorator="decorators.time_points" mode="multiple">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_432')" v-bind="formItemLayout" prop="time_points">
+          <a-select v-model:value="form.time_points" mode="multiple">
             <a-select-option v-for="(time, idx) in timeOptions" :key="idx" :value="idx">{{time}}</a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_433')" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_433')" v-bind="formItemLayout">
           <div>
             <div class="mb-2 d-flex align-items-center">
               <a-radio
@@ -61,7 +55,7 @@
               <a-input-number
                 class="ml-2"
                 size="small"
-                v-decorator="decorators.retention_days"
+                v-model:value="form.retention_days"
                 :step="1"
                 :max="49"
                 :min="1"
@@ -80,7 +74,7 @@
               <a-input-number
                 class="ml-2"
                 size="small"
-                v-decorator="decorators.retention_count"
+                v-model:value="form.retention_count"
                 :step="1"
                 :min="1"
                 :disabled="isRetentionDisabled('count') || alwaysReserved !== 'count'"
@@ -97,8 +91,8 @@
               </a-radio>
             </div>
           </div>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -111,7 +105,7 @@
 import debounce from 'lodash/debounce'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
-import DomainProject from '@/sections/DomainProject'
+import DomainProject from '@/sections/DomainProject/model'
 import validateForm, { isRequired } from '@/utils/validate'
 import { weekOptions, timeOptions } from '../constants'
 
@@ -141,96 +135,38 @@ export default {
       action: this.$t('compute.text_1095'),
       alwaysReserved,
       form: {
-        fc: this.$form.createForm(this, { onValuesChange: this.onValuesChange }),
-        fd: {
-          generate_name: initData.name || '',
-          description: initData.description || '',
-          repeat_weekdays: initData.repeat_weekdays || [],
-          time_points: initData.time_points || [],
-          retention_days: initData.retention_days || 7,
-          retention_count: initData.retention_count || 7,
-          type: initData.type || types[0],
-          alwaysReserved,
-        },
+        generate_name: initData.name || '',
+        description: initData.description || '',
+        repeat_weekdays: initData.repeat_weekdays || [],
+        time_points: initData.time_points || [],
+        retention_days: initData.retention_days || 7,
+        retention_count: initData.retention_count || 7,
+        type: initData.type || types[0],
+        domain: initData.domain_id || domain || this.$store.getters.userInfo.projectDomainId,
+        project: initData.tenant_id || tenant || this.$store.getters.userInfo.projectId,
       },
-      types,
-      decorators: {
+      rules: {
         generate_name: [
-          'generate_name',
-          {
-            validateFirst: true,
-            initialValue: initData.name || '',
-            rules: [
-              { required: true, message: this.$t('compute.text_1090') },
-              { validator: validateForm('serverName') },
-            ],
-          },
-        ],
-        description: ['description', { initialValue: initData.description || '' }],
-        type: [
-          'type',
-          {
-            initialValue: initData.type || types[0],
-          },
+          { required: true, message: this.$t('compute.text_1090') },
+          { validator: validateForm('serverName') },
         ],
         repeat_weekdays: [
-          'repeat_weekdays',
-          {
-            initialValue: initData.repeat_weekdays || [],
-            rules: [
-              { required: true, message: this.$t('compute.text_1096') },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_1096') },
         ],
         time_points: [
-          'time_points',
-          {
-            initialValue: initData.time_points || [],
-            rules: [
-              { required: true, message: this.$t('compute.text_1097') },
-            ],
-          },
-        ],
-        retention_days: [
-          'retention_days',
-          {
-            initialValue: initData.retention_days || 7,
-          },
-        ],
-        alwaysReserved: [
-          'alwaysReserved',
-          {
-            initialValue: alwaysReserved,
-          },
+          { required: true, message: this.$t('compute.text_1097') },
         ],
         retention_count: [
-          'retention_count',
-          {
-            initialValue: initData.retention_count || 7,
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('compute.retention_count')]) },
-            ],
-          },
+          { required: true, message: this.$t('common.tips.input', [this.$t('compute.retention_count')]) },
         ],
         domain: [
-          'domain',
-          {
-            initialValue: initData.domain_id || domain || this.$store.getters.userInfo.projectDomainId,
-            rules: [
-              { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
-            ],
-          },
+          { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
         ],
         project: [
-          'project',
-          {
-            initialValue: initData.tenant_id || tenant || this.$store.getters.userInfo.projectId,
-            rules: [
-              { validator: isRequired(), message: this.$t('rules.project'), trigger: 'change' },
-            ],
-          },
+          { validator: isRequired(), message: this.$t('rules.project'), trigger: 'change' },
         ],
       },
+      types,
       snapshotpolicies: [],
       weekOptions: [...weekOptions],
       timeOptions: [...timeOptions],
@@ -246,7 +182,7 @@ export default {
   },
   computed: {
     showRepeatTips () {
-      const name = this.form.fd.generate_name || ''
+      const name = this.form.generate_name || ''
       return !!this.snapshotpolicies.find(item => item.name === name.toLowerCase())
     },
   },
@@ -261,12 +197,11 @@ export default {
     setAlwaysReserved (val) {
       if (this.isRetentionDisabled(val)) return
       this.alwaysReserved = val
-      this.form.fd.alwaysReserved = val
     },
     fetchSnapshotpolicies () {
       const params = {
         scope: this.$store.getters.scope,
-        filter: `name.contains("${this.form.fd.generate_name}")`,
+        filter: `name.contains("${this.form.generate_name}")`,
       }
       this.manager.list({ params }).then(res => {
         const data = res.data.data || []
@@ -274,12 +209,11 @@ export default {
       })
     },
     genParams () {
-      const { retention_count, retention_days, domain, project, time_points, ...rest } = this.form.fd
+      const { retention_count, retention_days, domain, project, time_points, ...rest } = this.form
       const alwaysReserved = this.alwaysReserved
       const params = {
         ...rest,
       }
-      delete params.alwaysReserved
       if (alwaysReserved === 'count') {
         params.retention_count = retention_count
         params.retention_days = -1
@@ -289,10 +223,10 @@ export default {
         params.retention_days = retention_days
       }
       if (domain) {
-        params.domain = domain.key
+        params.domain = typeof domain === 'object' ? domain.key : domain
       }
       if (project) {
-        params.tenant = project.key
+        params.tenant = typeof project === 'object' ? project.key : project
       }
       params.time_points = time_points
       return params
@@ -306,14 +240,14 @@ export default {
       return this.params.onManager('update', {
         id: this.params.data[0].id,
         managerArgs: {
-          data: { ...params, name: this.form.fd.generate_name },
+          data: { ...params, name: this.form.generate_name },
         },
       })
     },
     async handleConfirm () {
       this.loading = true
       try {
-        await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         if (this.params.type === 'update') {
           await this.doUpdateSnapshotPolicySubmit()
         } else {
@@ -321,27 +255,15 @@ export default {
           this.params.refresh && this.params.refresh()
           this.params.success && this.params.success()
         }
-        this.loading = false
         this.cancelDialog()
       } catch (error) {
-        this.loading = false
         throw error
+      } finally {
+        this.loading = false
       }
     },
-    nameChangeHandle (val) {
-      this.form.fd.generate_name = val
+    nameChangeHandle () {
       this.debounceFetchSnapshotpolicies()
-    },
-    // timeSelectHandle (val) {
-    //   this.form.fd.time_points = [val]
-    //   this.$nextTick(() => {
-    //     this.form.fc.setFieldsValue({ time_points: [val] })
-    //   })
-    // },
-    onValuesChange (props, values) {
-      Object.keys(values).forEach((key) => {
-        this.form.fd[key] = values[key]
-      })
     },
   },
 }

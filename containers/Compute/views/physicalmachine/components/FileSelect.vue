@@ -1,5 +1,5 @@
 <template>
-  <a-form-item :wrapper-col="offsetWrapperCol">
+  <a-form-model-item :wrapper-col="offsetWrapperCol" prop="file">
     <a-alert type="warning" class="mb-2">
       <template v-slot:message>
         <div>{{$t('compute.text_814')}}</div>
@@ -8,7 +8,6 @@
       </template>
     </a-alert>
     <a-upload-dragger
-      v-decorator="decorators.file"
       :beforeUpload="beforeUpload"
       :fileList="fileList"
       @remove="handleRemove">
@@ -18,7 +17,7 @@
         <p class="ant-upload-hint">{{$t('compute.text_819')}}</p>
       </div>
     </a-upload-dragger>
-  </a-form-item>
+  </a-form-model-item>
 </template>
 
 <script>
@@ -27,10 +26,6 @@ import { download } from '@/utils/utils'
 export default {
   name: 'FileSelect',
   props: {
-    decorators: {
-      type: Object,
-      required: true,
-    },
     offsetWrapperCol: {
       type: Object,
       required: true,
@@ -46,12 +41,19 @@ export default {
       fileList: [],
     }
   },
-  created () {
+  mounted () {
     this.$bus.$on('PhysicalmachineAddFileSelectClear', this.handleClearFile, this)
   },
   methods: {
+    syncFileToForm (file) {
+      if (this.form?.fd) {
+        // 与 submit / validateFile 约定一致：fd.file = { file: File }
+        this.$set(this.form.fd, 'file', file ? { file } : undefined)
+      }
+    },
     beforeUpload (file) {
       this.fileList = [file]
+      this.syncFileToForm(file)
       return false
     },
     handleDownloadTemplate () {
@@ -65,9 +67,7 @@ export default {
     },
     handleClearFile () {
       this.fileList = []
-      this.form.fc.setFieldsValue({
-        file: undefined,
-      })
+      this.syncFileToForm(undefined)
     },
     handleRemove () {
       this.handleClearFile()

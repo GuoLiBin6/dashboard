@@ -7,18 +7,18 @@
       </template>
       <dialog-selected-tips :count="params.data.length" :action="`${$t('common.text00078')}${$t('dictionary.project')}`" :name="params.name || $t('common.text00006')" />
       <dialog-table v-if="columns" :data="params.data" :columns="columns" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="params.projectLabel || $t('dictionary.project')" v-bind="formItemLayout">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules">
+        <a-form-model-item :label="params.projectLabel || $t('dictionary.project')" v-bind="formItemLayout">
           <domain-project
-            :fc="form.fc"
-            :fd="form.fd"
-            :form-layout="formItemLayout"
+            :form="form"
             :labelInValue="false"
-            :decorators="{ project: decorators.project, domain: decorators.domain }"
+            :ignoreStorage="true"
             :getDomainList="getDomainList" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </template>
     <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -32,7 +32,7 @@ import { is } from 'ramda'
 import _ from 'lodash'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
-import DomainProject from '@/sections/DomainProject/last'
+import DomainProject from '@/sections/DomainProject/model'
 
 export default {
   name: 'ChangeOwenrDialog',
@@ -41,40 +41,20 @@ export default {
   },
   mixins: [DialogMixin, WindowsMixin],
   data () {
+    const domainId = _.get(this.params, 'data[0].domain_id')
+    const projectId = _.get(this.params, 'data[0].tenant_id') || _.get(this.params, 'data[0].project_id')
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          name: 'change_project_form',
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-          },
-        }),
-        fd: {
-          domain: _.get(this.params, 'data[0].domain_id'),
-          project: _.get(this.params, 'data[0].tenant_id') || _.get(this.params, 'data[0].project_id'),
-        },
+        domain: domainId,
+        project: projectId,
       },
-      decorators: {
+      rules: {
         domain: [
-          'domain',
-          {
-            initialValue: _.get(this.params, 'data[0].domain_id'),
-            rules: [
-              { required: true, message: this.$t('rules.domain'), trigger: 'change' },
-            ],
-          },
+          { required: true, message: this.$t('rules.domain'), trigger: 'change' },
         ],
         project: [
-          'project',
-          {
-            initialValue: _.get(this.params, 'data[0].tenant_id') || _.get(this.params, 'data[0].project_id'),
-            rules: [
-              { required: true, message: this.$t('rules.project'), trigger: 'change' },
-            ],
-          },
+          { required: true, message: this.$t('rules.project'), trigger: 'change' },
         ],
       },
       formItemLayout: this.params.formItemLayout || {
@@ -111,21 +91,14 @@ export default {
     },
   },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
+        await this.$refs.formRef.validate()
+        const values = {
+          domain: this.form.domain,
+          project: this.form.project,
+        }
         const ids = this.params.data.map(item => item.id)
         const { manager } = this.params
         if (manager) {

@@ -22,7 +22,7 @@ export const REDIS_CREATE_FORM_DRAFT_FIELD = {
 
 export const REDIS_CREATE_FORM_DRAFT_SCOPE = 'db.redis.create'
 
-export const REDIS_CREATE_FORM_DRAFT_FC_BINDINGS = [
+export const REDIS_CREATE_FORM_DRAFT_FD_BINDINGS = [
   { key: REDIS_CREATE_FORM_DRAFT_FIELD.BILLING_TYPE, formField: 'billing_type', kind: 'selection' },
 ]
 

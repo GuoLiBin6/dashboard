@@ -23,9 +23,6 @@ export default {
     return {
       action: this.$t('compute.text_1024', [this.$t('dictionary.secgroup')]),
       loading: false,
-      form: {
-        fc: this.$form.createForm(this),
-      },
     }
   },
   methods: {

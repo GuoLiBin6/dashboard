@@ -2,13 +2,13 @@
   <base-dialog @cancel="handleCancel" :modalProps="{footer: null}">
     <div slot="header">{{this.params.title}}</div>
     <div slot="body">
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('storage.text_117')">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('storage.text_117')">
           {{uploadTo}}
-        </a-form-item>
-        <a-form-item :label="$t('storage.text_118')" class="upload-file-item pb-3">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('storage.text_118')" class="upload-file-item pb-3" prop="files">
           <a-upload-dragger
-            v-decorator="decorators.files"
+            v-model:fileList="form.files"
             @change="hanldeFileChange"
             v-bind="uploadDraggerConfig">
             <div style="padding: 10px; min-width: 600px">
@@ -18,8 +18,8 @@
              <p class="ant-upload-text">{{$t('storage.text_119')}}<a>{{$t('storage.text_120')}}</a></p>
             </div>
           </a-upload-dragger>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
       <div style="text-align: center;margin-top:10px;font-size: 12px;" v-if="statusNums">
         <span>{{$t('storage.text_121', [statusNums.uploading])}}</span>
         <a-divider type="vertical" />
@@ -43,26 +43,18 @@ export default {
     return {
       loading: false,
       formItemLayout,
-      fileList: [],
       statusNums: undefined,
       modalProps: {
         footer: null,
       },
       form: {
-        fc: this.$form.createForm(this),
+        files: [],
       },
-      decorators: {
-        files: ['files', {
-          rules: [
-            { required: true, message: this.$t('storage.text_124') },
-          ],
-        }],
+      rules: {
+        files: [
+          { required: true, message: this.$t('storage.text_124') },
+        ],
       },
-    }
-  },
-  provide () {
-    return {
-      form: this.form,
     }
   },
   computed: {
@@ -117,7 +109,7 @@ export default {
       }
     },
     hanldeFileChange ({ fileList }) {
-      // if (!fileList || !fileList.length) return false
+      this.form.files = fileList
       const _statusNums = {
         uploading: 0,
         error: 0,

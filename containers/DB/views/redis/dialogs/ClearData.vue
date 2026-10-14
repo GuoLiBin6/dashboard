@@ -7,11 +7,11 @@
       </a-alert>
       <dialog-selected-tips :name="$t('dictionary.elasticcaches')" :count="params.data.length" :action="this.params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" class="mt-3">
-        <a-form-item v-if="params.data[0].provider === 'Qcloud' && params.data[0].auth_mode === 'on'" :label="$t('db.text_195')" v-bind="formItemLayout">
-          <a-input-password v-decorator="decorators.password" :plcaeholder="$t('db.text_360')" />
-        </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" :model="form" :rules="rules" class="mt-3" v-bind="formItemLayout">
+        <a-form-model-item v-if="params.data[0].provider === 'Qcloud' && params.data[0].auth_mode === 'on'" :label="$t('db.text_195')" prop="password">
+          <a-input-password v-model:value="form.password" :plcaeholder="$t('db.text_360')" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
@@ -31,33 +31,39 @@ export default {
   data () {
     return {
       form: {
-        fc: this.$form.createForm(this),
+        password: undefined,
       },
       formItemLayout: {
         wrapperCol: { span: 20 },
         labelCol: { span: 4 },
       },
       loading: false,
-      decorators: {
-        password: [
-          'password',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('db.text_360') },
-              { validator: passwordValidator },
-            ],
-          },
-        ],
-      },
     }
+  },
+  computed: {
+    rules () {
+      if (this.params.data[0].provider === 'Qcloud' && this.params.data[0].auth_mode === 'on') {
+        return {
+          password: [
+            { required: true, message: this.$t('db.text_360') },
+            { validator: passwordValidator },
+          ],
+        }
+      }
+      return {}
+    },
+    needPassword () {
+      return this.params.data[0].provider === 'Qcloud' && this.params.data[0].auth_mode === 'on' && this.params.data.length === 1
+    },
   },
   methods: {
     async handleConfirm () {
       this.loading = true
       try {
-        this.loading = false
-        const values = await this.form.fc.validateFields()
+        if (this.needPassword) {
+          await this.$refs.formRef.validate()
+        }
+        const values = { ...this.form }
         if (this.params.data && this.params.data.length > 1) {
           await this.params.onManager('batchPerformAction', {
             id: this.params.data.map(({ id }) => id),
@@ -80,8 +86,9 @@ export default {
         this.params.refresh()
         this.$message.success(this.$t('db.text_149'))
       } catch (error) {
-        this.loading = false
         throw error
+      } finally {
+        this.loading = false
       }
     },
   },

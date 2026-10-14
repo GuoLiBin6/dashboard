@@ -4,17 +4,19 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.cloudgroup')" :count="params.data.length" :action="$t('cloudenv.cloudgroup_single_action1')" />
       <dialog-table class="mb-2" :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc"
-         v-bind="formItemLayout">
-        <a-form-item :label="$t('cloudenv.coludgroup_text001')">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('cloudenv.coludgroup_text001')" prop="clouduser_ids">
           <list-select
-            v-decorator="decorators.clouduser_ids"
+            v-model:value="form.clouduser_ids"
             :listProps="clouduserSelectProps"
             :formatter="row => `${row.name} / ${row.cloudaccount || ''}`"
             :dialog-params="{ mask: false, width: 900, title: $t('rules.clouduser') }" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -41,21 +43,11 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-        fi: {
-          generate_name: '',
-        },
+        clouduser_ids: get(this.params.data[0], 'cloudusers', []).map(item => item.id),
       },
-      decorators: {
+      rules: {
         clouduser_ids: [
-          'clouduser_ids',
-          {
-            validateFirst: true,
-            initialValue: get(this.params.data[0], 'cloudusers', []).map(item => item.id),
-            rules: [
-              { required: true, message: this.$t('common.select') },
-            ],
-          },
+          { required: true, message: this.$t('common.select') },
         ],
       },
       clouduserSelectProps: {
@@ -105,13 +97,9 @@ export default {
   watch: {
     paramClouduserIds (val) {
       if (val && val.length) {
-        this.form.fc.setFieldsValue({
-          clouduser_ids: val,
-        })
+        this.form.clouduser_ids = val
       } else {
-        this.form.fc.setFieldsValue({
-          clouduser_ids: [],
-        })
+        this.form.clouduser_ids = []
       }
     },
   },
@@ -119,14 +107,14 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         await this.params.onManager('performAction', {
           steadyStatus: ['available'],
           id: this.params.data[0].id,
           managerArgs: {
             action: 'set-users',
             data: {
-              ...values,
+              ...this.form,
               provider: this.params.data[0].provider,
             },
           },

@@ -9,13 +9,13 @@
       </a-alert>
       <dialog-selected-tips :name="$t('compute.instance_backup')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.unpack_name')">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.unpack_name')" prop="name">
           <a-input
-            v-decorator="decorators.name"
+            v-model:value="form.name"
             :placeholder="$t('common.tips.input', [$t('compute.unpack_name')])" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -36,16 +36,11 @@ export default {
       loading: false,
       action: this.$t('compute.unpack'),
       form: {
-        fc: this.$form.createForm(this),
+        name: '',
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('compute.unpack_name')]) },
-            ],
-          },
+          { required: true, message: this.$t('common.tips.input', [this.$t('compute.unpack_name')]) },
         ],
       },
       formItemLayout: {
@@ -65,9 +60,9 @@ export default {
     },
   },
   methods: {
-    doUnpackSubmit (values) {
+    doUnpackSubmit () {
       const params = {
-        package_name: values.name,
+        package_name: this.form.name,
       }
       const ids = this.params.data.map(item => item.id)
       return this.params.onManager('performAction', {
@@ -82,8 +77,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        await this.doUnpackSubmit(values)
+        await this.$refs.formRef.validate()
+        await this.doUnpackSubmit()
         this.params.refresh && this.params.refresh()
         this.cancelDialog()
       } catch (error) {

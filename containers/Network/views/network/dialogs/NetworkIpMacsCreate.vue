@@ -4,35 +4,39 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.network')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" class="mt-3" v-bind="formItemLayout" hideRequiredMark>
-        <a-form-item
-          v-for="(k, index) in form.fc.getFieldValue('keys')"
-          :key="k"
+      <a-form-model ref="formRef" :model="form" class="mt-3" v-bind="formItemLayout" hideRequiredMark>
+        <a-form-model-item
+          v-for="(row, index) in form.rows"
+          :key="row.key"
           v-bind="index === 0 ? formItemLayout : formItemLayoutWithOutLabel"
           :label="index === 0 ? $t('network.mac_ip.mapping_table') : ''"
           :required="false">
           <a-row :gutter="6">
             <a-col :span="11">
-              <a-form-item
+              <a-form-model-item
                 :wrapperCol="{ span: 24 }"
-                class="mb-0 mr-1">
-                <a-input v-decorator="decorators.mappingTables.ip(k)" :placeholder="$t('network.text_217')" />
-              </a-form-item>
+                class="mb-0 mr-1"
+                :prop="`rows.${index}.ip`"
+                :rules="rules.ip">
+                <a-input v-model:value="row.ip" :placeholder="$t('network.text_217')" />
+              </a-form-model-item>
             </a-col>
             <a-col :span="11">
-              <a-form-item
+              <a-form-model-item
                 :wrapperCol="{ span: 24 }"
-                class="mb-0 mr-1">
-                <a-input v-decorator="decorators.mappingTables.mac(k)" :placeholder="$t('common.tips.input', [$t('network.text_228')])" />
-              </a-form-item>
+                class="mb-0 mr-1"
+                :prop="`rows.${index}.mac`"
+                :rules="rules.mac">
+                <a-input v-model:value="row.mac" :placeholder="$t('common.tips.input', [$t('network.text_228')])" />
+              </a-form-model-item>
             </a-col>
             <a-col :span="2" v-show="!isEdit">
               <a-button v-if="index === 0" type="primary" shape="circle" icon="plus" size="small" @click="add" />
-              <a-button v-else shape="circle" icon="minus" size="small" @click="remove(k)" />
+              <a-button v-else shape="circle" icon="minus" size="small" @click="remove(row.key)" />
             </a-col>
           </a-row>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -48,39 +52,39 @@ import WindowsMixin from '@/mixins/windows'
 import { Manager } from '@/utils/manager'
 
 let id = 0
+
+const buildInitialRows = (params) => {
+  const editData = params?.editData
+  if (editData?.length) {
+    return editData.map((item, i) => ({
+      key: i,
+      ip: item.ip_addr || undefined,
+      mac: item.mac_addr || undefined,
+    }))
+  }
+  return [{ key: 0, ip: undefined, mac: undefined }]
+}
+
 export default {
   name: 'NetworkIpMacsCreateDialog',
   mixins: [DialogMixin, WindowsMixin],
   data () {
+    const rows = buildInitialRows(this.params)
+    id = rows.reduce((max, row) => Math.max(max, row.key), 0)
     return {
       loading: false,
-      decorators: {
-        mappingTables: {
-          ip: i => [
-            `ip[${i}]`,
-            {
-              initialValue: this.params.editData?.[i].ip_addr || undefined,
-              validateTrigger: ['change', 'blur'],
-              validateFirst: true,
-              rules: [
-                { required: true, message: this.$t('network.text_217') },
-                { validator: this.$validate('IPv4') },
-              ],
-            },
-          ],
-          mac: i => [
-            `mac[${i}]`,
-            {
-              initialValue: this.params.editData?.[i].mac_addr || undefined,
-              validateTrigger: ['change', 'blur'],
-              validateFirst: true,
-              rules: [
-                { required: true, message: this.$t('common.tips.input', [this.$t('network.text_228')]) },
-                { validator: this.$validate('mac') },
-              ],
-            },
-          ],
-        },
+      form: {
+        rows,
+      },
+      rules: {
+        ip: [
+          { required: true, message: this.$t('network.text_217') },
+          { validator: this.$validate('IPv4') },
+        ],
+        mac: [
+          { required: true, message: this.$t('common.tips.input', [this.$t('network.text_228')]) },
+          { validator: this.$validate('mac') },
+        ],
       },
       columns: [
         {
@@ -153,35 +157,29 @@ export default {
       return this.isEdit ? this.$t('network.mac_ip.edit_mapping_table') : this.$t('network.mac_ip.create_mapping_table')
     },
   },
-  beforeCreate () {
-    this.form = {}
-    this.form.fc = this.$form.createForm(this, { name: 'ip_mac_create_form' })
-    this.form.fc.getFieldDecorator('keys', { initialValue: [id], preserve: true })
-  },
   methods: {
-    generateValues (values) {
+    generateValues () {
       const data = {
         network_id: this.params.data[0].id,
       }
       const ip_mac = {}
-      values.keys.forEach(key => {
-        const ip = values.ip[key]
-        const mac = values.mac[key]
-        ip_mac[`${ip}`] = mac
+      this.form.rows.forEach(row => {
+        ip_mac[`${row.ip}`] = row.mac
       })
       data.ip_mac = ip_mac
       return data
     },
-    async doCreate (values) {
+    async doCreate () {
       const manager = new Manager('network_ip_macs/batch-create')
-      const data = this.generateValues(values)
+      const data = this.generateValues()
       await manager.create({ data })
     },
-    async doUpdate (values) {
+    async doUpdate () {
       const manager = new Manager('network_ip_macs')
+      const row = this.form.rows[0]
       const data = {
-        ip_addr: values.ip[0],
-        mac_addr: values.mac[0],
+        ip_addr: row.ip,
+        mac_addr: row.mac,
       }
       await manager.update({
         id: this.params.editData[0].id,
@@ -191,9 +189,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const { validateFields } = this.form.fc
-        const values = await validateFields()
-        this.isEdit ? this.doUpdate(values) : this.doCreate(values)
+        await this.$refs.formRef.validate()
+        this.isEdit ? await this.doUpdate() : await this.doCreate()
         this.$message.success(this.$t('common.success'))
         this.params.ok && this.params.ok()
         this.cancelDialog()
@@ -204,21 +201,14 @@ export default {
       }
     },
     add () {
-      const { form } = this
-      const keys = form.fc.getFieldValue('keys')
-      const nextKeys = keys.concat(++id)
-      form.fc.setFieldsValue({ keys: nextKeys })
+      const nextKey = ++id
+      this.form.rows.push({ key: nextKey, ip: undefined, mac: undefined })
     },
     remove (k) {
-      const { form } = this
-      const keys = form.fc.getFieldValue('keys')
-
-      if (keys.length === 1) {
+      if (this.form.rows.length === 1) {
         return
       }
-      form.fc.setFieldsValue({
-        keys: keys.filter(key => key !== k),
-      })
+      this.form.rows = this.form.rows.filter(row => row.key !== k)
     },
   },
 }

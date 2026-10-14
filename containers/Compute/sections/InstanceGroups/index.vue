@@ -1,49 +1,56 @@
 <template>
   <div>
-    <a-form-item class="mb-0">
+    <a-form-model-item class="mb-0" :prop="enableField">
       <a-switch
-        :checked="showGroups"
+        v-model:checked="model[enableField]"
         :checkedChildren="$t('compute.text_115')"
         :unCheckedChildren="$t('compute.text_116')"
         @change="change" />
-    </a-form-item>
-    <a-form-item v-if="showGroups">
+    </a-form-model-item>
+    <a-form-model-item v-if="groupsEnableValue" :prop="groupsField">
       <base-select
-        v-decorator="decorators.groups"
+        v-model:value="model[groupsField]"
         :select-props="{ placeholder: $t('compute.text_148', [$t('dictionary.instancegroup')]), mode: 'multiple' }"
         resource="instancegroups"
         :params="params"
         :need-params="true" />
-    </a-form-item>
+    </a-form-model-item>
   </div>
 </template>
 
 <script>
-import * as R from 'ramda'
-
 export default {
   name: 'InstanceGroups',
   inject: { form: { default: undefined } },
   props: {
-    decorators: {
+    enableField: {
+      type: String,
+      default: 'groupsEnable',
+    },
+    groupsField: {
+      type: String,
+      default: 'groups',
+    },
+    model: {
       type: Object,
       required: true,
-      validator: val => !R.isNil(val.groupsEnable) && !R.isNil(val.groups),
     },
     params: {
       type: Object,
       required: true,
     },
   },
-  data () {
-    return {
-      showGroups: this.decorators.groupsEnable[1].initialValue,
-    }
+  computed: {
+    groupsEnableValue () {
+      return !!this.model[this.enableField]
+    },
   },
   methods: {
     change (val) {
-      this.showGroups = !!val
-      this.form?.fc?.setFieldsValue({ [this.decorators.groupsEnable[0]]: !!val })
+      this.$set(this.model, this.enableField, !!val)
+    },
+    async validate () {
+      return true
     },
   },
 }

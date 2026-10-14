@@ -19,14 +19,14 @@
         <!-- 速率限制规则 -->
         <template v-if="form.rule_type === 'rate_limit'" class="mb-0">
           <a-form-model-item :label="$t('network.waf.cache_status')">
-            <a-checkbox v-model="form.cache_status">
+            <a-checkbox v-model:checked="form.cache_status">
               {{ $t('network.waf.cache_status_limit') }}
             </a-checkbox>
           </a-form-model-item>
           <a-form-item :label="$t('network.waf.rule_limit.characteristics')" required>
             <rate-limit-rule-form ref="rateLimitRules" :form="form" ruleFormKey="rate_limit_rules" />
             <a-form-model-item :extra="rateLimitRuleExtra">
-              <a-checkbox v-model="form.customCounter">
+              <a-checkbox v-model:checked="form.customCounter">
                 {{ $t('network.waf.rule_limit.use_custom_counter') }}
               </a-checkbox>
             </a-form-model-item>
@@ -167,7 +167,7 @@
           <a-form-model-item label="IP / CIDR" prop="lockdown_ip" :extra="$t('network.waf.lockdown_ip.extra')">
             <a-input v-model:value="form.lockdown_ip" placeholder="IP / CIDR" />
           </a-form-model-item>
-          <span><span class="mr-2">{{$t('network.text_94')}}</span><a-switch v-model:value="form.is_show_lockdown_priority" /></span>
+          <span><span class="mr-2">{{$t('network.text_94')}}</span><a-switch v-model:checked="form.is_show_lockdown_priority" /></span>
           <a-form-model-item class="mt-3" v-if="form.is_show_lockdown_priority" :label="$t('network.waf.priority')">
             <a-input-number v-model:value="form.priority" :min="1" :step="1" :placeholder="$t('network.waf.priority')" />
           </a-form-model-item>

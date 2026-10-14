@@ -1,6 +1,7 @@
 /**
  * 控件级创建草稿 mixin：页面传 formDraftKey 启用，组件自管回填。
  * 回填 / 备份 / 落盘策略均由页面 provide；仅在表单校验通过后 flush 落盘。
+ * 默认读写 form.fd（或 resolveFormDraftStore 适配层）。
  */
 import {
   getComponentDraft,
@@ -15,6 +16,38 @@ import {
   SESSION_DRAFT_STORAGE_KEY,
   isCreateFormDraftRestoreFromLocal,
 } from '@/utils/createFormDraft'
+
+/** 薄适配：把 plain model/fd 暴露成 get/setFields*，供少数仍走 store API 的调用方 */
+function createFdDraftStoreAdapter (vm, fd) {
+  return {
+    getFieldValue (name) {
+      return fd[name]
+    },
+    getFieldsValue () {
+      return { ...fd }
+    },
+    setFieldsValue (vals) {
+      if (!vals || typeof vals !== 'object') return
+      Object.keys(vals).forEach((key) => {
+        vm.$set(fd, key, vals[key])
+      })
+    },
+    setFields (fields) {
+      if (!fields || typeof fields !== 'object') return
+      Object.keys(fields).forEach((key) => {
+        const entry = fields[key]
+        const val = entry && typeof entry === 'object' && 'value' in entry ? entry.value : entry
+        if (val === undefined) {
+          if (Object.prototype.hasOwnProperty.call(fd, key)) {
+            vm.$delete(fd, key)
+          }
+        } else {
+          vm.$set(fd, key, val)
+        }
+      })
+    },
+  }
+}
 
 export default {
   props: {
@@ -40,7 +73,7 @@ export default {
       type: Array,
       default: () => [],
     },
-    /** 自动读写的 form.fc 字段名列表（无自定义 snapshot 时生效） */
+    /** 自动读写的 form.fd 字段名列表（无自定义 snapshot 时生效） */
     formDraftFields: {
       type: Array,
       default: () => [],
@@ -161,8 +194,21 @@ export default {
       }
       return null
     },
-    resolveFormFc () {
-      return this.resolveFormRef()?.fc || this.fc || null
+    /**
+     * 草稿读写目标：优先 form.fd 薄适配；子类可 override（如 BastionHost → model）
+     * 返回 null 表示组件自管 snapshot / 不走默认 apply
+     */
+    resolveFormDraftStore () {
+      const formRef = this.resolveFormRef()
+      const fd = formRef?.fd
+      if (fd && typeof fd === 'object') {
+        if (!this._fdDraftStoreAdapter || this._fdDraftStoreAdapterFd !== fd) {
+          this._fdDraftStoreAdapterFd = fd
+          this._fdDraftStoreAdapter = createFdDraftStoreAdapter(this, fd)
+        }
+        return this._fdDraftStoreAdapter
+      }
+      return null
     },
     /** 读：回填或备份任一开启即可 */
     readFormFieldDraft () {
@@ -223,45 +269,52 @@ export default {
       }
       return draft
     },
+    /** 直接读 form.fd（无则 null） */
+    resolveFormFd () {
+      const fd = this.resolveFormRef()?.fd
+      return fd && typeof fd === 'object' ? fd : null
+    },
     /**
-     * 默认序列化：优先子类 snapshot，否则 formDraftFields
+     * 默认序列化：优先子类 snapshot，否则直接 pick form.fd
      */
     serializeFormFieldDraft () {
       if (typeof this.getCreateFormFieldDraftSnapshot === 'function') {
         return this.getCreateFormFieldDraftSnapshot()
       }
-      const fc = this.resolveFormFc()
-      if (this.formDraftFields?.length && fc) {
-        return pickFields(fc.getFieldsValue(), this.formDraftFields)
+      if (!this.formDraftFields?.length) return undefined
+      const fd = this.resolveFormFd()
+      if (fd) {
+        return pickFields(fd, this.formDraftFields)
+      }
+      const store = this.resolveFormDraftStore()
+      if (store) {
+        return pickFields(store.getFieldsValue(), this.formDraftFields)
       }
       return undefined
     },
-    /** setFieldsValue 后同步 form.fd（onValuesChange 不会走 fd 赋值） */
+    /** 将 values 写入 form.fd（响应式 $set） */
     syncFormFieldValuesToFd (values) {
-      const formRef = this.resolveFormRef()
-      if (!formRef?.fd || !values || typeof values !== 'object') return
+      if (!values || typeof values !== 'object') return
+      const fd = this.resolveFormFd()
+      if (!fd) return
       Object.keys(values).forEach((key) => {
-        formRef.fd[key] = values[key]
+        this.$set(fd, key, values[key])
       })
-      const fc = this.resolveFormFc()
-      if (!fc) return
-      const formValue = fc.getFieldsValue()
-      if (formValue.dataDiskSizes) {
-        formRef.fd.dataDiskSizes = formValue.dataDiskSizes
-      }
-      if (formValue.dataDiskTypes) {
-        formRef.fd.dataDiskTypes = formValue.dataDiskTypes
-      }
     },
-    /** 写 fc 并同步 fd */
+    /** 回填写 form.fd；无 fd 时回退 draft store adapter */
     applyFormFieldValues (values) {
-      const fc = this.resolveFormFc()
-      if (!fc || !values || typeof values !== 'object') return
-      fc.setFieldsValue(values)
-      this.syncFormFieldValuesToFd(values)
+      if (!values || typeof values !== 'object') return
+      const fd = this.resolveFormFd()
+      if (fd) {
+        this.syncFormFieldValuesToFd(values)
+        return
+      }
+      const store = this.resolveFormDraftStore()
+      if (!store) return
+      store.setFieldsValue(values)
     },
     /**
-     * 默认回填：优先子类 apply，否则 formDraftFields → setFieldsValue
+     * 默认回填：优先子类 apply，否则 formDraftFields → 写 fd
      */
     restoreFormFieldDraftFields () {
       if (!this.canRestoreFormFieldDraft()) return false
@@ -276,8 +329,8 @@ export default {
         this.applyCreateFormFieldDraft(safeDraft)
         return true
       }
-      const fc = this.resolveFormFc()
-      if (this.formDraftFields?.length && fc && safeDraft && typeof safeDraft === 'object') {
+      const hasTarget = this.resolveFormFd() || this.resolveFormDraftStore()
+      if (this.formDraftFields?.length && hasTarget && safeDraft && typeof safeDraft === 'object') {
         const values = pickFields(safeDraft, this.formDraftFields)
         if (Object.keys(values).length) {
           this.applyFormFieldValues(values)

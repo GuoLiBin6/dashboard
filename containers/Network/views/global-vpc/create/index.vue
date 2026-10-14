@@ -2,27 +2,30 @@
   <div>
     <page-header :title="$t('network.text_769')" />
     <page-body>
-      <a-form
+      <a-form-model
+        ref="formRef"
         class="mt-3"
-        :form="form.fc">
-        <a-form-item v-bind="formItemLayout" :label="$t('network.text_205', [$t('dictionary.domain')])" v-if="$store.getters.isAdminMode">
-          <domain-select v-decorator="decorators.project_domain" @change="handleDomainChange" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_198')" v-bind="formItemLayout">
-          <a-radio-group v-decorator="decorators.platform">
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('network.text_205', [$t('dictionary.domain')])" prop="project_domain" v-if="$store.getters.isAdminMode">
+          <domain-select v-model:value="form.project_domain" @change="handleDomainChange" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_198')" prop="platform">
+          <a-radio-group v-model:value="form.platform">
             <a-radio-button value="Google">Google</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('network.text_21')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.name" :placeholder="$t('network.text_684')" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')" v-bind="formItemLayout">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_15')" required v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_21')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('network.text_684')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" prop="description">
+          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.description" :placeholder="$t('common_367')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_15')" required prop="cloudprovider">
           <base-select
             class="w-50"
-            v-decorator="decorators.cloudprovider"
+            v-model:value="form.cloudprovider"
             resource="cloudproviders"
             :params="cloudproviderParams"
             :isDefaultSelect="true"
@@ -30,8 +33,8 @@
             :showSync="true"
             :select-props="{ placeholder: $t('compute.text_149') }"
             v-model:resList="cloudproviderData" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </page-body>
     <page-footer>
       <div slot="right">
@@ -57,47 +60,22 @@ export default {
       isGoogle: false,
       isAws: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            if (values.cloudregion) {
-              this.cloudregion = values.cloudregion
-            }
-          },
-        }),
+        project_domain: this.$store.getters.userInfo.projectDomainId,
+        platform: 'Google',
+        name: '',
+        description: '',
+        cloudprovider: undefined,
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            validateFirst: true,
-            validateTrigger: ['blur'],
-            rules: [
-              { required: true, message: this.$t('network.text_770') },
-              { validator: this.$validate('broadName') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_770') },
+          { validator: this.$validate('broadName') },
         ],
         platform: [
-          'platform',
-          {
-            initialValue: 'Google',
-            rules: [{ required: true }],
-          },
+          { required: true },
         ],
-        description: ['description'],
         cloudprovider: [
-          'cloudprovider',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_689') },
-            ],
-          },
-        ],
-        project_domain: [
-          'project_domain',
-          {
-            initialValue: this.$store.getters.userInfo.projectDomainId,
-          },
+          { required: true, message: this.$t('network.text_689') },
         ],
       },
       formItemLayout: {
@@ -137,11 +115,6 @@ export default {
       return params
     },
   },
-  provide () {
-    return {
-      form: this.form,
-    }
-  },
   methods: {
     doCreate (data) {
       return new this.$Manager('globalvpcs').create({ data })
@@ -152,7 +125,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = this.form
         const params = {
           name: values.name,
           description: values.description,

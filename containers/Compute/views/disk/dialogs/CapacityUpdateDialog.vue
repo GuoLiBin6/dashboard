@@ -7,7 +7,6 @@
           <div>
             <p>{{$t('compute.text_403')}}</p>
             <p>{{$t('compute.text_404')}}<span v-show="listData.length > 1">{{$t('compute.text_407_1')}}</span></p>
-            <!-- <p v-show="params.data[0].provider === 'Aliyun'">{{$t('compute.text_405')}}</p> -->
             <p v-show="params.data[0].provider === 'Aws'">{{$t('compute.text_406')}}</p>
             <p v-show="!params.data[0].provider">{{$t('compute.text_407')}}</p>
           </div>
@@ -16,17 +15,21 @@
       <dialog-selected-tips :count="params.data.length" :action="$t('compute.disk_perform_resize')" :name="$t('dictionary.disk')" />
       <div class="d-flex mt-1 mb-2" v-if="listData.length > 1">
         <span style="width: 100px;">{{$t('compute.resize_same_capacity')}}:</span>
-        <a-switch v-model:value="showSingleForm" />
+        <a-switch v-model:checked="showSingleForm" />
       </div>
       <dialog-table :data="listData" :columns="columns" :vxe-grid-props="vxeGridProps" />
-      <a-form
+      <a-form-model
         v-if="listData.length === 1 || showSingleForm"
-        :form="form.fc">
-        <a-form-item class="d-flex">
-          <span slot="label" style="width: 100px;">{{$t('compute.text_397')}}</span>
-          <a-input-number class="ml-2" :min="(params.data[0].disk_size / 1024) || 1" :max="100000" step="10" v-decorator="decorators.size" /> GB
-        </a-form-item>
-      </a-form>
+        ref="formRef"
+        :model="form"
+        :rules="rules">
+        <a-form-model-item class="d-flex" prop="size">
+          <template #label>
+            <span style="width: 100px;">{{$t('compute.text_397')}}</span>
+          </template>
+          <a-input-number class="ml-2" :min="(params.data[0].disk_size / 1024) || 1" :max="100000" step="10" v-model:value="form.size" /> GB
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -49,7 +52,12 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        size: Math.max(...diskSizes) / 1024,
+      },
+      rules: {
+        size: [
+          { required: true, message: this.$t('compute.text_408') },
+        ],
       },
       listData: R.clone(this.params.data).map(item => ({ ...item, size: item.disk_size / 1024 })),
       vxeGridProps: {
@@ -59,17 +67,6 @@ export default {
           showIcon: false,
           showStatus: true,
         },
-      },
-      decorators: {
-        size: [
-          'size',
-          {
-            initialValue: Math.max(...diskSizes) / 1024,
-            rules: [
-              { required: true, message: this.$t('compute.text_408') },
-            ],
-          },
-        ],
       },
       formItemLayout: {
         wrapperCol: {
@@ -114,17 +111,6 @@ export default {
     },
   },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     doCreate (data) {
       return new this.$Manager('disks').performAction({
         id: data.id,
@@ -134,7 +120,6 @@ export default {
         },
       })
     },
-    // 对于已经挂载了虚拟机的磁盘扩容
     doCreate2 (data) {
       return new this.$Manager('servers').performAction({
         id: data.guests[0].id,
@@ -150,16 +135,15 @@ export default {
       try {
         const listData = R.clone(this.listData)
         if (listData.length === 1 || this.showSingleForm) {
-          const values = await this.validateForm()
+          await this.$refs.formRef.validate()
           listData.forEach(item => {
-            item.value_size = values.size * 1024
+            item.value_size = this.form.size * 1024
           })
         } else {
           listData.forEach(item => {
             item.value_size = Math.max(parseInt(item.size + ''), item.disk_size / 1024) * 1024
           })
         }
-        this.loading = true
         for (let i = 0; i < listData.length; i++) {
           const item = listData[i]
           if (item.guest_count && item.guest_count >= 1) {
@@ -168,10 +152,11 @@ export default {
             await this.doCreate(item)
           }
         }
-        this.loading = false
         this.params.refresh()
         this.cancelDialog()
       } catch (error) {
+        // validate / resize failed
+      } finally {
         this.loading = false
       }
     },

@@ -82,7 +82,15 @@ export default {
       return attrs
     },
     otherListeners () {
-      const { input, change, ...rest } = this.$listeners
+      const src = (this.$listeners && Object.keys(this.$listeners).length)
+        ? this.$listeners
+        : Object.keys(this.$attrs || {}).reduce((acc, key) => {
+          if (!key.startsWith('on') || key.length < 3) return acc
+          const raw = key.slice(2)
+          acc[raw.charAt(0).toLowerCase() + raw.slice(1)] = this.$attrs[key]
+          return acc
+        }, {})
+      const { input, change, ...rest } = src
       return rest
     },
     mergedSelectProps () {

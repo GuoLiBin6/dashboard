@@ -3,8 +3,19 @@ import i18n from '@/locales'
 
 export default {
   name: 'NetworkSelects',
-  inject: ['form'],
+  inject: {
+    form: { default: undefined },
+  },
   props: {
+    /**
+     * a-form-model：父级 form 对象，读写 vpc / network（必传）。
+     * 用法：<network-selects :model="form.fd" />
+     * 或 import NetworkSelects from '@/sections/NetworkSelects/model'
+     */
+    model: {
+      type: Object,
+      required: true,
+    },
     disabled: {
       type: [Boolean, Array],
       default: false,
@@ -31,9 +42,6 @@ export default {
       default: () => {
         return ['vpc', 'network']
       },
-    },
-    decorators: {
-      type: Object,
     },
     form: {
       type: Object,
@@ -82,6 +90,11 @@ export default {
     },
   },
   created () {
+    this.types.forEach((name) => {
+      if (this.model[name] === undefined) {
+        this.$set(this.model, name, undefined)
+      }
+    })
     if (this.isDefaultFetch) {
       this.fetchs()
     }
@@ -95,12 +108,7 @@ export default {
     }
   },
   computed: {
-    FC () {
-      if (this.form && this.form.fc) {
-        return this.form.fc
-      }
-      return this.$form.createForm(this)
-    },
+
     colSpan () {
       return 24 / this.types.length
     },
@@ -116,19 +124,50 @@ export default {
     },
   },
   methods: {
+
+    getModelField (name) {
+      return this.model[name]
+    },
+    getModelFields (names) {
+      if (Array.isArray(names) && names.length) {
+        const picked = {}
+        names.forEach((name) => { picked[name] = this.model[name] })
+        return picked
+      }
+      return { ...this.model }
+    },
+    setModelFields (vals, callback) {
+      if (!vals || typeof vals !== 'object') return
+      Object.keys(vals).forEach((key) => {
+        this.$set(this.model, key, vals[key])
+      })
+      if (typeof callback === 'function') {
+        this.$nextTick(callback)
+      }
+    },
+
+    validateModelFields () {
+      return Promise.resolve({ ...this.model })
+    },
     firstName (name) {
       return name.replace(/^\S/, s => s.toUpperCase())
     },
     filterOption (input, option) {
-      const subChild = option.componentOptions.children[0]
-      if (subChild.text) {
+      const subChild = option.componentOptions && option.componentOptions.children && option.componentOptions.children[0]
+      if (subChild && subChild.text) {
         return (
           subChild.text.toLowerCase().indexOf(input.toLowerCase()) >= 0
         )
       }
-      if (subChild.children[0]) {
+      if (subChild && subChild.children && subChild.children[0]) {
         return subChild.children[0].data.attrs.title.toLowerCase().indexOf(input.toLowerCase()) >= 0
       }
+      // antdv4 option shape
+      const label = option && (option.label != null ? option.label : option.value)
+      if (label != null) {
+        return String(label).toLowerCase().indexOf(String(input || '').toLowerCase()) >= 0
+      }
+      return true
     },
     async fetchs (callback) {
       if (this.types.indexOf('vpc') > -1) {
@@ -172,7 +211,7 @@ export default {
           this.vpcList = data.data || []
         }
         if (this.defaultActiveFirstOption) {
-          const prefer = this.FC.getFieldValue('vpc')
+          const prefer = this.getModelField('vpc')
           const hit = prefer && this.vpcList.some(item => item.id === prefer)
           // 列表空：不写；有 prefer 但不在列表 → 回退首项（不保留非法值）
           let next
@@ -183,7 +222,7 @@ export default {
           } else {
             next = this.vpcList[0].id
           }
-          this.FC.setFieldsValue({ vpc: next }, this.fetchNetwork)
+          this.setModelFields({ vpc: next }, this.fetchNetwork)
         }
       } catch (err) {
         throw err
@@ -200,6 +239,7 @@ export default {
     RenderVpc () {
       const { vpcLoading, filterOption, disabled } = this
       const _handleChange = (vpcId) => {
+        this.$set(this.model, 'vpc', vpcId)
         const data = this.getSelectedValue('vpc', vpcId)
         this.$emit('vpcChange', data)
         this.$nextTick(() => {
@@ -217,7 +257,14 @@ export default {
         ])
       }
       return h('a-select', {
-        props: { disabled, showSearch: true, placeholder: i18n.t('common_226'), loading: vpcLoading, filterOption },
+        props: {
+          disabled,
+          showSearch: true,
+          placeholder: i18n.t('common_226'),
+          loading: vpcLoading,
+          filterOption,
+          value: this.model.vpc,
+        },
         on: { change: _handleChange },
       }, [
         renderStatusDesc(),
@@ -225,7 +272,7 @@ export default {
       ])
     },
     async getNetworkParams () {
-      const vpc = this.FC.getFieldValue('vpc')
+      const vpc = this.getModelField('vpc')
       const _default = {
         vpc,
         limit: 0,
@@ -258,7 +305,7 @@ export default {
           this.networkList = (data.data || [])
         }
         if (this.defaultActiveFirstOption) {
-          const prefer = this.FC.getFieldValue('network')
+          const prefer = this.getModelField('network')
           const hit = prefer && this.networkList.some(item => item.id === prefer)
           let next
           if (R.isEmpty(this.networkList)) {
@@ -268,11 +315,11 @@ export default {
           } else {
             next = this.networkList[0].id
           }
-          this.FC.setFieldsValue({ network: next })
+          this.setModelFields({ network: next })
         }
       } catch (err) {
         this.networkList = []
-        this.FC.setFieldsValue({
+        this.setModelFields({
           network: undefined,
         })
         throw err
@@ -289,6 +336,7 @@ export default {
     RenderNetwork () {
       const { networkLoading, filterOption, disabled } = this
       const _handleChange = (networkId) => {
+        this.$set(this.model, 'network', networkId)
         const data = this.getSelectedValue('network', networkId)
         this.$emit('networkChange', data)
       }
@@ -306,41 +354,34 @@ export default {
       })
       return h('a-select', {
         style: { width: 'calc(100% - 22px)' },
-        props: { disabled, showSearch: true, placeholder: i18n.t('common_227'), loading: networkLoading, filterOption },
+        props: {
+          disabled,
+          showSearch: true,
+          placeholder: i18n.t('common_227'),
+          loading: networkLoading,
+          filterOption,
+          value: this.model.network,
+        },
         on: { change: _handleChange },
       }, options)
     },
   },
   render () {
     const h = this.$createElement
-    const { getFieldDecorator } = this.FC
     const RenderCols = this.types.map(name => {
       const sn = this.firstName(name)
-      const decorator = this.decorators && this.decorators[name]
-      let _options = {}
-      if (decorator) {
-        const [, options] = decorator
-        _options = options || {}
-      }
-      if (this.isRequired && R.isEmpty(_options)) {
-        _options.rules = []
-        _options.rules.push({
-          required: true,
-          message: this.placeholders[name],
-        })
-      }
       if (this[`Render${sn}`]) {
         const Render = this[`Render${sn}`]()
         return h('a-col', { props: { span: name === 'network' ? this.colSpan - 1 : this.colSpan } }, [
-          h('a-form-item', { props: { wrapperCol: { span: 24 } } }, [
-            getFieldDecorator(name, _options)(Render),
+          h('a-form-model-item', { props: { wrapperCol: { span: 24 }, prop: name } }, [
+            Render,
             h('div', { slot: 'extra', key: name }, name === 'network' ? this.$slots.helplink : null),
           ]),
         ])
       }
       return null
     })
-    return h('a-form-item', {
+    return h('a-form-model-item', {
       props: { required: this.isRequired, labelCol: this.labelCol, wrapperCol: this.wrapperCol, label: this.label },
     }, [
       h('a-row', { props: { gutter: 8 } }, [

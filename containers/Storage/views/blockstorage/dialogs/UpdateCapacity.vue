@@ -4,15 +4,15 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="this.params.title" :name="$t('dictionary.blockstorage')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" v-bind="formItemLayout">
-       <a-form-item :label="$t('storage.text_59')">
-          <a-input style="width: 150px" name="capacity" v-decorator="decorators.capacity" @blur="handelBlur">
+      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout">
+       <a-form-model-item :label="$t('storage.text_59')" prop="capacity">
+          <a-input style="width: 150px" name="capacity" v-model:value="form.capacity" @blur="handelBlur">
             <span slot="addonAfter">
               GB
             </span>
           </a-input>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
@@ -30,51 +30,29 @@ export default {
   name: 'BlockStorageUpdateCapacityDialog',
   mixins: [DialogMixin, WindowsMixin],
   data () {
+    const { data = [] } = this.params
+    const initCapacity = data.length > 0 ? Math.round(parseFloat(data[0].capacity / 1024)) : 0
     return {
       loading: false,
       formItemLayout,
       form: {
-        fc: this.$form.createForm(this),
+        capacity: initCapacity,
       },
+      initCapacity,
     }
-  },
-  provide () {
-    return {
-      form: this.form,
-    }
-  },
-  computed: {
-    initCapacity () {
-      const { data = [] } = this.params
-      if (data.length > 0) {
-        return Math.round(parseFloat(data[0].capacity / 1024))
-      }
-      return 0
-    },
-    decorators () {
-      return {
-        capacity: [
-          'capacity',
-          {
-            initialValue: this.initCapacity,
-          },
-        ],
-      }
-    },
   },
   methods: {
     handelBlur ({ target }) {
-      const { value, name } = target
+      const { value } = target
       if (!/^\d+$/.test(value)) {
-        this.form.fc.setFieldsValue({
-          [name]: this.initCapacity,
-        })
+        this.form.capacity = this.initCapacity
       }
     },
     async handleConfirm () {
       this.loading = true
       try {
-        const { capacity } = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const { capacity } = this.form
         const manager = new this.$Manager('storages', 'v2')
         await manager.update({
           id: this.params.data[0].id,

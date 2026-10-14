@@ -7,18 +7,11 @@
       </a-alert> -->
       <dialog-selected-tips :count="params.data.length" :name="$t('dictionary.disk')" :action="this.params.title" />
       <dialog-table v-if="params.columns && params.columns.length" :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc" v-show="isShowAutoDelete">
-        <!-- <a-form-item :label="$t('compute.text_420')" v-bind="formItemLayout">
-          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-decorator="decorators.autoDelete" @change="autoDeleteChangeHandle" />
-        </a-form-item>
-        <a-form-item v-if="!form.fd.autoDelete" v-bind="formItemLayoutWithoutLabel">
-          {{ $t('compute.text_1310', [snapshot.list.length]) }}
-        </a-form-item> -->
+      <a-form-model v-show="isShowAutoDelete" :model="form.fd">
         <!-- 快照 -->
-        <a-form-item v-if="deleteSnapshotLimit.show" class="mb-0">
+        <a-form-model-item v-if="deleteSnapshotLimit.show" class="mb-0">
           <a-tooltip>
-            <template v-if="deleteSnapshotLimit.mustDelete" slot="title">
+            <template v-if="deleteSnapshotLimit.mustDelete" #title>
               {{deleteSnapshotLimit.tip}}
             </template>
             <a-checkbox
@@ -28,8 +21,8 @@
               {{$t('compute.text_420')}}
             </a-checkbox>
           </a-tooltip>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
       <!-- <dialog-table v-if="form.fd.autoDelete" :data="snapshot.list" :columns="snapshot.columns" /> -->
     </div>
     <div slot="footer">
@@ -69,26 +62,10 @@ export default {
       loading: false,
       snapshotList: [],
       form: {
-        fc: this.$form.createForm(this),
         fd: {
           autoDelete: false,
           deleteSnapshot: false,
         },
-      },
-      decorators: {
-        autoDelete: [
-          'autoDelete',
-          {
-            valuePropName: 'checked',
-            initialValue: false,
-          },
-        ],
-        deleteSnapshot: [
-          'deleteSnapshot',
-          {
-            valuePropName: 'checked',
-          },
-        ],
       },
       formItemLayout: {
         wrapperCol: {

@@ -6,7 +6,7 @@
          <h2>{{$t('common_120', [companyInfo.name])}}</h2>
          <p v-if="updateInfo.current_version">{{$t('common_121', [updateInfo.current_version])}}</p>
       </div>
-      <a-form class="form" label-align="right" :form="form.fc" v-bind="formItemLayout">
+      <a-form class="form" label-align="right" v-bind="formItemLayout">
         <a-form-item v-if="allSn && allSn.length > 0" :label="$t('common_122')">
           <div>
             <div class="flex-fill d-flex all-sn align-items-end">
@@ -83,18 +83,13 @@ export default {
           offset: 7,
         },
       },
-      form: {
-        fc: this.$form.createForm(this),
-      },
     }
   },
   computed: {
     headers () {
       return { Authorization: `Bearer ${this.$store.getters.userInfo.session}` }
     },
-    ...mapGetters([
-      'logo',
-    ]),
+    ...mapGetters({ name: 'logo' }),
     ...mapState('app', {
       companyInfo: state => state.companyInfo,
     }),

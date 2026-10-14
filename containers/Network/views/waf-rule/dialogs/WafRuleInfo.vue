@@ -83,18 +83,6 @@ export default {
     return {
       loading: false,
       title: initTitle,
-      form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-          },
-        }),
-        fd: {
-          applicationScope: 1,
-        },
-      },
       ruleInfoForm: {
         name: '',
         priority: 0,

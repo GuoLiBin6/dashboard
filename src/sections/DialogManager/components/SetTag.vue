@@ -121,18 +121,18 @@
             v-if="!showForm"
             @click="() => showForm = true">{{$t('common_111')}}</a-button>
         </div>
-        <a-form class="ml-2 tag-create-form" layout="inline" :form="form.fc" v-if="showForm">
-          <a-form-item class="mb-0">
-            <a-input v-decorator="decorators.key" :placeholder="$t('common_112')" />
-          </a-form-item>
-          <a-form-item class="mb-0">
-            <a-input v-decorator="decorators.value" :placeholder="$t('common_113')" />
-          </a-form-item>
-          <a-form-item class="mb-0">
+        <a-form-model ref="tagFormRef" class="ml-2 tag-create-form" layout="inline" :model="tagForm" :rules="tagRules" v-if="showForm">
+          <a-form-model-item class="mb-0" prop="key">
+            <a-input v-model:value="tagForm.key" :placeholder="$t('common_112')" />
+          </a-form-model-item>
+          <a-form-model-item class="mb-0" prop="value">
+            <a-input v-model:value="tagForm.value" :placeholder="$t('common_113')" />
+          </a-form-model-item>
+          <a-form-model-item class="mb-0">
             <a-button @click="addTag">{{$t('common_114')}}</a-button>
             <a-button @click="() => showForm = false" class="ml-2">{{$t('common_115')}}</a-button>
-          </a-form-item>
-        </a-form>
+          </a-form-model-item>
+        </a-form-model>
       </div>
     </template>
     <template #footer>
@@ -185,25 +185,16 @@ export default {
     }
     return {
       loading: false,
-      form: {
-        fc: this.$form.createForm(this),
+      tagForm: {
+        key: '',
+        value: '',
       },
-      decorators: {
+      tagRules: {
         key: [
-          'key',
-          {
-            rules: [
-              { required: true, whitespace: true, message: this.$t('common_116') },
-            ],
-          },
+          { required: true, whitespace: true, message: this.$t('common_116') },
         ],
         value: [
-          'value',
-          {
-            rules: [
-              { required: true, whitespace: true, message: this.$t('common.tips.input', [this.$t('common_113')]) },
-            ],
-          },
+          { required: true, whitespace: true, message: this.$t('common.tips.input', [this.$t('common_113')]) },
         ],
       },
       extTags,
@@ -249,7 +240,8 @@ export default {
   methods: {
     async addTag () {
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.tagFormRef.validate()
+        const values = { ...this.tagForm }
         const key = `user:${values.key}`
         const newValue = { ...this.checked }
         const newCheckedInfo = { ...this.checkedInfo }
@@ -289,7 +281,9 @@ export default {
         }
         this.checked = newValue
         this.checkedInfo = newCheckedInfo
-        this.form.fc.resetFields()
+        this.tagForm.key = ''
+        this.tagForm.value = ''
+        this.$refs.tagFormRef.clearValidate()
       } catch (error) {
         throw error
       }

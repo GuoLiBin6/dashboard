@@ -2,17 +2,19 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('compute.text_991')}}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('compute.text_990')" v-bind="formItemLayout">
-          <a-radio-group v-decorator="decorators.direction" @change="decoratorsChange">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules">
+        <a-form-model-item :label="$t('compute.text_990')" v-bind="formItemLayout" prop="direction">
+          <a-radio-group v-model:value="form.direction" @change="directionChange">
             <a-radio value="in">{{$t('compute.text_993')}}</a-radio>
             <a-radio value="out">{{$t('compute.text_994')}}</a-radio>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_175')" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_175')" v-bind="formItemLayout" prop="type">
           <a-select
-            v-decorator="decorators.type"
+            v-model:value="form.type"
             :disabled="typeDisabled"
             :placeholder="$t('compute.text_219')"
             @change="typeChange">
@@ -20,47 +22,47 @@
               {{item.label}}
             </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item v-bind="formItemLayout" prop="cidr">
           <span slot="label">
             {{decLabel}}&nbsp;
             <a-tooltip :title="$t('compute.secgroup.secrule.source.prompt')">
               <icon type="question-circle" />
             </a-tooltip>
           </span>
-          <a-input :disabled="IPCheckboxDisabled" v-decorator="decorators.cidr" :placeholder="$t('compute.text_996')" />
+          <a-input :disabled="IPCheckboxDisabled" v-model:value="form.cidr" :placeholder="$t('compute.text_996')" />
           <a-checkbox class="right-checkbox" @change="cidrChange">{{$t('compute.text_997')}}</a-checkbox>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_980')" v-bind="formItemLayout">
-          <a-select v-decorator="decorators.protocol" @change="protocolChange" :disabled="protocolDisabled">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_980')" v-bind="formItemLayout" prop="protocol">
+          <a-select v-model:value="form.protocol" @change="protocolChange" :disabled="protocolDisabled">
             <a-select-option v-for="item in protocolOptions" :key="item.value" :value="item.value">
               {{item.label}}
             </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item v-bind="formItemLayout" prop="ports">
           <span slot="label">{{$t('compute.text_998')}}<a-tooltip :title="$t('compute.text_999')">
               <icon type="question-circle" />
             </a-tooltip>
           </span>
-          <a-input :disabled="portsDisabled" v-decorator="decorators.ports" :placeholder="$t('compute.text_350')" />
+          <a-input :disabled="portsDisabled" v-model:value="form.ports" :placeholder="$t('compute.text_350')" />
           <a-checkbox class="right-checkbox" @change="portsChange" :checked="portsChecked" :disabled="portsCheckboxDisabled">{{$t('compute.text_1000')}}</a-checkbox>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_694')" v-bind="formItemLayout">
-          <a-select v-decorator="decorators.action">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_694')" v-bind="formItemLayout" prop="action">
+          <a-select v-model:value="form.action">
             <a-select-option v-for="item in actionOptions" :key="item.value" :value="item.value">
               {{item.label}}
             </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item v-bind="formItemLayout" prop="priority">
           <span slot="label">{{$t('compute.text_1001')}}<a-tooltip :title="$t('compute.text_1002')">
               <icon type="question-circle" />
             </a-tooltip>
           </span>
-          <a-input-number :min="1" :max="100" v-decorator="decorators.priority" />
-        </a-form-item>
-      </a-form>
+          <a-input-number :min="1" :max="100" v-model:value="form.priority" />
+        </a-form-model-item>
+      </a-form-model>
       <dialog-selected-tips :name="$t('dictionary.secgroup')" :count="params.data.length" :action="$t('compute.text_991')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
     </div>
@@ -83,57 +85,25 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        direction: 'in',
+        type: undefined,
+        cidr: undefined,
+        protocol: 'tcp',
+        ports: undefined,
+        action: 'allow',
+        priority: 1,
       },
-      decorators: {
-        direction: [
-          'direction',
-          {
-            initialValue: 'in',
-          },
-        ],
-        type: [
-          'type',
-        ],
+      rules: {
         cidr: [
-          'cidr',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_996') },
-              { validator: this.$validate(['cidr', 'IPv4', 'cidr6', 'IPv6'], true, 'some') },
-            ],
-          },
-        ],
-        protocol: [
-          'protocol',
-          {
-            initialValue: 'tcp',
-          },
+          { required: true, message: this.$t('compute.text_996') },
+          { validator: this.$validate(['cidr', 'IPv4', 'cidr6', 'IPv6'], true, 'some') },
         ],
         ports: [
-          'ports',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.text_347') },
-              { validator: this.validatePorts },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_347') },
+          { validator: this.validatePorts },
         ],
         action: [
-          'action',
-          {
-            initialValue: 'allow',
-            rules: [
-              { required: true },
-            ],
-          },
-        ],
-        priority: [
-          'priority',
-          {
-            initialValue: 1,
-          },
+          { required: true },
         ],
       },
       formItemLayout: {
@@ -199,31 +169,32 @@ export default {
     },
     typeChange (e) {
       if (e === 'windows') {
-        this.form.fc.setFieldsValue({ ports: '3389' })
+        this.form.ports = '3389'
         this.portsChecked = false
         this.portsDisabled = true
         this.portsCheckboxDisabled = true
         this.protocolDisabled = true
       } else if (e === 'linux') {
-        this.form.fc.setFieldsValue({ ports: '22' })
+        this.form.ports = '22'
         this.portsChecked = false
         this.portsDisabled = true
         this.portsCheckboxDisabled = true
         this.protocolDisabled = true
       } else if (e === 'http') {
-        this.form.fc.setFieldsValue({ ports: '80' })
+        this.form.ports = '80'
         this.portsChecked = false
         this.portsDisabled = true
         this.portsCheckboxDisabled = true
         this.protocolDisabled = true
       } else if (e === 'https') {
-        this.form.fc.setFieldsValue({ ports: '443' })
+        this.form.ports = '443'
         this.portsChecked = false
         this.portsDisabled = true
         this.portsCheckboxDisabled = true
         this.protocolDisabled = true
       } else if (e === 'ping') {
-        this.form.fc.setFieldsValue({ ports: 'ALL', protocol: 'icmp' })
+        this.form.ports = 'ALL'
+        this.form.protocol = 'icmp'
         this.portsChecked = true
         this.portsDisabled = true
         this.portsCheckboxDisabled = true
@@ -231,7 +202,7 @@ export default {
       } else {
         this.portsChecked = false
         this.portsDisabled = false
-        this.form.fc.resetFields(['ports'])
+        this.form.ports = undefined
         this.portsCheckboxDisabled = false
         this.protocolDisabled = false
       }
@@ -240,15 +211,15 @@ export default {
       if (e === 'icmp') {
         this.portsChecked = true
         this.portsDisabled = true
-        this.form.fc.setFieldsValue({ ports: 'ALL' })
+        this.form.ports = 'ALL'
         this.portsCheckboxDisabled = true
       } else {
         this.portsCheckboxDisabled = false
       }
       if (e === 'any') {
         this.portsChecked = true
-        this.form.fc.setFieldsValue({ ports: 'ALL' })
-        this.form.fc.setFieldsValue({ type: 'custom' })
+        this.form.ports = 'ALL'
+        this.form.type = 'custom'
         this.portsCheckboxDisabled = true
         this.portsDisabled = true
         this.typeDisabled = true
@@ -257,29 +228,37 @@ export default {
         this.typeDisabled = false
       }
     },
-    decoratorsChange (e) {
+    directionChange (e) {
       if (e.target.value === 'out') {
         this.decLabel = this.$t('compute.text_978')
       } else {
         this.decLabel = this.$t('compute.text_979')
       }
-      this.form.fc.resetFields()
+      this.form = {
+        ...this.form,
+        type: undefined,
+        cidr: undefined,
+        protocol: 'tcp',
+        ports: undefined,
+        action: 'allow',
+        priority: 1,
+      }
     },
     cidrChange (e) {
       this.IPCheckboxDisabled = !this.IPCheckboxDisabled
       if (e.target.checked) {
-        this.form.fc.setFieldsValue({ cidr: '0.0.0.0/0' })
+        this.form.cidr = '0.0.0.0/0'
       } else {
-        this.form.fc.resetFields(['cidr'])
+        this.form.cidr = undefined
       }
     },
     portsChange (e) {
       this.portsChecked = !this.portsChecked
       this.portsDisabled = !this.portsDisabled
       if (e.target.checked) {
-        this.form.fc.setFieldsValue({ ports: 'ALL' })
+        this.form.ports = 'ALL'
       } else {
-        this.form.fc.resetFields(['ports'])
+        this.form.ports = undefined
       }
     },
     doAdd (data) {
@@ -293,7 +272,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         if (values.ports === 'ALL') {
           values.ports = ''
         }
@@ -305,7 +285,6 @@ export default {
         })
         values.description = description
         await this.doAdd(values)
-        this.loading = false
         this.params.refresh()
         this.cancelDialog()
       } finally {

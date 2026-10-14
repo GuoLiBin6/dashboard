@@ -35,11 +35,17 @@ export default {
       dbList: [],
       dbIdItemObj: {},
       propsPrivileges: {},
+      privilegeById: {},
     }
   },
   created () {
+    if (!this.form.fd) {
+      this.form.fd = {}
+    }
+    if (this.form.fd.privileges === undefined) {
+      this.$set(this.form.fd, 'privileges', [])
+    }
     this.fetchQueryDBList()
-    this.form.fc.getFieldDecorator('privileges', { preserve: true })
     if (this.privileges && this.privileges.length > 0) {
       this.privileges.forEach(item => {
         this.propsPrivileges[item.dbinstancedatabase_id] = item
@@ -81,20 +87,23 @@ export default {
     },
     renderItemRadions (item) {
       const { id } = item
-      const { getFieldDecorator } = this.form.fc
+      const initialValue = (item.privileges === 'rw' || item.privileges === 'r') ? item.privileges : 'rw'
+      if (this.privilegeById[id] === undefined) {
+        this.$set(this.privilegeById, id, initialValue)
+      }
       const renderRadios = ['rw', 'r'].map(v => {
         return h('a-radio', { value: v }, { default: () => RDS_ACCOUNT_PRIVILEGES[v] })
       })
-      const _handleChange = () => {
-        this.$nextTick(() => {
-          this.setPrivileges()
-        })
-      }
-      const initialValue = (item.privileges === 'rw' || item.privileges === 'r') ? item.privileges : 'rw'
-      const radioGroupVNode = getFieldDecorator(id, { initialValue })(
-        h('a-radio-group', { onChange: _handleChange }, { default: () => renderRadios }),
-      )
-      return h('a-form-item', { class: 'radios' }, { default: () => [radioGroupVNode] })
+      const radioGroupVNode = h('a-radio-group', {
+        value: this.privilegeById[id],
+        onChange: (e) => {
+          this.$set(this.privilegeById, id, e.target.value)
+          this.$nextTick(() => {
+            this.setPrivileges()
+          })
+        },
+      }, { default: () => renderRadios })
+      return h('div', { class: 'radios' }, [radioGroupVNode])
     },
     renderItem (item) {
       const customLabel = h('span', { class: 'custom-item' }, [
@@ -109,14 +118,11 @@ export default {
       }
     },
     setPrivileges () {
-      const values = this.form.fc.getFieldsValue()
-      this.form.fc.setFieldsValue({
-        privileges: this.targetKeys.map(id => {
-          return {
-            database: this.dbIdItemObj[id].name,
-            privilege: values[id] || this.dbIdItemObj[id].name,
-          }
-        }),
+      this.form.fd.privileges = this.targetKeys.map(id => {
+        return {
+          database: this.dbIdItemObj[id].name,
+          privilege: this.privilegeById[id] || 'rw',
+        }
       })
     },
     handleChange (targetKeys) {

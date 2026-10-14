@@ -4,21 +4,23 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('cloudenv.text_431')" class="mt-3" :count="params.data.length" :action="title" />
       <dialog-table v-if="params.columns && params.columns.length" :data="params.data" :columns="columns" />
-      <a-form
-        :form="form.fc"
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
         v-bind="formItemLayout"
         hideRequiredMark>
-        <a-form-item :label="$t('cloudenv.text_440')" v-if="isServer">
+        <a-form-model-item v-if="isServer" :label="$t('cloudenv.text_440')" prop="servers">
           <list-select
-            v-decorator="decorators.servers"
+            v-model:value="form.servers"
             :list-props="resourceProps"
             :multiple="true"
             :formatter="formatter" />
-        </a-form-item>
-        <a-form-item :label="$t('cloudenv.text_16')" class="mb-0" v-if="isTag">
-          <tag v-decorator="decorators.tag" :extra="$t('cloudenv.text_441')" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+        <a-form-model-item v-if="isTag" :label="$t('cloudenv.text_16')" class="mb-0" prop="tag">
+          <tag :value="form.tag" @change="v => form.tag = v" :extra="$t('cloudenv.text_441')" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
@@ -55,25 +57,13 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-        fd: {},
+        servers: labels,
+        tag: getInitTags(labels),
       },
-      decorators: {
-        servers: [
-          'servers',
-          {
-            initialValue: labels,
-          },
-        ],
+      rules: {
         tag: [
-          'tag',
-          {
-            initialValue: getInitTags(labels),
-            rules: [
-              { required: true, message: this.$t('cloudenv.text_451') },
-              { validator: validateForm('tagName') },
-            ],
-          },
+          { required: true, message: this.$t('cloudenv.text_451') },
+          { validator: validateForm('tagName') },
         ],
       },
       formItemLayout: {
@@ -106,17 +96,17 @@ export default {
       this.loading = true
       const manager = new this.$Manager('scheduledtasks', 'v1')
       try {
-        const values = await this.form.fc.validateFields()
-        const ids = this.params.data.map(item => item.id)
+        await this.$refs.formRef.validate()
         const params = {}
         if (this.isServer) {
-          params.labels = values.servers
+          params.labels = this.form.servers
         } else if (this.isTag) {
-          const tags = Object.keys(values.tag).map((k) => {
-            return `${k}:${values.tag[k]}`
+          const tags = Object.keys(this.form.tag).map((k) => {
+            return `${k}:${this.form.tag[k]}`
           })
           params.labels = tags
         }
+        const ids = this.params.data.map(item => item.id)
         const res = await manager.performAction({
           id: ids[0],
           action: 'set-labels',

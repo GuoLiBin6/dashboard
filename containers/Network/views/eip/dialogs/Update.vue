@@ -4,16 +4,17 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.eip')" :count="params.data.length" :action="$t('network.text_220')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('network.text_195')" v-bind="formItemLayout">
-          <a-input-number v-if="isOneCloud" style="width: 120px" :precision="0" :min="1" v-decorator="decorators.bandwidth" />
+      <a-form-model
+        ref="formRef"
+        :model="form">
+        <a-form-model-item :label="$t('network.text_195')" v-bind="formItemLayout" prop="bandwidth">
+          <a-input-number v-if="isOneCloud" style="width: 120px" :precision="0" :min="1" v-model:value="form.bandwidth" />
           <a-tooltip v-else placement="top" :title="$t('network.eip.text_725', [maxBandwidth])">
-            <a-input-number style="width: 120px" :precision="0" :min="1" :max="200" v-decorator="decorators.bandwidth" />
+            <a-input-number style="width: 120px" :precision="0" :min="1" :max="200" v-model:value="form.bandwidth" />
           </a-tooltip>
           <span class="ml-2">Mbps</span>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -33,15 +34,7 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        bandwidth: [
-          'bandwidth',
-          {
-            initialValue: this.params.data[0].bandwidth || 30,
-          },
-        ],
+        bandwidth: this.params.data[0].bandwidth || 30,
       },
       formItemLayout: {
         wrapperCol: {
@@ -83,9 +76,9 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        let values = await this.form.fc.validateFields()
-        values = {
-          ...values,
+        await this.$refs.formRef.validate()
+        const values = {
+          ...this.form,
           id: this.params.data[0].id,
         }
         await this.doUpdate(values)

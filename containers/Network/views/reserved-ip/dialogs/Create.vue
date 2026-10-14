@@ -2,9 +2,12 @@
   <base-dialog @cancel="cancelDialog">
     <template #header>{{$t('network.text_26')}}</template>
     <template #body>
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('network.text_211')" v-bind="formItemLayout">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('network.text_211')" prop="network">
           <template v-if="hasNetwork">
             <div>
               <span>{{ networkDesc }}</span>
@@ -13,27 +16,27 @@
           </template>
           <template v-else>
             <base-select
+              v-model:value="form.network"
               :remote="true"
               needParams
-              v-decorator="decorators.network"
               resource="networks"
               :params="networkParams"
               :remote-fn="q => ({ filter: `name.contains(${q})` })"
               :select-props="{ placeholder: $t('network.text_212') }" />
           </template>
-        </a-form-item>
-        <a-form-item :label="$t('network.text_213')" v-bind="formItemLayout" required>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_213')" required>
           <ip-address
-            :decorators="decorators"
-            :form="form.fc" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_641')" v-bind="formItemLayout">
+            :model="form"
+            :checkIp="checkIp" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_641')" prop="notes">
           <a-textarea
+            v-model:value="form.notes"
             :placeholder="$t('network.text_643')"
-            v-decorator="decorators.notes"
             :autosize="{ minRows: 2, maxRows: 6 }" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </template>
     <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -45,7 +48,6 @@
 <script>
 import * as R from 'ramda'
 import { mapGetters } from 'vuex'
-import { validate } from '@/utils/validate'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import IpAddress from '../components/IpAddress'
@@ -60,42 +62,9 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        network: [
-          'network',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_212') },
-            ],
-          },
-        ],
-        networkConfig: {
-          ips: (i, networkData) => [
-            `networkIps[${i}]`,
-            {
-              validateFirst: true,
-              validateTrigger: ['change'],
-              rules: [{
-                required: true,
-                message: this.$t('network.text_217'),
-              }, {
-                validator: this.IPValidator,
-              }, {
-                validator: this.checkIp(i),
-              }],
-            },
-          ],
-        },
-        notes: [
-          'notes',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_643') },
-            ],
-          },
-        ],
+        network: undefined,
+        notes: undefined,
+        networkIps: {},
       },
       formItemLayout: {
         wrapperCol: {
@@ -109,6 +78,19 @@ export default {
   },
   computed: {
     ...mapGetters(['isAdminMode', 'scope', 'userInfo']),
+    rules () {
+      const rules = {
+        notes: [
+          { required: true, message: this.$t('network.text_643') },
+        ],
+      }
+      if (!this.hasNetwork) {
+        rules.network = [
+          { required: true, message: this.$t('network.text_212') },
+        ]
+      }
+      return rules
+    },
     networkParams () {
       return {
         scope: this.$store.getters.scope,
@@ -131,15 +113,9 @@ export default {
     },
   },
   methods: {
-    IPValidator (rule, value, callback) {
-      if ((validate(value, 'IPv4') === false || validate(value, 'IPv4').result === false) && (validate(value, 'IPv6') === false || validate(value, 'IPv6').result === false)) {
-        callback(new Error(this.$t('network.text_301')))
-      } else {
-        callback()
-      }
-    },
     checkIp (i) {
       return async (rule, value, callback) => {
+        if (!value) return callback()
         const params = {
           search: value,
         }
@@ -147,20 +123,13 @@ export default {
           const data = await new this.$Manager('reservedips').list({ params })
           if (data.data.data.length >= 1) {
             return callback(new Error(this.$t('network.text_645')))
-          } else {
-            const ipsVal = Object.values(this.form.fc.getFieldValue('networkIps'))
-            const ipsKey = Object.keys(this.form.fc.getFieldValue('networkIps'))
-            if (ipsVal.indexOf(value) !== -1 && ipsKey[ipsVal.indexOf(value)] !== i) {
-              return callback(new Error(this.$t('network.text_644')))
-            }
-            return callback()
-            // const ipsRepreat = Array.from(new Set(ips))
-            // if (ipsRepreat.length === ips.length) {
-            //   return callback()
-            // } else {
-            //   return callback(new Error('请勿重复添加相同IP'))
-            // }
           }
+          const ipsVal = Object.values(this.form.networkIps || {})
+          const ipsKey = Object.keys(this.form.networkIps || {})
+          if (ipsVal.indexOf(value) !== -1 && ipsKey[ipsVal.indexOf(value)] !== i) {
+            return callback(new Error(this.$t('network.text_644')))
+          }
+          return callback()
         } catch {
           return callback()
         }
@@ -171,7 +140,7 @@ export default {
         id: data.network,
         action: 'reserve-ip',
         data: {
-          ips: Object.values(data.networkIps),
+          ips: Object.values(data.networkIps).filter(v => !!v),
           notes: data.notes,
         },
       })
@@ -179,9 +148,10 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        if (this.hasNetwork) {
-          values.network = this.params.network.id
+        await this.$refs.formRef.validate()
+        const values = {
+          ...this.form,
+          network: this.hasNetwork ? this.params.network.id : this.form.network,
         }
         await this.doCreate(values)
         this.loading = false

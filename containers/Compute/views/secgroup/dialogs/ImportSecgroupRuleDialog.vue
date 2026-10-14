@@ -3,8 +3,10 @@
     <div slot="header">{{$t('compute.import_secgroup_rule', [])}}</div>
     <div slot="body">
       <a-spin :spinning="loading">
-        <a-form
-          :form="form.fc">
+        <a-form-model
+          ref="formRef"
+          :model="form"
+          :rules="rules">
           <a-alert type="warning" class="mb-2">
             <template v-slot:message>
               <div class="messages-list">
@@ -13,11 +15,10 @@
             </template>
           </a-alert>
           <div class="pt-3 pb-3">
-            <a-form-item>
+            <a-form-model-item prop="fileList">
               <a-upload-dragger
-                v-decorator="decorators.fileList"
+                v-model:fileList="form.fileList"
                 :beforeUpload="beforeUpload"
-                :fileList="fileList"
                 :accept="accept"
                 @remove="handleRemove">
                 <div class="pt-3 pb-3">
@@ -26,9 +27,9 @@
                   <p class="ant-upload-hint">{{$t('system.text_506')}}</p>
                 </div>
               </a-upload-dragger>
-            </a-form-item>
+            </a-form-model-item>
           </div>
-        </a-form>
+        </a-form-model>
       </a-spin>
     </div>
     <div slot="footer">
@@ -50,18 +51,15 @@ export default {
   data () {
     return {
       accept: '.xlsx',
-      fileList: [],
-      rules: [],
+      rulesData: [],
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        fileList: [],
       },
-      decorators: {
-        fileList: ['fileList', {
-          rules: [
-            { required: true, message: this.$t('system.text_507') },
-          ],
-        }],
+      rules: {
+        fileList: [
+          { required: true, message: this.$t('system.text_507'), type: 'array' },
+        ],
       },
     }
   },
@@ -85,9 +83,9 @@ export default {
             })
           }
         }
-        this.rules = rules
+        this.rulesData = rules
       })
-      this.fileList = [file]
+      this.form.fileList = [file]
       return false
     },
     readWorkbookFromLocalFile (file, callback) {
@@ -100,7 +98,7 @@ export default {
       reader.readAsBinaryString(file)
     },
     handleClearFile () {
-      this.fileList = []
+      this.form.fileList = []
     },
     handleRemove () {
       this.handleClearFile()
@@ -144,17 +142,12 @@ export default {
     },
     async handleConfirm () {
       try {
-        if (!this.fileList || this.fileList.length === 0) {
-          this.form.fc.setFieldsValue({
-            fileList: undefined,
-          })
-        }
         this.loading = true
-        await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         await new this.$Manager('secgroups').performAction({
           id: this.params.data[0].id,
           action: 'import-rules',
-          data: { rules: this.rules },
+          data: { rules: this.rulesData },
         })
         this.params.refresh()
         this.cancelDialog()

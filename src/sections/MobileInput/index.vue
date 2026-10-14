@@ -73,7 +73,7 @@ export default {
         area_code: this.area_code,
         mobile: this.mobile,
       }
-      // 只发 change：v-decorator 会同时监听 change/update:value，避免重复写 fd
+      // 只发 change，避免与 update:value 重复写 fd
       this.$emit('change', payload)
     },
   },

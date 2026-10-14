@@ -2,19 +2,19 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('common.save')}}</div>
     <div slot="body">
-      <a-form :form="form" v-bind="formLayout">
-        <a-form-item :label="$t('compute.text_228')">
-          <a-input v-decorator="decorators.name" :placeholder="$t('common.placeholder')"  @change="handleNameChange" />
-        </a-form-item>
-        <a-form-item :label="$t('monitor.dashboard.title')">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formLayout">
+        <a-form-model-item :label="$t('compute.text_228')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('common.placeholder')"  @change="handleNameChange" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('monitor.dashboard.title')" prop="dashboard_id">
           <base-select
               filterable
-              v-decorator="decorators.dashboard_id"
+              v-model:value="form.dashboard_id"
               :loading="loading"
               resource="alertdashboards"
               :options="dashboards" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -36,27 +36,19 @@ export default {
     return {
       loading: false,
       scope: this.$store.getters.scope,
-      form: this.$form.createForm(this),
       manager: new this.$Manager('alertdashboards', 'v1'),
       name: '',
       dashboards: [],
-      decorators: {
+      form: {
+        name: this.params.name || '',
+        dashboard_id: undefined,
+      },
+      rules: {
         dashboard_id: [
-          'dashboard_id',
-          {
-            rules: [
-              { required: true, message: this.$t('monitor.dashboard.create.chart.dashboard.tips') },
-            ],
-          },
+          { required: true, message: this.$t('monitor.dashboard.create.chart.dashboard.tips') },
         ],
         name: [
-          'name',
-          {
-            initialValue: this.params.name || '',
-            rules: [
-              { required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` },
-            ],
-          },
+          { required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` },
         ],
       },
       formLayout: {
@@ -93,27 +85,16 @@ export default {
         this.loading = false
       }
     },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     _handleNameChange (e) {
       this.name = e.target.value
     },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
+        await this.$refs.formRef.validate()
         const data = {
-          dashboard_id: values.dashboard_id,
-          name: values.name,
+          dashboard_id: this.form.dashboard_id,
+          name: this.form.name,
           metric_query: this.params.metric_query,
           interval: this.params.timeGroup,
           scope: this.$store.getters.scope,

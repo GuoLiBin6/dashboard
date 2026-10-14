@@ -4,24 +4,27 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="$t('compute.create_disk_backup')" :name="$t('dictionary.disk')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc"
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
         v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.backup_name')">
-          <a-input v-decorator="decorators.name" />
-        </a-form-item>
-        <a-form-item
-          :label="$t('compute.backup_storage')">
+        <a-form-model-item :label="$t('compute.backup_name')" prop="name">
+          <a-input v-model:value="form.name" />
+        </a-form-model-item>
+        <a-form-model-item
+          :label="$t('compute.backup_storage')"
+          prop="storage">
           <base-select
             style="width: 100%"
-            v-decorator="decorators.storage"
+            v-model:value="form.storage"
             :params="storageParams"
             :select-props="{ placeholder: $t('compute.text_1022', [$t('compute.backup_storage')]) }"
             resource="backupstorages"
             :filterable="true"
             :isDefaultSelect="true" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading" :disabled="confirmDisabled">{{ $t('dialog.ok') }}</a-button>
@@ -41,26 +44,15 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        name: undefined,
+        storage: undefined,
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_416') },
-              // { validator: this.$validate('snapshotName') },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_416') },
         ],
         storage: [
-          'storage',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.text_1022', [this.$t('compute.backup_storage')]), trigger: 'change' },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_1022', [this.$t('compute.backup_storage')]), trigger: 'change' },
         ],
       },
       formItemLayout: {
@@ -75,35 +67,24 @@ export default {
     }
   },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     doCreate (data) {
       return new this.$Manager('diskbackups').create({ data })
     },
     async handleConfirm () {
       this.loading = true
       try {
-        let values = await this.validateForm()
-        values = {
-          name: values.name,
-          backup_storage_id: values.storage,
+        await this.$refs.formRef.validate()
+        const values = {
+          name: this.form.name,
+          backup_storage_id: this.form.storage,
           disk_id: this.params.data[0].id,
         }
-        this.loading = true
         await this.doCreate(values)
-        this.loading = false
         this.params.refresh()
         this.cancelDialog()
       } catch (error) {
+        // validate or submit failed
+      } finally {
         this.loading = false
       }
     },

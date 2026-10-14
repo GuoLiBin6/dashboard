@@ -5,12 +5,12 @@
       <dialog-selected-tips :name="$t('compute.nic')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
       <a-form-item>
-        <a-checkbox v-model="syncConfigImmediately" :disabled="!isVmPoweroff">
+        <a-checkbox v-model:checked="syncConfigImmediately" :disabled="!isVmPoweroff">
           {{ $t('compute.nics.sync_config_immediately') }}
         </a-checkbox>
       </a-form-item>
       <a-form-item>
-        <a-checkbox v-model="forceRemove" :disabled="!isVmPoweroff">
+        <a-checkbox v-model:checked="forceRemove" :disabled="!isVmPoweroff">
           {{ $t('compute.nics.force_remove') }}
         </a-checkbox>
       </a-form-item>

@@ -28,25 +28,6 @@ export default {
   data () {
     return {
       loading: false,
-      form: {
-        fc: this.$form.createForm(this),
-        fd: {},
-      },
-      decorators: {},
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
-      },
-      formItemLayoutWithoutLabel: {
-        wrapperCol: {
-          span: 19,
-          offset: 5,
-        },
-      },
     }
   },
   computed: {
@@ -72,9 +53,7 @@ export default {
         await this.params.ok()
       } else {
         const ids = this.params.data.map(item => item.id)
-        let params = {}
-        params = {
-          ...params,
+        const params = {
           ...this.params.requestParams,
         }
         const response = await this.params.onManager('batchDelete', {

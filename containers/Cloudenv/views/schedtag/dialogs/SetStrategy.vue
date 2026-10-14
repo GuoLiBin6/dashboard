@@ -4,12 +4,11 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.schedtag')" :count="params.data.length" :action="$t('cloudenv.text_422')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc">
-        <a-form-item required :label="$t('cloudenv.text_413')" v-bind="formItemLayout">
-          <strategy-radio :decorator="decorators.default_strategy" />
-        </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout">
+        <a-form-model-item required :label="$t('cloudenv.text_413')" prop="default_strategy">
+          <strategy-radio v-model:value="form.default_strategy" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -33,15 +32,7 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        default_strategy: [
-          'default_strategy',
-          {
-            initialValue: this.params.data[0].default_strategy || '',
-          },
-        ],
+        default_strategy: this.params.data[0].default_strategy || '',
       },
       formItemLayout: {
         wrapperCol: {
@@ -54,19 +45,8 @@ export default {
     }
   },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     doSubmit (values) {
-      this.params.onManager('update', {
+      return this.params.onManager('update', {
         id: this.params.data[0].id,
         managerArgs: {
           data: values,
@@ -76,9 +56,7 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
-        this.loading = true
-        await this.doSubmit(values)
+        await this.doSubmit({ ...this.form })
         this.loading = false
         this.cancelDialog()
       } catch (error) {

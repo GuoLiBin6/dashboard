@@ -1,11 +1,11 @@
 <template>
   <div>
-    <a-form-item :label="$t('common_503', [$t('dictionary.domain')])" :extra="$t('system.text_229', [$t('dictionary.domain')])">
+    <a-form-model-item :label="$t('common_503', [$t('dictionary.domain')])" :extra="$t('system.text_229', [$t('dictionary.domain')])">
       <base-select
         v-if="isAdmin"
         @update:resList="resTargetDomain"
-        :disabled="!!fc.getFieldValue('project_domain')"
-        v-decorator="decorators.target_domain"
+        :disabled="!!fd.project_domain"
+        v-model:value="fd.target_domain"
         resource="domains"
         filterable
         version="v1"
@@ -15,7 +15,7 @@
         <span v-else>
           {{projectDomain}}
         </span>
-    </a-form-item>
+    </a-form-model-item>
   </div>
 </template>
 
@@ -24,10 +24,6 @@ export default {
   name: 'IDPEditLdapAdvanced',
   props: {
     fd: {
-      type: Object,
-      required: true,
-    },
-    fc: {
       type: Object,
       required: true,
     },
@@ -48,24 +44,17 @@ export default {
     return {
       isAdmin: this.$store.getters.isAdminMode,
       projectDomain: this.$store.getters.userInfo.projectDomain,
-      decorators: {
-        target_domain: [
-          'target_domain',
-        ],
-      },
     }
   },
   watch: {
-    'fd.target_domain' (val) {
-      this.fc.resetFields(['default_project_id', 'project_attribute'])
+    'fd.target_domain' () {
+      this.fd.default_project_id = undefined
+      this.fd.project_attribute = undefined
     },
   },
   methods: {
-    resTargetDomain (list) {
-      const project_domain = this.fc.getFieldValue('project_domain')
-      this.fc.setFieldsValue({
-        target_domain: project_domain,
-      })
+    resTargetDomain () {
+      this.fd.target_domain = this.fd.project_domain
     },
   },
 }

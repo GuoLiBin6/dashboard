@@ -16,11 +16,6 @@
         </template>
       </table-lite-grid>
     </a-form-item>
-    <a-form-item class="redis-sku-valid" v-bind="tailFormItemLayout">
-      <template v-show="false">
-        <a-radio-group v-decorator="skuDecorator" :placeholder="$t('validator.serverName')" />
-      </template>
-    </a-form-item>
   </div>
 </template>
 
@@ -57,12 +52,9 @@ export default {
       loading: false,
       rateLoading: false,
       skuList: [],
-      skuDecorator: [
-        'sku',
-        {
-          rules: [{ required: true, message: this.$t('db.text_258') }],
-        },
-      ],
+      skuFieldOpts: {
+        rules: [{ required: true, message: this.$t('db.text_258') }],
+      },
     }
   },
   computed: {
@@ -70,12 +62,6 @@ export default {
       return {
         reserve: true,
       }
-    },
-    FC () {
-      if (this.form && this.form.fc) {
-        return this.form.fc
-      }
-      return {}
     },
     tableColumn () {
       const column = [
@@ -154,7 +140,7 @@ export default {
               if (this.rateLoading) {
                 return [<icon type="loading" />]
               }
-              const isPackage = this.form.getFieldValue('billing_type') === BILL_TYPES_MAP.prepaid.key
+              const isPackage = this.form.fd.billing_type === BILL_TYPES_MAP.prepaid.key
               if (rate) {
                 let price = rate.hour_price
                 let unit = this.$t('db.text_129')
@@ -194,14 +180,16 @@ export default {
       this.handleSkuChange({ row })
     },
   },
+  created () {
+    if (this.form?.fd && this.form.fd.sku === undefined) {
+      this.$set(this.form.fd, 'sku', undefined)
+    }
+  },
   methods: {
     async handleSkuChange ({ row }) {
-      this.FC.setFieldsValue({
-        sku: row,
-      })
+      this.$set(this.form.fd, 'sku', row)
       await this.$nextTick()
       this.$refs.tableRef.setRadioRow(row)
-      this.FC.validateFields(['sku'])
     },
     skuSort (skuList) {
       return skuList ? skuList.sort((a, b) => a.memory_size_mb - b.memory_size_mb) : []

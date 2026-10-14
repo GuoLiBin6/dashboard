@@ -1,9 +1,9 @@
 <template>
   <div>
-    <a-form-item :label="$t('dictionary.domain')" v-bind="formLayout" v-if="isAdminMode && l3PermissionEnable">
+    <a-form-model-item :label="$t('dictionary.domain')" v-bind="formLayout" prop="domain" v-if="isAdminMode && l3PermissionEnable">
       <base-select
         ref="domain"
-        v-decorator="decorators.domain"
+        v-model:value="form.domain"
         resource="domains"
         remote
         :is-default-select="isDefaultSelect"
@@ -12,7 +12,7 @@
           allowClear,
           labelInValue,
           placeholder: $t('rules.domain'),
-          dropdownClassName: 'oc-select-dropdown',
+          popupClassName: 'oc-select-dropdown',
           labelInValueKeyName: 'key',
         }"
         @change="domainChange"
@@ -21,13 +21,13 @@
           <span class="text-color-secondary option-prefix">{{ $t('dictionary.domain') }}: </span>{{ item.name }}
         </template>
       </base-select>
-    </a-form-item>
-    <a-form-item :label="$t('cloudenv.resource_map_type')" :extra="resourceMapExtra">
-      <a-checkbox-group v-decorator="extraDecorators.resource_map_type" :options="resourceMapTypeOpts" @change="resourceMapTypeChange" />
-    </a-form-item>
-    <a-form-item v-if="openProjectMapping" :label="$t('cloudenv.text_580')">
+    </a-form-model-item>
+    <a-form-model-item :label="$t('cloudenv.resource_map_type')" :extra="resourceMapExtra" prop="resource_map_type">
+      <a-checkbox-group v-model:value="form.resource_map_type" :options="resourceMapTypeOpts" @change="resourceMapTypeChange" />
+    </a-form-model-item>
+    <a-form-model-item v-if="openProjectMapping" :label="$t('cloudenv.text_580')" prop="project_mapping_id">
       <base-select
-        v-decorator="extraDecorators.project_mapping_id"
+        v-model:value="form.project_mapping_id"
         resource="project_mappings"
         showSync
         :select-props="{ placeholder: $t('common.tips.select', [$t('cloudenv.text_580')]) }"
@@ -36,17 +36,17 @@
         {{$t('cloudenv.no_project_mapping')}}
         <help-link :href="href">{{$t('cloudenv.go_create')}}</help-link>
       </div>
-    </a-form-item>
-    <a-form-item v-if="openProjectMapping" :label="$t('cloudenv.project_mapping_effective_scope')" :extra="effectiveScopeExtra">
-      <a-radio-group v-decorator="extraDecorators.effective_scope" @change="effectiveScopeChange">
+    </a-form-model-item>
+    <a-form-model-item v-if="openProjectMapping" :label="$t('cloudenv.project_mapping_effective_scope')" :extra="effectiveScopeExtra" prop="effective_scope">
+      <a-radio-group v-model:value="form.effective_scope" @change="effectiveScopeChange">
         <a-radio-button value="resource">{{$t('cloudenv.resource_tag')}}</a-radio-button>
         <a-radio-button value="project">{{$t('cloudenv.project_tag')}}</a-radio-button>
       </a-radio-group>
-    </a-form-item>
-    <a-form-item v-if="resourceMapType.length" :label="resourceMapType.length === 1 && resourceMapType.includes('project') ? $t('cloudenv.target_project') : $t('cloudenv.default_project')">
+    </a-form-model-item>
+    <a-form-model-item v-if="resourceMapType.length" :label="resourceMapType.length === 1 && resourceMapType.includes('project') ? $t('cloudenv.target_project') : $t('cloudenv.default_project')" prop="project">
       <base-select
         ref="project"
-        v-decorator="decorators.project"
+        v-model:value="form.project"
         resource="projects"
         remote
         :is-default-select="isDefaultSelect"
@@ -55,7 +55,7 @@
           allowClear,
           labelInValue,
           placeholder: $t('rules.project'),
-          dropdownClassName: 'oc-select-dropdown',
+          popupClassName: 'oc-select-dropdown',
           labelInValueKeyName: 'key',
         }"
         @change="projectChange"
@@ -64,29 +64,29 @@
           <span class="text-color-secondary option-prefix">{{ $t('dictionary.project') }}: </span>{{ item.name }}
         </template>
       </base-select>
-    </a-form-item>
+    </a-form-model-item>
   </div>
 </template>
 
 <script>
 import * as R from 'ramda'
-import _ from 'lodash'
 import { mapGetters } from 'vuex'
+import { ensureDomainProjectFormFields } from './domainProjectForm'
 
 export default {
   name: 'DomainProject',
   props: {
+    form: {
+      type: Object,
+      required: true,
+    },
     labelInValue: {
       type: Boolean,
       default: true,
     },
-    decorators: {
+    fieldMap: {
       type: Object,
-      validator: val => R.is(Array, val.domain) && R.is(Array, val.project),
-    },
-    fc: {
-      type: Object,
-      required: true,
+      default: () => ({}),
     },
     allowClear: Boolean,
     formLayout: Object,
@@ -107,67 +107,21 @@ export default {
     },
   },
   data () {
-    const initResourceMapType = []
-    const initProjectMapping = []
-    let initEffectiveScope = ''
-    const {
-      auto_create_project,
-      auto_create_project_for_provider,
-      project_mapping_id,
-      tenant,
-      enable_resource_sync,
-      enable_project_sync,
-    } = this.cloneData
-    if (auto_create_project_for_provider) initResourceMapType.push('cloudprovider')
-    if (project_mapping_id) {
-      initResourceMapType.push('project_mapping')
-      initProjectMapping.push(project_mapping_id)
-    }
-    if (auto_create_project) initResourceMapType.push('external_project')
-    if (tenant) {
-      initResourceMapType.push('project')
-    }
-    if (enable_resource_sync && !initEffectiveScope) {
-      initEffectiveScope = 'resource'
-    } else if (enable_project_sync && !initEffectiveScope) {
-      initEffectiveScope = 'project'
-    }
+    const init = ensureDomainProjectFormFields(this.form, this.cloneData, this)
     return {
       domains: [],
       domainParams: {
         scope: this.scope,
         limit: 20,
-        filter: 'enabled.equals(1)', // 仅显示启用状态下的域
+        filter: 'enabled.equals(1)',
       },
       domainId: '',
       projectData: {},
       projects: [],
       disableProjectSelect: false,
-      extraDecorators: {
-        resource_map_type: [
-          'resource_map_type',
-          {
-            initialValue: initResourceMapType,
-            rules: [{ required: true, message: this.$t('cloudenv.select_resource_map_type') }],
-          },
-        ],
-        project_mapping_id: [
-          'project_mapping_id',
-          {
-            initialValue: initProjectMapping,
-            rules: [{ required: true, message: this.$t('common.tips.select', [this.$t('cloudenv.text_580')]) }],
-          },
-        ],
-        effective_scope: [
-          'effective_scope',
-          {
-            initialValue: initEffectiveScope || 'resource',
-          },
-        ],
-      },
-      resourceMapType: initResourceMapType,
-      openProjectMapping: initResourceMapType.includes('project_mapping'),
-      effectiveScope: initEffectiveScope || 'resource',
+      resourceMapType: init.resourceMapType,
+      openProjectMapping: init.openProjectMapping,
+      effectiveScope: init.effectiveScope,
     }
   },
   computed: {
@@ -199,9 +153,8 @@ export default {
       const types = resourceMapType.filter(key => key !== 'project')
       if (types.length) {
         return this.$t(`cloudenv.resource_map_type.${types[0]}`)
-      } else {
-        return this.$t('cloudenv.resource_map_type.project')
       }
+      return this.$t('cloudenv.resource_map_type.project')
     },
     effectiveScopeExtra () {
       if (this.effectiveScope === 'resource') {
@@ -241,91 +194,74 @@ export default {
       }
     },
     resourceMapTypeOpts () {
-      const ret = [
+      return [
         { value: 'project_mapping', label: this.$t('cloudenv.belong_to_project.project_mapping') },
         { value: 'external_project', label: this.$t('cloudenv.belong_to_project.external_project') },
         { value: 'cloudprovider', label: this.$t('cloudenv.belong_to_project.cloudprovider') },
         { value: 'project', label: this.$t('cloudenv.target_project') },
       ]
-      return ret
     },
   },
   mounted () {
     this.initDefaultData()
   },
   methods: {
+    updateDomainList () {},
+    updateProjectList () {},
     async initDefaultData () {
-      if (this.isAdminMode) { // 系统视图
+      if (this.isAdminMode) {
         let defaultDomain = { key: this.userInfo.projectDomainId, label: this.userInfo.projectDomain }
-        const initialValue = _.get(this.decorators, 'domain[1].initialValue')
+        const initialValue = this.fieldMap?.domain?.initialValue
         if (R.is(Object, initialValue) && initialValue.key) {
           defaultDomain = { key: initialValue.key, label: initialValue.label }
         } else if (R.is(String, initialValue) && initialValue) {
           defaultDomain = { key: initialValue }
         }
-        const projectInitialValue = _.get(this.decorators, 'project[1].initialValue')
-        const domainChange = () => {
+        const projectInitialValue = this.fieldMap?.project?.initialValue
+        const runDomainChange = () => {
           this._setInitDomain(defaultDomain)
           this.domainChange(defaultDomain || {})
         }
         if (R.is(Object, projectInitialValue) && projectInitialValue.key) {
-          domainChange()
+          runDomainChange()
         } else if (R.is(String, projectInitialValue) && projectInitialValue) {
-          domainChange()
-        } else {
-          if (this.isDefaultSelect) {
-            domainChange()
-          }
+          runDomainChange()
+        } else if (this.isDefaultSelect) {
+          runDomainChange()
         }
-        if (this.isDomainFirstLoadData) {
-          this.$emit('fetchDomainCallback')
-          this.isDomainFirstLoadData = false
+      } else if (this.isDomainMode) {
+        const data = [{
+          key: this.userInfo.projectDomainId,
+          label: this.userInfo.projectDomain,
+        }]
+        this.domains = data
+        this.domainChange(data[0])
+        let defaultProject = { key: this.userInfo.projectId, label: this.userInfo.projectName }
+        const initialProject = this.fieldMap?.project?.initialValue
+        if (R.is(Object, initialProject) && initialProject.key) {
+          defaultProject = { key: initialProject.key, label: initialProject.label }
+        } else if (R.is(String, initialProject) && initialProject) {
+          defaultProject = { key: initialProject.key, label: initialProject.label }
         }
-        // await this.$nextTick()
-        // this.$refs.domain.loadDefaultSelectedOpts()
+        const runProjectChange = () => {
+          this.projectChange(defaultProject || {})
+          this._setInitProject(defaultProject || {})
+        }
+        if (R.is(Object, initialProject) && initialProject.key) {
+          runProjectChange()
+        } else if (R.is(String, initialProject) && initialProject) {
+          runProjectChange()
+        } else if (this.isDefaultSelect) {
+          runProjectChange()
+        }
       } else {
-        if (this.isDomainMode) { // 域视图
-          const data = [{
-            key: this.userInfo.projectDomainId,
-            label: this.userInfo.projectDomain,
-          }]
-          this.domains = data
-          this.domainChange(data[0])
-
-          let defaultProject = { key: this.userInfo.projectId, label: this.userInfo.projectName }
-          const initialProject = _.get(this.decorators, 'project[1].initialValue')
-          if (R.is(Object, initialProject) && initialProject.key) {
-            defaultProject = { key: initialProject.key, label: initialProject.label }
-          } else if (R.is(String, initialProject) && initialProject) {
-            defaultProject = { key: initialProject.key, label: initialProject.label }
-          }
-          const projectChange = () => {
-            this.projectChange(defaultProject || {})
-            this._setInitProject(defaultProject || {})
-          }
-          if (R.is(Object, initialProject) && initialProject.key) {
-            projectChange()
-          } else if (R.is(String, initialProject) && initialProject) {
-            projectChange()
-          } else {
-            if (this.isDefaultSelect) {
-              projectChange()
-            }
-          }
-          if (this.isProjectFirstLoadData) {
-            this.$emit('fetchProjectCallback')
-            this.isProjectFirstLoadData = false
-          }
-        } else { // 普通视图
-          const data = [{
-            key: this.userInfo.projectId,
-            label: this.userInfo.projectName,
-          }]
-          this.projects = data
-          // 普通视图下不用判断 isDefaultSelect
-          this.projectChange(data[0])
-          this._setInitProject(data[0])
-        }
+        const data = [{
+          key: this.userInfo.projectId,
+          label: this.userInfo.projectName,
+        }]
+        this.projects = data
+        this.projectChange(data[0])
+        this._setInitProject(data[0])
       }
     },
     resourceMapTypeChange (value) {
@@ -335,41 +271,24 @@ export default {
     effectiveScopeChange (e) {
       this.effectiveScope = e.target.value
     },
-    /*
-     * @params {Object} domain { key: <domainId> }
-     */
     _setInitDomain (domain) {
       if (!R.isNil(domain) && !R.isEmpty(domain)) {
         if (this.labelInValue) {
-          this.fc.setFieldsValue({
-            domain: { key: domain.key, label: domain.label },
-          })
+          this.form.domain = { key: domain.key, label: domain.label }
         } else {
-          this.fc.setFieldsValue({
-            domain: domain.key,
-          })
+          this.form.domain = domain.key
         }
       }
     },
-    /*
-     * @params {Object} project { key: <projectId> }
-     */
     _setInitProject (project) {
       if (!R.isNil(project) && !R.isEmpty(project)) {
         if (this.labelInValue) {
-          this.fc.setFieldsValue({
-            project: { key: project.key, label: project.label },
-          })
+          this.form.project = { key: project.key, label: project.label }
         } else {
-          this.fc.setFieldsValue({
-            project: project.key,
-          })
+          this.form.project = project.key
         }
       }
     },
-    /**
-     * domain {Object|String}
-     */
     domainChange (domain) {
       const domainId = R.is(Object, domain) ? domain.key : domain
       if (this.labelInValue) {

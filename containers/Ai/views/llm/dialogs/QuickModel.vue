@@ -4,11 +4,11 @@
     <div slot="body">
       <dialog-selected-tips :name="instanceLabel" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('aice.model')">
-          <base-select v-decorator="decorators.model" :options="modelOptions" :select-props="{ placeholder: $t('common.tips.select', [$t('aice.model')]) }" />
-        </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('aice.model')" prop="model">
+          <base-select v-model:value="form.model" :options="modelOptions" :select-props="{ placeholder: $t('common.tips.select', [$t('aice.model')]) }" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -35,26 +35,11 @@ export default {
       loading: false,
       action: this.params.actionText,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-          },
-        }),
-        fd: {
-          model: [],
-        },
+        model: [],
       },
-      decorators: {
+      rules: {
         model: [
-          'model',
-          {
-            initialValue: [],
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('aice.model')]) },
-            ],
-          },
+          { required: true, message: this.$t('common.tips.select', [this.$t('aice.model')]) },
         ],
       },
       formItemLayout: {
@@ -102,11 +87,10 @@ export default {
     },
     async doSubmit () {
       const data = { method: 'install' }
-      data.model = this.form.fd.model
+      data.model = this.form.model
       const ids = this.params.data.map(item => item.id)
       return this.params.onManager('batchPerformAction', {
         id: ids,
-        // steadyStatus: 'ready',
         managerArgs: {
           action: 'quick-models',
           data,
@@ -116,6 +100,7 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
+        await this.$refs.formRef.validate()
         await this.doSubmit()
         this.loading = false
         this.cancelDialog()

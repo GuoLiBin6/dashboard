@@ -16,9 +16,9 @@
               <a-radio-button value="auto_allocation">{{$t('compute.auto_allocation')}}</a-radio-button>
               <a-radio-button value="specify_ip">{{$t('compute.specify_ip')}}</a-radio-button>
             </a-radio-group>
-            <!-- <a-checkbox v-model="form.require_ipv6" class="ml-2">{{ $t('compute.server_create.require_ipv6_all') }}</a-checkbox> -->
+            <!-- <a-checkbox v-model:checked="form.require_ipv6" class="ml-2">{{ $t('compute.server_create.require_ipv6_all') }}</a-checkbox> -->
             <span class="ml-3 d-flex align-items-center">
-              <a-checkbox style="width: max-content" v-model="form.require_ipv6" />
+              <a-checkbox style="width: max-content" v-model:checked="form.require_ipv6" />
               <a-dropdown>
                 <a-menu slot="overlay" v-model="form.ipv6_mode" @click="handleIpv6Mode">
                   <a-menu-item key="all">{{ $t('compute.server_create.require_ipv6_all') }}</a-menu-item>

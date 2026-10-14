@@ -1,24 +1,24 @@
 <template>
   <div class="w-75">
-    <a-form :form="form.fc" v-bind="formItemLayout">
-      <a-form-item :label="$t('k8s.text_41')">
-        <a-input :placeholder="$t('k8s.text_60')" v-decorator="decorators.name" />
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_305')">
-        <a-input-number v-decorator="decorators.size" :min="1" :max="500" /> G
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_19')">
-        <cluster-select v-decorator="decorators.cluster" @input="setCluster" />
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_23')">
-        <namespace-select v-decorator="decorators.namespace" @input="setNamespace" :cluster="cluster" />
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_22')">
+    <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model-item :label="$t('k8s.text_41')" prop="name">
+        <a-input :placeholder="$t('k8s.text_60')" v-model:value="form.name" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('k8s.text_305')" prop="size">
+        <a-input-number v-model:value="form.size" :min="1" :max="500" /> G
+      </a-form-model-item>
+      <a-form-model-item :label="$t('k8s.text_19')" prop="cluster">
+        <cluster-select v-model:value="form.cluster" @input="onClusterChange" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('k8s.text_23')" prop="namespace">
+        <namespace-select v-model:value="form.namespace" @input="setNamespace" :cluster="cluster" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('k8s.text_22')" prop="storageClass">
         <div slot="extra">{{$t('k8s.text_306')}}<help-link :href="storageClassHref">{{$t('k8s.text_307')}}</help-link>
         </div>
         <base-select
           show-sync
-          v-decorator="decorators.storageClass"
+          v-model:value="form.storageClass"
           resource="storageclasses"
           version="v1"
           id-key="name"
@@ -26,8 +26,8 @@
           :need-params="true"
           :params="storageclassParams"
           :select-props="{ placeholder: $t('k8s.text_308') }" />
-      </a-form-item>
-    </a-form>
+      </a-form-model-item>
+    </a-form-model>
   </div>
 </template>
 
@@ -47,77 +47,43 @@ export default {
   data () {
     return {
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            R.forEachObjIndexed((value, key) => {
-              this.form.fd[key] = value
-            }, values)
-          },
-        }),
-        fd: {
-          cluster: this.$store.state.common.k8s.cluster,
-        },
+        name: '',
+        size: 1,
+        cluster: this.$store.state.common.k8s.cluster,
+        namespace: this.$store.state.common.k8s.namespace,
+        storageClass: undefined,
+      },
+      rules: {
+        name: [
+          { required: true, message: this.$t('k8s.text_60') },
+          { min: 2, max: 24, message: this.$t('k8s.text_132'), trigger: 'blur' },
+          { validator: this.$validate('k8sName') },
+        ],
+        cluster: [
+          { required: true, message: this.$t('k8s.text_30'), trigger: 'blur' },
+        ],
+        namespace: [
+          { required: true, message: this.$t('k8s.text_61'), trigger: 'blur' },
+        ],
+        storageClass: [
+          { required: true, message: this.$t('k8s.text_308'), trigger: 'blur' },
+        ],
       },
       formItemLayout: {
         labelCol: { span: 4 },
         wrapperCol: { span: 20 },
-      },
-      decorators: {
-        name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('k8s.text_60') },
-              { min: 2, max: 24, message: this.$t('k8s.text_132'), trigger: 'blur' },
-              { validator: this.$validate('k8sName') },
-            ],
-          },
-        ],
-        cluster: [
-          'cluster',
-          {
-            initialValue: this.$store.state.common.k8s.cluster,
-            rules: [
-              { required: true, message: this.$t('k8s.text_30'), trigger: 'blur' },
-            ],
-          },
-        ],
-        namespace: [
-          'namespace',
-          {
-            initialValue: this.$store.state.common.k8s.namespace,
-            rules: [
-              { required: true, message: this.$t('k8s.text_61'), trigger: 'blur' },
-            ],
-          },
-        ],
-        size: [
-          'size',
-          {
-            initialValue: 1,
-          },
-        ],
-        storageClass: [
-          'storageClass',
-          {
-            rules: [
-              { required: true, message: this.$t('k8s.text_308'), trigger: 'blur' },
-            ],
-          },
-        ],
       },
       storageclassOpts: [],
     }
   },
   computed: {
     storageClassHref () {
-      return `/v2/k8s-storageclass/create?cluster=${this.form.fd.cluster}`
+      return `/v2/k8s-storageclass/create?cluster=${this.form.cluster}`
     },
     storageclassParams () {
-      if (this.form.fd.cluster) {
+      if (this.form.cluster) {
         return {
-          cluster: this.form.fd.cluster,
+          cluster: this.form.cluster,
           limit: 0,
         }
       }
@@ -126,29 +92,21 @@ export default {
   },
   watch: {
     storageclassOpts (val, oldV) {
-      let storageclass
       if (!R.equals(val, oldV)) {
         const defaultItem = val.find(v => v.isDefault)
         if (R.is(Object, defaultItem)) {
-          storageclass = defaultItem.name
+          this.form.storageClass = defaultItem.name
         }
       }
-      this.form.fc.setFieldsValue({
-        [this.decorators.storageClass[0]]: storageclass,
-      })
     },
   },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFieldsAndScroll({ scroll: { alignWithTop: true, offsetTop: 100 } }, (err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
+    onClusterChange (cluster) {
+      this.setCluster(cluster)
+    },
+    async validateForm () {
+      await this.$refs.formRef.validate()
+      return this.form
     },
     async _doCreate (data) {
       await new this.$Manager('persistentvolumeclaims', 'v1').create({ data })

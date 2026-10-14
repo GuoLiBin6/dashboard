@@ -2,24 +2,24 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{ $t('network.additional_wires.set') }}</div>
     <div slot="body">
-      <a-form :form="form.fc">
-        <a-form-item :label="$t('network.text_571')" v-bind="formItemLayout">
-          <a-radio-group v-decorator="decorators.type">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
+        <a-form-model-item :label="$t('network.text_571')" v-bind="formItemLayout" prop="type">
+          <a-radio-group v-model:value="form.type">
             <a-radio-button value="auto">{{ $t('network.additional_wires.type.auto') }}</a-radio-button>
             <a-radio-button value="manual">{{ $t('network.additional_wires.type.manual') }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item v-bind="formItemLayoutWithOutLabel" v-if="form.fd.type === 'manual'">
+        </a-form-model-item>
+        <a-form-model-item v-bind="formItemLayoutWithOutLabel" v-if="form.type === 'manual'" prop="wires">
           <base-select
             resource="wires"
-            v-decorator="decorators.wires"
+            v-model:value="form.wires"
             :selectProps="{ 'placeholder': $t('network.text_572'), mode: 'multiple' }"
             remote
             :remote-fn="q => ({ filter: `name.contains(${q})` })"
             :params="wireParams"
             :mapper="wireMapper" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -43,30 +43,12 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.$set(this.form.fd, key, values[key])
-            })
-          },
-        }),
-        fd: {},
+        type: 'auto',
+        wires: additionalWires,
       },
-      decorators: {
-        type: [
-          'type',
-          {
-            initialValue: 'auto',
-          },
-        ],
+      rules: {
         wires: [
-          'wires',
-          {
-            initialValue: additionalWires,
-            rules: [
-              { required: true, message: this.$t('network.text_572') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_572') },
         ],
       },
       formItemLayout: {
@@ -116,8 +98,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        this.doSubmit(values)
+        await this.$refs.formRef.validate()
+        this.doSubmit({ ...this.form })
         this.cancelDialog()
         this.$message.success(this.$t('common.success'))
         this.params.success && this.params.success()

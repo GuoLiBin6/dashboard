@@ -1,6 +1,6 @@
 import { mapGetters } from 'vuex'
 import qs from 'qs'
-import { SMART_SSH_FORM_DECORATORS } from '@Compute/constants'
+import { SMART_SSH_FORM_FIELDS } from '@Compute/constants'
 import { disableDeleteAction } from '@/utils/common/tableActions'
 import expectStatus from '@/constants/expectStatus'
 import i18n from '@/locales'
@@ -142,7 +142,7 @@ export default {
                         }
                         openWebConsole(pms)
                       },
-                      decorators: SMART_SSH_FORM_DECORATORS,
+                      fields: SMART_SSH_FORM_FIELDS,
                     })
                   }
                   return h('a-tooltip', {

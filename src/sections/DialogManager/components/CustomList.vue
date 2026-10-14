@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <template #header>{{ params.title }}</template>
     <template #body>
-      <a-form :form="form.fc" hideRequiredMark>
+      <a-form hideRequiredMark>
         <a-form-item>
           <a-divider orientation="left">{{$t('common.text00084')}}</a-divider>
           <a-checkbox
@@ -16,16 +16,41 @@
                 v-for="item in columnFields"
                 :key="item.property"
                 v-show="item && (item.title || item.property)"
-                class="customlist-cell mb-2 checkbox-item checkbox-item--columns">
+                class="customlist-cell mb-2 checkbox-item checkbox-item--columns"
+                :data-property="item.property"
+                :class="{
+                  'checkbox-item--sortable': !isOrderLockedColumn(item),
+                  'checkbox-item--primary': isPrimaryColumn(item),
+                  'checkbox-item--action': isActionColumn(item),
+                }">
                 <div class="checkbox-item__main">
-                  <a-checkbox :value="item.property" :disabled="item.disabled" class="text-truncate checkbox-property">
-                    <span class="checkbox-item__drag-handle checkbox-item__title" :title="item.title || item.property">{{ item.title || item.property }}</span>
+                  <a-checkbox :value="item.property" :disabled="item.disabled || isOrderLockedColumn(item)" class="text-truncate checkbox-property">
+                    <span
+                      class="checkbox-item__title"
+                      :class="{ 'checkbox-item__drag-handle': !isOrderLockedColumn(item) }"
+                      :title="item.title || item.property">{{ item.title || item.property }}</span>
                   </a-checkbox>
-                  <div class="checkbox-item__drag-handle checkbox-item__gap" aria-hidden="true" />
+                  <div
+                    class="checkbox-item__gap"
+                    :class="{ 'checkbox-item__drag-handle': !isOrderLockedColumn(item) }"
+                    aria-hidden="true" />
                 </div>
-                <div class="checkbox-item__handle checkbox-item__drag-handle" @click.stop="iconClick">
+                <a-select
+                  size="small"
+                  class="checkbox-item__fixed"
+                  :value="columnFixedMap[item.property] || ''"
+                  :disabled="!columnsSelected.includes(item.property)"
+                  :options="isActionColumn(item) ? actionFixedSelectOptions : fixedSelectOptions"
+                  @click.stop
+                  @mousedown.stop
+                  @update:value="(v) => onColumnFixedChange(item.property, v)" />
+                <div
+                  v-if="!isOrderLockedColumn(item)"
+                  class="checkbox-item__handle checkbox-item__drag-handle"
+                  @click.stop="iconClick">
                   <icon type="dragable" class="drag-icon" />
                 </div>
+                <div v-else class="checkbox-item__handle checkbox-item__handle--placeholder" aria-hidden="true" />
               </div>
             </div>
           </a-checkbox-group>
@@ -91,7 +116,13 @@ export default {
   mixins: [DialogMixin, WindowsMixin],
   data () {
     const customsRaw = Array.isArray(this.params?.customs) ? this.params.customs : []
-    const hidenColumns = Array.isArray(this.params?.hidenColumns) ? this.params.hidenColumns : []
+    // lockedColumns：首列等锁定列（可固定、不可取消勾选、不可拖排序）
+    // hidenColumns：兼容旧入参，语义改为锁定而非隐藏
+    const lockedColumns = [
+      ...(Array.isArray(this.params?.lockedColumns) ? this.params.lockedColumns : []),
+      ...(Array.isArray(this.params?.hidenColumns) ? this.params.hidenColumns : []),
+    ].filter(Boolean)
+    const lockedColumnSet = new Set(lockedColumns)
     const hiddenColumnsFromConfig = Array.isArray(this.params?.config?.hiddenColumns) ? this.params.config.hiddenColumns : []
 
     // vxe-table 可能存在分组列（children/columns），自定义列只展示叶子列
@@ -143,7 +174,7 @@ export default {
       }
     }
 
-    // 普通的列
+    // 普通的列（不含操作列）；首列等锁定列一并展示
     const columnFields = customs
       .map(normalizeColumn)
       .filter(item => {
@@ -154,10 +185,38 @@ export default {
           key !== '_action' &&
           key !== '_action_placeholder' &&
           !isUserTag(key) &&
-          !isExtTag(key) &&
-          !hidenColumns.includes(key)
+          !isExtTag(key)
       })
-    const initialColumnsSelected = columnFields.filter(item => item.visible).map(item => item.property)
+      .map((item) => {
+        if (!lockedColumnSet.has(item.property)) return item
+        return {
+          ...item,
+          visible: true,
+          disabled: true,
+          isPrimary: true,
+        }
+      })
+    // 锁定首列始终排在最前
+    columnFields.sort((a, b) => {
+      const ap = a.isPrimary ? 0 : 1
+      const bp = b.isPrimary ? 0 : 1
+      return ap - bp
+    })
+    // 当前列表有操作列时追加到末尾：可配置固定，不可拖排序、不可取消勾选
+    const actionColRaw = customs.map(normalizeColumn).find(item => item.property === '_action')
+    if (actionColRaw) {
+      columnFields.push({
+        ...actionColRaw,
+        property: '_action',
+        title: actionColRaw.title || this.$t('table.title._action'),
+        visible: true,
+        disabled: true,
+        isAction: true,
+      })
+    }
+    const initialColumnsSelected = columnFields
+      .filter(item => item.visible || item.isPrimary || item.isAction)
+      .map(item => item.property)
     // 标签列
     const tagFields = customs.map(normalizeColumn).filter(item => {
       const key = item.property
@@ -188,60 +247,51 @@ export default {
     const initialTagsSelected = tagFields.filter(item => {
       return this.params.config.showTagKeys.includes(item.property)
     }).map(item => item.property)
-    const initialInstanceTagsSelected = instanceTagFields.filter(item => {
-      return this.params.config.showInstanceTagKeys.includes(item.property)
-    }).map(item => item.property)
     const initialProjectTagsSelected = projectTagFields.filter(item => {
       return this.params.config.showProjectTagKeys.includes(item.property)
     }).map(item => item.property)
+    const fixedFromConfig = this.params?.config?.fixedColumns || {}
+    const columnFixedMap = {}
+    ;(fixedFromConfig.left || []).forEach((key) => {
+      // 操作列不支持左固定
+      if (key && key !== '_action') columnFixedMap[key] = 'left'
+    })
+    ;(fixedFromConfig.right || []).forEach((key) => {
+      if (key) columnFixedMap[key] = 'right'
+    })
     return {
       loading: false,
-      form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        columnsSelected: [
-          'columnsSelected',
-          {
-            initialValue: initialColumnsSelected,
-            // rules: [
-            //   { required: true, message: this.$t('common.text00087') },
-            // ],
-          },
-        ],
-        tagsSelected: [
-          'tagsSelected',
-          {
-            initialValue: initialTagsSelected,
-          },
-        ],
-        instanceTagsSelected: [
-          'instanceTagsSelected',
-          {
-            initialValue: initialInstanceTagsSelected,
-          },
-        ],
-        projectTagsSelected: [
-          'projectTagsSelected',
-          {
-            initialValue: initialProjectTagsSelected,
-          },
-        ],
-      },
       columnFields,
       tagFields,
       instanceTagFields,
       projectTagFields,
-      /** ant-design-vue v4 无 v-decorator 联动；与 legacy setFieldsValue 共用一份选中态 */
+      /** 列/标签勾选与表单 model 共用一份选中态 */
       columnsSelected: [...initialColumnsSelected],
       tagsSelected: [...initialTagsSelected],
       projectTagsSelected: [...initialProjectTagsSelected],
       columnsIndeterminate: initialColumnsSelected.length !== 0 && columnFields.length !== initialColumnsSelected.length,
       columnsCheckAll: columnFields.length === initialColumnsSelected.length,
+      /** property -> '' | 'left' | 'right' */
+      columnFixedMap,
+      maxFixedPerSide: 5,
     }
   },
   computed: {
     ...mapGetters(['scope']),
+    fixedSelectOptions () {
+      return [
+        { value: '', label: this.$t('common.column_fixed_none') },
+        { value: 'left', label: this.$t('common.column_fixed_left') },
+        { value: 'right', label: this.$t('common.column_fixed_right') },
+      ]
+    },
+    /** 操作列仅支持不固定 / 右固定 */
+    actionFixedSelectOptions () {
+      return [
+        { value: '', label: this.$t('common.column_fixed_none') },
+        { value: 'right', label: this.$t('common.column_fixed_right') },
+      ]
+    },
     tagParams () {
       let ret = {
         with_user_meta: true,
@@ -304,7 +354,6 @@ export default {
     if (this.params.showTagColumns2) {
       this.fetchProjectTags()
     }
-    this.syncFormFieldValues()
   },
   mounted () {
     this.initColumnsSortable()
@@ -320,15 +369,45 @@ export default {
         if (!el || !Array.isArray(this.columnFields) || !this.columnFields.length) return
         this._columnsSortable = Sortable.create(el, {
           handle: '.checkbox-item__drag-handle',
+          draggable: '.checkbox-item--sortable',
           animation: 150,
           ghostClass: 'ghost',
-          onEnd: (evt) => {
-            const { oldIndex, newIndex } = evt
-            if (oldIndex == null || newIndex == null || oldIndex === newIndex) return
-            const list = this.columnFields
-            if (oldIndex < 0 || newIndex < 0 || oldIndex >= list.length || newIndex >= list.length) return
-            const [moved] = list.splice(oldIndex, 1)
-            list.splice(newIndex, 0, moved)
+          onMove: (evt) => {
+            // 首列/操作列不可拖；不可拖到首列之前、操作列之后
+            if (evt.dragged && (
+              evt.dragged.classList.contains('checkbox-item--action') ||
+              evt.dragged.classList.contains('checkbox-item--primary')
+            )) return false
+            if (evt.related && evt.related.classList.contains('checkbox-item--action')) {
+              return !evt.willInsertAfter
+            }
+            if (evt.related && evt.related.classList.contains('checkbox-item--primary')) {
+              return !!evt.willInsertAfter
+            }
+            return true
+          },
+          onEnd: () => {
+            const root = this.$refs.columnsSortableRoot
+            if (!root) return
+            const orderKeys = [...root.children]
+              .filter(node => node.classList && node.classList.contains('checkbox-item--columns'))
+              .map(node => node.getAttribute('data-property'))
+              .filter(Boolean)
+            const byKey = {}
+            this.columnFields.forEach((item) => {
+              if (item && item.property) byKey[item.property] = item
+            })
+            const next = []
+            orderKeys.forEach((key) => {
+              if (byKey[key]) next.push(byKey[key])
+            })
+            this.columnFields.forEach((item) => {
+              if (item && item.property && !next.includes(byKey[item.property])) {
+                next.push(item)
+              }
+            })
+            this.columnFields.splice(0, this.columnFields.length, ...next)
+            this.ensureLockedColumnsOrder()
           },
         })
       })
@@ -338,6 +417,46 @@ export default {
         this._columnsSortable.destroy()
         this._columnsSortable = null
       }
+    },
+    isPrimaryColumn (item) {
+      return !!(item && item.isPrimary)
+    },
+    isActionColumn (item) {
+      return !!(item && (item.isAction || item.property === '_action'))
+    },
+    isOrderLockedColumn (item) {
+      return this.isPrimaryColumn(item) || this.isActionColumn(item)
+    },
+    ensurePrimaryColumnFirst () {
+      const list = this.columnFields
+      if (!Array.isArray(list) || !list.length) return
+      const primaries = list.filter(item => this.isPrimaryColumn(item))
+      if (!primaries.length) return
+      const rest = list.filter(item => !this.isPrimaryColumn(item))
+      list.splice(0, list.length, ...primaries, ...rest)
+    },
+    ensureActionColumnLast () {
+      const list = this.columnFields
+      if (!Array.isArray(list) || !list.length) return
+      const actionIdx = list.findIndex(item => this.isActionColumn(item))
+      if (actionIdx < 0 || actionIdx === list.length - 1) return
+      const [action] = list.splice(actionIdx, 1)
+      list.push(action)
+    },
+    ensureLockedColumnsOrder () {
+      this.ensurePrimaryColumnFirst()
+      this.ensureActionColumnLast()
+    },
+    ensureLockedColumnsSelected (selected = []) {
+      const next = Array.isArray(selected) ? [...selected] : []
+      this.columnFields.forEach((item) => {
+        if (!this.isOrderLockedColumn(item)) return
+        if (item.property && !next.includes(item.property)) next.push(item.property)
+      })
+      return next
+    },
+    ensureActionColumnSelected (selected = []) {
+      return this.ensureLockedColumnsSelected(selected)
     },
     async fetchTags () {
       let manager = new this.$Manager('metadatas')
@@ -423,31 +542,38 @@ export default {
         manager = null
       }
     },
-    syncFormFieldValues () {
-      this.form.fc.setFieldsValue({
-        columnsSelected: this.columnsSelected,
-        tagsSelected: this.tagsSelected,
-        projectTagsSelected: this.projectTagsSelected,
-      })
-    },
-    validateForm () {
-      this.syncFormFieldValues()
-      return Promise.resolve(this.form.fc.getFieldsValue())
-    },
     async handleConfirm () {
       try {
-        const { columnsSelected = [], tagsSelected = [], projectTagsSelected = [] } = await this.validateForm()
+        const columnsSelected = this.columnsSelected || []
+        const tagsSelected = this.tagsSelected || []
+        const projectTagsSelected = this.projectTagsSelected || []
         this.loading = true
+        this.ensureLockedColumnsOrder()
         const sortColumnsMap = arrToObjByKey(this.columnFields, 'property', (item, i) => i)
-        const unSelect = this.columnFields.filter(item => !columnsSelected.includes(item.property)).map(item => item.property)
+        // 首列/操作列始终展示，不进 hiddenColumns
+        const unSelect = this.columnFields
+          .filter(item => !this.isOrderLockedColumn(item) && !columnsSelected.includes(item.property))
+          .map(item => item.property)
         const showTagKeys = this.tagFields.filter(item => tagsSelected.includes(item.property)).map(item => item.property)
         const showProjectTagKeys = this.projectTagFields.filter(item => projectTagsSelected.includes(item.property)).map(item => item.property)
+        const fixedLeft = []
+        const fixedRight = []
+        this.columnFields.forEach((item) => {
+          if (!this.isOrderLockedColumn(item) && !columnsSelected.includes(item.property)) return
+          const side = this.columnFixedMap[item.property]
+          if (side === 'left') fixedLeft.push(item.property)
+          if (side === 'right') fixedRight.push(item.property)
+        })
         await this.params.update({
           ...this.params.config,
           hiddenColumns: unSelect,
           showTagKeys,
           showProjectTagKeys,
           sortColumnsMap,
+          fixedColumns: {
+            left: fixedLeft,
+            right: fixedRight,
+          },
         })
         this.cancelDialog()
       } catch (error) {
@@ -461,24 +587,64 @@ export default {
       this.columnsCheckAll = val.length === this.columnFields.length
     },
     onColumnsSelectedUpdate (val) {
-      this.columnsSelected = val
-      this.syncFormFieldValues()
-      this.handleColumnsSelectedChange(val)
+      this.columnsSelected = this.ensureLockedColumnsSelected(val)
+      // 取消勾选时清除固定（锁定列除外，仍可保留固定配置）
+      Object.keys(this.columnFixedMap).forEach((key) => {
+        const locked = this.columnFields.some(item => item.property === key && this.isOrderLockedColumn(item))
+        if (locked) return
+        if (!this.columnsSelected.includes(key) && this.columnFixedMap[key]) {
+          this.columnFixedMap[key] = ''
+        }
+      })
+      this.handleColumnsSelectedChange(this.columnsSelected)
+    },
+    onColumnFixedChange (property, value) {
+      let next = value || ''
+      // 操作列不允许左固定
+      if (property === '_action' && next === 'left') next = ''
+      if (next === 'left' || next === 'right') {
+        const count = this.columnFields.filter((item) => {
+          if (item.property === property) return false
+          if (!this.columnsSelected.includes(item.property)) return false
+          return this.columnFixedMap[item.property] === next
+        }).length
+        if (count >= this.maxFixedPerSide) {
+          this.$message.warning(this.$t('common.column_fixed_limit', [this.maxFixedPerSide]))
+          return
+        }
+        if (!this.columnsSelected.includes(property)) {
+          return
+        }
+      }
+      this.columnFixedMap = {
+        ...this.columnFixedMap,
+        [property]: next,
+      }
     },
     onTagsSelectedUpdate (val) {
       this.tagsSelected = val
-      this.syncFormFieldValues()
     },
     onProjectTagsSelectedUpdate (val) {
       this.projectTagsSelected = val
-      this.syncFormFieldValues()
     },
     handleColumnsCheckAllChange (e) {
-      const next = e.target.checked ? this.columnFields.map(item => item.property) : []
+      const next = e.target.checked
+        ? this.columnFields.map(item => item.property)
+        : this.ensureLockedColumnsSelected([])
       this.columnsSelected = next
-      this.syncFormFieldValues()
+      if (!e.target.checked) {
+        const lockedKeys = new Set(
+          this.columnFields.filter(item => this.isOrderLockedColumn(item)).map(item => item.property),
+        )
+        const cleared = { ...this.columnFixedMap }
+        Object.keys(cleared).forEach((key) => {
+          if (lockedKeys.has(key)) return
+          cleared[key] = ''
+        })
+        this.columnFixedMap = cleared
+      }
       this.columnsCheckAll = e.target.checked
-      this.columnsIndeterminate = false
+      this.columnsIndeterminate = !e.target.checked && next.length > 0
     },
     iconClick (e) {
       e.preventDefault()
@@ -500,8 +666,8 @@ export default {
   width: 100%;
 }
 .customlist-cell {
-  flex: 0 0 25%;
-  max-width: 25%;
+  flex: 0 0 50%;
+  max-width: 50%;
   min-width: 0;
 }
 /* 标签区仍用下方通用 .checkbox-item 文案省略；列自定义区单独布局（拖拽柄不占 label 宽度、hover 可靠） */
@@ -510,6 +676,7 @@ export default {
   align-items: center;
   min-width: 0;
   gap: 4px;
+  padding-right: 8px;
 }
 .checkbox-item__main {
   flex: 1;
@@ -523,6 +690,10 @@ export default {
   min-width: 6px;
   min-height: 22px;
   align-self: stretch;
+}
+.checkbox-item__fixed {
+  flex: 0 0 96px;
+  width: 96px;
 }
 .checkbox-item__drag-handle {
   cursor: move;
@@ -539,6 +710,14 @@ export default {
   justify-content: center;
   height: 22px;
   color: rgba(0, 0, 0, 0.45);
+}
+.checkbox-item__handle--placeholder {
+  visibility: hidden;
+  pointer-events: none;
+}
+.checkbox-item--action,
+.checkbox-item--primary {
+  cursor: default;
 }
 .checkbox-item--columns .checkbox-item__handle :deep(.drag-icon) {
   cursor: move;

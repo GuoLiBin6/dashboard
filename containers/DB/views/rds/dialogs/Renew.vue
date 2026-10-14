@@ -4,9 +4,9 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.dbinstances')" :count="params.data.length" :action="params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc">
-         <clearing-radios v-bind="formItemLayout" />
-      </a-form>
+      <a-form-model ref="formRef" :model="form" class="mt-3">
+        <clearing-radios :model="form" v-bind="formItemLayout" />
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button :loading="loading" @click="handleConfirm" type="primary">{{ $t('dialog.ok') }}</a-button>
@@ -23,16 +23,13 @@ import WindowsMixin from '@/mixins/windows'
 export default {
   name: 'RdsRenewDialog',
   mixins: [DialogMixin, WindowsMixin],
-  provide () {
-    return {
-      form: this.form,
-    }
-  },
   data () {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        billing_type: 'postpaid',
+        duration: '1M',
+        auto_renew: true,
       },
       formItemLayout: {
         wrapperCol: { span: CreateServerForm.wrapperCol },
@@ -41,21 +38,10 @@ export default {
     }
   },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
+        const values = { ...this.form }
         const ids = this.params.data.map(item => item.id)
         await this.params.onManager('batchUpdate', {
           id: ids,

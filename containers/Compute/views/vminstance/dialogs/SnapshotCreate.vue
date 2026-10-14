@@ -9,10 +9,10 @@
       <dialog-table
         :data="params.data"
         :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.text_1071')" v-if="isKvm || isEsxi">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.text_1071')" v-if="isKvm || isEsxi" prop="snapshotType">
           <a-radio-group
-            v-decorator="decorators.snapshotType"
+            v-model:value="form.snapshotType"
             @change="snapshotTypeChangeHandle">
             <a-tooltip>
               <template slot="title" v-if="isEsxi">
@@ -22,13 +22,14 @@
             </a-tooltip>
             <a-radio value="instance">{{$t('compute.text_102')}}</a-radio>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item
+        </a-form-model-item>
+        <a-form-model-item
           :label="$t('compute.text_1254')"
-          v-if="isDiskSnapshot">
+          v-if="isDiskSnapshot"
+          prop="disk">
           <base-select
             style="width: 100%"
-            v-decorator="decorators.disk"
+            v-model:value="form.disk"
             :params="diskParams"
             :select-props="{ placeholder: $t('compute.text_1085') }"
             resource="disks"
@@ -39,30 +40,31 @@
             :filterable="true"
             :isDefaultSelect="true"
             v-model:item="selectDisk" />
-        </a-form-item>
-        <a-form-item
-          :label="$t('compute.text_415')">
+        </a-form-model-item>
+        <a-form-model-item
+          :label="$t('compute.text_415')"
+          prop="snapshotName">
           <a-input
-            v-decorator="decorators.snapshotName"
+            v-model:value="form.snapshotName"
             :placeholder="$t('validator.resourceName')" />
           <div slot="extra">
             <div v-if="showRepeatTips">{{$t('compute.text_1091')}}</div>
             <div v-show="!isDiskSnapshot">{{$t('compute.text_1255', [ diskCount ])}}</div>
           </div>
-        </a-form-item>
-        <a-form-item v-if="!isDiskSnapshot">
+        </a-form-model-item>
+        <a-form-model-item v-if="!isDiskSnapshot" prop="with_memory">
           <a-tooltip>
             <template v-if="!isRunningVm" slot="title">
               {{$t('compute.create_mem_snapshot_limit')}}
             </template>
             <a-checkbox
-              v-decorator="decorators.with_memory"
+              v-model:checked="form.with_memory"
               :disabled="!isRunningVm">
               {{$t('compute.create_mem_snapshot_same_time')}}
             </a-checkbox>
           </a-tooltip>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading" :disabled="disabledSubmit">{{
@@ -89,47 +91,23 @@ export default {
   name: 'VmSnapshotCreateDialog',
   mixins: [DialogMixin, WindowsMixin],
   data () {
+    const isEsxi = this.params.data[0].hypervisor === hypervisorMap.esxi.key
     return {
       loading: false,
       showRepeatTips: false,
       form: {
-        fc: this.$form.createForm(this, {
-          name: 'snapshort_create_form',
-          onFieldsChange: this.onFieldsChange,
-          onValuesChange: this.onValuesChange,
-        }),
-        fd: {
-          snapshotName: '',
-          snapshotType: this.params.data[0].hypervisor === hypervisorMap.esxi.key ? 'instance' : 'disk',
-        },
+        snapshotName: '',
+        snapshotType: isEsxi ? 'instance' : 'disk',
+        disk: undefined,
+        with_memory: undefined,
       },
-      decorators: {
-        snapshotType: [
-          'snapshotType',
-          {
-            initialValue: this.params.data[0].hypervisor === hypervisorMap.esxi.key ? 'instance' : 'disk',
-          },
-        ],
+      rules: {
         disk: [
-          'disk',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.text_1085'), trigger: 'change' },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_1085'), trigger: 'change' },
         ],
         snapshotName: [
-          'snapshotName',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_1256') },
-              { validator: this.$validate('resourceName') },
-            ],
-          },
-        ],
-        with_memory: [
-          'with_memory',
+          { required: true, message: this.$t('compute.text_1256') },
+          { validator: this.$validate('resourceName') },
         ],
       },
       formItemLayout: {
@@ -158,7 +136,7 @@ export default {
       if (this.params.data[0].hypervisor === hypervisorMap.cnware.key) {
         return false
       }
-      return this.form.fd.snapshotType === 'disk'
+      return this.form.snapshotType === 'disk'
     },
     manager () {
       return new this.$Manager(this.isDiskSnapshot ? 'snapshots' : 'instance_snapshots', 'v2')
@@ -171,10 +149,10 @@ export default {
     },
   },
   watch: {
-    'form.fd.snapshotName' (val) {
+    'form.snapshotName' (val) {
       this.debounceCheckTemplateName()
     },
-    'selectDisk' (val) {
+    selectDisk (val) {
       this.disabledSubmit = val.storage_type === 'nova'
     },
   },
@@ -185,7 +163,7 @@ export default {
   },
   methods: {
     checkTemplateName () {
-      const snapshotName = this.form.fd.snapshotName
+      const snapshotName = this.form.snapshotName
       if (!R.isNil(snapshotName) && !R.isEmpty(snapshotName)) {
         this.manager.get({ id: snapshotName, params: { scope: this.$store.getters.scope } })
           .then(res => {
@@ -200,31 +178,20 @@ export default {
         this.showRepeatTips = false
       }
     },
-    validateForm (fileds = []) {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields(fileds, (err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     async doCreateDiskSnapshot () {
-      const values = await this.validateForm(['disk', 'snapshotName'])
+      await this.$refs.formRef.validate()
       const params = {
-        disk: values.disk,
-        generate_name: values.snapshotName,
+        disk: this.form.disk,
+        generate_name: this.form.snapshotName,
       }
       return this.manager.create({ data: params })
     },
     async doCreateInstanceSnapshot () {
-      const values = await this.validateForm(['snapshotName', 'with_memory'])
+      await this.$refs.formRef.validate()
       const params = {
-        generate_name: values.snapshotName,
+        generate_name: this.form.snapshotName,
       }
-      if (values.with_memory) {
+      if (this.form.with_memory) {
         params.with_memory = true
       }
       return this.params.onManager('performAction', {
@@ -244,13 +211,13 @@ export default {
         } else {
           await this.doCreateInstanceSnapshot()
         }
-        this.loading = false
         this.params.refresh()
         this.cancelDialog()
         this.$message.success(this.$t('compute.text_322'))
       } catch (error) {
-        this.loading = false
         this.cancelDialog()
+      } finally {
+        this.loading = false
       }
     },
     getDiskLabel (item) {
@@ -260,14 +227,9 @@ export default {
           : DISK_TYPE.data.text
       }, ${sizestr(item.disk_size, 'M', 1024)}）`
     },
-    snapshotTypeChangeHandle (e) {
+    snapshotTypeChangeHandle () {
       this.$nextTick(() => {
         this.debounceCheckTemplateName()
-      })
-    },
-    onValuesChange (props, values) {
-      Object.keys(values).forEach((key) => {
-        this.form.fd[key] = values[key]
       })
     },
   },

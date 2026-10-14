@@ -1,14 +1,14 @@
 <template>
-  <a-form-item :label="$t('cloudenv.read_only')">
+  <a-form-model-item :label="$t('cloudenv.read_only')">
     <a-switch
       :checkedChildren="$t('cloudenv.text_84')"
       :unCheckedChildren="$t('cloudenv.text_85')"
       v-model:checked="readOnly"
       @change="onReadOnlyChange" />
-      <div slot="extra">
-        {{ $t('cloudenv.read_only_extra') }}
-      </div>
-  </a-form-item>
+    <template #extra>
+      {{ $t('cloudenv.read_only_extra') }}
+    </template>
+  </a-form-model-item>
 </template>
 
 <script>
@@ -30,15 +30,6 @@ export default {
   data () {
     return {
       readOnly: !!(this.cloneData.read_only || this.checked),
-      decorators: {
-        read_only: [
-          'read_only',
-          {
-            initialValue: this.cloneData.read_only || false,
-            valuePropName: 'checked',
-          },
-        ],
-      },
     }
   },
   watch: {
@@ -51,21 +42,20 @@ export default {
     this.syncReadOnlyToForm(this.readOnly)
   },
   methods: {
-    getFormFc () {
-      if (this.form && this.form.fc) return this.form.fc
+    getFormFd () {
+      if (this.form?.fd) return this.form.fd
+      if (this.form && typeof this.form === 'object' && !this.form.fd) return this.form
       let cur = this.$parent
       while (cur) {
-        if (cur.form && cur.form.fc) return cur.form.fc
+        if (cur.form?.fd) return cur.form.fd
         cur = cur.$parent
       }
       return null
     },
     syncReadOnlyToForm (v) {
-      const fc = this.getFormFc()
-      if (!fc) return
-      const opts = this.decorators.read_only[1] || {}
-      if (typeof fc.__registerField === 'function') fc.__registerField('read_only', opts)
-      fc.setFieldsValue({ read_only: v })
+      const fd = this.getFormFd()
+      if (!fd) return
+      this.$set(fd, 'read_only', v)
     },
     onReadOnlyChange (v) {
       this.readOnly = v

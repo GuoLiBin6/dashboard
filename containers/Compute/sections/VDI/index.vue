@@ -1,11 +1,13 @@
 <template>
-  <a-form-item>
-    <a-radio-group v-decorator="decorator" @change="handleVdiChange">
+  <a-form-model-item :prop="field">
+    <a-radio-group
+      v-model:value="model[field]"
+      @change="handleVdiChange">
       <a-radio-button v-if="showDefault" value="">{{ $t('compute.text_1') }}</a-radio-button>
       <a-radio-button value="vnc">VNC</a-radio-button>
       <a-radio-button value="spice">SPICE</a-radio-button>
     </a-radio-group>
-  </a-form-item>
+  </a-form-model-item>
 </template>
 
 <script>
@@ -23,12 +25,16 @@ export default {
       type: String,
       default: 'selection',
     },
-    decorator: {
-      type: Array,
-      required: true,
-    },
     form: {
       type: Object,
+    },
+    model: {
+      type: Object,
+      required: true,
+    },
+    field: {
+      type: String,
+      default: 'vdi',
     },
     showDefault: {
       type: Boolean,
@@ -52,23 +58,21 @@ export default {
   },
   methods: {
     handleVdiChange (e) {
-      this.$emit('change', { value: e.target.value })
+      const val = e.target.value
+      this.$set(this.model, this.field, val)
+      this.$emit('change', { value: val })
     },
     serializeFormFieldDraft () {
-      const field = Array.isArray(this.decorator) ? this.decorator[0] : 'vdi'
-      const value = this.resolveFormFc()?.getFieldValue?.(field)
+      const value = this.model[this.field]
       if (value === undefined || value === null) return undefined
       return value
     },
     applyCreateFormFieldDraft (draft) {
       if (draft === undefined || draft === null) return
       if (!this.selectableVdiOptions.includes(draft)) return
-      const field = Array.isArray(this.decorator) ? this.decorator[0] : 'vdi'
-      const fc = this.resolveFormFc()
-      if (!fc) return
-      const current = fc.getFieldValue(field)
+      const current = this.model[this.field]
       if (current === draft || String(current) === String(draft)) return
-      this.applyFormFieldValues({ [field]: draft })
+      this.$set(this.model, this.field, draft)
     },
   },
 }

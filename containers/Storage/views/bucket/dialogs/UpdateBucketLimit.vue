@@ -4,24 +4,24 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="this.params.title" :name="$t('storage.text_18')" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('storage.text_59')">
-          <a-input class="w-50" name="size_bytes" v-decorator="decorators.size_bytes" @blur="handelBlur">
-            <a-select slot="addonAfter" style="width: 80px" v-decorator="decorators.size_bytes_unit">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('storage.text_59')" prop="size_bytes">
+          <a-input class="w-50" name="size_bytes" v-model:value="form.size_bytes" @blur="handelBlur">
+            <a-select slot="addonAfter" style="width: 80px" v-model:value="form.size_bytes_unit">
               <a-select-option v-for="item in sizeUnitOpts" :key="item.value" :value="item.value">{{item.label}}</a-select-option>
             </a-select>
           </a-input>
            <span slot="extra">{{$t('storage.text_127')}}</span>
-        </a-form-item>
-         <a-form-item :label="$t('storage.text_128')">
-          <a-input class="w-50" name="object_count" v-decorator="decorators.object_count" @blur="handelBlur">
-            <a-select slot="addonAfter" type="number" style="width: 80px" v-decorator="decorators.object_count_unit">
+        </a-form-model-item>
+         <a-form-model-item :label="$t('storage.text_128')" prop="object_count">
+          <a-input class="w-50" name="object_count" v-model:value="form.object_count" @blur="handelBlur">
+            <a-select slot="addonAfter" type="number" style="width: 80px" v-model:value="form.object_count_unit">
               <a-select-option v-for="item in unitOpts" :key="item.value" :value="item.value">{{item.label}}</a-select-option>
             </a-select>
           </a-input>
           <span slot="extra">{{$t('storage.text_127')}}</span>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
@@ -42,11 +42,26 @@ export default {
   },
   mixins: [DialogMixin, WindowsMixin],
   data () {
+    const { data } = this.params
+    // eslint-disable-next-line camelcase
+    const { size_bytes_limit = 0, object_cnt_limit = 0 } = data.length === 1 ? data[0] : {}
     return {
       loading: false,
       formItemLayout,
       form: {
-        fc: this.$form.createForm(this),
+        // eslint-disable-next-line camelcase
+        size_bytes: Math.round(size_bytes_limit / (1024 * 1024 * 1024)),
+        size_bytes_unit: Math.pow(1024, 3),
+        object_count: Math.round(object_cnt_limit),
+        object_count_unit: 1,
+      },
+      rules: {
+        size_bytes: [
+          { required: true, message: this.$t('storage.text_136') },
+        ],
+        object_count: [
+          { required: true, message: this.$t('storage.text_137') },
+        ],
       },
       sizeUnitOpts: [
         { value: Math.pow(1024, 3), label: 'GB' },
@@ -61,11 +76,6 @@ export default {
         { value: 1000, label: this.$t('storage.text_132') },
         { value: 10000, label: this.$t('storage.text_133') },
       ],
-    }
-  },
-  provide () {
-    return {
-      form: this.form,
     }
   },
   computed: {
@@ -90,62 +100,20 @@ export default {
         },
       ]
     },
-    decorators () {
-      const { data } = this.params
-      // eslint-disable-next-line camelcase
-      const { size_bytes_limit = 0, object_cnt_limit = 0 } = data.length === 1 ? data[0] : {}
-      return {
-        size_bytes: [
-          'size_bytes',
-          {
-            // eslint-disable-next-line camelcase
-            initialValue: Math.round(size_bytes_limit / (1024 * 1024 * 1024)),
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('storage.text_136') },
-            ],
-          },
-        ],
-        size_bytes_unit: ['size_bytes_unit', {
-          initialValue: Math.pow(1024, 3),
-        }],
-        object_count: [
-          'object_count',
-          {
-            initialValue: Math.round(object_cnt_limit),
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('storage.text_137') },
-            ],
-          },
-        ],
-        object_count_unit: ['object_count_unit', {
-          initialValue: 1,
-        }],
-      }
-    },
   },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (err) return reject(err)
-          // eslint-disable-next-line camelcase
-          const { size_bytes, size_bytes_unit, object_count, object_count_unit } = values
-          const limit = {
-            size_bytes: parseInt(size_bytes) * parseInt(size_bytes_unit),
-            object_count: parseInt(object_count) * parseInt(object_count_unit),
-          }
-          resolve({
-            limit,
-          })
-        })
-      })
-    },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
+        await this.$refs.formRef.validate()
+        // eslint-disable-next-line camelcase
+        const { size_bytes, size_bytes_unit, object_count, object_count_unit } = this.form
+        const values = {
+          limit: {
+            size_bytes: parseInt(size_bytes) * parseInt(size_bytes_unit),
+            object_count: parseInt(object_count) * parseInt(object_count_unit),
+          },
+        }
         const { data } = this.params
         await this.params.onManager('batchPerformAction', {
           id: data.map(item => item.id),
@@ -165,9 +133,7 @@ export default {
     handelBlur ({ target }) {
       const { value, name } = target
       if (!/^\d+$/.test(value)) {
-        this.form.fc.setFieldsValue({
-          [name]: 0,
-        })
+        this.form[name] = 0
       }
     },
   },

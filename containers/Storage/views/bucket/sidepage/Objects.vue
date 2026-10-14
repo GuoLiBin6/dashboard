@@ -193,15 +193,14 @@ export default {
                 await manager.create({ data })
                 this.list.fetchData()
               },
-              decorators: {
-                key: ['key', {
+              fields: {
+                key: {
+                  name: 'key',
                   rules: [
                     { required: true, message: this.$t('storage.text_151') },
                     { type: 'string', min: 1, max: 254, message: this.$t('storage.text_160'), trigger: 'blur' },
                     { validator: validDirName, trigger: 'blur' },
                   ],
-                },
-                {
                   label: this.$t('storage.text_161'),
                   placeholder: this.$t('storage.text_162'),
                   extra: (h) => {
@@ -213,7 +212,6 @@ export default {
                     ])
                   },
                 },
-                ],
               },
             })
           },

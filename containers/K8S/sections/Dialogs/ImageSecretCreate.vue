@@ -2,31 +2,33 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{ params.title || $t('k8s.create') }}</div>
     <div slot="body">
-      <a-form
-        v-bind="formItemLayout"
-        :form="form.fc">
-        <a-form-item :label="$t('k8s.text_50')">
-          <a-input v-decorator="decorators.name" :placeholder="$t('k8s.text_51')" />
-        </a-form-item>
-        <a-form-item :label="$t('k8s.text_19')">
-          <cluster-select v-decorator="decorators.cluster" :setDefault="false" :disabled="true" />
-        </a-form-item>
-        <a-form-item :label="$t('k8s.text_23')">
-          <namespace-select v-decorator="decorators.namespace" :cluster="params.cluster" :setDefault="false" :disabled="true" />
-        </a-form-item>
-        <a-form-item :label="$t('k8s.text_52')" prop="server">
-          <a-input v-decorator="decorators.server" :placeholder="$t('k8s.text_53')" />
-        </a-form-item>
-        <a-form-item :label="$t('k8s.text_54')">
-          <a-input v-decorator="decorators.user" :placeholder="$t('k8s.text_55')" />
-        </a-form-item>
-        <a-form-item :label="$t('k8s.text_56')">
-          <a-input-password v-decorator="decorators.password" :placeholder="$t('k8s.text_57')" />
-        </a-form-item>
-        <a-form-item :label="$t('k8s.text_58')">
-          <a-input v-decorator="decorators.email" :placeholder="$t('k8s.text_59')" />
-        </a-form-item>
-      </a-form>
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('k8s.text_50')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('k8s.text_51')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('k8s.text_19')" prop="cluster">
+          <cluster-select v-model:value="form.cluster" :setDefault="false" :disabled="true" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('k8s.text_23')" prop="namespace">
+          <namespace-select v-model:value="form.namespace" :cluster="params.cluster" :setDefault="false" :disabled="true" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('k8s.text_52')" prop="server">
+          <a-input v-model:value="form.server" :placeholder="$t('k8s.text_53')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('k8s.text_54')" prop="user">
+          <a-input v-model:value="form.user" :placeholder="$t('k8s.text_55')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('k8s.text_56')" prop="password">
+          <a-input-password v-model:value="form.password" :placeholder="$t('k8s.text_57')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('k8s.text_58')" prop="email">
+          <a-input v-model:value="form.email" :placeholder="$t('k8s.text_59')" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -67,69 +69,36 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-        fd: {},
+        name: '',
+        cluster: this.params.cluster,
+        namespace: this.params.namespace,
+        server: '',
+        user: '',
+        password: '',
+        email: '',
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('k8s.text_60') },
-              { validator: this.$validate('k8sName') },
-            ],
-          },
+          { required: true, message: this.$t('k8s.text_60') },
+          { validator: this.$validate('k8sName') },
         ],
         cluster: [
-          'cluster',
-          {
-            initialValue: this.params.cluster,
-            rules: [
-              { required: true, message: this.$t('k8s.text_30'), trigger: 'blur' },
-            ],
-          },
+          { required: true, message: this.$t('k8s.text_30'), trigger: 'blur' },
         ],
         namespace: [
-          'namespace',
-          {
-            initialValue: this.params.namespace,
-            rules: [
-              { required: true, message: this.$t('k8s.text_61'), trigger: 'blur' },
-            ],
-          },
+          { required: true, message: this.$t('k8s.text_61'), trigger: 'blur' },
         ],
         server: [
-          'server',
-          {
-            rules: [
-              { required: true, message: this.$t('k8s.text_53'), trigger: 'blur' },
-            ],
-          },
+          { required: true, message: this.$t('k8s.text_53'), trigger: 'blur' },
         ],
         user: [
-          'user',
-          {
-            rules: [
-              { required: true, message: this.$t('k8s.text_62'), trigger: 'blur' },
-            ],
-          },
+          { required: true, message: this.$t('k8s.text_62'), trigger: 'blur' },
         ],
         password: [
-          'password',
-          {
-            rules: [
-              { required: true, message: this.$t('k8s.text_57'), trigger: 'blur' },
-            ],
-          },
+          { required: true, message: this.$t('k8s.text_57'), trigger: 'blur' },
         ],
         email: [
-          'email',
-          {
-            rules: [
-              { validator: validateEmail, trigger: 'blur' },
-            ],
-          },
+          { validator: validateEmail, trigger: 'blur' },
         ],
       },
       formItemLayout: {
@@ -146,17 +115,6 @@ export default {
     this.secretsM = new this.$Manager('secrets', 'v1')
   },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     async doCreate (values) {
       const data = {
         cluster: values.cluster,
@@ -179,11 +137,11 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
-        await this.doCreate(values)
+        await this.$refs.formRef.validate()
+        await this.doCreate(this.form)
         this.loading = false
         this.cancelDialog()
-        this.params.success && this.params.success(values.name)
+        this.params.success && this.params.success(this.form.name)
       } catch (error) {
         this.loading = false
       }

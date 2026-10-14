@@ -20,109 +20,72 @@ import validateForm, { isRequired } from '@/utils/validate'
 import store from '@/store'
 import i18n from '@/locales'
 
-export const decorators = {
-  generate_name: [
-    'generate_name',
-    {
-      initialValue: '',
-      validateTrigger: ['change', 'blur'],
-      validateFirst: true,
-      rules: [
-        { required: true, message: i18n.t('db.text_136') },
-        { validator: validateForm('serverName') },
-      ],
-    },
-  ],
-  count: [
-    'count',
-    {
-      initialValue: 1,
-    },
-  ],
-  billing_type: [
-    'billing_type',
-    {
-      initialValue: 'postpaid',
-    },
-  ],
-  sku: [
-    'sku',
-    {
-      rules: [
-        { required: true, message: i18n.t('db.text_258') },
-      ],
-    },
-  ],
+export const fieldMap = {
+  generate_name: {
+    name: 'generate_name',
+    initialValue: '',
+    validateTrigger: ['change', 'blur'],
+    validateFirst: true,
+    rules: [
+      { required: true, message: i18n.t('db.text_136') },
+      { validator: validateForm('serverName') },
+    ],
+  },
+  count: { name: 'count', initialValue: 1 },
+  billing_type: { name: 'billing_type', initialValue: 'postpaid' },
+  sku: {
+    name: 'sku',
+    rules: [
+      { required: true, message: i18n.t('db.text_258') },
+    ],
+  },
   regionZone: {
-    cloudregion: [
-      'region',
-      {
-        initialValue: { key: '', label: '' },
-        rules: [
-          { validator: isRequired(), message: i18n.t('db.text_259') },
-        ],
-      },
-    ],
-    zone: [
-      'zone',
-      {
-        initialValue: { key: '', label: '' },
-        rules: [
-          { validator: isRequired(), message: i18n.t('db.text_260') },
-        ],
-      },
-    ],
+    cloudregion: {
+      name: 'region',
+      initialValue: { key: '', label: '' },
+      rules: [
+        { validator: isRequired(), message: i18n.t('db.text_259') },
+      ],
+    },
+    zone: {
+      name: 'zone',
+      initialValue: { key: '', label: '' },
+      rules: [
+        { validator: isRequired(), message: i18n.t('db.text_260') },
+      ],
+    },
   },
   cityProviderRegion: {
-    city: ['city', {
-      initialValue: undefined,
-    }],
-    provider: ['provider', {
-      initialValue: undefined,
-    }],
-    region: ['region', {
-      initialValue: undefined,
-    }],
-    zone: ['zone', {
-      initialValue: undefined,
-    }],
+    city: { name: 'city', initialValue: undefined },
+    provider: { name: 'provider', initialValue: undefined },
+    region: { name: 'region', initialValue: undefined },
+    zone: { name: 'zone', initialValue: undefined },
   },
   loginConfig: {
-    loginType: [
-      'loginType',
-      {
-        initialValue: 'random',
-      },
-    ],
-    keypair: [
-      'loginKeypair',
-      {
-        initialValue: undefined, // { key: '', label: '' }
-        rules: [
-          { validator: isRequired(), message: i18n.t('db.text_137') },
-        ],
-      },
-    ],
+    loginType: { name: 'loginType', initialValue: 'random' },
+    keypair: {
+      name: 'loginKeypair',
+      initialValue: undefined, // { key: '', label: '' }
+      rules: [
+        { validator: isRequired(), message: i18n.t('db.text_137') },
+      ],
+    },
   },
   vpcNetwork: {
-    vpc: [
-      'vpc',
-      {
-        initialValue: undefined,
-        rules: [
-          { required: true, message: i18n.t('db.text_261') },
-        ],
-      },
-    ],
-    network: [
-      'network',
-      {
-        initialValue: undefined,
-        rules: [
-          { required: true, message: i18n.t('db.text_262') },
-        ],
-      },
-    ],
+    vpc: {
+      name: 'vpc',
+      initialValue: undefined,
+      rules: [
+        { required: true, message: i18n.t('db.text_261') },
+      ],
+    },
+    network: {
+      name: 'network',
+      initialValue: undefined,
+      rules: [
+        { required: true, message: i18n.t('db.text_262') },
+      ],
+    },
   },
 }
 

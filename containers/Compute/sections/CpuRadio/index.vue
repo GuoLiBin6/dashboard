@@ -1,18 +1,35 @@
 <template>
   <div class="d-flex">
-    <a-form-item :extra="extra">
-      <a-radio-group v-decorator="decorator" @change="change" :disabled="disabled">
+    <a-form-model-item :extra="extra" :prop="field">
+      <a-radio-group
+        v-model:value="model[field]"
+        :disabled="disabled"
+        @change="onChange">
         <a-radio-button v-show="showUnlimited" :key="0" :value="0">{{ $t('compute.unlimited') }}</a-radio-button>
-        <a-radio-button v-for="item in realOptions" :value="item" :key="item" v-show="item < max || !showMore" :disabled="disableOptionHandle(item)">{{$t('compute.text_120', [ item ])}}</a-radio-button>
+        <a-radio-button
+          v-for="item in realOptions"
+          :key="item"
+          :value="item"
+          v-show="item < max || !showMore"
+          :disabled="disableOptionHandle(item)">{{ $t('compute.text_120', [item]) }}</a-radio-button>
         <a-radio-button v-if="showMore" @click="showMore = !showMore">...</a-radio-button>
       </a-radio-group>
-    </a-form-item>
-    <a-form-item v-if="showCpuSockets" :extra="cpuSocketsExtra">
+    </a-form-model-item>
+    <a-form-model-item v-if="showCpuSockets" :extra="cpuSocketsExtra">
       <a-tooltip :title="isServerRunning ? $t('compute.hot_action_notsupport') : ''">
-        <base-select :disabled="isServerRunning" :value="cpuSockets" class="ml-1" :options="getCpuSocketsOptions(cpuSocketsOptions, cpu)" @change="cpuSocketsChangeHandle" />
+        <base-select
+          :disabled="isServerRunning"
+          :value="cpuSockets"
+          class="ml-1"
+          :options="getCpuSocketsOptions(cpuSocketsOptions, cpuValue)"
+          @change="cpuSocketsChangeHandle" />
       </a-tooltip>
-    </a-form-item>
-    <a-button v-if="isVMware && !isServerRunning" class="mt-1" type="link" @click="showCpuSocketsHandle">{{ showCpuSockets ? $t('common.cancel') : $t('compute.set_cpu_sockets') }}</a-button>
+    </a-form-model-item>
+    <a-button
+      v-if="isVMware && !isServerRunning"
+      class="mt-1"
+      type="link"
+      @click="showCpuSocketsHandle">{{ showCpuSockets ? $t('common.cancel') : $t('compute.set_cpu_sockets') }}</a-button>
   </div>
 </template>
 
@@ -25,9 +42,14 @@ export default {
   name: 'CpuRadio',
   mixins: [createFormFieldDraftMixin],
   props: {
-    decorator: {
-      type: Array,
+    model: {
+      type: Object,
       required: true,
+    },
+    /** fd 字段名，默认 vcpu */
+    field: {
+      type: String,
+      default: 'vcpu',
     },
     options: {
       type: Array,
@@ -55,7 +77,6 @@ export default {
     },
     form: {
       type: Object,
-      require: true,
     },
     hypervisor: {
       validator: val => {
@@ -72,19 +93,16 @@ export default {
     showCpuSocketsInit: {
       type: Boolean,
     },
-    /** selection：radio/单选 select/switch 类，local + session 双写、可跨 tab 回填 */
     formDraftKind: {
       type: String,
       default: 'selection',
     },
   },
+  emits: ['update:value', 'change'],
   data () {
-    const max = Math.max.apply(null, this.options)
-    const showMore = max > this.max
+    const max = Math.max.apply(null, this.options || [0])
     return {
-      showMore,
-      opta: this.options,
-      cpu: this.decorator[1].initialValue,
+      showMore: max > this.max,
       cpuSockets: 0,
       cpuSocketsOptions: [
         { label: '1', value: 1 },
@@ -95,6 +113,9 @@ export default {
     }
   },
   computed: {
+    cpuValue () {
+      return this.model[this.field]
+    },
     isVMware () {
       return this.hypervisor === HYPERVISORS_MAP.esxi.key
     },
@@ -102,7 +123,8 @@ export default {
       if (this.isServerRunning) {
         return `${this.$t('compute.core_per_sockets')}: ` + (this.cpuSocketsInit)
       }
-      return `${this.$t('compute.core_per_sockets')}: ` + (this.cpu / (this.cpuSockets || 1))
+      const cpu = Number(this.cpuValue) || 0
+      return `${this.$t('compute.core_per_sockets')}: ` + (cpu / (this.cpuSockets || 1))
     },
     isServerRunning () {
       return this.serverStatus === 'running'
@@ -118,9 +140,8 @@ export default {
     options: {
       immediate: true,
       handler (opts) {
-        const max = Math.max.apply(null, opts || [])
+        const max = Math.max.apply(null, opts || [0])
         this.showMore = max > this.max
-        // options 变化：尝试草稿回填
         this.$nextTick(() => this.tryRestoreCpuDraft(opts))
       },
     },
@@ -134,20 +155,26 @@ export default {
     },
     cpuSocketsInit: {
       handler (v) {
-        if (this.isServerRunning) {
-          this.cpuSockets = this.cpu / v
+        const cpu = Number(this.cpuValue) || 0
+        if (this.isServerRunning && v) {
+          this.cpuSockets = cpu / v
         } else {
           this.cpuSockets = v
         }
       },
       immediate: true,
     },
+    cpuValue (cpu) {
+      const n = Number(cpu) || 0
+      this.cpuSockets = this.isServerRunning && this.cpuSocketsInit
+        ? n / this.cpuSocketsInit
+        : (this.cpuSockets || 1)
+    },
   },
   methods: {
-    change (e) {
+    onChange (e) {
       const cpu = e && e.target ? e.target.value : e
       this.cpuSockets = this.isServerRunning ? cpu / this.cpuSocketsInit : 1
-      this.cpu = cpu
       this.$emit('change', cpu)
     },
     disableOptionHandle (item) {
@@ -155,62 +182,43 @@ export default {
     },
     showCpuSocketsHandle () {
       this.showCpuSockets = !this.showCpuSockets
-      this.form.fi.showCpuSockets = this.showCpuSockets
+      if (this.form?.fi) {
+        this.form.fi.showCpuSockets = this.showCpuSockets
+      }
     },
     cpuSocketsChangeHandle (v) {
       this.cpuSockets = v
     },
     getCpuSocketsOptions (cpuSocketsOptions, cpu) {
-      return cpuSocketsOptions.filter(item => {
-        return cpu % item.value === 0
-      })
+      const n = Number(cpu) || 0
+      return cpuSocketsOptions.filter(item => n % item.value === 0)
     },
     tryRestoreCpuDraft (opts) {
       if (!this.formDraftKey || !Array.isArray(opts)) return
-      const fieldName = Array.isArray(this.decorator) ? this.decorator[0] : 'vcpu'
       const draft = this.readFormFieldDraft()
-      // 无草稿：不覆盖，走页面原有 initialValue(2) + fetchInstanceSpecs/cpuChange
       if (draft === null || draft === undefined || draft === '') return
       let next
-      // 不限存的是 0，不在 options 内，需单独回填
       if (this.showUnlimited && (draft === 0 || draft === '0')) {
         next = 0
       } else if (!opts.length) {
         return
       } else {
-        const hit = this.matchFormFieldDraftInOptions(opts, draft, {
-          getId: item => item,
-        })
-        // 草稿不在 options：回退原先默认 2 核，再不行用第一项
-        if (hit != null) {
-          next = hit
-        } else if (opts.some(item => Number(item) === 2)) {
-          next = opts.find(item => Number(item) === 2)
-        } else {
-          next = opts[0]
-        }
+        const hit = this.matchFormFieldDraftInOptions(opts, draft, { getId: item => item })
+        if (hit != null) next = hit
+        else if (opts.some(item => Number(item) === 2)) next = opts.find(item => Number(item) === 2)
+        else next = opts[0]
       }
       if (next == null) return
-      // 草稿在「更多」折叠区（>= max）：展开以便选中态可见
       if (next !== 0 && Number(next) >= this.max) {
         this.showMore = false
       }
-      const current = this.form?.fc?.getFieldValue?.(fieldName)
-      if (current === next || String(current) === String(next)) return
-      if (this.form?.fc) {
-        this.form.fc.setFieldsValue({ [fieldName]: next })
-      }
-      this.cpu = next
+      if (this.cpuValue === next || String(this.cpuValue) === String(next)) return
+      this.$set(this.model, this.field, next)
+      this.$emit('update:value', next)
       this.$emit('change', next)
     },
-    /**
-     * 提交时获取表单草稿
-     */
     serializeFormFieldDraft () {
-      const fieldName = Array.isArray(this.decorator) ? this.decorator[0] : 'vcpu'
-      const value = this.form?.fc?.getFieldValue?.(fieldName)
-      // 0 表示不限，需可序列化
-      return value != null && value !== '' ? value : undefined
+      return this.cpuValue != null && this.cpuValue !== '' ? this.cpuValue : undefined
     },
   },
 }

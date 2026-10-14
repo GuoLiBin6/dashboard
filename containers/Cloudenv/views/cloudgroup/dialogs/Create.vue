@@ -2,63 +2,52 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{ $t('cloudenv.text_492') }}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc"
-         v-bind="formItemLayout">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
         <template v-if="showDomainSelect">
-          <a-form-item :label="`${$t('network.text_205', [$t('dictionary.domain')])}`">
+          <a-form-model-item :label="`${$t('network.text_205', [$t('dictionary.domain')])}`" prop="project_domain">
             <base-select
-              v-decorator="decorators.project_domain"
+              v-model:value="form.project_domain"
               resource="domains"
               version="v1"
               :params="domainProps"
               filterable
               :select-props="{ placeholder: $t('rules.domain') }" />
-          </a-form-item>
+          </a-form-model-item>
         </template>
-        <a-form-item :label="$t('dictionary.cloudprovider')">
+        <a-form-model-item :label="$t('dictionary.cloudprovider')" prop="manager_id">
           <base-select
-            v-decorator="decorators.manager_id"
+            v-model:value="form.manager_id"
             resource="cloudproviders"
             filterable
             isDefaultSelect
             :params="cloudproviderParams"
-            v-model:item="form.fi.cloudprovider" />
-        </a-form-item>
-        <a-form-item :label="$t('common.name')">
-          <a-input v-decorator="decorators.name" :placeholder="$t('validator.serverCreateName')"  @change="e => { form.fi.generate_name = e.target.value }" />
+            v-model:item="formFi.cloudprovider" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.name')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('validator.serverCreateName')" @change="e => { formFi.generate_name = e.target.value }" />
           <name-repeated
-            v-if="form.fi.generate_name"
+            v-if="formFi.generate_name"
             res="servers"
             version="v1"
-            :name="form.fi.generate_name"
+            :name="formFi.generate_name"
             :params="nameRepeatParams" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
-        <!-- <a-form-item :label="$t('common.brand')">
-          <a-select
-            showSearch
-            :filterOption="filterOption"
-            v-decorator="decorators.provider"
-            :placeholder="$t('rules.provider')"
-            :disabled="!!params.provider"
-            @change="handleProviderChange">
-            <template v-for="item of providerOptions" :key="item[0]">
-              <a-select-option :value="item[1].provider">{{ item[1].label }}</a-select-option>
-            </template>
-          </a-select>
-        </a-form-item> -->
-        <a-form-item :label="$t('dictionary.policy')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" prop="description">
+          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.description" :placeholder="$t('common_367')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('dictionary.policy')" prop="cloudpolicy_ids">
           <list-select
-            v-decorator="decorators.cloudpolicy_ids"
+            v-model:value="form.cloudpolicy_ids"
             :listProps="policySelectProps"
             multiple
             :formatter="row => `${row.name} / ${row.description || ''}`"
             :dialog-params="{ mask: false, width: 900, title: $t('rules.policy') }" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -68,14 +57,12 @@
 </template>
 
 <script>
-// import get from 'lodash/get'
 import { mapGetters } from 'vuex'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import NameRepeated from '@/sections/NameRepeated'
 import ListSelect from '@/sections/ListSelect'
 import { getNameFilter } from '@/utils/common/tableFilter'
-// import { HYPERVISORS_MAP } from '@/constants'
 
 export default {
   name: 'CloudgroupCreateDialog',
@@ -85,58 +72,28 @@ export default {
   },
   mixins: [DialogMixin, WindowsMixin],
   data () {
-    // const providerOptions = Object.entries(HYPERVISORS_MAP).filter(item => {
-    //   return (this.$store.getters.capability.cloud_id_brands || []).includes(item[1].provider) && this.$store.getters.capability.brands.includes(item[1].provider)
-    // })
-    // const firstProvider = get(providerOptions, '[0][1].provider')
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-        fi: {
-          generate_name: '',
-          provider: this.params.provider || '',
-        },
+        name: '',
+        description: '',
+        manager_id: undefined,
+        cloudpolicy_ids: undefined,
+        project_domain: undefined,
       },
-      // providerOptions,
-      decorators: {
+      formFi: {
+        generate_name: '',
+        cloudprovider: {},
+      },
+      rules: {
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('common.text00042') },
-            ],
-          },
-        ],
-        description: ['description'],
-        provider: [
-          'provider',
-          {
-            initialValue: this.params.provider || '',
-            rules: [
-              { required: true, message: this.$t('rules.provider') },
-            ],
-          },
+          { required: true, message: this.$t('common.text00042') },
         ],
         manager_id: [
-          'manager_id',
-          {
-            rules: [
-              { required: true, message: this.$t('common.select') },
-            ],
-          },
-        ],
-        cloudpolicy_ids: [
-          'cloudpolicy_ids',
+          { required: true, message: this.$t('common.select') },
         ],
         project_domain: [
-          'project_domain',
-          {
-            rules: [
-              { required: true, message: this.$t('rules.domain') },
-            ],
-          },
+          { required: true, message: this.$t('rules.domain') },
         ],
       },
       policySelectProps: {
@@ -147,7 +104,7 @@ export default {
           getParams: () => {
             return {
               scope: this.$store.getters.scope,
-              manager_id: this.form.fc.getFieldValue('manager_id'),
+              manager_id: this.form.manager_id,
             }
           },
           filterOptions: {
@@ -188,7 +145,7 @@ export default {
     ...mapGetters(['scope', 'isAdminMode']),
     nameRepeatParams () {
       return {
-        provider: this.form.fi.cloudprovider?.provider,
+        provider: this.formFi.cloudprovider?.provider,
       }
     },
     domainProps () {
@@ -214,7 +171,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         values.project_domain = values.project_domain || this.params.cloudaccount?.domain_id
         await this.params.onManager('create', {
           managerArgs: {
@@ -225,14 +183,6 @@ export default {
       } finally {
         this.loading = false
       }
-    },
-    handleProviderChange (val) {
-      this.form.fi.provider = val
-    },
-    filterOption (input, option) {
-      return (
-        option.componentOptions.children[0].text.toLowerCase().indexOf(input.toLowerCase()) >= 0
-      )
     },
   },
 }

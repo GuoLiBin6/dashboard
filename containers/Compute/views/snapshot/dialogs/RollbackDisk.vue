@@ -7,12 +7,13 @@
       </a-alert>
       <dialog-selected-tips :name="$t('dictionary.snapshot')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('compute.text_494')" v-bind="formItemLayout" :extra="$t('compute.text_1068')">
-          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-decorator="decorators.autoStart" :disabled="disabled" />
-        </a-form-item>
-      </a-form>
+      <a-form-model
+        ref="formRef"
+        :model="form">
+        <a-form-model-item :label="$t('compute.text_494')" v-bind="formItemLayout" :extra="$t('compute.text_1068')" prop="autoStart">
+          <a-switch v-model:checked="form.autoStart" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" :disabled="disabled" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -33,16 +34,7 @@ export default {
       loading: false,
       action: this.$t('compute.text_1069'),
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        autoStart: [
-          'autoStart',
-          {
-            valuePropName: 'checked',
-            initialValue: true,
-          },
-        ],
+        autoStart: true,
       },
       disabled: false,
       formItemLayout: {
@@ -68,23 +60,19 @@ export default {
       handler (val) {
         if (val.some(v => !v.guest)) {
           this.disabled = true
-          this.$nextTick(() => {
-            this.form.fc.setFieldsValue({ autoStart: false })
-          })
+          this.form.autoStart = false
         } else {
           this.disabled = false
-          this.$nextTick(() => {
-            this.form.fc.setFieldsValue({ autoStart: true })
-          })
+          this.form.autoStart = true
         }
       },
     },
   },
   methods: {
-    async doRollbackDiskSubmit (values) {
+    async doRollbackDiskSubmit () {
       const params = {
         snapshot_id: this.params.data[0].id,
-        auto_start: values.autoStart,
+        auto_start: this.form.autoStart,
       }
       const ids = this.params.data.map(item => item.disk_id)
       const manager = new this.$Manager('disks')
@@ -97,12 +85,12 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.getFieldsValue()
-        await this.doRollbackDiskSubmit(values)
+        await this.doRollbackDiskSubmit()
         this.params.refresh()
-        this.loading = false
         this.cancelDialog()
       } catch (error) {
+        // submit failed
+      } finally {
         this.loading = false
       }
     },

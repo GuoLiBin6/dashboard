@@ -2,96 +2,101 @@
   <div>
     <page-header :title="createPageTitle" />
     <page-body needMarginBottom>
-      <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
-        <a-form-item :label="$t('common.name')">
-          <a-input v-decorator="decorators.name" :placeholder="$t('validator.resourceName')" />
+      <a-form-model
+        ref="formRef"
+        :model="form.fd"
+        :rules="rules"
+        hideRequiredMark
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('common.name')" prop="name">
+          <a-input v-model:value="form.fd.name" :placeholder="$t('validator.resourceName')" />
           <template v-slot:extra>
             <name-repeated res="llms" :name="form.fd.name" />
           </template>
-        </a-form-item>
-        <a-form-item :label="llmTypeLabel">
+        </a-form-model-item>
+        <a-form-model-item :label="llmTypeLabel" prop="llm_type">
           <a-radio-group
             class="llm-type-picker"
             button-style="solid"
-            v-decorator="decorators.llm_type">
+            v-model:value="form.fd.llm_type">
             <a-radio-button v-for="opt in llmTypeOptions" :key="opt.id" :value="opt.id">
               {{ opt.name }}
             </a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="llmSkuLabel">
+        </a-form-model-item>
+        <a-form-model-item :label="llmSkuLabel" prop="llm_sku_id">
           <llm-sku-select
-            v-decorator="decorators.llm_sku_id"
+            v-model:value="form.fd.llm_sku_id"
             :params="llmSkuParams"
             :select-props="{
               placeholder: $t('common.tips.select', [llmSkuLabel]),
             }" />
-        </a-form-item>
-        <a-form-item v-if="supportMountedModels" :label="$t('aice.model')" :extra="$t('aice.llm_override_sku_extra')">
+        </a-form-model-item>
+        <a-form-model-item v-if="supportMountedModels" :label="$t('aice.model')" :extra="$t('aice.llm_override_sku_extra')">
           <base-select
-            v-decorator="decorators.mounted_models"
+            v-model:value="form.fd.mounted_models"
             resource="llm_instant_models"
             remote
             :params="mountedModelParams"
             :selectProps="{ mode: 'multiple', placeholder: $t('common.tips.select', [$t('aice.model')]), allowClear: true }" />
-        </a-form-item>
-        <a-form-item v-if="supportDevices" :label="$t('aice.devices')" :extra="$t('aice.llm_override_sku_extra')">
+        </a-form-model-item>
+        <a-form-model-item v-if="supportDevices" :label="$t('aice.devices')" :extra="$t('aice.llm_override_sku_extra')">
           <base-select
-            v-decorator="decorators.device"
+            v-model:value="form.fd.device"
             :options="specList"
             :selectProps="{ mode: 'multiple', placeholder: $t('common.tips.select', [$t('aice.devices')]), allowClear: true }" />
-        </a-form-item>
-        <a-form-item v-if="supportDevicesAndHostPaths" :label="$t('aice.host_paths')" :extra="$t('aice.llm_override_sku_extra')">
+        </a-form-model-item>
+        <a-form-model-item v-if="supportDevicesAndHostPaths" :label="$t('aice.host_paths')" :extra="$t('aice.llm_override_sku_extra')">
           <div v-for="hp in hostPathRows" :key="hp.key" style="display: flex; align-items: stretch; gap: 10px; margin-bottom: 12px;">
             <div style="flex: 1; border: 1px solid #e8e8e8; border-radius: 4px; padding: 12px;">
               <a-row :gutter="8">
                 <a-col :span="8">
-                  <a-form-item>
+                  <a-form-model-item>
                     <fixed-label-filter :label="$t('aice.host_paths.type')">
-                      <a-select v-decorator="decorators.host_paths.type(hp.key)" :placeholder="$t('common.tips.select', [$t('aice.host_paths.type')])">
+                      <a-select v-model:value="hp.type" :placeholder="$t('common.tips.select', [$t('aice.host_paths.type')])">
                         <a-select-option value="directory">directory</a-select-option>
                         <a-select-option value="file">file</a-select-option>
                       </a-select>
                     </fixed-label-filter>
-                  </a-form-item>
+                  </a-form-model-item>
                 </a-col>
                 <a-col :span="16">
-                  <a-form-item>
+                  <a-form-model-item>
                     <fixed-label-filter :label="$t('aice.host_paths.path')">
-                      <a-input v-decorator="decorators.host_paths.path(hp.key)" :placeholder="$t('aice.host_paths.path.placeholder')" />
+                      <a-input v-model:value="hp.path" :placeholder="$t('aice.host_paths.path.placeholder')" />
                     </fixed-label-filter>
-                  </a-form-item>
+                  </a-form-model-item>
                 </a-col>
               </a-row>
 
               <a-row :gutter="8">
                 <a-col :span="24">
-                  <a-form-item>
-                    <a-checkbox v-decorator="decorators.host_paths.auto_create(hp.key)">{{ $t('aice.host_paths.auto_create') }}</a-checkbox>
-                  </a-form-item>
+                  <a-form-model-item>
+                    <a-checkbox v-model:checked="hp.auto_create">{{ $t('aice.host_paths.auto_create') }}</a-checkbox>
+                  </a-form-model-item>
                 </a-col>
               </a-row>
-              <a-row :gutter="8" v-if="form.fc.getFieldValue(`host_path_auto_create_${hp.key}`)">
+              <a-row :gutter="8" v-if="hp.auto_create">
                 <a-col :span="8">
-                  <a-form-item>
+                  <a-form-model-item>
                     <fixed-label-filter :label="$t('aice.host_paths.auto_create_config.uid')">
-                      <a-input v-decorator="decorators.host_paths.auto_uid(hp.key)" :placeholder="$t('aice.host_paths.auto_create_config.uid.placeholder')" />
+                      <a-input v-model:value="hp.auto_create_config.uid" :placeholder="$t('aice.host_paths.auto_create_config.uid.placeholder')" />
                     </fixed-label-filter>
-                  </a-form-item>
+                  </a-form-model-item>
                 </a-col>
                 <a-col :span="8">
-                  <a-form-item>
+                  <a-form-model-item>
                     <fixed-label-filter :label="$t('aice.host_paths.auto_create_config.gid')">
-                      <a-input v-decorator="decorators.host_paths.auto_gid(hp.key)" :placeholder="$t('aice.host_paths.auto_create_config.gid.placeholder')" />
+                      <a-input v-model:value="hp.auto_create_config.gid" :placeholder="$t('aice.host_paths.auto_create_config.gid.placeholder')" />
                     </fixed-label-filter>
-                  </a-form-item>
+                  </a-form-model-item>
                 </a-col>
                 <a-col :span="8">
-                  <a-form-item>
+                  <a-form-model-item>
                     <fixed-label-filter :label="$t('aice.host_paths.permissions')">
-                      <a-input v-decorator="decorators.host_paths.auto_perm(hp.key)" :placeholder="$t('aice.host_paths.permissions.placeholder')" />
+                      <a-input v-model:value="hp.auto_create_config.permissions" :placeholder="$t('aice.host_paths.permissions.placeholder')" />
                     </fixed-label-filter>
-                  </a-form-item>
+                  </a-form-model-item>
                 </a-col>
               </a-row>
 
@@ -99,29 +104,29 @@
               <div v-for="c in hp.containerRows" :key="c.key">
                 <a-row :gutter="8">
                   <a-col :span="12">
-                    <a-form-item>
+                    <a-form-model-item>
                       <fixed-label-filter :label="$t('aice.host_paths.mount_path')">
-                        <a-input v-decorator="decorators.host_paths.mount_path(hp.key, c.key)" :placeholder="$t('aice.host_paths.mount_path.placeholder')" />
+                        <a-input v-model:value="c.mount_path" :placeholder="$t('aice.host_paths.mount_path.placeholder')" />
                       </fixed-label-filter>
-                    </a-form-item>
+                    </a-form-model-item>
                   </a-col>
                   <a-col :span="12">
-                    <a-form-item>
+                    <a-form-model-item>
                       <fixed-label-filter :label="$t('aice.host_paths.propagation')">
-                        <a-select v-decorator="decorators.host_paths.propagation(hp.key, c.key)" :placeholder="$t('common.tips.select', [$t('aice.host_paths.propagation')])" optionLabelProp="label" :dropdownMatchSelectWidth="false">
+                        <a-select v-model:value="c.propagation" :placeholder="$t('common.tips.select', [$t('aice.host_paths.propagation')])" optionLabelProp="label" :dropdownMatchSelectWidth="false">
                           <a-select-option value="private" label="private">private - {{ $t('aice.host_paths.propagation.private') }}</a-select-option>
                           <a-select-option value="rslave" label="rslave">rslave - {{ $t('aice.host_paths.propagation.rslave') }}</a-select-option>
                           <a-select-option value="rshared" label="rshared">rshared - {{ $t('aice.host_paths.propagation.rshared') }}</a-select-option>
                         </a-select>
                       </fixed-label-filter>
-                    </a-form-item>
+                    </a-form-model-item>
                   </a-col>
                 </a-row>
                 <a-row :gutter="8">
                   <a-col :span="4">
-                    <a-form-item>
-                      <a-checkbox v-decorator="decorators.host_paths.read_only(hp.key, c.key)">{{ $t('aice.host_paths.read_only') }}</a-checkbox>
-                    </a-form-item>
+                    <a-form-model-item>
+                      <a-checkbox v-model:checked="c.read_only">{{ $t('aice.host_paths.read_only') }}</a-checkbox>
+                    </a-form-model-item>
                   </a-col>
                 </a-row>
               </div>
@@ -136,19 +141,12 @@
             <a-button type="primary" shape="circle" icon="plus" size="small" @click="addHostPath" />
             <a-button type="link" @click="addHostPath">{{ $t('aice.host_paths.add') }}</a-button>
           </div>
-        </a-form-item>
-        <!-- <a-form-item :label="$t('aice.bandwidth_mb')">
-          <a-input-number
-            v-decorator="decorators.bandwidth_mb"
-            :min="1"
-            :max="10000"
-            :step="1"
-            :precision="0" />
-        </a-form-item> -->
-        <a-form-item :label="$t('compute.text_104')" class="mb-0">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_104')" class="mb-0">
           <server-network
+            ref="networkRef"
+            :model="form.fd"
             :form="form"
-            :decorator="decorators.network"
             :network-list-params="networkParams"
             :schedtag-params="resourcesParams.schedtag"
             :network-resource-mapper="networkResourceMapper"
@@ -156,15 +154,15 @@
             defaultNetworkType="default"
             :hiddenAdd="true"
             :isDialog="true" />
-        </a-form-item>
+        </a-form-model-item>
         <template v-if="form.fd.llm_type === 'openclaw'">
-          <a-form-item :label="$t('aice.openclaw.manual_config')">
-            <a-switch v-decorator="decorators.openclaw_manual_config" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
+          <a-form-model-item :label="$t('aice.openclaw.manual_config')">
+            <a-switch v-model:checked="form.fd.openclaw_manual_config" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
             <div class="text-color-secondary mt-1" style="font-size: 13px;">{{ $t('aice.openclaw.manual_config_tip') }}</div>
-          </a-form-item>
+          </a-form-model-item>
           <template v-if="!form.fd.openclaw_manual_config">
           <a-divider orientation="left" class="openclaw-section-divider">{{ $t('aice.openclaw.section.ai_providers') }}</a-divider>
-          <a-form-item :label="$t('aice.openclaw.provider_filter')" :extra="$t('aice.openclaw.provider_select_tip')">
+          <a-form-model-item :label="$t('aice.openclaw.provider_filter')" :extra="$t('aice.openclaw.provider_select_tip')">
             <a-select
               v-model="openclawSelectedProviders"
               mode="multiple"
@@ -177,7 +175,7 @@
                 {{ opt.label }}
               </a-select-option>
             </a-select>
-          </a-form-item>
+          </a-form-model-item>
           <a-tabs
             v-if="providerTabList.length > 0"
             :activeKey="openclawProviderActiveKey"
@@ -194,31 +192,31 @@
                 <a-icon type="close" class="openclaw-tab-close" @click.prevent.stop="closeProviderTab(item.key)" />
               </span>
 
-              <a-form-item :label="$t('aice.openclaw.credential_mode.label')">
+              <a-form-model-item :label="$t('aice.openclaw.credential_mode.label')">
                 <a-radio-group
                   :value="openclawProviderCredentialMode[item.key] || 'new'"
                   @change="e => $set(openclawProviderCredentialMode, item.key, e.target.value)">
                   <a-radio value="new">{{ $t('aice.openclaw.credential_mode.new') }}</a-radio>
                   <a-radio value="existing">{{ $t('aice.openclaw.credential_mode.existing') }}</a-radio>
                 </a-radio-group>
-              </a-form-item>
+              </a-form-model-item>
 
               <template v-if="(openclawProviderCredentialMode[item.key] || 'new') === 'existing'">
-                <a-form-item :label="$t('aice.container_secret')">
+                <a-form-model-item :label="$t('aice.container_secret')">
                   <base-select
                     v-model="openclawProviderCredentialId[item.key]"
                     resource="credentials"
                     :params="credentialParamsForProvider(item.key)"
                     :selectProps="{ placeholder: $t('common.tips.select', [$t('aice.container_secret')]) }"
                     @change="val => onProviderCredentialChange(item.key, val)" />
-                </a-form-item>
-                <a-form-item :label="$t('aice.container_secret.export_keys')" :extra="$t('aice.container_secret.export_keys_tip')">
+                </a-form-model-item>
+                <a-form-model-item :label="$t('aice.container_secret.export_keys')" :extra="$t('aice.container_secret.export_keys_tip')">
                   <a-checkbox-group
                     :value="openclawProviderExportKeys[item.key] || []"
                     @change="val => $set(openclawProviderExportKeys, item.key, val)">
                     <a-checkbox v-for="k in (openclawProviderBlobKeys[item.key] || [])" :key="k" :value="k">{{ k }}</a-checkbox>
                   </a-checkbox-group>
-                </a-form-item>
+                </a-form-model-item>
               </template>
 
               <template v-else>
@@ -227,7 +225,7 @@
                 </div>
                 <div class="openclaw-new-blob-section">
                   <div v-for="v in item.vars" :key="v.envKey" class="openclaw-new-blob-row mb-2">
-                    <a-form-item
+                    <a-form-model-item
                       :label="v.envKey"
                       :required="item.required || v.required"
                       :extra="((item.required || v.required) ? $t('aice.openclaw.required_hint') + ' ' : '') + ($te(v.descriptionKey) ? $t(v.descriptionKey) : '')">
@@ -271,8 +269,8 @@
                         :placeholder="v.envKey"
                         allow-clear
                         @change="e => $set(openclawProviderBlob[item.key], v.envKey, e.target.value)" />
-                    </a-form-item>
-                    <a-form-item
+                    </a-form-model-item>
+                    <a-form-model-item
                       v-if="v.overrideUrlKey"
                       :label="v.overrideUrlKey"
                       :extra="($te('aice.openclaw.env.' + v.overrideUrlKey) ? $t('aice.openclaw.env.' + v.overrideUrlKey) : '') + ' ' + $t('aice.openclaw.override_url_optional')"
@@ -282,7 +280,7 @@
                         :placeholder="overrideUrlPlaceholder(v.overrideUrlKey)"
                         allow-clear
                         @change="e => $set(openclawProviderBlob[item.key], v.overrideUrlKey, e.target.value)" />
-                    </a-form-item>
+                    </a-form-model-item>
                   </div>
                 </div>
               </template>
@@ -293,9 +291,9 @@
           </div>
 
           <a-divider orientation="left" class="openclaw-section-divider">{{ $t('aice.openclaw.section.chat_channels') }}</a-divider>
-          <a-form-item :label="$t('aice.openclaw.channels')" :extra="$t('aice.openclaw.channels_extra')">
+          <a-form-model-item :label="$t('aice.openclaw.channels')" :extra="$t('aice.openclaw.channels_extra')">
             <a-select
-              v-decorator="decorators.openclaw_channels"
+              v-model:value="form.fd.openclaw_channels"
               mode="multiple"
               :placeholder="$t('aice.openclaw.channel_select_placeholder')"
               allow-clear
@@ -306,7 +304,7 @@
                 {{ opt.label }}
               </a-select-option>
             </a-select>
-          </a-form-item>
+          </a-form-model-item>
           <template v-if="filteredChannelSections.length > 0">
             <div class="openclaw-channel-config-hint text-color-secondary mb-2">
               {{ $t('aice.openclaw.channel_config_hint') }}
@@ -324,24 +322,24 @@
                   {{ $t(section.sectionLabelKey) }}
                   <a-icon type="close" class="openclaw-tab-close" @click.prevent.stop="closeChannelTab(section.sectionKey)" />
                 </span>
-                <a-form-item :label="$t('aice.openclaw.credential_mode.label')">
+                <a-form-model-item :label="$t('aice.openclaw.credential_mode.label')">
                   <a-radio-group
                     :value="openclawChannelCredentialMode[section.sectionKey] || 'new'"
                     @change="e => $set(openclawChannelCredentialMode, section.sectionKey, e.target.value)">
                     <a-radio value="new">{{ $t('aice.openclaw.credential_mode.new') }}</a-radio>
                     <a-radio value="existing">{{ $t('aice.openclaw.credential_mode.existing') }}</a-radio>
                   </a-radio-group>
-                </a-form-item>
+                </a-form-model-item>
                 <template v-if="(openclawChannelCredentialMode[section.sectionKey] || 'new') === 'existing'">
-                  <a-form-item :label="$t('aice.container_secret')">
+                  <a-form-model-item :label="$t('aice.container_secret')">
                     <base-select
                       v-model="openclawChannelCredentialId[section.sectionKey]"
                       resource="credentials"
                       :params="credentialParamsForChannel(section.sectionKey)"
                       :selectProps="{ placeholder: $t('common.tips.select', [$t('aice.container_secret')]) }"
                       @change="val => onChannelCredentialChange(section.sectionKey, val)" />
-                  </a-form-item>
-                  <a-form-item :label="$t('aice.container_secret.export_keys')" :extra="$t('aice.container_secret.export_keys_tip')">
+                  </a-form-model-item>
+                  <a-form-model-item :label="$t('aice.container_secret.export_keys')" :extra="$t('aice.container_secret.export_keys_tip')">
                     <a-checkbox-group
                       :value="openclawChannelExportKeys[section.sectionKey] || []"
                       @change="val => $set(openclawChannelExportKeys, section.sectionKey, val)">
@@ -358,7 +356,7 @@
                         </a-collapse-panel>
                       </a-collapse>
                     </a-checkbox-group>
-                  </a-form-item>
+                  </a-form-model-item>
                 </template>
                 <template v-else>
                   <div class="openclaw-auto-credential-name text-color-secondary mb-2">
@@ -366,7 +364,7 @@
                   </div>
                   <div class="openclaw-new-blob-section">
                     <div v-for="v in channelBasicVars(section.vars)" :key="v.envKey" class="openclaw-new-blob-row mb-2">
-                      <a-form-item
+                      <a-form-model-item
                         :label="v.envKey"
                         :required="v.required"
                         :extra="($te(v.descriptionKey) ? $t(v.descriptionKey) : '') + ' ' + (v.required ? $t('aice.openclaw.required_hint') : $t('aice.openclaw.channel_var_optional'))">
@@ -441,12 +439,12 @@
                             allow-clear
                             @change="e => $set(openclawChannelBlob[section.sectionKey], v.envKey, e.target.value)" />
                         </template>
-                      </a-form-item>
+                      </a-form-model-item>
                     </div>
                     <a-collapse :bordered="false" v-if="channelAdvancedVars(section.vars).length">
                       <a-collapse-panel :header="$t('common.adv_config')" key="advanced">
                         <div v-for="v in channelAdvancedVars(section.vars)" :key="v.envKey" class="openclaw-new-blob-row mb-2">
-                          <a-form-item
+                          <a-form-model-item
                             :label="v.envKey"
                             :required="v.required"
                             :extra="($te(v.descriptionKey) ? $t(v.descriptionKey) : '') + ' ' + (v.required ? $t('aice.openclaw.required_hint') : $t('aice.openclaw.channel_var_optional'))">
@@ -521,7 +519,7 @@
                                 allow-clear
                                 @change="e => $set(openclawChannelBlob[section.sectionKey], v.envKey, e.target.value)" />
                             </template>
-                          </a-form-item>
+                          </a-form-model-item>
                         </div>
                       </a-collapse-panel>
                     </a-collapse>
@@ -534,22 +532,22 @@
         </template>
         <a-collapse :bordered="false" v-model="collapseActive">
           <a-collapse-panel :header="$t('compute.text_309')" key="1">
-            <a-form-item :label="$t('dictionary.host')">
+            <a-form-model-item :label="$t('dictionary.host')">
               <base-select
-                v-decorator="decorators.prefer_host"
+                v-model:value="form.fd.prefer_host"
                 resource="hosts"
                 :select-props="{
                   placeholder: $t('common.tips.select', [$t('dictionary.host')]),
                   allowClear: true,
                 }"
                 :params="hostParams" />
-            </a-form-item>
-            <a-form-item :label="$t('compute.text_494')" :extra="$t('compute.text_495')">
-              <a-switch v-decorator="decorators.auto_start" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
-            </a-form-item>
+            </a-form-model-item>
+            <a-form-model-item :label="$t('compute.text_494')" :extra="$t('compute.text_495')">
+              <a-switch v-model:checked="form.fd.auto_start" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
+            </a-form-model-item>
           </a-collapse-panel>
         </a-collapse>
-      </a-form>
+      </a-form-model>
     </page-body>
     <page-footer>
       <template v-slot:right>
@@ -568,7 +566,6 @@ import LlmSkuSelect from '@Ai/sections/LlmSkuSelect'
 import { parseLlmRoute } from '@Ai/utils/llmRouteContext'
 import { devicesFromModelKeys } from '@Ai/utils/deviceFormUtils'
 import WindowsMixin from '@/mixins/windows'
-import validateForm from '@/utils/validate'
 import { uuid } from '@/utils/utils'
 import NameRepeated from '@/sections/NameRepeated'
 import { LLM_TYPE_OPTIONS, getParamsForType } from '../llm-sku/constants/llmTypeConfig'
@@ -612,15 +609,16 @@ export default {
       loading: false,
       hostPathRows: [],
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.$set(this.form.fd, key, values[key])
-            })
-          },
-        }),
         fd: {
           llm_type: defaultLlmType,
+          name: '',
+          llm_sku_id: undefined,
+          mounted_models: [],
+          device: [],
+          openclaw_manual_config: false,
+          openclaw_channels: [],
+          prefer_host: undefined,
+          auto_start: true,
         },
         fi: {
           networkList: [],
@@ -629,194 +627,16 @@ export default {
           },
         },
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            validateTrigger: 'blur',
-            validateFirst: true,
-            rules: [
-              { required: true, validator: this.$validate('resourceName') },
-            ],
-          },
+          { required: true, validator: this.$validate('resourceName') },
         ],
         llm_type: [
-          'llm_type',
-          {
-            initialValue: defaultLlmType,
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [llmTypeSelectLabel]) },
-            ],
-          },
+          { required: true, message: this.$t('common.tips.select', [llmTypeSelectLabel]) },
         ],
         llm_sku_id: [
-          'llm_sku_id',
-          {
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('aice.llm_sku')]) },
-            ],
-          },
+          { required: true, message: this.$t('common.tips.select', [this.$t('aice.llm_sku')]) },
         ],
-        // bandwidth_mb: [
-        //   'bandwidth_mb',
-        //   {
-        //     initialValue: 30,
-        //     rules: [
-        //       { required: true, message: this.$t('common.tips.input', [this.$t('aice.bandwidth_mb')]) },
-        //     ],
-        //   },
-        // ],
-        network: {
-          networkType: [
-            'networkType',
-            {
-              initialValue: NETWORK_OPTIONS_MAP.default.key,
-            },
-          ],
-          networkConfig: {
-            vpcs: i => [
-              `vpcs[${i}]`,
-              {
-                validateTrigger: ['change', 'blur'],
-                rules: [{
-                  required: true,
-                  message: this.$t('compute.text_194'),
-                }],
-              },
-            ],
-            networks: i => [
-              `networks[${i}]`,
-              {
-                validateTrigger: ['change', 'blur'],
-                rules: [{
-                  required: true,
-                  message: this.$t('compute.text_217'),
-                }],
-              },
-            ],
-            ips: (i, networkData) => [
-              `networkIps[${i}]`,
-              {
-                validateFirst: true,
-                validateTrigger: ['blur', 'change'],
-                rules: [
-                  {
-                    validator: validateForm('IPv4'),
-                  },
-                ],
-              },
-            ],
-            macs: (i, networkData) => [
-              `networkMacs[${i}]`,
-              {
-                validateFirst: true,
-                validateTrigger: ['blur', 'change'],
-                rules: [
-                  {
-                    validator: validateForm('mac'),
-                  },
-                ],
-              },
-            ],
-          },
-          networkSchedtag: {
-            schedtags: i => [
-              `networkSchedtags[${i}]`,
-              {
-                validateTrigger: ['change', 'blur'],
-                rules: [{
-                  required: true,
-                  message: this.$t('compute.text_123'),
-                }],
-              },
-            ],
-            policys: (i, networkData) => [
-              `networkPolicys[${i}]`,
-              {
-                validateTrigger: ['blur', 'change'],
-                rules: [{
-                  required: true,
-                  message: this.$t('common_256'),
-                }],
-              },
-            ],
-          },
-        },
-        prefer_host: [
-          'prefer_host',
-          {
-            rules: [
-              { required: false, message: this.$t('common.tips.select', [this.$t('dictionary.host')]) },
-            ],
-          },
-        ],
-        auto_start: [
-          'auto_start',
-          {
-            valuePropName: 'checked',
-            initialValue: true,
-          },
-        ],
-        openclaw_manual_config: [
-          'openclaw_manual_config',
-          {
-            valuePropName: 'checked',
-            initialValue: false,
-          },
-        ],
-        openclaw_channels: [
-          'openclaw_channels',
-          { initialValue: [], rules: [] },
-        ],
-        device: [
-          'device',
-          {
-            initialValue: [],
-          },
-        ],
-        mounted_models: [
-          'mounted_models',
-          {
-            initialValue: [],
-          },
-        ],
-        host_paths: {
-          type: rowKey => [
-            `host_path_type_${rowKey}`,
-            { initialValue: 'directory' },
-          ],
-          path: rowKey => [
-            `host_path_path_${rowKey}`,
-            {
-              rules: [{ required: true, message: this.$t('aice.host_paths.path.required') }],
-            },
-          ],
-          auto_create: rowKey => [
-            `host_path_auto_create_${rowKey}`,
-            { valuePropName: 'checked', initialValue: false },
-          ],
-          auto_uid: rowKey => [`host_path_auto_uid_${rowKey}`, {}],
-          auto_gid: rowKey => [`host_path_auto_gid_${rowKey}`, {}],
-          auto_perm: rowKey => [`host_path_auto_perm_${rowKey}`, {}],
-          container_index: (hpKey, cKey) => [
-            `host_path_container_index_${hpKey}__${cKey}`,
-            { initialValue: 0 },
-          ],
-          mount_path: (hpKey, cKey) => [
-            `host_path_mount_path_${hpKey}__${cKey}`,
-            {
-              rules: [{ required: true, message: this.$t('aice.host_paths.mount_path.required') }],
-            },
-          ],
-          read_only: (hpKey, cKey) => [
-            `host_path_read_only_${hpKey}__${cKey}`,
-            { valuePropName: 'checked', initialValue: false },
-          ],
-          propagation: (hpKey, cKey) => [
-            `host_path_propagation_${hpKey}__${cKey}`,
-            { initialValue: 'rslave' },
-          ],
-        },
       },
       formItemLayout: {
         wrapperCol: {
@@ -1006,20 +826,19 @@ export default {
     },
     'form.fd.llm_type' (val, oldVal) {
       if (val === oldVal) return
-      this.form.fc.setFieldsValue({ llm_sku_id: undefined })
+      this.form.fd.llm_sku_id = undefined
       const llmType = (val || '').toLowerCase()
       // 切到不支持 devices 的类型（含 ComfyUI）时清空 device，避免提交脏数据
       if (!['ollama', 'vllm', 'sglang', 'desktop'].includes(llmType)) {
-        this.form.fc.setFieldsValue({ device: [] })
+        this.form.fd.device = []
       }
       // 切到不支持 host_paths 的类型时清空路径
       if (!['ollama', 'vllm', 'sglang', 'comfyui', 'desktop'].includes(llmType)) {
         this.hostPathRows = []
       }
       // mounted_models 仅 ollama/vllm/sglang 支持；类型切换时模型过滤参数不同，统一清空
-      this.form.fc.setFieldsValue({ mounted_models: [] })
+      this.form.fd.mounted_models = []
       if (oldVal === 'openclaw' && val !== 'openclaw') {
-        this.form.fc.setFieldsValue({ openclaw_channels: [] })
         this.$set(this.form.fd, 'openclaw_channels', [])
         this.openclawSelectedProviders = []
         this.openclawProviderActiveTab = ''
@@ -1061,7 +880,14 @@ export default {
   },
   methods: {
     addHostPath () {
-      this.hostPathRows.push({ key: uuid(), containerRows: [{ key: uuid() }] })
+      this.hostPathRows.push({
+        key: uuid(),
+        type: 'directory',
+        path: '',
+        auto_create: false,
+        auto_create_config: { uid: '', gid: '', permissions: '' },
+        containerRows: [{ key: uuid(), mount_path: '', propagation: 'rslave', read_only: false }],
+      })
     },
     delHostPath (hp) {
       const idx = this.hostPathRows.findIndex(v => v.key === hp.key)
@@ -1187,7 +1013,6 @@ export default {
     },
     closeChannelTab (sectionKey) {
       const channels = (this.form.fd.openclaw_channels || []).filter(k => k !== sectionKey)
-      this.form.fc.setFieldsValue({ openclaw_channels: channels })
       this.$set(this.form.fd, 'openclaw_channels', channels)
       if (this.openclawChannelActiveTab === sectionKey && channels.length > 0) {
         this.openclawChannelActiveTab = channels[0]
@@ -1415,7 +1240,11 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        if (typeof this.$refs.networkRef?.validate === 'function') {
+          await this.$refs.networkRef.validate()
+        }
+        const values = { ...this.form.fd }
         const networks = await this.genNetworks(values)
         const data = {
           generate_name: values.name,
@@ -1438,16 +1267,10 @@ export default {
           }
         }
         const host_paths = this.supportDevicesAndHostPaths ? this.hostPathRows.map(hp => {
-          const hpKey = hp.key
-          const type = values[`host_path_type_${hpKey}`]
-          const path = values[`host_path_path_${hpKey}`]
-          const autoCreate = !!values[`host_path_auto_create_${hpKey}`]
-          const out = { type, path }
-          if (autoCreate) {
+          const out = { type: hp.type, path: hp.path }
+          if (hp.auto_create) {
             out.auto_create = true
-            const uid = values[`host_path_auto_uid_${hpKey}`]
-            const gid = values[`host_path_auto_gid_${hpKey}`]
-            const perm = values[`host_path_auto_perm_${hpKey}`]
+            const { uid, gid, permissions: perm } = hp.auto_create_config || {}
             const cfg = {}
             if (uid !== undefined && uid !== null && uid !== '') cfg.uid = uid
             if (gid !== undefined && gid !== null && gid !== '') cfg.gid = gid
@@ -1456,14 +1279,11 @@ export default {
           }
           const containers = {}
           ;(hp.containerRows || []).forEach(c => {
-            const composite = `${hpKey}__${c.key}`
-            const idx = values[`host_path_container_index_${composite}`]
-            const mountPath = values[`host_path_mount_path_${composite}`]
-            if (idx == null || mountPath == null || String(mountPath).trim() === '') return
-            const k = String(idx).trim()
-            if (!k) return
-            const m = { mount_path: String(mountPath).trim(), read_only: !!values[`host_path_read_only_${composite}`] }
-            const prop = values[`host_path_propagation_${composite}`]
+            const mountPath = c.mount_path
+            if (mountPath == null || String(mountPath).trim() === '') return
+            const k = '0'
+            const m = { mount_path: String(mountPath).trim(), read_only: !!c.read_only }
+            const prop = c.propagation
             if (prop != null && String(prop).trim() !== '') m.propagation = String(prop).trim()
             containers[k] = m
           })

@@ -3,13 +3,13 @@
     <div slot="header">{{ $t('table.action.modify') }} - {{ $t('dictionary.keypair') }}</div>
     <div slot="body">
       <a-spin :spinning="loadingDetail">
-        <a-form v-if="!loadingDetail" :form="form.fc" hideRequiredMark v-bind="formItemLayout">
-          <a-form-item :label="$t('common.name')">
+        <a-form-model v-if="!loadingDetail" ref="formRef" :model="form" :rules="rules" hideRequiredMark v-bind="formItemLayout">
+          <a-form-model-item :label="$t('common.name')" prop="name">
             <a-input
-              v-decorator="decorators.name"
+              v-model:value="form.name"
               :placeholder="$t('common.tips.input', [$t('common.name')])" />
-          </a-form-item>
-          <a-form-item :label="$t('dictionary.keypair')" :extra="$t('aice.container_secret.env_hint') + ' ' + $t('aice.container_secret.add_pair')">
+          </a-form-model-item>
+          <a-form-model-item :label="$t('dictionary.keypair')" :extra="$t('aice.container_secret.env_hint') + ' ' + $t('aice.container_secret.add_pair')">
             <div v-for="(item, index) in items" :key="item.id" class="d-flex align-items-start mb-2">
               <a-input
                 v-model:value="item.key"
@@ -35,8 +35,8 @@
               {{ $t('aice.container_secret.add_pair') }}
             </a-button>
             <div v-if="blobError" class="text-danger mt-1">{{ blobError }}</div>
-          </a-form-item>
-        </a-form>
+          </a-form-model-item>
+        </a-form-model>
       </a-spin>
     </div>
     <div slot="footer">
@@ -72,17 +72,14 @@ export default {
       loading: false,
       loadingDetail: true,
       blobError: '',
-      initialName: '',
       items: [{ id: uuid(), key: '', value: '' }],
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.$set(this.form.fd, key, values[key])
-            })
-          },
-        }),
-        fd: {},
+        name: '',
+      },
+      rules: {
+        name: [
+          { required: true, message: this.$t('common.tips.input', [this.$t('common.name')]) },
+        ],
       },
       formItemLayout: {
         wrapperCol: { span: 20 },
@@ -95,19 +92,6 @@ export default {
       const data = this.params.data
       const row = Array.isArray(data) ? data[0] : data
       return row?.id
-    },
-    decorators () {
-      return {
-        name: [
-          'name',
-          {
-            initialValue: this.initialName,
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('common.name')]) },
-            ],
-          },
-        ],
-      }
     },
   },
   created () {
@@ -124,7 +108,7 @@ export default {
         const manager = new this.$Manager('credentials', 'v1')
         const { data } = await manager.get({ id: this.recordId })
         const row = data || (Array.isArray(this.params.data) ? this.params.data[0] : this.params.data) || {}
-        this.initialName = row.name || ''
+        this.form.name = row.name || ''
         const blob = parseBlob(row.blob)
         const entries = Object.entries(blob)
         this.items = entries.length
@@ -157,8 +141,11 @@ export default {
     },
     async handleConfirm () {
       this.blobError = ''
-      const values = await this.form.fc.validateFields().catch(() => null)
-      if (!values) return
+      try {
+        await this.$refs.formRef.validate()
+      } catch (e) {
+        return
+      }
       const blob = this.buildBlob()
       if (Object.keys(blob).length === 0) {
         this.blobError = this.$t('common.tips.input', [this.$t('aice.container_secret')])
@@ -170,7 +157,7 @@ export default {
         await manager.update({
           id: this.recordId,
           data: {
-            name: values.name || '',
+            name: this.form.name || '',
             blob,
           },
         })

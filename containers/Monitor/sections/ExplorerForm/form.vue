@@ -4,66 +4,78 @@
       <a-icon type="delete" v-if="showDelete" @click="remove" class="mr-2 remove-icon" />
       <a-icon :type="panelShow ? 'up' : 'down'" @click="toggle" />
     </div>
-    <a-form
-      v-show="panelShow"
-      v-bind="formItemLayout"
-      :form="form.fc">
-      <a-form-item :label="$t('monitor.monitor_metric')" class="mb-0">
-        <metric
-          :form="form"
-          :decorators="decorators"
-          :res_type_measurements="res_type_measurements"
-          :res_types="res_types"
-          :loading="metricLoading"
-          @metricChange="getMetricInfo"
-          @metricClear="resetChart" />
-      </a-form-item>
-      <a-form-item :label="$t('monitor.monitor_filters')">
-        <filters
-          :form="form"
-          ref="filtersRef"
-          :decorators="decorators.filters"
-          :init-filters="initFilters"
-          @remove="$nextTick(toParams)"
-          :loading="metricInfoLoading"
-          :metricInfo="metricInfo"
-          @tagValuesChange="tagValuesChange" />
-      </a-form-item>
-      <a-form-item :label="$t('monitor.monitor_group')">
-        <base-select
-          v-decorator="decorators.group_by"
-          :options="groupbyOpts"
-          @change="groupbyChange"
-          class="w-100"
-          :select-props="{ mode: 'multiple', placeholder: $t('monitor.text_114'), allowClear: true }" />
-      </a-form-item>
-      <a-form-item :label="$t('monitor.monitor_function')">
-        <base-select
-          v-decorator="decorators.function"
-          :options="functionOpts"
-          class="w-100"
-          :select-props="{ placeholder: $t('monitor.text_115'), allowClear: allowClearGroupFunction }" />
-      </a-form-item>
-      <a-form-item :label="$t('monitor.monitor_result_function')">
-        <base-select
-          v-decorator="decorators.result_function"
-          :options="resultFunctionOpts"
-          class="w-100"
-          :select-props="{ placeholder: $t('monitor.text_115'), allowClear: true }" />
-      </a-form-item>
-      <a-form-item v-if="form.fd.result_function === 'percentile'" :label="$t('monitor.monitor_percentile')">
-        <a-input-number :min="1" :max="99" v-decorator="decorators.percentile" placeholder="1~99" />
-      </a-form-item>
-      <a-form-item v-if="showChartTypes" :label="$t('monitor.chart_form')">
-        <a-checkbox-group
-          :value="chartTypes"
-          :options="chartTypeOptions"
-          @change="chartTypesChange" />
-      </a-form-item>
-      <a-form-item :label="$t('common.name')" v-if="!queryOnly">
-        <a-input v-decorator="decorators.name" :placeholder="$t('common.placeholder')" />
-      </a-form-item>
-    </a-form>
+    <div v-show="panelShow">
+      <a-form-model
+        v-bind="formItemLayout"
+        :model="form.fd">
+        <a-form-model-item :label="$t('monitor.monitor_metric')" class="mb-0">
+          <metric
+            ref="metricRef"
+            :form="form"
+            :model="form.fd"
+            :field-map="metricFieldMap"
+            :res_type_measurements="res_type_measurements"
+            :res_types="res_types"
+            :loading="metricLoading"
+            @metricChange="getMetricInfo"
+            @metricClear="resetChart" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('monitor.monitor_filters')">
+          <filters
+            :form="form"
+            :model="form.fd"
+            :field-map="filterFieldMap"
+            ref="filtersRef"
+            :init-filters="initFilters"
+            @remove="$nextTick(toParams)"
+            :loading="metricInfoLoading"
+            :metricInfo="metricInfo"
+            @tagValuesChange="tagValuesChange" />
+        </a-form-model-item>
+      </a-form-model>
+      <a-form-model
+        ref="shellFormRef"
+        :model="form.fd"
+        :rules="shellRules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('monitor.monitor_group')" prop="group_by">
+          <base-select
+            :value="form.fd.group_by"
+            :options="groupbyOpts"
+            @change="val => { shellSet('group_by', val); groupbyChange(val) }"
+            class="w-100"
+            :select-props="{ mode: 'multiple', placeholder: $t('monitor.text_114'), allowClear: true }" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('monitor.monitor_function')" prop="function">
+          <base-select
+            :value="form.fd.function"
+            :options="functionOpts"
+            @change="val => shellSet('function', val)"
+            class="w-100"
+            :select-props="{ placeholder: $t('monitor.text_115'), allowClear: allowClearGroupFunction }" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('monitor.monitor_result_function')" prop="result_function">
+          <base-select
+            :value="form.fd.result_function"
+            :options="resultFunctionOpts"
+            @change="val => shellSet('result_function', val)"
+            class="w-100"
+            :select-props="{ placeholder: $t('monitor.text_115'), allowClear: true }" />
+        </a-form-model-item>
+        <a-form-model-item v-if="form.fd.result_function === 'percentile'" :label="$t('monitor.monitor_percentile')" prop="percentile">
+          <a-input-number :min="1" :max="99" :value="form.fd.percentile" @change="val => shellSet('percentile', val)" placeholder="1~99" />
+        </a-form-model-item>
+        <a-form-model-item v-if="showChartTypes" :label="$t('monitor.chart_form')">
+          <a-checkbox-group
+            :value="chartTypes"
+            :options="chartTypeOptions"
+            @change="chartTypesChange" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.name')" v-if="!queryOnly" prop="name">
+          <a-input :value="form.fd.name" @update:value="v => shellSet('name', v)" :placeholder="$t('common.placeholder')" />
+        </a-form-model-item>
+      </a-form-model>
+    </div>
   </a-card>
 </template>
 
@@ -82,8 +94,8 @@ import {
   isPercentUnit,
   parseChartTypesFromPanel,
 } from '@Monitor/utils/chartTypes'
-import { resolveValueChangeField } from '@/utils/common/ant'
 import { uuid, getRequestT } from '@/utils/utils'
+import { buildMetricFieldMap, buildFilterFieldMap } from '../fields'
 
 export default {
   name: 'ExplorerForm',
@@ -209,123 +221,71 @@ export default {
       }
     }
 
-    const decorators = {
-      metric_res_type: [
-        'metric_res_type',
+    const selectRequired = [{ required: true, message: this.$t('common.select') }]
+    const metricFieldMap = buildMetricFieldMap({
+      res_type: initialValue.res_type,
+      metric_key: initialValue.metric_key,
+      metric_value: initialValue.metric_value,
+    })
+    const defaultFilterFieldMap = buildFilterFieldMap()
+    const filterFieldMap = {
+      tagCondition: i => [
+        defaultFilterFieldMap.tagCondition(i)[0],
         {
-          initialValue: initialValue.res_type,
-          rules: [
-            { required: true, message: this.$t('common.select') },
-          ],
+          initialValue: getkey(i, 'condition', 'AND'),
+          rules: selectRequired,
         },
       ],
-      metric_key: [
-        'metric_key',
+      tagKey: i => [
+        defaultFilterFieldMap.tagKey(i)[0],
         {
-          initialValue: initialValue.metric_key,
-          rules: [
-            { required: true, message: this.$t('common.select') },
-          ],
+          initialValue: getkey(i, 'key', ''),
+          rules: [],
         },
       ],
-      metric_value: [
-        'metric_value',
+      tagOperator: i => [
+        defaultFilterFieldMap.tagOperator(i)[0],
         {
-          initialValue: initialValue.metric_value,
-          rules: [
-            { required: true, message: this.$t('common.select') },
-          ],
+          initialValue: getkey(i, 'operator', '=~'),
+          rules: selectRequired,
         },
       ],
-      filters: {
-        tagCondition: i => [
-          `tagConditions[${i}]`,
-          {
-            initialValue: getkey(i, 'condition', 'AND'),
-            rules: [
-              { required: true, message: this.$t('common.select') },
-            ],
-          },
-        ],
-        tagKey: i => [
-          `tagKeys[${i}]`,
-          {
-            initialValue: getkey(i, 'key', ''),
-            rules: [
-              // { required: true, message: this.$t('common.select') },
-            ],
-          },
-        ],
-        tagOperator: i => [
-          `tagOperators[${i}]`,
-          {
-            initialValue: getkey(i, 'operator', '=~'),
-            rules: [
-              { required: true, message: this.$t('common.select') },
-            ],
-          },
-        ],
-        tagValue: i => [
-          `tagValues[${i}]`,
-          {
-            initialValue: getkey(i, 'value', []),
-            rules: [
-              // { required: true, message: this.$t('common.select') },
-            ],
-          },
-        ],
-      },
-      group_by: [
-        'group_by',
+      tagValue: i => [
+        defaultFilterFieldMap.tagValue(i)[0],
         {
-          initialValue: initialValue.group_by || [],
-        },
-      ],
-      function: [
-        'function',
-        {
-          initialValue: initialValue.function,
-        },
-      ],
-      result_function: [
-        'result_function',
-        {
-          initialValue: initialValue.result_function,
-        },
-      ],
-      percentile: [
-        'percentile',
-        {
-          initialValue: initialValue.percentile,
-          rules: [{ required: true, message: this.$t('common.tips.input', [this.$t('monitor.monitor_percentile')]) }],
+          initialValue: getkey(i, 'value', []),
+          rules: [],
         },
       ],
     }
 
+    const shellRules = {
+      percentile: [{ required: true, message: this.$t('common.tips.input', [this.$t('monitor.monitor_percentile')]) }],
+    }
     if (!this.queryOnly) {
-      decorators.name = [
-        'name',
-        {
-          initialValue: initialValue.name || '',
-          rules: [
-            { required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` },
-          ],
-        },
+      shellRules.name = [
+        { required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` },
       ]
     }
 
     return {
       prevName: initialValue.name,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: this.onValuesChange,
-        }),
         fd: {
+          metric_res_type: initialValue.res_type,
+          metric_key: initialValue.metric_key,
+          metric_value: initialValue.metric_value,
+          group_by: initialValue.group_by || [],
+          function: initialValue.function,
           result_function: initialValue.result_function,
+          percentile: initialValue.percentile,
+          name: initialValue.name || '',
           tagOperators: initTagOperators,
         },
       },
-      decorators: decorators,
+      shellRules,
+      metricFieldMap,
+      filterFieldMap,
       initFilters: initFilters,
       groupbyOpts: [],
       functionOpts: [],
@@ -433,6 +393,13 @@ export default {
     this.$emit('chartTypesChange', this.showChartTypes ? this.chartTypes : [CHART_TYPE_LINE])
   },
   methods: {
+    shellSet (key, value, { emitParams = true } = {}) {
+      this.$set(this.form.fd, key, value)
+      if (key === 'name') {
+        this.$emit('nameChange', value)
+      }
+      if (emitParams) this.$nextTick(this.toParams)
+    },
     chartTypesChange (val) {
       // 至少保留一种图表形式
       this.chartTypes = (val && val.length) ? val : [CHART_TYPE_LINE]
@@ -461,47 +428,19 @@ export default {
     },
     groupbyChange (a) {
       if (!a || a.length === 0) {
-        this.form.fc.setFieldsValue({
-          [this.decorators.function[0]]: '',
-        })
+        this.shellSet('function', '', { emitParams: false })
         this.allowClearGroupFunction = true
       } else {
         this.allowClearGroupFunction = false
         if (this.functionOpts && this.functionOpts.length) {
           const mean = this.functionOpts.find(val => val.key.toLowerCase() === 'mean')
-          this.form.fc.setFieldsValue({
-            [this.decorators.function[0]]: mean.key,
-          })
+          this.shellSet('function', mean.key, { emitParams: false })
         }
-      }
-    },
-    onValuesChange (props, values) {
-      const newField = resolveValueChangeField(values)
-      R.forEachObjIndexed((item, key) => {
-        if (!['tagValues'].includes(key)) {
-          if (R.is(Object, this.form.fd[key]) && R.is(Object, item)) {
-            this.form.fd[key] = { ...this.form.fd[key], ...item }
-          } else {
-            this.form.fd[key] = item
-          }
-        }
-      }, newField)
-      const changedKeys = Object.keys(values)
-      if (changedKeys.length === 1 && changedKeys[0] === 'name') {
-        this.$emit('nameChange', this.form.fd.name)
-        return
-      }
-      if (changedKeys.length === 1 && changedKeys[0] === 'tagValues') {
-        return
-      }
-      this.$nextTick(this.toParams)
-      if ((values.hasOwnProperty('metric_key') && !values.metric_key) || (values.hasOwnProperty('metric_value') && !values.metric_value)) {
-        this.resetChart()
       }
     },
     tagValuesChange (item) {
       this.$nextTick(this.toParams)
-      const values = this.form.fc.getFieldsValue()
+      const values = { ...this.form.fd }
       if ((values.hasOwnProperty('metric_key') && !values.metric_key) || (values.hasOwnProperty('metric_value') && !values.metric_value)) {
         this.resetChart()
       }
@@ -525,7 +464,7 @@ export default {
         this.mertricItem = mertricItem || {}
         const title = this.getTitle()
         if (this.prevName === '' || this.form.fd.name === this.prevName) {
-          this.form.fc.setFieldsValue({ name: title })
+          this.shellSet('name', title, { emitParams: false })
           this.prevName = title
         }
         this.$emit('mertricItemChange', { ...mertricItem, title: title, metricKeyItem })
@@ -548,14 +487,14 @@ export default {
         if (R.is(Array, Aggregations)) {
           this.functionOpts = Aggregations.map(v => ({ key: v, label: this.$te(`monitor.func.${v}`) ? this.$t(`monitor.func.${v}`) : v }))
         }
-        const { group_by: groupBy, function: func } = this.form.fc.getFieldsValue([this.decorators.group_by[0], this.decorators.function[0]])
-        const resetFields = {}
+        const groupBy = this.form.fd.group_by || []
+        const func = this.form.fd.function
         const resetGroupBy = groupBy.filter(key => (this.metricInfo?.tag_key || []).includes(key))
-        resetFields[this.decorators.group_by[0]] = resetGroupBy
+        this.shellSet('group_by', resetGroupBy, { emitParams: false })
         if (!~(Aggregations || []).indexOf(func)) {
-          resetFields[this.decorators.function[0]] = undefined
+          this.shellSet('function', undefined, { emitParams: false })
         }
-        this.form.fc.setFieldsValue(resetFields)
+        this.$nextTick(this.toParams)
         this.metricInfoLoading = false
       } catch (error) {
         this.metricInfo.tag_key = []
@@ -567,17 +506,27 @@ export default {
     toggle () {
       this.panelShow = !this.panelShow
     },
-    toParams (ignoreEmit) {
-      const fd = this.form.fc.getFieldsValue()
+    async toParams (ignoreEmit) {
+      const fd = { ...this.form.fd }
       const params = {
         database: this.metricKeyItem && this.metricKeyItem.database ? this.metricKeyItem.database : 'telegraf',
       }
       const resParams = {}
       const tags = []
       if (!this.queryOnly) {
-        let formErr
-        this.form.fc.validateFieldsAndScroll({ scroll: { alignWithTop: true, offsetTop: 100 } }, (err, values) => { if (err) { formErr = err } })
-        if (formErr) return
+        try {
+          if (this.$refs.shellFormRef) {
+            await this.$refs.shellFormRef.validate()
+          }
+          if (typeof this.$refs.metricRef?.validate === 'function') {
+            await this.$refs.metricRef.validate()
+          }
+          if (typeof this.$refs.filtersRef?.validate === 'function') {
+            await this.$refs.filtersRef.validate()
+          }
+        } catch (e) {
+          return
+        }
         params.name = fd.name
       }
       if (fd.metric_key) params.measurement = fd.metric_key

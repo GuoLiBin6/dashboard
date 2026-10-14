@@ -1,61 +1,63 @@
 <template>
-  <a-form :form="form.fc" class="mt-3" v-bind="formItemLayout">
-    <a-form-item :label="$t('network.text_205', [$t('dictionary.project')])">
-      <domain-project :fc="form.fc" :decorators="decorators" v-model:domain="domain" v-model:project="project" :labelInValue="false" />
-    </a-form-item>
-    <a-form-item :label="$t('network.text_21')">
-      <a-input v-decorator="decorators.name" :placeholder="$t('validator.resourceName')" />
-    </a-form-item>
-    <a-form-item :label="$t('common.description')">
-      <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-    </a-form-item>
+  <a-form-model ref="formRef" :model="form.fd" :rules="rules" class="mt-3" v-bind="formItemLayout">
+    <a-form-model-item :label="$t('network.text_205', [$t('dictionary.project')])">
+      <domain-project :form="form.fd" v-model:domain="domain" v-model:project="project" :labelInValue="false" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('network.text_21')">
+      <a-input v-model:value="form.fd.name" :placeholder="$t('validator.resourceName')" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('common.description')">
+      <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.fd.description" :placeholder="$t('common_367')" />
+    </a-form-model-item>
     <area-selects
+      :model="form.fd"
       v-bind="areaParams"
       filterBrandResource="loadbalancer_engine"
       @providerFetchSuccess="providerFetchSuccess"
       @cloudregionFetchSuccess="cloudregionFetchSuccess"
       @zoneFetchSuccess="zoneFetchSuccess"
       class="mb-0" />
-    <a-form-item :label="$t('network.text_268')" v-if="isAliyun">
+    <a-form-model-item :label="$t('network.text_268')" v-if="isAliyun">
       <base-select
-        v-decorator="decorators.loadbalancer_spec"
+        v-model:value="form.fd.loadbalancer_spec"
         :options="specOpts"
         :select-props="{ placeholder: $t('network.text_269') }" />
-    </a-form-item>
-    <a-form-item :label="$t('compute.text_266')" v-if="isAws">
-      <a-radio-group v-decorator="decorators.instance_type">
+    </a-form-model-item>
+    <a-form-model-item :label="$t('compute.text_266')" v-if="isAws">
+      <a-radio-group v-model:value="form.fd.instance_type">
         <a-radio-button v-for="item in instanceOpts" :value="item.key" :label="item.label" :key="item.key">{{ item.label }}</a-radio-button>
       </a-radio-group>
-    </a-form-item>
-    <a-form-item :label="$t('network.text_16')">
-      <a-radio-group v-decorator="decorators.address_type">
+    </a-form-model-item>
+    <a-form-model-item :label="$t('network.text_16')">
+      <a-radio-group v-model:value="form.fd.address_type">
         <a-radio-button value="internet">{{$t('network.text_270')}}</a-radio-button>
         <a-radio-button value="intranet">{{$t('network.text_271')}}</a-radio-button>
       </a-radio-group>
-    </a-form-item>
-    <a-form-item :label="$t('network.text_272')" v-if="(isAliyun || isQcloud) && form.fd.address_type === 'internet' ">
-      <charge-type-radio :decorators="decorators" />
-    </a-form-item>
-    <a-form-item :label="$t('network.text_273')">
-      <a-radio-group v-decorator="decorators.ip">
+    </a-form-model-item>
+    <a-form-model-item :label="$t('network.text_272')" v-if="(isAliyun || isQcloud) && form.fd.address_type === 'internet' ">
+      <charge-type-radio :model="form.fd" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('network.text_273')">
+      <a-radio-group v-model:value="form.fd.ip">
         <a-radio-button value="ipv4">IPv4</a-radio-button>
       </a-radio-group>
-    </a-form-item>
-    <a-form-item :label="$t('common_711')" v-if="isShowCloudprovider">
+    </a-form-model-item>
+    <a-form-model-item :label="$t('common_711')" v-if="isShowCloudprovider">
       <base-select
-        v-decorator="decorators.manager"
+        v-model:value="form.fd.manager"
         resource="cloudproviders"
         need-params
         filterable
         :params="cloudproviderParams"
         :select-props="{ placeholder: $t('common_588') }" />
-    </a-form-item>
-    <a-form-item :label="$t('cloudenv.text_7')" v-else>
+    </a-form-model-item>
+    <a-form-model-item :label="$t('cloudenv.text_7')" v-else>
       <a-row :gutter="9">
         <a-col :span="12">
           <oc-select
             width="100%"
-            v-decorator="decorators.vpc"
+            v-model:value="form.fd.vpc"
+            @selectChange="handleVpcChange"
             show-status
             :status-desc="$t('compute.vpc_status_desc')"
             resource="vpcs"
@@ -63,12 +65,11 @@
             :formatter="vpcFormatter"
             :params="vpcParams"
             :sort="(arr) => arr.sort((a, b) => a.network_count > b.network_count ? -1 : 1)"
-            :placeholder="$t('compute.text_194')"
-            @selectChange="handleVpcChange" />
+            :placeholder="$t('compute.text_194')" />
         </a-col>
         <a-col :span="12" v-if="(isQcloud && form.fd.address_type === 'intranet') || !isQcloud">
           <base-select
-            v-decorator="decorators.network"
+            v-model:value="form.fd.network"
             resource="networks"
             need-params
             filterable
@@ -77,10 +78,10 @@
             :select-props="{ placeholder: $t('network.text_275') }" />
         </a-col>
       </a-row>
-    </a-form-item>
-    <a-form-item :label="$t('network.text_221')" v-if="isHuawei && form.fd.address_type === 'internet'">
+    </a-form-model-item>
+    <a-form-model-item :label="$t('network.text_221')" v-if="isHuawei && form.fd.address_type === 'internet'">
       <base-select
-        v-decorator="decorators.eip.eip"
+        v-model:value="form.fd.eip"
         resource="eips"
         need-params
         :params="eipParams"
@@ -88,18 +89,18 @@
         :select-props="{ placeholder: $t('network.text_278') }" />
         <div slot="extra">{{$t('system.text_439')}}<help-link href="/eip">{{$t('system.text_440')}}</help-link>
         </div>
-    </a-form-item>
-    <a-form-item :label="$t('table.title.tag')">
-      <tag v-decorator="decorators.__meta__" :allowNoValue="false" />
-    </a-form-item>
-  </a-form>
+    </a-form-model-item>
+    <a-form-model-item :label="$t('table.title.tag')">
+      <tag :value="form.fd.__meta__" @change="v => { form.fd.__meta__ = v }" :allowNoValue="false" />
+    </a-form-model-item>
+  </a-form-model>
 </template>
 
 <script>
 import * as R from 'ramda'
 import { LB_SPEC } from '@Network/views/lb/constants'
 import ChargeTypeRadio from '@/sections/ChargeTypeRadio'
-import AreaSelects from '@/sections/AreaSelects'
+import AreaSelects from '@/sections/AreaSelects/model'
 import lbCreate from './mixin.js'
 export default {
   name: 'LbAliyunCreate',
@@ -162,7 +163,7 @@ export default {
     },
     async submit () {
       try {
-        const values = await this.form.fc.validateFields()
+        const values = await this.validateCreateForm()
         if (!this.validateIp()) throw Error(this.$t('network.text_276'))
         if (!R.isEmpty(this.vpcObj)) {
           values.manager = this.vpcObj.manager

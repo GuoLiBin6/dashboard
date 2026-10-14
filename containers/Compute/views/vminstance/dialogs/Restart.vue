@@ -10,14 +10,14 @@
       </a-alert>
       <dialog-selected-tips :name="params.name || $t('dictionary.server')" :count="dataList.length" :action="action" />
       <table-lite-grid class="mb-2" :data="dataList" :columns="columns" />
-      <a-form :form="form.fc" hideRequiredMark>
-        <a-form-item :label="$t('compute.text_1041')" v-bind="formItemLayout" v-if="isOpenWorkflow">
-          <a-input v-decorator="decorators.reason" :placeholder="$t('compute.text_1105')" />
-        </a-form-item>
-        <a-form-item v-if="isSupportForce" :label="$t('compute.text_1235')" v-bind="formItemLayout">
-          <a-switch v-decorator="decorators.autoStart" />
-        </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" :model="form" hideRequiredMark>
+        <a-form-model-item :label="$t('compute.text_1041')" v-bind="formItemLayout" v-if="isOpenWorkflow" prop="reason">
+          <a-input v-model:value="form.reason" :placeholder="$t('compute.text_1105')" />
+        </a-form-model-item>
+        <a-form-model-item v-if="isSupportForce" :label="$t('compute.text_1235')" v-bind="formItemLayout" prop="autoStart">
+          <a-switch v-model:checked="form.autoStart" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -45,22 +45,8 @@ export default {
       action: type === 'modifyWorkflow' ? this.$t('common.modify_workflow') + `(${this.$t('compute.text_274')})` : this.$t('compute.text_274'),
       type,
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        reason: [
-          'reason',
-          {
-            initialValue: formData.reason || '',
-          },
-        ],
-        autoStart: [
-          'autoStart',
-          {
-            initialValue: formData.is_force || false,
-            valuePropName: 'checked',
-          },
-        ],
+        reason: formData.reason || '',
+        autoStart: formData.is_force || false,
       },
       formItemLayout: {
         wrapperCol: {
@@ -128,7 +114,7 @@ export default {
         this.dataList = this.params.data || []
       }
     },
-    async doRestartSubmit (values) {
+    async doRestartSubmit () {
       const ids = this.dataList.map(item => item.id)
       return this.params.onManager('batchPerformAction', {
         id: ids,
@@ -136,7 +122,7 @@ export default {
         managerArgs: {
           action: 'restart',
           data: {
-            is_force: values.autoStart,
+            is_force: this.form.autoStart,
           },
         },
       })
@@ -144,7 +130,7 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         if (this.isOpenWorkflow) {
           if (this.dataList.length > BATCH_OPERATE_SERVERS_MAX) {
             this.$message.error(this.$t('compute.workflow.operate_servers_check.message', [this.$t('compute.text_274'), BATCH_OPERATE_SERVERS_MAX]))
@@ -157,20 +143,21 @@ export default {
             this.loading = false
             return
           }
-          await this.handleRestartByWorkflowSubmit(values)
+          await this.handleRestartByWorkflowSubmit()
         } else {
-          await this.doRestartSubmit(values)
+          await this.doRestartSubmit()
         }
-        this.loading = false
         this.cancelDialog()
       } catch (error) {
+        // validate or submit failed
+      } finally {
         this.loading = false
       }
     },
-    async handleRestartByWorkflowSubmit (values) {
+    async handleRestartByWorkflowSubmit () {
       const ids = this.dataList.map(item => item.id)
       const params = {
-        is_force: values.autoStart,
+        is_force: this.form.autoStart,
       }
       const variables = {
         project: this.dataList[0].tenant_id,
@@ -178,7 +165,7 @@ export default {
         process_definition_key: this.WORKFLOW_TYPES.APPLY_SERVER_RESTART,
         initiator: this.userInfo.id,
         ids: ids.join(','),
-        description: values.reason,
+        description: this.form.reason,
         paramter: JSON.stringify(params),
       }
       if (this.type === 'modifyWorkflow') {

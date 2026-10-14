@@ -2,14 +2,14 @@
   <base-dialog @cancel="cancelDialog">
     <template #header>{{ title }}</template>
     <template #body>
-      <a-form :form="form.fc">
-        <a-form-item :label="$t('common.text00068')">
+      <a-form-model v-bind="formItemLayout">
+        <a-form-model-item :label="$t('common.text00068')">
           <quota-set-to-workflow
             ref="quotaSetRef"
             sence="project"
             :tenant="userInfo.projectId" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </template>
     <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
@@ -44,9 +44,6 @@ export default {
           span: 8,
         },
       },
-      form: {
-        fc: this.$form.createForm(this),
-      },
     }
   },
   computed: {
@@ -76,7 +73,6 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        // const values = await this.form.fc.validateFields()
         const quota = this.$refs.quotaSetRef.getParams()
         const oldQuota = this.$refs.quotaSetRef.quotaOptions
         const isChange = this.checkQuotaChangeHandle(oldQuota, quota)

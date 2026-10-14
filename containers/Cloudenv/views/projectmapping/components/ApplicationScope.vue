@@ -56,10 +56,8 @@ export default {
   },
   methods: {
     // applicationScopeChangeHandle () {
-    //   this.form.fc.setFieldsValue({
-    //     accounts: [],
-    //     cloudproviders: [],
-    //   })
+    //   this.form.fd.accounts = []
+    //   this.form.fd.cloudproviders = []
     // },
   },
 }

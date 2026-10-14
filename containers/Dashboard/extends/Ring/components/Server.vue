@@ -59,24 +59,31 @@
     </div>
     <base-drawer class="ring-drawer-wrapper" @update:visible="updateVisible" :visible="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit">
       <slot />
-      <a-form
-        hideRequiredMark
-        :form="form.fc"
-        v-bind="formItemLayout">
-        <a-form-item :label="$t('dashboard.text_6')">
-          <a-input v-decorator="decorators.name" />
-        </a-form-item>
-        <quota-config :fc="form.fc" :fd="form.fd" :decorators="decorators" @update:usage_key="setDefaultName" />
-        <a-form-item :label="$t('dashboard.chart_type')">
-          <a-radio-group v-decorator="decorators.chart_type">
+      <a-form-model ref="formRef" hideRequiredMark :model="form.fd" :rules="drawerRules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('dashboard.text_6')" prop="name">
+          <a-input v-model:value="form.fd.name" @change="onNameInput" />
+        </a-form-model-item>
+        <quota-config :model="form.fd" :fd="form.fd" @update:usage_key="setDefaultName" />
+        <a-form-model-item prop="all_usage_key" class="d-none">
+          <a-input v-model:value="form.fd.all_usage_key" />
+        </a-form-model-item>
+        <a-form-model-item prop="usage_key" class="d-none">
+          <a-input v-model:value="form.fd.usage_key" />
+        </a-form-model-item>
+        <a-form-model-item prop="usage_label" class="d-none">
+          <a-input v-model:value="form.fd.usage_label" />
+        </a-form-model-item>
+        <a-form-model-item prop="un_usage_label" class="d-none">
+          <a-input v-model:value="form.fd.un_usage_label" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('dashboard.chart_type')" prop="chart_type">
+          <a-radio-group v-model:value="form.fd.chart_type">
             <a-radio-button value="ring">{{ $t('dashboard.ring') }}</a-radio-button>
             <a-radio-button value="liquidfill">{{ $t('dashboard.liquidfill') }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item v-if="isRing" :label="colorLabel || $t('dashboard.color.scheme')" class="mb-0">
-          <a-select
-            @change="colorChange"
-            v-decorator="decorators.color">
+        </a-form-model-item>
+        <a-form-model-item v-if="isRing" :label="colorLabel || $t('dashboard.color.scheme')" prop="color" class="mb-0">
+          <a-select v-model:value="form.fd.color" @change="colorChange">
             <a-select-option v-for="item in ringColors" :key="item.key" :value="item.key">
               <div>
                 <a-progress :show-info="false" :stroke-color="{ '60%': item.percent60, '80%': item.percent80, '100%': item.percent100}" :percent="100" />
@@ -84,8 +91,8 @@
               <div class="text-color-help">{{ item.label }}</div>
             </a-select-option>
           </a-select>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </base-drawer>
   </div>
 </template>
@@ -100,6 +107,7 @@ import { getRequestT, sizestrWithUnit } from '@/utils/utils'
 import { hasPermission } from '@/utils/auth'
 import { numerify } from '@/filters'
 import { chartColors } from '@/constants'
+import { rollupFormData } from '@/utils/common/ant'
 import mixin from './mixin'
 
 export default {
@@ -131,13 +139,32 @@ export default {
     return {
       data: {},
       loading: false,
+      nameTouched: false,
+      drawerRules: {
+        name: [
+          { required: true, message: this.$t('dashboard.text_8') },
+        ],
+        all_usage_key: [
+          { required: true, message: this.$t('dashboard.text_22') },
+        ],
+        usage_key: [
+          { required: true, message: this.$t('dashboard.text_22') },
+        ],
+        usage_label: [
+          { required: true, message: this.$t('dashboard.usage_label_title') },
+        ],
+        un_usage_label: [
+          { required: true, message: this.$t('dashboard.un_usage_label_title') },
+        ],
+      },
       form: {
-        fc: this.$form.createForm(this, { onValuesChange: this.onValuesChange }),
         fd: {
           name: initialNameValue,
           cloud_env: initialCloudEnvValue,
           brand: initialBrandValue,
           region: initialRegionValue,
+          regionAccountType: initialRegionAccountType,
+          account: this.params && this.params.account,
           all_usage_key: initialAllUsageKeyValue,
           usage_key: initialUsageKeyValue,
           usage_label: initialUsageLabelValue,
@@ -146,94 +173,49 @@ export default {
           chart_type: initialChartTypeValue,
         },
       },
-      decorators: {
-        name: [
-          'name',
-          {
-            initialValue: initialNameValue,
-            rules: [
-              { required: true, message: this.$t('dashboard.text_8') },
-            ],
-          },
-        ],
-        cloud_env: [
-          'cloud_env',
-          {
-            initialValue: initialCloudEnvValue,
-          },
-        ],
-        brand: [
-          'brand',
-          {
-            initialValue: initialBrandValue,
-          },
-        ],
-        regionAccountType: [
-          'regionAccountType',
-          {
-            initialValue: initialRegionAccountType,
-          },
-        ],
-        region: [
-          'region',
-          {
-            initialValue: initialRegionValue,
-          },
-        ],
-        account: [
-          'account',
-          {
-            initialValue: this.params && this.params.account,
-          },
-        ],
-        all_usage_key: [
-          'all_usage_key',
-          {
-            initialValue: initialAllUsageKeyValue,
-            rules: [
-              { required: true, message: this.$t('dashboard.text_22') },
-            ],
-          },
-        ],
-        usage_key: [
-          'usage_key',
-          {
-            initialValue: initialUsageKeyValue,
-            rules: [
-              { required: true, message: this.$t('dashboard.text_22') },
-            ],
-          },
-        ],
-        color: [
-          'color',
-          {
-            initialValue: initialColorValue,
-          },
-        ],
-        usage_label: [
-          'usage_label',
-          {
-            initialValue: initialUsageLabelValue,
-            rules: [
-              { required: true, message: this.$t('dashboard.usage_label_title') },
-            ],
-          },
-        ],
-        un_usage_label: [
-          'un_usage_label',
-          {
-            initialValue: initialUnUsageLabelValue,
-            rules: [
-              { required: true, message: this.$t('dashboard.un_usage_label_title') },
-            ],
-          },
-        ],
-        chart_type: [
-          'chart_type',
-          {
-            initialValue: initialChartTypeValue,
-          },
-        ],
+      fieldMap: {
+        name: {
+          name: 'name',
+          initialValue: initialNameValue,
+          rules: [
+            { required: true, message: this.$t('dashboard.text_8') },
+          ],
+        },
+        cloud_env: { name: 'cloud_env', initialValue: initialCloudEnvValue },
+        brand: { name: 'brand', initialValue: initialBrandValue },
+        regionAccountType: { name: 'regionAccountType', initialValue: initialRegionAccountType },
+        region: { name: 'region', initialValue: initialRegionValue },
+        account: { name: 'account', initialValue: this.params && this.params.account },
+        all_usage_key: {
+          name: 'all_usage_key',
+          initialValue: initialAllUsageKeyValue,
+          rules: [
+            { required: true, message: this.$t('dashboard.text_22') },
+          ],
+        },
+        usage_key: {
+          name: 'usage_key',
+          initialValue: initialUsageKeyValue,
+          rules: [
+            { required: true, message: this.$t('dashboard.text_22') },
+          ],
+        },
+        color: { name: 'color', initialValue: initialColorValue },
+        usage_label: {
+          name: 'usage_label',
+          initialValue: initialUsageLabelValue,
+          rules: [
+            { required: true, message: this.$t('dashboard.usage_label_title') },
+          ],
+        },
+        un_usage_label: {
+          name: 'un_usage_label',
+          initialValue: initialUnUsageLabelValue,
+          rules: [
+            { required: true, message: this.$t('dashboard.un_usage_label_title') },
+          ],
+        },
+        chart_type: { name: 'chart_type', initialValue: initialChartTypeValue },
       },
     }
   },
@@ -469,14 +451,7 @@ export default {
   watch: {
     'form.fd' (val) {
       this.fetchUsage()
-      for (const key in this.decorators) {
-        let config = this.decorators[key][1] || {}
-        config = {
-          ...config,
-          initialValue: val[key],
-        }
-        this.decorators[key][1] = config
-      }
+      rollupFormData(val, this.fieldMap)
     },
     'dataRangeParams.scope': {
       handler (val) {
@@ -507,10 +482,8 @@ export default {
     }
   },
   methods: {
-    onValuesChange (props, values) {
-      Object.keys(values).forEach((key) => {
-        this.form.fd[key] = values[key]
-      })
+    onNameInput () {
+      this.nameTouched = true
     },
     colorChange (color) {
       this.$emit('update:color', color)
@@ -705,8 +678,8 @@ export default {
     },
     async handleSubmit () {
       try {
-        const values = await this.form.fc.validateFields()
-        this.form.fd = values
+        await this.$refs.formRef.validate()
+        const values = { ...this.form.fd }
         this.$emit('update', this.options.i, values)
         this.updateVisible(false)
       } catch (error) {

@@ -4,20 +4,20 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.sku')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.sku.postpaid_status')">
-          <a-radio-group v-model:value="postpaid">
+      <a-form-model :model="form" hideRequiredMark v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.sku.postpaid_status')">
+          <a-radio-group v-model:value="form.postpaid">
             <a-radio :value="available">{{ $t('status.sku.available') }}</a-radio>
             <a-radio :value="soldout">{{ $t('status.sku.soldout') }}</a-radio>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('compute.sku.prepaid_status')">
-          <a-radio-group v-model:value="prepaid">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.sku.prepaid_status')">
+          <a-radio-group v-model:value="form.prepaid">
             <a-radio :value="available">{{ $t('status.sku.available') }}</a-radio>
             <a-radio :value="soldout">{{ $t('status.sku.soldout') }}</a-radio>
           </a-radio-group>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -37,13 +37,12 @@ export default {
     return {
       loading: false,
       action: this.$t('compute.sku.setup.sell.status'),
-      form: {
-        fc: this.$form.createForm(this),
-      },
       available: 'available',
       soldout: 'soldout',
-      postpaid: 'available',
-      prepaid: 'available',
+      form: {
+        postpaid: 'available',
+        prepaid: 'available',
+      },
       formItemLayout: {
         wrapperCol: {
           span: 20,
@@ -65,8 +64,8 @@ export default {
       const { data = [] } = this.params
       if (data.length === 1) {
         const { prepaid_status, postpaid_status } = data[0]
-        this.postpaid = postpaid_status
-        this.prepaid = prepaid_status
+        this.form.postpaid = postpaid_status
+        this.form.prepaid = prepaid_status
       }
     } catch (err) {}
   },
@@ -77,8 +76,8 @@ export default {
         id: ids,
         managerArgs: {
           data: {
-            prepaid_status: this.prepaid,
-            postpaid_status: this.postpaid,
+            prepaid_status: this.form.prepaid,
+            postpaid_status: this.form.postpaid,
           },
         },
       })

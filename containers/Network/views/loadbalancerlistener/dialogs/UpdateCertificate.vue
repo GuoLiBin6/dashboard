@@ -4,17 +4,17 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.lb_listener')" :count="params.data.length" :action="$t('network.text_470')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('network.text_471')">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('network.text_471')" prop="certificate">
           <base-select
-            v-decorator="decorators.certificate"
+            v-model:value="form.certificate"
             resource="loadbalancercertificates"
             :params="certificateParams"
             show-sync
             :select-props="{ placeholder: $t('network.text_421') }" />
           <div slot="extra">{{$t('network.text_422')}}<help-link href="/lbcert">{{$t('network.text_321')}}</help-link></div>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -34,17 +34,11 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        certificate: this.params.lbDetail.id,
       },
-      decorators: {
+      rules: {
         certificate: [
-          'certificate',
-          {
-            initialValue: this.params.lbDetail.id,
-            rules: [
-              { required: true, message: this.$t('network.text_421') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_421') },
         ],
       },
       formItemLayout: {
@@ -96,8 +90,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        await this.doCreate(values)
+        await this.$refs.formRef.validate()
+        await this.doCreate({ ...this.form })
         this.params.refresh()
         this.loading = false
         this.cancelDialog()

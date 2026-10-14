@@ -4,11 +4,11 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.instancegroup')" :count="params.data.length" :action="$t('compute.text_1264')" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" hideRequiredMark>
-        <a-form-item :label="$t('compute.text_1265')" v-bind="formItemLayout" :extra="$t('compute.text_1266')">
-          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-decorator="decorators.auto_delete" />
-        </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" :model="form" hideRequiredMark>
+        <a-form-model-item :label="$t('compute.text_1265')" v-bind="formItemLayout" :extra="$t('compute.text_1266')" prop="auto_delete">
+          <a-switch v-model:checked="form.auto_delete" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -28,48 +28,31 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        auto_delete: [
-          'auto_delete',
-          {
-            initialValue: false,
-            valuePropName: 'checked',
-          },
-        ],
+        auto_delete: false,
       },
       formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
+        wrapperCol: { span: 21 },
+        labelCol: { span: 3 },
       },
     }
   },
   computed: {
     columns () {
       const fields = ['name', 'metadata', 'ip']
-      return this.params.columns.filter(item => {
-        const { field } = item
-        return fields.indexOf(field) > -1
-      })
+      return this.params.columns.filter(item => fields.indexOf(item.field) > -1)
     },
   },
   methods: {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
         const ids = this.params.data.map(item => item.id)
         await this.params.onManager('batchPerformAction', {
           id: ids,
           steadyStatus: ['running', 'ready'],
           managerArgs: {
             action: 'dissociate-eip',
-            data: values,
+            data: { auto_delete: this.form.auto_delete },
           },
         })
         this.cancelDialog()

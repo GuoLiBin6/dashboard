@@ -1,6 +1,6 @@
 <template>
   <a-form-item>
-    <a-radio-group v-decorator="decorator" @change="handleMachineChange">
+    <a-radio-group :value="machineValue" @change="handleMachineChange">
       <a-radio-button :value="opt.value" v-for="opt in machineOptions" :key="opt.value">{{ opt.text }}</a-radio-button>
     </a-radio-group>
   </a-form-item>
@@ -21,12 +21,12 @@ export default {
       type: String,
       default: 'selection',
     },
-    decorator: {
-      type: Array,
-      required: true,
-    },
     form: {
       type: Object,
+    },
+    field: {
+      type: String,
+      default: 'machine',
     },
     isArm: {
       type: Boolean,
@@ -37,6 +37,9 @@ export default {
     },
   },
   computed: {
+    machineValue () {
+      return this.form?.fd?.[this.field]
+    },
     machineOptions () {
       var options = []
       if (this.showDefault) {
@@ -82,35 +85,36 @@ export default {
     },
   },
   methods: {
+    fieldSet (val) {
+      if (this.form?.fd) {
+        this.form.fd[this.field] = val
+      }
+    },
     handleMachineChange (e) {
-      this.$emit('change', { value: e.target.value })
+      const val = e.target.value
+      this.fieldSet(val)
+      this.$emit('change', { value: val })
     },
     /** 架构切换后当前值不在选项里时落到第一项（避免 radio 无选中） */
     ensureValidMachine () {
-      const field = Array.isArray(this.decorator) ? this.decorator[0] : 'machine'
-      const fc = this.resolveFormFc()
-      if (!fc || !this.selectableMachineValues.length) return
-      const current = fc.getFieldValue(field)
+      if (!this.form?.fd || !this.selectableMachineValues.length) return
+      const current = this.form.fd[this.field]
       if (this.selectableMachineValues.includes(current)) return
       const next = this.selectableMachineValues[0]
       if (next === undefined) return
-      this.applyFormFieldValues({ [field]: next })
+      this.fieldSet(next)
     },
     serializeFormFieldDraft () {
-      const field = Array.isArray(this.decorator) ? this.decorator[0] : 'machine'
-      const value = this.resolveFormFc()?.getFieldValue?.(field)
+      const value = this.form?.fd?.[this.field]
       if (value === undefined || value === null) return undefined
       return value
     },
     applyCreateFormFieldDraft (draft) {
       if (draft === undefined || draft === null) return
       if (!this.selectableMachineValues.includes(draft)) return
-      const field = Array.isArray(this.decorator) ? this.decorator[0] : 'machine'
-      const fc = this.resolveFormFc()
-      if (!fc) return
-      const current = fc.getFieldValue(field)
+      const current = this.form?.fd?.[this.field]
       if (current === draft || String(current) === String(draft)) return
-      this.applyFormFieldValues({ [field]: draft })
+      this.fieldSet(draft)
     },
   },
 }

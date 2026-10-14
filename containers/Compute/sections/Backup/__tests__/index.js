@@ -13,22 +13,11 @@ jest.mock('@/utils/manager', () => {
 })
 
 describe('Backup switchDisabled', () => {
-  const decorator = {
-    backupEnable: [
-      'backupEnable',
-      {
-        valuePropName: 'checked',
-        initialValue: false,
-      },
-    ],
-    backup: [
-      'backup',
-    ],
-  }
-
   it('hostList.length decide switchDisabled false', () => {
     const wrapper = shallowMount(Backup, {
-      propsData: { decorator },
+      propsData: {
+        model: { backupEnable: false },
+      },
       data () {
         return {
           backupEnable: false,
@@ -42,7 +31,10 @@ describe('Backup switchDisabled', () => {
 
   it('diskType=gpfs decide switchDisabled true', () => {
     const wrapper = shallowMount(Backup, {
-      propsData: { decorator, diskType: 'gfs1' },
+      propsData: {
+        model: { backupEnable: false },
+        diskType: 'gfs1',
+      },
     })
     expect(wrapper.vm.switchDisabled).toBeTruthy()
   })

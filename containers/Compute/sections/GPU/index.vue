@@ -4,24 +4,24 @@
       <span><a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" :value="gpuEnable" :disabled="true" /></span>
     </a-tooltip>
     <a-form-item class="mb-0" v-else>
-      <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-decorator="decorators.gpuEnable" @change="change" />
+      <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" :checked="gpuEnable" @change="change" />
     </a-form-item>
     <template v-if="gpuEnable">
       <a-row>
         <a-col :span="3" class="mr-2">
           <a-form-item>
-            <base-select v-decorator="decorators.gpuType" :options="gpuTypeOptions" @change="onChangeGpuType" />
+            <base-select :value="boundFd.gpuType" :options="gpuTypeOptions" @change="onChangeGpuType" />
           </a-form-item>
         </a-col>
         <a-col :span="12">
           <a-form-item>
-            <base-select v-decorator="decorators.gpu" :options="realGpuOptions" v-model:item="curGpuItem"
-              :selectProps="{ placeholder: $t('compute.text_147') }" />
+            <base-select :value="boundFd.gpu" :options="realGpuOptions" v-model:item="curGpuItem"
+              :selectProps="{ placeholder: $t('compute.text_147') }" @change="v => $set(boundFd, 'gpu', v)" />
           </a-form-item>
         </a-col>
       </a-row>
       <a-form-item class="mb-0">
-        <a-radio-group v-decorator="decorators.gpuCount">
+        <a-radio-group :value="boundFd.gpuCount" @change="e => $set(boundFd, 'gpuCount', e.target.value)">
           <a-radio-button
             v-for="item in gpuCountOptions"
             :value="item.key"
@@ -44,13 +44,16 @@ import {
 export default {
   name: 'GPU',
   props: {
-    decorators: {
+    model: {
       type: Object,
-      validator: val => val.gpuEnable && val.gpu && val.gpuCount && val.gpuType,
+      default: null,
     },
     gpuOptions: {
       type: Array,
       default: () => [],
+    },
+    form: {
+      type: Object,
     },
   },
   data () {
@@ -62,6 +65,9 @@ export default {
     }
   },
   computed: {
+    boundFd () {
+      return this.model || this.form?.fd || this.form
+    },
     isGpuEmpty () {
       return this.gpuOptions && this.gpuOptions.length === 0
     },
@@ -77,17 +83,34 @@ export default {
       const nextGpuType = resolveGpuTypeBySharingMode(this.curGpuType, val?.sharing_mode)
       if (nextGpuType !== this.curGpuType) {
         this.curGpuType = nextGpuType
+        this.$set(this.boundFd, 'gpuType', nextGpuType)
         this.$emit('change-gpu-type', nextGpuType)
       }
     },
   },
+  created () {
+    const fd = this.boundFd
+    if (fd && fd.gpuEnable === undefined) {
+      this.$set(fd, 'gpuEnable', false)
+    }
+    if (fd && fd.gpuCount === undefined) {
+      this.$set(fd, 'gpuCount', 1)
+    }
+    if (fd && fd.gpuType === undefined) {
+      this.$set(fd, 'gpuType', GPU_TYPE_OPTION_MAP.HPC.value)
+    }
+    this.gpuEnable = !!fd?.gpuEnable
+    this.curGpuType = fd?.gpuType || GPU_TYPE_OPTION_MAP.HPC.value
+  },
   methods: {
     change (val) {
       this.gpuEnable = val
+      this.$set(this.boundFd, 'gpuEnable', val)
       this.$emit('change', val)
     },
     onChangeGpuType (val) {
       this.curGpuType = val
+      this.$set(this.boundFd, 'gpuType', val)
     },
   },
 }

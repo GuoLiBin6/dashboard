@@ -4,11 +4,13 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.cloudaccount')" :count="params.data.length" :action="params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
+      <a-form-model
+        ref="formRef"
         v-bind="formItemLayout"
-        :form="form.fc">
-        <proxy-setting :fc="form.fc" :account="params.data[0]" />
-      </a-form>
+        :model="form.fd"
+        :rules="rules">
+        <proxy-setting :form="form.fd" :account="params.data[0]" />
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -32,7 +34,14 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        fd: {
+          proxy_setting: '',
+        },
+      },
+      rules: {
+        proxy_setting: [
+          { required: true, message: this.$t('common.tips.select', [this.$t('cloudenv.text_14')]) },
+        ],
       },
       formItemLayout: {
         wrapperCol: {
@@ -48,7 +57,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form.fd }
         values.proxy_setting = values.proxy_setting || 'DIRECT'
         const ids = this.params.data.map(item => item.id)
         if (ids.length > 1) {

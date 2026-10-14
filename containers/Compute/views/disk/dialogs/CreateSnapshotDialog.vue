@@ -5,12 +5,14 @@
       <a-alert :message="errorInfo" banner v-if="errorInfo !== ''" />
       <dialog-selected-tips :count="params.data.length" :action="$t('compute.disk_perform_create_snapshot')" :name="$t('dictionary.disk')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('compute.text_415')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.name" />
-        </a-form-item>
-      </a-form>
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules">
+        <a-form-model-item :label="$t('compute.text_415')" v-bind="formItemLayout" prop="name">
+          <a-input v-model:value="form.name" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading" :disabled="confirmDisabled">{{ $t('dialog.ok') }}</a-button>
@@ -31,18 +33,12 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        name: undefined,
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_416') },
-              { validator: this.$validate('snapshotName') },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_416') },
+          { validator: this.$validate('snapshotName') },
         ],
       },
       formItemLayout: {
@@ -99,34 +95,23 @@ export default {
       })
   },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     doCreate (data) {
       return new this.$Manager('snapshots').create({ data })
     },
     async handleConfirm () {
       this.loading = true
       try {
-        let values = await this.validateForm()
-        values = {
-          ...values,
+        await this.$refs.formRef.validate()
+        const values = {
+          name: this.form.name,
           disk: this.params.data[0].id,
         }
-        this.loading = true
         await this.doCreate(values)
-        this.loading = false
         this.params.refresh()
         this.cancelDialog()
       } catch (error) {
+        // validate or submit failed
+      } finally {
         this.loading = false
       }
     },

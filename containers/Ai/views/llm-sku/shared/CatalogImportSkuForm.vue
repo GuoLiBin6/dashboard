@@ -11,11 +11,21 @@
     :catalog-type-selectable="catalogTypeSelectable"
     catalog-submit-type="import"
     v-bind="$attrs"
-    v-on="$listeners" />
+    v-on="forwardListeners" />
 </template>
 
 <script>
 import LlmSkuCreateForm from '@Ai/views/llm-sku/create/Form.vue'
+
+function listenersFromAttrs (attrs = {}) {
+  const out = {}
+  Object.keys(attrs).forEach((key) => {
+    if (!key.startsWith('on') || key.length < 3) return
+    const raw = key.slice(2)
+    out[raw.charAt(0).toLowerCase() + raw.slice(1)] = attrs[key]
+  })
+  return out
+}
 
 export default {
   name: 'CatalogImportSkuForm',
@@ -35,6 +45,12 @@ export default {
     catalogTypeSelectable: {
       type: Boolean,
       default: false,
+    },
+  },
+  computed: {
+    forwardListeners () {
+      if (this.$listeners && Object.keys(this.$listeners).length) return this.$listeners
+      return listenersFromAttrs(this.$attrs)
     },
   },
   methods: {

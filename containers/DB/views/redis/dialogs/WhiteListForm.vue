@@ -1,24 +1,24 @@
 <template>
     <base-dialog @cancel="cancelDialog">
         <div slot="header">{{params.title}}</div>
-        <a-form slot="body" :form="form.fc" class="mt-3">
+        <a-form-model ref="formRef" slot="body" :model="form" :rules="rules" class="mt-3" v-bind="formItemLayout">
           <template v-if="params.data && params.data.length > 0">
             <dialog-selected-tips :name="$t('dictionary.elasticcaches')" :count="params.data.length" :action="params.title" />
             <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
           </template>
-          <a-form-item v-bind="formItemLayout" :label="$t('db.text_60')">
+          <a-form-model-item :label="$t('db.text_60')" prop="name">
             <template v-if="params.data && params.data.length > 0">
               {{params.data[0].name}}
             </template>
-            <a-input v-else :placeholder="$t('validator.dbName')" v-decorator="decorators.name" />
-          </a-form-item>
-          <a-form-item v-bind="formItemLayout" :label="$t('db.text_294')">
+            <a-input v-else :placeholder="$t('validator.dbName')" v-model:value="form.name" />
+          </a-form-model-item>
+          <a-form-model-item :label="$t('db.text_294')" prop="ip_list">
             <a-textarea :placeholder="$t('db.text_295')"
               :autosize="{ minRows: 4, maxRows: 7 }"
-              v-decorator="decorators['ip_list']" />
+              v-model:value="form.ip_list" />
               <div style="line-height:20px;color:#999">{{$t('db.text_296')}}<b style="color:#666">{{remainIpCount}}</b>{{$t('db.text_297')}}</div>
-          </a-form-item>
-        </a-form>
+          </a-form-model-item>
+        </a-form-model>
          <div slot="footer">
             <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
             <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
@@ -35,11 +35,23 @@ export default {
   name: 'RedisWhiteListFormDialog',
   mixins: [DialogMixin, WindowsMixin],
   data () {
+    const { initialValues = {} } = this.params
     return {
       loading: false,
       title: this.$t('db.text_41'),
       form: {
-        fc: this.$form.createForm(this),
+        name: initialValues.name,
+        ip_list: initialValues.ip_list,
+      },
+      rules: {
+        name: [
+          { required: true, message: this.$t('db.text_136') },
+          { validator: validateForm('dbName') },
+        ],
+        ip_list: [
+          { required: true, message: this.$t('db.text_298') },
+          { validator: this.validateIps },
+        ],
       },
       formItemLayout: {
         wrapperCol: { span: 20 },
@@ -49,35 +61,6 @@ export default {
     }
   },
   computed: {
-    decorators () {
-      const { initialValues = {} } = this.params
-      const decorators = {
-        name: [
-          'name',
-          {
-            initialValue: initialValues.name,
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('db.text_136') },
-              { validator: validateForm('dbName') },
-            ],
-          },
-        ],
-        ip_list: [
-          'ip_list',
-          {
-            initialValue: initialValues.ip_list,
-            validateFirst: true,
-            validateTrigger: 'blur',
-            rules: [
-              { required: true, message: this.$t('db.text_298') },
-              { validator: this.validateIps },
-            ],
-          },
-        ],
-      }
-      return decorators
-    },
     remainIpCount () {
       return 20 - this.ipsLength
     },
@@ -130,21 +113,11 @@ export default {
       }
       _callback()
     },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         if (this.params.data && this.params.data.length > 0) {
           const params = {
             ...values,

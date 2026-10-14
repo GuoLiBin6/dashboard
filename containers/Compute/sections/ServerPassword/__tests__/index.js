@@ -6,28 +6,13 @@ import { LOGIN_TYPES_MAP } from '@Compute/constants'
 import ServerPassword from '../index'
 const localVue = createLocalVue()
 localVue.use(VueRouter)
-localVue.directive('decorator', {})
 const router = new VueRouter()
 
-let decorator = null
-let form = null
+let model = null
 beforeEach(() => {
-  decorator = {
-    loginType: ['loginType', { initialValue: 'random' }],
-    keypair: [
-      'loginKeypair',
-      {
-        initialValue: 'abc',
-      },
-    ],
-    password: [
-      'loginPassword',
-    ],
-  }
-  form = {
-    fc: {
-      setFieldsValue: jest.fn(),
-    },
+  model = {
+    loginType: 'random',
+    loginKeypair: 'abc',
   }
 })
 
@@ -36,13 +21,12 @@ describe('ServerPassword loginTypeMap', () => {
     const loginTypes = ['random', 'keypair', 'image', 'password']
     const wrapper = shallowMount(ServerPassword, {
       propsData: {
-        decorator,
         loginTypes,
-        form,
+        model,
       },
     })
     expect(wrapper.vm.loginTypeMap).toEqual(LOGIN_TYPES_MAP)
-    expect(wrapper.vm.form.fc.setFieldsValue.mock.calls[0][0]).toEqual({ loginType: LOGIN_TYPES_MAP.random.key })
+    expect(wrapper.vm.model.loginType).toEqual(LOGIN_TYPES_MAP.random.key)
     expect(wrapper.vm.$el).toMatchSnapshot()
   })
 
@@ -50,16 +34,15 @@ describe('ServerPassword loginTypeMap', () => {
     const loginTypes = ['keypair', 'image']
     const wrapper = shallowMount(ServerPassword, {
       propsData: {
-        decorator,
         loginTypes,
-        form,
+        model,
       },
     })
     expect(wrapper.vm.loginTypeMap).toEqual({
       keypair: LOGIN_TYPES_MAP.keypair,
       image: LOGIN_TYPES_MAP.image,
     })
-    expect(wrapper.vm.form.fc.setFieldsValue.mock.calls[0][0]).toEqual({ loginType: LOGIN_TYPES_MAP.image.key })
+    expect(wrapper.vm.model.loginType).toEqual(LOGIN_TYPES_MAP.image.key)
     expect(wrapper.vm.$el).toMatchSnapshot()
   })
 
@@ -68,9 +51,8 @@ describe('ServerPassword loginTypeMap', () => {
     const loginTypes = ['keypair', 'password']
     const wrapper = shallowMount(ServerPassword, {
       propsData: {
-        decorator,
         loginTypes,
-        form,
+        model,
       },
       stubs: {
         'base-select': BaseSelect,
@@ -83,7 +65,7 @@ describe('ServerPassword loginTypeMap', () => {
       keypair: LOGIN_TYPES_MAP.keypair,
       password: LOGIN_TYPES_MAP.password,
     })
-    expect(wrapper.vm.form.fc.setFieldsValue.mock.calls[0][0]).toEqual({ loginType: LOGIN_TYPES_MAP.keypair.key })
+    expect(wrapper.vm.model.loginType).toEqual(LOGIN_TYPES_MAP.keypair.key)
     expect(wrapper.vm.$el).toMatchSnapshot()
   })
 })

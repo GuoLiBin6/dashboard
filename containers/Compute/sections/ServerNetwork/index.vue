@@ -1,7 +1,9 @@
 <template>
   <div>
-    <a-form-item>
-      <a-radio-group v-decorator="decorator.networkType" @change="change">
+    <a-form-model-item>
+      <a-radio-group
+        v-model:value="model.networkType"
+        @change="change">
         <template  v-for="(item, key) in originNetworkMaps" :key="key">
           <a-radio-button v-if="(isServertemplate && (key !== 'schedtag')) || !isServertemplate" :value="key">
             {{ item.t ? $t(item.t) : item.label }}
@@ -9,11 +11,11 @@
           </a-radio-button>
         </template>
       </a-radio-group>
-    </a-form-item>
-    <a-form-item v-if="networkComponent === 'config'">
+    </a-form-model-item>
+    <a-form-model-item v-if="networkComponent === 'config'">
       <network-config
         :form="form"
-        :decorator="decorator.networkConfig"
+        :model="model"
         :isBonding="isBonding"
         :network-params="networkListParams"
         v-bind="configs"
@@ -33,18 +35,18 @@
         :hiddenAdd="hiddenAdd"
         @advancedChange="onNetworkAdvancedChange"
         @optionalChange="onNetworkOptionalChange" />
-    </a-form-item>
-    <a-form-item v-if="networkComponent === 'schedtag'">
+    </a-form-model-item>
+    <a-form-model-item v-if="networkComponent === 'schedtag'">
       <network-schedtag
         ref="networkSchedtagRef"
         :form="form"
-        :decorator="decorator.networkSchedtag"
+        :model="model"
         :isBonding="isBonding"
         :schedtag-params="schedtagParams"
         :limit="form.fi.capability.max_nic_count"
         :showDeviceConfig="showDeviceConfig"
         @optionalChange="onNetworkOptionalChange" />
-    </a-form-item>
+    </a-form-model-item>
   </div>
 </template>
 
@@ -53,8 +55,10 @@ import { NETWORK_OPTIONS_MAP } from '@Compute/constants'
 import { HYPERVISORS_MAP } from '@/constants'
 import createFormFieldDraftMixin from '@/mixins/createFormFieldDraft'
 import { DRAFT_KIND } from '@/utils/createFormDraft'
+import { resolveFieldMeta } from '@/utils/common/ant'
 import NetworkConfig from './NetworkConfig'
 import NetworkSchedtag from './NetworkSchedtag'
+import { resolveServerNetworkFieldMap } from './fields'
 
 export default {
   name: 'ServerNetwork',
@@ -73,16 +77,16 @@ export default {
       type: String,
       default: DRAFT_KIND.SELECTION,
     },
-    decorator: {
+    /** a-form-model：与 networkType 等字段名对齐的受控对象 */
+    model: {
       type: Object,
-      required: true,
-      validator: val => val.networkType && val.networkConfig && val.networkSchedtag,
-      // val.segment && val.ip && val.schedtag && val.strategy,
+      default: null,
     },
     form: {
       type: Object,
       required: true,
-      validator: val => val.fc,
+      // end-state：有 model 时仅写 model；无 model 时读写 form.fd
+      validator: val => !!val && typeof val === 'object',
     },
     networkListParams: {
       type: Object,
@@ -200,6 +204,9 @@ export default {
     }
   },
   computed: {
+    networkFieldMap () {
+      return resolveServerNetworkFieldMap()
+    },
     ipsDisable () {
       return this.serverCount > 1
     },
@@ -294,18 +301,54 @@ export default {
     },
   },
   mounted () {
-    // 仅创建草稿/工单回填：Decorator 已种 networkType 时需挂出 VPC/子网区
+    // 仅创建草稿/工单回填：fd 已种 networkType 时需挂出 VPC/子网区
     if (this.isCreateNetworkDraftContext) {
       this.syncNetworkComponentFromForm()
     }
   },
   created () {
     this._pendingNetworkDraft = null
+    this.initModelFields()
   },
   methods: {
+    fieldVal (fieldTuple) {
+      const meta = resolveFieldMeta(fieldTuple)
+      if (!meta) return undefined
+      const { name, ...opts } = meta
+      const v = this.model[name]
+      return v !== undefined ? v : opts.initialValue
+    },
+    fieldSet (fieldTuple, value) {
+      if (!resolveFieldMeta(fieldTuple)) return
+      this.$set(this.model, resolveFieldMeta(fieldTuple)?.name, value)
+    },
+    initModelFields () {
+      const fieldDef = this.networkFieldMap.networkType
+      const meta = resolveFieldMeta(fieldDef)
+      if (!meta) return
+      const { name, ...opts } = meta
+      if (this.model[name] === undefined && opts.initialValue !== undefined) {
+        this.$set(this.model, name, opts.initialValue)
+      }
+    },
+    async validate () {
+      const networkType = this.model.networkType || this.fieldVal(this.networkFieldMap.networkType)
+      if (!networkType) throw new Error(this.$t('compute.text_195'))
+      if (networkType === NETWORK_OPTIONS_MAP.manual.key) {
+        const ref = this.$refs.networkConfigRef
+        if (ref?.validate) await ref.validate()
+      } else if (networkType === NETWORK_OPTIONS_MAP.schedtag.key) {
+        const ref = this.$refs.networkSchedtagRef
+        if (ref?.validate) await ref.validate()
+      }
+      return true
+    },
+    readNicModelField (root, key) {
+      return this.model?.[root]?.[key]
+    },
     tryApplyPendingNetworkDraft () {
       const pending = this._pendingNetworkDraft
-      if (!pending || !this.form?.fc) return true
+      if (!pending) return true
       const { draft, options } = pending
       let ok = true
       if (draft.networkType === NETWORK_OPTIONS_MAP.manual.key &&
@@ -333,32 +376,26 @@ export default {
     },
     getCreateFormFieldDraftSnapshot () {
       if (!this.canReadWriteFormFieldDraft()) return undefined
-      const f = this.form?.fc
-      if (!f) return undefined
-      const networkType = f.getFieldValue('networkType') || this.form.fd?.networkType
+      const networkType = this.model.networkType || this.form.fd?.networkType
       const ret = { networkType }
       // 多网卡：存与工单同形的 nets，回填走 NetworkConfig.initData（uuid key 会变）
       if (networkType === NETWORK_OPTIONS_MAP.manual.key) {
         const list = this.$refs.networkConfigRef?.networkList
         if (Array.isArray(list) && list.length) {
           ret.nets = list.map((item) => {
-            const vpcId = item.vpc?.id || f.getFieldValue(this.decorator.networkConfig.vpcs(item.key)[0])
-            const networkId = item.network?.id || f.getFieldValue(this.decorator.networkConfig.networks(item.key)[0])
+            const vpcId = item.vpc?.id || this.readNicModelField('vpcs', item.key)
+            const networkId = item.network?.id || this.readNicModelField('networks', item.key)
             const net = {
               vpc: vpcId,
               network: networkId,
               network_id: networkId,
             }
             if (item.ipShow) {
-              const ipVal = item.ip || (typeof this.decorator.networkConfig.ips === 'function'
-                ? f.getFieldValue(this.decorator.networkConfig.ips(item.key, item.network)[0])
-                : undefined)
+              const ipVal = item.ip || this.readNicModelField('networkIps', item.key)
               if (ipVal) net.address = ipVal
             }
             if (item.macShow) {
-              const macVal = item.mac || (typeof this.decorator.networkConfig.macs === 'function'
-                ? f.getFieldValue(this.decorator.networkConfig.macs(item.key, item.network)[0])
-                : undefined)
+              const macVal = item.mac || this.readNicModelField('networkMacs', item.key)
               if (macVal) net.mac = macVal
             }
             if (item.requireIpv6) {
@@ -366,19 +403,15 @@ export default {
               if (item.ipv6Mode === 'only') net.strict_ipv6 = true
             }
             if (item.ipv6Show) {
-              const ipv6Val = item.ipv6 || (typeof this.decorator.networkConfig.ips6 === 'function'
-                ? f.getFieldValue(this.decorator.networkConfig.ips6(item.key, item.network)[0])
-                : undefined)
+              const ipv6Val = item.ipv6 || this.readNicModelField('networkIpsAddress6', item.key)
               if (ipv6Val) {
                 const prefix = this.$refs.networkConfigRef?.getIpv6Prefix?.(item.network?.guest_ip6_start)
                 net.address6 = prefix ? `${prefix}${ipv6Val}` : ipv6Val
               }
             }
             if (item.deviceShow) {
-              const model = item.device || (typeof this.decorator.networkConfig.devices === 'function'
-                ? f.getFieldValue(this.decorator.networkConfig.devices(item.key)[0])
-                : undefined)
-              if (model) net.sriov_device = { model }
+              const deviceModel = item.device || this.readNicModelField('networkDevices', item.key)
+              if (deviceModel) net.sriov_device = { model: deviceModel }
             }
             // 安全组多选：不写入草稿、不回填
             return net
@@ -388,11 +421,11 @@ export default {
         const list = this.$refs.networkSchedtagRef?.schedtagList
         if (Array.isArray(list) && list.length) {
           ret.nets = list.map((item) => {
-            const schedtag = item.schedtag || f.getFieldValue(this.decorator.networkSchedtag.schedtags(item.key)[0])
-            const strategy = item.policy || f.getFieldValue(this.decorator.networkSchedtag.policys(item.key)[0])
+            const schedtag = item.schedtag || this.readNicModelField('networkSchedtags', item.key)
+            const strategy = item.policy || this.readNicModelField('networkPolicys', item.key)
             let device = item.device
-            if (!device && item.deviceShow && typeof this.decorator.networkSchedtag.devices === 'function') {
-              device = f.getFieldValue(this.decorator.networkSchedtag.devices(item.key)[0])
+            if (!device && item.deviceShow) {
+              device = this.readNicModelField('networkDevices', item.key)
             }
             const tag = { id: schedtag, strategy }
             if (device) tag.sriov_device = { model: device }
@@ -453,7 +486,7 @@ export default {
     },
     applyCreateFormFieldDraft (draft, options = {}) {
       if (!this.canRestoreFormFieldDraft() && !this.ignoreAutoNetworkType) return
-      if (!draft || !this.form?.fc) return
+      if (!draft) return
       this.networkDraftRestoring = true
       const finish = () => {
         this.networkDraftRestoring = false
@@ -483,8 +516,7 @@ export default {
         networkType = keys[0]
       }
       if (networkType) {
-        this.form.fc.setFieldsValue({ networkType })
-        if (this.form.fd) this.form.fd.networkType = networkType
+        this.fieldSet(this.networkFieldMap.networkType, networkType)
         this.syncNetworkComponentFromForm()
       }
       const safeDraft = networkType ? { ...sourceDraft, networkType } : sourceDraft
@@ -515,7 +547,7 @@ export default {
      * 跨 tab：用户展开网络高级子项后再回填（IP 单选 / 设备等；安全组多选不回填）
      */
     applyNetworkGatedFromDraft (flag, nicKey) {
-      if (!flag || flag === 'secgroup' || !this.isNetworkDraftFromLocal() || !this.form?.fc) return
+      if (!flag || flag === 'secgroup' || !this.isNetworkDraftFromLocal()) return
       const full = this._networkLocalFullDraft || this.readFormFieldDraft()
       if (!full || !Array.isArray(full.nets) || !full.nets.length) return
       // 跨 tab 仅第一块网卡
@@ -525,13 +557,28 @@ export default {
       const gateKey = `${flag}:${nicKey || 'first'}`
       if (this._networkGatedApplied[gateKey]) return
 
+      const writeModel = (rootOrFlat, keyOrVal, maybeVal) => {
+        if (maybeVal !== undefined) {
+          const cfg = this.$refs.networkConfigRef || this.$refs.networkSchedtagRef
+          if (cfg?.setNicField) cfg.setNicField(rootOrFlat, keyOrVal, maybeVal)
+          else {
+            if (!this.model[rootOrFlat] || typeof this.model[rootOrFlat] !== 'object') {
+              this.$set(this.model, rootOrFlat, {})
+            }
+            this.$set(this.model[rootOrFlat], keyOrVal, maybeVal)
+          }
+        } else {
+          this.$set(this.model, rootOrFlat, keyOrVal)
+        }
+      }
+
       if (full.networkType === NETWORK_OPTIONS_MAP.manual.key) {
         const ref = this.$refs.networkConfigRef
         const list = ref && ref.networkList
         if (!list || !list.length) return
         const item = (nicKey && list.find(n => n.key === nicKey)) || list[0]
         if (!item) return
-        const dec = this.decorator.networkConfig
+        const fieldDef = this.networkFieldMap.networkConfig
         const scheduleWrite = (write) => {
           write()
           this.$nextTick(write)
@@ -544,38 +591,35 @@ export default {
           }
           item.requireIpv6 = true
           item.ipv6Mode = net.strict_ipv6 ? 'only' : 'all'
-          const networkArg = item.network
-          const values = {}
-          if (dec.ipv6s) values[dec.ipv6s(item.key, networkArg)[0]] = true
-          if (dec.ipv6_mode) values[dec.ipv6_mode(item.key, networkArg)[0]] = item.ipv6Mode
-          if (!Object.keys(values).length) return
           this._networkGatedApplied[gateKey] = true
-          scheduleWrite(() => this.form.fc.setFieldsValue(values))
+          scheduleWrite(() => {
+            writeModel('networkIPv6s', item.key, true)
+            writeModel('networkIPv6Modes', item.key, item.ipv6Mode)
+          })
           return
         }
         if (flag === 'ip') {
-          if (!net.address || !dec.ips) return
+          if (!net.address || !fieldDef.ips) return
           // 仅回填；IpSelect 拉完可用地址后若不在列表会自动清空，不伪造选项
           item.ip = net.address
           this._networkGatedApplied[gateKey] = true
-          const fieldKey = dec.ips(item.key, item.network)[0]
           scheduleWrite(() => {
             item.ip = net.address
-            this.form.fc.setFieldsValue({ [fieldKey]: net.address })
+            writeModel('networkIps', item.key, net.address)
           })
           return
         }
         if (flag === 'mac') {
-          if (!net.mac || !dec.macs) return
+          if (!net.mac || !fieldDef.macs) return
           item.mac = net.mac
           this._networkGatedApplied[gateKey] = true
           scheduleWrite(() => {
-            this.form.fc.setFieldsValue({ [dec.macs(item.key, item.network)[0]]: net.mac })
+            writeModel('networkMacs', item.key, net.mac)
           })
           return
         }
         if (flag === 'ipv6') {
-          if (!net.address6 || !dec.ips6) return
+          if (!net.address6 || !fieldDef.ips6) return
           const prefix = ref.getIpv6Prefix
             ? ref.getIpv6Prefix(item.network?.guest_ip6_start || net.address6)
             : ''
@@ -585,24 +629,24 @@ export default {
           item.ipv6 = short
           this._networkGatedApplied[gateKey] = true
           scheduleWrite(() => {
-            this.form.fc.setFieldsValue({ [dec.ips6(item.key, item.network)[0]]: short })
+            writeModel('networkIpsAddress6', item.key, short)
           })
           return
         }
         if (flag === 'device') {
-          const model = net.sriov_device && net.sriov_device.model
-          if (!model || !dec.devices) return
+          const deviceModel = net.sriov_device && net.sriov_device.model
+          if (!deviceModel || !fieldDef.devices) return
           const opts = ref.gpuOptions || []
           // options 未就绪则稍后重试；就绪后不在列表则不回填
           if (!opts.length) return
-          const hit = opts.some(o => o.key === model || o.id === model || o.model === model)
+          const hit = opts.some(o => o.key === deviceModel || o.id === deviceModel || o.model === deviceModel)
           if (!hit) {
             this._networkGatedApplied[gateKey] = true
             return
           }
           this._networkGatedApplied[gateKey] = true
           scheduleWrite(() => {
-            this.form.fc.setFieldsValue({ [dec.devices(item.key)[0]]: model })
+            writeModel('networkDevices', item.key, deviceModel)
           })
           return
         }
@@ -616,19 +660,19 @@ export default {
         const item = (nicKey && list.find(n => n.key === nicKey)) || list[0]
         if (!item) return
         const tag = net.schedtags && net.schedtags[0]
-        const model = tag && tag.sriov_device && tag.sriov_device.model
-        const dec = this.decorator.networkSchedtag
-        if (!model || !dec || !dec.devices) return
+        const deviceModel = tag && tag.sriov_device && tag.sriov_device.model
+        const fieldDef = this.networkFieldMap.networkSchedtag
+        if (!deviceModel || !fieldDef || !fieldDef.devices) return
         const opts = ref.gpuOptions || []
         if (!opts.length) return
-        const hit = opts.some(o => o.key === model || o.id === model || o.model === model)
+        const hit = opts.some(o => o.key === deviceModel || o.id === deviceModel || o.model === deviceModel)
         if (!hit) {
           this._networkGatedApplied[gateKey] = true
           return
         }
         this._networkGatedApplied[gateKey] = true
         const write = () => {
-          this.form.fc.setFieldsValue({ [dec.devices(item.key)[0]]: model })
+          writeModel('networkDevices', item.key, deviceModel)
         }
         write()
         this.$nextTick(write)
@@ -717,8 +761,7 @@ export default {
 
     /** 按当前表单 networkType 挂载对应子组件（与 @change 同源） */
     syncNetworkComponentFromForm () {
-      const type = (this.form.fc && this.form.fc.getFieldValue('networkType')) ||
-        (this.form.fd && this.form.fd.networkType)
+      const type = this.model?.networkType || this.form.fd?.networkType
       if (!type) return
       this.change({ target: { value: type }, name: 'default' })
     },
@@ -727,16 +770,13 @@ export default {
       const val = this.effectiveAutoAllocNetworkCountTt
       const noAutoAlloc = val == null || val === '' || Number(val) <= 0
       if (noAutoAlloc) {
-        const { hypervisor } = this.form.fd || {}
+        const { hypervisor } = this.form.fd || this.model || {}
         if (hypervisor !== HYPERVISORS_MAP.proxmox.key) {
           this.$delete(this.networkMaps, NETWORK_OPTIONS_MAP.default.key)
         }
         const manual = NETWORK_OPTIONS_MAP.manual.key
         this.$nextTick(() => {
-          this.form.fc.setFieldsValue({ networkType: manual })
-          if (this.form.fd) {
-            this.form.fd.networkType = manual
-          }
+          this.fieldSet(this.networkFieldMap.networkType, manual)
           this.networkComponent = 'config'
         })
       } else {
@@ -748,24 +788,18 @@ export default {
           })
         }
         this.networkMaps = maps
-        const value = {
-          networkType: NETWORK_OPTIONS_MAP[Object.keys(maps)[0]].key,
-        }
+        const networkType = NETWORK_OPTIONS_MAP[Object.keys(maps)[0]].key
         this.$nextTick(() => {
-          this.form.fc.setFieldsValue(value)
-          if (this.form.fd) {
-            this.form.fd.networkType = value.networkType
-          }
-          this.networkComponent = value.networkType === NETWORK_OPTIONS_MAP.default.key ? '' : 'config'
+          this.fieldSet(this.networkFieldMap.networkType, networkType)
+          this.networkComponent = networkType === NETWORK_OPTIONS_MAP.default.key ? '' : 'config'
         })
       }
     },
     change (e) {
-      if (this.form.fd) {
-        this.form.fd.networkType = e.target.value
-      }
+      const networkType = e.target.value
+      this.fieldSet(this.networkFieldMap.networkType, networkType)
 
-      switch (e.target.value) {
+      switch (networkType) {
         case NETWORK_OPTIONS_MAP.default.key:
           this.networkComponent = ''
           break

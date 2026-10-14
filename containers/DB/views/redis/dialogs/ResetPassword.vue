@@ -4,14 +4,14 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.elasticcaches')" :count="params.data.length" :action="params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" class="mt-3">
-        <a-form-item v-if="this.params.data[0].provider === 'Huawei'" :label="$t('db.text_291')" v-bind="formItemLayout">
-           <a-input-password v-decorator="decorators.old_password" />
-        </a-form-item>
-        <a-form-item :label="$t('db.text_286')" v-bind="formItemLayout">
-            <server-password :loginTypes="['random', 'password']" :decorator="decorators.loginConfig" />
-        </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" :model="form" :rules="rules" class="mt-3" v-bind="formItemLayout">
+        <a-form-model-item v-if="this.params.data[0].provider === 'Huawei'" :label="$t('db.text_291')" prop="old_password">
+           <a-input-password v-model:value="form.old_password" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('db.text_286')">
+            <server-password :loginTypes="['random', 'password']" :form="form" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
@@ -21,7 +21,7 @@
 </template>
 
 <script>
-import ServerPassword from '@Compute/sections/ServerPassword'
+import ServerPassword, { PASSWORD_RULES } from '@Compute/sections/ServerPassword/model'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import { passwordValidator } from '@/utils/validate'
@@ -32,15 +32,12 @@ export default {
     ServerPassword,
   },
   mixins: [DialogMixin, WindowsMixin],
-  provide () {
-    return {
-      form: this.form,
-    }
-  },
   data () {
     return {
       form: {
-        fc: this.$form.createForm(this),
+        old_password: undefined,
+        loginType: 'random',
+        password: undefined,
       },
       formItemLayout: {
         wrapperCol: { span: 20 },
@@ -50,47 +47,26 @@ export default {
     }
   },
   computed: {
-    decorators () {
-      const decorators = {
-        old_password: [
-          'old_password',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('db.text_207') },
-              { validator: passwordValidator },
-            ],
-          },
-        ],
-        loginConfig: {
-          loginType: [
-            'loginType',
-            {
-              initialValue: 'random',
-            },
-          ],
-        },
+    rules () {
+      const rules = {}
+      if (this.form.loginType === 'password') {
+        rules.password = PASSWORD_RULES
       }
-      return decorators
+      if (this.params.data[0].provider === 'Huawei') {
+        rules.old_password = [
+          { required: true, message: this.$t('db.text_207') },
+          { validator: passwordValidator },
+        ]
+      }
+      return rules
     },
   },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     async handleConfirm () {
       this.loading = true
       try {
-        this.loading = false
-        const values = await this.validateForm()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         if (values.loginType === 'random') {
           values.reset_password = true
         }
@@ -108,8 +84,9 @@ export default {
         this.params.refresh()
         this.$message.success(this.$t('db.text_149'))
       } catch (error) {
-        this.loading = false
         throw error
+      } finally {
+        this.loading = false
       }
     },
   },

@@ -19,28 +19,33 @@
       </template>
     </a-alert>
     <page-body>
-      <a-form
+      <a-form-model
+        ref="formRef"
         class="mt-3"
-        :form="form.fc">
-        <a-form-item
+        :model="form.fd"
+        :rules="rules"
+        hideRequiredMark>
+        <a-form-model-item
           :label="$t('k8s.text_412')"
+          prop="project_domain_id"
           v-bind="formItemLayout">
           <base-select
             v-if="$store.getters.isAdminMode"
-            v-decorator="decorators.project_domain_id"
+            v-model:value="form.fd.project_domain_id"
+            @change="domainChange"
             resource="domains"
             version="v1"
             :params="params.domain"
-            @change="domainChange"
             is-default-select
             filterable />
           <div v-else>{{ $store.getters.userInfo.projectDomain }}</div>
-        </a-form-item>
-        <a-form-item
+        </a-form-model-item>
+        <a-form-model-item
           :label="$t('k8s.platform')"
+          prop="provider"
           v-bind="formItemLayout">
           <a-radio-group
-            v-decorator="decorators.provider(provider)"
+            v-model:value="form.fd.provider"
             v-if="providers.length"
             @change="providerChange">
             <a-radio-button v-for="item in providers" :key="item.value" :value="item">
@@ -48,51 +53,54 @@
             </a-radio-button>
           </a-radio-group>
           <div v-else>{{ $t('common_467') }}</div>
-        </a-form-item>
-        <a-form-item :label="$t('k8s.region')" class="mb-0" v-bind="formItemLayout" v-if="provider.brand">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('k8s.region')" class="mb-0" v-bind="formItemLayout" v-if="provider.brand">
           <cloudregion-vpc
+            ref="cloudregionVpcRef"
+            :model="form.fd"
             :cloudregion-params="cloudregionParams"
             :vpc-params="params.vpcParams"
-            :decorator="decorators.regionVpc" />
-        </a-form-item>
-        <a-form-item
+            @regionChange="onRegionChange"
+            @vpcChange="onVpcChange" />
+        </a-form-model-item>
+        <a-form-model-item
           :label="$t('k8s.text_41')"
+          prop="name"
           v-bind="formItemLayout">
-          <a-input v-decorator="decorators.name" :placeholder="$t('validator.serverName')" />
-        </a-form-item>
-        <a-form-item :label="$t('k8s.text_152')" v-if="cloudregionId" v-bind="formItemLayout">
+          <a-input v-model:value="form.fd.name" :placeholder="$t('validator.serverName')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('k8s.text_152')" v-if="cloudregionId" v-bind="formItemLayout">
           <server-config
+            ref="serverConfigRef"
             :form="form"
+            :model="form.fd"
             :cloudregionId="cloudregionId"
-            :decorator="decorators.serverConfig"
             :hypervisor="hypervisor"
             :platform="platform"
             :networkParams="params.network" />
-        </a-form-item>
-        <a-form-item :label="$t('k8s.text_153')" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('k8s.text_153')" prop="version" v-bind="formItemLayout">
           <base-select
-            v-decorator="decorators.version"
+            v-model:value="form.fd.version"
             :options="k8sVersionOps"
             :filterable="true"
             :select-props="{ placeholder: $t('k8s.text_154') }" />
-        </a-form-item>
-        <!-- <a-form-item :label="$t('k8s.text_155')" v-bind="formItemLayout" v-if="isAdminMode">
-          <a-switch :checkedChildren="$t('k8s.text_156')" :unCheckedChildren="$t('k8s.text_157')" v-decorator="decorators.is_public" />
-        </a-form-item> -->
-        <a-form-item :label="$t('k8s.text_158')" v-bind="formItemLayout">
-          <a-switch :checkedChildren="$t('k8s.text_156')" :unCheckedChildren="$t('k8s.text_157')" v-decorator="decorators.isConfigImage" @change="isConfigImageChange" />
-        </a-form-item>
-        <a-form-item
+        </a-form-model-item>
+        <a-form-model-item :label="$t('k8s.text_158')" v-bind="formItemLayout">
+          <a-switch :checkedChildren="$t('k8s.text_156')" :unCheckedChildren="$t('k8s.text_157')" v-model:checked="isConfigImage" @change="isConfigImageChange" />
+        </a-form-model-item>
+        <a-form-model-item
           v-if="isConfigImage"
           :label="$t('k8s.text_52')"
+          prop="image_repository_url"
           v-bind="formItemLayout"
           :extra="$t('k8s.text_159')">
-          <a-input v-decorator="decorators.image_repository_url" :placeholder="$t('k8s.text_160')" />
-        </a-form-item>
-        <a-form-item v-if="isConfigImage" :wrapper-col="{ span: 20, offset: 3 }">
-          <a-checkbox v-decorator="decorators.image_repository_insecure">{{$t('k8s.text_161')}}</a-checkbox>
-        </a-form-item>
-      </a-form>
+          <a-input v-model:value="form.fd.image_repository_url" :placeholder="$t('k8s.text_160')" />
+        </a-form-model-item>
+        <a-form-model-item v-if="isConfigImage" :wrapper-col="{ span: 20, offset: 3 }">
+          <a-checkbox v-model:checked="form.fd.image_repository_insecure">{{$t('k8s.text_161')}}</a-checkbox>
+        </a-form-model-item>
+      </a-form-model>
     </page-body>
     <page-footer>
       <div slot="right">
@@ -108,23 +116,11 @@
 import { mapGetters } from 'vuex'
 import ServerConfig from '@K8S/sections/serverConfig'
 import { HYPERVISORS_MAP } from '@/constants'
-import { IMAGES_TYPE_MAP } from '@/constants/compute'
 import { DOCS_MAP, showDocsLink } from '@/constants/docs'
 import CloudregionVpc from '@/sections/CloudregionVpc'
-import { isWithinRange, isRequired } from '@/utils/validate'
+import { expandBracketFd } from '@/utils/bracketModel'
 import { findPlatform } from '@/utils/common/hypervisor'
-import i18n from '@/locales'
 import { KUBE_PROVIDER, K8S_HYPERVISORS_MAP } from '../constants'
-function checkIpInSegment (i, networkData) {
-  return (rule, value, _callback) => {
-    const isIn = isWithinRange(value, networkData.guest_ip_start, networkData.guest_ip_end)
-    if (isIn) {
-      _callback()
-    } else {
-      _callback(this.$t('k8s.text_163'))
-    }
-  }
-}
 
 export default {
   name: 'ClusterCreate',
@@ -145,250 +141,15 @@ export default {
       },
       docs: DOCS_MAP.cluster(),
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            if (values.vpc && values.vpc.key) {
-              this.params.network = {
-                vpc: values.vpc.key,
-                filter: 'server_type.notin(ipmi, pxe)',
-                scope: this.scope,
-              }
-            }
-            if (values.cloudregion && values.cloudregion.key) {
-              this.cloudregionId = values.cloudregion.key
-            }
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-          },
-        }),
-        fi: {
-          /* hypervisors: ['kvm'], */
-          /* capability: {}, */
-        },
+        fi: {},
         fd: {
-          /* hypervisor: hyperOpts[0].value, */
           project_domain_id: this.$store.getters.projectDomainId,
+          provider: undefined,
+          name: '',
+          version: undefined,
+          image_repository_url: '',
+          image_repository_insecure: true,
         },
-      },
-      decorators: {
-        project_domain_id: [
-          'project_domain_id',
-          {
-            rules: [
-              { required: true, message: this.$t('k8s.text_413') },
-            ],
-          },
-        ],
-        provider: defaultProvider => [
-          'provider',
-          {
-            initialValue: defaultProvider,
-            rules: [
-              { required: true, message: this.$t('k8s.text_164') },
-            ],
-          },
-        ],
-        regionVpc: {
-          cloudregion: [
-            'cloudregion',
-            {
-              initialValue: { key: '', label: '' },
-              rules: [
-                { required: true, message: this.$t('k8s.text_165') },
-              ],
-            },
-          ],
-          vpc: [
-            'vpc',
-            {
-              initialValue: { key: '', label: '' },
-              rules: [
-                { required: true, message: this.$t('k8s.text_165') },
-              ],
-            },
-          ],
-        },
-        name: [
-          'name',
-          {
-            validateTrigger: 'blur',
-            rules: [
-              { required: true, message: this.$t('k8s.text_60') },
-              { validator: this.$validate('serverName') },
-            ],
-          },
-        ],
-        serverConfig: {
-          network: i => [
-            `network[${i}]`,
-            {
-              rules: [
-                { required: true, message: this.$t('k8s.text_122') },
-              ],
-            },
-          ],
-          ip: (i, networkData) => [
-            `ip[${i}]`,
-            {
-              validateFirst: true,
-              validateTrigger: ['blur', 'change'],
-              rules: [{
-                required: true,
-                message: this.$t('k8s.text_169'),
-              }, {
-                validator: checkIpInSegment(i, networkData),
-              }],
-            },
-          ],
-          sku: i => [
-            `sku[${i}]`,
-            {
-              rules: [
-                { validator: isRequired(true, 'id'), message: this.$t('compute.text_216') },
-              ],
-            },
-          ],
-          imageOS: i => [
-            `imageOS[${i}]`,
-            {
-              os: [
-                `os[${i}]`,
-                {
-                  initialValue: '',
-                  rules: [
-                    { required: true, message: i18n.t('compute.text_153') },
-                  ],
-                },
-              ],
-              image: [
-                `image[${i}]`,
-                {
-                  initialValue: { key: '', label: '' },
-                  rules: [
-                    { validator: isRequired(), message: i18n.t('compute.text_214') },
-                  ],
-                },
-              ],
-              imageType: [
-                `imageType[${i}]`,
-                {
-                  initialValue: IMAGES_TYPE_MAP.standard.key,
-                },
-              ],
-            },
-          ],
-          /*
-           * vcpu_count: i => [
-           *   `vcpu_count[${i}]`,
-           *   {
-           *     initialValue: 4,
-           *     rules: [
-           *       { required: true, message: this.$t('k8s.text_99') },
-           *       { validator: this.validator('vcpu_count') },
-           *     ],
-           *   },
-           * ],
-           * vmem_size: i => [
-           *   `vmem_size[${i}]`,
-           *   {
-           *     initialValue: 4,
-           *     rules: [
-           *       { required: true, message: this.$t('k8s.text_167') },
-           *       { validator: this.validator('vmem_size') },
-           *     ],
-           *   },
-           * ],
-           */
-          disk: i => ({
-            type: [
-              `systemDiskType[${i}]`,
-              {
-                rules: [
-                  { validator: isRequired(), message: this.$t('compute.text_121') },
-                ],
-              },
-            ],
-            size: [
-              `systemDiskSize[${i}]`,
-              {
-                rules: [
-                  { required: true, message: this.$t('compute.text_122') },
-                ],
-              },
-            ],
-            schedtag: [
-              `systemDiskSchedtag[${i}]`,
-              {
-                validateTrigger: ['change', 'blur'],
-                rules: [{
-                  required: true,
-                  message: this.$t('compute.text_123'),
-                }],
-              },
-            ],
-            policy: [
-              `systemDiskPolicy[${i}]`,
-              {
-                validateTrigger: ['blur', 'change'],
-                rules: [{
-                  required: true,
-                  message: this.$t('compute.text_123'),
-                }],
-              },
-            ],
-          }),
-          num: i => [
-            `num[${i}]`,
-            {
-              initialValue: 1,
-              rules: [
-                { required: true, message: this.$t('k8s.text_170') },
-              ],
-            },
-          ],
-          role: i => [
-            `role[${i}]`,
-            {
-              initialValue: 'controlplane',
-              rules: [
-                { required: true },
-              ],
-            },
-          ],
-        },
-        version: [
-          'version',
-        ],
-        is_public: [
-          'is_public',
-          {
-            valuePropName: 'checked',
-            initialValue: false,
-          },
-        ],
-        isConfigImage: [
-          'isConfigImage',
-          {
-            valuePropName: 'checked',
-            initialValue: false,
-          },
-        ],
-        image_repository_url: [
-          'image_repository_url',
-          {
-            rules: [
-              { required: true, message: this.$t('k8s.text_53') },
-            ],
-          },
-        ],
-        image_repository_insecure: [
-          'image_repository_insecure',
-          {
-            valuePropName: 'checked',
-            initialValue: true,
-          },
-        ],
       },
       isConfigImage: false,
       formItemLayout: {
@@ -434,6 +195,26 @@ export default {
   },
   computed: {
     ...mapGetters(['userInfo', 'scope', 'isAdminMode', 'isDomainMode']),
+    rules () {
+      const rules = {
+        project_domain_id: [
+          { required: true, message: this.$t('k8s.text_413') },
+        ],
+        provider: [
+          { required: true, message: this.$t('k8s.text_164') },
+        ],
+        name: [
+          { required: true, message: this.$t('k8s.text_60') },
+          { validator: this.$validate('serverName') },
+        ],
+      }
+      if (this.isConfigImage) {
+        rules.image_repository_url = [
+          { required: true, message: this.$t('k8s.text_53') },
+        ]
+      }
+      return rules
+    },
     cloudregionParams () {
       const provider = this.provider
       /* const type = findPlatform(provider, 'hypervisor') */
@@ -469,11 +250,20 @@ export default {
   },
   created () {
     this.clustersM = new this.$Manager('kubeclusters', 'v1')
-    this.form.fc.getFieldDecorator('cloudregion', { preserve: true })
-    /* this.form.fc.getFieldDecorator('zone', { preserve: true }) */
     this.isDomainMode && this.fetchCapability(this.userInfo.projectDomainId)
   },
   methods: {
+    onRegionChange (payload) {
+      if (payload?.key) this.cloudregionId = payload.key
+    },
+    onVpcChange (vpcId) {
+      if (!vpcId) return
+      this.params.network = {
+        vpc: vpcId,
+        filter: 'server_type.notin(ipmi, pxe)',
+        scope: this.scope,
+      }
+    },
     /*
      * async fetchCapability (id, resource) {
      *   const params = {
@@ -523,11 +313,13 @@ export default {
       if (this.providers.length > 0) {
         // set default provider
         this.provider = this.providers[0]
+        this.form.fd.provider = this.provider
         this.preCheckK8sProvider(this.provider)
       }
     },
     providerChange (e) {
-      this.provider = e.target.value
+      this.provider = e?.target ? e.target.value : (e || this.form.fd.provider)
+      this.form.fd.provider = this.provider
       this.cloudregionId = ''
       this.preCheckK8sProvider(this.provider)
       /*
@@ -573,10 +365,8 @@ export default {
       new this.$Manager('kubeclusters/k8s-versions', 'v1').list({
         params: this.params.k8sVersions(),
       }).then(({ data }) => {
-        data.map((item, index) => {
-          this.k8sVersionOps.push({ key: item, label: item })
-        })
-        this.form.fc.setFieldsValue({ version: data[0] })
+        this.k8sVersionOps = data.map(item => ({ key: item, label: item }))
+        this.form.fd.version = data[0]
       })
     },
     isConfigImageChange (val) {
@@ -671,7 +461,18 @@ export default {
         return
       }
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        if (typeof this.$refs.cloudregionVpcRef?.validate === 'function') {
+          await this.$refs.cloudregionVpcRef.validate()
+        }
+        if (typeof this.$refs.serverConfigRef?.validate === 'function') {
+          await this.$refs.serverConfigRef.validate()
+        }
+        const values = {
+          ...expandBracketFd(this.form.fd),
+          provider: this.form.fd.provider || this.provider,
+          isConfigImage: this.isConfigImage,
+        }
         const genValues = this.genData(values)
         const hasControl = genValues.machines.some(val => val.role === 'controlplane')
         if (!hasControl) {

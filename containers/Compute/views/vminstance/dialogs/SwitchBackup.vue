@@ -4,11 +4,11 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_1259')" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" hideRequiredMark>
-        <a-form-item :label="$t('compute.text_1209')" v-bind="formItemLayout" :extra="$t('compute.text_1260')">
-          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-decorator="decorators.delete_backup" />
-        </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" :model="form" hideRequiredMark>
+        <a-form-model-item :label="$t('compute.text_1209')" v-bind="formItemLayout" :extra="$t('compute.text_1260')" prop="delete_backup">
+          <a-switch v-model:checked="form.delete_backup" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -29,16 +29,7 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        delete_backup: [
-          'delete_backup',
-          {
-            initialValue: true,
-            valuePropName: 'checked',
-          },
-        ],
+        delete_backup: true,
       },
       formItemLayout: {
         wrapperCol: {
@@ -78,14 +69,10 @@ export default {
         const manager = new this.$Manager('hosts')
         const response = await manager.get({ id: data.host_id })
         if (response.data.host_status !== 'online') {
-          this.form.fc.setFieldsValue({
-            delete_backup: true,
-          })
+          this.form.delete_backup = true
           this.purge_backup = true
         } else {
-          this.form.fc.setFieldsValue({
-            delete_backup: false,
-          })
+          this.form.delete_backup = false
           this.purge_backup = false
         }
       } finally {
@@ -95,10 +82,9 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
         const ids = this.params.data.map(item => item.id)
-        const purgeBackup = values.delete_backup ? this.purge_backup : false
-        const data = { delete_backup: values.delete_backup, purge_backup: purgeBackup }
+        const purgeBackup = this.form.delete_backup ? this.purge_backup : false
+        const data = { delete_backup: this.form.delete_backup, purge_backup: purgeBackup }
         await this.params.onManager('batchPerformAction', {
           id: ids,
           steadyStatus: ['running', 'ready'],

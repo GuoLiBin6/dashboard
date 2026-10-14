@@ -4,8 +4,8 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="$t('system.text_142')" :name="$t('system.text_317')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 5)" />
-      <a-form :form="form" v-bind="formItemLayout">
-        <a-form-item>
+      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout">
+        <a-form-model-item prop="enabled_contact_types">
           <span slot="label">
             {{ $t('common_599') }}
             <a-tooltip effect="dark" placement="top">
@@ -13,8 +13,7 @@
               <div slot="title">{{$t('system.contact')}}</div>
             </a-tooltip>
           </span>
-          <a-checkbox-group
-            v-decorator="decorators.enabled_contact_types">
+          <a-checkbox-group v-model:value="form.enabled_contact_types">
             <a-checkbox
               v-for="(v, index) in contactArrOpts"
               :key="index"
@@ -23,8 +22,8 @@
               {{ v.label }}
             </a-checkbox>
           </a-checkbox-group>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -43,19 +42,11 @@ export default {
   name: 'SetupNotifyChannelsDialog',
   mixins: [DialogMixin, WindowsMixin],
   data () {
-    const initialValue = {
-      enabled_contact_types: ['webconsole'],
-    }
     return {
-      form: this.$form.createForm(this),
+      loading: false,
       contactArrOpts: [],
-      decorators: {
-        enabled_contact_types: [
-          'enabled_contact_types',
-          {
-            initialValue: initialValue.enabled_contact_types,
-          },
-        ],
+      form: {
+        enabled_contact_types: ['webconsole'],
       },
       formItemLayout: {
         wrapperCol: {
@@ -102,11 +93,11 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const data = await this.form.validateFields()
+        await this.$refs.formRef.validate()
         const ids = this.params.data.map((item) => { return item.id })
         await this.params.onManager('batchUpdate', {
           id: ids,
-          managerArgs: { data: data },
+          managerArgs: { data: this.form },
         })
         this.loading = false
         if (this.params.success && R.is(Function, this.params.success)) {

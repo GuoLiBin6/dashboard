@@ -17,11 +17,6 @@
         </template>
       </table-lite-grid>
     </a-form-item>
-    <a-form-item class="nas-sku-valid" v-bind="tailFormItemLayout">
-      <template v-show="false">
-        <a-radio-group v-decorator="skuDecorator" :placeholder="$t('validator.serverName')" />
-      </template>
-    </a-form-item>
   </div>
 </template>
 
@@ -51,12 +46,9 @@ export default {
       loading: false,
       rateLoading: false,
       skuList: [],
-      skuDecorator: [
-        'sku',
-        {
-          rules: [{ required: true, message: this.$t('network.nat.sku.choose') }],
-        },
-      ],
+      skuFieldOpts: {
+        rules: [{ required: true, message: this.$t('network.nat.sku.choose') }],
+      },
     }
   },
   computed: {
@@ -64,12 +56,6 @@ export default {
       return {
         reserve: true,
       }
-    },
-    FC () {
-      if (this.form && this.form.fc) {
-        return this.form.fc
-      }
-      return {}
     },
     tableColumn () {
       const column = [
@@ -111,7 +97,7 @@ export default {
               if (this.rateLoading) {
                 return [h('icon', { props: { type: 'loading' } })]
               }
-              const isPackage = this.form.fc.getFieldValue('billing_type') === 'prepaid'
+              const isPackage = this.form.fd.billing_type === 'prepaid'
               if (rate) {
                 const unit = this.$t('network.unit.month')
                 let price = rate.hour_price * 24 * 30
@@ -137,11 +123,14 @@ export default {
       this.handleSkuChange({ row })
     },
   },
+  created () {
+    if (this.form?.fd && this.form.fd.sku === undefined) {
+      this.$set(this.form.fd, 'sku', undefined)
+    }
+  },
   methods: {
     async handleSkuChange ({ row }) {
-      this.FC.setFieldsValue({
-        sku: row,
-      })
+      this.$set(this.form.fd, 'sku', row)
       const options = {
         min: row ? (row.min_disk_size_gb > 0 ? row.min_disk_size_gb : 100) : 100,
         max: row ? (row.max_disk_size_gb > 0 ? row.max_disk_size_gb : 100000) : 100000,
@@ -152,7 +141,6 @@ export default {
       this.$emit('update:options', options)
       await this.$nextTick()
       this.$refs.tableRef.setRadioRow(row)
-      this.FC.validateFields(['sku'])
     },
     async fetchRates (skuList = this.skuList) {
       if (!hasMeterService()) return

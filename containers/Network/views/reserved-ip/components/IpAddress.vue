@@ -1,12 +1,15 @@
 <template>
   <div class="network-config">
     <div class="d-flex align-items-start mb-2" v-for="(item, i) in networkList" :key="item.key">
-      <a-form-item class="w-100 mb-0 mr-2">
+      <a-form-model-item
+        class="w-100 mb-0 mr-2"
+        :prop="`networkIps.${item.key}`"
+        :rules="ipRules(item.key)">
         <a-input
           :placeholder="$t('network.text_217')"
-          v-decorator="decorators.networkConfig.ips(item.key, item.network)"
-          @change="e => ipChange(e, i)" />
-      </a-form-item>
+          v-model:value="networkIps[item.key]"
+          @update:value="val => onIpInput(val, i)" />
+      </a-form-model-item>
       <a-button v-if="networkList.length > 1" shape="circle" icon="minus" size="small" @click="decrease(item.key, i)" class="mt-2 ml-1" />
     </div>
     <div class="d-flex align-items-center">
@@ -23,13 +26,17 @@ import { validate } from '@/utils/validate'
 export default {
   name: 'ReservedIPAddress',
   props: {
-    decorators: {
+    model: {
       type: Object,
       required: true,
     },
-    form: {
-      type: Object,
-      required: true,
+    networkIpsProp: {
+      type: String,
+      default: 'networkIps',
+    },
+    /** 异步校验：检查 IP 是否已被预留 / 表单内重复 */
+    checkIp: {
+      type: Function,
     },
   },
   data () {
@@ -37,15 +44,36 @@ export default {
       networkList: [],
     }
   },
+  computed: {
+    networkIps () {
+      return this.model[this.networkIpsProp] || {}
+    },
+  },
   created () {
+    if (!this.model[this.networkIpsProp]) {
+      this.model[this.networkIpsProp] = {}
+    }
     this.add()
   },
   methods: {
-    getFormInstance () {
-      return this.form || this.$parent?.form?.fc || this.$parent?.$parent?.form?.fc
+    ipRules (key) {
+      return [
+        { required: true, message: this.$t('network.text_217') },
+        { validator: this.IPValidator },
+        ...(this.checkIp ? [{ validator: this.checkIp(key) }] : []),
+      ]
     },
-    ipChange (e, i) {
-      this.networkList[i].ip = e.target.value
+    IPValidator (rule, value, callback) {
+      if ((validate(value, 'IPv4') === false || validate(value, 'IPv4').result === false) && (validate(value, 'IPv6') === false || validate(value, 'IPv6').result === false)) {
+        callback(new Error(this.$t('network.text_301')))
+      } else {
+        callback()
+      }
+    },
+    onIpInput (val, i) {
+      const key = this.networkList[i].key
+      this.networkList[i].ip = val
+      this.networkIps[key] = val
     },
     ipToInt (ip) {
       const REG = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/
@@ -83,33 +111,21 @@ export default {
       if (this.networkList.length > 0) {
         const lastIndex = this.networkList.length - 1
         const lastItem = this.networkList[lastIndex]
-        const form = this.getFormInstance()
-        if (form) {
-          const lastFieldName = `networkIps[${lastItem.key}]`
-          const lastFieldValue = form.getFieldValue(lastFieldName)
-          if (lastFieldValue) {
-            nextIp = this.getNextIp(lastFieldValue)
-          }
+        const lastFieldValue = this.networkIps[lastItem.key] || lastItem.ip
+        if (lastFieldValue) {
+          nextIp = this.getNextIp(lastFieldValue)
         }
       }
-      this.networkList.push({
+      const item = {
         key: uid,
         ip: nextIp,
-      })
-      this.$nextTick(() => {
-        if (nextIp) {
-          const form = this.getFormInstance()
-          if (form) {
-            const fieldName = `networkIps[${uid}]`
-            form.setFieldsValue({
-              [fieldName]: nextIp,
-            })
-          }
-        }
-      })
+      }
+      this.networkList.push(item)
+      this.networkIps[uid] = nextIp
     },
     decrease (uid, index) {
       this.networkList.splice(index, 1)
+      delete this.networkIps[uid]
     },
   },
 }

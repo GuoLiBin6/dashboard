@@ -9,18 +9,22 @@
       </a-alert>
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_276')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item v-if="isSingle" :label="$t('common_312')">
-          <a-input v-decorator="decorators.username" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.qga.password')">
-          <server-password ref="serverPassword" :decorator="decorators.loginConfig" :login-types="loginTypes" :disabledLoginTypes="disabledLoginTypes" />
-        </a-form-item>
-        <a-form-item v-if="enableAutoStart" :label="$t('compute.text_494')" :extra="$t('compute.text_1229')">
-          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-decorator="decorators.auto_start" :disabled="form.fi.disableAutoStart" />
-        </a-form-item>
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item v-if="isSingle" :label="$t('common_312')" prop="username">
+          <a-input v-model:value="form.username" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.qga.password')">
+          <server-password
+            ref="serverPassword"
+            :form="form"
+            :login-types="loginTypes"
+            :disabledLoginTypes="disabledLoginTypes" />
+        </a-form-model-item>
+        <a-form-model-item v-if="enableAutoStart" :label="$t('compute.text_494')" :extra="$t('compute.text_1229')" prop="auto_start">
+          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-model:checked="form.auto_start" :disabled="disableAutoStart" />
+        </a-form-model-item>
         <p v-if="!checkQgaOK" class="error-color">{{ $t('compute.reset_password.qga_tooltip') }}</p>
-      </a-form>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-tooltip :title="checkQgaOK ? undefined : $t('compute.reset_password.qga_tooltip')">
@@ -32,7 +36,7 @@
 </template>
 
 <script>
-import ServerPassword from '@Compute/sections/ServerPassword'
+import ServerPassword, { PASSWORD_RULES } from '@Compute/sections/ServerPassword/model'
 import { LOGIN_TYPES_MAP } from '@Compute/constants'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
@@ -70,43 +74,16 @@ export default {
       showDocsLink,
       loading: false,
       loginTypes: [LOGIN_TYPES_MAP.random.key, LOGIN_TYPES_MAP.password.key],
+      disableAutoStart,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-          },
-        }),
-        fi: {
-          disableAutoStart,
-        },
-        fd: {
-          username: login_account || userName[firstData.os_type],
-        },
+        username: login_account || userName[firstData.os_type],
+        loginType: LOGIN_TYPES_MAP.random.key,
+        password: undefined,
+        keypair: undefined,
+        auto_start: autoStartInitialValue,
       },
-      decorators: {
-        username: [
-          'username',
-          {
-            initialValue: login_account || userName[firstData.os_type],
-          },
-        ],
-        loginConfig: {
-          loginType: [
-            'loginType',
-            {
-              initialValue: LOGIN_TYPES_MAP.random.key,
-            },
-          ],
-        },
-        auto_start: [
-          'auto_start',
-          {
-            initialValue: autoStartInitialValue,
-            valuePropName: 'checked',
-          },
-        ],
+      rules: {
+        password: PASSWORD_RULES,
       },
       formItemLayout: {
         wrapperCol: {
@@ -150,7 +127,7 @@ export default {
       return this.isAllKvm && this.isAllRunning && this.isSingle
     },
     disabledLoginTypes () {
-      if (this.form.fd.username && this.form.fd.username !== this.loginAccount) {
+      if (this.form.username && this.form.username !== this.loginAccount) {
         return [LOGIN_TYPES_MAP.random.key]
       }
       return []
@@ -159,10 +136,8 @@ export default {
   watch: {
     disabledLoginTypes (val, oldVal) {
       if (!oldVal.length && val.length) {
-        this.form.fc.setFieldsValue({
-          loginType: LOGIN_TYPES_MAP.password.key,
-        })
-        this.$refs.serverPassword.loginTypeChange({ target: { value: LOGIN_TYPES_MAP.password.key } })
+        this.form.loginType = LOGIN_TYPES_MAP.password.key
+        this.$refs.serverPassword && this.$refs.serverPassword.loginTypeChange(LOGIN_TYPES_MAP.password.key)
       }
     },
   },
@@ -212,7 +187,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         const callback = async () => {
           this.loading = true
           await this.doSetPassword(values)
@@ -225,7 +201,7 @@ export default {
             success: callback,
           })
         } else {
-          callback()
+          await callback()
         }
       } finally {
         this.loading = false

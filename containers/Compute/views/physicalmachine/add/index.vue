@@ -3,24 +3,22 @@
     <page-header :title="$t('compute.text_804')" />
     <page-body>
       <a-alert class="mb-3" :message="$t('compute.physicalmachine_add')" />
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.text_805')" :extra="desc">
-          <a-radio-group v-decorator="decorators.type" @change="handleTypeChange">
+      <a-form-model ref="formRef" :model="form.fd" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.text_805')" :extra="desc" prop="type">
+          <a-radio-group v-model:value="form.fd.type" @change="handleTypeChange">
             <template v-for="(item, key) of types" :key="key">
               <a-radio-button :value="key">{{ item.label }}</a-radio-button>
             </template>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_297', [$t('dictionary.domain')])" v-if="isAdminMode && !isScriptAdd">
-          <domain-select v-decorator="decorators.project_domain" />
-        </a-form-item>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.domain')])" v-if="isAdminMode && !isScriptAdd" prop="project_domain">
+          <domain-select v-model:value="form.fd.project_domain" />
+        </a-form-model-item>
         <component
           :is="form.fd.type"
-          :decorators="decorators"
           :fd="form.fd"
-          :offset-wrapper-col="offsetWrapperCol"
-          :fc="form.fc" />
-      </a-form>
+          :offset-wrapper-col="offsetWrapperCol" />
+      </a-form-model>
     </page-body>
     <page-footer>
       <template v-slot:right>
@@ -32,16 +30,13 @@
 </template>
 
 <script>
-import * as R from 'ramda'
 import { mapGetters } from 'vuex'
-import { resolveValueChangeField } from '@/utils/common/ant'
 import validateForm, { isWithinRange, validate } from '@/utils/validate'
 import DomainSelect from '@/sections/DomainSelect'
 import ScriptAdd from './ScriptAdd'
 import PreAdd from './PreAdd'
 import ISOAdd from './ISOAdd'
 import PXEAdd from './PXEAdd'
-
 export default {
   name: 'PhysicalmachineAdd',
   components: {
@@ -63,21 +58,12 @@ export default {
     return {
       adding: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            this.$nextTick(() => {
-              const newField = resolveValueChangeField(values)
-              R.forEachObjIndexed((item, key) => {
-                this.$set(this.form.fd, key, item)
-              }, newField)
-            })
-          },
-        }),
         fd: {
           type: typeInitialValue,
           mode: modeInitialValue,
           project_domain: projectDomainInitialValue,
         },
+        fi: {},
       },
       types: this.$t('physicalmachineAddTypes'),
       typeInitialValue,
@@ -108,129 +94,52 @@ export default {
   },
   computed: {
     ...mapGetters(['isAdminMode']),
-    decorators () {
+    rules () {
       return {
         type: [
-          'type',
-          {
-            initialValue: this.typeInitialValue,
-          },
+          { required: true },
         ],
         project_domain: [
-          'project_domain',
-          {
-            initialValue: this.projectDomainInitialValue,
-          },
+          { required: true },
         ],
         mode: [
-          'mode',
-          {
-            initialValue: this.modeInitialValue,
-          },
+          { required: true },
         ],
         mac: [
-          'mac',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_806') },
-              { validator: validateForm('mac') },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_806') },
+          { validator: validateForm('mac') },
         ],
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_807') },
-              { validator: validateForm('serverName') },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_807') },
+          { validator: validateForm('serverName') },
         ],
-        description: ['description'],
         ipmi_ip_addr: [
-          'ipmi_ip_addr',
-          {
-            validateFirst: true,
-            rules: [
-              { required: this.ipmi_ip_addr_required, message: this.$t('compute.text_808') },
-              { validator: this.validateIpAddr, trigger: 'change' },
-              { validator: this.checkIpInNetwork, trigger: 'change' },
-            ],
-          },
+          { required: this.ipmi_ip_addr_required, message: this.$t('compute.text_808') },
+          { validator: this.validateIpAddr, trigger: 'change' },
+          { validator: this.checkIpInNetwork, trigger: 'change' },
         ],
         ipmi_username: [
-          'ipmi_username',
-          {
-            rules: [
-              { required: this.ipmi_username_required, message: this.$t('compute.text_809') },
-            ],
-          },
+          { required: this.ipmi_username_required, message: this.$t('compute.text_809') },
         ],
         ipmi_password: [
-          'ipmi_password',
-          {
-            rules: [
-              { required: this.ipmi_password_required, message: this.$t('compute.text_810') },
-            ],
-          },
+          { required: this.ipmi_password_required, message: this.$t('compute.text_810') },
         ],
         net: [
-          'net',
-          {
-            validateFirst: true,
-            rules: [
-              { required: this.net_required, message: this.$t('compute.text_811') },
-              { validator: this.validateNet },
-            ],
-          },
+          { required: this.net_required, message: this.$t('compute.text_811') },
+          { validator: this.validateNet },
         ],
         content: [
-          'content',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.text_797') },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_797') },
         ],
         file: [
-          'file',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_812') },
-              { validator: this.validateFile },
-            ],
-          },
-        ],
-        no_prepare: [
-          'no_prepare',
-          {
-            valuePropName: 'checked',
-          },
-        ],
-        no_bmc: [
-          'no_bmc',
-          {
-            valuePropName: 'checked',
-          },
+          { required: true, message: this.$t('compute.text_812') },
+          { validator: this.validateFile },
         ],
         access_mac: [
-          'access_mac',
-          {
-            rules: [
-              { validator: validateForm('mac', false) },
-            ],
-          },
+          { validator: validateForm('mac', false) },
         ],
         __meta__: [
-          '__meta__',
-          {
-            rules: [
-              { validator: validateForm('tagName') },
-            ],
-          },
+          { validator: validateForm('tagName') },
         ],
       }
     },
@@ -461,7 +370,8 @@ export default {
     },
     async handleAdd () {
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form.fd }
         this.adding = true
         if (this.isPreSingleAdd) {
           await this.doPreSingleAdd()
@@ -529,16 +439,19 @@ export default {
       return callback()
     },
     handleTypeChange (e) {
-      const project_domain = this.form.fc.getFieldValue('project_domain')
-      this.form.fc.resetFields()
+      const type = e?.target?.value ?? e
+      const project_domain = this.form.fd.project_domain
+      // 切换录入方式时保留 type/domain，其余字段清空（保持 fd 对象引用）
+      Object.keys(this.form.fd).forEach((key) => {
+        if (key !== 'type' && key !== 'project_domain') {
+          delete this.form.fd[key]
+        }
+      })
+      this.form.fd.type = type
+      this.form.fd.mode = 'single'
+      this.form.fd.project_domain = project_domain
       this.$nextTick(() => {
-        this.form.fc.getFieldDecorator('mode', { preserve: true })
-        this.form.fc.getFieldDecorator('project_domain', { preserve: true })
-        this.form.fc.setFieldsValue({
-          type: e.target.value,
-          mode: 'single',
-          project_domain,
-        })
+        this.$refs.formRef?.clearValidate?.()
       })
     },
     getIpAddr (val) {

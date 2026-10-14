@@ -1,29 +1,31 @@
 <!-- 创建和修改属性都需要的 -->
 <template>
   <div>
-    <template v-if="storage_type === 'rbd'">
-      <a-form-item label="Ceph Mon Host" v-if="!edit">
-        <a-input :placeholder="$t('storage.host.input.place_holder')" v-decorator="decorators.rbd_mon_host" />
-      </a-form-item>
-      <a-form-item label="Ceph Pool" v-if="!edit">
-          <a-input :placeholder="$t('storage.text_21')" v-decorator="decorators.rbd_pool" />
-      </a-form-item>
-      <a-form-item label="Ceph Key">
-        <a-input :placeholder="$t('storage.text_20')" v-decorator="decorators.rbd_key" />
-      </a-form-item>
-    </template>
-    <template v-if="storage_type === 'nfs'">
-      <a-form-item label="NFS Host">
-        <a-input :placeholder="$t('storage.host.input.place_holder')" v-decorator="decorators.nfs_host" />
-      </a-form-item>
-      <a-form-item label="NFS Shared Dir">
-        <a-input :placeholder="$t('storage.path.input.place_holder')" v-decorator="decorators.nfs_shared_dir" />
-      </a-form-item>
-    </template>
-    <template v-if="storage_type === 'slvm'">
-      <a-form-item label="SlvmVgName">
-        <a-input :placeholder="$t('common.tips.input', ['SlvmVgName'])" v-decorator="decorators.slvm_vg_name" />
-      </a-form-item>
+    <template>
+      <template v-if="storage_type === 'rbd'">
+        <a-form-model-item v-if="!edit" label="Ceph Mon Host" prop="rbd_mon_host" :rules="fieldRules.rbd_mon_host">
+          <a-input :placeholder="$t('storage.host.input.place_holder')" v-model:value="model.rbd_mon_host" />
+        </a-form-model-item>
+        <a-form-model-item v-if="!edit" label="Ceph Pool" prop="rbd_pool" :rules="fieldRules.rbd_pool">
+          <a-input :placeholder="$t('storage.text_21')" v-model:value="model.rbd_pool" />
+        </a-form-model-item>
+        <a-form-model-item label="Ceph Key" prop="rbd_key">
+          <a-input :placeholder="$t('storage.text_20')" v-model:value="model.rbd_key" />
+        </a-form-model-item>
+      </template>
+      <template v-if="storage_type === 'nfs'">
+        <a-form-model-item label="NFS Host" prop="nfs_host" :rules="fieldRules.nfs_host">
+          <a-input :placeholder="$t('storage.host.input.place_holder')" v-model:value="model.nfs_host" />
+        </a-form-model-item>
+        <a-form-model-item label="NFS Shared Dir" prop="nfs_shared_dir" :rules="fieldRules.nfs_shared_dir">
+          <a-input :placeholder="$t('storage.path.input.place_holder')" v-model:value="model.nfs_shared_dir" />
+        </a-form-model-item>
+      </template>
+      <template v-if="storage_type === 'slvm'">
+        <a-form-model-item label="SlvmVgName" prop="slvm_vg_name" :rules="fieldRules.slvm_vg_name">
+          <a-input :placeholder="$t('common.tips.input', ['SlvmVgName'])" v-model:value="model.slvm_vg_name" />
+        </a-form-model-item>
+      </template>
     </template>
   </div>
 </template>
@@ -44,14 +46,22 @@ export default {
     editData: {
       type: Object,
     },
+    /** a-form-model：传入父级 form 对象 */
+    model: {
+      type: Object,
+    },
   },
-  inject: ['form'],
+  inject: {
+    form: {
+      default: null,
+    },
+  },
   computed: {
-    decorators () {
+    fieldRules () {
       const hostCheckValid = (rule, value, _callback) => {
         let isValid = true
         if (!value || value === '') isValid = false
-        const parts = value.split(',')
+        const parts = (value || '').split(',')
         if (parts.some(part => {
           const trimmedPart = part.trim()
           return !REGEXP.IPv4.regexp.test(trimmedPart) && !REGEXP.IPv6.regexp.test(trimmedPart)
@@ -74,62 +84,50 @@ export default {
       }
       return {
         rbd_mon_host: [
-          'rbd_mon_host',
-          {
-            validateFirst: true,
-            initialValue: this.editData?.storage_conf?.mon_host || '',
-            rules: [
-              { required: true, validator: hostCheckValid, trigger: 'blur' },
-            ],
-          },
-        ],
-        rbd_key: [
-          'rbd_key',
-          {
-            initialValue: this.editData?.storage_conf?.key || '',
-            rules: [
-            ],
-          },
+          { required: true, validator: hostCheckValid, trigger: 'blur' },
         ],
         rbd_pool: [
-          'rbd_pool',
-          {
-            validateFirst: true,
-            initialValue: this.editData?.storage_conf?.pool || '',
-            rules: [
-              { required: true, message: this.$t('storage.text_28'), trigger: 'blur' },
-              { validator: commonCheckValid('Ceph Pool') },
-            ],
-          },
+          { required: true, message: this.$t('storage.text_28'), trigger: 'blur' },
+          { validator: commonCheckValid('Ceph Pool') },
         ],
         nfs_host: [
-          'nfs_host',
-          {
-            validateFirst: true,
-            initialValue: this.editData?.storage_conf?.nfs_host || '',
-            rules: [
-              { required: true, validator: hostCheckValid, trigger: 'blur' },
-            ],
-          },
+          { required: true, validator: hostCheckValid, trigger: 'blur' },
         ],
         nfs_shared_dir: [
-          'nfs_shared_dir',
-          {
-            initialValue: this.editData?.storage_conf?.nfs_shared_dir || '',
-            rules: [
-              { required: true, message: this.$t('storage.nfs_shared_dir.validate.prompt'), trigger: 'blur' },
-            ],
-          },
+          { required: true, message: this.$t('storage.nfs_shared_dir.validate.prompt'), trigger: 'blur' },
         ],
         slvm_vg_name: [
-          'slvm_vg_name',
-          {
-            initialValue: this.editData?.storage_conf?.slvm_vg_name || '',
-            rules: [
-              { required: true, message: this.$t('common.tips.input', ['SlvmVgName']), trigger: 'blur' },
-            ],
-          },
+          { required: true, message: this.$t('common.tips.input', ['SlvmVgName']), trigger: 'blur' },
         ],
+      }
+    },
+  },
+  watch: {
+    editData: {
+      immediate: true,
+      handler () {
+        this.initModelFromEditData()
+      },
+    },
+  },
+  mounted () {
+    this.initModelFromEditData()
+  },
+  methods: {
+    initModelFromEditData () {
+      if (!this.editData?.storage_conf) return
+      const conf = this.editData.storage_conf
+      if (this.storage_type === 'rbd') {
+        if (this.model.rbd_key === undefined) this.model.rbd_key = conf.key || ''
+        if (!this.edit) {
+          if (this.model.rbd_mon_host === undefined) this.model.rbd_mon_host = conf.mon_host || ''
+          if (this.model.rbd_pool === undefined) this.model.rbd_pool = conf.pool || ''
+        }
+      } else if (this.storage_type === 'nfs') {
+        if (this.model.nfs_host === undefined) this.model.nfs_host = conf.nfs_host || ''
+        if (this.model.nfs_shared_dir === undefined) this.model.nfs_shared_dir = conf.nfs_shared_dir || ''
+      } else if (this.storage_type === 'slvm') {
+        if (this.model.slvm_vg_name === undefined) this.model.slvm_vg_name = conf.slvm_vg_name || ''
       }
     },
   },

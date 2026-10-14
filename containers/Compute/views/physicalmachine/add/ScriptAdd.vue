@@ -1,5 +1,5 @@
 <template>
-  <a-form-item :wrapper-col="offsetWrapperCol">
+  <a-form-model-item :wrapper-col="offsetWrapperCol">
     <div class="script-add-wrap">
       <template v-if="loading"><loader loading /></template>
       <template v-else>
@@ -14,7 +14,7 @@
         </div>
       </template>
     </div>
-  </a-form-item>
+  </a-form-model-item>
 </template>
 
 <script>

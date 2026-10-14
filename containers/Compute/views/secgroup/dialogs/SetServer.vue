@@ -4,17 +4,18 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.secgroup')" :count="params.data.length" :action="params.title" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" v-bind="formItemLayout" hideRequiredMark>
-        <a-form-item
-          :label="params.resourceName">
+      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout" hideRequiredMark>
+        <a-form-model-item
+          :label="params.resourceName"
+          prop="servers">
           <list-select
-            v-decorator="decorators.servers"
+            v-model:value="form.servers"
             :list-props="serverListProps"
             :formatter="v => v.name"
             :placeholder="$t('compute.text_1022', [params.resourceName])"
             :dialog-params="{ title: params.resourceName, width: 1060 }" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -47,15 +48,7 @@ export default {
       loading: false,
       scope: this.$store.getters.scope,
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        servers: [
-          'servers',
-          {
-            validateFirst: true,
-          },
-        ],
+        servers: undefined,
       },
       formItemLayout: {
         wrapperCol: {
@@ -121,9 +114,7 @@ export default {
         const { data: { data = [] } } = await manager.list({ params })
         this.bindServers = data
         this.bindServersLoaded = true
-        this.$nextTick(() => {
-          this.form.fc.setFieldsValue({ servers: data.map(item => item.id) })
-        })
+        this.form.servers = data.map(item => item.id)
       } catch (error) {
         console.error(error)
       }
@@ -131,14 +122,14 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         let ids = []
         const bindServers = []
         const removeServers = []
         const data = {
           secgroup_ids: [this.selectedResource.id],
         }
-        ids = JSON.parse(JSON.stringify(values.servers))
+        ids = JSON.parse(JSON.stringify(this.form.servers || []))
         this.bindServers.forEach((item, idx) => {
           bindServers.push(item.id)
         })
@@ -166,7 +157,6 @@ export default {
             data,
           })
         }
-        this.loading = false
         this.cancelDialog()
         this.params.refresh()
       } finally {

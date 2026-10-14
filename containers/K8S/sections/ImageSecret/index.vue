@@ -1,14 +1,14 @@
 <template>
   <div>
     <a-form-item class="mb-0">
-      <a-radio-group v-decorator="decorators.secretType" @change="secretTypeChange">
+      <a-radio-group v-model:value="secretType" @change="secretTypeChange">
         <a-radio-button value="none">{{$t('k8s.text_75')}}</a-radio-button>
         <a-radio-button value="select">{{$t('k8s.text_76')}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
     <a-form-item v-if="secretType === 'select'">
       <base-select
-        v-decorator="decorators.imagePullSecrets"
+        v-model:value="imagePullSecrets"
         resource="secrets"
         version="v1"
         :params="params"
@@ -28,21 +28,19 @@ export default {
   name: 'K8SImageSecrets',
   mixins: [WindowsMixin],
   props: {
-    decorators: {
-      type: Object,
-      default: val => val.secretType && val.imagePullSecrets,
-    },
     cluster: {},
     namespace: {},
     form: {
       type: Object,
-      required: true,
-      validator: val => val.fc,
+      default: () => ({}),
     },
   },
   data () {
     return {
+      secretTypeField: 'secretType',
+      imageField: 'imagePullSecrets',
       secretType: 'none',
+      imagePullSecrets: undefined,
     }
   },
   computed: {
@@ -57,9 +55,26 @@ export default {
       return {}
     },
   },
+  watch: {
+    imagePullSecrets () {
+      this.syncToParentForm()
+    },
+  },
+  mounted () {
+    this.syncToParentForm()
+  },
   methods: {
-    secretTypeChange (e) {
-      this.secretType = e.target.value
+    syncToParentForm () {
+      const fd = this.form?.fd
+      if (!fd) return
+      this.$set(fd, this.secretTypeField, this.secretType)
+      this.$set(fd, this.imageField, this.imagePullSecrets)
+    },
+    secretTypeChange () {
+      if (this.secretType !== 'select') {
+        this.imagePullSecrets = undefined
+      }
+      this.syncToParentForm()
     },
     createImageSecret () {
       this.createDialog('K8SImageSecretCreateDialog', {
@@ -67,11 +82,8 @@ export default {
         cluster: this.cluster,
         namespace: this.namespace,
         success: name => {
-          if (this.form.fc) {
-            this.form.fc.setFieldsValue({
-              [this.decorators.imagePullSecrets[0]]: [name],
-            })
-          }
+          this.imagePullSecrets = [name]
+          this.syncToParentForm()
         },
       })
     },

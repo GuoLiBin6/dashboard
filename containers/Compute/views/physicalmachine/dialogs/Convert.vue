@@ -4,29 +4,31 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.physicalmachine')" :count="params.data.length" :action="$t('compute.text_828')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 2)" />
-       <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('compute.text_829')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.name" :placeholder="$t('compute.text_830')" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_831')" v-bind="formItemLayout">
-          <a-select v-decorator="decorators.host_type" :placeholder="$t('compute.text_831')">
+       <a-form-model
+        ref="formRef"
+        :model="form.fd"
+        :rules="rules">
+        <a-form-model-item :label="$t('compute.text_829')" v-bind="formItemLayout" prop="name">
+          <a-input v-model:value="form.fd.name" :placeholder="$t('compute.text_830')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_831')" v-bind="formItemLayout" prop="host_type">
+          <a-select v-model:value="form.fd.host_type" :placeholder="$t('compute.text_831')">
             <a-select-option v-for="item in hostTypeOptions" :key="item.value" :value="item.value">
               {{item.text}}
             </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_832')" v-bind="formItemLayout">
-          <a-select v-decorator="decorators.raid" :placeholder="$t('compute.text_832')" @change="raidChange">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_832')" v-bind="formItemLayout" prop="raid">
+          <a-select v-model:value="form.fd.raid" :placeholder="$t('compute.text_832')" @change="raidChange">
             <a-select-option v-for="item in raidOptions" :key="item.value" :value="item.value">
               {{item.text}}
             </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_96')" v-bind="formItemLayout" v-if="isShowImages">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_96')" v-bind="formItemLayout" v-if="isShowImages" prop="image">
          <base-select
             :filterable="true"
-            v-decorator="decorators.image"
+            v-model:value="form.fd.image"
             needParams
             resource="images"
             version="v1"
@@ -35,8 +37,8 @@
             v-model:resList="imagesData"
             @update:item="imagechange"
             :select-props="{ placeholder: $t('compute.text_833') }" />
-        </a-form-item>
-        <a-form-item v-bind="formItemLayout" :label="$t('compute.text_834')" v-if="isShowImages">
+        </a-form-model-item>
+        <a-form-model-item v-bind="formItemLayout" :label="$t('compute.text_834')" v-if="isShowImages">
           <div class="d-flex flex-wrap">
             <template v-for="(item, idx) of diskOptionsDate" :key="idx">
               <div class="disk-option-item">
@@ -69,14 +71,18 @@
               </div>
             </template>
           </div>
-        </a-form-item>
-        <a-form-item :wrapper-col="{ span: 18, offset: 4 }" v-if="isShowImages">
+        </a-form-model-item>
+        <a-form-model-item :wrapper-col="{ span: 18, offset: 4 }" v-if="isShowImages">
           <a-button type="primary" @click="addDisk">{{$t('compute.text_307')}}</a-button>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_104')" v-bind="formItemLayout" class="mb-0" v-if="isShowNetwork">
+        </a-form-model-item>
+        <a-form-model-item :wrapper-col="{ span: 18, offset: 4 }" v-if="isShowNetwork">
+          <a-checkbox v-model:checked="isBonding">{{$t('compute.text_310')}}</a-checkbox>
+        </a-form-model-item>
+        <a-form-model-item v-if="isShowNetwork" :label="$t('compute.text_104')" v-bind="formItemLayout" class="mb-0">
           <server-network
+            ref="networkRef"
+            :model="form.fd"
             :form="form"
-            :decorator="decorators.network"
             :isBonding="isBonding"
             :network-resource-mapper="networkResourceMapper"
             :network-list-params="networkParams"
@@ -85,11 +91,8 @@
             :vpcResource="vpcResource"
             :vpcResourceMapper="vpcResourceMapper"
             :isDialog="true" />
-        </a-form-item>
-        <a-form-item :wrapper-col="{ span: 18, offset: 4 }" v-if="isShowNetwork">
-          <a-checkbox v-model="isBonding">{{$t('compute.text_310')}}</a-checkbox>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -104,21 +107,9 @@ import * as R from 'ramda'
 import { NETWORK_OPTIONS_MAP } from '@Compute/constants'
 import ServerNetwork from '@Compute/sections/ServerNetwork'
 import { sizestr } from '@/utils/utils'
-import { isWithinRange } from '@/utils/validate'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import i18n from '@/locales'
-
-function checkIpInSegment (i, networkData) {
-  return (rule, value, cb) => {
-    const isIn = isWithinRange(value, networkData.guest_ip_start, networkData.guest_ip_end)
-    if (isIn) {
-      cb()
-    } else {
-      cb(new Error(this.$t('compute.text_205')))
-    }
-  }
-}
 
 export default {
   name: 'HostsConvertDialog',
@@ -131,107 +122,25 @@ export default {
       loading: false,
       scope: this.$store.getters.scope,
       form: {
-        fc: this.$form.createForm(this),
+        fd: {
+          name: this.params.data[0].name,
+          host_type: 'hypervisor',
+          raid: undefined,
+          image: undefined,
+          networkType: NETWORK_OPTIONS_MAP.default.key,
+        },
         fi: {
           capability: {},
         },
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            initialValue: this.params.data[0].name,
-            validateFirst: true,
-            rules: [
-              {
-                required: true, message: this.$t('compute.text_835'),
-              },
-              {
-                validator: this.$validate('serverCreateName'),
-              },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_835') },
+          { validator: this.$validate('serverCreateName') },
         ],
         host_type: [
-          'host_type',
-          {
-            initialValue: 'hypervisor',
-            rules: [
-              { required: true },
-            ],
-          },
+          { required: true },
         ],
-        raid: [
-          'raid',
-        ],
-        image: [
-          'image',
-        ],
-        network: {
-          networkType: [
-            'networkType',
-            {
-              initialValue: NETWORK_OPTIONS_MAP.default.key,
-            },
-          ],
-          networkConfig: {
-            vpcs: i => [
-              `vpcs[${i}]`,
-              {
-                validateTrigger: ['change', 'blur'],
-                rules: [{
-                  required: true,
-                  message: this.$t('compute.text_194'),
-                }],
-              },
-            ],
-            networks: i => [
-              `networks[${i}]`,
-              {
-                validateTrigger: ['change', 'blur'],
-                rules: [{
-                  required: true,
-                  message: this.$t('compute.text_217'),
-                }],
-              },
-            ],
-            ips: (i, networkData) => [
-              `networkIps[${i}]`,
-              {
-                validateFirst: true,
-                validateTrigger: ['blur', 'change'],
-                rules: [{
-                  required: true,
-                  message: this.$t('compute.text_218'),
-                }, {
-                  validator: checkIpInSegment(i, networkData),
-                }],
-              },
-            ],
-          },
-          networkSchedtag: {
-            schedtags: i => [
-              `networkSchedtags[${i}]`,
-              {
-                validateTrigger: ['change', 'blur'],
-                rules: [{
-                  required: true,
-                  message: this.$t('compute.text_123'),
-                }],
-              },
-            ],
-            policys: (i, networkData) => [
-              `networkPolicys[${i}]`,
-              {
-                validateTrigger: ['blur', 'change'],
-                rules: [{
-                  required: true,
-                  message: this.$t('compute.text_123'),
-                }],
-              },
-            ],
-          },
-        },
       },
       formItemLayout: {
         wrapperCol: {
@@ -378,8 +287,10 @@ export default {
   watch: {
     imagesData: {
       handler (val) {
-        this.form.fc.setFieldsValue({ image: val[0].id })
-        this.selectedImage = val[0]
+        if (val && val[0]) {
+          this.form.fd.image = val[0].id
+          this.selectedImage = val[0]
+        }
       },
     },
     isShowImages: {
@@ -653,16 +564,12 @@ export default {
       }
       return size
     },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
+    async validateForm () {
+      await this.$refs.formRef.validate()
+      if (this.isShowNetwork && typeof this.$refs.networkRef?.validate === 'function') {
+        await this.$refs.networkRef.validate()
+      }
+      return { ...this.form.fd }
     },
     doConvert (data) {
       return this.params.onManager('performAction', {

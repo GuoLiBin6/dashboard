@@ -2,95 +2,95 @@
   <div>
     <page-header :title="$t('network.text_606')" style="margin-bottom: 7px;" />
     <page-body>
-      <a-form class="mt-3" :form="form.fc">
+      <a-form-model ref="formRef" class="mt-3" :model="formModel" :rules="rules" v-bind="formItemLayout">
         <a-divider orientation="left">{{$t('network.text_397')}}</a-divider>
-        <a-form-item :label="$t('network.text_21')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.name" :placeholder="$t('validator.resourceName')" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_198')" v-bind="formItemLayout">
-          <a-radio-group v-decorator="decorators.platform_type">
+        <a-form-model-item :label="$t('network.text_21')" prop="name">
+          <a-input v-model:value="formModel.name" :placeholder="$t('validator.resourceName')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_198')" prop="platform_type">
+          <a-radio-group v-model:value="formModel.platform_type">
             <a-radio-button
               v-for="item of platformOpts"
               :key="item.key"
               :disabled="item.key !== 'idc'"
               :value="item.key">{{ item.label }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('network.text_574')" v-bind="formItemLayout">
-          <a-radio-group v-decorator="decorators.server_type" @change="handleServerTypeChange">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_574')" prop="server_type">
+          <a-radio-group v-model:value="formModel.server_type" @change="handleServerTypeChange">
             <a-radio-button
               v-for="item of serverTypeOpts"
               :key="item.key"
               :disabled="item.key !== server_type"
               :value="item.key">{{ item.label }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('network.text_607')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.guest_ip_start" :disabled="!isClassicNetwork" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_608')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.guest_ip_end" :disabled="!isClassicNetwork" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_609')" v-bind="formItemLayout">
-          <a-select v-decorator="decorators.guest_ip_mask" :disabled="!isClassicNetwork">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_607')" prop="guest_ip_start">
+          <a-input v-model:value="formModel.guest_ip_start" :disabled="!isClassicNetwork" @blur="normalizeIpField('guest_ip_start')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_608')" prop="guest_ip_end">
+          <a-input v-model:value="formModel.guest_ip_end" :disabled="!isClassicNetwork" @blur="normalizeIpField('guest_ip_end')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_609')" prop="guest_ip_mask">
+          <a-select v-model:value="formModel.guest_ip_mask" :disabled="!isClassicNetwork">
             <a-select-option v-for="item in netMaskOptions" :key="item.value" :value="item.value">
               {{item.label}}
             </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('network.text_610')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.guest_gateway" :disabled="!isClassicNetwork" />
-        </a-form-item>
-        <a-form-item :label="$t('network.ipv6.ip_start.label')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.guest_ip6_start" :disabled="!isClassicNetwork" />
-        </a-form-item>
-        <a-form-item :label="$t('network.ipv6.ip_end.label')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.guest_ip6_end" :disabled="!isClassicNetwork" />
-        </a-form-item>
-        <a-form-item :label="$t('network.ipv6.ip_mask.label')" v-bind="formItemLayout">
-          <a-select v-decorator="decorators.guest_ip6_mask" :disabled="!isClassicNetwork">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_610')" prop="guest_gateway">
+          <a-input v-model:value="formModel.guest_gateway" :disabled="!isClassicNetwork" @blur="normalizeIpField('guest_gateway')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.ipv6.ip_start.label')" prop="guest_ip6_start">
+          <a-input v-model:value="formModel.guest_ip6_start" :disabled="!isClassicNetwork" @blur="normalizeIpField('guest_ip6_start')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.ipv6.ip_end.label')" prop="guest_ip6_end">
+          <a-input v-model:value="formModel.guest_ip6_end" :disabled="!isClassicNetwork" @blur="normalizeIpField('guest_ip6_end')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.ipv6.ip_mask.label')" prop="guest_ip6_mask">
+          <a-select v-model:value="formModel.guest_ip6_mask" :disabled="!isClassicNetwork">
             <a-select-option v-for="item in net6MaskOptions" :key="item.value" :value="item.value">
               {{item.label}}
             </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('network.ipv6.gateway.label')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.guest_gateway6" :disabled="!isClassicNetwork" />
-        </a-form-item>
-        <a-form-item label="VLAN ID" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.vlan_id" :disabled="!isClassicNetwork" />
-        </a-form-item>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.ipv6.gateway.label')" prop="guest_gateway6">
+          <a-input v-model:value="formModel.guest_gateway6" :disabled="!isClassicNetwork" @blur="normalizeIpField('guest_gateway6')" />
+        </a-form-model-item>
+        <a-form-model-item label="VLAN ID" prop="vlan_id">
+          <a-input v-model:value="formModel.vlan_id" :disabled="!isClassicNetwork" />
+        </a-form-model-item>
         <a-collapse :bordered="false" :active-key="getDefaultActiveKey">
           <a-collapse-panel :header="$t('network.text_94')" key="1" forceRender>
-            <a-form-item :label="$t('network.text_743')" v-bind="formItemLayout" v-if="hasBgpType">
-              <a-input v-decorator="decorators.bgp_type" />
+            <a-form-model-item :label="$t('network.text_743')" prop="bgp_type" v-if="hasBgpType">
+              <a-input v-model:value="formModel.bgp_type" />
               <template #extra>{{$t('network.text_744')}}</template>
-            </a-form-item>
-            <a-form-item v-bind="formItemLayout">
+            </a-form-model-item>
+            <a-form-model-item prop="alloc_policy">
               <template #label>{{$t('network.text_583')}}<help-tooltip class="ml-1" name="networkPolicy" /></template>
-              <a-radio-group v-decorator="decorators.alloc_policy">
+              <a-radio-group v-model:value="formModel.alloc_policy">
                 <a-radio-button
                   v-for="item of allocPolicyoptions"
                   :key="item.key"
                   :value="item.key">{{ item.label }}</a-radio-button>
               </a-radio-group>
-            </a-form-item>
-            <a-form-item :label="$t('network.dns_server')" v-bind="formItemLayout">
-              <a-input :placeholder="$t('validator.IPs')" v-decorator="decorators.guest_dns" />
-            </a-form-item>
-            <a-form-item v-bind="formItemLayout">
+            </a-form-model-item>
+            <a-form-model-item :label="$t('network.dns_server')" prop="guest_dns">
+              <a-input :placeholder="$t('validator.IPs')" v-model:value="formModel.guest_dns" @blur="normalizeIpField('guest_dns')" />
+            </a-form-model-item>
+            <a-form-model-item prop="guest_domain">
               <template #label>{{$t('network.text_586')}}<help-tooltip class="ml-1" name="networkDomain" /></template>
-              <a-input :placeholder="$t('validator.domain')" v-decorator="decorators.guest_domain" />
-            </a-form-item>
-            <a-form-item :label="$t('network.ntp_server')" v-bind="formItemLayout">
-              <a-input :placeholder="$t('validator.IPs_or_domains')" v-decorator="decorators.guest_ntp" />
-            </a-form-item>
-            <a-form-item label="dhcp_relay" v-bind="formItemLayout">
-              <a-input class="w-50" v-decorator="decorators.guest_dhcp" :placeholder="$t('validator.IPs')" />
-            </a-form-item>
+              <a-input :placeholder="$t('validator.domain')" v-model:value="formModel.guest_domain" />
+            </a-form-model-item>
+            <a-form-model-item :label="$t('network.ntp_server')" prop="guest_ntp">
+              <a-input :placeholder="$t('validator.IPs_or_domains')" v-model:value="formModel.guest_ntp" />
+            </a-form-model-item>
+            <a-form-model-item label="dhcp_relay" prop="guest_dhcp">
+              <a-input class="w-50" v-model:value="formModel.guest_dhcp" :placeholder="$t('validator.IPs')" @blur="normalizeIpField('guest_dhcp')" />
+            </a-form-model-item>
           </a-collapse-panel>
         </a-collapse>
-      </a-form>
+      </a-form-model>
     </page-body>
     <page-footer>
       <template v-slot:right>
@@ -111,8 +111,25 @@ export default {
   data () {
     return {
       submiting: false,
-      form: {
-        fc: this.$form.createForm(this),
+      formModel: {
+        name: '',
+        platform_type: 'idc',
+        server_type: 'guest',
+        guest_ip_start: '',
+        guest_ip_end: '',
+        guest_ip_mask: '16',
+        guest_gateway: '',
+        guest_ip6_start: '',
+        guest_ip6_end: '',
+        guest_ip6_mask: '64',
+        guest_gateway6: '',
+        vlan_id: '',
+        bgp_type: '',
+        alloc_policy: 'none',
+        guest_dns: '',
+        guest_domain: '',
+        guest_ntp: '',
+        guest_dhcp: '',
       },
       formItemLayout: {
         wrapperCol: {
@@ -126,171 +143,45 @@ export default {
           xxl: { span: 2 },
         },
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            initialValue: '',
-            validateTrigger: ['change', 'blur'],
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('network.text_116') },
-              { validator: this.$validate('resourceName') },
-            ],
-          },
-        ],
-        platform_type: [
-          'platform_type',
-          {
-            initialValue: 'idc',
-            validateTrigger: ['change', 'blur'],
-          },
+          { required: true, message: this.$t('network.text_116') },
+          { validator: this.$validate('resourceName') },
         ],
         server_type: [
-          'server_type',
-          {
-            initialValue: 'guest',
-            validateTrigger: ['change', 'blur'],
-            rules: [
-              { required: true, message: this.$t('network.text_592') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_592') },
         ],
         guest_ip_start: [
-          'guest_ip_start',
-          {
-            validateTrigger: ['change', 'blur'],
-            validateFirst: true,
-            normalize: stripIpWhitespace,
-            rules: [
-              // { required: true, message: this.$t('network.text_593') },
-              { validator: this.$validate('IPv4', false) },
-            ],
-          },
+          { validator: this.$validate('IPv4', false) },
         ],
         guest_ip_end: [
-          'guest_ip_end',
-          {
-            validateTrigger: ['change', 'blur'],
-            validateFirst: true,
-            normalize: stripIpWhitespace,
-            rules: [
-              // { required: true, message: this.$t('network.text_594') },
-              { validator: this.$validate('IPv4', false) },
-            ],
-          },
-        ],
-        guest_ip_mask: [
-          'guest_ip_mask',
-          {
-            initialValue: '16',
-          },
+          { validator: this.$validate('IPv4', false) },
         ],
         guest_gateway: [
-          'guest_gateway',
-          {
-            validateTrigger: ['change', 'blur'],
-            validateFirst: true,
-            normalize: stripIpWhitespace,
-            rules: [
-              // { required: true, message: this.$t('network.text_611') },
-              { validator: this.$validate('IPv4', false) },
-              { validator: this.validateGateway },
-            ],
-          },
+          { validator: this.$validate('IPv4', false) },
+          { validator: this.validateGateway },
         ],
         guest_ip6_start: [
-          'guest_ip6_start',
-          {
-            validateTrigger: ['change', 'blur'],
-            validateFirst: true,
-            normalize: stripIpWhitespace,
-            rules: [
-              { validator: this.$validate('IPv6', false) },
-            ],
-          },
+          { validator: this.$validate('IPv6', false) },
         ],
         guest_ip6_end: [
-          'guest_ip6_end',
-          {
-            validateTrigger: ['change', 'blur'],
-            validateFirst: true,
-            normalize: stripIpWhitespace,
-            rules: [
-              { validator: this.$validate('IPv6', false) },
-            ],
-          },
-        ],
-        guest_ip6_mask: [
-          'guest_ip6_mask',
-          {
-            initialValue: '64',
-          },
+          { validator: this.$validate('IPv6', false) },
         ],
         guest_gateway6: [
-          'guest_gateway6',
-          {
-            validateTrigger: ['change', 'blur'],
-            validateFirst: true,
-            normalize: stripIpWhitespace,
-            rules: [
-              { validator: this.$validate('IPv6', false) },
-              { validator: this.validateGateway6 },
-            ],
-          },
-        ],
-        vlan_id: [
-          'vlan_id',
-        ],
-        alloc_policy: [
-          'alloc_policy',
-          {
-            initialValue: 'none',
-          },
+          { validator: this.$validate('IPv6', false) },
+          { validator: this.validateGateway6 },
         ],
         guest_dhcp: [
-          'guest_dhcp',
-          {
-            validateFirst: true,
-            normalize: stripIpWhitespace,
-            rules: [
-              { validator: this.$validate('IPs', false) },
-            ],
-          },
+          { validator: this.$validate('IPs', false) },
         ],
         guest_dns: [
-          'guest_dns',
-          {
-            initialValue: '',
-            validateTrigger: ['change', 'blur'],
-            normalize: stripIpWhitespace,
-            rules: [
-              { validator: this.$validate('IPs', false) },
-            ],
-          },
+          { validator: this.$validate('IPs', false) },
         ],
         guest_domain: [
-          'guest_domain',
-          {
-            initialValue: '',
-            validateTrigger: ['change', 'blur'],
-            rules: [
-              { validator: this.$validate('domain', false) },
-            ],
-          },
+          { validator: this.$validate('domain', false) },
         ],
         guest_ntp: [
-          'guest_ntp',
-          {
-            initialValue: '',
-            validateTrigger: ['change', 'blur'],
-            rules: [
-              { validator: this.$validate('IPs_or_domains', false) },
-            ],
-          },
-        ],
-        bgp_type: [
-          'bgp_type',
+          { validator: this.$validate('IPs_or_domains', false) },
         ],
       },
       params: {
@@ -306,7 +197,6 @@ export default {
       serverTypeOpts: [
         { label: this.$t('network.text_226'), key: 'guest' },
         { label: this.$t('network.text_598'), key: 'baremetal' },
-        // { label: this.$t('network.text_599'), key: 'container' },
         { label: 'PXE', key: 'pxe' },
         { label: 'IPMI', key: 'ipmi' },
         { label: this.$t('network.text_221'), key: 'eip' },
@@ -358,33 +248,31 @@ export default {
     },
     getDefaultActiveKey () {
       if (this.vpcId === 'default') {
-        return '0' // hide
+        return '0'
       } else {
-        return '1' // show
+        return '1'
       }
     },
     hasBgpType () {
       return this.server_type === 'eip' || this.server_type === 'guest' || this.server_type === 'baremetal' || this.server_type === 'hostlocal'
     },
   },
-  provide () {
-    return {
-      form: this.form,
-    }
-  },
   mounted () {
     this.bindData()
   },
   methods: {
+    normalizeIpField (key) {
+      this.formModel[key] = stripIpWhitespace(this.formModel[key])
+    },
     fetchData () {
       return new this.$Manager('networks').get({ id: this.$route.query.network_id })
     },
-    handleServerTypeChange (e) {
-      this.server_type = e.target.value
+    handleServerTypeChange () {
+      this.server_type = this.formModel.server_type
     },
     async bindData () {
       const { data } = await this.fetchData()
-      this.form.fc.setFieldsValue({
+      Object.assign(this.formModel, {
         name: data.name,
         server_type: data.server_type,
         guest_ip_start: stripIpWhitespace(data.guest_ip_start),
@@ -401,8 +289,8 @@ export default {
         guest_domain: data.guest_domain || '',
         guest_ntp: data.guest_ntp || '',
         guest_dhcp: stripIpWhitespace(data.guest_dhcp) || '',
+        bgp_type: data.bgp_type || '',
       })
-      this.form.fc.getFieldDecorator('bgp_type', { initialValue: data.bgp_type })
       this.wire_id = data.wire_id
       this.cloudEnv = data.cloud_env
       this.vpcId = data.vpc_id
@@ -413,7 +301,6 @@ export default {
       if (!value) {
         return callback()
       }
-      // 只需要查看是否是以 0 结尾
       const ipItems = value.split('.')
       if (ipItems[ipItems.length - 1] === '0') {
         callback(new Error(this.$t('network.text_591')))
@@ -426,7 +313,6 @@ export default {
       if (!value) {
         return callback()
       }
-      // 只需要查看是否是以 0 结尾
       const ipItems = value.split(':')
       if (ipItems[ipItems.length - 1] === '0') {
         callback(new Error(this.$t('network.text_591')))
@@ -451,9 +337,9 @@ export default {
     async handleSubmit () {
       this.submiting = true
       try {
-        let values = await this.form.fc.validateFields()
-        values = {
-          ...values,
+        await this.$refs.formRef.validate()
+        const values = {
+          ...this.formModel,
           wire_id: this.wire_id,
         }
         if (!((values.guest_ip_start && values.guest_ip_end) || (values.guest_ip6_start && values.guest_ip6_end))) {

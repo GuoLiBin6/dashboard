@@ -4,17 +4,21 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('network.text_714')" :count="params.data.length" :action="$t('compute.text_1179')" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" hideRequiredMark>
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
         <eip-config
           hidden-none-type
-          :decorators="decorators.eipConfig"
+          type-field="type"
+          charge-type-field="charge_type"
+          bgp-type-field="bgp_type"
+          bandwidth-field="bandwidth"
+          eip-field="eip"
           :eip-params="eipParams"
           :hypervisor="hypervisor"
           :cloud-env="params.data[0].cloud_env"
-          :form="form"
+          :model="form"
           :formItemLayout="formItemLayout"
           :show-new="eipBindNew" />
-      </a-form>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -24,7 +28,7 @@
 </template>
 
 <script>
-import EipConfig from '@Compute/sections/EipConfig'
+import EipConfig from '@Compute/sections/EipConfig/model'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 
@@ -35,47 +39,15 @@ export default {
   },
   mixins: [DialogMixin, WindowsMixin],
   data () {
+    const typeInitialValue = this.params.data[0].brand === 'OneCloud' ? 'new' : 'bind'
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        eipConfig: {
-          type: [
-            'type',
-            {
-              initialValue: this.params.data[0].brand === 'OneCloud' ? 'new' : 'bind',
-            },
-          ],
-          charge_type: [
-            'charge_type',
-            {
-              initialValue: 'bandwidth',
-            },
-          ],
-          bgp_type: [
-            'bgp_type',
-            {
-              initialValue: '',
-            },
-          ],
-          bandwidth: [
-            'bandwidth',
-            {
-              initialValue: 30,
-              validateFirst: true,
-            },
-          ],
-          eip: [
-            'eip',
-            {
-              rules: [
-                { required: true, message: this.$t('compute.text_145'), trigger: 'change' },
-              ],
-            },
-          ],
-        },
+        type: typeInitialValue,
+        charge_type: 'bandwidth',
+        bgp_type: '',
+        bandwidth: 30,
+        eip: undefined,
       },
       formItemLayout: {
         wrapperCol: {
@@ -88,6 +60,9 @@ export default {
     }
   },
   computed: {
+    hypervisor () {
+      return this.params.data[0].hypervisor
+    },
     eipParams () {
       return {
         usable_eip_for_associate_type: 'loadbalancer',
@@ -104,6 +79,14 @@ export default {
         const { field } = item
         return fields.indexOf(field) > -1
       })
+    },
+    rules () {
+      if (this.form.type !== 'bind') return {}
+      return {
+        eip: [
+          { required: true, message: this.$t('compute.text_145'), trigger: 'change' },
+        ],
+      }
     },
   },
   methods: {
@@ -135,7 +118,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = this.form
         const ids = this.params.data.map(item => item.id)
         if (values.type === 'new') {
           await this.doCreateEip(ids, values)

@@ -12,14 +12,16 @@
             :img="chartDetail.metadata.icon"
             :page-title="chartDetail.metadata.name || ''"
             :description="chartDetail.metadata.description" />
-          <a-form
-            v-bind="formItemLayout"
-            :form="form.fc">
-            <a-form-item :label="$t('helm.text_16')">
-              <a-input v-decorator="decorators.release_name" :placeholder="$t('helm.text_28')" disabled />
-            </a-form-item>
-            <a-form-item :label="$t('helm.text_29')">
-              <a-select v-decorator="decorators.version" :placeholder="$t('helm.text_30')" @change="versionChange">
+          <a-form-model
+            ref="formRef"
+            :model="form"
+            :rules="rules"
+            v-bind="formItemLayout">
+            <a-form-model-item :label="$t('helm.text_16')" prop="release_name">
+              <a-input v-model:value="form.release_name" :placeholder="$t('helm.text_28')" disabled />
+            </a-form-model-item>
+            <a-form-model-item :label="$t('helm.text_29')" prop="version">
+              <a-select v-model:value="form.version" :placeholder="$t('helm.text_30')" @change="versionChange">
                 <a-select-option
                   v-for="item in versions"
                   :key="item.key"
@@ -27,11 +29,11 @@
                   {{ item.label }}
                 </a-select-option>
               </a-select>
-            </a-form-item>
-            <a-form-item :label="$t('helm.text_88')">
-              <code-mirror v-decorator="decorators.yaml" :options="cmOptions" />
-            </a-form-item>
-          </a-form>
+            </a-form-model-item>
+            <a-form-model-item :label="$t('helm.text_88')" prop="yaml">
+              <code-mirror :value="form.yaml" @change="v => form.yaml = v" :options="cmOptions" />
+            </a-form-model-item>
+          </a-form-model>
           <template-preview :previewFiles="previewFiles" />
         </template>
       </div>
@@ -101,29 +103,17 @@ export default {
         [13, 9],
       ],
       form: {
-        fc: this.$form.createForm(this),
+        release_name: undefined,
+        version: undefined,
+        yaml: undefined,
       },
-      decorators: {
-        release_name: [
-          'release_name',
-        ],
+      rules: {
         version: [
-          'version',
-          {
-            rules: [
-              { required: true, message: this.$t('helm.text_30'), trigger: 'blur' },
-            ],
-          },
+          { required: true, message: this.$t('helm.text_30'), trigger: 'blur' },
         ],
         yaml: [
-          'yaml',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('helm.text_43') },
-              { validator },
-            ],
-          },
+          { required: true, message: this.$t('helm.text_43') },
+          { validator },
         ],
       },
     }
@@ -169,10 +159,8 @@ export default {
       if (!R.isNil(data) && !R.isEmpty(data)) {
         this.releaseDetail = data
         this.chartDetail = this.releaseDetail.chart_info
-        this.form.fc.setFieldsValue({
-          [this.decorators.release_name[0]]: this.releaseDetail.name,
-          [this.decorators.yaml[0]]: jsYaml.safeDump(this.releaseDetail.config || {}, { lineWidth: Infinity }),
-        })
+        this.form.release_name = this.releaseDetail.name
+        this.form.yaml = jsYaml.safeDump(this.releaseDetail.config || {}, { lineWidth: Infinity })
         this.getChartVersion()
       }
     },
@@ -204,9 +192,7 @@ export default {
         if (findVersion) {
           defaultVersion = findVersion.key
         }
-        this.form.fc.setFieldsValue({
-          [this.decorators.version[0]]: defaultVersion,
-        })
+        this.form.version = defaultVersion
         this.versionChange(defaultVersion)
       }
     },
@@ -233,8 +219,8 @@ export default {
     async confirm () {
       try {
         this.loading = true
-        const values = await this.form.fc.validateFields()
-        await this.doUpdate(values)
+        await this.$refs.formRef.validate()
+        await this.doUpdate({ ...this.form })
         this.$message.success(this.$t('helm.text_45'))
         this.loading = false
         this.cancel()

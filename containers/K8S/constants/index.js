@@ -4,6 +4,9 @@ export const RESTART_POLICY_OPTS = {
   deployment: [
     { key: 'Always', label: 'Always' },
   ],
+  daemonset: [
+    { key: 'Always', label: 'Always' },
+  ],
   job: [
     { key: 'Never', label: 'Never' },
     { key: 'OnFailure', label: 'OnFailure' },
@@ -13,6 +16,9 @@ export const RESTART_POLICY_OPTS = {
     { key: 'OnFailure', label: 'OnFailure' },
   ],
   statefulset: [
+    { key: 'Always', label: 'Always' },
+  ],
+  pod: [
     { key: 'Always', label: 'Always' },
   ],
 }

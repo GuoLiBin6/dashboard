@@ -1,34 +1,36 @@
 <template>
-  <a-form
-    :form="form.fc"
+  <a-form-model
+    ref="formRef"
+    :model="form"
+    :rules="rules"
     v-bind="formItemLayout">
     <a-alert type="warning" :message="$t('system.text_285')" class="mb-2" />
-    <a-form-item label="Access Key ID">
+    <a-form-model-item label="Access Key ID" prop="access_key_id">
       <template v-slot:extra>
         <div>{{$t('system.text_286')}}</div>
         <div class="mb-0">{{ $t('system.text_573') }}</div>
       </template>
-      <a-input v-decorator="decorators.access_key_id" />
-    </a-form-item>
-    <a-form-item label="Access Key Secret">
+      <a-input v-model:value="form.access_key_id" />
+    </a-form-model-item>
+    <a-form-model-item label="Access Key Secret" prop="access_key_secret">
       <template v-slot:extra>
         <div>{{$t('system.text_287')}}</div>
         <div class="mb-0">{{ $t('system.text_573') }}</div>
       </template>
-      <a-input-password v-decorator="decorators.access_key_secret" />
-    </a-form-item>
-    <a-form-item :label="$t('system.text_288')">
+      <a-input-password v-model:value="form.access_key_secret" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('system.text_288')" prop="signature">
       <template v-slot:extra>
         <div>{{$t('system.text_289')}}</div>
         <div class="mb-0">{{$t('system.text_574')}}</div>
       </template>
-      <a-input v-decorator="decorators.signature" />
-    </a-form-item>
-    <a-form-item :wrapper-col="offsetWrapperCol">
+      <a-input v-model:value="form.signature" />
+    </a-form-model-item>
+    <a-form-model-item :wrapper-col="offsetWrapperCol">
       <a-button type="primary" class="mr-4" @click="handleSubmit" :loading="submiting">{{ $t('common.ok') }}</a-button>
       <test-button v-if="false" class="ml-3" :post="testPost" />
-    </a-form-item>
-  </a-form>
+    </a-form-model-item>
+  </a-form-model>
 </template>
 
 <script>
@@ -54,32 +56,19 @@ export default {
       submiting: false,
       testLoding: false,
       form: {
-        fc: this.$form.createForm(this),
+        access_key_id: undefined,
+        access_key_secret: undefined,
+        signature: undefined,
       },
-      decorators: {
+      rules: {
         access_key_id: [
-          'access_key_id',
-          {
-            rules: [
-              { required: true, message: this.$t('system.text_291') },
-            ],
-          },
+          { required: true, message: this.$t('system.text_291') },
         ],
         access_key_secret: [
-          'access_key_secret',
-          {
-            rules: [
-              { required: true, message: this.$t('system.text_292') },
-            ],
-          },
+          { required: true, message: this.$t('system.text_292') },
         ],
         signature: [
-          'signature',
-          {
-            rules: [
-              { required: true, message: this.$t('system.text_293') },
-            ],
-          },
+          { required: true, message: this.$t('system.text_293') },
         ],
       },
       contactData: null,
@@ -104,7 +93,7 @@ export default {
         const data = response.data.data[0] || {}
         this.contactData = data
         this.$nextTick(() => {
-          this.form.fc.setFieldsValue(data.content)
+          Object.assign(this.form, data.content || {})
         })
       } catch (error) {
         throw error
@@ -113,7 +102,8 @@ export default {
       }
     },
     async handleSubmit () {
-      const values = await this.form.fc.validateFields()
+      await this.$refs.formRef.validate()
+      const values = { ...this.form }
       try {
         this.submiting = true
         if (this.contactData && this.contactData.id) {
@@ -143,7 +133,8 @@ export default {
     },
     async testPost () {
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         await new this.$Manager('notifyconfigs', 'v1').performClassAction({
           action: 'validate',
           data: {

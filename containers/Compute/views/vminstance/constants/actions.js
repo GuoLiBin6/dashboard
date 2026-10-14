@@ -1,5 +1,5 @@
 import qs from 'qs'
-import { SERVER_TYPE, SMART_SSH_FORM_DECORATORS } from '@Compute/constants'
+import { SERVER_TYPE, SMART_SSH_FORM_FIELDS } from '@Compute/constants'
 import { isServerNetworkTagMode } from '@Compute/utils/secgroupDisplay'
 import VncInfoFetcher from '@Compute/sections/VncInfoFetcher'
 import Icon from '@/components/Icon'
@@ -194,7 +194,7 @@ const getSingleActions = function (ctx) {
                       callback: async (data) => {
                         openWebconsole({ port: data.port, username: data.username, password: data.password }, obj.id)
                       },
-                      decorators: SMART_SSH_FORM_DECORATORS,
+                      fields: SMART_SSH_FORM_FIELDS,
                     })
                   }
                   const tooltipTitle = obj.rescue_mode ? i18n.t('compute.start_rescue.validate_tooltip') : !isRunning ? i18n.t('compute.text_1309', [i18n.t('compute.text_574')]) : ''
@@ -225,7 +225,7 @@ const getSingleActions = function (ctx) {
                   callback: async (data) => {
                     handleRdpConnect(obj, data, 'rdp')
                   },
-                  decorators: SMART_SSH_FORM_DECORATORS,
+                  fields: SMART_SSH_FORM_FIELDS,
                 })
               }
               const handleRdpConnect = (obj, prms = {}) => {

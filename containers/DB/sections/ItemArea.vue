@@ -1,7 +1,7 @@
 <template>
   <area-selects
     ref="areaSelects"
-    :decorators="decorators"
+    :model="model"
     :form-draft-key="formDraftKey"
     v-bind="formItemLayout"
     :names="names"
@@ -16,7 +16,7 @@
     @fetchsDone="$emit('fetchsDone', $event)" />
 </template>
 <script>
-import AreaSelects from '@/sections/AreaSelects'
+import AreaSelects from '@/sections/AreaSelects/model'
 const PROVIDERS = {
   postpaid: ['Aliyun', 'Huawei', 'Google', 'Qcloud', 'HCSO', 'HCS', 'Aws'],
   prepaid: ['Aliyun', 'Huawei', 'Qcloud'],
@@ -28,6 +28,11 @@ export default {
     AreaSelects,
   },
   props: {
+    /** a-form-model：传入 form.fd，走 AreaSelects model 模式（必传） */
+    model: {
+      type: Object,
+      required: true,
+    },
     names: {
       type: Array,
     },
@@ -57,25 +62,6 @@ export default {
     },
     service () {
       return this.isRds ? 'dbinstances' : 'elasticcaches'
-    },
-    decorators () {
-      return {
-        provider: ['provider', {
-          validateFirst: true,
-          rules: [
-            {
-              required: this.isRequired, message: this.$t('db.text_30'),
-            },
-            {
-              validator: (rule, value, _callback) => {
-                if (!this.providerList || this.providerList.length === 0) {
-                  return _callback(new Error(this.$t('db.text_31')))
-                }
-                _callback()
-              },
-            }],
-        }],
-      }
     },
     providerParams () {
       const params = {
@@ -127,11 +113,8 @@ export default {
         return true
       })
       this.providerList = _list
-      this.form.fc.validateFields(['provider'])
-      if (this.providerList.length === 0) {
-        this.form.setFieldsValue({
-          sku: undefined,
-        })
+      if (this.providerList.length === 0 && this.model) {
+        this.model.sku = undefined
       }
       return _list
     },

@@ -2,16 +2,18 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{ $t('cloudenv.aksk.add') }}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc"
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
         v-bind="formItemLayout">
-        <a-form-item :label="$t('cloudenv.text_327')">
+        <a-form-model-item :label="$t('cloudenv.text_327')" prop="name">
           <a-textarea
-            v-decorator="decorators.name"
+            v-model:value="form.name"
             :placeholder="$t('cloudenv.aksk.placeholder')"
             :auto-size="{ minRows: 3, maxRows: 5 }" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -30,18 +32,12 @@ export default {
   data () {
     return {
       loading: false,
-      userLoading: false,
       form: {
-        fc: this.$form.createForm(this),
+        name: '',
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            rules: [
-              { required: false, message: this.$t('common_367') },
-            ],
-          },
+          { required: false, message: this.$t('common_367') },
         ],
       },
       formItemLayout: {
@@ -58,14 +54,14 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
+        await this.$refs.formRef.validate()
         const manager = new this.$Manager('cloudusers')
-        const values = await this.form.fc.validateFields()
         const res = await manager.performAction({
           id: this.params.cloudaccountId,
           action: 'create-access-key',
           data: {
             id: this.params.cloudaccountId,
-            name: values.name,
+            name: this.form.name,
           },
         })
         this.cancelDialog()

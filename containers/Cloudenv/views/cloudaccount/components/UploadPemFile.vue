@@ -1,12 +1,12 @@
 <template>
  <div>
-   <a-form-item :label="$t('cloudenv.private_key')">
+   <a-form-model-item :label="$t('cloudenv.private_key')">
     <a-radio-group @change="handleTypeChange" v-model:value="type">
         <a-radio-button :value="1">{{ $t('cloudenv.private_key.upload_certificate') }}</a-radio-button>
         <a-radio-button :value="2">{{ $t('cloudenv.private_key.text_input') }}</a-radio-button>
       </a-radio-group>
-   </a-form-item>
-   <a-form-item :label="$t('cloudenv.text_116')" v-if="type === 1" class="pem-file-upload">
+   </a-form-model-item>
+   <a-form-model-item :label="$t('cloudenv.text_116')" v-if="type === 1" class="pem-file-upload" prop="oracle_private_pem">
     <a-upload-dragger
       v-bind="uploadDraggerConfig"
       :beforeUpload="handleBeforeUpload"
@@ -20,11 +20,11 @@
         <p class="ant-upload-hint">{{ $t('cloudenv.private_key.upload_pem_file') }}</p>
       </div>
     </a-upload-dragger>
-    <a-input v-show="false" v-decorator="decorators.oracle_private_pem" type="text" />
-  </a-form-item>
-  <a-form-item :label="$t('cloudenv.text_116')" v-else class="pem-file-upload">
+    <a-input v-show="false" v-model:value="form.oracle_private_pem" type="text" />
+  </a-form-model-item>
+  <a-form-model-item :label="$t('cloudenv.text_116')" v-else class="pem-file-upload" prop="oracle_private_key">
     <slot />
-  </a-form-item>
+  </a-form-model-item>
  </div>
 </template>
 
@@ -32,11 +32,9 @@
 export default {
   name: 'ObjectsUploadPemFileDialog',
   props: {
-    decorators: {
+    form: {
       type: Object,
-    },
-    fc: {
-      type: Object,
+      required: true,
     },
   },
   data () {
@@ -66,7 +64,8 @@ export default {
     },
     setValues (val) {
       if (!val || val === '') return false
-      this.fc.setFieldsValue({ oracle_private_pem: val })
+      this.form.oracle_private_pem = val
+      this.form.oracle_private_key = val
     },
     handleBeforeUpload (file) {
       const isPem = file.name.endsWith('.pem')
@@ -87,7 +86,8 @@ export default {
     },
     hanldeRemoveFile () {
       this.fileList = []
-      this.fc.setFieldsValue({ oracle_private_pem: '' })
+      this.form.oracle_private_pem = ''
+      this.form.oracle_private_key = ''
       return true
     },
   },

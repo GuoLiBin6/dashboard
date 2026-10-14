@@ -2,30 +2,27 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('compute.text_247')}}</div>
     <div slot="body">
-      <a-form v-bind="formItemLayout" :form="form.fc">
-        <a-form-item :label="$t('compute.text_228')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.name" :placeholder="$t('compute.text_627')" />
-        </a-form-item>
-        <!-- <a-form-item :label="$t('common.text00076')" v-bind="formItemLayout">
-          <a-radio-group v-decorator="decorators.protected">
-            <a-radio-button value="true">{{$t('compute.text_656')}}</a-radio-button>
-            <a-radio-button value="false">{{$t('compute.text_569')}}</a-radio-button>
-          </a-radio-group>
-        </a-form-item>-->
-        <a-form-item :label="$t('compute.text_1365')">
-          <os-arch v-on:change="osArchChangeHandle" v-decorator="decorators.os_arch" :form="form" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_267')" v-bind="formItemLayout" v-if="!$route.path.includes('app-package')">
-          <a-radio-group @change="osTypeChangeHandle" v-decorator="decorators.osType">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.text_228')" v-bind="formItemLayout" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('compute.text_627')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_1365')">
+          <os-arch
+            :value="form.os_arch"
+            @change="osArchChangeHandle"
+            :form="form" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_267')" v-bind="formItemLayout" v-if="!$route.path.includes('app-package')" prop="osType">
+          <a-radio-group @change="osTypeChangeHandle" v-model:value="form.osType">
             <a-radio-button value="Linux">Linux</a-radio-button>
             <a-radio-button value="Windows">Windows</a-radio-button>
             <a-radio-button value="Other">{{$t('compute.text_151')}}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_657')" v-bind="formItemLayout" v-if="!$route.path.includes('app-package')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_657')" v-bind="formItemLayout" v-if="!$route.path.includes('app-package')" prop="osDistribution">
           <a-select
             :placeholder="$t('compute.text_658')"
-            v-decorator="decorators.osDistribution"
+            v-model:value="form.osDistribution"
             @change="osDistributionChange">
             <a-select-option
               v-for="item in osNewDisOptions"
@@ -34,69 +31,70 @@
           </a-select>
           <a-input
             v-if="isDisOther"
-            v-decorator="decorators.osOtherDistribution"
+            v-model:value="form.osOtherDistribution"
             :placeholder="$t('compute.text_659')" />
-        </a-form-item>
-        <a-form-item
+        </a-form-model-item>
+        <a-form-model-item
           :label="$t('compute.text_633')"
           :extra="$t('compute.image.min_disk.extra')"
           v-bind="formItemLayout"
-          v-if="!isHostImage">
+          v-if="!isHostImage"
+          prop="minDisk">
           <div class="d-flex align-items-center">
             <a-input-number
               :min="1"
               :max="1000"
               :step="50"
               :precision="0"
-              v-decorator="decorators.minDisk" />
+              v-model:value="form.minDisk" />
             <span class="ml-2">GB</span>
           </div>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_634')" v-bind="formItemLayout">
-          <a-radio-group v-decorator="decorators.diskDriver">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_634')" v-bind="formItemLayout" prop="diskDriver">
+          <a-radio-group v-model:value="form.diskDriver">
             <a-radio-button
               v-for="(item, index) in diskDriverOptions"
               :value="item.value"
               :key="index">{{item.text}}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_635')" v-bind="formItemLayout">
-          <a-radio-group v-decorator="decorators.netDriver">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_635')" v-bind="formItemLayout" prop="netDriver">
+          <a-radio-group v-model:value="form.netDriver">
             <a-radio-button
               v-for="(item, index) in netDriverOptions"
               :value="item.value"
               :key="index">{{item.text}}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_1155')">
-          <a-radio-group v-decorator="decorators.bios">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_1155')" prop="bios">
+          <a-radio-group v-model:value="form.bios">
             <a-radio-button
               v-for="(item, index) in biosOptions"
               :value="item.value"
               :key="index"
               :disabled="isArm && item.value==='BIOS'">{{item.text}}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('compute.vdi_protocol')">
-          <a-radio-group v-decorator="decorators.vdi">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.vdi_protocol')" prop="vdi">
+          <a-radio-group v-model:value="form.vdi">
             <a-radio-button
               v-for="(item, index) in vdiOptions"
               :value="item.value"
               :key="index">{{item.text}}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('compute.machine')" v-bind="formItemLayout">
-          <a-radio-group v-decorator="decorators.machine_type">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.machine')" v-bind="formItemLayout" prop="machine_type">
+          <a-radio-group v-model:value="form.machine_type">
             <a-radio-button
               v-for="(item, index) in machineTypeOptions"
               :value="item.value"
               :key="index">{{item.text}}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('compute.usb_kbd')" v-bind="formItemLayout">
-          <a-switch v-decorator="decorators.disable_usb_kbd" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.usb_kbd')" v-bind="formItemLayout" prop="disable_usb_kbd">
+          <a-switch v-model:checked="form.disable_usb_kbd" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -139,84 +137,24 @@ export default {
       isArm: isArm,
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        name: this.params.data[0].name,
+        osType: 'Linux',
+        osDistribution: 'CentOS',
+        osOtherDistribution: undefined,
+        minDisk: 1,
+        diskDriver: undefined,
+        netDriver: undefined,
+        os_arch,
+        bios,
+        vdi: 'vnc',
+        machine_type: '',
+        disable_usb_kbd: false,
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            initialValue: this.params.data[0].name,
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_660') },
-              { validator: this.$validate('imageName') },
-              { validator: this.checkTemplateName },
-            ],
-          },
-        ],
-        protected: [
-          'protected',
-          {
-            initialValue: 'true',
-          },
-        ],
-        osType: [
-          'osType',
-          {
-            initialValue: 'Linux',
-          },
-        ],
-        osDistribution: [
-          'osDistribution',
-          {
-            initialValue: 'CentOS',
-          },
-        ],
-        osOtherDistribution: [
-          'osOtherDistribution',
-        ],
-        minDisk: [
-          'minDisk',
-          {
-            initialValue: 1,
-          },
-        ],
-        diskDriver: [
-          'diskDriver',
-        ],
-        netDriver: [
-          'netDriver',
-        ],
-        os_arch: [
-          'os_arch',
-          {
-            initialValue: os_arch,
-          },
-        ],
-        bios: [
-          'bios',
-          {
-            initialValue: bios,
-          },
-        ],
-        vdi: [
-          'vdi',
-          {
-            initialValue: 'vnc',
-          },
-        ],
-        machine_type: [
-          'machine_type',
-          {
-            initialValue: '',
-          },
-        ],
-        disable_usb_kbd: [
-          'disable_usb_kbd',
-          {
-            initialValue: false,
-            valuePropName: 'checked',
-          },
+          { required: true, message: this.$t('compute.text_660') },
+          { validator: this.$validate('imageName') },
+          { validator: this.checkTemplateName },
         ],
       },
       formItemLayout: {
@@ -335,10 +273,9 @@ export default {
           this.initName = name
           this.initMinDisk = minDisk
           this.$nextTick(() => {
-            this.form.fc.setFieldsValue({
+            Object.assign(this.form, {
               name,
               minDisk: Math.round(minDisk / 1024),
-              protected: res.data.protected + '',
               osType,
               osDistribution,
               diskDriver: diskDriver || '',
@@ -378,19 +315,20 @@ export default {
       })
     },
     osArchChangeHandle (e) {
+      this.form.os_arch = e
       this.isArm = (e === HOST_CPU_ARCHS.arm.key)
       this.$nextTick(() => {
-        this.form.fc.setFieldsValue({ bios: 'UEFI' })
+        this.form.bios = 'UEFI'
       })
     },
     osTypeChangeHandle (e) {
       const v = e.target.value
       this.osNewDisOptions = this.osDistributionOptions[v]
       if (v === 'Other') {
-        this.form.fc.setFieldsValue({ osDistribution: 'Other' })
+        this.form.osDistribution = 'Other'
         this.isDisOther = true
       } else {
-        this.form.fc.setFieldsValue({ osDistribution: this.osNewDisOptions[0].value })
+        this.form.osDistribution = this.osNewDisOptions[0].value
         this.isDisOther = false
         this.osDistributionChange(this.osNewDisOptions[0].value)
       }
@@ -405,8 +343,8 @@ export default {
           if (e === 'Windows 11') {
             minDisk = 60
           }
-          if (this.form.fc.getFieldValue('minDisk') < minDisk) {
-            this.form.fc.setFieldsValue({ minDisk: minDisk })
+          if (this.form.minDisk < minDisk) {
+            this.form.minDisk = minDisk
           }
         }
       }
@@ -420,11 +358,10 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        const { name, osType, osDistribution, osOtherDistribution, minDisk, diskDriver, netDriver, os_arch, bios, vdi, machine_type, disable_usb_kbd } = values
+        await this.$refs.formRef.validate()
+        const { name, osType, osDistribution, osOtherDistribution, minDisk, diskDriver, netDriver, os_arch, bios, vdi, machine_type, disable_usb_kbd } = this.form
         const params = {
           name,
-          // protected: values.protected,
           os_arch,
           properties: {
             os_type: osType,
@@ -439,7 +376,7 @@ export default {
         }
         if (!this.isHostImage) {
           params['min-disk'] = minDisk * 1024
-          if (params['min-disk'] === 0) { // 说明上传了一个小于1G的镜像,被四舍五入成0了，要取源数据
+          if (params['min-disk'] === 0) {
             params['min-disk'] = this.initMinDisk
           }
         }
@@ -454,12 +391,12 @@ export default {
           params.properties.bios_support = 'true'
         }
         await this.doEdit(params)
-        this.loading = false
         this.cancelDialog()
         this.params.refresh()
       } catch (error) {
-        this.loading = false
         throw error
+      } finally {
+        this.loading = false
       }
     },
   },

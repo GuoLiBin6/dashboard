@@ -227,7 +227,7 @@
   "compute.text_218": "请输入ip",
   "compute.text_219": "请选择",
   "compute.text_220": "请输入模板名称",
-  "compute.text_221": "FE：创建虚拟机未声明decorator {0}",
+  "compute.text_221": "FE：创建虚拟机未声明字段元数据 {0}",
   "compute.text_222": "{0} 台宿主机被 {1} 标签过滤",
   "compute.text_223": "{0} 台 {1}",
   "compute.text_224": "{0} 台宿主机被 {1} 原因过滤",

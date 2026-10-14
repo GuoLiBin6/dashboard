@@ -3,7 +3,7 @@
     <div class="dashboard-card-wrap" :style="wrapStyle">
       <div class="dashboard-card-header" style="margin-bottom:0">
         <div class="dashboard-card-header-left">
-          <span :style="headerStyle">{{ form.fd.name || $t('dashboard.title_bar') }}</span>
+          <span :style="headerStyle">{{ fd.name || $t('dashboard.title_bar') }}</span>
           <icon class="ml-2" type="loading" v-if="loading" /></div>
         <div class="dashboard-card-header-right">
           <slot name="actions" :handle-edit="handleEdit" />
@@ -14,28 +14,26 @@
       </div>
     </div>
     <base-drawer v-model:visible="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit" @cancel="handleCancel">
-      <a-form
-        :form="form.fc"
-        v-bind="formItemLayout">
-        <a-form-item :label="$t('dashboard.text_6')">
-          <a-input v-decorator="decorators.name" />
-        </a-form-item>
-        <a-form-item :label="$t('dashboard.explain')">
-          <a-input v-decorator="decorators.desc" />
-        </a-form-item>
-        <a-form-item :label="$t('dashboard.background')">
+      <a-form-model ref="formRef" :model="fd" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('dashboard.text_6')" prop="name">
+          <a-input v-model:value="fd.name" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('dashboard.explain')" prop="desc">
+          <a-input v-model:value="fd.desc" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('dashboard.background')">
           <div class="d-flex flex-wrap" style="line-height: 30px">
             <a-tooltip class="color-item" v-for="(item, index) in colorList" :key="index">
               <template slot="title">
                 {{ item.key }}
               </template>
               <a-tag :color="item.color" @click="changeColor(item.color)" :style="item.color === '#FFFFFF' ? {border:'solid #ccc 1px'} : {}">
-                <icon type="check" v-if="item.color === form.fd.color" :style="item.color === '#FFFFFF' ? {color:'#333'} : {}" />
+                <icon type="check" v-if="item.color === fd.color" :style="item.color === '#FFFFFF' ? {color:'#333'} : {}" />
               </a-tag>
             </a-tooltip>
           </div>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </base-drawer>
   </div>
 </template>
@@ -66,35 +64,14 @@ export default {
       data: [],
       visible: false,
       loading: false,
-      form: {
-        fc: this.$form.createForm(this),
-        fd: {
-          name: initialNameValue,
-          desc: initialDesc,
-          color: initialColor,
-        },
+      fd: {
+        name: initialNameValue,
+        desc: initialDesc,
+        color: initialColor,
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            initialValue: initialNameValue,
-            rules: [
-              { required: true, message: this.$t('dashboard.text_8') },
-            ],
-          },
-        ],
-        desc: [
-          'desc',
-          {
-            initialValue: initialDesc,
-          },
-        ],
-        color: [
-          'color',
-          {
-            initialValue: initialColor,
-          },
+          { required: true, message: this.$t('dashboard.text_8') },
         ],
       },
       formItemLayout: {
@@ -117,7 +94,7 @@ export default {
   computed: {
     ...mapGetters(['scope', 'userInfo']),
     desc () {
-      return this.form.fd.desc
+      return this.fd.desc
     },
     bgColor () {
       return (this.params && this.params.color) || '#FFFFFF'
@@ -152,29 +129,17 @@ export default {
       return {}
     },
   },
-  watch: {
-    'form.fd' (val) {
-      for (const key in this.decorators) {
-        let config = this.decorators[key][1] || {}
-        config = {
-          ...config,
-          initialValue: val[key],
-        }
-        this.decorators[key][1] = config
-      }
-    },
-  },
   unmounted () {
     this.manager = null
   },
   created () {
     this.$emit('update', this.options.i, {
-      ...this.form.fd,
+      ...this.fd,
     })
   },
   methods: {
     changeColor (color) {
-      this.form.fd.color = color
+      this.fd.color = color
     },
     refresh () {
       return function () {}
@@ -184,16 +149,15 @@ export default {
     },
     async handleSubmit () {
       try {
-        const values = await this.form.fc.validateFields()
-        this.form.fd = { ...values, color: this.form.fd.color }
-        this.$emit('update', this.options.i, { ...values, color: this.form.fd.color })
+        await this.$refs.formRef.validate()
+        this.$emit('update', this.options.i, { ...this.fd })
         this.visible = false
       } catch (error) {
         throw error
       }
     },
     handleCancel () {
-      this.form.fd.color = (this.params && this.params.color) || '#fff'
+      this.fd.color = (this.params && this.params.color) || '#fff'
     },
   },
 }

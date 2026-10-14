@@ -1,89 +1,100 @@
 <template>
   <div>
     <page-header :title="$t('k8s.text_307')" />
-    <a-form
+    <a-form-model
+      ref="formRef"
       class="mt-3"
-      :form="form.fc">
-      <a-form-item
+      :model="form"
+      :rules="rules">
+      <a-form-model-item
         :label="$t('k8s.text_348')"
-        v-bind="formItemLayout">
-        <a-radio-group v-decorator="decorators.storageType">
+        v-bind="formItemLayout"
+        prop="storageType">
+        <a-radio-group v-model:value="form.storageType">
           <a-radio-button value="cephCSI">
             Ceph RBD
           </a-radio-button>
         </a-radio-group>
-      </a-form-item>
-      <a-form-item
+      </a-form-model-item>
+      <a-form-model-item
         :label="$t('k8s.text_41')"
-        v-bind="formItemLayout">
-        <a-input v-decorator="decorators.name" :placeholder="$t('k8s.text_60')" />
-      </a-form-item>
-      <a-form-item
+        v-bind="formItemLayout"
+        prop="name">
+        <a-input v-model:value="form.name" :placeholder="$t('k8s.text_60')" />
+      </a-form-model-item>
+      <a-form-model-item
         :label="$t('k8s.text_19')"
-        v-bind="formItemLayout">
+        v-bind="formItemLayout"
+        prop="cluster">
         <cluster-select
-          v-decorator="decorators.cluster"
-          @input="setCluster"
+          v-model="form.cluster"
+          @input="onClusterInput"
           style="width: 140px;" />
-      </a-form-item>
-      <a-form-item
+      </a-form-model-item>
+      <a-form-model-item
         :label="$t('k8s.text_18')"
         class="mb-0"
         required
         v-bind="formItemLayout">
         <a-row :gutter="8">
           <a-col :span="12">
-            <a-form-item>
+            <a-form-model-item prop="secretNamespace" :wrapperCol="{ span: 24 }">
               <namespace-select
                 size="small"
-                v-decorator="decorators.secretNamespace"
-                :cluster="cluster"
-                @change="secretNamespaceChange" />
-            </a-form-item>
+                v-model="form.secretNamespace"
+                @change="onSecretNamespaceChange"
+                :cluster="form.cluster" />
+            </a-form-model-item>
           </a-col>
           <a-col :span="12">
-            <a-form-item>
+            <a-form-model-item prop="secretName" :wrapperCol="{ span: 24 }">
               <base-select
                 resource="secrets"
-                v-decorator="decorators.secretName"
+                v-model="form.secretName"
                 :params="secretsParams"
                 version="v1"
                 :need-params="true"
                 filterable
                 showSync
-                :placeholder="$t('k8s.text_349')" />
-              <div slot="extra">{{$t('k8s.text_306')}} <help-link class="pl-1" slot="extra" :href="`/k8s-secret/create?storageType=${form.fc.getFieldValue('storageType')}`">{{$t('k8s.text_350')}}</help-link></div>
-            </a-form-item>
+                :placeholder="$t('k8s.text_349')"
+                @change="fetchPoolOpts" />
+              <template #extra>
+                {{$t('k8s.text_306')}} <help-link class="pl-1" :href="`/k8s-secret/create?storageType=${form.storageType}`">{{$t('k8s.text_350')}}</help-link>
+              </template>
+            </a-form-model-item>
           </a-col>
         </a-row>
-      </a-form-item>
-      <a-form-item
+      </a-form-model-item>
+      <a-form-model-item
         :label="$t('k8s.text_351')"
-        v-bind="formItemLayout">
-        <a-select v-decorator="decorators.clusterId" :placeholder="$t('k8s.text_77')">
+        v-bind="formItemLayout"
+        prop="clusterId">
+        <a-select v-model:value="form.clusterId" :placeholder="$t('k8s.text_77')" @change="fetchPoolOpts">
           <a-select-option v-for="item in cephcsiOpts" :value="item.clusterId" :key="item.clusterId">{{item.clusterId}}</a-select-option>
         </a-select>
-      </a-form-item>
-      <a-form-item
+      </a-form-model-item>
+      <a-form-model-item
         label="Pool"
-        v-bind="formItemLayout">
-        <a-select v-decorator="decorators.pool" :placeholder="$t('k8s.text_352')">
+        v-bind="formItemLayout"
+        prop="pool">
+        <a-select v-model:value="form.pool" :placeholder="$t('k8s.text_352')">
           <a-select-option v-for="item in poolOpts" :value="item" :key="item">{{item}}</a-select-option>
         </a-select>
-      </a-form-item>
-      <a-form-item
+      </a-form-model-item>
+      <a-form-model-item
         :label="$t('k8s.text_353')"
-        v-bind="formItemLayout">
-        <a-select v-decorator="decorators.csiFsType">
+        v-bind="formItemLayout"
+        prop="csiFsType">
+        <a-select v-model:value="form.csiFsType">
           <a-select-option value="ext4">ext4</a-select-option>
           <a-select-option value="xfs">xfs</a-select-option>
         </a-select>
-      </a-form-item>
-      <a-form-item :wrapper-col="{ span: 20, offset: 3 }">
+      </a-form-model-item>
+      <a-form-model-item :wrapper-col="{ span: 20, offset: 3 }">
         <a-button class="mr-2" type="primary" @click="handleConfirm" :loading="loading">{{$t('common.create')}}</a-button>
         <a-button @click="cancel">{{$t('k8s.text_162')}}</a-button>
-      </a-form-item>
-    </a-form>
+      </a-form-model-item>
+    </a-form-model>
     <base-dialog v-if="showCreateCephCSI" @cancel="() => showCreateCephCSI = false">
       <div slot="header">{{$t('k8s.text_354')}}</div>
       <div slot="body">{{$t('k8s.text_355')}}</div>
@@ -113,82 +124,33 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            if (values.cluster) {
-              this.form.fd.cluster = values.cluster
-            }
-            this.$nextTick(() => {
-              this.fetchPoolOpts()
-            })
-          },
-        }),
-        fd: {
-          cluster: initCluster,
-        },
+        storageType: 'cephCSI',
+        name: undefined,
+        cluster: initCluster,
+        secretNamespace: undefined,
+        secretName: undefined,
+        clusterId: undefined,
+        pool: undefined,
+        csiFsType: 'ext4',
       },
-      decorators: {
-        storageType: [
-          'storageType',
-          {
-            initialValue: 'cephCSI',
-          },
-        ],
+      rules: {
         name: [
-          'name',
-          {
-            validateTrigger: 'blur',
-            rules: [
-              { required: true, message: this.$t('k8s.text_60') },
-            ],
-          },
+          { required: true, message: this.$t('k8s.text_60') },
         ],
         cluster: [
-          'cluster',
-          {
-            initialValue: initCluster,
-            rules: [
-              { required: true, message: this.$t('k8s.text_30') },
-            ],
-          },
+          { required: true, message: this.$t('k8s.text_30') },
         ],
         secretNamespace: [
-          'secretNamespace',
-          {
-            rules: [
-              { required: true, message: this.$t('k8s.text_61') },
-            ],
-          },
+          { required: true, message: this.$t('k8s.text_61') },
         ],
         secretName: [
-          'secretName',
-          {
-            rules: [
-              { required: true, message: this.$t('k8s.text_349') },
-            ],
-          },
+          { required: true, message: this.$t('k8s.text_349') },
         ],
         clusterId: [
-          'clusterId',
-          {
-            rules: [
-              { required: true, message: this.$t('k8s.text_356') },
-            ],
-          },
+          { required: true, message: this.$t('k8s.text_356') },
         ],
         pool: [
-          'pool',
-          {
-            rules: [
-              { required: true, message: this.$t('k8s.text_357') },
-            ],
-          },
-        ],
-        csiFsType: [
-          'csiFsType',
-          {
-            initialValue: 'ext4',
-          },
+          { required: true, message: this.$t('k8s.text_357') },
         ],
       },
       formItemLayout: {
@@ -204,11 +166,11 @@ export default {
   computed: {
     ...mapGetters(['userInfo', 'scope', 'isAdminMode']),
     secretsParams () {
-      if (this.secretNamespace && this.cluster) {
+      if (this.secretNamespace && this.form.cluster) {
         return {
           type: 'yunion.io/ceph-csi',
           namespace: this.secretNamespace,
-          cluster: this.cluster,
+          cluster: this.form.cluster,
           limit: 0,
         }
       }
@@ -216,17 +178,27 @@ export default {
     },
   },
   watch: {
-    'form.fd.cluster': {
+    'form.cluster': {
       handler (val) {
         if (val) {
           this.fetchCephcsiOpts(val)
           this.fetchClusterStatus(val)
+          this.fetchPoolOpts()
         }
       },
       immediate: true,
     },
   },
   methods: {
+    onClusterInput (v) {
+      this.form.cluster = v
+      this.setCluster(v)
+    },
+    onSecretNamespaceChange (e) {
+      this.form.secretNamespace = e
+      this.secretNamespaceChange(e)
+      this.fetchPoolOpts()
+    },
     async fetchClusterStatus (cluster) {
       const { data } = await new this.$Manager('kubeclusters', 'v1').get({
         id: `${cluster}/components-status`,
@@ -238,12 +210,12 @@ export default {
         path: '/k8s-kubecomponent/create',
         query: {
           kubeComponent: 'cephCSI',
-          cluster: this.cluster,
+          cluster: this.form.cluster,
         },
       })
     },
     async fetchPoolOpts () {
-      const { clusterId, secretName, secretNamespace, cluster } = this.form.fc.getFieldsValue(['clusterId', 'secretName', 'secretNamespace', 'cluster'])
+      const { clusterId, secretName, secretNamespace, cluster } = this.form
       if (clusterId && secretName && secretNamespace && cluster) {
         const params = {
           cephCSIRBD: {
@@ -261,10 +233,7 @@ export default {
         })
         if (data && data.cephCSIRBD && data.cephCSIRBD.pools) {
           this.poolOpts = data.cephCSIRBD.pools
-          this.form.fc.getFieldDecorator('pool', {
-            preserve: true,
-            initialValue: data.cephCSIRBD.pools[0],
-          })
+          this.form.pool = data.cephCSIRBD.pools[0]
         }
       }
     },
@@ -276,19 +245,12 @@ export default {
       if (data && data.cephCSI && data.cephCSI.config) {
         this.cephcsiOpts = data.cephCSI.config
         if (this.cephcsiOpts.length) {
-          this.form.fc.getFieldDecorator('clusterId', {
-            preserve: true,
-            initialValue: this.cephcsiOpts[0].clusterId,
-          })
+          this.form.clusterId = this.cephcsiOpts[0].clusterId
         }
       }
     },
     secretNamespaceChange (e) {
       this.secretNamespace = e
-    },
-    toCreateCluster () {
-      this.$router.push('/k8s-cluster/create')
-      window.open(`${this.$router.resolve('/k8s-cluster/create').href}`)
     },
     doCreate (values) {
       const data = {
@@ -309,8 +271,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        await this.doCreate(values)
+        await this.$refs.formRef.validate()
+        await this.doCreate(this.form)
         this.loading = false
         this.$message.success(this.$t('k8s.text_184'))
         this.$router.push('/k8s-storageclass')

@@ -1,18 +1,18 @@
 <template>
   <div>
     <a-form-item :label="$t('db.text_131')" v-bind="formItemLayout">
-      <a-radio-group v-decorator="['vcpu_count']" @change="onCpuChange">
+      <a-radio-group :value="fieldVal(vcpuDec)" @change="e => { fieldSet(vcpuDec, e.target.value); onCpuChange(e) }">
         <a-radio-button :key="cpu" :value="cpu" v-for="cpu in cpus">{{$t('db.text_125', [cpu])}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
     <a-form-item :label="$t('db.text_132')" v-bind="formItemLayout">
-      <a-radio-group v-decorator="['vmem_size_mb']" @change="onMemChange">
+      <a-radio-group :value="fieldVal(vmemDec)" @change="e => { fieldSet(vmemDec, e.target.value); onMemChange(e) }">
         <a-radio-button :key="size" :value="size" v-for="size in mems_mbs">{{sizestr(size, 'M', 1024)}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
     <a-form-item :label="$t('db.text_133')" v-bind="formItemLayout" v-if="form.fd.provider !== 'Aws'">
       <slot name="zone" v-if="$slots.zone" />
-      <a-radio-group v-else v-decorator="['zones']" @change="onZoneChange">
+      <a-radio-group v-else :value="fieldVal(zonesDec)" @change="e => { fieldSet(zonesDec, e.target.value); onZoneChange(e) }">
         <a-radio-button :key="id" :value="id" v-for="(zone, id) of zones">{{zone}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
@@ -20,6 +20,7 @@
 </template>
 <script>
 import { sizestr } from '@/utils/utils'
+import { resolveFieldMeta } from '@/utils/common/ant'
 
 /**
  * 约定：specs 拉取后 options 变化时按草稿回填；落盘由页面 flush（selection）。
@@ -39,18 +40,45 @@ export default {
   },
   data () {
     return {
+      vcpuDec: { name: 'vcpu_count' },
+      vmemDec: { name: 'vmem_size_mb' },
+      zonesDec: { name: 'zones' },
       cpus: [],
       mems_mbs: [],
       zones: {},
       cpu_mems_mb: {},
     }
   },
+  computed: {
+    boundFd () {
+      return this.form?.fd || this.form
+    },
+  },
   created () {
     this._fetchSpecsSeq = 0
     this._ignoreChange = false
+    ;[this.vcpuDec, this.vmemDec, this.zonesDec].forEach(fieldDef => {
+      const name = resolveFieldMeta(fieldDef)?.name
+      if (this.form?.fd && this.form.fd[name] === undefined) {
+        this.$set(this.form.fd, name, undefined)
+      }
+    })
   },
   methods: {
     sizestr,
+    fieldVal (decoratorTuple) {
+      const meta = resolveFieldMeta(decoratorTuple)
+      if (!meta) return undefined
+      const { name, ...opts } = meta
+      if (this.form?.fd && this.form.fd[name] !== undefined) return this.form.fd[name]
+      return opts.initialValue
+    },
+    fieldSet (decoratorTuple, value) {
+      const meta = resolveFieldMeta(decoratorTuple)
+      if (!meta) return
+      const { name } = meta
+      if (this.form?.fd) this.$set(this.form.fd, name, value)
+    },
     normalizeDraftScalar (val) {
       if (val == null || val === '') return val
       if (typeof val === 'object') {
@@ -81,21 +109,13 @@ export default {
     },
     setFieldQuiet (fields, callback) {
       this._ignoreChange = true
-      const setter = (this.form && this.form.fc && this.form.fc.setFieldsValue) ||
-        (this.form && this.form.setFieldsValue)
-      if (!setter) {
+      Object.keys(fields || {}).forEach((k) => {
+        if (this.form.fd) this.$set(this.form.fd, k, fields[k])
+        else this.$set(this.form, k, fields[k])
+      })
+      this.$nextTick(() => {
         this._ignoreChange = false
         callback && callback()
-        return
-      }
-      setter.call(this.form.fc || this.form, fields, () => {
-        Object.keys(fields || {}).forEach((k) => {
-          if (this.form.fd) this.form.fd[k] = fields[k]
-        })
-        this.$nextTick(() => {
-          this._ignoreChange = false
-          callback && callback()
-        })
       })
     },
     onCpuChange (e) {
@@ -122,7 +142,7 @@ export default {
     },
     /** mem options 变化后回填 */
     applyMemFromOptions (cpuVal) {
-      const cpu = cpuVal != null ? cpuVal : this.form.getFieldValue('vcpu_count')
+      const cpu = cpuVal != null ? cpuVal : this.form.fd.vcpu_count
       const memList = this.cpu_mems_mb[cpu] || this.cpu_mems_mb[String(cpu)] || []
       this.mems_mbs = Array.isArray(memList) ? memList : []
       const mem = this.pickFromOptions(this.mems_mbs, this.readDraft('vmem_size_mb'))
@@ -143,7 +163,7 @@ export default {
         callback && callback()
         return
       }
-      const cur = this.form.getFieldValue('zones')
+      const cur = this.form.fd.zones
       if (cur === zone || String(cur) === String(zone)) {
         callback && callback()
         return
@@ -152,7 +172,7 @@ export default {
     },
     getMemsMb (e) {
       const target = e && e.target ? e.target : {}
-      const cpu = target.value || this.form.getFieldValue('vcpu_count')
+      const cpu = target.value || this.form.fd.vcpu_count
       const memList = this.cpu_mems_mb[cpu] || this.cpu_mems_mb[String(cpu)] || []
       this.mems_mbs = Array.isArray(memList) ? memList : []
       // 用户改 CPU 后：内存 options 变了，按草稿回填，否则第一项（不写草稿）
@@ -165,12 +185,11 @@ export default {
     },
     getSpecsParams (override) {
       const paramsKeys = ['provider', 'cloudregion', 'engine', 'engine_version', 'category', 'storage_type']
-      const fromFc = (this.form && this.form.getFieldsValue && this.form.getFieldsValue(paramsKeys)) || {}
       const fromFd = (this.form && this.form.fd) || {}
       const PARASM = { ...(override || {}) }
       paramsKeys.forEach((k) => {
         if (PARASM[k] != null && PARASM[k] !== '') return
-        const v = fromFc[k] != null && fromFc[k] !== '' ? fromFc[k] : fromFd[k]
+        const v = fromFd[k]
         if (v != null && v !== '') PARASM[k] = v
       })
       PARASM.cloudregion_id = PARASM.cloudregion

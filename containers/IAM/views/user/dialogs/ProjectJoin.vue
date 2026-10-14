@@ -2,29 +2,26 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{action}}</div>
     <div slot="body">
-      <!--a-alert :message="$t('system.text_508', [$t('dictionary.role')])" type="warning" class="mb-2" /-->
       <dialog-selected-tips :name="$t('dictionary.user')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc"
-        v-bind="formItemLayout">
-        <a-form-item :label="$t('dictionary.domain')" v-if="isAdminMode">
-          <a-radio-group v-decorator="decorators.domain" @change="domainChange" v-if="!l3PermissionEnable">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item v-if="isAdminMode" :label="$t('dictionary.domain')" prop="domain">
+          <a-radio-group v-if="!l3PermissionEnable" v-model:value="form.domain" @change="domainChange">
             <a-radio-button v-for="item in domainOptions" :value="item.key" :key="item.key">{{ item.label }}</a-radio-button>
           </a-radio-group>
           <base-select v-else
-            v-decorator="decorators.domain"
+            v-model:value="form.domain"
             version="v1"
             resource="domains"
             filterable
             :params="domainParams"
             :select-props="{ placeholder: $t('rules.project') }"
             @change="domainChange" />
-        </a-form-item>
-        <a-form-item :label="$t('dictionary.project')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('dictionary.project')" prop="projects">
           <base-select
             resource="projects"
-            v-decorator="decorators.projects"
+            v-model:value="form.projects"
             filterable
             remote
             :select-props="{placeholder: $t('rules.project'), mode: 'multiple'}"
@@ -33,11 +30,11 @@
               {{item.name}}
             </template>
           </base-select>
-        </a-form-item>
-        <a-form-item :label="$t('dictionary.role')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('dictionary.role')" prop="roles">
           <base-select
             resource="roles"
-            v-decorator="decorators.roles"
+            v-model:value="form.roles"
             filterable
             remote
             :select-props="{placeholder: $t('rules.role'), mode: 'multiple'}"
@@ -46,14 +43,14 @@
               {{item.name}}
             </template>
           </base-select>
-        </a-form-item>
-        <a-form-item v-if="isUserDisabled" :label="$t('iam.enabled_user')" v-bind="formItemLayout" :extra="$t('iam.user_can_enabled')">
+        </a-form-model-item>
+        <a-form-model-item v-if="isUserDisabled" :label="$t('iam.enabled_user')" :extra="$t('iam.user_can_enabled')" prop="enabled">
           <a-switch
             :checkedChildren="$t('common_292')"
             :unCheckedChildren="$t('common_293')"
-            v-decorator="decorators.enabled" />
-        </a-form-item>
-      </a-form>
+            v-model:checked="form.enabled" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -63,7 +60,6 @@
 </template>
 
 <script>
-// import get from 'lodash/get'
 import { mapGetters } from 'vuex'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
@@ -76,42 +72,19 @@ export default {
     return {
       action: this.$t('system.text_195', [this.$t('dictionary.project')]),
       loading: false,
-      projectList: [],
-      projectLoading: false,
-      roleList: [],
-      roleLoading: false,
-      form: {
-        fc: this.$form.createForm(this),
-      },
       domainId,
-      decorators: {
-        domain: [
-          'domain',
-          {
-            initialValue: domainId,
-          },
-        ],
+      form: {
+        domain: domainId,
+        projects: undefined,
+        roles: undefined,
+        enabled: false,
+      },
+      rules: {
         projects: [
-          'projects',
-          {
-            rules: [
-              { required: true, message: this.$t('rules.project') },
-            ],
-          },
+          { required: true, message: this.$t('rules.project') },
         ],
         roles: [
-          'roles',
-          {
-            rules: [
-              { required: true, message: this.$t('rules.role') },
-            ],
-          },
-        ],
-        enabled: [
-          'enabled',
-          {
-            initialValue: false,
-          },
+          { required: true, message: this.$t('rules.role') },
         ],
       },
       formItemLayout: {
@@ -160,6 +133,7 @@ export default {
   created () {
     if (!this.l3PermissionEnable) {
       this.domainId = 'default'
+      this.form.domain = 'default'
     }
   },
   methods: {
@@ -167,15 +141,15 @@ export default {
       this.loading = true
       const manager = new this.$Manager('users', 'v1')
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         await manager.performAction({
           id: this.params.data[0].id,
           action: 'join',
-          data: values,
+          data: this.form,
         })
         this.cancelDialog()
         this.$bus.$emit('UserSidepageProjectsListRefresh')
-        if (values.enabled) {
+        if (this.form.enabled) {
           this.$bus.$emit('RefreshUser', this.params.data[0].id)
         }
       } catch (error) {
@@ -184,7 +158,9 @@ export default {
       }
     },
     domainChange (val) {
-      this.domainId = val
+      const domain = val && val.target ? val.target.value : val
+      this.domainId = domain
+      this.form.domain = domain
     },
   },
 }

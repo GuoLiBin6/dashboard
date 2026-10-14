@@ -4,84 +4,81 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.cloudaccount')" :count="params.data.length" :action="$t('cloudenv.text_298')" />
       <dialog-table class="mb-2" :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc"
-         v-bind="formItemLayout">
-        <upload-json-file :fc="form.fc" v-if="isGoogle">
-          <a-form-item :label="field.label.k">
-            <a-textarea :autosize="{ minRows: 3, maxRows: 7 }" v-decorator="decorators.keyId" :placeholder="field.placeholder.k" />
-          </a-form-item>
-          <a-form-item :label="field.label.s">
-            <a-input-password v-decorator="decorators.keySecret" :placeholder="field.placeholder.s" type="password" />
-          </a-form-item>
-        </upload-json-file>
-        <div v-else>
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <template v-if="isGoogle">
+          <upload-json-file :form="form">
+            <a-form-model-item :label="field.label.k" :prop="credKey">
+              <a-textarea :autosize="{ minRows: 3, maxRows: 7 }" v-model:value="form[credKey]" :placeholder="field.placeholder.k" />
+            </a-form-model-item>
+            <a-form-model-item :label="field.label.s" :prop="credSecret">
+              <a-input-password v-model:value="form[credSecret]" :placeholder="field.placeholder.s" type="password" />
+            </a-form-model-item>
+          </upload-json-file>
+        </template>
+        <template v-else>
           <h2 class="mt-3 mb-3" v-if="isHcs">{{ $t('cloudenv.operation_info_input') }}</h2>
-          <a-form-item :label="field.label.k">
-            <a-input v-decorator="decorators.keyId" :placeholder="field.placeholder.k" />
-          </a-form-item>
-          <a-form-item :label="$t('cloudenv.text_300')" v-if="isAzure">
-            <a-input v-decorator="decorators.directory_id" :placeholder="$t('cloudenv.text_243')" />
+          <a-form-model-item :label="field.label.k" :prop="credKey">
+            <a-input v-model:value="form[credKey]" :placeholder="field.placeholder.k" />
+          </a-form-model-item>
+          <a-form-model-item :label="$t('cloudenv.text_300')" v-if="isAzure" prop="directory_id">
+            <a-input v-model:value="form.directory_id" :placeholder="$t('cloudenv.text_243')" />
             <div slot="extra" v-if="showDocsLink()">
               <help-link :href="doc">{{$t('cloudenv.text_301')}}</help-link>
             </div>
-          </a-form-item>
-          <a-form-item :label="field.label.s">
-            <a-input-password v-decorator="decorators.keySecret" :placeholder="field.placeholder.s" type="password" />
-          </a-form-item>
-          <!-- <template v-if="isVMware">
-            <a-form-item :label="$t('cloudenv.text_264')" :extra="this.$t('common_572')">
-              <a-input v-decorator="decorators.host" />
-            </a-form-item>
-            <a-form-item :label="$t('cloudenv.text_266')">
-              <a-input v-decorator="decorators.port" />
-            </a-form-item>
-          </template> -->
-         </div>
-        <!-- <a-form-item :label="$t('cloudenv.text_242')" v-if="isAzure">
-          <a-textarea v-decorator="decorators.balanceKey" rows="4" />
-        </a-form-item> -->
-        <a-form-item label="project_id" v-if="isUcloud">
-          <a-input v-decorator="decorators.ucloud_project_id" :placeholder="$t('cloudenv.text_247')" />
-        </a-form-item>
-        <a-form-item :label="$t('cloudenv.text_254')" v-if="isOpenStack">
-          <a-input v-decorator="decorators.project_name" :placeholder="$t('cloudenv.text_255')" />
-        </a-form-item>
-        <a-form-item :label="$t('cloudenv.text_304')" v-if="isOpenStack">
-          <a-select v-decorator="decorators.endpoint_type" :placeholder="$t('cloudenv.text_305')">
+          </a-form-model-item>
+          <a-form-model-item :label="field.label.s" :prop="credSecret">
+            <a-input-password v-model:value="form[credSecret]" :placeholder="field.placeholder.s" type="password" />
+          </a-form-model-item>
+        </template>
+        <a-form-model-item label="project_id" v-if="isUcloud" prop="ucloud_project_id">
+          <a-input v-model:value="form.ucloud_project_id" :placeholder="$t('cloudenv.text_247')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('cloudenv.text_254')" v-if="isOpenStack" prop="project_name">
+          <a-input v-model:value="form.project_name" :placeholder="$t('cloudenv.text_255')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('cloudenv.text_304')" v-if="isOpenStack" prop="endpoint_type">
+          <a-select v-model:value="form.endpoint_type" :placeholder="$t('cloudenv.text_305')">
             <a-select-option
               v-for="item in endpointTypeOpts"
               :key="item.key"
               :value="item.key">{{ item.label }}</a-select-option>
           </a-select>
-        </a-form-item>
+        </a-form-model-item>
         <template v-if="isHcs">
           <h2 class="mb-3">{{ $t('cloudenv.operation_and_maintenance_info_input') }}</h2>
-          <a-form-item :label="$t('cloudenv.text_94')">
-            <a-input v-decorator="decorators.options.account" :placeholder="$t('common.tips.input', [$t('cloudenv.text_94')])" />
-          </a-form-item>
-          <a-form-item :label="$t('cloudenv.text_147')">
-            <a-input-password v-decorator="decorators.options.password" :placeholder="$t('common.tips.input', [$t('cloudenv.text_147')])" />
-          </a-form-item>
+          <a-form-model-item :label="$t('cloudenv.text_94')" prop="options.account">
+            <a-input v-model:value="form.options.account" :placeholder="$t('common.tips.input', [$t('cloudenv.text_94')])" />
+          </a-form-model-item>
+          <a-form-model-item :label="$t('cloudenv.text_147')" prop="options.password">
+            <a-input-password v-model:value="form.options.password" :placeholder="$t('common.tips.input', [$t('cloudenv.text_147')])" />
+          </a-form-model-item>
         </template>
-        <upload-pem-file :fc="form.fc" :decorators="decorators" v-if="isOraclecloud">
-          <a-textarea
-            v-decorator="decorators.oracle_private_key"
-            :placeholder="$t('common.tips.input', [$t('cloudenv.private_key')])"
-            :auto-size="{ minRows: 6, maxRows: 8 }" />
-        </upload-pem-file>
+        <template v-if="isOraclecloud">
+          <upload-pem-file :form="form">
+            <a-form-model-item prop="oracle_private_key">
+              <a-textarea
+                v-model:value="form.oracle_private_key"
+                :placeholder="$t('common.tips.input', [$t('cloudenv.private_key')])"
+                :auto-size="{ minRows: 6, maxRows: 8 }" />
+            </a-form-model-item>
+          </upload-pem-file>
+        </template>
         <template v-if="isCephFS">
-          <a-form-item label="Name">
-            <a-input v-decorator="decorators.option_name" />
-          </a-form-item>
-          <a-form-item label="Mon Host" :extra="$t('cloudenv.mon_host_extra')">
-            <a-input v-decorator="decorators.mon_host" />
-          </a-form-item>
-          <a-form-item label="Secret">
-            <a-input-password v-decorator="decorators.secret" />
-          </a-form-item>
+          <a-form-model-item label="Name" prop="option_name">
+            <a-input v-model:value="form.option_name" />
+          </a-form-model-item>
+          <a-form-model-item label="Mon Host" prop="mon_host" :extra="$t('cloudenv.mon_host_extra')">
+            <a-input v-model:value="form.mon_host" />
+          </a-form-model-item>
+          <a-form-model-item label="Secret" prop="secret">
+            <a-input-password v-model:value="form.secret" />
+          </a-form-model-item>
         </template>
-      </a-form>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -109,133 +106,87 @@ export default {
   mixins: [DialogMixin, WindowsMixin],
   data () {
     const provider = this.params.data[0].brand.toLowerCase()
-    // const isVMware = provider === HYPERVISORS_MAP.esxi.provider.toLowerCase()
     const { options = {} } = this.params.data[0]
     const initMonHost = options.mon_host || ''
     const initName = options.name || ''
     const field = keySecretFields[provider] || {}
+    const credKey = field.k || 'access_key_id'
+    const credSecret = field.s || 'access_key_secret'
+    const form = {
+      [credKey]: undefined,
+      [credSecret]: '',
+      directory_id: '',
+      ucloud_project_id: '',
+      project_name: '',
+      endpoint_type: undefined,
+      oracle_private_pem: '',
+      oracle_private_key: '',
+      option_name: initName,
+      mon_host: initMonHost,
+      secret: '',
+      options: {
+        account: '',
+        password: '',
+      },
+    }
+    const rules = {
+      [credKey]: [
+        { required: true, message: field.placeholder?.k || this.$t('cloudenv.text_149') },
+      ],
+      [credSecret]: [
+        { required: true, message: field.placeholder?.s || this.$t('cloudenv.text_150') },
+      ],
+      directory_id: [
+        { required: true, message: this.$t('cloudenv.text_243') },
+      ],
+      project_name: [
+        { required: true, message: this.$t('cloudenv.text_308') },
+      ],
+      oracle_private_key: [
+        {
+          validator: (rule, value, callback) => {
+            if (value || form.oracle_private_pem) {
+              callback()
+            } else {
+              callback(new Error(this.$t('common.tips.input', [this.$t('cloudenv.private_key')])))
+            }
+          },
+        },
+      ],
+      oracle_private_pem: [
+        {
+          validator: (rule, value, callback) => {
+            if (value || form.oracle_private_key) {
+              callback()
+            } else {
+              callback(new Error(this.$t('cloudenv.private_pem_message')))
+            }
+          },
+        },
+      ],
+      mon_host: [
+        {
+          validator: (rule, value, callback) => {
+            if (!value) callback()
+            const list = value.split(',')
+            if (list.every(str => {
+              return regexp.isIPv4AndPort(str)
+            })) {
+              callback()
+            }
+            callback(new Error(this.$t('cloudenv.check_mon_host')))
+          },
+        },
+      ],
+    }
     return {
       showDocsLink,
       loading: false,
-      form: {
-        fc: this.$form.createForm(this),
-      },
       provider,
-      decorators: {
-        oracle_private_key: [
-          'oracle_private_key',
-          {
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('cloudenv.private_key')]) },
-            ],
-          },
-        ],
-        oracle_private_pem: [
-          'oracle_private_pem',
-          {
-            rules: [
-              { required: true, message: this.$t('cloudenv.private_pem_message') },
-            ],
-          },
-        ],
-        keyId: [
-          keySecretFields[provider].k,
-          {
-            initialValue: undefined,
-            rules: [
-              { required: true, message: field.placeholder?.k || this.$t('cloudenv.text_149') },
-            ],
-          },
-        ],
-        keySecret: [
-          keySecretFields[provider].s,
-          {
-            rules: [
-              { required: true, message: field.placeholder?.s || this.$t('cloudenv.text_150') },
-            ],
-          },
-        ],
-        ucloud_project_id: [
-          'ucloud_project_id',
-          {
-            rules: [
-              { required: false },
-            ],
-          },
-        ],
-        directory_id: [
-          'directory_id',
-          {
-            rules: [
-              { required: true, message: this.$t('cloudenv.text_243') },
-            ],
-          },
-        ],
-        balanceKey: [
-          'balanceKey',
-        ],
-        endpoint_type: [
-          'endpoint_type',
-        ],
-        project_name: [
-          'project_name',
-          {
-            rules: [
-              { required: true, message: this.$t('cloudenv.text_308') },
-            ],
-          },
-        ],
-        host: [
-          'host',
-          {
-            rules: [
-              { required: true, message: this.$t('cloudenv.text_268') },
-              { validator: this.$validate(['domain', 'IPv4'], true, 'some'), trigger: ['blur', 'change'], message: this.$t('cloudenv.text_269') },
-            ],
-          },
-        ],
-        port: [
-          'port',
-          {
-            rules: [
-              { type: 'number', min: 0, max: 65535, message: this.$t('cloudenv.text_270'), trigger: 'blur', transform: (v) => parseFloat(v) },
-            ],
-          },
-        ],
-        options: {
-          account: ['options.account'],
-          password: ['options.password'],
-        },
-        option_name: [
-          'option_name',
-          {
-            initialValue: initName,
-          },
-        ],
-        mon_host: [
-          'mon_host',
-          {
-            initialValue: initMonHost,
-            rules: [
-              {
-                validator: (rule, value, callback) => {
-                  if (!value) callback()
-                  const list = value.split(',')
-                  if (list.every(str => {
-                    return regexp.isIPv4AndPort(str)
-                  })) {
-                    callback()
-                  }
-                  callback(new Error(this.$t('cloudenv.check_mon_host')))
-                },
-              },
-            ],
-          },
-        ],
-        secret: [
-          'secret',
-        ],
-      },
+      credKey,
+      credSecret,
+      form,
+      rules,
       endpointTypeOpts: [
         { key: 'internal', label: 'internal' },
         { key: 'admin', label: 'admin' },
@@ -292,19 +243,6 @@ export default {
       }
       return ret
     },
-    offsetFormLayout () {
-      const ret = {
-        wrapperCol: {
-          span: 21,
-          offset: 3,
-        },
-      }
-      if (this.isAzure || this.isGoogle) {
-        ret.wrapperCol.span = 19
-        ret.wrapperCol.offset = 5
-      }
-      return ret
-    },
   },
   created () {
     this.init()
@@ -313,48 +251,42 @@ export default {
     init () {
       if (this.isVMware) {
         const { hostname, port, protocol } = this.parseUrl(this.params.data[0].access_url)
-        this.setHost(hostname)
-        this.setPort(port || (protocol === 'http' ? 80 : 443))
+        this.form.host = hostname
+        this.form.port = port || (protocol === 'http' ? 80 : 443)
       }
     },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (err) {
-            reject(err)
-          } else {
-            const params = {}
-            R.forEachObjIndexed((value, key) => {
-              if (R.is(String, value)) {
-                params[key] = value.trim()
-              } else {
-                params[key] = value
-              }
-            }, values)
-            // 针对oracle cloud oracle_private_pem参数做转换处理
-            if (params.oracle_private_pem) {
-              params.oracle_private_key = params.oracle_private_pem
-              delete params.oracle_private_pem
-            }
-            if (this.isCephFS) {
-              params.options = params.options || {}
-              params.options.mon_host = params.mon_host
-              params.options.password = params.secret
-              params.options.name = params.option_name
-              delete params.mon_host
-              delete params.secret
-              delete params.option_name
-            }
-            resolve(params)
-          }
-        })
-      })
+    normalizeValues (values) {
+      const params = {}
+      R.forEachObjIndexed((value, key) => {
+        if (R.is(String, value)) {
+          params[key] = value.trim()
+        } else {
+          params[key] = value
+        }
+      }, values)
+      if (params.oracle_private_pem) {
+        params.oracle_private_key = params.oracle_private_pem
+        delete params.oracle_private_pem
+      }
+      if (this.isCephFS) {
+        params.options = params.options || {}
+        params.options.mon_host = params.mon_host
+        params.options.password = params.secret
+        params.options.name = params.option_name
+        delete params.mon_host
+        delete params.secret
+        delete params.option_name
+      }
+      return params
+    },
+    async validateForm () {
+      await this.$refs.formRef.validate()
+      return this.normalizeValues({ ...this.form })
     },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
-        const params = values
+        const params = await this.validateForm()
         if (params.ucloud_project_id && params.access_key_id) {
           params.access_key_id = params.access_key_id + '::' + params.ucloud_project_id
           delete params.ucloud_project_id
@@ -381,9 +313,10 @@ export default {
             },
           })
         }
-        this.loading = false
         this.cancelDialog()
       } catch (error) {
+        // validation or API error
+      } finally {
         this.loading = false
       }
     },
@@ -399,16 +332,6 @@ export default {
     },
     parseUrl (url) {
       return new URL(url)
-    },
-    setHost (host) {
-      this.$nextTick(() => {
-        this.form.fc.setFieldsValue({ host })
-      })
-    },
-    setPort (port) {
-      this.$nextTick(() => {
-        this.form.fc.setFieldsValue({ port })
-      })
     },
   },
 }

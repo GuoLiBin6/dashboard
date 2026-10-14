@@ -1,15 +1,15 @@
 <template>
-  <a-form :form="form.fc" v-bind="formItemLayout">
-    <a-form-item :label="$t('system.text_101')">
-      <a-input :placeholder="$t('system.text_168')" v-decorator="decorators.name" />
-    </a-form-item>
-    <a-form-item :label="$t('common.description')">
-      <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-    </a-form-item>
-    <a-form-item :label="$t('dictionary.domain')" v-if="$store.getters.isAdminMode && $store.getters.l3PermissionEnable">
+  <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+    <a-form-model-item :label="$t('system.text_101')" prop="name">
+      <a-input :placeholder="$t('system.text_168')" v-model:value="form.name" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('common.description')" prop="description">
+      <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.description" :placeholder="$t('common_367')" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('dictionary.domain')" v-if="$store.getters.isAdminMode && $store.getters.l3PermissionEnable" prop="domain_id">
       <base-select
         resource="domains"
-        v-decorator="decorators.domain_id"
+        v-model="form.domain_id"
         :params="domainParams"
         remote
         version="v1"
@@ -17,8 +17,8 @@
         :select-props="{ placeholder: $t('system.text_443', [$t('dictionary.domain')])}" />
         <div slot="extra">{{$t('system.text_439')}}<help-link :href="domainCreateLink">{{$t('system.text_440')}}</help-link>
       </div>
-    </a-form-item>
-  </a-form>
+    </a-form-model-item>
+  </a-form-model>
 </template>
 
 <script>
@@ -29,10 +29,20 @@ export default {
   data () {
     return {
       form: {
-        fc: this.$form.createForm(this, { onValuesChange: this.onValuesChange }),
-        fd: {
-          domain: '',
-        },
+        name: undefined,
+        description: undefined,
+        domain_id: undefined,
+      },
+      rules: {
+        name: [
+          {
+            required: true,
+            message: this.$t('system.text_170'),
+          },
+        ],
+        domain_id: [
+          { required: true, message: this.$t('rules.domain') },
+        ],
       },
       formItemLayout: {
         wrapperCol: {
@@ -47,28 +57,6 @@ export default {
             span: 2,
           },
         },
-      },
-      decorators: {
-        name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              {
-                required: true, message: this.$t('system.text_170'),
-              },
-            ],
-          },
-        ],
-        description: ['description'],
-        domain_id: [
-          'domain_id',
-          {
-            rules: [
-              { required: true, message: this.$t('rules.domain') },
-            ],
-          },
-        ],
       },
       domainParams: {
         scope: this.$store.getters.scope,
@@ -96,29 +84,20 @@ export default {
     },
   },
   created () {
-    // 如果 query 携带 tenant 和 domain，表示 clone
     if (this.isClone) {
-      // 触发watch获取域quotas，进行上限设置
-      this.form.fd.domain = this.domain
+      this.form.domain_id = this.domain
     } else if (!this.isAdminMode || !this.l3PermissionEnable) {
       if (!this.l3PermissionEnable) {
-        this.form.fd.domain = 'default'
+        this.form.domain_id = 'default'
       } else {
-        this.form.fd.domain = this.userInfo.projectDomainId
+        this.form.domain_id = this.userInfo.projectDomainId
       }
     }
   },
-  mounted () {
-    this.form.fc.setFieldsValue({ domain_id: this.form.fd.domain })
-  },
   methods: {
-    validateForm () {
-      return this.form.fc.validateFields()
-    },
-    onValuesChange (props, values) {
-      if (values.hasOwnProperty('domain_id')) {
-        this.form.fd.domain = values.domain_id
-      }
+    async validateForm () {
+      await this.$refs.formRef.validate()
+      return { ...this.form }
     },
   },
 }

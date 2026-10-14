@@ -2,13 +2,11 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{ $t('system.text_130', [$t('system.text_317')]) }}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc"
-        v-bind="formItemLayout">
-        <a-form-item :label="$t('dictionary.domain')" v-if="isAdminMode">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item v-if="isAdminMode" :label="$t('dictionary.domain')" prop="domain">
           <base-select
             style="width: 300px;"
-            v-decorator="decorators.domain"
+            v-model:value="form.domain"
             resource="domains"
             version="v1"
             remote
@@ -16,11 +14,11 @@
             :remote-fn="q => ({ filter: `name.contains(${q})` })"
             :select-props="{ placeholder: $t('rules.domain'), allowClear: true }"
             @change="handleDomainChange" />
-        </a-form-item>
-        <a-form-item :label="$t('dictionary.user')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('dictionary.user')" prop="user">
           <base-select
             style="width: 300px;"
-            v-decorator="decorators.user"
+            v-model:value="form.user"
             resource="users"
             version="v1"
             remote
@@ -30,14 +28,14 @@
             :mapper="mapperUserData"
             :remote-fn="q => ({ filter: `name.contains(${q})` })"
             :select-props="{ placeholder: $t('rules.user'), allowClear: true }" />
-        </a-form-item>
-        <a-form-item :label="$t('system.text_131')">
-          <mobile-input v-decorator="decorators.international_mobile" />
-        </a-form-item>
-        <a-form-item :label="$t('system.text_132')">
-          <a-input v-decorator="decorators.email" />
-        </a-form-item>
-        <a-form-item>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('system.text_131')" prop="international_mobile">
+          <mobile-input :value="form.international_mobile" @change="v => { form.international_mobile = v }" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('system.text_132')" prop="email">
+          <a-input v-model:value="form.email" />
+        </a-form-model-item>
+        <a-form-model-item prop="enabled_contact_types">
           <template #label>
             {{ $t('common_599') }}
             <a-tooltip placement="top">
@@ -46,10 +44,10 @@
             </a-tooltip>
           </template>
           <a-checkbox-group
-            v-decorator="decorators.enabled_contact_types"
+            v-model:value="form.enabled_contact_types"
             :options="contactArrOpts" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -80,63 +78,42 @@ export default {
         scope: this.$store.getters.scope,
       },
       form: {
-        fc: this.$form.createForm(this),
+        domain: undefined,
+        user: undefined,
+        international_mobile: { mobile: '', area_code: '86' },
+        email: '',
+        enabled_contact_types: ['webconsole'],
       },
-      contactArrOpts: [],
-      userOptions: [],
-      decorators: {
-        domain: [
-          'domain',
-        ],
+      rules: {
         user: [
-          'user',
           {
-            rules: [
-              {
-                required: true,
-                message: this.$t('rules.user'),
-                whitespace: true,
-              },
-            ],
+            required: true,
+            message: this.$t('rules.user'),
+            whitespace: true,
           },
         ],
         international_mobile: [
-          'international_mobile',
           {
-            initialValue: { mobile: '', area_code: '86' },
-            rules: [
-              {
-                type: 'object',
-                required: true,
-              },
-              { validator: this.checkInternationalMobile },
-            ],
+            type: 'object',
+            required: true,
           },
+          { validator: this.checkInternationalMobile },
         ],
         email: [
-          'email',
           {
-            rules: [
-              {
-                required: true,
-                message: this.$t('system.text_139'),
-                whitespace: true,
-              },
-              {
-                validator: this.$validate('email'),
-                message: this.$t('system.text_140'),
-                whitespace: true,
-              },
-            ],
+            required: true,
+            message: this.$t('system.text_139'),
+            whitespace: true,
           },
-        ],
-        enabled_contact_types: [
-          'enabled_contact_types',
           {
-            initialValue: ['webconsole'],
+            validator: this.$validate('email'),
+            message: this.$t('system.text_140'),
+            whitespace: true,
           },
         ],
       },
+      contactArrOpts: [],
+      userOptions: [],
       formItemLayout: {
         wrapperCol: {
           span: 18,
@@ -158,14 +135,13 @@ export default {
     this.manager = new this.$Manager('receivers', 'v1')
     this.generateContactArrOpts()
     this.fetchReceivers()
-    // this.isDomainMode && this.fetchUsers()
   },
   methods: {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        const { user: uid, domain, email, international_mobile, enabled_contact_types } = values
+        await this.$refs.formRef.validate()
+        const { user: uid, domain, email, international_mobile, enabled_contact_types } = this.form
         const data = {
           uid,
           email,
@@ -186,9 +162,7 @@ export default {
       }
     },
     handleDomainChange (val) {
-      this.form.fc.setFieldsValue({
-        user: '',
-      })
+      this.form.user = ''
       this.userParams = {
         limit: 20,
         is_system_account: false,
@@ -196,7 +170,6 @@ export default {
         scope: this.$store.getters.scope,
         domain_id: val,
       }
-      // this.fetchUsers()
       this.generateContactArrOpts({ domain_ids: [val] })
     },
     async generateContactArrOpts (params) {
@@ -227,26 +200,6 @@ export default {
           reject(err)
         })
       })
-    },
-    async fetchUsers () {
-      const userManager = new this.$Manager('users', 'v1')
-      const receiverManager = new this.$Manager('receivers', 'v1')
-      try {
-        const userRes = await userManager.list({ params: this.userParams })
-        const users = userRes.data.data
-        const receiverRes = await receiverManager.list({ params: { scope: this.scope } })
-        const receivers = receiverRes.data.data
-        const receiverUsers = receivers.map((item) => { return item.name })
-        const noExsitUser = users.filter((item) => { return !receiverUsers.includes(item.name) })
-        this.userOptions = noExsitUser.map((item) => {
-          return {
-            label: item.name,
-            value: item.id,
-          }
-        })
-      } catch (error) {
-        throw error
-      }
     },
     checkInternationalMobile (rule, value, callback) {
       if (!value.mobile) {

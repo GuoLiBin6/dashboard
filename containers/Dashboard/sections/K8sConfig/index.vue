@@ -1,11 +1,11 @@
 <template>
   <div>
-    <a-form-item :label="$t('dashboard.text_96')" v-if="decorators.all_usage_key">
+    <a-form-item :label="$t('dashboard.text_96')">
       <usage-select
         class="w-100"
-        v-decorator="decorators.all_usage_key"
+        :value="boundModel.all_usage_key"
         :usages="allUsages"
-        @change="allUsageChange" />
+        @change="onAllUsageChange" />
       <div slot="extra" v-if="showDocsLink()">
         <i18n path="metricConfig.create_form.all_usage_extra">
           <template #link>
@@ -14,12 +14,12 @@
         </i18n>
       </div>
     </a-form-item>
-    <a-form-item :label="usageLabel || $t('dashboard.text_97')" v-if="decorators.usage_key">
+    <a-form-item :label="usageLabel || $t('dashboard.text_97')">
       <usage-select
         class="w-100"
-        v-decorator="decorators.usage_key"
+        :value="boundModel.usage_key"
         :usages="usages"
-        @change="usageChange" />
+        @change="onUsageChange" />
       <div slot="extra">
         <i18n :path="usageLabel?'metricConfig.create_form.metric_extra':'metricConfig.create_form.usage_extra'">
           <template #link>
@@ -28,14 +28,14 @@
         </i18n>
       </div>
     </a-form-item>
-    <a-form-item :label="$t('dashboard.usage_metric_name')" class="mb-0" v-if="decorators.usage_label">
+    <a-form-item :label="$t('dashboard.usage_metric_name')" class="mb-0">
       <a-form-item :wrapperCol="{ span: 24 }">
-        <a-input class="w-100" v-decorator="decorators.usage_label" />
+        <a-input class="w-100" :value="boundModel.usage_label" @change="e => onInputChange('usage_label', e.target.value)" />
       </a-form-item>
     </a-form-item>
-    <a-form-item :label="$t('dashboard.remaining_usage_metric_name')" class="mb-0" v-if="decorators.un_usage_label">
+    <a-form-item :label="$t('dashboard.remaining_usage_metric_name')" class="mb-0">
       <a-form-item :wrapperCol="{ span: 24 }">
-        <a-input class="w-100" v-decorator="decorators.un_usage_label" />
+        <a-input class="w-100" :value="boundModel.un_usage_label" @change="e => onInputChange('un_usage_label', e.target.value)" />
       </a-form-item>
     </a-form-item>
   </div>
@@ -53,13 +53,14 @@ export default {
     UsageSelect,
   },
   props: {
-    decorators: {
+    /** a-form-model：字段与 form.fd 对齐 */
+    model: {
       type: Object,
       required: true,
     },
     fc: {
       type: Object,
-      required: true,
+      default: null,
     },
     fd: {
       type: Object,
@@ -75,6 +76,10 @@ export default {
     }
   },
   computed: {
+
+    boundModel () {
+      return this.model || this.fd
+    },
     ...mapGetters(['scope']),
     allUsages () {
       const ret = []
@@ -91,7 +96,7 @@ export default {
     },
     usages () {
       const ret = []
-      const allUsageKey = this.fd?.all_usage_key || ''
+      const allUsageKey = this.boundModel?.all_usage_key || ''
       for (const key in K8S_USAGE_CONFIG) {
         const { isOnlyAllPartKey, belongAllPartKeys } = K8S_USAGE_CONFIG[key]
         if (!isOnlyAllPartKey && belongAllPartKeys && belongAllPartKeys.includes(allUsageKey) && K8S_USAGE_CONFIG[key].scope === this.scope) {
@@ -103,13 +108,30 @@ export default {
           })
         }
       }
-      if (!ret.length && this.decorators.usage_key && !this.decorators.all_usage_key) {
+      if (!ret.length) {
         return this.allUsages
       }
       return ret
     },
   },
   methods: {
+    setModelFields (values) {
+      if (!this.boundModel || !values) return
+      Object.keys(values).forEach((k) => {
+        this.$set(this.boundModel, k, values[k])
+      })
+    },
+    onInputChange (name, value) {
+      this.setModelFields({ [name]: value })
+    },
+    onAllUsageChange (allUsage) {
+      this.setModelFields({ all_usage_key: allUsage })
+      this.allUsageChange(allUsage)
+    },
+    onUsageChange (usage) {
+      this.setModelFields({ usage_key: usage })
+      this.usageChange(usage)
+    },
     allUsageChange (allUsage) {
       this.$emit('update:all_usage_key', allUsage)
     },

@@ -16,9 +16,6 @@ export default {
   },
   inject: ['form'],
   props: {
-    decorators: {
-      type: Object,
-    },
     filterSkuCallback: {
       type: Function,
     },
@@ -28,12 +25,13 @@ export default {
   },
   methods: {
     getParams (keys) {
-      const values = this.form.getFieldsValue(keys)
+      const values = {}
+      ;(keys || []).forEach((k) => { values[k] = this.form.fd[k] })
       const params = {
         ...values,
         scope: 'domain',
       }
-      if (this.form.getFieldValue('billing_type') === 'postpaid') {
+      if (this.form.fd.billing_type === 'postpaid') {
         params.postpaid_status = 'available'
       } else {
         params.prepaid_status = 'available'

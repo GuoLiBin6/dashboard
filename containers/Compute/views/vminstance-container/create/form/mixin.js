@@ -30,16 +30,17 @@ import { Manager } from '@/utils/manager'
 import { isSuccess } from '@/utils/http'
 import NameRepeated from '@/sections/NameRepeated'
 import CloudregionZone from '@/sections/CloudregionZone'
-import DomainProject from '@/sections/DomainProject'
-import { getInitialValue } from '@/utils/common/ant'
+import DomainProject from '@/sections/DomainProject/model'
 import { IMAGES_TYPE_MAP } from '@/constants/compute'
 import { HYPERVISORS_MAP } from '@/constants'
 import { WORKFLOW_TYPES } from '@/constants/workflow'
 import i18n from '@/locales'
 import { deleteInvalid, uuid } from '@/utils/utils'
+import validateForm from '@/utils/validate'
 import createFormDraftMixin from '@/mixins/createFormDraft'
+import { createVmFormDefaults } from '@Compute/utils/createServer'
 import Tag from '../components/Tag'
-import { Decorator, GenCreateData } from '../../utils/createServer'
+import { GenCreateData } from '../../utils/createServer'
 import BottomBar from '../components/BottomBar'
 
 const CreateServerForm = {
@@ -98,14 +99,7 @@ export default {
       ? (this.initFormData && !R.isEmpty(this.initFormData) ? this.initFormData : routeInitData)
       : {}
     const seedFormData = workflowInitData
-    const decorators = new Decorator(SERVER_TYPE[this.type]).createDecorators(seedFormData)
-    if (!decorators.groups) {
-      decorators.groups = {
-        groupsEnable: ['groupsEnable', { valuePropName: 'checked', initialValue: false }],
-        groups: ['groups', { initialValue: [] }],
-      }
-    }
-    const initFd = getInitialValue(decorators)
+    const { defaults: initFd } = createVmFormDefaults(SERVER_TYPE[this.type], seedFormData)
     return {
       _initFormPromise: null,
       _initFormDone: false,
@@ -115,27 +109,33 @@ export default {
         wrapperCol: CreateServerForm.wrapperCol,
         labelCol: CreateServerForm.labelCol,
       },
-      form: {
-        fc: this.$form.createForm(this, { onValuesChange: this.onValuesChange }),
-        fi: { // formInfo 存储着和表单相关的数据
-          capability: {}, // 可用区下的可用资源
-          imageMsg: {}, // 当前选中的 image
-          cpuMem: {}, // cpu 和 内存 的关联关系
-          createType: SERVER_TYPE[this.type],
-          dataDiskDisabled: false, // 数据盘是否禁用
-          sysDiskDisabled: false, // 系统盘是否禁用
-          cpuDisabled: false,
-          memDisabled: false,
-          dataDiskMedium: '',
-          networkVpcObj: {},
-          showCpuSockets: false,
-          cpuSockets: 1,
-          errPanes: [], // 表单校验错误的tabs
-          containerPanes: [], // 子组件同步的tabs
-        },
-        fd: { ...initFd, os: '' },
-      },
-      decorators,
+      form: (() => {
+        // createForm / fc shim 已移除：form 仅 { fd, fi }；onValuesChange → watch form.fd
+        const fd = {
+          ...initFd,
+          os: '',
+          __meta__: initFd.__meta__ || initFd.tag || {},
+        }
+        return {
+          fi: { // formInfo 存储着和表单相关的数据
+            capability: {}, // 可用区下的可用资源
+            imageMsg: {}, // 当前选中的 image
+            cpuMem: {}, // cpu 和 内存 的关联关系
+            createType: SERVER_TYPE[this.type],
+            dataDiskDisabled: false, // 数据盘是否禁用
+            sysDiskDisabled: false, // 系统盘是否禁用
+            cpuDisabled: false,
+            memDisabled: false,
+            dataDiskMedium: '',
+            networkVpcObj: {},
+            showCpuSockets: false,
+            cpuSockets: 1,
+            errPanes: [], // 表单校验错误的tabs
+            containerPanes: [], // 子组件同步的tabs
+          },
+          fd,
+        }
+      })(),
       capabilityParams: {}, // 防止 capability 反复调用，这里对当前的接口参数做记录
       price: null,
       tagDefaultChecked: {},
@@ -144,6 +144,18 @@ export default {
         errorMsg: '',
       },
       dataDiskInterval: null,
+      rules: {
+        name: [
+          { required: true, message: i18n.t('compute.text_210') },
+          { validator: validateForm('resourceCreateName') },
+        ],
+        count: [
+          { required: true, message: i18n.t('compute.text_211') },
+        ],
+        __meta__: [
+          { validator: validateForm('tagName') },
+        ],
+      },
     }
   },
   provide () {
@@ -669,7 +681,7 @@ export default {
         ? ((!R.isEmpty(this.initFormData) && this.initFormData) || this.$route.params?.data || {})
         : null
       const canInit = !!((this.isInitForm || this.$route.query.workflow) && initData?.extraData)
-      if (!canInit || !this.form?.fc) return
+      if (!canInit || !this.form?.fd) return
       if (this._initFormDone) return
       this._initFormDone = true
       const preferZone = (Array.isArray(initData.prefer_zones) && initData.prefer_zones[0]) ||
@@ -689,7 +701,7 @@ export default {
           let hypervisors = R.is(Object, data) ? (data.hypervisors || []) : []
           hypervisors = Array.from(new Set(hypervisors))
           this.form.fi.capability = { ...data, hypervisors }
-          this.form.fc.setFieldsValue({ hypervisor: 'pod' })
+          this.form.fd.hypervisor = 'pod'
         }
       } catch (e) { /* ignore */ }
       this.$nextTick(() => {
@@ -731,8 +743,7 @@ export default {
         // 网络（等 NetworkConfig 挂载后再 initData，避免竞态）
         if (this.$refs.networkRef && initData.nets) {
           const initNetworkType = resolveDraftNetworkType(initData)
-          this.form.fc.setFieldsValue({ networkType: initNetworkType })
-          if (this.form.fd) this.form.fd.networkType = initNetworkType
+          this.form.fd.networkType = initNetworkType
           this.$refs.networkRef.change({ target: { value: initNetworkType }, name: 'default' })
           if (initNetworkType === NETWORK_OPTIONS_MAP.manual.key) {
             const nets = initData.extraData?.nets || []
@@ -775,7 +786,7 @@ export default {
               advanceRef.tryAutoOpenOnce()
             }
             if (initData.hostname) {
-              this.form.fc.setFieldsValue({ hostName: initData.hostname })
+              this.form.fd.hostName = initData.hostname
             }
             // 安全组 / 指定宿主机：由组件 initSecgroups / initPreferHost + initLoaded 补写
             const secgroupIds = this.normalizeDraftSecgroups(initData.secgroups)
@@ -798,10 +809,8 @@ export default {
               })
             }
             if (initData.groups?.length) {
-              this.form.fc.setFieldsValue({
-                groupsEnable: true,
-                groups: initData.groups,
-              })
+              this.form.fd.groupsEnable = true
+              this.form.fd.groups = initData.groups
             }
             // 端口映射（Labels）：优先靠 init-pairs；再兜底调 initData
             const portMappings = resolveDraftPortMappings(initData)
@@ -823,6 +832,7 @@ export default {
             ret[key] = R.is(Array, value) ? value : [value]
           }, initData.__meta__)
           this.tagDefaultChecked = ret
+          this.form.fd.__meta__ = { ...initData.__meta__ }
         }
         // 容器配置
         const containers = initData.pod?.containers || []
@@ -985,23 +995,67 @@ export default {
           throw error
         })
     },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFieldsAndScroll({ scroll: { alignWithTop: true, offsetTop: 100 } }, (err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
+    async validateForm () {
+      const formRef = this.$refs.formRef
+      if (formRef?.validate) {
+        await formRef.validate()
+      }
+      // end-state sections：字段走组件 validate，不依赖全量 fc.validateFields
+      if (typeof this.$refs.domainProjectRef?.validate === 'function') {
+        await this.$refs.domainProjectRef.validate()
+      }
+      if (typeof this.$refs.cloudregionZoneRef?.validate === 'function') {
+        await this.$refs.cloudregionZoneRef.validate()
+      }
+      if (typeof this.$refs.networkRef?.validate === 'function') {
+        await this.$refs.networkRef.validate()
+      }
+      if (typeof this.$refs.dataDiskRef?.validate === 'function') {
+        await this.$refs.dataDiskRef.validate()
+      }
+      if (typeof this.$refs.skuRef?.validate === 'function') {
+        await this.$refs.skuRef.validate()
+      }
+      if (typeof this.$refs.pciRef?.validate === 'function') {
+        await this.$refs.pciRef.validate()
+      }
+      if (typeof this.$refs.specContainerRef?.validate === 'function') {
+        await this.$refs.specContainerRef.validate()
+      }
+      if (typeof this.$refs.eipConfigRef?.validate === 'function') {
+        await this.$refs.eipConfigRef.validate()
+      }
+      if (typeof this.$refs.hostNameRef?.validate === 'function') {
+        await this.$refs.hostNameRef.validate()
+      }
+      if (typeof this.$refs.secgroupConfigRef?.validate === 'function') {
+        await this.$refs.secgroupConfigRef.validate()
+      }
+      if (typeof this.$refs.schedPolicyRef?.validate === 'function') {
+        await this.$refs.schedPolicyRef.validate()
+      }
+      if (typeof this.$refs.instanceGroupsRef?.validate === 'function') {
+        await this.$refs.instanceGroupsRef.validate()
+      }
+      if (typeof this.$refs.osArchRef?.validate === 'function') {
+        await this.$refs.osArchRef.validate([{ required: true, message: this.$t('compute.text_1363') }])
+      }
+      if (typeof this.$refs.labelRef?.validate === 'function') {
+        await this.$refs.labelRef.validate()
+      }
+      return { ...this.form.fd }
     },
     cpuChange (cpu) {
       const cpuMem = this.form.fi.cpuMem || {}
       const cpuNum = Number(cpu)
+      // end-state：Cpu/Mem 只写 form.fd
+      const setCpuMem = (vals) => {
+        if (!vals || typeof vals !== 'object') return
+        Object.keys(vals).forEach((k) => { this.form.fd[k] = vals[k] })
+      }
       // 不限：只设 CPU，不改内存（用户未动内存应保留原值）
       if (cpuNum === 0) {
-        this.form.fc.setFieldsValue({ vcpu: 0 })
+        setCpuMem({ vcpu: 0 })
         return
       }
       const memOpts = (cpuMem.cpu_mems_mb && (cpuMem.cpu_mems_mb[cpuNum] || cpuMem.cpu_mems_mb[cpu])) || []
@@ -1011,21 +1065,16 @@ export default {
         if (!cpus.includes(cpuNum) && !cpus.includes(cpu)) {
           vcpu = cpus.length ? cpus[0] : 0
         }
-        this.form.fc.setFieldsValue({
-          vcpu,
-          vmem: 0,
-        })
+        setCpuMem({ vcpu, vmem: 0 })
         return
-      } else if (Number(this.form.fc.getFieldValue('vcpu')) !== cpuNum) {
-        this.form.fc.setFieldsValue({
-          vcpu: cpuNum,
-        })
+      } else if (Number(this.form.fd.vcpu) !== cpuNum) {
+        setCpuMem({ vcpu: cpuNum })
       }
       this.form.fi.cpuMem.mems_mb = memOpts
-      const currentMem = Number(this.form.fc.getFieldValue('vmem'))
+      const currentMem = Number(this.form.fd.vmem)
       if (currentMem && memOpts.some(m => Number(m) === currentMem)) {
         // 保持工单回填的内存，避免被默认 2G 覆盖导致套餐错选
-        this.form.fc.setFieldsValue({ vmem: currentMem })
+        setCpuMem({ vmem: currentMem })
         return
       }
       // 内存 options 变化：优先草稿，否则 2G / 第一项（不写草稿）；草稿 0=不限
@@ -1033,7 +1082,7 @@ export default {
         ? this.readCreateFormFieldDraft(CONTAINER_CREATE_FORM_DRAFT_FIELD.VMEM)
         : null
       if (draftMem === 0 || draftMem === '0') {
-        this.form.fc.setFieldsValue({ vmem: 0 })
+        setCpuMem({ vmem: 0 })
         return
       }
       let defaultMem = 2048
@@ -1042,9 +1091,7 @@ export default {
       } else if (!memOpts.some(m => Number(m) === 2048)) {
         defaultMem = memOpts[0]
       }
-      this.form.fc.setFieldsValue({
-        vmem: defaultMem,
-      })
+      setCpuMem({ vmem: defaultMem })
     },
     _getProjectDomainInfo (variables) {
       variables.project = this.form.fd.project.key
@@ -1057,46 +1104,10 @@ export default {
       }
     },
     _resetDataDisk () { // 重置数据盘
-      const formValue = this.form.fc.getFieldsValue()
-      if (formValue.dataDiskSizes) {
-        const dataDiskKeys = Object.keys(formValue.dataDiskSizes)
-        dataDiskKeys.forEach(key => this.$refs.dataDiskRef.decrease(key))
+      const sizes = this.form.fd?.dataDiskSizes
+      if (sizes && this.$refs.dataDiskRef) {
+        Object.keys(sizes).forEach(key => this.$refs.dataDiskRef.decrease(key))
       }
-    },
-    _setNewFieldToFd (newField, formValue) { // vue-ant-form change 后赋值 fd
-      const changeKeys = Object.keys(newField)
-      R.forEachObjIndexed((item, key) => {
-        this.form.fd[key] = item
-      }, newField)
-      if (changeKeys.some(val => val.includes('dataDiskSizes'))) { // 动态赋值默认值的表单需要单独处理
-        this.form.fd.dataDiskSizes = formValue.dataDiskSizes
-      }
-      // 端口映射：字段名是 containerPorts[uuid]，需从 getFieldsValue 取嵌套对象写入 fd
-      if (changeKeys.some(val => val.includes('containerPorts') || val.includes('hostPorts'))) {
-        if (formValue.containerPorts) {
-          this.form.fd.containerPorts = formValue.containerPorts
-        }
-        if (formValue.hostPorts) {
-          this.form.fd.hostPorts = formValue.hostPorts
-        }
-      }
-      this.syncContainerCreateFormFcDrafts(newField)
-    },
-    bindContainerCreateFormFcDrafts () {
-      this._containerCreateFormFcDraftMap = Object.create(null)
-    },
-    syncContainerCreateFormFcDrafts (newField) {
-      if (!this.canUseCreateFormDraft || !newField || typeof newField !== 'object') return
-      // 仅用户交互后落盘；vcpu/vmem 由 CpuRadio/MemRadio 点选落盘
-      if (!this.createFormDraftUserInteracted) return
-      const skip = { vcpu: true, vmem: true }
-      const map = this._containerCreateFormFcDraftMap || {}
-      Object.keys(newField).forEach((formField) => {
-        if (skip[formField]) return
-        const draftKey = map[formField]
-        if (!draftKey) return
-        this.writeCreateFormFieldDraft(draftKey, newField[formField])
-      })
     },
     normalizeDraftSecgroups (secgroups) {
       if (!Array.isArray(secgroups) || !secgroups.length) return []
@@ -1121,11 +1132,9 @@ export default {
         .sort((a, b) => (b.ports - b.ports_used) - (a.ports - a.ports_used))
     },
     countBlur () {
-      const count = this.form.fc.getFieldValue(this.decorators.count[0])
+      const count = this.form.fd.count
       if (!count) {
-        this.form.fc.setFieldsValue({
-          [this.decorators.count[0]]: 1,
-        })
+        this.form.fd.count = 1
       }
     },
     fetchDomainCallback () {
@@ -1135,9 +1144,7 @@ export default {
         domain = this.effectiveInitFormData?.extraData?.domain_id
       }
       if (!R.isNil(domain) && !R.isEmpty(domain)) {
-        this.form.fc.setFieldsValue({
-          domain: { key: domain },
-        })
+        this.form.fd.domain = { key: domain }
       }
     },
     fetchProjectCallback () {
@@ -1147,9 +1154,7 @@ export default {
         project = this.effectiveInitFormData?.project_id
       }
       if (!R.isNil(project) && !R.isEmpty(project)) {
-        this.form.fc.setFieldsValue({
-          project: { key: project },
-        })
+        this.form.fd.project = { key: project }
       }
     },
     validateHostNameChange (v) {

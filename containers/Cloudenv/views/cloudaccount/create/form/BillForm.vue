@@ -1,28 +1,28 @@
 <template>
   <div>
     <a-alert :showIcon="false" :message="$t('cloudenv.text_194')" banner />
-    <a-form class="pt-3" :form="form.fc" v-bind="formLayout">
-      <a-form-item v-if="isAzure" :label="$t('cloudenv.text_360')">
+    <a-form-model ref="formRef" class="pt-3" :model="form.fd" :rules="billRules" v-bind="formLayout">
+      <a-form-model-item v-if="isAzure" :label="$t('cloudenv.text_360')">
         <a-radio-group v-model:value="billType">
           <a-radio-button
             v-for="item in billTypeOptions"
             :key="item.value"
             :value="item.value">{{ item.label }}</a-radio-button>
         </a-radio-group>
-      </a-form-item>
+      </a-form-model-item>
       <template v-if="isAzure && isEA">
-        <a-form-item :label="$t('cloudenv.text_195')">
-          <a-input v-decorator="decorators.enrollment_number" />
+        <a-form-model-item :label="$t('cloudenv.text_195')">
+          <a-input v-model:value="form.fd.enrollment_number" />
           <span slot="extra" v-if="showDocsLink()">
             {{ $t('cloudenv.text_572') }}
             <help-link :href="enrollmentNumberUrl">{{ $t('cloudenv.text_197') }}</help-link>
           </span>
-        </a-form-item>
-        <a-form-item :label="$t('cloudenv.text_198')">
-          <a-input v-decorator="decorators.balance_key" type="textarea" rows="4" />
-        </a-form-item>
-        <a-form-item :label="$t('cloudenv.billing_scope')">
-          <a-radio-group v-decorator="decorators.billing_scope">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('cloudenv.text_198')">
+          <a-input v-model:value="form.fd.balance_key" type="textarea" rows="4" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('cloudenv.billing_scope')">
+          <a-radio-group v-model:value="form.fd.billing_scope">
             <a-radio-button value="managed" key="managed">{{ $t('cloudenv.billing_scope.managed') }}</a-radio-button>
             <a-radio-button value="all" key="all">{{ $t('cloudenv.billing_scope.all') }}</a-radio-button>
           </a-radio-group>
@@ -30,17 +30,17 @@
             <div>{{ $t('cloudenv.billing_scope.extra') }}</div>
             <div>{{ $t('cloudenv.billing_scope.extra_note') }}</div>
           </div>
-        </a-form-item>
+        </a-form-model-item>
       </template>
       <template v-if="useBillingBucket && !isEA && !isApi">
         <a-divider v-if="!isHiddenDriver" orientation="left">{{ $t('cloudenv.text_199') }}</a-divider>
-        <a-form-item :label="$t('cloudenv.text_200')">
+        <a-form-model-item :label="$t('cloudenv.text_200')">
           <a-radio-group v-model:value="cloudAccountType">
             <a-radio-button :value="1">{{ $t('cloudenv.text_201') }}</a-radio-button>
             <a-radio-button v-if="!isHuawei && !isAzure" :value="2">{{ $t('cloudenv.text_202') }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item
+        </a-form-model-item>
+        <a-form-model-item
           :label="$t('cloudenv.text_201')"
           v-if="cloudAccountType === 2"
           :extra="$t('cloudenv.text_203')">
@@ -48,59 +48,59 @@
             :filterOption="filterOption"
             showSearch
             :loading="cloudAccountLoading"
-            v-decorator="decorators.billing_bucket_account">
+            v-model:value="form.fd.billing_bucket_account">
             <template v-for="item in cloudAccounts" :key="item.id">
               <a-select-option v-if="id !== item.id" :value="item.id">{{ item.name }}</a-select-option>
             </template>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('cloudenv.text_204')">
-          <a-input v-decorator="decorators.billing_report_bucket" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('cloudenv.text_204')">
+          <a-input v-model:value="form.fd.billing_report_bucket" />
           <span slot="extra" v-if="bucketUrl && showDocsLink()">
             <!-- 请正确输入账单文件所在存储桶的URL，例如：https://bucket-name.oss-cn-beijing.aliyuncs.com <br /> -->
             {{ $t('cloudenv.text_196') }}
             <help-link :href="bucketUrl">{{ $t('cloudenv.text_205') }}</help-link>
           </span>
-        </a-form-item>
-        <a-form-item
+        </a-form-model-item>
+        <a-form-model-item
           v-if="!isHuawei"
           :label="$t('cloudenv.text_206')"
           :extra="$t('cloudenv.text_207')">
-          <a-input v-decorator="decorators.billing_file_prefix" />
-        </a-form-item>
-        <a-form-item :label="$t('cloudenv.billing_scope')" v-if="cloudAccountType === 1">
+          <a-input v-model:value="form.fd.billing_file_prefix" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('cloudenv.billing_scope')" v-if="cloudAccountType === 1">
           <div slot="extra">
             <div>{{ $t('cloudenv.billing_scope.extra') }}</div>
             <div>{{ $t('cloudenv.billing_scope.extra_note') }}</div>
           </div>
-          <a-radio-group v-decorator="decorators.billing_scope">
+          <a-radio-group v-model:value="form.fd.billing_scope">
             <a-radio-button value="managed" key="managed">{{ $t('cloudenv.billing_scope.managed') }}</a-radio-button>
             <a-radio-button
               value="all"
               key="all"
               :disabled="billingScopeDisabled">{{ $t('cloudenv.billing_scope.all') }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
+        </a-form-model-item>
         <!-- google -->
         <template v-if="isGoogle">
           <a-divider class="mt-5" orientation="left">{{ $t('cloudenv.text_208') }}</a-divider>
-          <a-form-item :label="$t('cloudenv.text_204')" :extra="$t('cloudenv.text_209')">
-            <a-input v-decorator="decorators.usage_report_bucket" />
-          </a-form-item>
-          <a-form-item :label="$t('cloudenv.text_206')" :extra="$t('cloudenv.text_207')">
-            <a-input v-decorator="decorators.usage_file_prefix" />
-          </a-form-item>
+          <a-form-model-item :label="$t('cloudenv.text_204')" :extra="$t('cloudenv.text_209')">
+            <a-input v-model:value="form.fd.usage_report_bucket" />
+          </a-form-model-item>
+          <a-form-model-item :label="$t('cloudenv.text_206')" :extra="$t('cloudenv.text_207')">
+            <a-input v-model:value="form.fd.usage_file_prefix" />
+          </a-form-model-item>
         </template>
       </template>
       <template v-if="isApi">
         <a-divider v-if="!isHiddenDriver" orientation="left">{{ $t('cloudenv.text_199') }}</a-divider>
-        <a-form-item :label="$t('cloudenv.text_200')">
+        <a-form-model-item :label="$t('cloudenv.text_200')">
           <a-radio-group v-model:value="cloudAccountType">
             <a-radio-button :value="1">{{ $t('cloudenv.text_201') }}</a-radio-button>
             <a-radio-button v-if="!isHuawei" :value="2">{{ $t('cloudenv.text_202') }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item
+        </a-form-model-item>
+        <a-form-model-item
           :label="$t('cloudenv.text_201')"
           v-if="cloudAccountType === 2"
           :extra="$t('cloudenv.text_203')">
@@ -108,48 +108,48 @@
             :filterOption="filterOption"
             showSearch
             :loading="cloudAccountLoading"
-            v-decorator="decorators.billing_account">
+            v-model:value="form.fd.billing_account">
             <template v-for="item in cloudAccounts" :key="item.id">
               <a-select-option v-if="id !== item.id" :value="item.id">{{ item.name }}</a-select-option>
             </template>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('cloudenv.billing_scope')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('cloudenv.billing_scope')">
           <div slot="extra">
             <div>{{ $t('cloudenv.billing_scope.extra') }}</div>
             <div>{{ $t('cloudenv.billing_scope.extra_note') }}</div>
           </div>
-          <a-radio-group v-decorator="decorators.billing_scope">
+          <a-radio-group v-model:value="form.fd.billing_scope">
             <a-radio-button value="managed" key="managed">{{ $t('cloudenv.billing_scope.managed') }}</a-radio-button>
             <a-radio-button
               value="all"
               key="all"
               :disabled="billingScopeDisabled">{{ $t('cloudenv.billing_scope.all') }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
+        </a-form-model-item>
       </template>
-      <a-form-item :label="$t('cloudenv.text_210')" :extra="$t('cloudenv.text_211')">
-        <a-switch v-decorator="decorators.sync_info" />
-      </a-form-item>
-      <a-form-item
+      <a-form-model-item :label="$t('cloudenv.text_210')" :extra="$t('cloudenv.text_211')">
+        <a-switch v-model:checked="form.fd.sync_info" />
+      </a-form-model-item>
+      <a-form-model-item
         :label="$t('cloudenv.text_212')"
-        v-if="form.fc.getFieldValue('sync_info')"
+        v-if="form.fd.sync_info"
         :extra="$t('cloudenv.text_213')">
-        <a-form-item style="display: inline-block">
+        <a-form-model-item style="display: inline-block">
           <a-month-picker
-            v-decorator="decorators.start_day"
+            v-model:value="form.fd.start_day"
             :disabled-date="dateDisabledStart"
             format="YYYY-MM" />
-        </a-form-item>
+        </a-form-model-item>
         <span class="ml-2 mr-2">~</span>
-        <a-form-item style="display: inline-block">
+        <a-form-model-item style="display: inline-block">
           <a-month-picker
-            v-decorator="decorators.end_day"
+            v-model:value="form.fd.end_day"
             :disabled-date="dateDisabledEnd"
             format="YYYY-MM" />
-        </a-form-item>
-      </a-form-item>
-    </a-form>
+        </a-form-model-item>
+      </a-form-model-item>
+    </a-form-model>
   </div>
 </template>
 <script lang="jsx">
@@ -163,6 +163,7 @@ import {
   BILL_TYPES,
   BILL_TYPE_MAP,
 } from '../../constants'
+import { applyFieldMapInitialValues, rulesFromFieldMap } from './components/createFormModelHelpers'
 
 export default {
   name: 'BillConfig',
@@ -183,7 +184,7 @@ export default {
       billTypeOptions: BILL_TYPES,
       billType: BILL_TYPE_MAP.EA.value, // EA --> EA账号 | Bucket --> 存储桶
       form: {
-        fc: this.$form.createForm(this),
+        fd: {},
       },
       billTasks: {
         '7 days': this.$t('cloudenv.text_214'),
@@ -279,111 +280,78 @@ export default {
     enrollmentNumberUrl () {
       return DOCS_MAP.enrollmentNumber()
     },
-    decorators () {
+    billRules () {
+      return rulesFromFieldMap(this.fieldMap)
+    },
+    fieldMap () {
       const options = this.cloudAccount.options || {}
       return {
-        billing_bucket_account: [
-          'billing_bucket_account',
-          {
-            initialValue: options.billing_bucket_account,
-          },
-        ],
-        billing_account: [
-          'billing_account',
-          {
-            initialValue: options.billing_account,
-          },
-        ],
-        billing_report_bucket: [
-          'billing_report_bucket',
-          {
-            initialValue: options.billing_report_bucket,
-            rules: [{ required: true, message: this.$t('cloudenv.text_220') }],
-          },
-        ],
-        billing_file_prefix: [
-          'billing_file_prefix',
-          {
-            initialValue: options.billing_file_prefix,
-          },
-        ],
-        usage_report_bucket: [
-          'usage_report_bucket',
-          {
-            initialValue: options.usage_report_bucket,
-            rules: [
-              // { required: true, message: '请输入存储桶URL' },
-            ],
-          },
-        ],
-        usage_file_prefix: [
-          'usage_file_prefix',
-          {
-            initialValue: options.usage_file_prefix,
-          },
-        ],
-        sync_info: [
-          'sync_info',
-          {
-            initialValue: false,
-            valuePropName: 'checked',
-          },
-        ],
-        enrollment_number: [
-          'enrollment_number',
-          {
-            initialValue: options.enrollment_number,
-            rules: [{ required: true, message: this.$t('cloudenv.text_221') }],
-          },
-        ],
-        balance_key: [
-          'balance_key',
-          {
-            initialValue: options.balance_key,
-            rules: [{ required: true, message: this.$t('cloudenv.text_222') }],
-          },
-        ],
-        start_day: [
-          'start_day',
-          {
-            initialValue: this.$moment().startOf('month'),
-            rules: [
-              {
-                required: true,
-                message: this.$t('common.tips.select', [
-                  this.$t('cloudenv.text_461'),
-                ]),
-              },
-            ],
-          },
-        ],
-        end_day: [
-          'end_day',
-          {
-            initialValue: this.$moment(),
-            rules: [
-              {
-                required: true,
-                message: this.$t('common.tips.select', [
-                  this.$t('cloudenv.text_462'),
-                ]),
-              },
-            ],
-          },
-        ],
-        billing_scope: [
-          'billing_scope',
-          {
-            initialValue:
+        billing_bucket_account: { name: 'billing_bucket_account', initialValue: options.billing_bucket_account },
+        billing_account: { name: 'billing_account', initialValue: options.billing_account },
+        billing_report_bucket: {
+          name: 'billing_report_bucket',
+          initialValue: options.billing_report_bucket,
+          rules: [{ required: true, message: this.$t('cloudenv.text_220') }],
+        },
+        billing_file_prefix: { name: 'billing_file_prefix', initialValue: options.billing_file_prefix },
+        usage_report_bucket: {
+          name: 'usage_report_bucket',
+          initialValue: options.usage_report_bucket,
+          rules: [
+            // { required: true, message: '请输入存储桶URL' },
+          ],
+        },
+        usage_file_prefix: { name: 'usage_file_prefix', initialValue: options.usage_file_prefix },
+        sync_info: {
+          name: 'sync_info',
+          initialValue: false,
+          valuePropName: 'checked',
+        },
+        enrollment_number: {
+          name: 'enrollment_number',
+          initialValue: options.enrollment_number,
+          rules: [{ required: true, message: this.$t('cloudenv.text_221') }],
+        },
+        balance_key: {
+          name: 'balance_key',
+          initialValue: options.balance_key,
+          rules: [{ required: true, message: this.$t('cloudenv.text_222') }],
+        },
+        start_day: {
+          name: 'start_day',
+          initialValue: this.$moment().startOf('month'),
+          rules: [
+            {
+              required: true,
+              message: this.$t('common.tips.select', [
+                this.$t('cloudenv.text_461'),
+              ]),
+            },
+          ],
+        },
+        end_day: {
+          name: 'end_day',
+          initialValue: this.$moment(),
+          rules: [
+            {
+              required: true,
+              message: this.$t('common.tips.select', [
+                this.$t('cloudenv.text_462'),
+              ]),
+            },
+          ],
+        },
+        billing_scope: {
+          name: 'billing_scope',
+          initialValue:
               options.billing_scope || this.getDefaultBillingScope(),
-            rules: [
-              {
-                required: true,
-                message: this.$t('cloudenv.billing_scope.prompt'),
-              },
-            ],
-          },
-        ],
+          rules: [
+            {
+              required: true,
+              message: this.$t('cloudenv.billing_scope.prompt'),
+            },
+          ],
+        },
       }
     },
     billingScopeDisabled () {
@@ -405,6 +373,12 @@ export default {
     },
   },
   watch: {
+    fieldMap: {
+      immediate: true,
+      handler (deco) {
+        applyFieldMapInitialValues(this.form.fd, deco)
+      },
+    },
     cloudAccount (val) {
       const { enrollment_number, billing_report_bucket } = val.options || {}
       if (this.provider === HYPERVISORS_MAP.azure.provider) {
@@ -518,7 +492,8 @@ export default {
     },
     async doSubmit ({ id } = this.cloudAccount, isGoCloudaccount = true) {
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form.fd }
         if (values.sync_info) {
           this.postBillTasks(id, values)
         }
@@ -589,7 +564,8 @@ export default {
       }
     },
     async testPost () {
-      const values = await this.form.fc.validateFields()
+      await this.$refs.formRef.validate()
+      const values = { ...this.form.fd }
       values.cloudaccount_id = this.id
       delete values.sync_info
       delete values.month
@@ -626,13 +602,13 @@ export default {
       } else return false
     },
     dateDisabledStart (value) {
-      const dateEnd = this.form.fc.getFieldValue('end_day')
+      const dateEnd = this.form.fd.end_day
       if (dateEnd && value > dateEnd) return true
       if (value > this.$moment()) return true
       return false
     },
     dateDisabledEnd (value) {
-      const dateStart = this.form.fc.getFieldValue('start_day')
+      const dateStart = this.form.fd.start_day
       if (dateStart && value < dateStart) return true
       if (value > this.$moment()) return true
       return false

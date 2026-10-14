@@ -6,15 +6,17 @@
         <dialog-selected-tips :name="$t('common_663')" :count="params.data.length" :action="params.type === 'update' ? $t('common_694') : $t('common_666')" />
         <dialog-table :data="params.data" :columns="params.columns.slice(0, 4)" />
       </template>
-      <a-form
-        :form="form.fc"
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
         v-bind="formItemLayout">
-        <a-form-item :label="$t('common_664')">
-          <a-input v-decorator="decorators.name" :addon-after="params.detailData.name" :placeholder="$t('common_695')" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_160')">
+        <a-form-model-item :label="$t('common_664')" prop="name">
+          <a-input v-model:value="form.name" :addon-after="params.detailData.name" :placeholder="$t('common_695')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_160')" prop="dns_type">
           <a-select
-            v-decorator="decorators.dns_type"
+            v-model:value="form.dns_type"
             @change="dnsTypeChangeHandle">
             <template v-for="v in options.dnsTypes" :key="v.value">
               <a-select-option v-if="!(isMultiValueAnswer && v.value === 'CNAME')" :value="v.value">
@@ -22,8 +24,8 @@
               </a-select-option>
             </template>
           </a-select>
-        </a-form-item>
-        <a-form-item>
+        </a-form-model-item>
+        <a-form-model-item prop="dns_value">
           <span slot="label">
             {{ $t('network.text_152') }}
             <a-tooltip class="item" effect="dark" placement="top" v-if="isSRV">
@@ -31,12 +33,12 @@
               <div slot="title">{{$t('network.text_751')}}</div>
             </a-tooltip>
           </span>
-          <a-input v-decorator="decorators.dns_value" :placeholder="$t('network.text_175')" />
-        </a-form-item>
-        <a-form-item v-if="showProxied" :label="$t('network.proxy_status')">
-          <a-switch v-decorator="decorators.proxied" :checkedChildren="$t('network.proxy_exist')" :unCheckedChildren="$t('network.just_dns')" />
-        </a-form-item>
-        <a-form-item>
+          <a-input v-model:value="form.dns_value" :placeholder="$t('network.text_175')" />
+        </a-form-model-item>
+        <a-form-model-item v-if="showProxied" :label="$t('network.proxy_status')" prop="proxied">
+          <a-switch v-model:checked="form.proxied" :checkedChildren="$t('network.proxy_exist')" :unCheckedChildren="$t('network.just_dns')" />
+        </a-form-model-item>
+        <a-form-model-item prop="ttl">
           <span slot="label">
             {{ $t('common_665') }}
             <a-tooltip class="item" effect="dark" placement="top">
@@ -46,7 +48,7 @@
           </span>
           <a-row>
             <a-col :span="2">
-              <a-input-number v-decorator="decorators.ttl" :min="ttlRange.min" :max="ttlRange.max" />
+              <a-input-number v-model:value="form.ttl" :min="ttlRange.min" :max="ttlRange.max" />
             </a-col>
             <a-col :span="22">
               <ul class="oc-ttl d-flex">
@@ -61,8 +63,8 @@
               </ul>
             </a-col>
           </a-row>
-        </a-form-item>
-        <a-form-item v-if="isMX">
+        </a-form-model-item>
+        <a-form-model-item v-if="isMX" prop="mx_priority">
           <span slot="label">
             {{ $t('network.text_731') }}
             <a-tooltip class="item" effect="dark" placement="top">
@@ -70,38 +72,40 @@
               <div slot="title">{{$t('network.text_732')}}</div>
             </a-tooltip>
           </span>
-          <a-input-number v-decorator="decorators.mx_priority" :min="1" :max="50" />
-        </a-form-item>
-        <a-form-item v-if="isPublic && !isCloudflare" :label="$t('common_696')" class="mb-0">
+          <a-input-number v-model:value="form.mx_priority" :min="1" :max="50" />
+        </a-form-model-item>
+        <a-form-model-item v-if="isPublic && !isCloudflare" :label="$t('common_696')" class="mb-0">
           <a-row
             :gutter="4"
             class="record-list mb-3">
             <a-col :span="6">
-              <a-form-item>
-                <a-select v-decorator="decorators.policy_type" @change="policyTypeChangeHandle">
+              <a-form-model-item prop="policy_type">
+                <a-select v-model:value="form.policy_type" @change="policyTypeChangeHandle">
                   <template
                       v-for="(item, i) in policyTypeOpts">
                     <a-select-option
                       :key="i"
                       :value="item.value"
-                      v-if="!(form.fd.dns_type === 'CNAME' && item.value === 'MultiValueAnswer')">
+                      v-if="!(form.dns_type === 'CNAME' && item.value === 'MultiValueAnswer')">
                       {{item.label}}
                     </a-select-option>
                   </template>
                 </a-select>
-              </a-form-item>
+              </a-form-model-item>
             </a-col>
             <a-col :span="18">
-              <a-form-item>
-                <a-input v-if="form.fd.policy_type === 'Weighted'" v-decorator="decorators.policy_txtvalue" />
+              <a-form-model-item v-if="form.policy_type === 'Weighted'" prop="policy_txtvalue">
+                <a-input v-model:value="form.policy_txtvalue" />
+              </a-form-model-item>
+              <a-form-model-item v-else-if="isAliyunEE" prop="policy_value_list">
                 <a-cascader
-                  v-decorator="decorators.policy_value_list"
-                  v-else-if="isAliyunEE"
+                  v-model:value="form.policy_value_list"
                   :options="policyValueOptions"
                   change-on-select
-                  expand-trigger="hover"
-                  @change="onChange" />
-                <a-select v-else :disabled="form.fd.policy_type === 'Simple' || form.fd.policy_type === 'MultiValueAnswer'" v-decorator="decorators.policy_value">
+                  expand-trigger="hover" />
+              </a-form-model-item>
+              <a-form-model-item v-else prop="policy_value">
+                <a-select v-model:value="form.policy_value" :disabled="form.policy_type === 'Simple' || form.policy_type === 'MultiValueAnswer'">
                   <a-select-option
                     :key="i"
                     :value="item.value"
@@ -109,14 +113,14 @@
                     {{item.label}}
                   </a-select-option>
                 </a-select>
-              </a-form-item>
+              </a-form-model-item>
             </a-col>
           </a-row>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_1154')" class="mb-0">
-          <tag v-decorator="decorators.tag" :allowNoValue="false" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_1154')" class="mb-0" prop="tag">
+          <tag :value="form.tag" @change="v => form.tag = v" :allowNoValue="false" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading.submit">{{ $t('dialog.ok') }}</a-button>
@@ -151,25 +155,25 @@ export default {
     let initPolicyValue = this.params.data ? this.params.data[0]?.policy_value || '' : ''
 
     const checkDnsValue = (rule, value, callback) => {
-      if (this.form.fd.dns_type === 'A') {
+      if (this.form.dns_type === 'A') {
         if (validate(value, 'IPv4') === false || validate(value, 'IPv4').result === false) {
           callback(new Error(this.$t('validator.IPv4')))
         } else {
           callback()
         }
-      } else if (this.form.fd.dns_type === 'AAAA') {
+      } else if (this.form.dns_type === 'AAAA') {
         if (validate(value, 'IPv6') === false || validate(value, 'IPv6').result === false) {
           callback(new Error(this.$t('validator.IPv6')))
         } else {
           callback()
         }
-      } else if (this.form.fd.dns_type === 'CNAME' || this.form.fd.dns_type === 'MX') {
+      } else if (this.form.dns_type === 'CNAME' || this.form.dns_type === 'MX') {
         if (validate(value, 'domain') === false || validate(value, 'domain').result === false) {
           callback(new Error(this.$t('validator.domain')))
         } else {
           callback()
         }
-      } else if (this.form.fd.dns_type === 'SRV') {
+      } else if (this.form.dns_type === 'SRV') {
         const parts = value.split(' ')
         if (parts.length !== 4) {
           callback(new Error(this.$t('network.text_179')))
@@ -184,8 +188,8 @@ export default {
           callback(new Error(this.$t('network.text_180')))
         }
         if (parts[3]) {
-          const domain = parts[3]
-          if (validate(domain, 'domain') === false || validate(domain, 'domain').result === false) {
+          const domainVal = parts[3]
+          if (validate(domainVal, 'domain') === false || validate(domainVal, 'domain').result === false) {
             callback(new Error(this.$t('network.text_180')))
           } else {
             callback()
@@ -196,7 +200,7 @@ export default {
     }
 
     const checkDnsName = (rule, value, callback) => {
-      if (this.form.fd.dns_type === 'SRV') {
+      if (this.form.dns_type === 'SRV') {
         const parts = value.split('.')
         if (parts.length < 2) {
           return callback(new Error(this.$t('network.text_179')))
@@ -249,115 +253,52 @@ export default {
       trafficPolicies: [],
       dnsZoneCapabilityData: null,
       form: {
-        fc: this.$form.createForm(this, { onValuesChange: this.onValuesChange }),
-        fd: {
-          provider: '',
-          dns_type: 'A',
-          policy_type: initPolicyType,
-        },
+        name: undefined,
+        dns_type: dnsTypes[0].value,
+        dns_value: undefined,
+        mx_priority: 5,
+        ttl: 300,
+        proxied: initProxied,
+        provider: '',
+        policy_type: initPolicyType,
+        policy_value: !isAliyunEE ? initPolicyValue : '',
+        policy_value_list: isAliyunEE ? initPolicyValue : [],
+        policy_txtvalue: '',
+        tag: this.params?.data[0]?.metadata || {},
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            validateTrigger: ['change', 'blur'],
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('common_695') },
-              { validator: checkDnsName },
-            ],
-          },
-        ],
-        dns_type: [
-          'dns_type',
-          {
-            initialValue: dnsTypes[0].value,
-          },
+          { required: true, message: this.$t('common_695') },
+          { validator: checkDnsName },
         ],
         dns_value: [
-          'dns_value',
-          {
-            validateTrigger: ['change', 'blur'],
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('network.text_175') },
-              { validator: checkDnsValue },
-            ],
-          },
-        ],
-        mx_priority: [
-          'mx_priority',
-          {
-            initialValue: 5,
-          },
-        ],
-        ttl: [
-          'ttl',
-          {
-            initialValue: 300,
-          },
-        ],
-        proxied: [
-          'proxied',
-          {
-            initialValue: initProxied,
-            valuePropName: 'checked',
-          },
+          { required: true, message: this.$t('network.text_175') },
+          { validator: checkDnsValue },
         ],
         provider: [
-          'provider',
           {
-            initialValue: '',
-            validateTrigger: ['change', 'blur'],
-            rules: [{
-              required: true,
-              message: this.$t('network.text_334', [this.$t('common_283')]),
-            }],
+            required: true,
+            message: this.$t('network.text_334', [this.$t('common_283')]),
           },
         ],
         policy_type: [
-          'policy_type',
           {
-            initialValue: initPolicyType,
-            validateTrigger: ['change', 'blur'],
-            rules: [{
-              required: true,
-              message: this.$t('network.text_334', [this.$t('common_713')]),
-            }],
-          },
-        ],
-        policy_value: [
-          'policy_value',
-          {
-            initialValue: !isAliyunEE ? initPolicyValue : '',
+            required: true,
+            message: this.$t('network.text_334', [this.$t('common_713')]),
           },
         ],
         policy_value_list: [
-          'policy_value_list',
           {
-            initialValue: isAliyunEE ? initPolicyValue : [],
-            rules: [{
-              required: true,
-              message: this.$t('common.tips.select', [this.$t('common_696')]),
-            }],
+            required: true,
+            message: this.$t('common.tips.select', [this.$t('common_696')]),
           },
         ],
         policy_txtvalue: [
-          'policy_txtvalue',
-          {
-            initialValue: '',
-            rules: [{ validator: checkPolicyTxtValue }],
-          },
+          { validator: checkPolicyTxtValue },
         ],
         tag: [
-          'tag',
-          {
-            initialValue: this.params?.data[0]?.metadata,
-            rules: [
-              { required: false, message: this.$t('cloudenv.text_451') },
-              { validator: validateForm('tagName') },
-            ],
-          },
+          { required: false, message: this.$t('cloudenv.text_451') },
+          { validator: validateForm('tagName') },
         ],
       },
       formItemLayout: {
@@ -396,10 +337,10 @@ export default {
       }
     },
     isSRV () {
-      return this.form.fd.dns_type === 'SRV'
+      return this.form.dns_type === 'SRV'
     },
     isMX () {
-      return this.form.fd.dns_type === 'MX'
+      return this.form.dns_type === 'MX'
     },
     isUpdate () {
       return this.params.type === 'update'
@@ -421,17 +362,17 @@ export default {
       return this.getPublicTypes(this.params.detailData.provider, this.zoneType)
     },
     policyValueOpts () {
-      return this.getPublicValues(this.params.detailData.provider, this.form.fd.policy_type)
+      return this.getPublicValues(this.params.detailData.provider, this.form.policy_type)
     },
     isCloudflare () {
       return this.params.detailData.provider === 'Cloudflare'
     },
     showProxied () {
-      return this.isCloudflare && ['A', 'AAAA', 'CNAME'].includes(this.form.fd.dns_type)
+      return this.isCloudflare && ['A', 'AAAA', 'CNAME'].includes(this.form.dns_type)
     },
     policyValueOptions () {
       if (!this.isAliyunEE) return []
-      return getPolicyValueOpts(this.form.fd.policy_type)
+      return getPolicyValueOpts(this.form.policy_type)
     },
   },
   created () {
@@ -454,8 +395,8 @@ export default {
     async handleConfirm () {
       this.loading.submit = true
       try {
-        const values = await this.form.fc.validateFields()
-        const newValues = this.generateData(values)
+        await this.$refs.formRef.validate()
+        const newValues = this.generateData(this.form)
         await this.doCreate(newValues)
         this.loading.submit = false
         this.params.refresh && this.params.refresh()
@@ -469,26 +410,14 @@ export default {
     policyTypeChangeHandle (val) {
       this.$nextTick(() => {
         if (this.isAliyunEE) {
-          this.form.fc.setFieldsValue({
-            policy_value_list: [],
-          })
-          this.form.fc.setFieldsValue({
-            policy_txtvalue: '',
-          })
+          this.form.policy_value_list = []
+          this.form.policy_txtvalue = ''
         } else if (this.policyValueOpts.length > 0) {
-          this.form.fc.setFieldsValue({
-            policy_value: this.policyValueOpts[0].value,
-          })
-          this.form.fc.setFieldsValue({
-            policy_txtvalue: this.policyValueOpts[0].value,
-          })
+          this.form.policy_value = this.policyValueOpts[0].value
+          this.form.policy_txtvalue = this.policyValueOpts[0].value
         } else {
-          this.form.fc.setFieldsValue({
-            policy_value: '',
-          })
-          this.form.fc.setFieldsValue({
-            policy_txtvalue: '',
-          })
+          this.form.policy_value = ''
+          this.form.policy_txtvalue = ''
         }
       })
     },
@@ -532,28 +461,23 @@ export default {
         if (this.isUpdate) {
           _name = name
         }
-        const data = {
-          name: _name,
-          dns_type,
-          dns_value,
-          ttl,
-          policy_type,
-        }
+        this.form.name = _name
+        this.form.dns_type = dns_type
+        this.form.dns_value = dns_value
+        this.form.ttl = ttl
+        this.form.policy_type = policy_type
         if (dns_type === 'MX') {
-          data.mx_priority = mx_priority
+          this.form.mx_priority = mx_priority
         }
         if (policy_type === 'Weighted') {
-          data.policy_txtvalue = policy_value
+          this.form.policy_txtvalue = policy_value
         } else if (policy_type !== 'MultiValueAnswer' && policy_type !== 'Simple') {
-          data.policy_value = policy_value
+          this.form.policy_value = policy_value
         }
-        this.form.fc.setFieldsValue(data)
       })
     },
     ttlClickHandle (v) {
-      this.form.fc.setFieldsValue({
-        ttl: v.value,
-      })
+      this.form.ttl = v.value
     },
     fetchTrafficPolicies () {
       this.loading.trafficPolicy = true
@@ -607,16 +531,9 @@ export default {
       }
       return []
     },
-    onValuesChange (props, values) {
-      Object.keys(values).forEach((key) => {
-        if (['dns_type', 'policy_type'].includes(key)) {
-          this.form.fd[key] = values[key]
-        }
-      })
-    },
     dnsTypeChangeHandle () {
       this.$nextTick(() => {
-        this.form.fc.validateFields(['dns_value'], { force: true })
+        this.$refs.formRef && this.$refs.formRef.validateField('dns_value')
       })
     },
     filterOption (input, option) {

@@ -1,39 +1,39 @@
 <template>
   <div class="k8s-deployment-create w-75">
-    <a-form :form="form.fc" v-bind="formItemLayout">
-      <a-form-item :label="$t('k8s.text_41')">
-        <a-input :placeholder="$t('k8s.text_60')" v-decorator="decorators.name" />
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_19')">
-        <cluster-select v-decorator="decorators.cluster" @input="setCluster" v-model:clusterObj="clusterObj" />
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_23')">
-        <namespace-select v-decorator="decorators.namespace" @input="setNamespace" :cluster="cluster" v-model:namespaceObj="namespaceObj" />
-      </a-form-item>
-      <a-form-item :label="$t('k8s.text_389')">
-        <a-radio-group v-decorator="decorators.roleRefType" @change="e => roleRefType = e.target.value">
+    <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model-item :label="$t('k8s.text_41')" prop="name">
+        <a-input :placeholder="$t('k8s.text_60')" v-model:value="form.name" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('k8s.text_19')" prop="cluster">
+        <cluster-select v-model:value="form.cluster" @input="setCluster" v-model:clusterObj="clusterObj" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('k8s.text_23')" prop="namespace">
+        <namespace-select v-model:value="form.namespace" @input="setNamespace" :cluster="cluster" v-model:namespaceObj="namespaceObj" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('k8s.text_389')" prop="roleRefType">
+        <a-radio-group v-model:value="form.roleRefType" @change="onRoleRefTypeChange">
           <a-radio-button v-for="item in roleRefOpts" :value="item.key" :key="item.key">{{ item.label }}</a-radio-button>
         </a-radio-group>
-      </a-form-item>
-      <a-form-item :label="roleLabel">
+      </a-form-model-item>
+      <a-form-model-item :label="roleLabel" prop="role">
         <base-select
-          :resource="roleRefType === 'Role' ? 'rbacroles' : 'rbacclusterroles'"
+          :resource="form.roleRefType === 'Role' ? 'rbacroles' : 'rbacclusterroles'"
           version="v1"
           :params="params"
           need-params
           idKey="name"
-          :select-props="{ placeholder: $t('common.select') }"
-          v-decorator="decorators.role" />
-      </a-form-item>
-      <a-form-item label="Subject">
-        <a-radio-group v-decorator="decorators.subjectType" @change="subjectTypeChange">
+          v-model:value="form.role"
+          :select-props="{ placeholder: $t('common.select') }" />
+      </a-form-model-item>
+      <a-form-model-item label="Subject" prop="subjectType">
+        <a-radio-group v-model:value="form.subjectType" @change="subjectTypeChange">
           <a-radio-button v-for="item in subjectTypeOpts" :value="item.key" :key="item.key">{{ item.label }}</a-radio-button>
         </a-radio-group>
-      </a-form-item>
-      <a-form-item label="Subject Name">
+      </a-form-model-item>
+      <a-form-model-item label="Subject Name" prop="subject">
         <base-select
-          v-if="subjectType === 'ServiceAccount'"
-          v-decorator="decorators.subject"
+          v-if="form.subjectType === 'ServiceAccount'"
+          v-model:value="form.subject"
           resource="serviceaccounts"
           version="v1"
           idKey="name"
@@ -43,15 +43,15 @@
         <template v-else>
           <base-select
             v-if="subjectOpts.length"
-            v-decorator="decorators.subject"
+            v-model:value="form.subject"
             :options="subjectOpts"
             version="v1"
             idKey="name"
             :select-props="{ placeholder: $t('common.select') }" />
-          <a-input v-else v-decorator="decorators.subject" :placeholder="$t('common.placeholder')" />
+          <a-input v-else v-model:value="form.subject" :placeholder="$t('common.placeholder')" />
         </template>
-      </a-form-item>
-    </a-form>
+      </a-form-model-item>
+    </a-form-model>
   </div>
 </template>
 
@@ -72,70 +72,36 @@ export default {
   data () {
     return {
       form: {
-        fc: this.$form.createForm(this),
+        name: '',
+        cluster: this.$store.state.common.k8s.cluster,
+        namespace: this.$store.state.common.k8s.namespace,
+        roleRefType: 'Role',
+        role: undefined,
+        subjectType: 'User',
+        subject: undefined,
+      },
+      rules: {
+        name: [
+          { required: true, message: this.$t('k8s.text_60') },
+          { min: 2, max: 24, message: this.$t('k8s.text_132'), trigger: 'blur' },
+          { validator: this.$validate('k8sName') },
+        ],
+        cluster: [
+          { required: true, message: this.$t('k8s.text_30'), trigger: 'blur' },
+        ],
+        namespace: [
+          { required: true, message: this.$t('k8s.text_61'), trigger: 'blur' },
+        ],
+        role: [
+          { required: true, message: this.$t('common.select'), trigger: 'blur' },
+        ],
+        subject: [
+          { required: true, message: this.$t('common.select'), trigger: 'blur' },
+        ],
       },
       formItemLayout: {
         labelCol: { span: 4 },
         wrapperCol: { span: 20 },
-      },
-      decorators: {
-        name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('k8s.text_60') },
-              { min: 2, max: 24, message: this.$t('k8s.text_132'), trigger: 'blur' },
-              { validator: this.$validate('k8sName') },
-            ],
-          },
-        ],
-        cluster: [
-          'cluster',
-          {
-            initialValue: this.$store.state.common.k8s.cluster,
-            rules: [
-              { required: true, message: this.$t('k8s.text_30'), trigger: 'blur' },
-            ],
-          },
-        ],
-        namespace: [
-          'namespace',
-          {
-            initialValue: this.$store.state.common.k8s.namespace,
-            rules: [
-              { required: true, message: this.$t('k8s.text_61'), trigger: 'blur' },
-            ],
-          },
-        ],
-        roleRefType: [
-          'roleRefType',
-          {
-            initialValue: 'Role',
-          },
-        ],
-        role: [
-          'role',
-          {
-            rules: [
-              { required: true, message: this.$t('common.select'), trigger: 'blur' },
-            ],
-          },
-        ],
-        subjectType: [
-          'subjectType',
-          {
-            initialValue: 'User',
-          },
-        ],
-        subject: [
-          'subject',
-          {
-            rules: [
-              { required: true, message: this.$t('common.select'), trigger: 'blur' },
-            ],
-          },
-        ],
       },
       clusterObj: {},
       namespaceObj: {},
@@ -149,8 +115,6 @@ export default {
         { key: 'ServiceAccount', label: this.$t('k8s.text_26') },
       ],
       subjectOpts: [],
-      roleRefType: 'Role',
-      subjectType: 'User',
     }
   },
   computed: {
@@ -163,29 +127,32 @@ export default {
         scope: this.$store.getters.scope,
       }
       if (!cluster) return {}
-      if (this.roleRefType === 'Role') {
+      if (this.form.roleRefType === 'Role') {
         if (!namespace) return {}
         params.namespace = namespace
       }
       return params
     },
     roleLabel () {
-      return this.roleRefType === 'Role' ? this.$t('k8s.text_370') : this.$t('k8s.text_373')
+      return this.form.roleRefType === 'Role' ? this.$t('k8s.text_370') : this.$t('k8s.text_373')
     },
   },
   watch: {
-    clusterObj (val, oldV) {
+    clusterObj () {
       this.namespaceObj = {}
       this.getSubjectOpts()
     },
   },
   methods: {
+    onRoleRefTypeChange () {
+      this.form.role = undefined
+    },
     async getSubjectOpts () {
       try {
         const cluster = this.clusterObj.id
         let spec = ''
-        if (this.subjectType === 'User') spec = 'cluster-users'
-        if (this.subjectType === 'Group') spec = 'cluster-user-groups'
+        if (this.form.subjectType === 'User') spec = 'cluster-users'
+        if (this.form.subjectType === 'Group') spec = 'cluster-user-groups'
         if (cluster) {
           const { data } = await new this.$Manager('kubeclusters', 'v1').getSpecific({ id: cluster, spec, params: { scope: this.$store.getters.scope } })
           this.subjectOpts = data
@@ -194,37 +161,33 @@ export default {
         throw error
       }
     },
-    subjectTypeChange (e) {
-      this.subjectType = e.target.value
+    subjectTypeChange () {
+      this.form.subject = undefined
       this.getSubjectOpts()
-      this.form.fc.setFieldsValue({
-        [this.decorators.subject[0]]: undefined,
-      })
     },
     async validateForm () {
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         const subjects = [{
-          kind: values.subjectType,
-          name: values.subject,
+          kind: this.form.subjectType,
+          name: this.form.subject,
         }]
         if (subjects[0].kind === 'ServiceAccount') {
           subjects[0].namespace = this.namespaceObj.name
         } else {
           subjects[0].apiGroup = API_GROUP
         }
-        const data = {
-          cluster_id: values.cluster,
-          name: values.name,
-          namespace_id: values.namespace,
+        return {
+          cluster_id: this.form.cluster,
+          name: this.form.name,
+          namespace_id: this.form.namespace,
           roleRef: {
-            kind: values.roleRefType,
-            name: values.role,
+            kind: this.form.roleRefType,
+            name: this.form.role,
             apiGroup: API_GROUP,
           },
           subjects,
         }
-        return data
       } catch (error) {
         throw error
       }

@@ -1,15 +1,18 @@
 <template>
   <div>
     <page-header :title="$t('k8s.text_367')" />
-    <a-form
+    <a-form-model
+      ref="formRef"
       class="mt-3"
-      :form="form.fc">
-      <a-form-item
+      :model="form"
+      :rules="rules"
+      v-bind="formItemLayout">
+      <a-form-model-item
         :label="$t('k8s.text_41')"
-        v-bind="formItemLayout">
-        <a-input v-decorator="decorators.name" :placeholder="$t('k8s.text_60')" />
-      </a-form-item>
-    </a-form>
+        prop="name">
+        <a-input v-model:value="form.name" :placeholder="$t('k8s.text_60')" />
+      </a-form-model-item>
+    </a-form-model>
     <page-footer>
       <div slot="right">
         <a-button class="mr-2" type="primary" @click="handleConfirm" :loading="loading">{{$t('common.create')}}</a-button>
@@ -29,28 +32,13 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        name: '',
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            validateTrigger: 'blur',
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('k8s.text_60') },
-              { min: 2, max: 24, message: this.$t('k8s.text_132') },
-              { validator: this.$validate('k8sName') },
-            ],
-          },
-        ],
-        cluster: [
-          'cluster',
-          {
-            rules: [
-              { required: true, message: this.$t('k8s.text_30') },
-            ],
-          },
+          { required: true, message: this.$t('k8s.text_60') },
+          { min: 2, max: 24, message: this.$t('k8s.text_132') },
+          { validator: this.$validate('k8sName') },
         ],
       },
       formItemLayout: {
@@ -72,9 +60,9 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         const data = {
-          ...values,
+          ...this.form,
           spec: {
             template: {
               spec: {},

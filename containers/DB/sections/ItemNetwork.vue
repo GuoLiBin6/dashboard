@@ -1,6 +1,7 @@
 <template>
   <network-selects
     ref="NETWORK"
+    :model="resolvedModel"
     :label="$t('db.text_32')"
     :isDefaultFetch="false"
     :vpcFormat="vpcFormat"
@@ -14,7 +15,7 @@
 </template>
 
 <script>
-import NetworkSelects from '@/sections/NetworkSelects'
+import NetworkSelects from '@/sections/NetworkSelects/model'
 
 export default {
   name: 'DBItemNetwork',
@@ -22,6 +23,18 @@ export default {
     NetworkSelects,
   },
   inject: ['form', 'formItemLayout', 'scopeParams'],
+  props: {
+    /** a-form-model：通常为 form.fd，转给 NetworkSelects（必传） */
+    model: {
+      type: Object,
+      required: true,
+    },
+  },
+  computed: {
+    resolvedModel () {
+      return this.model
+    },
+  },
   methods: {
     vpcFormat (vpc) {
       const h = this.$createElement
@@ -66,7 +79,7 @@ export default {
         ...this.scopeParams,
       }
       // zones是rds新建
-      const zonesStr = this.normalizeZoneValue(this.form.getFieldValue('zones'))
+      const zonesStr = this.normalizeZoneValue(fd.zones)
       if (fd.provider === 'Aws') {
         params.provider = 'Aws'
       } else if (zonesStr) {
@@ -76,11 +89,11 @@ export default {
         }
       }
       // zone是redis新建
-      const zone = this.normalizeZoneValue(this.form.getFieldValue('zone'))
+      const zone = this.normalizeZoneValue(fd.zone)
       if (zone) {
         params.zone = zone
       } else {
-        const zoneId = this.normalizeZoneValue(this.form.getFieldValue('zone_id'))
+        const zoneId = this.normalizeZoneValue(fd.zone_id)
         if (zoneId) {
           params.zone = zoneId
         }

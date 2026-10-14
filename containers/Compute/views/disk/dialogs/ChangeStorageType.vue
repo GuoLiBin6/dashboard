@@ -7,14 +7,17 @@
       </div>
       <dialog-selected-tips :count="params.data.length" :action="$t('compute.vminstance.change_storage_type')" :name="$t('dictionary.disk')" />
       <dialog-table :data="params.data" :columns="params.columns.filter(item => ['name', 'disk_size', 'disk_type', 'storage_type', 'billing_type'].includes(item.field))" />
-      <a-form
-        :form="form.fc"
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
         v-bind="formItemLayout">
-        <a-form-item
-          :label="$t('compute.text_380')">
+        <a-form-model-item
+          :label="$t('compute.text_380')"
+          prop="storage_type">
           <base-select
             style="width: 100%"
-            v-decorator="decorators.storage_type"
+            v-model:value="form.storage_type"
             :options="storageOptions"
             :select-props="{ placeholder: $t('compute.text_1022', [$t('compute.text_380')]) }">
             <template #optionLabelTemplate="{ item }">
@@ -24,8 +27,8 @@
               </div>
             </template>
           </base-select>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading" :disabled="confirmDisabled">{{ $t('dialog.ok') }}</a-button>
@@ -45,16 +48,11 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        storage_type: undefined,
       },
-      decorators: {
+      rules: {
         storage_type: [
-          'storage_type',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.text_1022', [this.$t('compute.text_380')]), trigger: 'change' },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_1022', [this.$t('compute.text_380')]), trigger: 'change' },
         ],
       },
       formItemLayout: {
@@ -113,33 +111,22 @@ export default {
       const { data } = await new this.$Manager('zones').get({ id: `${this.params.data[0].zone_id}/capability`, params })
       this.capabilityData = data
     },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
-        this.loading = true
+        await this.$refs.formRef.validate()
         await this.params.onManager('performAction', {
           id: this.params.data[0].id,
           managerArgs: {
             action: 'change-storage-type',
-            data: values,
+            data: this.form,
           },
         })
-        this.loading = false
         this.params.refresh()
         this.cancelDialog()
       } catch (error) {
+        // validate or submit failed
+      } finally {
         this.loading = false
       }
     },

@@ -6,17 +6,17 @@
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_1116')" />
       <dialog-table v-if="params.columns && params.columns.length > 0" :data="params.data" :columns="(params.columns || []).slice(0, 3)" />
       <loader loading v-if="!(bindedSecgroupsLoaded && secgroupsInitLoaded)" />
-      <a-form :form="form.fc" hideRequiredMark v-show="bindedSecgroupsLoaded && secgroupsInitLoaded" v-bind="formItemLayout">
-        <a-form-item v-if="params.type === 'vminstance'" :label="$t('compute.nic')" :extra="$t('compute.nic_empty_secgroups_tip')">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-show="bindedSecgroupsLoaded && secgroupsInitLoaded" v-bind="formItemLayout">
+        <a-form-model-item v-if="params.type === 'vminstance'" :label="$t('compute.nic')" :extra="$t('compute.nic_empty_secgroups_tip')" prop="nic">
           <base-select
             class="w-100"
-            v-decorator="decorators.nic"
+            v-model:value="form.nic"
             :options="nicOptions"
             :select-props="{ allowClear: true, placeholder: $t('compute.text_193') }"
             @change="handleNicChange" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_105')">
-          <template #extra>{{$t('compute.text_1242', [max])}}<!-- <help-link :href="href">{{$t('compute.text_189')}}</help-link> -->
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_105')" prop="secgroups">
+          <template #extra>{{$t('compute.text_1242', [max])}}
             <dialog-trigger :vm="params.vm" :extParams="{ tenant, domain }" :name="$t('compute.text_189')" value="CreateSecgroupDialog" resource="secgroups" @success="successCallback" />
           </template>
           <base-select
@@ -24,15 +24,15 @@
             class="w-100"
             remote
             show-sync
-            v-decorator="decorators.secgroups"
+            v-model:value="form.secgroups"
             resource="secgroups"
             v-model:resList="secgroupOptions"
             :mapper="mapperSecgroups"
             :params="secgroupsParams"
             v-model:initLoaded="secgroupsInitLoaded"
             :select-props="{ allowClear: true, placeholder: $t('compute.text_190'), mode: 'multiple' }" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </template>
     <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -60,7 +60,7 @@ export default {
       if (value.length > max) {
         return callback(maxError)
       }
-      if (this.params.type === 'vminstance' && this.form.fd.nic) {
+      if (this.params.type === 'vminstance' && this.form.nic) {
         return callback()
       }
       if (value.length < 1) {
@@ -72,36 +72,15 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-          },
-        }),
-        fd: {
-          nic: null,
-        },
+        nic: null,
+        secgroups: this.params.data[0].secgroups && this.params.data[0].secgroups.map(item => item.id),
       },
-      decorators: {
+      rules: {
         nic: [
-          'nic',
-          {
-            initialValue: undefined,
-            rules: [
-              { required: false, message: this.$t('compute.text_193') },
-            ],
-          },
+          { required: false, message: this.$t('compute.text_193') },
         ],
         secgroups: [
-          'secgroups',
-          {
-            initialValue: this.params.data[0].secgroups && this.params.data[0].secgroups.map(item => item.id),
-            validateFirst: true,
-            rules: [
-              { validator: validateSecgroups, trigger: 'change' },
-            ],
-          },
+          { validator: validateSecgroups, trigger: 'change' },
         ],
       },
       formItemLayout: {
@@ -121,8 +100,8 @@ export default {
   },
   computed: {
     selectedNic () {
-      if (!this.form.fd.nic) return null
-      return this.nicOptions.find(item => item.value === this.form.fd.nic)
+      if (!this.form.nic) return null
+      return this.nicOptions.find(item => item.value === this.form.nic)
     },
     ...mapGetters(['isAdminMode', 'scope']),
     isAzure () {
@@ -190,31 +169,23 @@ export default {
       })
     },
     async handleNicChange (value) {
-      // 更新 fd.nic
-      this.form.fd.nic = value
-      // 先清空当前选中的安全组
-      this.form.fc.setFieldsValue({ secgroups: [] })
-      // 等待安全组选择器更新
+      this.form.nic = value
+      this.form.secgroups = []
       await this.$nextTick()
-      // 加载安全组数据
       await this.fetchBindedSecgroups()
-      // 确保安全组选择器已加载选项
       if (this.$refs.secgroupRef) {
         await this.$refs.secgroupRef.loadOpts()
       }
-      // 设置安全组
       await this.$nextTick()
       if (this.selectedNic) {
-        // 如果选择了网卡，使用网卡绑定的安全组
         const bindedSecgroupIds = this.getBindedSecgroupIds()
         if (bindedSecgroupIds.length > 0) {
-          this.form.fc.setFieldsValue({ secgroups: bindedSecgroupIds })
+          this.form.secgroups = bindedSecgroupIds
         }
       } else {
-        // 如果清空了网卡，使用默认的虚拟机安全组
         const defaultSecgroupIds = this.params.data[0].secgroups && this.params.data[0].secgroups.map(item => item.id)
         if (defaultSecgroupIds && defaultSecgroupIds.length > 0) {
-          this.form.fc.setFieldsValue({ secgroups: defaultSecgroupIds })
+          this.form.secgroups = defaultSecgroupIds
         }
       }
     },
@@ -223,7 +194,6 @@ export default {
         return []
       }
       const selectedMac = this.selectedNic.value
-      // 从数据中获取已绑定的安全组
       const networkSecgroups = this.params.data[0].network_secgroups || []
       const currentNicSecgroup = networkSecgroups.find(item => item.mac === selectedMac)
       if (currentNicSecgroup && currentNicSecgroup.secgroups) {
@@ -239,14 +209,11 @@ export default {
     async fetchBindedSecgroups () {
       let bindedSecgroupIds = []
       if (this.selectedNic) {
-        // 如果选择了网卡，获取网卡绑定的安全组
         bindedSecgroupIds = this.getBindedSecgroupIds()
       } else {
-        // 如果没有选择网卡，使用虚拟机级别的安全组
         bindedSecgroupIds = this.params.data[0].secgroups ? this.params.data[0].secgroups.map(item => item.id) : []
       }
 
-      // 获取安全组详情
       if (bindedSecgroupIds.length > 0) {
         const manager = new this.$Manager('secgroups')
         try {
@@ -265,20 +232,19 @@ export default {
         this.bindedSecgroups = []
       }
 
-      this.decorators.secgroups[1].initialValue = bindedSecgroupIds
+      this.form.secgroups = bindedSecgroupIds
       this.bindedSecgroupsLoaded = true
     },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        // 如果选择了网卡，使用 set-network-secgroup 操作
+        await this.$refs.formRef.validate()
         const manager = new this.$Manager('servers')
         if (this.selectedNic) {
           const data = {
             network_index: this.selectedNic.index,
             guest: this.params.data[0].id,
-            secgroup_ids: values.secgroups,
+            secgroup_ids: this.form.secgroups,
           }
           await manager.performAction({
             id: this.params.data[0].id,
@@ -286,10 +252,9 @@ export default {
             data,
           })
         } else {
-          // 如果没有选择网卡，使用原来的 set-secgroup 操作
           const ids = this.params.data.map(item => item.id)
           const data = {
-            secgroup_ids: values.secgroups,
+            secgroup_ids: this.form.secgroups,
           }
           await manager.batchPerformAction({
             ids,
@@ -307,10 +272,8 @@ export default {
     },
     async successCallback () {
       await this.$refs.secgroupRef.loadOpts()
-      const secgroups = this.form.fc.getFieldValue('secgroups')
       const newSecgroup = this.secgroupOptions[0]
-      secgroups.push(newSecgroup.id)
-      this.form.fc.setFieldsValue({ secgroups: secgroups })
+      this.form.secgroups = [...(this.form.secgroups || []), newSecgroup.id]
     },
   },
 }

@@ -2,12 +2,19 @@
   <div class="network-schedtag">
     <div class="d-flex align-items-start mb-2" v-for="(item, i) in schedtagList" :key="item.key">
       <a-tag class="network-nic-tag mr-1">{{ isBonding ? 'bond' : $t('compute.text_193')}}{{i}}</a-tag>
-      <schedtag-policy :form="form" :decorators="genDecorator(item.key)" :schedtag-params="{ ...schedtagParams, $t: `net-schedtag-${i}` }" :policyReactInSchedtag="false" />
+      <schedtag-policy
+        :model="model"
+        :item-key="item.key"
+        schedtag-root="networkSchedtags"
+        policy-root="networkPolicys"
+        :schedtag-params="{ ...schedtagParams, $t: `net-schedtag-${i}` }"
+        :policyReactInSchedtag="false" />
       <template v-if="showDeviceConfig">
         <template v-if="item.deviceShow">
           <a-form-item class="mb-0 ml-1"  :wrapperCol="{ span: 24 }">
             <oc-select
-              v-decorator="decorator.devices(item.key)"
+              :value="fieldVal(networkFieldMap.devices(item.key))"
+              @change="v => fieldSet(networkFieldMap.devices(item.key), v)"
               :data="gpuOptions"
               :placeholder="$t('compute.sriov_device_tips')" />
           </a-form-item>
@@ -26,16 +33,20 @@
 </template>
 
 <script>
-import * as R from 'ramda'
 import { uuid } from '@/utils/utils'
 import { SCHEDTAG_POLICY_OPTIONS } from '@/constants'
 import SchedtagPolicy from '@/sections/SchedtagPolicy'
+import nicModelMixin from './nicModelMixin'
+import { resolveNetworkSchedtagFieldMap } from './fields'
+
+const SCHED_MAP_ROOTS = ['networkSchedtags', 'networkPolicys', 'networkDevices']
 
 export default {
   name: 'NetworkSchedtag',
   components: {
     SchedtagPolicy,
   },
+  mixins: [nicModelMixin],
   props: {
     schedtagParams: {
       type: Object,
@@ -46,10 +57,10 @@ export default {
       type: Object,
       required: true,
     },
-    decorator: {
+    /** a-form-model end-state：嵌套 maps 写在 form.fd（model）上 */
+    model: {
       type: Object,
       required: true,
-      validator: val => R.is(Function, val.schedtags) && R.is(Function, val.policys),
     },
     limit: {
       type: Number,
@@ -71,6 +82,9 @@ export default {
     }
   },
   computed: {
+    networkFieldMap () {
+      return resolveNetworkSchedtagFieldMap()
+    },
     schedtagCountRemaining () {
       return this.limit - this.schedtagList.length
     },
@@ -94,9 +108,40 @@ export default {
     },
   },
   created () {
+    SCHED_MAP_ROOTS.forEach(root => this.ensureMap(root))
     this.add()
   },
   methods: {
+    fieldVal (fieldTuple) {
+      return this.nicFieldVal(fieldTuple)
+    },
+    fieldSet (fieldTuple, value) {
+      this.nicFieldSet(fieldTuple, value)
+    },
+    writeFields (vals) {
+      this.nicWriteFields(vals)
+    },
+    clearSchedMapsForKey (key) {
+      if (!key) return
+      SCHED_MAP_ROOTS.forEach((root) => {
+        if (this.model[root] && Object.prototype.hasOwnProperty.call(this.model[root], key)) {
+          this.$delete(this.model[root], key)
+        }
+      })
+    },
+    async validate () {
+      for (const item of this.schedtagList) {
+        const schedtag = this.nicField('networkSchedtags', item.key)
+        if (!schedtag) throw new Error(this.$t('compute.text_123'))
+        const policy = this.nicField('networkPolicys', item.key)
+        if (!policy) throw new Error(this.$t('common_256'))
+        if (item.deviceShow) {
+          const device = this.nicField('networkDevices', item.key)
+          await this.runFieldRule({ required: true, message: this.$t('compute.sriov_device_tips') }, device)
+        }
+      }
+      return true
+    },
     initData (data) {
       this.schedtagList = data.map(schedtag => {
         const item = schedtag.schedtags[0]
@@ -114,15 +159,11 @@ export default {
       })
       this.$nextTick(() => {
         for (const item of this.schedtagList) {
-          this.form.fc.setFieldsValue({
-            [this.decorator.schedtags(item.key)[0]]: item.schedtag,
-            [this.decorator.policys(item.key)[0]]: item.policy,
-          })
+          this.setNicField('networkSchedtags', item.key, item.schedtag)
+          this.setNicField('networkPolicys', item.key, item.policy)
           if (item.device) {
             setTimeout(() => {
-              this.form.fc.setFieldsValue({
-                [this.decorator.devices(item.key)[0]]: item.device,
-              })
+              this.setNicField('networkDevices', item.key, item.device)
             }, 2000)
           }
         }
@@ -130,22 +171,19 @@ export default {
     },
     add () {
       const uid = uuid()
+      SCHED_MAP_ROOTS.forEach(root => this.ensureMap(root))
       this.schedtagList.push({
         key: uid,
         deviceShow: false,
       })
     },
     decrease (uid, index) {
+      this.clearSchedMapsForKey(uid)
       this.schedtagList.splice(index, 1)
     },
-    genDecorator (key) {
-      return {
-        schedtag: this.decorator.schedtags(key),
-        policy: this.decorator.policys(key),
-      }
-    },
-    triggerShowDevice (item, i) {
+    triggerShowDevice (item) {
       item.deviceShow = !item.deviceShow
+      this.$emit('optionalChange', { flag: 'device', key: item.key, show: item.deviceShow })
     },
   },
 }

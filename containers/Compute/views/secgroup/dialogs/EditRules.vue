@@ -2,12 +2,14 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{params.title === 'edit' ? $t('compute.text_982') : params.title === 'create' ? $t('compute.perform_create') : $t('compute.text_983')}}{{$t('compute.rule')}}</div>
     <div slot="body">
-      <a-form
-        v-bind="formItemLayout"
-        :form="form.fc">
-        <a-form-item :label="$t('compute.text_175')" v-if="params.title !== 'edit'">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.text_175')" v-if="params.title !== 'edit'" prop="type">
           <a-select
-            v-decorator="decorators.type"
+            v-model:value="form.type"
             :disabled="typeDisabled"
             :placeholder="$t('compute.text_219')"
             @change="typeChange">
@@ -15,17 +17,17 @@
               {{item.label}}
             </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="targetTypeLabel">
-          <a-select v-decorator="decorators.target_type" @change="targetTypeChange">
+        </a-form-model-item>
+        <a-form-model-item :label="targetTypeLabel" prop="target_type">
+          <a-select v-model:value="form.target_type" @change="targetTypeChange">
             <a-select-option v-for="item in targetTypeOptions" :key="item.value" :value="item.value">
               {{item.label}}
             </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="decLabel" :extra="sourcePromptText">
+        </a-form-model-item>
+        <a-form-model-item :label="decLabel" :extra="sourcePromptText" :prop="targetType === 'ip_set' ? 'ip_set_id' : (targetType === 'cidr' ? 'source' : undefined)">
           <base-select v-if="targetType === 'ip_set'"
-            v-decorator="decorators.ip_set_id"
+            v-model:value="form.ip_set_id"
             version="v2"
             resource="ipsets"
             filterable
@@ -36,49 +38,42 @@
             mode="combobox"
             option-filter-prop="children"
             :placeholder="$t('compute.secgroup.source.placeholder')"
-            v-decorator="decorators.source">
+            v-model:value="form.source">
             <a-select-opt-group>
               <span slot="label">CIDR</span>
               <a-select-option v-for="item in cidrOptions" :key="item.value" :value="item.value">
               {{item.label}}
               </a-select-option>
             </a-select-opt-group>
-            <!-- <a-select-opt-group>
-              <span slot="label">{{$t('dictionary.secgroup')}}</span>
-              <a-select-option v-for="item in secgroupOpts" :key="item.id" :value="item.name">
-              {{item.name}}
-              </a-select-option>
-            </a-select-opt-group> -->
           </a-select>
           <span v-else>ALL</span>
-          <!--a-checkbox v-if="cidrCheckedShow" class="right-checkbox" @change="cidrChange" :checked="cidrChecked">{{$t('compute.any_cidr.text')}}</a-checkbox-->
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_980')">
-          <a-select v-decorator="decorators.protocol" @change="protocolChange" :disabled="protocolDisabled || cidrDisabled">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_980')" prop="protocol">
+          <a-select v-model:value="form.protocol" @change="protocolChange" :disabled="protocolDisabled || cidrDisabled">
             <a-select-option v-for="item in protocolOptions" :key="item.value" :value="item.value">
               {{item.label}}
             </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_998')" :extra="portExtra">
-          <a-input :disabled="portsDisabled || cidrDisabled" v-decorator="decorators.ports" :placeholder="$t('compute.text_350')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_998')" :extra="portExtra" prop="ports">
+          <a-input :disabled="portsDisabled || cidrDisabled" v-model:value="form.ports" :placeholder="$t('compute.text_350')" />
           <a-checkbox class="right-checkbox" @change="portsChange" :checked="portsChecked" :disabled="portsCheckboxDisabled || cidrDisabled">{{$t('compute.text_1000')}}</a-checkbox>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_694')">
-          <a-select v-decorator="decorators.action" :disabled="!isPrioritySupport || cidrDisabled">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_694')" prop="action">
+          <a-select v-model:value="form.action" :disabled="!isPrioritySupport || cidrDisabled">
             <a-select-option v-for="item in actionOptions" :key="item.value" :value="item.value">
               {{item.label}}
             </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item v-if="isPrioritySupport" :label="$t('compute.text_1001')" :extra="priorityExtra">
-          <a-input-number :min="priorityMin" :max="priorityMax" :disabled="priorityDisabled || cidrDisabled" v-decorator="decorators.priority" />
-        </a-form-item>
-        <a-form-item :extra="isAws ? $t('compute.use_en_comment') : ''">
+        </a-form-model-item>
+        <a-form-model-item v-if="isPrioritySupport" :label="$t('compute.text_1001')" :extra="priorityExtra" prop="priority">
+          <a-input-number :min="priorityMin" :max="priorityMax" :disabled="priorityDisabled || cidrDisabled" v-model:value="form.priority" />
+        </a-form-model-item>
+        <a-form-model-item :extra="isAws ? $t('compute.use_en_comment') : ''" prop="description">
           <span slot="label">{{$t('compute.text_312')}}</span>
-          <a-input v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
-      </a-form>
+          <a-input v-model:value="form.description" :placeholder="$t('common_367')" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -117,85 +112,40 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        type: undefined,
+        target_type: initTargetType,
+        source: selectItem.cidr || '0.0.0.0/0',
+        ip_set_id: selectItem.cidr || '',
+        protocol: selectItem.protocol || 'tcp',
+        ports: JSON.stringify(selectItem) === '{}' ? '' : selectItem.ports ? selectItem.ports : 'ALL',
+        action: selectItem.action || 'allow',
+        priority: selectItem.priority || priorityMin,
+        description: selectItem.description || '',
       },
-      decorators: {
-        type: [
-          'type',
-        ],
-        target_type: [
-          'target_type',
-          {
-            initialValue: initTargetType,
-          },
-        ],
+      rules: {
         source: [
-          'source',
-          {
-            validateFirst: true,
-            initialValue: selectItem.cidr || '0.0.0.0/0',
-            rules: [
-              { validator: this.validateCIDR, required: this.targetType === 'cidr' },
-            ],
-          },
+          { validator: this.validateCIDR, required: true },
         ],
         ip_set_id: [
-          'ip_set_id',
-          {
-            initialValue: selectItem.cidr || '',
-            rules: [
-              { required: this.targetType === 'ip_set' },
-            ],
-          },
-        ],
-        protocol: [
-          'protocol',
-          {
-            initialValue: selectItem.protocol || 'tcp',
-          },
+          { required: true },
         ],
         ports: [
-          'ports',
-          {
-            validateFirst: true,
-            initialValue: JSON.stringify(selectItem) === '{}' ? '' : selectItem.ports ? selectItem.ports : 'ALL',
-            rules: [
-              { required: true, message: this.$t('compute.text_347') },
-              { validator: this.validatePorts },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_347') },
+          { validator: this.validatePorts },
         ],
         action: [
-          'action',
-          {
-            initialValue: selectItem.action || 'allow',
-            rules: [
-              { required: true },
-            ],
-          },
-        ],
-        priority: [
-          'priority',
-          {
-            initialValue: selectItem.priority || priorityMin,
-          },
+          { required: true },
         ],
         description: [
-          'description',
           {
-            initialValue: selectItem.description || '',
-            rules: [
-              {
-                validator: (rule, value, callback) => {
-                  if (value && (this.isKsyun || this.isAws)) {
-                    if (/[\u4e00-\u9fff]/.test(value)) {
-                      callback(new Error(this.$t('scope.text_339')))
-                    }
-                  }
-                  callback()
-                },
-              },
-            ],
+            validator: (rule, value, callback) => {
+              if (value && (this.isKsyun || this.isAws)) {
+                if (/[\u4e00-\u9fff]/.test(value)) {
+                  callback(new Error(this.$t('scope.text_339')))
+                }
+              }
+              callback()
+            },
           },
         ],
       },
@@ -220,7 +170,6 @@ export default {
         { label: this.$t('compute.text_977'), value: 'deny' },
       ],
       cidrOptions: [
-        // { label: this.$t('compute.any_cidr.text'), value: '' },
         { label: '0.0.0.0/0', value: '0.0.0.0/0' },
         { label: '10.0.0.0/8', value: '10.0.0.0/8' },
         { label: '172.16.0.0/12', value: '172.16.0.0/12' },
@@ -280,8 +229,6 @@ export default {
       const ret = [
         { label: this.$t('compute.secgroup.rule.target_type.all'), value: 'all' },
         { label: this.$t('compute.secgroup.rule.target_type.cidr'), value: 'cidr' },
-        // { label: this.$t('compute.title.ipsetGroup'), value: 'ip_set_group' },
-        // { label: this.$t('dictionary.secgroup'), value: 'security_group' },
       ]
       if (this.supportsIpSet) {
         ret.push({ label: this.$t('compute.secgroup.rule.target_type.ip_set'), value: 'ip_set' })
@@ -335,7 +282,6 @@ export default {
       if (managerId) {
         params.manager_id = managerId
       } else {
-        // local IDC / onpremise: only unmanaged ipsets
         params.is_managed = false
       }
       return params
@@ -387,6 +333,9 @@ export default {
       callback()
     },
     validateCIDR (rule, value, callback) {
+      if (this.targetType !== 'cidr') {
+        return callback()
+      }
       if (!this.cidrCheckedShow && !value) {
         return callback(new Error(this.$t('common.tips.input', [this.decLabel])))
       }
@@ -412,35 +361,40 @@ export default {
     },
     typeChange (e) {
       if (e === 'windows') {
-        this.form.fc.setFieldsValue({ ports: '3389', protocol: 'tcp' })
+        this.form.ports = '3389'
+        this.form.protocol = 'tcp'
         this.changeCidrChecked(true)
         this.portsChecked = false
         this.portsDisabled = true
         this.portsCheckboxDisabled = true
         this.protocolDisabled = true
       } else if (e === 'linux') {
-        this.form.fc.setFieldsValue({ ports: '22', protocol: 'tcp' })
+        this.form.ports = '22'
+        this.form.protocol = 'tcp'
         this.changeCidrChecked(true)
         this.portsChecked = false
         this.portsDisabled = true
         this.portsCheckboxDisabled = true
         this.protocolDisabled = true
       } else if (e === 'http') {
-        this.form.fc.setFieldsValue({ ports: '80', protocol: 'tcp' })
+        this.form.ports = '80'
+        this.form.protocol = 'tcp'
         this.changeCidrChecked(true)
         this.portsChecked = false
         this.portsDisabled = true
         this.portsCheckboxDisabled = true
         this.protocolDisabled = true
       } else if (e === 'https') {
-        this.form.fc.setFieldsValue({ ports: '443', protocol: 'tcp' })
+        this.form.ports = '443'
+        this.form.protocol = 'tcp'
         this.changeCidrChecked(true)
         this.portsChecked = false
         this.portsDisabled = true
         this.portsCheckboxDisabled = true
         this.protocolDisabled = true
       } else if (e === 'ping') {
-        this.form.fc.setFieldsValue({ ports: 'ALL', protocol: 'icmp' })
+        this.form.ports = 'ALL'
+        this.form.protocol = 'icmp'
         this.changeCidrChecked(true)
         this.portsChecked = true
         this.portsDisabled = true
@@ -450,7 +404,7 @@ export default {
         this.changeCidrChecked(true)
         this.portsChecked = false
         this.portsDisabled = false
-        this.form.fc.resetFields(['ports'])
+        this.form.ports = undefined
         this.portsCheckboxDisabled = false
         this.protocolDisabled = false
       }
@@ -460,14 +414,14 @@ export default {
         this.portsChecked = true
         this.portsDisabled = true
         this.$nextTick(() => {
-          this.form.fc.setFieldsValue({ ports: 'ALL' })
+          this.form.ports = 'ALL'
         })
         this.portsCheckboxDisabled = true
       } else {
         if (e === 'any') {
           this.portsChecked = true
           this.$nextTick(() => {
-            this.form.fc.setFieldsValue({ ports: 'ALL' })
+            this.form.ports = 'ALL'
           })
           this.portsCheckboxDisabled = true
           this.portsDisabled = true
@@ -478,22 +432,6 @@ export default {
         }
       }
     },
-    // async fetchSecgroups (value) {
-    // const params = {
-    //   filter: [
-    //     `id.notequals("${this.params.secgroup}")`,
-    //   ],
-    //   scope: this.scope,
-    //   limit: 10,
-    // }
-    // if (value.length > 0) {
-    //   params.filter.push(`name.contains("${value}")`)
-    // }
-    // await new this.$Manager('secgroups').list({ params })
-    //   .then(({ data: { data = [] } }) => {
-    //     this.secgroupOpts.splice(0, this.secgroupOpts.length, ...data)
-    //   })
-    // },
     targetTypeChange (e) {
       this.targetType = e
     },
@@ -502,11 +440,11 @@ export default {
       this.portsDisabled = !this.portsDisabled
       if (e.target.checked) {
         this.$nextTick(() => {
-          this.form.fc.setFieldsValue({ ports: 'ALL' })
+          this.form.ports = 'ALL'
         })
       } else {
         this.$nextTick(() => {
-          this.form.fc.setFieldsValue({ ports: '' })
+          this.form.ports = ''
         })
       }
     },
@@ -514,11 +452,15 @@ export default {
       this.cidrChecked = !this.cidrChecked
       if (e.target.checked) {
         this.$nextTick(() => {
-          this.form.fc.setFieldsValue({ source: 'ALL', target_type: 'cidr' })
+          this.form.source = 'ALL'
+          this.form.target_type = 'cidr'
+          this.targetType = 'cidr'
         })
       } else {
         this.$nextTick(() => {
-          this.form.fc.setFieldsValue({ source: '0.0.0.0/0', target_type: 'cidr' })
+          this.form.source = '0.0.0.0/0'
+          this.form.target_type = 'cidr'
+          this.targetType = 'cidr'
         })
       }
     },
@@ -566,7 +508,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         if (values.ports === 'ALL') {
           values.ports = ''
         }
@@ -583,12 +526,12 @@ export default {
         delete values.source
         delete values.ip_set_id
         await this.saveEdit(values)
-        this.loading = false
         this.params.refresh && this.params.refresh()
         this.cancelDialog()
       } catch (e) {
-        this.loading = false
         throw e
+      } finally {
+        this.loading = false
       }
     },
   },

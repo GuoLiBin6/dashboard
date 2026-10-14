@@ -13,7 +13,7 @@ export default function (def, schema) {
     if (R.is(String, initialValue)) {
       initialValue = initialValue.split(',')
     }
-    def.decorator = [
+    def.field = [
       {
         initialValue,
         rules: [

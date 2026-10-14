@@ -1,6 +1,6 @@
 <template>
   <div>
-    <a-form-item class="mb-0">
+    <a-form-model-item class="mb-0">
       <a-checkbox :value="checked" @change="onChecked">
         {{ $t('db.redis.replicas_zones') }}
       </a-checkbox>
@@ -16,7 +16,7 @@
             @change="onChange"
             style="display: inline-block;" />
       </div>
-    </a-form-item>
+    </a-form-model-item>
   </div>
 </template>
 
@@ -26,6 +26,11 @@ export default {
   props: {
     form: {
       type: Object,
+    },
+    /** a-form-model fd（优先于 form.fd） */
+    model: {
+      type: Object,
+      default: null,
     },
     options: {
       type: Array,
@@ -37,6 +42,11 @@ export default {
       selectedZones: undefined,
     }
   },
+  computed: {
+    boundFd () {
+      return this.model || this.form?.fd
+    },
+  },
   watch: {
     'form.fd.sku.replicas_num' () {
       this.resetZones()
@@ -47,25 +57,27 @@ export default {
   },
   methods: {
     resetZones () {
+      const fd = this.boundFd
       if (!this.checked) {
         this.selectedZones = undefined
       } else {
         const selectedZones = []
-        const mainZone = this.form.fd.zone || ''
-        const replicasNumber = this.form.fd.sku.replicas_num || 0
+        const mainZone = fd?.zone || ''
+        const replicasNumber = fd?.sku?.replicas_num || 0
         for (let i = 0; i < replicasNumber; i++) {
           selectedZones.push(mainZone)
         }
         this.selectedZones = selectedZones
       }
-      this.form.fc.setFieldsValue({ slave_zones: this.selectedZones })
+      if (fd) this.$set(fd, 'slave_zones', this.selectedZones)
     },
     onChecked (v) {
       this.checked = v.target.checked
       this.resetZones()
     },
     onChange () {
-      this.form.fc.setFieldsValue({ slave_zones: this.selectedZones })
+      const fd = this.boundFd
+      if (fd) this.$set(fd, 'slave_zones', this.selectedZones)
     },
   },
 }

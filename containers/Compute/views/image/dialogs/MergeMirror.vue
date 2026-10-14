@@ -4,13 +4,15 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('common_238')" :count="params.data.length" :action="$t('compute.image.merge_mirror')" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form
-        :form="form.fc"
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
         v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.text_228')" :extra="$t('compute.image.merge_mirror.extra')">
-          <a-input v-decorator="decorators.name" :placeholder="$t('compute.image.merge_mirror.placeholder')" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.image.merge_mirror.order')" :extra="$t('compute.image.merge_mirror.order_extra')">
+        <a-form-model-item :label="$t('compute.text_228')" :extra="$t('compute.image.merge_mirror.extra')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('compute.image.merge_mirror.placeholder')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.image.merge_mirror.order')" :extra="$t('compute.image.merge_mirror.order_extra')">
           <draggable
             handle=".drag-icon"
             chosen-class="chosen"
@@ -22,8 +24,8 @@
               </div>
             </template>
           </draggable>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -55,25 +57,12 @@ export default {
         },
       },
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.$set(this.form.fd, key, values[key])
-            })
-          },
-        }),
-        fd: {},
+        name: undefined,
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_660') },
-              { validator: this.$validate('imageName') },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_660') },
+          { validator: this.$validate('imageName') },
         ],
       },
       images: [],
@@ -103,8 +92,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        const data = { images: this.images, name: values.name }
+        await this.$refs.formRef.validate()
+        const data = { images: this.images, name: this.form.name }
         await this.doAction(data)
         this.cancelDialog()
         this.params.refresh()

@@ -31,11 +31,17 @@ export default {
       targetKeys: [],
       dbList: [],
       dbIdItemObj: {},
+      privilegeById: {},
     }
   },
   created () {
+    if (!this.form.fd) {
+      this.form.fd = {}
+    }
+    if (this.form.fd.accounts === undefined) {
+      this.$set(this.form.fd, 'accounts', [])
+    }
     this.fetchQueryAccountList()
-    this.form.fc.getFieldDecorator('accounts', { preserve: true })
   },
   methods: {
     async fetchQueryAccountList () {
@@ -64,19 +70,23 @@ export default {
     },
     renderItemRadions (item) {
       const { id } = item
-      const { getFieldDecorator } = this.form.fc
+      const initialValue = (item.privileges === 'rw' || item.privileges === 'r') ? item.privileges : 'rw'
+      if (this.privilegeById[id] === undefined) {
+        this.$set(this.privilegeById, id, initialValue)
+      }
       const renderRadios = ['rw', 'r'].map(v => {
         return h('a-radio', { value: v }, { default: () => RDS_ACCOUNT_PRIVILEGES[v] })
       })
-      const _handleChange = () => {
-        this.$nextTick(() => {
-          this.setPrivileges()
-        })
-      }
-      const radioGroupVNode = getFieldDecorator(id, { initialValue: item.privileges || 'rw' })(
-        h('a-radio-group', { onChange: _handleChange }, { default: () => renderRadios }),
-      )
-      return h('a-form-item', { class: 'radios' }, { default: () => [radioGroupVNode] })
+      const radioGroupVNode = h('a-radio-group', {
+        value: this.privilegeById[id],
+        onChange: (e) => {
+          this.$set(this.privilegeById, id, e.target.value)
+          this.$nextTick(() => {
+            this.setPrivileges()
+          })
+        },
+      }, { default: () => renderRadios })
+      return h('div', { class: 'radios' }, [radioGroupVNode])
     },
     renderItem (item) {
       const customLabel = h('span', { class: 'custom-item' }, [
@@ -86,19 +96,16 @@ export default {
       ])
 
       return {
-        label: customLabel, // for displayed item
-        value: item.title, // for title and filter matching
+        label: customLabel,
+        value: item.title,
       }
     },
     setPrivileges () {
-      const values = this.form.fc.getFieldsValue()
-      this.form.fc.setFieldsValue({
-        accounts: this.targetKeys.map(id => {
-          return {
-            account: this.dbIdItemObj[id].name,
-            privilege: values[id],
-          }
-        }),
+      this.form.fd.accounts = this.targetKeys.map(id => {
+        return {
+          account: this.dbIdItemObj[id].name,
+          privilege: this.privilegeById[id] || 'rw',
+        }
       })
     },
     handleChange (targetKeys) {

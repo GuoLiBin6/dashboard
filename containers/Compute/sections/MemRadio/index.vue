@@ -1,10 +1,17 @@
 <template>
-  <a-form-item :extra="extra">
-    <a-radio-group v-decorator="decorator" :disabled="disabled" @change="onChange">
+  <a-form-model-item :extra="extra" :prop="field">
+    <a-radio-group
+      v-model:value="model[field]"
+      :disabled="disabled"
+      @change="onChange">
       <a-radio-button v-show="showUnlimited" :key="0" :value="0">{{ $t('compute.unlimited') }}</a-radio-button>
-      <a-radio-button v-for="item in options" :value="item" :key="item" :disabled="disableOptionHandle(item)">{{ item | format }}</a-radio-button>
+      <a-radio-button
+        v-for="item in options"
+        :key="item"
+        :value="item"
+        :disabled="disableOptionHandle(item)">{{ item | format }}</a-radio-button>
     </a-radio-group>
-  </a-form-item>
+  </a-form-model-item>
 </template>
 
 <script>
@@ -20,11 +27,15 @@ export default {
   },
   mixins: [createFormFieldDraftMixin],
   props: {
-    decorator: {
-      type: Array,
+    model: {
+      type: Object,
       required: true,
     },
-    /** selection：radio/单选 select/switch 类，local + session 双写、可跨 tab 回填 */
+    /** fd 字段名，默认 vmem */
+    field: {
+      type: String,
+      default: 'vmem',
+    },
     formDraftKind: {
       type: String,
       default: 'selection',
@@ -50,6 +61,12 @@ export default {
       default: false,
     },
   },
+  emits: ['update:value', 'change'],
+  computed: {
+    memValue () {
+      return this.model[this.field]
+    },
+  },
   watch: {
     options: {
       immediate: true,
@@ -68,44 +85,27 @@ export default {
     },
     tryRestoreMemDraft (opts) {
       if (!this.formDraftKey || !Array.isArray(opts)) return
-      const fieldName = Array.isArray(this.decorator) ? this.decorator[0] : 'vmem'
-      const fc = this.resolveFormFc()
-      if (!fc?.getFieldValue) return
       const draft = this.readFormFieldDraft()
-      // 无草稿：不覆盖，走页面原有 initialValue(2048) + cpuChange 默认 2G
       if (draft === null || draft === undefined || draft === '') return
       let next
-      // 不限存的是 0，不在 options 内，需单独回填
       if (this.showUnlimited && (draft === 0 || draft === '0')) {
         next = 0
       } else if (!opts.length) {
         return
       } else {
-        const hit = this.matchFormFieldDraftInOptions(opts, draft, {
-          getId: item => item,
-        })
-        // 草稿不在 options：回退原先默认 2G，再不行用第一项
-        if (hit != null) {
-          next = hit
-        } else if (opts.some(item => Number(item) === 2048)) {
-          next = opts.find(item => Number(item) === 2048)
-        } else {
-          next = opts[0]
-        }
+        const hit = this.matchFormFieldDraftInOptions(opts, draft, { getId: item => item })
+        if (hit != null) next = hit
+        else if (opts.some(item => Number(item) === 2048)) next = opts.find(item => Number(item) === 2048)
+        else next = opts[0]
       }
       if (next == null) return
-      const current = fc.getFieldValue(fieldName)
-      if (current === next || String(current) === String(next)) return
-      if (fc.setFieldsValue) {
-        fc.setFieldsValue({ [fieldName]: next })
-      }
+      if (this.memValue === next || String(this.memValue) === String(next)) return
+      this.$set(this.model, this.field, next)
+      this.$emit('update:value', next)
+      this.$emit('change', next)
     },
     serializeFormFieldDraft () {
-      const fieldName = Array.isArray(this.decorator) ? this.decorator[0] : 'vmem'
-      const fc = this.resolveFormFc()
-      const value = fc?.getFieldValue?.(fieldName)
-      // 0 表示不限，需可序列化
-      return value != null && value !== '' ? value : undefined
+      return this.memValue != null && this.memValue !== '' ? this.memValue : undefined
     },
   },
 }

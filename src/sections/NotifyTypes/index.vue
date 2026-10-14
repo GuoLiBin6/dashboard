@@ -1,14 +1,14 @@
 <template>
-  <a-form-item :label="label" :extra="extraStr">
+  <a-form-model-item :label="label" :prop="fieldName">
     <base-select
-      v-decorator="decorator"
+      v-model:value="model[fieldName]"
       class="w-100"
       :filterable="true"
       resource="robots"
       version="v1"
       :params="getParams"
       :select-props="{ placeholder: placeholder, allowClear: true, mode: 'multiple' }" />
-  </a-form-item>
+  </a-form-model-item>
 </template>
 
 <script>
@@ -17,9 +17,17 @@ import i18n from '@/locales'
 export default {
   name: 'NotifyTypes',
   props: {
-    decorator: {
-      type: Array,
+    /** a-form-model：与 field 字段名对齐的受控对象（必传） */
+    model: {
+      type: Object,
       required: true,
+    },
+    field: {
+      type: String,
+      default: 'robot_ids',
+    },
+    initialValue: {
+      default: undefined,
     },
     getParams: {
       type: Object,
@@ -35,6 +43,16 @@ export default {
       type: String,
       default: i18n.t('monitor.channel'),
     },
+  },
+  computed: {
+    fieldName () {
+      return this.field
+    },
+  },
+  created () {
+    if (this.model[this.fieldName] === undefined && this.initialValue !== undefined) {
+      this.$set(this.model, this.fieldName, this.initialValue)
+    }
   },
 }
 </script>

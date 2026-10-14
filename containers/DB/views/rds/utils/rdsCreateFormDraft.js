@@ -23,7 +23,7 @@ export const RDS_CREATE_FORM_DRAFT_FIELD = {
 
 export const RDS_CREATE_FORM_DRAFT_SCOPE = 'db.rds.create'
 
-export const RDS_CREATE_FORM_DRAFT_FC_BINDINGS = [
+export const RDS_CREATE_FORM_DRAFT_FD_BINDINGS = [
   { key: RDS_CREATE_FORM_DRAFT_FIELD.BILLING_TYPE, formField: 'billing_type', kind: 'selection' },
 ]
 

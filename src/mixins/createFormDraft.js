@@ -327,17 +327,18 @@ export default {
         try { this.restoreCreateFormFieldDraft(key) } catch (e) { /* ignore */ }
       })
     },
-    bindFormFcFieldDraft (fieldKey, opts = {}) {
+    /** END-STATE：按 form.fd 读写选择类草稿 */
+    bindFormFdFieldDraft (fieldKey, opts = {}) {
       const formField = opts.formField || fieldKey
       const kind = opts.kind || DRAFT_KIND.SELECTION
       if (kind === DRAFT_KIND.INPUT) return
       this.bindCreateFormFieldDraft({
         key: fieldKey,
         kind,
-        get: () => this.form?.fc?.getFieldValue?.(formField),
+        get: () => this.form?.fd?.[formField],
         set: (val) => {
-          if (this.form?.fc) {
-            this.form.fc.setFieldsValue({ [formField]: val })
+          if (this.form?.fd) {
+            this.$set(this.form.fd, formField, val)
           }
         },
         options: opts.options,

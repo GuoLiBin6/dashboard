@@ -2,24 +2,39 @@
 import * as R from 'ramda'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
+import { normalizeFieldDef } from '@/utils/common/ant'
+
 export default {
   name: 'SmartFormDialog',
   mixins: [DialogMixin, WindowsMixin],
   data () {
+    const fieldMap = this.params.fields || {}
+    const formModel = {}
+    const rules = {}
+    Object.keys(fieldMap).forEach(key => {
+      const meta = normalizeFieldDef(key, fieldMap[key])
+      formModel[meta.name] = meta.initialValue
+      if (meta.rules) {
+        rules[meta.name] = meta.rules
+      }
+    })
     return {
       loading: false,
-      form: this.$form.createForm(this, { name: 'SmartFormDialog' }),
+      formModel,
+      rules,
     }
   },
   methods: {
+    setFieldValue (name, value) {
+      this.$set(this.formModel, name, value)
+    },
     async handleConfirm () {
-      const { callback } = this.params
-      const { validateFields } = this.form
+      const onConfirm = this.params.callback
       try {
-        const values = await validateFields()
+        await this.$refs.formRef.validate()
         this.loading = true
-        if (callback && R.type(callback).includes('Function')) {
-          await callback(values)
+        if (onConfirm && R.type(onConfirm).includes('Function')) {
+          await onConfirm({ ...this.formModel })
           this.cancelDialog()
         }
       } catch (err) {
@@ -30,33 +45,52 @@ export default {
     },
   },
   render (h) {
-    const { title, decorators, width = 400 } = this.params
-    const { getFieldDecorator } = this.form
-    const RenderHeader = () => {
-      if (!title) return null
-      return h('div', { slot: 'header' }, [title])
-    }
-    const formItem = (decorator) => {
-      const [name, options, inputParams] = decorator
-      const { label, placeholder = '', render, extra } = inputParams
-      const RenderFormVal = () => {
-        if (render && R.type(render) === 'Function') {
-          return render(this.form)
-        }
-        if (name === 'password') {
-          return h('a-input-password', { attrs: { placeholder } })
-        }
-        return h('a-input', { attrs: { placeholder } })
+    const { title, width = 400 } = this.params
+    const fieldMap = this.params.fields || {}
+    const formItem = (key, def) => {
+      const meta = normalizeFieldDef(key, def)
+      const { name, label, placeholder = '', render, extra } = meta
+      const inputProps = {
+        placeholder,
+        value: this.formModel[name],
       }
-      const formItemChildren = []
-      formItemChildren.push(getFieldDecorator(name, options)(RenderFormVal()))
+      const inputOn = {
+        input: (e) => {
+          const val = e && e.target ? e.target.value : e
+          this.setFieldValue(name, val)
+        },
+        change: (e) => {
+          const val = e && e.target ? e.target.value : e
+          this.setFieldValue(name, val)
+        },
+      }
+      let inputVnode
+      if (render && R.type(render) === 'Function') {
+        inputVnode = render({ fd: this.formModel, setFieldValue: this.setFieldValue })
+      } else if (name === 'password') {
+        inputVnode = h('a-input-password', {
+          props: inputProps,
+          on: inputOn,
+        })
+      } else {
+        inputVnode = h('a-input', {
+          props: inputProps,
+          on: inputOn,
+        })
+      }
+      const children = [inputVnode]
       if (extra) {
-        formItemChildren.push(h('div', { slot: 'extra' }, [extra()]))
+        const extraContent = typeof extra === 'function' ? extra(h) : extra
+        if (extraContent) {
+          children.push(h('div', { slot: 'extra' }, [extraContent]))
+        }
       }
-      return h('a-form-item', { attrs: { label } }, formItemChildren)
+      return h('a-form-model-item', {
+        props: { label, prop: name },
+      }, children)
     }
     const RenderForm = () => {
-      const decoratorArrs = Object.keys(decorators)
+      const fieldKeys = Object.keys(fieldMap)
       const defaultFormItemLayout = {
         wrapperCol: {
           span: 20,
@@ -67,13 +101,23 @@ export default {
       }
       const { formItemLayout } = this.params
       const { wrapperCol, labelCol } = formItemLayout || defaultFormItemLayout
-      if (!decorators || decoratorArrs.length === 0) return null
-      const items = decoratorArrs.map(k => formItem(decorators[k]))
-      const form = h('a-form', {
+      if (!fieldKeys.length) return null
+      const items = fieldKeys.map(k => formItem(k, fieldMap[k]))
+      const form = h('a-form-model', {
+        ref: 'formRef',
         class: 'mt-3',
-        props: { form: this.form, wrapperCol, labelCol },
+        props: {
+          model: this.formModel,
+          rules: this.rules,
+          wrapperCol,
+          labelCol,
+        },
       }, items)
       return h('div', { slot: 'body' }, [form])
+    }
+    const RenderHeader = () => {
+      if (!title) return null
+      return h('div', { slot: 'header' }, [title])
     }
     const RenderFormFooter = () => {
       const okBtn = h('a-button', {

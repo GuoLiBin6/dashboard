@@ -4,22 +4,24 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.wire')" :count="params.data.length" :action="$t('network.text_606')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('network.text_195')" v-bind="formItemLayout">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules">
+        <a-form-model-item :label="$t('network.text_195')" v-bind="formItemLayout" prop="bandwidth">
           <a-select
-              v-decorator="decorators.bandwidth"
+              v-model:value="form.bandwidth"
               :placeholder="$t('network.text_697')">
             <a-select-option v-for="item in bandwidthOptions" :value="item.value" :key="item.value">
               {{item.label}}
             </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item label="MTU" v-bind="formItemLayout">
-          <a-input-number :min="68" :max="9216" :step="50" v-decorator="decorators.mtu" />
+        </a-form-model-item>
+        <a-form-model-item label="MTU" v-bind="formItemLayout" prop="mtu">
+          <a-input-number :min="68" :max="9216" :step="50" v-model:value="form.mtu" />
           <div class="add-desc">{{$t('network.text_700')}}</div>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -39,23 +41,12 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        bandwidth: this.params.data[0].bandwidth.toString(),
+        mtu: this.params.data[0].mtu || 1500,
       },
-      decorators: {
+      rules: {
         bandwidth: [
-          'bandwidth',
-          {
-            initialValue: this.params.data[0].bandwidth.toString(),
-            rules: [
-              { required: true, message: this.$t('network.text_699') },
-            ],
-          },
-        ],
-        mtu: [
-          'mtu',
-          {
-            initialValue: this.params.data[0].mtu || 1500,
-          },
+          { required: true, message: this.$t('network.text_699') },
         ],
       },
       formItemLayout: {
@@ -79,8 +70,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        await this.doUpdate(values)
+        await this.$refs.formRef.validate()
+        await this.doUpdate({ ...this.form })
         this.loading = false
         this.cancelDialog()
         this.params.refresh()

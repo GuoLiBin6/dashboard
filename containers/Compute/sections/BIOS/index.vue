@@ -1,6 +1,8 @@
 <template>
-  <a-form-item>
-    <a-radio-group v-decorator="decorator" @change="handleBiosChange">
+  <a-form-model-item :prop="field">
+    <a-radio-group
+      v-model:value="model[field]"
+      @change="handleBiosChange">
       <a-radio-button v-if="showDefault" value="">{{ $t('compute.text_1') }}</a-radio-button>
       <a-tooltip :title="$t('compute.text_1362')" v-if="isArm">
         <a-radio-button value="BIOS" :disabled="isArm">BIOS</a-radio-button>
@@ -8,7 +10,7 @@
       <a-radio-button v-else value="BIOS" :disabled="uefi">BIOS</a-radio-button>
       <a-radio-button value="UEFI">UEFI</a-radio-button>
     </a-radio-group>
-  </a-form-item>
+  </a-form-model-item>
 </template>
 
 <script>
@@ -22,17 +24,20 @@ export default {
       type: String,
       default: '',
     },
-    /** selection：radio 类，local + session 双写、可跨 tab 回填 */
     formDraftKind: {
       type: String,
       default: 'selection',
     },
-    decorator: {
-      type: Array,
-      required: true,
-    },
     form: {
       type: Object,
+    },
+    model: {
+      type: Object,
+      required: true,
+    },
+    field: {
+      type: String,
+      default: 'bios',
     },
     uefi: {
       type: Boolean,
@@ -45,7 +50,6 @@ export default {
     },
   },
   computed: {
-    /** 当前可选值（禁用项不参与草稿回填） */
     selectableBiosOptions () {
       const opts = []
       if (this.showDefault) opts.push('')
@@ -64,25 +68,21 @@ export default {
   },
   methods: {
     handleBiosChange (e) {
-      this.$emit('change', e.target.value)
+      const val = e.target.value
+      this.$set(this.model, this.field, val)
+      this.$emit('change', val)
     },
     serializeFormFieldDraft () {
-      const field = Array.isArray(this.decorator) ? this.decorator[0] : 'bios'
-      const fc = this.resolveFormFc()
-      const value = fc?.getFieldValue?.(field)
-      // '' 表示「默认」，需可落盘
+      const value = this.model[this.field]
       if (value === undefined || value === null) return undefined
       return value
     },
     applyCreateFormFieldDraft (draft) {
       if (draft === undefined || draft === null) return
       if (!this.selectableBiosOptions.includes(draft)) return
-      const field = Array.isArray(this.decorator) ? this.decorator[0] : 'bios'
-      const fc = this.resolveFormFc()
-      if (!fc) return
-      const current = fc.getFieldValue(field)
+      const current = this.model[this.field]
       if (current === draft || String(current) === String(draft)) return
-      this.applyFormFieldValues({ [field]: draft })
+      this.$set(this.model, this.field, draft)
     },
   },
 }

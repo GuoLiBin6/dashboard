@@ -6,21 +6,22 @@
       <dialog-table
         :data="params.data"
         :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.backup_type')">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.backup_type')" prop="type">
           <a-radio-group
-            v-decorator="decorators.type"
+            v-model:value="form.type"
             @change="typeChangeHandle">
             <a-radio value="disk" :disabled="isEsxi">{{$t('compute.disk_backup')}}</a-radio>
             <a-radio value="instance">{{$t('compute.instance_backup')}}</a-radio>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item
+        </a-form-model-item>
+        <a-form-model-item
           :label="$t('compute.text_1254')"
-          v-if="isDiskBackup">
+          v-if="isDiskBackup"
+          prop="disk">
           <base-select
             style="width: 100%"
-            v-decorator="decorators.disk"
+            v-model:value="form.disk"
             :params="diskParams"
             :select-props="{ placeholder: $t('compute.text_1085') }"
             resource="disks"
@@ -31,29 +32,31 @@
             :filterable="true"
             :isDefaultSelect="true"
             v-model:item="selectDisk" />
-        </a-form-item>
-        <a-form-item
+        </a-form-model-item>
+        <a-form-model-item
           :label="$t('compute.backup_name')"
-          class="mb-0">
+          class="mb-0"
+          prop="name">
           <a-input
-            v-decorator="decorators.name"
+            v-model:value="form.name"
             :placeholder="$t('validator.resourceName')" />
           <div slot="extra">
             <div v-if="showRepeatTips">{{$t('compute.text_1091')}}</div>
           </div>
-        </a-form-item>
-        <a-form-item
-          :label="$t('compute.backup_storage')">
+        </a-form-model-item>
+        <a-form-model-item
+          :label="$t('compute.backup_storage')"
+          prop="storage">
           <base-select
             style="width: 100%"
-            v-decorator="decorators.storage"
+            v-model:value="form.storage"
             :params="storageParams"
             :select-props="{ placeholder: $t('compute.text_1022', [$t('compute.backup_storage')]) }"
             resource="backupstorages"
             :filterable="true"
             :isDefaultSelect="true" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading" :disabled="disabledSubmit">{{
@@ -81,52 +84,25 @@ export default {
   name: 'VmBackupCreateDialog',
   mixins: [DialogMixin, WindowsMixin],
   data () {
+    const isEsxi = this.params.data[0].hypervisor === hypervisorMap.esxi.key
     return {
       loading: false,
       showRepeatTips: false,
       form: {
-        fc: this.$form.createForm(this, {
-          name: 'backup_create_form',
-          onFieldsChange: this.onFieldsChange,
-          onValuesChange: this.onValuesChange,
-        }),
-        fd: {
-          name: '',
-          type: this.params.data[0].hypervisor === hypervisorMap.esxi.key ? 'instance' : 'disk',
-        },
+        name: '',
+        type: isEsxi ? 'instance' : 'disk',
+        disk: undefined,
+        storage: undefined,
       },
-      decorators: {
-        type: [
-          'type',
-          {
-            initialValue: this.params.data[0].hypervisor === hypervisorMap.esxi.key ? 'instance' : 'disk',
-          },
-        ],
+      rules: {
         disk: [
-          'disk',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.text_1085'), trigger: 'change' },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_1085'), trigger: 'change' },
         ],
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_1256') },
-              // { validator: this.$validate('resourceName') },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_1256') },
         ],
         storage: [
-          'storage',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.text_1022', [this.$t('compute.backup_storage')]), trigger: 'change' },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_1022', [this.$t('compute.backup_storage')]), trigger: 'change' },
         ],
       },
       formItemLayout: {
@@ -135,6 +111,7 @@ export default {
       },
       selectDisk: {},
       disabledSubmit: false,
+      isEsxi,
     }
   },
   computed: {
@@ -147,7 +124,7 @@ export default {
       }
     },
     isDiskBackup () {
-      return this.form.fd.type === 'disk'
+      return this.form.type === 'disk'
     },
     manager () {
       return new this.$Manager(this.isDiskBackup ? 'diskbackups' : 'instancebackups', 'v2')
@@ -166,10 +143,10 @@ export default {
     },
   },
   watch: {
-    'form.fd.name' (val) {
+    'form.name' (val) {
       this.debounceCheckTemplateName()
     },
-    'selectDisk' (val) {
+    selectDisk (val) {
       this.disabledSubmit = val.storage_type === 'nova'
     },
   },
@@ -180,7 +157,7 @@ export default {
   },
   methods: {
     checkTemplateName () {
-      const name = this.form.fd.name
+      const name = this.form.name
       if (!R.isNil(name) && !R.isEmpty(name)) {
         this.manager.get({ id: name, params: { scope: this.$store.getters.scope } })
           .then(res => {
@@ -195,31 +172,20 @@ export default {
         this.showRepeatTips = false
       }
     },
-    validateForm (fileds = []) {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields(fileds, (err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     async doCreateDiskBackup () {
-      const values = await this.validateForm(['disk', 'name', 'storage'])
+      await this.$refs.formRef.validate()
       const params = {
-        disk_id: values.disk,
-        generate_name: values.name,
-        backup_storage_id: values.storage,
+        disk_id: this.form.disk,
+        generate_name: this.form.name,
+        backup_storage_id: this.form.storage,
       }
       return this.manager.create({ data: params })
     },
     async doCreateInstanceBackup () {
-      const values = await this.validateForm(['name', 'storage'])
+      await this.$refs.formRef.validate()
       const params = {
-        generate_name: values.name,
-        backup_storage_id: values.storage,
+        generate_name: this.form.name,
+        backup_storage_id: this.form.storage,
       }
       return this.params.onManager('performAction', {
         id: this.params.data[0].id,
@@ -238,13 +204,13 @@ export default {
         } else {
           await this.doCreateInstanceBackup()
         }
-        this.loading = false
         this.params.refresh()
         this.cancelDialog()
         this.$message.success(this.$t('compute.text_322'))
       } catch (error) {
-        this.loading = false
         this.cancelDialog()
+      } finally {
+        this.loading = false
       }
     },
     getDiskLabel (item) {
@@ -254,14 +220,9 @@ export default {
           : DISK_TYPE.data.text
       }, ${sizestr(item.disk_size, 'M', 1024)}）`
     },
-    typeChangeHandle (e) {
+    typeChangeHandle () {
       this.$nextTick(() => {
         this.debounceCheckTemplateName()
-      })
-    },
-    onValuesChange (props, values) {
-      Object.keys(values).forEach((key) => {
-        this.form.fd[key] = values[key]
       })
     },
   },

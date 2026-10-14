@@ -4,20 +4,25 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.cloudaccount')" :count="params.data.length" :action="$t('cloudenv.action.update_credential')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form class="mt-3" :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('cloudenv.text_212')">
+      <a-form-model
+        ref="formRef"
+        class="mt-3"
+        :model="form.fd"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('cloudenv.text_212')">
           <span slot="extra">
             <span>{{$t('cloudenv.text_213')}}</span>
           </span>
-          <a-form-item style="display:inline-block">
-            <a-month-picker :disabled-date="dateDisabledStart" v-decorator="decorators.start_day" @change="startChange" />
-          </a-form-item>
+          <a-form-model-item prop="start_day" style="display:inline-block; margin-bottom: 0">
+            <a-month-picker :disabled-date="dateDisabledStart" v-model:value="form.fd.start_day" @change="startChange" />
+          </a-form-model-item>
           <span class="ml-2 mr-2">~</span>
-          <a-form-item style="display:inline-block">
-            <a-month-picker :disabled-date="dateDisabledEnd" v-decorator="decorators.end_day" />
-          </a-form-item>
-        </a-form-item>
-      </a-form>
+          <a-form-model-item prop="end_day" style="display:inline-block; margin-bottom: 0">
+            <a-month-picker :disabled-date="dateDisabledEnd" v-model:value="form.fd.end_day" />
+          </a-form-model-item>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -35,28 +40,20 @@ export default {
   mixins: [DialogMixin, WindowsMixin],
   data () {
     return {
+      loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-          },
-        }),
         fd: {
           start_day: this.$moment().startOf('month').subtract('month', 1),
           end_day: this.$moment().subtract('month', 1),
         },
       },
-      decorators: {
-        start_day: ['start_day', {
-          initialValue: this.$moment().startOf('month').subtract('month', 1),
-          rules: [{ required: true, message: this.$t('common.tips.select', [this.$t('bill.text_40')]) }],
-        }],
-        end_day: ['end_day', {
-          initialValue: this.$moment().subtract('month', 1),
-          rules: [{ required: true, message: this.$t('common.tips.select', [this.$t('bill.text_41')]) }],
-        }],
+      rules: {
+        start_day: [
+          { required: true, message: this.$t('common.tips.select', [this.$t('bill.text_40')]) },
+        ],
+        end_day: [
+          { required: true, message: this.$t('common.tips.select', [this.$t('bill.text_41')]) },
+        ],
       },
       formItemLayout: {
         wrapperCol: {
@@ -90,28 +87,20 @@ export default {
       return list
     },
   },
-  watch: {
-  },
-  created () {
-  },
   methods: {
     startChange (value) {
-      const dateEnd = this.form.fc.getFieldValue('end_day')
+      const dateEnd = this.form.fd.end_day
       if (dateEnd && value > dateEnd) {
-        this.form.fc.setFieldsValue({
-          end_day: value,
-        })
+        this.form.fd.end_day = value
       }
     },
     dateDisabledStart (value) {
-      // const dateEnd = this.form.fc.getFieldValue('end_day')
-      // if (dateEnd && value > dateEnd) return true
       if (this.params.data.every(item => item.provider === 'extdb')) return false
       if (value > this.$moment()) return true
       return false
     },
     dateDisabledEnd (value) {
-      const dateStart = this.form.fc.getFieldValue('start_day')
+      const dateStart = this.form.fd.start_day
       if (dateStart && value < dateStart) return true
       if (this.params.data.every(item => item.provider === 'extdb')) return false
       if (value > this.$moment()) return true
@@ -137,8 +126,8 @@ export default {
     async handleConfirm () {
       try {
         this.loading = false
-        const values = await this.form.fc.validateFields()
-        this.postBillTasks(this.params.data.map(item => item.id), values)
+        await this.$refs.formRef.validate()
+        this.postBillTasks(this.params.data.map(item => item.id), this.form.fd)
         this.loading = false
         this.$message.success(this.$t('common.success'))
         this.cancelDialog()

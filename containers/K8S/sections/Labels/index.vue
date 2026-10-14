@@ -1,77 +1,90 @@
 <template>
-  <div>
-    <div class="d-flex" v-for="(item) in labelList" :key="item.key">
-      <a-form-item :wrapperCol="{ span: 24 }">
-        <a-input-group compact v-if="keyBaseSelectProps">
-          <div class="d-flex">
-            <a-input class="oc-addonBefore ant-input-group-addon" style="width: 80px;" :defaultValue="keyLabel" readonly />
-            <base-select v-decorator="decorators.key(item.key)" v-bind="keyBaseSelectProps"  />
-          </div>
-        </a-input-group>
-        <a-input v-else :addonBefore="keyLabel" v-decorator="decorators.key(item.key)" :placeholder="keyPlaceholder" />
-      </a-form-item>
-      <div class="mx-3"> = </div>
-      <a-form-item :wrapperCol="{ span: 24 }">
-        <a-input :addonBefore="valueLabel" v-decorator="decorators.value(item.key)" :placeholder="valuePlaceholder" />
-      </a-form-item>
-      <a-button v-if="firstCanDelete || labelList.length > 1" type="danger" shape="circle" icon="delete" @click="del(item)" class="mt-1 ml-3" />
-    </div>
-    <a-button type="primary" icon="plus" @click="add">{{$t('k8s.text_81', [ title ])}}</a-button>
-  </div>
+  <labels-model ref="model" v-bind="forwardProps" @change="syncFromModel" />
 </template>
 
 <script>
 import * as R from 'ramda'
-import { uuid } from '@/utils/utils'
-import i18n from '@/locales'
+import { setBracketValue } from '@/utils/bracketModel'
+import LabelsModel from './model.vue'
 
 export default {
   name: 'K8SLables',
+  components: {
+    LabelsModel,
+  },
+  inheritAttrs: false,
   props: {
-    title: {
-      type: String,
-      default: i18n.t('k8s.text_82'),
-    },
-    keyLabel: {
-      type: String,
-      default: i18n.t('k8s.text_83'),
-    },
-    valueLabel: {
-      type: String,
-      default: i18n.t('k8s.text_84'),
-    },
-    decorators: {
+    title: LabelsModel.props.title,
+    keyLabel: LabelsModel.props.keyLabel,
+    valueLabel: LabelsModel.props.valueLabel,
+    keyPlaceholder: LabelsModel.props.keyPlaceholder,
+    valuePlaceholder: LabelsModel.props.valuePlaceholder,
+    keyBaseSelectProps: LabelsModel.props.keyBaseSelectProps,
+    firstCanDelete: LabelsModel.props.firstCanDelete,
+    fields: {
       type: Object,
-      validator: val => R.is(Function, val.key) && R.is(Function, val.value),
+      validator: val => !val || (R.is(Function, val?.key) && R.is(Function, val?.value)),
     },
-    keyPlaceholder: {
-      type: String,
-      default: i18n.t('k8s.text_85'),
-    },
-    valuePlaceholder: {
-      type: String,
-      default: i18n.t('k8s.text_85'),
-    },
-    keyBaseSelectProps: {
+    fieldMap: {
       type: Object,
+      validator: val => !val || (R.is(Function, val.key) && R.is(Function, val.value)),
     },
-    firstCanDelete: {
-      type: Boolean,
-      default: true,
+    /** a-form-model：与 field 动态 key 对齐（通常为 form.fd） */
+    model: {
+      type: Object,
+      default: null,
     },
   },
-  data () {
-    return {
-      labelList: [],
+  computed: {
+    forwardProps () {
+      const { fieldMap, fields, model, ...rest } = this.$props
+      return rest
+    },
+  },
+  mounted () {
+    if (!this.$refs.model.rows.length) {
+      this.$refs.model.add()
     }
+    this.syncFromModel()
   },
   methods: {
+    fieldName (rowId, which) {
+      if (this.fields) {
+        return this.fields[which](rowId)
+      }
+      if (!this.fieldMap) return null
+      const fieldDef = this.fieldMap[which](rowId)
+      return Array.isArray(fieldDef) ? fieldDef[0] : fieldDef
+    },
+    syncFromModel () {
+      if ((!this.fields && !this.fieldMap) || !this.model) return
+      const rows = this.$refs.model.rows
+      const values = {}
+      rows.forEach(row => {
+        const keyName = this.fieldName(row._id, 'key')
+        const valName = this.fieldName(row._id, 'value')
+        if (!keyName || !valName) return
+        values[keyName] = row.key
+        values[valName] = row.value
+      })
+      Object.keys(values).forEach((key) => {
+        setBracketValue(this, this.model, key, values[key])
+      })
+    },
     add () {
-      this.labelList.push({ key: uuid() })
+      this.$refs.model.add()
     },
     del (item) {
-      const index = this.labelList.findIndex(val => val.key === item.key)
-      this.labelList.splice(index, 1)
+      this.$refs.model.del(item)
+    },
+    getPairs () {
+      return this.$refs.model.getPairs()
+    },
+    getLabelMap () {
+      return this.$refs.model.getLabelMap()
+    },
+    async validate () {
+      return true
     },
   },
 }

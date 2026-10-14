@@ -4,15 +4,15 @@
         <div slot="body">
            <dialog-selected-tips :name="$t('dictionary.elasticcaches')" :count="params.data.length" :action="params.title" />
            <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-           <a-form :form="form.fc" class="mt-5">
-              <a-form-item :label="$t('db.text_284')" v-bind="formItemLayout">
-                <a-radio-group v-decorator="decorators.account_privilege">
+           <a-form-model ref="formRef" :model="form" class="mt-5" v-bind="formItemLayout">
+              <a-form-model-item :label="$t('db.text_284')" prop="account_privilege">
+                <a-radio-group v-model:value="form.account_privilege">
                     <a-radio v-for="k in Object.keys(privileges)" :key="k" :value="k">
                       {{privileges[k]}}
                     </a-radio>
                 </a-radio-group>
-              </a-form-item>
-          </a-form>
+              </a-form-model-item>
+          </a-form-model>
         </div>
          <div slot="footer">
             <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -30,10 +30,11 @@ export default {
   name: 'RedisAccountListSetPrivilegeDialog',
   mixins: [DialogMixin, WindowsMixin],
   data () {
+    const { initialValues = {} } = this.params
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        account_privilege: initialValues.account_privilege,
       },
       formItemLayout: {
         wrapperCol: { span: CreateServerForm.wrapperCol },
@@ -49,25 +50,13 @@ export default {
       }
       return ret
     },
-    decorators () {
-      const { initialValues = {} } = this.params
-      const decorators = {
-        account_privilege: [
-          'account_privilege',
-          {
-            initialValue: initialValues.account_privilege,
-          },
-        ],
-      }
-      return decorators
-    },
   },
   methods: {
     async handleConfirm () {
       this.loading = true
       try {
         const params = {
-          account_privilege: this.form.fc.getFieldValue('account_privilege'),
+          account_privilege: this.form.account_privilege,
           elasticcache: this.params.redisItem.id,
         }
         await this.params.list.onManager('performAction', {

@@ -1,58 +1,20 @@
 import { shallowMount } from '@vue/test-utils'
 import { IMAGES_TYPE_MAP } from '@/constants/compute'
-import i18n from '@/locales'
 import OsSelect from '../index'
-let setFieldsValue = null
-let decorator = null
 
 const $route = {
   query: {
   },
 }
 
-beforeEach(() => {
-  setFieldsValue = jest.fn()
-  decorator = {
-    os: [
-      'os',
-      {
-        initialValue: '',
-        rules: [
-          { required: true, message: i18n.t('compute.text_153') },
-        ],
-      },
-    ],
-    image: [
-      'image',
-      {
-        initialValue: { key: '', label: '' },
-      },
-    ],
-    imageType: [
-      'imageType',
-      {
-        initialValue: 'standard',
-      },
-    ],
-  }
-})
-
 describe('OsSelect', () => {
   it('IDC base', () => {
     const type = 'idc'
     const hypervisor = 'kvm'
     const wrapper = shallowMount(OsSelect, {
-      provide () {
-        return {
-          form: {
-            fc: {
-              setFieldsValue,
-            },
-          },
-        }
-      },
       propsData: {
-        decorator,
+        model: { imageType: IMAGES_TYPE_MAP.standard.key },
+        form: { fd: {}, fi: {} },
         type,
         hypervisor,
       },

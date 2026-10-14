@@ -2,17 +2,15 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{ $t('user.create_samluser') }}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc"
-        v-bind="formItemLayout">
-        <a-form-item :label="$t('cloudenv.clouduser_list_t4')">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('cloudenv.clouduser_list_t4')">
           <span>{{ params.user.name }}</span>
-        </a-form-item>
-        <a-form-item :label="$t('dictionary.project')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('dictionary.project')" prop="project_id">
           <base-select
-            v-decorator="decorators.project_id"
+            v-model:value="form.project_id"
             filterable
-            v-model:item="form.fi.project"
+            v-model:item="fi.project"
             :options="projects">
             <template #optionTemplate="{ options }">
               <a-select-option v-for="item in options" :key="item.id" :value="item.id">
@@ -20,11 +18,11 @@
               </a-select-option>
             </template>
           </base-select>
-        </a-form-item>
-        <a-form-item :label="$t('dictionary.cloudaccount')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('dictionary.cloudaccount')">
           <a-row :gutter="8">
             <a-col :span="12">
-              <a-select v-model:value="form.fi.provider">
+              <a-select v-model:value="fi.provider">
                 <template v-for="item of providerOptions" :key="item[0]">
                   <a-select-option :value="item[1].provider">
                     <span class="text-color-secondary">{{ $t('common.brand') }}: </span>{{ item[1].label }}
@@ -33,40 +31,42 @@
               </a-select>
             </a-col>
             <a-col :span="12">
-              <base-select
-                v-decorator="decorators.cloudaccount_id"
-                resource="cloudaccounts"
-                filterable
-                v-model:item="form.fi.cloudaccount"
-                :params="cloudaccountParams"
-                :mapper="cloudaccountMapper">
-                <template #optionTemplate="{ options }">
-                  <a-select-option v-for="item in options" :key="item.id" :value="item.id">
-                    <span class="text-color-secondary">{{ $t('dictionary.cloudaccount') }}: </span>{{ item.name }}
-                  </a-select-option>
-                </template>
-              </base-select>
+              <a-form-model-item prop="cloudaccount_id" :wrapper-col="{ span: 24 }" class="mb-0">
+                <base-select
+                  v-model:value="form.cloudaccount_id"
+                  resource="cloudaccounts"
+                  filterable
+                  v-model:item="fi.cloudaccount"
+                  :params="cloudaccountParams"
+                  :mapper="cloudaccountMapper">
+                  <template #optionTemplate="{ options }">
+                    <a-select-option v-for="item in options" :key="item.id" :value="item.id">
+                      <span class="text-color-secondary">{{ $t('dictionary.cloudaccount') }}: </span>{{ item.name }}
+                    </a-select-option>
+                  </template>
+                </base-select>
+              </a-form-model-item>
             </a-col>
           </a-row>
-        </a-form-item>
+        </a-form-model-item>
         <template v-if="isGoogle">
-          <a-form-item :label="$t('dictionary.cloudprovider')">
+          <a-form-model-item :label="$t('dictionary.cloudprovider')" prop="cloudprovider_id">
             <base-select
-              v-decorator="decorators.cloudprovider_id"
+              v-model:value="form.cloudprovider_id"
               resource="cloudproviders"
               filterable
               :params="cloudproviderParams" />
-          </a-form-item>
+          </a-form-model-item>
         </template>
-        <a-form-item :label="$t('dictionary.cloudgroup')" :extra="$t('cloudenv.clouduser_text2')">
+        <a-form-model-item :label="$t('dictionary.cloudgroup')" :extra="$t('cloudenv.clouduser_text2')" prop="cloudgroup_id">
           <list-select
-            v-decorator="decorators.cloudgroup_id"
+            v-model:value="form.cloudgroup_id"
             :listProps="cloudgroupListSelectProps"
             :formatter="formatterLabel"
             :dialog-params="{ mask: false }"
             :multiple="false" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -99,57 +99,31 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-        fi: {
-          provider: firstProvider,
-          cloudaccount: {},
-          project: {},
-        },
+        project_id: undefined,
+        cloudaccount_id: undefined,
+        cloudprovider_id: undefined,
+        cloudgroup_id: undefined,
       },
-      projects: [],
-      decorators: {
+      fi: {
+        provider: firstProvider,
+        cloudaccount: {},
+        project: {},
+      },
+      rules: {
         project_id: [
-          'project_id',
-          {
-            rules: [
-              { required: true, message: this.$t('common.select') },
-            ],
-          },
-        ],
-        owner_id: [
-          'owner_id',
-          {
-            rules: [
-              { required: true, message: this.$t('common.select') },
-            ],
-          },
+          { required: true, message: this.$t('common.select') },
         ],
         cloudaccount_id: [
-          'cloudaccount_id',
-          {
-            rules: [
-              { required: true, message: this.$t('common.select') },
-            ],
-          },
+          { required: true, message: this.$t('common.select') },
         ],
         cloudprovider_id: [
-          'cloudprovider_id',
-          {
-            rules: [
-              { required: true, message: this.$t('common.select') },
-            ],
-          },
+          { required: true, message: this.$t('common.select') },
         ],
         cloudgroup_id: [
-          'cloudgroup_id',
-          {
-            rules: [
-              { required: true, message: this.$t('common.select') },
-              // { required: firstProvider === 'Google', message: this.$t('common.select') },
-            ],
-          },
+          { required: true, message: this.$t('common.select') },
         ],
       },
+      projects: [],
       providerOptions,
       cloudgroupListSelectProps: {
         list: this.$list.createList(this, {
@@ -159,7 +133,7 @@ export default {
           getParams: () => {
             return {
               scope: this.$store.getters.scope,
-              provider: this.form.fi.provider,
+              provider: this.fi.provider,
             }
           },
           filterOptions: {
@@ -216,55 +190,44 @@ export default {
     cloudaccountParams () {
       const params = {
         scope: this.$store.getters.scope,
-        provider: this.form.fi.provider,
+        provider: this.fi.provider,
         enabled: true,
         health_status: 'normal',
         status: 'connected',
-        tenant_id: this.form.fi.project.id,
+        tenant_id: this.fi.project.id,
       }
       if (this.$store.getters.isAdminMode) {
-        params.project_domain = this.form.fi.project.domain_id
+        params.project_domain = this.fi.project.domain_id
       }
       if (this.$store.getters.isDomainMode) {
-        params.project_domains = [this.form.fi.project.domain_id]
+        params.project_domains = [this.fi.project.domain_id]
       }
       return params
     },
     cloudproviderParams () {
       return {
         scope: this.$store.getters.scope,
-        cloudaccount_id: this.form.fi.cloudaccount.id || '',
-        tenant_id: this.form.fi.project.id,
+        cloudaccount_id: this.fi.cloudaccount.id || '',
+        tenant_id: this.fi.project.id,
       }
     },
     isGoogle () {
-      return this.form.fi.provider === 'Google'
-    },
-    namePlaceholder () {
-      return this.isGoogle ? this.$t('system.text_496') : this.params.user.name
-    },
-    nameExtra () {
-      return this.isGoogle ? null : this.$t('cloudenv.clouduser_text1')
+      return this.fi.provider === 'Google'
     },
   },
   watch: {
     isGoogle (val) {
-      this.decorators.generate_name[1].rules = val ? [
-        { required: true, message: this.$t('common.text00042') },
-        { validator: this.$validate('email'), message: this.$t('system.text_497') },
-      ] : []
-      if (val) {
-        this.decorators.cloudgroup_id[1].rules[0].required = true
-      } else {
-        this.decorators.cloudgroup_id[1].rules[0].required = false
-      }
-      this.form.fc.resetFields(['generate_name', 'cloudgroup_id'])
+      this.rules.cloudgroup_id[0].required = !!val
+      this.form.cloudgroup_id = undefined
+      this.form.cloudprovider_id = undefined
     },
-    'form.fi.cloudaccount.provider' (val) {
-      this.form.fc.resetFields(['cloudgroup_id', 'cloudprovider_id'])
+    'fi.cloudaccount.provider' () {
+      this.form.cloudgroup_id = undefined
+      this.form.cloudprovider_id = undefined
     },
-    'form.fi.project.id' (val) {
-      this.form.fc.resetFields(['cloudgroup_id', 'cloudprovider_id'])
+    'fi.project.id' () {
+      this.form.cloudgroup_id = undefined
+      this.form.cloudprovider_id = undefined
     },
   },
   unmounted () {
@@ -285,9 +248,7 @@ export default {
           },
         })
         this.projects = response.data.data || []
-        this.form.fc.setFieldsValue({
-          project_id: this.projects[0].id,
-        })
+        this.form.project_id = this.projects[0]?.id
       } catch (error) {
         throw error
       }
@@ -295,9 +256,10 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const { ...values } = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         values.owner_id = this.params.user.id
-        values.project_domain = this.form.fi.project.project_domain
+        values.project_domain = this.fi.project.project_domain
         await this.params.onManager('create', {
           managerArgs: {
             data: values,
@@ -314,7 +276,7 @@ export default {
     cloudaccountMapper (data) {
       let _data = [...data]
       _data = _data.filter(item => {
-        if (this.form.fi.provider !== 'Google' && item.share_mode === 'provider_domain' && item.project_domain !== this.form.fi.project.project_domain) {
+        if (this.fi.provider !== 'Google' && item.share_mode === 'provider_domain' && item.project_domain !== this.fi.project.project_domain) {
           return false
         }
         return true

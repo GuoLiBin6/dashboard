@@ -73,6 +73,7 @@ export default {
           }
         }
       }
+      this.$emit('update:value', imageObj)
       this.$emit('change', imageObj)
       this.$emit('imageChange', imageObj)
     },

@@ -1,11 +1,12 @@
 <template>
   <div class="system-disk">
     <disk
+      ref="disk"
       diskKey="system"
       :max="max"
       :min="min"
-      :form="form"
-      :decorator="decorator"
+      :form="useModel ? undefined : form"
+      :model="model"
       :hypervisor="hypervisor"
       :types-map="typesMap"
       :elements="elements"
@@ -26,12 +27,12 @@
 import _ from 'lodash'
 import * as R from 'ramda'
 import Disk from '@Compute/sections/Disk'
+import { SYSTEM_DISK_FIELDS } from '@Compute/sections/Disk/fields'
 import { MEDIUM_MAP } from '@Compute/constants'
 import { IMAGES_TYPE_MAP, STORAGE_TYPES } from '@/constants/compute'
 import { HYPERVISORS_MAP, isUcloudLikeHypervisor } from '@/constants'
 import { findAndUnshift, findAndPush } from '@/utils/utils'
 import { diskSupportTypeMedium, getOriginDiskKey } from '@/utils/common/hypervisor'
-// import { STORAGE_AUTO } from '@Compute/constants'
 // 磁盘最小值
 export const DISK_MIN_SIZE = 10
 // let isFirstSetDefaultSize = true
@@ -45,7 +46,11 @@ export default {
     form: {
       type: Object,
       required: true,
-      validator: val => val.fd && val.fc,
+      validator: val => val && val.fd,
+    },
+    /** a-form-model end-state：有则只写 model，不双写 fc */
+    model: {
+      type: Object,
     },
     type: {
       type: String,
@@ -63,10 +68,6 @@ export default {
     },
     image: {
       type: Object,
-    },
-    decorator: {
-      type: Object,
-      required: true,
     },
     disabled: {
       type: Boolean,
@@ -104,6 +105,9 @@ export default {
     },
   },
   computed: {
+    useModel () {
+      return !!(this.model && typeof this.model === 'object')
+    },
     isPublic () {
       return this.type === 'public'
     },
@@ -227,8 +231,8 @@ export default {
       return ret
     },
     currentTypeObj () {
-      if (R.is(Object, this.typesMap) && this.form.fd[this.decorator.type[0]] && this.form.fd[this.decorator.type[0]].key) {
-        return this.typesMap[this.form.fd[this.decorator.type[0]].key] || {}
+      if (R.is(Object, this.typesMap) && this.form.fd[SYSTEM_DISK_FIELDS.type] && this.form.fd[SYSTEM_DISK_FIELDS.type].key) {
+        return this.typesMap[this.form.fd[SYSTEM_DISK_FIELDS.type].key] || {}
       }
       return {}
     },
@@ -274,11 +278,22 @@ export default {
     this.setDefaultType = _.debounce(this.setDefaultType, 300)
   },
   methods: {
+    async validate () {
+      if (!this.useModel) return true
+      const disk = this.$refs.disk
+      if (typeof disk?.validate === 'function') await disk.validate()
+      return true
+    },
+    writeDiskFields (vals) {
+      if (!vals || typeof vals !== 'object') return
+      const target = this.useModel ? this.model : this.form.fd
+      Object.keys(vals).forEach((k) => { this.$set(target, k, vals[k]) })
+    },
     setDefaultType () {
       if (R.isNil(this.typesMap) || R.isEmpty(this.typesMap)) {
-        this.form.fc.setFieldsValue({
-          [this.decorator.type[0]]: { key: '', label: '' },
-          [this.decorator.size[0]]: 0,
+        this.writeDiskFields({
+          [SYSTEM_DISK_FIELDS.type]: { key: '', label: '' },
+          [SYSTEM_DISK_FIELDS.size]: 0,
         })
         return
       }
@@ -286,13 +301,13 @@ export default {
       const keys = Object.keys(this.typesMap)
       const firstKey = keys[0]
       const diskMsg = this.typesMap[firstKey]
-      this.form.fc.setFieldsValue(this.defaultType || {
-        [this.decorator.type[0]]: { key: diskMsg.key, label: diskMsg.label },
+      this.writeDiskFields(this.defaultType || {
+        [SYSTEM_DISK_FIELDS.type]: { key: diskMsg.key, label: diskMsg.label },
       })
       this.setDiskMedium(diskMsg)
       this.$nextTick(() => { // 解决磁盘大小 inputNumber 第一次点击变为0 的bug
-        this.form.fc.setFieldsValue({
-          [this.decorator.size[0]]: this.defaultSize || +diskMsg.sysMin,
+        this.writeDiskFields({
+          [SYSTEM_DISK_FIELDS.size]: this.defaultSize || +diskMsg.sysMin,
         })
       })
     },
@@ -350,9 +365,8 @@ export default {
       if (this.form.fi) {
         this.$set(this.form.fi, 'showStorage', v)
       }
-      const decoratorKey = _.get(this.decorator, 'systemDisk.storage[0]') || 'systemDiskStorage'
       if (!v) {
-        this.$set(this.form.fd, decoratorKey, undefined)
+        this.$set(this.form.fd, SYSTEM_DISK_FIELDS.storage, undefined)
       }
     },
     setDiskMedium (v) {

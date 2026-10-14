@@ -6,24 +6,24 @@
       <dialog-selected-tips :count="params.data.length" :action="$t('compute.bind_resource')" :name="$t('dictionary.snapshotpolicy')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <loader loading v-if="!bindedDisksLoaded && !bindedServersLoaded" />
-      <a-form :form="form.fc" hideRequiredMark v-else>
-        <a-form-item v-if="resourceType === 'disk'" :label="$t('compute.text_376')" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" hideRequiredMark v-else>
+        <a-form-model-item v-if="resourceType === 'disk'" :label="$t('compute.text_376')" v-bind="formItemLayout" prop="disks">
           <list-select
-            v-if="form.fc.getFieldValue('disks')"
-            v-decorator="decorators.disks"
+            v-if="bindedDisksLoaded"
+            v-model:value="form.disks"
             :list-props="diskProps"
             :multiple="true"
             :formatter="v => v.name" />
-        </a-form-item>
-        <a-form-item v-else :label="$t('dictionary.server')" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item v-else :label="$t('dictionary.server')" v-bind="formItemLayout" prop="servers">
           <list-select
-            v-if="form.fc.getFieldValue('servers')"
-            v-decorator="decorators.servers"
+            v-if="bindedServersLoaded"
+            v-model:value="form.servers"
             :list-props="serverProps"
             :multiple="true"
             :formatter="v => v.name" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -53,21 +53,8 @@ export default {
       loading: false,
       resourceType: this.params.data[0].type,
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        disks: [
-          'disks',
-          {
-            initialValue: [],
-          },
-        ],
-        servers: [
-          'servers',
-          {
-            initialValue: [],
-          },
-        ],
+        disks: [],
+        servers: [],
       },
       formItemLayout: {
         wrapperCol: {
@@ -106,18 +93,12 @@ export default {
   watch: {
     bindedDisks (val) {
       if (val) {
-        const ids = val.map((item) => { return item.id })
-        this.$nextTick(() => {
-          this.form.fc.setFieldsValue({ disks: ids })
-        })
+        this.form.disks = val.map((item) => { return item.id })
       }
     },
     bindedServers (val) {
       if (val) {
-        const ids = val.map((item) => { return item.id })
-        this.$nextTick(() => {
-          this.form.fc.setFieldsValue({ servers: ids })
-        })
+        this.form.servers = val.map((item) => { return item.id })
       }
     },
   },
@@ -174,8 +155,8 @@ export default {
       const manager = new this.$Manager(this.resourceType === 'disk' ? 'disks' : 'servers')
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        const ids = this.resourceType === 'disk' ? values.disks : values.servers
+        await this.$refs.formRef.validate()
+        const ids = this.resourceType === 'disk' ? this.form.disks : this.form.servers
         const resource = this.resourceType === 'disk' ? this.getDisks(ids, this.bindedDisks) : this.getServers(ids, this.bindedServers)
         const data = {
           snapshotpolicy_id: this.params.data[0].id,

@@ -5,14 +5,14 @@
         <a-input-group compact v-if="keyBaseSelectProps">
           <div class="d-flex">
             <a-input class="oc-addonBefore ant-input-group-addon" style="width: 80px;" :defaultValue="keyLabel" readonly />
-            <base-select v-decorator="getDecorator(item.key, 'key')" v-bind="getBindProps(item.key, item)" />
+            <base-select :value="fieldVal(fieldName(item.key, 'key'))" @change="v => fieldSet(fieldName(item.key, 'key'), v)" v-bind="getBindProps(item.key, item)" />
           </div>
         </a-input-group>
-        <a-input v-else :addonBefore="keyLabel" v-decorator="getDecorator(item.key, 'key')" :placeholder="keyPlaceholder" :disabled="isLocked(item)" />
+        <a-input v-else :addonBefore="keyLabel" :value="fieldVal(fieldName(item.key, 'key'))" @change="e => fieldSet(fieldName(item.key, 'key'), e.target.value)" :placeholder="keyPlaceholder" :disabled="isLocked(item)" />
       </a-form-item>
       <div class="mx-3"> = </div>
       <a-form-item :wrapperCol="{ span: 24 }">
-        <a-input :addonBefore="valueLabel" v-decorator="getDecorator(item.key, 'value')" :placeholder="valuePlaceholder" :disabled="isLocked(item)" />
+        <a-input :addonBefore="valueLabel" :value="fieldVal(fieldName(item.key, 'value'))" @change="e => fieldSet(fieldName(item.key, 'value'), e.target.value)" :placeholder="valuePlaceholder" :disabled="isLocked(item)" />
       </a-form-item>
       <a-button v-if="(firstCanDelete || labelList.length > 1) && !isLocked(item)" shape="circle" icon="minus" size="small" @click="del(item)" class="mt-2 ml-2" />
     </div>
@@ -29,6 +29,22 @@
 import * as R from 'ramda'
 import { uuid } from '@/utils/utils'
 import i18n from '@/locales'
+import { PORT_MAPPING_FIELD_FACTORIES } from './fields'
+
+/** `containerPorts[uuid]` / `containerEnvNames[0][uuid]` → nested model paths */
+export function parseLabelFieldName (name) {
+  if (!name || typeof name !== 'string') return null
+  const m = name.match(/^([^[\]]+)((?:\[[^[\]]+\])+)$/)
+  if (!m) return { root: name, path: [] }
+  const root = m[1]
+  const path = []
+  const re = /\[([^[\]]+)\]/g
+  let match
+  while ((match = re.exec(m[2])) !== null) {
+    path.push(match[1])
+  }
+  return { root, path }
+}
 
 export default {
   name: 'ContainerLables',
@@ -45,9 +61,21 @@ export default {
       type: String,
       default: i18n.t('compute.repo.value'),
     },
-    decorators: {
+    /** { key: (rowKey) => 'containerPorts[uuid]', value: (rowKey) => 'hostPorts[uuid]' } */
+    fields: {
       type: Object,
-      validator: val => R.is(Function, val.key) && R.is(Function, val.value),
+      default: null,
+      validator: val => !val || (R.is(Function, val?.key) && R.is(Function, val?.value)),
+    },
+    keyRules: {
+      type: Array,
+      default: () => [
+        { required: true, message: i18n.t('common.tips.input', [i18n.t('compute.repo.container_port')]) },
+      ],
+    },
+    valueRules: {
+      type: Array,
+      default: () => [],
     },
     keyPlaceholder: {
       type: String,
@@ -72,33 +100,23 @@ export default {
       type: Object,
       default: () => { },
     },
-    /** 优先于 inject，避免 collapse 内 inject 不稳定 */
-    createForm: {
-      type: Object,
-      default: null,
-    },
-    /**
-     * 工单端口映射：[{ port, host_port }] 或 [{ key, value }]
-     * 挂载后自动回填
-     */
     initPairs: {
       type: Array,
       default: () => [],
     },
-    /**
-     * 需要锁定的环境变量 key：命中的行不可编辑、不可删除
-     * 用于容器镜像提供的默认环境变量
-     */
     readonlyKeys: {
       type: Array,
       default: () => [],
+    },
+    model: {
+      type: Object,
+      required: true,
     },
   },
   data () {
     return {
       labelList: [],
       pendingPairs: [],
-      // 行 uuid -> 环境变量 key，用于判断该行是否来自容器镜像
       rowEnvKey: {},
     }
   },
@@ -108,8 +126,8 @@ export default {
     },
   },
   computed: {
-    effectiveForm () {
-      return this.createForm || this.form
+    resolvedFields () {
+      return this.fields || PORT_MAPPING_FIELD_FACTORIES
     },
   },
   watch: {
@@ -137,14 +155,97 @@ export default {
     },
   },
   methods: {
+    fieldName (rowKey, type) {
+      return this.resolvedFields[type]?.(rowKey)
+    },
+    ensureNested (root, path) {
+      const m = this.model
+      if (!m || !root) return
+      if (!m[root] || typeof m[root] !== 'object') {
+        this.$set(m, root, {})
+      }
+      let cur = m[root]
+      for (let i = 0; i < path.length - 1; i++) {
+        const p = path[i]
+        if (!cur[p] || typeof cur[p] !== 'object') {
+          this.$set(cur, p, {})
+        }
+        cur = cur[p]
+      }
+    },
+    getNested (root, path) {
+      const m = this.model
+      if (!m || !root) return undefined
+      let cur = m[root]
+      for (const p of path) {
+        if (cur == null || typeof cur !== 'object') return undefined
+        cur = cur[p]
+      }
+      return cur
+    },
+    setNested (root, path, value) {
+      const m = this.model
+      if (!m || !root) return
+      if (!path.length) {
+        if (value === undefined) {
+          if (Object.prototype.hasOwnProperty.call(m, root)) this.$delete(m, root)
+        } else {
+          this.$set(m, root, value)
+        }
+        return
+      }
+      this.ensureNested(root, path)
+      let cur = m[root]
+      for (let i = 0; i < path.length - 1; i++) {
+        cur = cur[path[i]]
+      }
+      const last = path[path.length - 1]
+      if (value === undefined) {
+        if (Object.prototype.hasOwnProperty.call(cur, last)) this.$delete(cur, last)
+      } else {
+        this.$set(cur, last, value)
+      }
+    },
+    fieldVal (name) {
+      if (!name) return undefined
+      const parsed = parseLabelFieldName(name)
+      if (parsed?.path?.length) {
+        return this.getNested(parsed.root, parsed.path)
+      }
+      return this.model[name]
+    },
+    fieldSet (name, value) {
+      if (!name) return
+      const parsed = parseLabelFieldName(name)
+      if (parsed?.path?.length) {
+        this.setNested(parsed.root, parsed.path, value)
+      } else if (value === undefined) {
+        if (Object.prototype.hasOwnProperty.call(this.model, name)) this.$delete(this.model, name)
+      } else {
+        this.$set(this.model, name, value)
+      }
+    },
+    clearRowFields (rowKey) {
+      ;['key', 'value'].forEach((type) => {
+        const name = this.fieldName(rowKey, type)
+        if (name) this.fieldSet(name, undefined)
+      })
+    },
     add () {
-      this.labelList.push({ key: uuid() })
+      const rowKey = uuid()
+      this.labelList.push({ key: rowKey })
     },
     del (item) {
       const index = this.labelList.findIndex(val => val.key === item.key)
+      if (index < 0) return
+      this.clearRowFields(item.key)
       this.labelList.splice(index, 1)
+      if (this.rowEnvKey[item.key] != null) {
+        this.$delete(this.rowEnvKey, item.key)
+      }
     },
     reset () {
+      this.labelList.forEach((row) => this.clearRowFields(row.key))
       this.labelList = []
       this.pendingPairs = []
       this.rowEnvKey = {}
@@ -152,14 +253,12 @@ export default {
     normalizePairs (pairs = []) {
       return (pairs || []).map((pair) => {
         if (!pair || typeof pair !== 'object') return null
-        // 兼容 port_mappings: { port, host_port } 与 Labels: { key, value }
         const key = pair.key != null ? pair.key : pair.port
         const value = pair.value != null ? pair.value : pair.host_port
         if (key == null || key === '') return null
         return { key, value }
       }).filter(Boolean)
     },
-    /** 有 keyBaseSelect 时：options 空不回填；非空只保留命中 key */
     filterPairsByKeyOptions (pairs = []) {
       if (!this.keyBaseSelectProps) return pairs
       const options = this.keyBaseSelectProps.options
@@ -167,7 +266,6 @@ export default {
       const ids = new Set(options.map(o => o.id ?? o.key))
       return pairs.filter(p => ids.has(p.key))
     },
-    /** pairs: [{ key, value }] 或 [{ port, host_port }] */
     initData (pairs = []) {
       const normalized = this.filterPairsByKeyOptions(this.normalizePairs(pairs))
       if (!normalized.length) return
@@ -181,7 +279,6 @@ export default {
         })
       })
     },
-    /** 记录 行 uuid -> env key 的映射，供 readonlyKeys 判断锁定行 */
     syncRowEnvKey (pairs = this.pendingPairs) {
       const mapping = {}
       pairs.forEach((pair, i) => {
@@ -197,23 +294,14 @@ export default {
       if (envKey == null) return false
       return (this.readonlyKeys || []).includes(envKey)
     },
-    /**
-     * 取该行的 decorator 定义；锁定行去掉 required 校验，
-     * 避免用户被自己无法编辑的值（如镜像的 value_from）卡住提交
-     */
-    getDecorator (rowKey, type) {
-      const dec = this.decorators[type](rowKey)
+    rowRules (type, rowKey) {
+      const base = type === 'key' ? (this.keyRules || []) : (this.valueRules || [])
       const item = this.labelList.find(row => row.key === rowKey)
-      if (!item || !this.isLocked(item)) return dec
-      const options = dec && dec[1]
-      if (!options || !options.rules) return dec
-      const rules = options.rules.filter(rule => !rule.required)
-      if (rules.length === options.rules.length) return dec
-      return [dec[0], { ...options, rules }]
+      if (!item || !this.isLocked(item)) return base
+      return base.filter(rule => !rule.required)
     },
     writePendingPairs () {
-      const form = this.effectiveForm
-      if (!form?.fc || !this.labelList.length || !this.pendingPairs.length) return
+      if (!this.labelList.length || !this.pendingPairs.length) return
       const pairs = this.filterPairsByKeyOptions(this.pendingPairs)
       if (pairs.length !== this.pendingPairs.length) {
         this.pendingPairs = pairs
@@ -221,33 +309,14 @@ export default {
         if (!pairs.length) return
       }
       this.syncRowEnvKey(pairs)
-      const values = {}
       pairs.forEach((pair, i) => {
         const rowKey = this.labelList[i]?.key
         if (!rowKey) return
-        const keyField = this.decorators.key(rowKey)?.[0]
-        const valueField = this.decorators.value(rowKey)?.[0]
-        if (keyField) values[keyField] = pair.key
-        if (valueField && pair.value != null && pair.value !== '') {
-          values[valueField] = pair.value
+        this.fieldSet(this.fieldName(rowKey, 'key'), pair.key)
+        if (pair.value != null && pair.value !== '') {
+          this.fieldSet(this.fieldName(rowKey, 'value'), pair.value)
         }
       })
-      form.fc.setFieldsValue(values)
-      // 同步嵌套对象到 fd，便于 GenCreateData
-      if (form.fd) {
-        const containerPorts = { ...(form.fd.containerPorts || {}) }
-        const hostPorts = { ...(form.fd.hostPorts || {}) }
-        this.labelList.forEach((row, i) => {
-          const pair = pairs[i]
-          if (!pair || !row?.key) return
-          containerPorts[row.key] = pair.key
-          if (pair.value != null && pair.value !== '') {
-            hostPorts[row.key] = pair.value
-          }
-        })
-        form.fd.containerPorts = containerPorts
-        form.fd.hostPorts = hostPorts
-      }
     },
     getBindProps (key, item) {
       const { options } = this.keyBaseSelectProps
@@ -264,6 +333,51 @@ export default {
         bindProps.disabled = true
       }
       return bindProps
+    },
+    runFieldRule (rule, value) {
+      return new Promise((resolve, reject) => {
+        if (rule.required) {
+          const empty = value === undefined || value === null || value === '' ||
+            (Array.isArray(value) && !value.length)
+          if (empty) {
+            reject(new Error(rule.message || 'required'))
+            return
+          }
+        }
+        if (typeof rule.validator === 'function') {
+          let settled = false
+          const finish = (err) => {
+            if (settled) return
+            settled = true
+            if (err) reject(err instanceof Error ? err : new Error(String(err)))
+            else resolve()
+          }
+          let ret
+          try {
+            ret = rule.validator(rule, value, finish)
+          } catch (e) {
+            finish(e)
+            return
+          }
+          if (ret && typeof ret.then === 'function') {
+            ret.then(() => finish()).catch(finish)
+          }
+          return
+        }
+        resolve()
+      })
+    },
+    async validate () {
+      for (const row of this.labelList) {
+        for (const type of ['key', 'value']) {
+          const name = this.fieldName(row.key, type)
+          const rules = this.rowRules(type, row.key)
+          for (const rule of rules) {
+            await this.runFieldRule(rule, this.fieldVal(name))
+          }
+        }
+      }
+      return true
     },
   },
 }

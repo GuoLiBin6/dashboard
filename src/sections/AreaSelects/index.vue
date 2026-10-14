@@ -5,7 +5,7 @@
         <a-form-item :wrapperCol="{ span: 24 }" class="mb-0">
           <a-select
             v-if="name === 'provider'"
-            v-decorator="getDecorator(name)"
+            :value="areaSelectValue(name)"
             :mode="providerMultiple ? 'multiple' : 'default'"
             optionLabelProp="label"
             :allowClear="allowClear"
@@ -30,7 +30,7 @@
           </a-select>
           <a-select
             v-else-if="name === 'cloudregion'"
-            v-decorator="getDecorator(name)"
+            :value="areaSelectValue(name)"
             :mode="cloudregionMultiple ? 'multiple' : 'default'"
             optionLabelProp="label"
             :allowClear="allowClear"
@@ -55,7 +55,7 @@
           </a-select>
           <a-select
             v-else-if="name === 'zone'"
-            v-decorator="getDecorator(name)"
+            :value="areaSelectValue(name)"
             :mode="zoneMultiple ? 'multiple' : 'default'"
             optionLabelProp="label"
             :allowClear="allowClear"
@@ -117,6 +117,15 @@ export default {
     form: { default: undefined },
   },
   props: {
+    /**
+     * a-form-model：父级 form 对象，读写 provider/cloudregion/zone（必传）。
+     * 用法：<area-selects :model="form.fd" :names="['provider','cloudregion']" />
+     * 或 import AreaSelects from '@/sections/AreaSelects/model'
+     */
+    model: {
+      type: Object,
+      required: true,
+    },
     formDraftKey: {
       type: String,
       default: '',
@@ -149,9 +158,6 @@ export default {
       default: () => {
         return ['provider', 'cloudregion', 'zone']
       },
-    },
-    decorators: {
-      type: Object,
     },
     labelCol: {
       type: Object,
@@ -225,12 +231,7 @@ export default {
   },
   computed: {
     ...mapGetters(['capability']),
-    FC () {
-      if (this.form && this.form.fc) {
-        return this.form.fc
-      }
-      return this.$form.createForm(this)
-    },
+
     formItemLayout () {
       return {
         labelCol: this.labelCol,
@@ -306,19 +307,55 @@ export default {
     },
   },
   created () {
+    this.names.forEach(name => {
+      if (this.model[name] === undefined) {
+        this.model[name] = this.emptyFieldValue(name)
+      }
+    })
     this.fetchs()
   },
   methods: {
+
+    getModelField (name) {
+      return this.model[name]
+    },
+    getModelFields (names) {
+      if (Array.isArray(names) && names.length) {
+        const picked = {}
+        names.forEach((name) => { picked[name] = this.model[name] })
+        return picked
+      }
+      return { ...this.model }
+    },
+    setModelFields (vals) {
+      if (!vals || typeof vals !== 'object') return
+      Object.keys(vals).forEach((key) => {
+        this.model[key] = vals[key]
+      })
+    },
+    resetModelFields (names) {
+      const list = (names && names.length) ? names : this.names
+      list.forEach((name) => {
+        this.model[name] = this.emptyFieldValue(name)
+      })
+    },
+
+    validateModelFields () {
+      return Promise.resolve({ ...this.model })
+    },
+    areaSelectValue (name) {
+      const v = this.model[name]
+      if (v !== undefined) return v
+      return this.isMultiple(name) ? [] : undefined
+    },
     /**
      * 提交时获取表单草稿
      */
     getCreateFormFieldDraftSnapshot () {
-      const f = this.form?.fc
-      if (!f) return undefined
       return {
-        provider: f.getFieldValue('provider'),
-        cloudregion: f.getFieldValue('cloudregion'),
-        zone: f.getFieldValue('zone'),
+        provider: this.model.provider,
+        cloudregion: this.model.cloudregion,
+        zone: this.model.zone,
       }
     },
     /**
@@ -347,9 +384,8 @@ export default {
 
       const next = this.normalizeFieldValue(name, matchedIds)
       if (this.isFieldValueChanged(name, next)) {
-        this.FC.setFieldsValue({ [name]: next })
+        this.setModelFields({ [name]: next })
         this.emitFieldChange(name, next)
-        this.syncAreaDraftToFormFd(name)
       }
       // 上游命中后拉下游，由下游 *List watch 继续回填
       if (name === 'provider') {
@@ -360,12 +396,6 @@ export default {
       }
       return true
     },
-    /** 程序化 setFieldsValue 不一定走 onValuesChange，补写 fd */
-    syncAreaDraftToFormFd (name) {
-      if (!this.form?.fd || !name) return
-      this.form.fd[name] = this.FC.getFieldValue(name)
-    },
-
     isMultiple (name) {
       if (name === 'provider') return this.providerMultiple
       if (name === 'cloudregion') return this.cloudregionMultiple
@@ -479,18 +509,15 @@ export default {
       }
       return next
     },
-    getDecorator (name) {
-      if (this.decorators && this.decorators[name]) {
-        return this.decorators[name]
-      }
-      const options = {}
+    getFieldMeta (name) {
+      const meta = { name }
       if (this.isRequired) {
-        options.rules = [{ required: true, message: this.placeholders[name] }]
+        meta.rules = [{ required: true, message: this.placeholders[name] }]
       }
       if (this.isMultiple(name)) {
-        options.initialValue = []
+        meta.initialValue = []
       }
-      return [name, options]
+      return meta
     },
     getProviderShowName (name = '') {
       const cloudProvidersMap = this.$t('scopeCloudProvidersMap')
@@ -509,17 +536,17 @@ export default {
       return this.getProviderShowName(provider.name)
     },
     syncMultipleMode (name) {
-      const value = this.FC.getFieldValue(name)
+      const value = this.getModelField(name)
       if (this.isMultiple(name)) {
         if (value === undefined || value === null) {
-          this.FC.setFieldsValue({ [name]: [] })
+          this.setModelFields({ [name]: [] })
         } else if (!Array.isArray(value)) {
-          this.FC.setFieldsValue({ [name]: [value] })
+          this.setModelFields({ [name]: [value] })
         }
         return
       }
       if (Array.isArray(value)) {
-        this.FC.setFieldsValue({ [name]: value[0] || undefined })
+        this.setModelFields({ [name]: value[0] || undefined })
       }
     },
     handleProviderChange (id) {
@@ -539,8 +566,7 @@ export default {
       }, this.cloudregionChangeCallback)
     },
     async cloudregionChangeCallback (item = {}) {
-      const { setFieldsValue, getFieldsValue } = this.FC
-      const fields = getFieldsValue()
+      const fields = this.getModelFields()
       // 多选模式不回写 provider
       if (this.providerMultiple || this.cloudregionMultiple) {
         return
@@ -548,14 +574,14 @@ export default {
       if (Array.isArray(item)) {
         const providers = [...new Set(item.map(i => i.provider || i.brand).filter(Boolean))]
         if (providers.length && this.isEmptyFieldValue('provider', fields.provider) && this.names.indexOf('provider') !== -1) {
-          setFieldsValue({
+          this.setModelFields({
             provider: this.providerMultiple ? providers : providers[0],
           })
         }
         return
       }
       const { city = 'Other', provider } = item
-      setFieldsValue({
+      this.setModelFields({
         city,
         provider: this.providerMultiple ? this.toArray(provider) : provider,
       })
@@ -575,7 +601,7 @@ export default {
       }, this.zoneChangeCallback)
     },
     async zoneChangeCallback (item = {}) {
-      const fields = this.FC.getFieldsValue()
+      const fields = this.getModelFields()
       // 多选模式：只更新 zone，不回写上游
       if (this.providerMultiple || this.cloudregionMultiple || this.zoneMultiple) {
         return
@@ -584,7 +610,7 @@ export default {
         const providers = [...new Set(item.map(i => i.provider).filter(Boolean))]
         const cloudregionIds = [...new Set(item.map(i => i.cloudregion_id).filter(Boolean))]
         if (providers.length || cloudregionIds.length) {
-          this.FC.setFieldsValue({
+          this.setModelFields({
             provider: this.providerMultiple ? providers : providers[0],
             cloudregion: this.cloudregionMultiple ? cloudregionIds : cloudregionIds[0],
           })
@@ -611,7 +637,7 @@ export default {
         if (this.names.indexOf('provider') === -1) delete param.provider
         this.zoneList = await this.fetchZone(param)
       }
-      this.FC.setFieldsValue({
+      this.setModelFields({
         provider: this.providerMultiple ? this.toArray(provider) : provider,
         cloudregion: this.cloudregionMultiple ? this.toArray(cloudregion_id) : cloudregion_id,
       })
@@ -625,8 +651,7 @@ export default {
       names.forEach(k => {
         values[k] = this.emptyFieldValue(k)
       })
-      // antdFormLegacyCompat.setFieldsValue 无第二参回调，勿 await 回调
-      this.FC.setFieldsValue(values)
+      this.setModelFields(values)
       callback && callback()
       return Promise.resolve(names)
     },
@@ -666,7 +691,7 @@ export default {
       names.forEach(name => {
         values[name] = this.emptyFieldValue(name)
       })
-      this.FC.setFieldsValue(values)
+      this.setModelFields(values)
     },
     normalizeFieldValue (name, values) {
       const list = this.toArray(values).filter(Boolean)
@@ -674,7 +699,7 @@ export default {
       return list[0] || undefined
     },
     isFieldValueChanged (name, nextValue) {
-      const prev = this.FC.getFieldValue(name)
+      const prev = this.getModelField(name)
       const a = this.toArray(prev).sort().join(',')
       const b = this.toArray(nextValue).sort().join(',')
       return a !== b
@@ -702,7 +727,7 @@ export default {
     },
     filterZoneListBySelectedProvider (list = []) {
       if (!this.isMultiple('provider') || !this.isMultiple('zone')) return list
-      const providers = this.toArray(this.FC.getFieldValue('provider')).filter(Boolean)
+      const providers = this.toArray(this.getModelField('provider')).filter(Boolean)
       if (!providers.length) return list
       return list.filter(item => this.isProviderInSelection(this.getZoneProvider(item), providers))
     },
@@ -727,10 +752,10 @@ export default {
     pruneCloudregionByProvider () {
       if (!this.isMultiple('provider') || !this.names.includes('cloudregion')) return false
 
-      const providers = this.toArray(this.FC.getFieldValue('provider')).filter(Boolean)
+      const providers = this.toArray(this.getModelField('provider')).filter(Boolean)
       if (!providers.length) return false
 
-      const current = this.toArray(this.FC.getFieldValue('cloudregion'))
+      const current = this.toArray(this.getModelField('cloudregion'))
       const pruned = current.filter(id => {
         const item = this.findListItem('cloudregion', id)
         if (!item) return true
@@ -739,7 +764,7 @@ export default {
 
       const next = this.normalizeFieldValue('cloudregion', pruned)
       if (!this.isFieldValueChanged('cloudregion', next)) return false
-      this.FC.setFieldsValue({ cloudregion: next })
+      this.setModelFields({ cloudregion: next })
       return true
     },
     // region 多选时裁剪 zone（zone 可为单选或多选）
@@ -748,10 +773,10 @@ export default {
         return false
       }
 
-      const cloudregions = this.toArray(this.FC.getFieldValue('cloudregion'))
+      const cloudregions = this.toArray(this.getModelField('cloudregion'))
       if (!cloudregions.length) return false
 
-      const current = this.toArray(this.FC.getFieldValue('zone'))
+      const current = this.toArray(this.getModelField('zone'))
       const regionSet = new Set(cloudregions)
 
       const pruned = current.filter(id => {
@@ -763,7 +788,7 @@ export default {
 
       const next = this.normalizeFieldValue('zone', pruned)
       if (!this.isFieldValueChanged('zone', next)) return false
-      this.FC.setFieldsValue({ zone: next })
+      this.setModelFields({ zone: next })
       return true
     },
     // provider 多选且 region 为空时裁剪 zone（zone 可为单选或多选）
@@ -772,10 +797,10 @@ export default {
         return false
       }
 
-      const providers = this.toArray(this.FC.getFieldValue('provider')).filter(Boolean)
+      const providers = this.toArray(this.getModelField('provider')).filter(Boolean)
       if (!providers.length) return false
 
-      const current = this.toArray(this.FC.getFieldValue('zone'))
+      const current = this.toArray(this.getModelField('zone'))
       const pruned = current.filter(id => {
         const item = this.findListItem('zone', id)
         if (!item) return true
@@ -784,12 +809,12 @@ export default {
 
       const next = this.normalizeFieldValue('zone', pruned)
       if (!this.isFieldValueChanged('zone', next)) return false
-      this.FC.setFieldsValue({ zone: next })
+      this.setModelFields({ zone: next })
       return true
     },
     // 上游多选时裁剪 zone：cloudregion 有值 → 按 region；否则 → 按 provider
     pruneZoneForMultipleMode () {
-      const cloudregions = this.toArray(this.FC.getFieldValue('cloudregion'))
+      const cloudregions = this.toArray(this.getModelField('cloudregion'))
       if (cloudregions.length) {
         return this.pruneZoneByCloudregion()
       }
@@ -813,7 +838,7 @@ export default {
       const isMultipleMode = this.isMultiple(key)
 
       if (this.isEmptyFieldValue(key, id)) {
-        this.FC.setFieldsValue({ [key]: this.emptyFieldValue(key) })
+        this.setModelFields({ [key]: this.emptyFieldValue(key) })
 
         // 单选模式：清空下级并重拉（原有逻辑，不做修改）
         if (!isMultipleMode) {
@@ -828,7 +853,7 @@ export default {
             await this.refetchDownstreamOnly(fetchNames, { changedKey: key })
             this.emitFieldChange(key, id)
             if (key === 'cloudregion' && fetchNames.includes('zone')) {
-              this.emitFieldChange('zone', this.FC.getFieldValue('zone'))
+              this.emitFieldChange('zone', this.getModelField('zone'))
             }
           })
         } else {
@@ -837,7 +862,7 @@ export default {
         return false
       }
 
-      this.FC.setFieldsValue({ [key]: id })
+      this.setModelFields({ [key]: id })
 
       if (!fetchNames.length) {
         const selectedValue = this.getSelectedValue(key, id)
@@ -864,7 +889,7 @@ export default {
         await this.cascadeMultipleChange(key, fetchNames)
         this.emitFieldChange(key, id)
         fetchNames.forEach(name => {
-          const val = this.FC.getFieldValue(name)
+          const val = this.getModelField(name)
           this.emitFieldChange(name, val)
         })
         const selectedValue = this.getSelectedValue(key, id)
@@ -876,7 +901,7 @@ export default {
       let _list = findAndPush(list, ({ name }) => name === 'Other')
       const changeFetchSuccess = this.resolveFetchSuccessHandler(name)
       if (changeFetchSuccess) {
-        const value = await changeFetchSuccess(list, this.FC)
+        const value = await changeFetchSuccess(list, this)
         if (value && R.type(value) === 'Array') {
           _list = value
         }
@@ -889,12 +914,12 @@ export default {
           ? [_item.id || _item.name]
           : (_item.id || _item.name)
         if (R.type(df) === 'Boolean') {
-          this.FC.setFieldsValue({
+          this.setModelFields({
             [name]: defaultValue,
           })
         }
         if (R.type(df) === 'Array' && !R.isEmpty(df) && df.indexOf(name) > -1) {
-          this.FC.setFieldsValue({
+          this.setModelFields({
             [name]: defaultValue,
           })
         }
@@ -1000,17 +1025,17 @@ export default {
 
       // 顺序回填：与工单 applyInitPublicAreaFields 同构，避免 cascade prune 冲掉草稿
       if (provider !== undefined && !this.isEmptyFieldValue('provider', provider)) {
-        this.FC.setFieldsValue({ provider })
+        this.setModelFields({ provider })
         await this.fetchListsOnly(['cloudregion'], { skipDefaultSelect: true })
       }
       if (cloudregion !== undefined && !this.isEmptyFieldValue('cloudregion', cloudregion)) {
-        this.FC.setFieldsValue({ cloudregion })
+        this.setModelFields({ cloudregion })
         await this.fetchListsOnly(['zone'], { skipDefaultSelect: true })
       } else if (provider !== undefined && !this.isEmptyFieldValue('provider', provider)) {
         await this.fetchListsOnly(['zone'], { skipDefaultSelect: true })
       }
       if (zone !== undefined && !this.isEmptyFieldValue('zone', zone)) {
-        this.FC.setFieldsValue({ zone })
+        this.setModelFields({ zone })
       }
 
       const emitNames = new Set()
@@ -1023,7 +1048,7 @@ export default {
       }
       emitNames.forEach(name => {
         if (this.names.includes(name)) {
-          this.emitFieldChange(name, this.FC.getFieldValue(name))
+          this.emitFieldChange(name, this.getModelField(name))
         }
       })
     },
@@ -1044,7 +1069,7 @@ export default {
                 nextNames.forEach(name => {
                   this[`${name}List`] = []
                 })
-                this.FC.resetFields(nextNames)
+                this.resetModelFields(nextNames)
                 return
               }
               if (R.type(list) === 'Array' && list.length === 0) {
@@ -1091,8 +1116,7 @@ export default {
       }
     },
     async fetchCloudregion (queryParams = {}) {
-      const { getFieldsValue } = this.FC
-      const { provider } = getFieldsValue(this.names)
+      const { provider } = this.getModelFields(this.names)
       let params = {
         capability: 'compute',
         ...DEFAULT_PARAMS,
@@ -1135,8 +1159,7 @@ export default {
       }
     },
     async fetchZone (queryParams = {}) {
-      const { getFieldsValue } = this.FC
-      const { city, provider, cloudregion } = getFieldsValue(this.names)
+      const { city, provider, cloudregion } = this.getModelFields(this.names)
       let params = {
         city,
         ...DEFAULT_PARAMS,
@@ -1173,6 +1196,48 @@ export default {
       } finally {
         this.zoneLoading = false
       }
+    },
+    runFieldRule (rule, value) {
+      return new Promise((resolve, reject) => {
+        if (rule.required) {
+          const empty = value === undefined || value === null || value === '' ||
+            (Array.isArray(value) && !value.length)
+          if (empty) {
+            reject(new Error(rule.message || 'required'))
+            return
+          }
+        }
+        if (typeof rule.validator === 'function') {
+          let settled = false
+          const finish = (err) => {
+            if (settled) return
+            settled = true
+            if (err) reject(err instanceof Error ? err : new Error(String(err)))
+            else resolve()
+          }
+          let ret
+          try {
+            ret = rule.validator(rule, value, finish)
+          } catch (e) {
+            finish(e)
+            return
+          }
+          if (ret && typeof ret.then === 'function') {
+            ret.then(() => finish()).catch(finish)
+          }
+          return
+        }
+        resolve()
+      })
+    },
+    async validate () {
+      for (const name of this.names) {
+        const rules = this.getFieldMeta(name)?.rules || []
+        for (const rule of rules) {
+          await this.runFieldRule(rule, this.model[name])
+        }
+      }
+      return true
     },
   },
 }

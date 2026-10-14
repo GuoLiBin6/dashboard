@@ -13,87 +13,45 @@ export const BILL_TYPES_MAP = {
   },
 }
 
-export const DECORATORS = {
+/** NAT 创建 field-map（initialValue 唯一来源） */
+export const NATS_CREATE_FIELD_MAP = {
   eip: {
-    type: [
-      'type',
-      {
-        initialValue: 'none',
-      },
-    ],
-    charge_type: [
-      'charge_type',
-      {
-        initialValue: 'traffic',
-      },
-    ],
-    bgp_type: [
-      'bgp_type',
-      {
-        initialValue: '',
-      },
-    ],
-    bandwidth: [
-      'bandwidth',
-      {
-        initialValue: 30,
-        validateFirst: true,
-      },
-    ],
-    eip: [
-      'eip',
-      {
-        rules: [
-          { required: true, message: i18n.t('compute.text_145'), trigger: 'change' },
-        ],
-      },
-    ],
-  },
-  billing_type: [
-    'billing_type',
-    {
-      initialValue: 'postpaid',
-    },
-  ],
-  duration: {
-    durationStandard: [
-      'durationStandard',
-      {
-        initialValue: 'none',
-      },
-    ],
-    duration: [
-      'duration',
-      {
-        initialValue: '1h',
-      },
-    ],
-  },
-  project_domain: [
-    'project_domain',
-    {
-      initialValue: undefined,
-    },
-  ],
-  name: [
-    'name',
-    {
+    type: { name: 'type', initialValue: 'none' },
+    charge_type: { name: 'charge_type', initialValue: 'traffic' },
+    bgp_type: { name: 'bgp_type', initialValue: '' },
+    bandwidth: {
+      name: 'bandwidth',
+      initialValue: 30,
       validateFirst: true,
+    },
+    eip: {
+      name: 'eip',
       rules: [
-        { required: true, message: i18n.t('network.text_218') },
-        { validator: validateForm('serverName') },
+        { required: true, message: i18n.t('compute.text_145'), trigger: 'change' },
       ],
     },
-  ],
-  description: ['description'],
-  __meta__: [
-    '__meta__',
-    {
-      rules: [
-        { validator: validateForm('tagName') },
-      ],
-    },
-  ],
+  },
+  billing_type: { name: 'billing_type', initialValue: 'postpaid' },
+  duration: {
+    durationStandard: { name: 'durationStandard', initialValue: 'none' },
+    duration: { name: 'duration', initialValue: '1h' },
+  },
+  project_domain: { name: 'project_domain', initialValue: undefined },
+  name: {
+    name: 'name',
+    validateFirst: true,
+    rules: [
+      { required: true, message: i18n.t('network.text_218') },
+      { validator: validateForm('serverName') },
+    ],
+  },
+  description: { name: 'description' },
+  __meta__: {
+    name: '__meta__',
+    rules: [
+      { validator: validateForm('tagName') },
+    ],
+  },
 }
 
 // capbilit接口所需要的参数

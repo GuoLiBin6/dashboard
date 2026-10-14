@@ -7,12 +7,13 @@
       </a-alert>
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_1232')" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('compute.text_1233')" v-bind="formItemLayout">
-          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-decorator="decorators.autoRenew" />
-        </a-form-item>
-      </a-form>
+      <a-form-model
+        ref="formRef"
+        :model="form">
+        <a-form-model-item :label="$t('compute.text_1233')" v-bind="formItemLayout" prop="autoRenew">
+          <a-switch v-model:checked="form.autoRenew" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -34,16 +35,7 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        autoRenew: [
-          'autoRenew',
-          {
-            initialValue: autoRenew,
-            valuePropName: 'checked',
-          },
-        ],
+        autoRenew,
       },
       formItemLayout: {
         wrapperCol: {
@@ -62,36 +54,25 @@ export default {
     },
   },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
-    doResourceRenewFeeSubmit (data) {
+    doResourceRenewFeeSubmit () {
       const selectedIds = this.params.data.map(item => item.id)
       return new this.$Manager('servers', 'v2').batchPerformAction({
         ids: selectedIds,
         action: 'set-auto-renew',
         data: {
-          auto_renew: data.autoRenew,
+          auto_renew: this.form.autoRenew,
         },
       })
     },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
-        await this.doResourceRenewFeeSubmit(values)
-        this.loading = false
+        await this.doResourceRenewFeeSubmit()
         this.params.refresh()
         this.cancelDialog()
       } catch (error) {
+        // submit failed
+      } finally {
         this.loading = false
       }
     },

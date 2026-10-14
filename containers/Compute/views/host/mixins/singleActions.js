@@ -1,6 +1,6 @@
 import { mapGetters } from 'vuex'
 import qs from 'qs'
-import { SMART_SSH_FORM_DECORATORS } from '@Compute/constants'
+import { SMART_SSH_FORM_FIELDS } from '@Compute/constants'
 import { typeClouds, getDisabledProvidersActionMeta } from '@/utils/common/hypervisor'
 import { getDomainChangeOwnerAction, getSetPublicAction, getEnabledSwitchActions } from '@/utils/common/tableActions'
 import i18n from '@/locales'
@@ -127,7 +127,7 @@ export default {
                         }
                         openWebConsole(pms, obj.id)
                       },
-                      decorators: SMART_SSH_FORM_DECORATORS,
+                      fields: SMART_SSH_FORM_FIELDS,
                     })
                   }
                   return h('a-tooltip', {

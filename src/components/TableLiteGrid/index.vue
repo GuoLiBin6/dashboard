@@ -401,6 +401,38 @@ export default {
     bodyColumns () {
       return [...this.injectedLeadingColumns, ...this.leafColumns].map(withColumnProperty)
     },
+    /** 左右固定列的 sticky offset（px） */
+    pinnedOffsetMap () {
+      const left = {}
+      const right = {}
+      const cols = this.bodyColumns
+      let leftAcc = 0
+      cols.forEach((col) => {
+        if (this.getColFixed(col) !== 'left') return
+        const key = this.colKey(col)
+        left[key] = leftAcc
+        leftAcc += this.resolveColDisplayWidth(col)
+      })
+      let rightAcc = 0
+      for (let i = cols.length - 1; i >= 0; i--) {
+        const col = cols[i]
+        if (this.getColFixed(col) !== 'right') continue
+        const key = this.colKey(col)
+        right[key] = rightAcc
+        rightAcc += this.resolveColDisplayWidth(col)
+      }
+      return { left, right }
+    },
+    lastLeftFixedKey () {
+      const cols = this.bodyColumns.filter(c => this.getColFixed(c) === 'left')
+      if (!cols.length) return null
+      return this.colKey(cols[cols.length - 1])
+    },
+    firstRightFixedKey () {
+      const cols = this.bodyColumns.filter(c => this.getColFixed(c) === 'right')
+      if (!cols.length) return null
+      return this.colKey(cols[0])
+    },
     /** 各列声明/拖拽后的基准宽度 */
     colBaseWidths () {
       return this.bodyColumns.map(col => this.resolveColMinWidth(col))
@@ -581,6 +613,25 @@ export default {
     isFillFixedCol (col) {
       return ['checkbox', 'radio', 'expand', 'seq'].includes(col.type)
     },
+    /** 列固定方向：left | right | ''（仅尊重列上的 fixed，不再默认固定勾选列） */
+    getColFixed (col) {
+      if (!col) return ''
+      if (col.fixed === 'left' || col.fixed === 'right') return col.fixed
+      if (col.fixed === true) return 'left'
+      return ''
+    },
+    pinnedCellStyle (col) {
+      const side = this.getColFixed(col)
+      if (!side) return null
+      const key = this.colKey(col)
+      const style = { position: 'sticky', zIndex: side === 'left' ? 3 : 3 }
+      if (side === 'left') {
+        style.left = `${this.pinnedOffsetMap.left[key] || 0}px`
+      } else {
+        style.right = `${this.pinnedOffsetMap.right[key] || 0}px`
+      }
+      return style
+    },
     resolveColDisplayWidth (col) {
       const key = this.colKey(col)
       const mapped = this.colDisplayWidthMap[key]
@@ -596,11 +647,24 @@ export default {
       return style
     },
     thStyle (col) {
-      return this.colGroupStyle(col)
+      const style = { ...this.colGroupStyle(col) }
+      const pin = this.pinnedCellStyle(col)
+      if (pin) {
+        Object.assign(style, pin)
+        // 表头同时 sticky top + left/right
+        style.zIndex = 5
+        if (!style.background) style.background = '#fafafa'
+      }
+      return style
     },
     bodyTdStyle (col, row, rowIndex) {
       const style = { ...this.colGroupStyle(col) }
       if (col.align) style.textAlign = col.align
+      const pin = this.pinnedCellStyle(col)
+      if (pin) {
+        Object.assign(style, pin)
+        if (!style.background) style.background = '#fff'
+      }
       if (typeof this.cellStyle === 'function') {
         const column = withColumnProperty(col)
         Object.assign(style, this.cellStyle({ row, rowIndex, column }) || {})
@@ -609,6 +673,12 @@ export default {
     },
     footerTdStyle (col, rowIndex) {
       const style = { ...this.colGroupStyle(col) }
+      const pin = this.pinnedCellStyle(col)
+      if (pin) {
+        Object.assign(style, pin)
+        style.zIndex = 4
+        if (!style.background) style.background = '#fafafa'
+      }
       if (typeof this.footerCellStyle === 'function') {
         const column = withColumnProperty(col)
         Object.assign(style, this.footerCellStyle({ rowIndex, column }) || {})
@@ -616,18 +686,30 @@ export default {
       return style
     },
     thClass (col) {
+      const side = this.getColFixed(col)
+      const key = this.colKey(col)
       return [
         'table-lite-grid__th',
         col.sortable ? 'is-sortable' : '',
         this.canResize(col) ? 'is-resizable' : '',
         ['checkbox', 'radio', 'expand', 'seq'].includes(col.type) ? 'is-select' : '',
+        side === 'left' ? 'is-fixed-left' : '',
+        side === 'right' ? 'is-fixed-right' : '',
+        side === 'left' && key === this.lastLeftFixedKey ? 'is-fixed-left-last' : '',
+        side === 'right' && key === this.firstRightFixedKey ? 'is-fixed-right-first' : '',
       ]
     },
     bodyTdClass (col, row, rowIndex) {
+      const side = this.getColFixed(col)
+      const key = this.colKey(col)
       const classes = [
         'table-lite-grid__td',
         this.useEllipsis && !['checkbox', 'radio', 'expand', 'seq'].includes(col.type) ? 'is-ellipsis' : '',
         ['checkbox', 'radio', 'expand', 'seq'].includes(col.type) ? 'is-select' : '',
+        side === 'left' ? 'is-fixed-left' : '',
+        side === 'right' ? 'is-fixed-right' : '',
+        side === 'left' && key === this.lastLeftFixedKey ? 'is-fixed-left-last' : '',
+        side === 'right' && key === this.firstRightFixedKey ? 'is-fixed-right-first' : '',
       ]
       if (typeof this.cellClassName === 'function') {
         const extra = this.cellClassName({ row, rowIndex, column: withColumnProperty(col) })
@@ -636,7 +718,16 @@ export default {
       return classes
     },
     footerTdClass (col, rowIndex) {
-      const classes = ['table-lite-grid__td', 'is-footer']
+      const side = this.getColFixed(col)
+      const key = this.colKey(col)
+      const classes = [
+        'table-lite-grid__td',
+        'is-footer',
+        side === 'left' ? 'is-fixed-left' : '',
+        side === 'right' ? 'is-fixed-right' : '',
+        side === 'left' && key === this.lastLeftFixedKey ? 'is-fixed-left-last' : '',
+        side === 'right' && key === this.firstRightFixedKey ? 'is-fixed-right-first' : '',
+      ]
       if (typeof this.footerCellClassName === 'function') {
         const extra = this.footerCellClassName({ rowIndex, column: withColumnProperty(col) })
         if (extra) classes.push(extra)
@@ -1269,10 +1360,56 @@ export default {
 .table-lite-grid.is-hover-row .table-lite-grid__table tbody tr:hover > td {
   background: #f5f7fa;
 }
+.table-lite-grid.is-hover-row .table-lite-grid__table tbody tr:hover > td.is-fixed-left,
+.table-lite-grid.is-hover-row .table-lite-grid__table tbody tr:hover > td.is-fixed-right {
+  background: #f5f7fa;
+}
 .table-lite-grid__table tbody tr.is-checked > td,
 .table-lite-grid__table tbody tr.is-current > td {
   background: color-mix(in srgb, var(--ant-color-primary, #1890ff) 5%, #fff);
 }
+.table-lite-grid__table tbody tr.is-checked > td.is-fixed-left,
+.table-lite-grid__table tbody tr.is-checked > td.is-fixed-right,
+.table-lite-grid__table tbody tr.is-current > td.is-fixed-left,
+.table-lite-grid__table tbody tr.is-current > td.is-fixed-right {
+  background: color-mix(in srgb, var(--ant-color-primary, #1890ff) 5%, #fff);
+}
+
+/* 左右固定列阴影：提示中间区域可横向滚动 */
+.table-lite-grid__th.is-fixed-left-last,
+.table-lite-grid__td.is-fixed-left-last {
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: -1px;
+    width: 6px;
+    pointer-events: none;
+    box-shadow: inset -6px 0 6px -6px rgba(0, 0, 0, 0.12);
+  }
+}
+.table-lite-grid__th.is-fixed-right-first,
+.table-lite-grid__td.is-fixed-right-first {
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: -1px;
+    width: 6px;
+    pointer-events: none;
+    box-shadow: inset 6px 0 6px -6px rgba(0, 0, 0, 0.12);
+  }
+}
+.table-lite-grid__th.is-fixed-left,
+.table-lite-grid__th.is-fixed-right,
+.table-lite-grid__td.is-fixed-left,
+.table-lite-grid__td.is-fixed-right {
+  position: sticky;
+  overflow: visible;
+}
+
 .table-lite-grid.is-hover-row .table-lite-grid__table tbody tr.is-checked:hover > td,
 .table-lite-grid.is-hover-row .table-lite-grid__table tbody tr.is-current:hover > td {
   background: color-mix(in srgb, var(--ant-color-primary, #1890ff) 10%, #fff);

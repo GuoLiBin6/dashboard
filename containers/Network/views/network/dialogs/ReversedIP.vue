@@ -4,14 +4,16 @@
     <template #body>
       <dialog-selected-tips :name="$t('dictionary.network')" :count="params.data.length" :action="params.title" />
       <dialog-table class="mb-2" :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc">
-        <a-form-item
+      <a-form-model ref="formRef" :model="form" :rules="rules">
+        <a-form-model-item
           v-for="(item, i) in ipList"
           :key="item.key"
           :label="i === 0 ? $t('network.text_213') : ''"
-          v-bind="i === 0 ? formItemLayout : formItemLayoutWithOutLabel">
+          v-bind="i === 0 ? formItemLayout : formItemLayoutWithOutLabel"
+          :prop="'ipData.' + item.key"
+          :rules="ipRules">
           <a-input
-            v-decorator="ipDecorator(item, i)"
+            v-model:value="form.ipData[item.key]"
             :placeholder="$t('network.text_217')"
             style="width: 60%; margin-right: 8px" />
           <a-button
@@ -21,22 +23,17 @@
             v-if="ipList.length > 1"
             @click="decrease(i)"
             class="mt-2 ml-2" />
-        </a-form-item>
-        <a-form-item v-bind="formItemLayoutWithOutLabel" style="position:relative; top: -14px">
+        </a-form-model-item>
+        <a-form-model-item v-bind="formItemLayoutWithOutLabel" style="position:relative; top: -14px">
           <div class="d-flex align-items-center">
             <a-button type="primary" shape="circle" icon="plus" size="small" @click="addIP" />
             <a-button type="link" @click="addIP">{{$t('network.text_640')}}</a-button>
           </div>
-        </a-form-item>
-        <a-form-item :label="$t('network.text_641')" v-bind="formItemLayout">
-          <a-textarea v-decorator="['notes', {
-            rules: [
-              { required: true, message: this.$t('network.text_643') },
-              { max: 200, message: $t('network.text_642')}
-            ],
-          }]" :placeholder="$t('network.text_643')" :rows="2" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_641')" v-bind="formItemLayout" prop="notes">
+          <a-textarea v-model:value="form.notes" :placeholder="$t('network.text_643')" :rows="2" />
+        </a-form-model-item>
+      </a-form-model>
     </template>
     <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -46,7 +43,6 @@
 </template>
 
 <script>
-// import * as R from 'ramda'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import { uuid } from '@/utils/utils'
@@ -56,12 +52,22 @@ export default {
   name: 'NetworkReversedIPDialog',
   mixins: [DialogMixin, WindowsMixin],
   data () {
+    const firstKey = uuid()
     return {
-      ipList: [{ key: uuid() }],
+      ipList: [{ key: firstKey }],
       loading: false,
       scope: this.$store.getters.scope,
       form: {
-        fc: this.$form.createForm(this),
+        ipData: {
+          [firstKey]: undefined,
+        },
+        notes: undefined,
+      },
+      rules: {
+        notes: [
+          { required: true, message: this.$t('network.text_643') },
+          { max: 200, message: this.$t('network.text_642') },
+        ],
       },
       formItemLayout: {
         wrapperCol: {
@@ -78,10 +84,20 @@ export default {
       },
     }
   },
+  computed: {
+    ipRules () {
+      return [
+        {
+          required: true, message: this.$t('network.text_646'),
+        },
+        { validator: validateForm(['IPv4', 'IPv6'], true, 'some'), message: this.$t('network.text_647') },
+        { validator: this.ipBlur, trigger: ['change'] },
+      ]
+    },
+  },
   methods: {
     async ipBlur (rule, value, _callback) {
-      const ipData = this.form.fc.getFieldValue('ipData') || {}
-      const ips = Object.values(ipData)
+      const ips = Object.values(this.form.ipData || {})
       if (ips.filter(ip => ip === value).length >= 2) {
         return _callback(this.$t('network.text_644'))
       }
@@ -97,19 +113,6 @@ export default {
       } catch {
         _callback()
       }
-    },
-    ipDecorator (item, i) {
-      const { key } = item
-      return [`ipData.${key}`, {
-        validateFirst: true,
-        rules: [
-          {
-            required: true, message: this.$t('network.text_646'),
-          },
-          { validator: validateForm(['IPv4', 'IPv6'], true, 'some'), message: this.$t('network.text_647') },
-          { validator: this.ipBlur, trigger: ['change'] },
-        ],
-      }]
     },
     ipToInt (ip) {
       const REG = /^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/
@@ -147,8 +150,7 @@ export default {
       if (this.ipList.length > 0) {
         const lastIndex = this.ipList.length - 1
         const lastItem = this.ipList[lastIndex]
-        const lastFieldName = `ipData.${lastItem.key}`
-        const lastFieldValue = this.form.fc.getFieldValue(lastFieldName)
+        const lastFieldValue = this.form.ipData[lastItem.key]
         if (lastFieldValue) {
           nextIp = this.getNextIp(lastFieldValue)
         }
@@ -156,28 +158,25 @@ export default {
       this.ipList.push({
         key,
       })
-      this.$nextTick(() => {
-        if (nextIp) {
-          this.form.fc.setFieldsValue({
-            [`ipData.${key}`]: nextIp,
-          })
-        }
-      })
+      this.$set(this.form.ipData, key, nextIp || undefined)
     },
     decrease (index) {
-      this.ipList.splice(index, 1)
+      const removed = this.ipList.splice(index, 1)
+      if (removed[0]) {
+        this.$delete(this.form.ipData, removed[0].key)
+      }
     },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         await this.params.onManager('performAction', {
           id: this.params.data[0].id,
           managerArgs: {
             action: 'reserve-ip',
             data: {
-              ips: Object.values(values.ipData),
-              notes: values.notes,
+              ips: Object.values(this.form.ipData),
+              notes: this.form.notes,
             },
           },
         })

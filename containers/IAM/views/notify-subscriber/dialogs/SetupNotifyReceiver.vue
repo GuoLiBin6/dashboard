@@ -2,28 +2,29 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{ title }}</div>
     <div slot="body">
-      <a-form
+      <a-form-model
+        ref="formRef"
         class="mt-3"
-        :form="form.fc"
+        :model="form"
+        :rules="formRules"
         v-bind="formItemLayout"
         hideRequiredMark>
         <scope-radio
           :disabled="isUpdate"
-          :decorators="decorators"
-          :form="form"
+          :model="form"
           :label="$t('system.notify.topic.receiver.resource_scope')"
-          @change="scopeChange"  />
-        <a-form-item :label="$t('system.text_48')">
-          <a-radio-group v-decorator="decorators.type"  @change="handleTypeChange" :disabled="isUpdate">
+          @change="scopeChange" />
+        <a-form-model-item :label="$t('system.text_48')" prop="type">
+          <a-radio-group v-model:value="form.type" @change="handleTypeChange" :disabled="isUpdate">
             <a-radio-button
               v-for="item in sub_types"
               :value="item.key"
               :key="item.key">{{ item.label }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item v-if="curType === 'receiver'" :label="$t('system.notify.subscriber.type.receiver')">
+        </a-form-model-item>
+        <a-form-model-item v-if="curType === 'receiver'" :label="$t('system.notify.subscriber.type.receiver')" prop="receivers">
           <base-select
-            v-decorator="decorators.receivers"
+            v-model:value="form.receivers"
             class="w-100"
             :filterable="true"
             needParams
@@ -40,32 +41,36 @@
               </a-row>
             </template>
           </base-select>
-        </a-form-item>
-        <a-form-item v-if="curType === 'role'" :label="$t('system.notify.subscriber.type.role')">
+        </a-form-model-item>
+        <a-form-model-item v-if="curType === 'role'" :label="$t('system.notify.subscriber.type.role')">
           <a-row type="flex">
             <a-col :flex="2" class="mr-2">
-              <base-select
-                v-decorator="decorators.role_scope"
-                :options="roleScopeOptions"
-                :select-props="{ placeholder: $t('system.text_232', [$t('common_235')]), allowClear: false }" />
+              <a-form-model-item prop="role_scope" :wrapper-col="{ span: 24 }" class="mb-0">
+                <base-select
+                  v-model:value="form.role_scope"
+                  :options="roleScopeOptions"
+                  :select-props="{ placeholder: $t('system.text_232', [$t('common_235')]), allowClear: false }" />
+              </a-form-model-item>
             </a-col>
             <a-col :flex="3">
-              <base-select
-                v-decorator="decorators.role"
-                :filterable="true"
-                needParams
-                resource="roles"
-                version="v1"
-                :isDefaultSelect="true"
-                :applyOptionLabel="true"
-                :params="recipientParams"
-                :select-props="{ placeholder: $t('system.text_232', [$t('system.notify.subscriber.type.role')]), allowClear: false }" />
+              <a-form-model-item prop="role" :wrapper-col="{ span: 24 }" class="mb-0">
+                <base-select
+                  v-model:value="form.role"
+                  :filterable="true"
+                  needParams
+                  resource="roles"
+                  version="v1"
+                  :isDefaultSelect="true"
+                  :applyOptionLabel="true"
+                  :params="recipientParams"
+                  :select-props="{ placeholder: $t('system.text_232', [$t('system.notify.subscriber.type.role')]), allowClear: false }" />
+              </a-form-model-item>
             </a-col>
           </a-row>
-        </a-form-item>
-        <a-form-item v-if="curType === 'robot'" :label="$t('system.notify.subscriber.type.robot')">
+        </a-form-model-item>
+        <a-form-model-item v-if="curType === 'robot'" :label="$t('system.notify.subscriber.type.robot')" prop="robot">
           <base-select
-            v-decorator="decorators.robot"
+            v-model:value="form.robot"
             class="w-100"
             :filterable="true"
             needParams
@@ -75,12 +80,12 @@
             :isDefaultSelect="true"
             :params="recipientParams"
             :select-props="{ placeholder: $t('system.text_232', [$t('system.notify.subscriber.type.robot')]), allowClear: false }" />
-        </a-form-item>
-        <a-form-item :label="$t('iam.notify_silent')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('iam.notify_silent')" prop="group_times">
           <a-row type="flex">
             <a-col :flex="2" class="mr-2">
               <a-select
-                v-decorator="decorators.group_times"
+                v-model:value="form.group_times"
                 allow-clear
                 :placeholder="$t('common.tips.select', [$t('iam.notify_silent')])">
                 <a-select-option v-for="item in groupKeyOpts" :value="item.id" :key="item.id">{{item.name}}</a-select-option>
@@ -88,8 +93,8 @@
             </a-col>
             <a-col :flex="3"><help-tooltip :text="$t('iam.notify_silent.tip')" /></a-col>
           </a-row>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -112,10 +117,8 @@ export default {
   data () {
     const initialValues = {}
     if (this.params.data && this.params.data.id) {
-      // update
       const s = this.params.data
       initialValues.scope = s.resource_scope
-      initialValues.resource_scope = s.resource_scope
       if (s.resource_scope === 'domain') initialValues.domain = s.resource_attribution_id
       if (s.resource_scope === 'project') initialValues.project = s.resource_attribution_id
       initialValues.type = s.type
@@ -125,9 +128,9 @@ export default {
       initialValues.receivers = s.receivers ? s.receivers.map(r => r.id) : []
       initialValues.group_times = s.group_times || undefined
     } else {
-      // create
       initialValues.scope = this.$store.getters.scope
-      initialValues.resource_scope = this.$store.getters.scope
+      initialValues.domain = undefined
+      initialValues.project = undefined
       initialValues.type = NOTIFY_SUBSCRIBER_TYPES[0].key
       initialValues.role_scope = 'system'
       initialValues.group_times = 60
@@ -140,95 +143,28 @@ export default {
       sub_types: NOTIFY_SUBSCRIBER_TYPES,
       roleScopeOptions: NOTIFY_ROLE_SCOPES,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-          },
-        }),
-        fd: {
-          ...initialValues,
-        },
+        scope: initialValues.scope,
+        domain: initialValues.domain,
+        project: initialValues.project,
+        type: initialValues.type,
+        receivers: initialValues.receivers,
+        robot: initialValues.robot,
+        role: initialValues.role,
+        role_scope: initialValues.role_scope,
+        group_times: initialValues.group_times,
       },
-      decorators: {
-        scope: [
-          'scope',
-          {
-            initialValue: initialValues.resource_scope,
-          },
-        ],
-        domain: [
-          'domain',
-          {
-            initialValue: initialValues.domain,
-            rules: [
-              { required: !this.params.data, message: `${this.$t('common.select')}` },
-            ],
-          },
-        ],
-        project: [
-          'project',
-          {
-            initialValue: initialValues.project,
-            rules: [
-              { required: !this.params.data, message: `${this.$t('common.select')}` },
-            ],
-          },
-        ],
+      rules: {
         type: [
-          'type',
-          {
-            initialValue: initialValues.type,
-            rules: [
-              { required: true, message: `${this.$t('common.select')}` },
-            ],
-          },
-        ],
-        receivers: [
-          'receivers',
-          {
-            initialValue: initialValues.receivers,
-            rules: [
-              { required: true, message: `${this.$t('common.select')}` },
-            ],
-          },
-        ],
-        robot: [
-          'robot',
-          {
-            initialValue: initialValues.robot,
-            rules: [
-              { required: true, message: `${this.$t('common.select')}` },
-            ],
-          },
-        ],
-        role: [
-          'role',
-          {
-            initialValue: initialValues.role,
-            rules: [
-              { required: true, message: `${this.$t('common.select')}` },
-            ],
-          },
-        ],
-        role_scope: [
-          'role_scope',
-          {
-            initialValue: initialValues.role_scope,
-            rules: [
-              { required: true, message: `${this.$t('common.select')}` },
-            ],
-          },
+          { required: true, message: `${this.$t('common.select')}` },
         ],
         group_times: [
-          'group_times',
-          {
-            initialValue: initialValues.group_times,
-            rules: [
-              { required: false, message: `${this.$t('common.select')}` },
-            ],
-          },
+          { required: false, message: `${this.$t('common.select')}` },
+        ],
+        domain: [
+          { required: !this.params.data, message: `${this.$t('common.select')}` },
+        ],
+        project: [
+          { required: !this.params.data, message: `${this.$t('common.select')}` },
         ],
       },
       formItemLayout: {
@@ -272,6 +208,22 @@ export default {
         enabled: true,
       }
     },
+    formRules () {
+      const rules = { ...this.rules }
+      const msg = `${this.$t('common.select')}`
+      if (this.curType === 'receiver') {
+        rules.receivers = [{ required: true, message: msg }]
+      } else if (this.curType === 'robot') {
+        rules.robot = [{ required: true, message: msg }]
+      } else if (this.curType === 'role') {
+        rules.role = [{ required: true, message: msg }]
+        rules.role_scope = [{ required: true, message: msg }]
+      }
+      // domain/project 仅在对应 scope 下必填
+      if (this.form.scope !== 'domain') delete rules.domain
+      if (this.form.scope !== 'project') delete rules.project
+      return rules
+    },
   },
   unmounted () {
     this.manager = null
@@ -280,13 +232,15 @@ export default {
     this.manager = new this.$Manager('subscribers', 'v1')
   },
   methods: {
+    scopeChange () {},
     handleTypeChange (e) {
-      this.curType = e.target.value
+      this.curType = e?.target?.value ?? e
     },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         let resource_attribution_id = ''
         if (values.scope === 'domain') resource_attribution_id = values.domain || this.userInfo.projectDomainId
         if (values.scope === 'project') resource_attribution_id = values.project || this.userInfo.projectId
@@ -298,7 +252,6 @@ export default {
           group_times: values.group_times || 0,
         }
         if (this.isUpdate) {
-          // params.topic_id = this.params.data.topic_id || this.params.resId
           await this.manager.performAction({
             id: this.params.data.id,
             action: 'change',

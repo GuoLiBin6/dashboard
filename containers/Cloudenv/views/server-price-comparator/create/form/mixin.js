@@ -8,7 +8,7 @@ import CpuRadio from '@Compute/sections/CpuRadio'
 import MemRadio from '@Compute/sections/MemRadio'
 import sku from '@Compute/sections/SKU'
 import gpu from '@Compute/sections/GPU/index'
-import { Decorator, GenCreateData } from '@Compute/utils/createServer'
+import { createVmFormDefaults, GenCreateData } from '@Compute/utils/createServer'
 import ServerNetwork from '@Compute/sections/ServerNetwork'
 import ServerAccount from '@Compute/sections/ServerAccount'
 import SchedPolicy from '@Compute/sections/SchedPolicy'
@@ -25,8 +25,7 @@ import { Manager } from '@/utils/manager'
 import NameRepeated from '@/sections/NameRepeated'
 import CloudregionZone from '@/sections/CloudregionZone'
 import HypervisorRadio from '@/sections/HypervisorRadio'
-import DomainProject from '@/sections/DomainProject'
-import { getInitialValue } from '@/utils/common/ant'
+import DomainProject from '@/sections/DomainProject/model'
 import { IMAGES_TYPE_MAP } from '@/constants/compute'
 import { HYPERVISORS_MAP } from '@/constants'
 import i18n from '@/locales'
@@ -83,8 +82,7 @@ export default {
     },
   },
   data () {
-    const decorators = new Decorator(SERVER_TYPE[this.type]).createDecorators()
-    const initFd = getInitialValue(decorators)
+    const { defaults: initFd } = createVmFormDefaults(SERVER_TYPE[this.type])
     return {
       submiting: false,
       errors: {},
@@ -92,35 +90,31 @@ export default {
         wrapperCol: CreateServerForm.wrapperCol,
         labelCol: CreateServerForm.labelCol,
       },
-      form: {
-        fc: this.$form.createForm(this, { onValuesChange: this.onValuesChange }),
-        fi: { // formInfo 存储着和表单相关的数据
-          capability: {}, // 可用区下的可用资源
-          imageMsg: {}, // 当前选中的 image
-          cpuMem: {}, // cpu 和 内存 的关联关系
-          createType: SERVER_TYPE[this.type],
-          dataDiskDisabled: false, // 数据盘是否禁用
-          sysDiskDisabled: false, // 系统盘是否禁用
-          cpuDisabled: false,
-          memDisabled: false,
-        },
-        fd: { ...initFd, os: '' },
-      },
-      decorators: {
-        ...decorators,
-        name: [
-          'name',
-          {
-            initialValue: '',
-            rules: [
-              { required: false, message: i18n.t('compute.text_210') },
-            ],
+      form: (() => {
+        // createForm / fc shim 已移除：form 仅 { fd, fi }；onValuesChange → 各页 watch form.fd
+        const fd = { ...initFd, os: '' }
+        return {
+          fi: { // formInfo 存储着和表单相关的数据
+            capability: {}, // 可用区下的可用资源
+            imageMsg: {}, // 当前选中的 image
+            cpuMem: {}, // cpu 和 内存 的关联关系
+            createType: SERVER_TYPE[this.type],
+            dataDiskDisabled: false, // 数据盘是否禁用
+            sysDiskDisabled: false, // 系统盘是否禁用
+            cpuDisabled: false,
+            memDisabled: false,
           },
-        ],
-      },
+          fd,
+        }
+      })(),
       capabilityParams: {}, // 防止 capability 反复调用，这里对当前的接口参数做记录
       price: null,
       collapseActive: [],
+      rules: {
+        count: [
+          { required: true, message: i18n.t('compute.text_211') },
+        ],
+      },
     }
   },
   provide () {
@@ -395,44 +389,60 @@ export default {
       this.$message.success(i18n.t('common.success'))
       this.$router.push('/pricecomparator')
     },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFieldsAndScroll({ scroll: { alignWithTop: true, offsetTop: 100 } }, (err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            this.collapseActive = ['1'] // 仅仅在报错的时候展开高级配置
-            reject(err)
-          }
-        })
-      })
+    async validateForm () {
+      const formRef = this.$refs.formRef
+      if (formRef?.validate) {
+        await formRef.validate()
+      }
+      // end-state sections：字段走组件 validate，不依赖 fc.validateFields
+      if (typeof this.$refs.domainProjectRef?.validate === 'function') {
+        await this.$refs.domainProjectRef.validate()
+      }
+      if (typeof this.$refs.cloudregionZoneRef?.validate === 'function') {
+        await this.$refs.cloudregionZoneRef.validate()
+      }
+      if (typeof this.$refs.areaSelectRef?.validate === 'function') {
+        await this.$refs.areaSelectRef.validate()
+      }
+      if (typeof this.$refs.hypervisorRadioRef?.validate === 'function') {
+        await this.$refs.hypervisorRadioRef.validate()
+      }
+      if (typeof this.$refs.skuRef?.validate === 'function') {
+        await this.$refs.skuRef.validate()
+      }
+      if (typeof this.$refs.systemDiskRef?.validate === 'function') {
+        await this.$refs.systemDiskRef.validate()
+      }
+      if (typeof this.$refs.dataDiskRef?.validate === 'function') {
+        await this.$refs.dataDiskRef.validate()
+      }
+      return { ...this.form.fd }
     },
     cpuChange (cpu) {
-      const memOpts = this.form.fi.cpuMem.cpu_mems_mb[cpu]
+      // end-state：Cpu/Mem 只写 form.fd
+      const setCpuMem = (vals) => {
+        if (!vals || typeof vals !== 'object') return
+        Object.keys(vals).forEach((k) => { this.form.fd[k] = vals[k] })
+      }
+      const memOpts = this.form.fi.cpuMem.cpu_mems_mb?.[cpu] || this.form.fi.cpuMem.cpu_mems_mb?.[String(cpu)]
       if (!memOpts || !memOpts.length) { // 没有内存Opts，则内存为0
         let vcpu = cpu
-        if (!this.form.fi.cpuMem.cpus.includes(cpu)) { // CPU的Opts不包括cpu的话
-          if (this.form.fi.cpuMem.cpus && this.form.fi.cpuMem.cpus.length) { // 如果CPU的Opts有值
+        if (!this.form.fi.cpuMem.cpus?.includes(cpu) && !this.form.fi.cpuMem.cpus?.some(c => String(c) === String(cpu))) {
+          if (this.form.fi.cpuMem.cpus && this.form.fi.cpuMem.cpus.length) {
             vcpu = this.form.fi.cpuMem.cpus[0]
-          } else { // 否则为0
+          } else {
             vcpu = 0
           }
         }
-        this.form.fc.setFieldsValue({
-          vcpu,
-          vmem: 0,
-        })
+        setCpuMem({ vcpu, vmem: 0 })
         return
       }
       this.form.fi.cpuMem.mems_mb = memOpts
       let defaultMem = 2048
-      if (!this.form.fi.cpuMem.mems_mb.includes(2048)) { // 如果返回值不包括默认内存2G，选择第一项
+      if (!memOpts.some(m => Number(m) === 2048)) {
         defaultMem = memOpts[0]
       }
-      this.form.fc.setFieldsValue({
-        vcpu: cpu,
-        vmem: defaultMem,
-      })
+      setCpuMem({ vcpu: cpu, vmem: defaultMem })
     },
     _getProjectDomainInfo (variables) {
       variables.project = this.form.fd.project.key
@@ -445,20 +455,17 @@ export default {
       }
     },
     _resetDataDisk () { // 重置数据盘
-      const formValue = this.form.fc.getFieldsValue()
-      if (formValue.dataDiskSizes) {
-        const dataDiskKeys = Object.keys(formValue.dataDiskSizes)
-        dataDiskKeys.forEach(key => this.$refs.dataDiskRef.decrease(key))
+      const sizes = this.form.fd?.dataDiskSizes
+      if (sizes && this.$refs.dataDiskRef) {
+        Object.keys(sizes).forEach(key => this.$refs.dataDiskRef.decrease(key))
       }
     },
-    _setNewFieldToFd (newField, formValue) { // vue-ant-form change 后赋值 fd
-      const changeKeys = Object.keys(newField)
-      R.forEachObjIndexed((item, key) => {
-        this.$set(this.form.fd, key, item)
-      }, newField)
-      if (changeKeys.some(val => val.includes('dataDiskSizes'))) { // 动态赋值默认值的表单需要单独处理
-        this.$set(this.form.fd, 'dataDiskSizes', formValue.dataDiskSizes)
-      }
+    /** 程序化写 form.fd */
+    setFormFieldsAndSyncFd (values) {
+      if (!values || typeof values !== 'object' || !this.form?.fd) return
+      Object.keys(values).forEach((k) => {
+        if (values[k] !== undefined) this.form.fd[k] = values[k]
+      })
     },
     networkResourceMapper (list) {
       return list
@@ -475,27 +482,21 @@ export default {
         .sort((a, b) => (b.ports - b.ports_used) - (a.ports - a.ports_used))
     },
     countBlur () {
-      const count = this.form.fc.getFieldValue(this.decorators.count[0])
+      const count = this.form.fd.count
       if (!count) {
-        this.form.fc.setFieldsValue({
-          [this.decorators.count[0]]: 1,
-        })
+        this.form.fd.count = 1
       }
     },
     fetchDomainCallback () {
       const domain = this.$route.query.domain_id
       if (!R.isNil(domain) && !R.isEmpty(domain)) {
-        this.form.fc.setFieldsValue({
-          domain,
-        })
+        this.form.fd.domain = domain
       }
     },
     fetchProjectCallback () {
       const project = this.$route.query.tenant_id
       if (!R.isNil(project) && !R.isEmpty(project)) {
-        this.form.fc.setFieldsValue({
-          project: { key: project },
-        })
+        this.form.fd.project = { key: project }
       }
     },
   },

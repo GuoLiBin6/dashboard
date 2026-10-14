@@ -4,9 +4,9 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.add_to_bastion')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <bastion-host :decorator="decorators.bastion_host" :form="form" inDialog />
-      </a-form>
+      <a-form-model ref="formRef" :model="form.fd" :rules="rules" v-bind="formItemLayout">
+        <bastion-host :form="form" :model="form.fd" inDialog />
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -16,12 +16,12 @@
 </template>
 
 <script>
-import { Decorator } from '@Compute/utils/createServer'
+import { createVmFormDefaults } from '@Compute/utils/createServer'
 import { SERVER_TYPE } from '@Compute/constants'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
-import { getInitialValue } from '@/utils/common/ant'
 import BastionHost from '../create/components/BastionHost'
+
 export default {
   name: 'VmAddToBastionDialog',
   components: {
@@ -29,15 +29,14 @@ export default {
   },
   mixins: [DialogMixin, WindowsMixin],
   data () {
-    const decorators = new Decorator(SERVER_TYPE.idc).createDecorators()
-    const initFd = getInitialValue(decorators)
+    const { defaults: initFd } = createVmFormDefaults(SERVER_TYPE.idc)
+    const fd = {
+      ...initFd,
+    }
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-        fd: {
-          ...initFd,
-        },
+        fd,
       },
       formItemLayout: {
         wrapperCol: {
@@ -47,16 +46,31 @@ export default {
           span: 6,
         },
       },
-      decorators,
+      rules: {
+        bastion_host_id: [
+          { required: true, message: this.$t('compute.bastionHost.bastion_host.placeholder') },
+        ],
+        bastion_org_id: [
+          { required: true, message: this.$t('compute.bastionHost.bastion_org.placeholder') },
+        ],
+        nodes: [
+          { required: true, message: this.$t('compute.bastionHost.node.placeholder') },
+        ],
+        privileged_accounts: [
+          { required: true, message: this.$t('compute.bastionHost.privileged_account.placeholder') },
+        ],
+        accounts: [
+          { required: true, message: this.$t('compute.bastionHost.account.placeholder') },
+        ],
+      },
     }
-  },
-  computed: {
   },
   methods: {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form.fd }
         values.accounts = [values.privileged_accounts].concat(values.accounts)
         delete values.privileged_accounts
         for (const item of this.params.data) {

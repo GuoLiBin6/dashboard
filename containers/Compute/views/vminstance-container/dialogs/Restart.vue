@@ -9,14 +9,14 @@
       </a-alert>
       <dialog-selected-tips :name="$t('compute.vminstance-container')" :count="params.data.length" :action="action" />
       <table-lite-grid class="mb-2" :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" hideRequiredMark>
-        <a-form-item :label="$t('compute.text_1041')" v-bind="formItemLayout" v-if="isOpenWorkflow">
-          <a-input v-decorator="decorators.reason" :placeholder="$t('compute.text_1105')" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_1235')" v-bind="formItemLayout">
-          <a-switch v-decorator="decorators.autoStart" />
-        </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" :model="form" hideRequiredMark>
+        <a-form-model-item :label="$t('compute.text_1041')" v-bind="formItemLayout" v-if="isOpenWorkflow" prop="reason">
+          <a-input v-model:value="form.reason" :placeholder="$t('compute.text_1105')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_1235')" v-bind="formItemLayout" prop="autoStart">
+          <a-switch v-model:checked="form.autoStart" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -40,22 +40,8 @@ export default {
       loading: false,
       action: this.$t('compute.text_274'),
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        reason: [
-          'reason',
-          {
-            initialValue: '',
-          },
-        ],
-        autoStart: [
-          'autoStart',
-          {
-            initialValue: false,
-            valuePropName: 'checked',
-          },
-        ],
+        reason: '',
+        autoStart: false,
       },
       formItemLayout: {
         wrapperCol: {
@@ -78,7 +64,7 @@ export default {
     },
   },
   methods: {
-    async doRestartSubmit (values) {
+    async doRestartSubmit () {
       const ids = this.params.data.map(item => item.id)
       return this.params.onManager('batchPerformAction', {
         id: ids,
@@ -86,7 +72,7 @@ export default {
         managerArgs: {
           action: 'restart',
           data: {
-            is_force: values.autoStart,
+            is_force: this.form.autoStart,
           },
         },
       })
@@ -94,7 +80,7 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         if (this.isOpenWorkflow) {
           if (this.params.data.length > BATCH_OPERATE_SERVERS_MAX) {
             this.$message.error(this.$t('compute.workflow.operate_servers_check.message', [this.$t('compute.text_274'), BATCH_OPERATE_SERVERS_MAX]))
@@ -107,20 +93,21 @@ export default {
             this.loading = false
             return
           }
-          await this.handleRestartByWorkflowSubmit(values)
+          await this.handleRestartByWorkflowSubmit()
         } else {
-          await this.doRestartSubmit(values)
+          await this.doRestartSubmit()
         }
-        this.loading = false
         this.cancelDialog()
       } catch (error) {
+        // validate or submit failed
+      } finally {
         this.loading = false
       }
     },
-    async handleRestartByWorkflowSubmit (values) {
+    async handleRestartByWorkflowSubmit () {
       const ids = this.params.data.map(item => item.id)
       const params = {
-        is_force: values.autoStart,
+        is_force: this.form.autoStart,
       }
       const variables = {
         project: this.params.data[0].tenant_id,
@@ -128,7 +115,7 @@ export default {
         process_definition_key: this.WORKFLOW_TYPES.APPLY_SERVER_RESTART,
         initiator: this.userInfo.id,
         ids: ids.join(','),
-        description: values.reason,
+        description: this.form.reason,
         paramter: JSON.stringify(params),
       }
       await this.createWorkflow(variables)

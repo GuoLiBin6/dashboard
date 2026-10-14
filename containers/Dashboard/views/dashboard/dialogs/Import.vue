@@ -2,11 +2,10 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{this.params.title}}</div>
     <div slot="body">
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item>
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item prop="file">
           <a-upload-dragger
             name="file"
-            v-decorator="decorators.file"
             accept=".ocdb"
             :fileList="fileList"
             :multiple="false"
@@ -17,8 +16,8 @@
             </p>
             <p class="ant-upload-text">{{$t('dashboard.text_112')}}</p>
           </a-upload-dragger>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
@@ -41,19 +40,14 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        file: null,
       },
-      fileList: [],
-      decorators: {
+      rules: {
         file: [
-          'file',
-          {
-            rules: [
-              { required: true, message: this.$t('dashboard.text_113') },
-            ],
-          },
+          { required: true, message: this.$t('dashboard.text_113') },
         ],
       },
+      fileList: [],
       formItemLayout: {
         wrapperCol: {
           span: 24,
@@ -88,12 +82,13 @@ export default {
       let fileList = [...info.fileList]
       fileList = fileList.slice(-1)
       this.fileList = fileList
+      this.form.file = fileList[0] || null
     },
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        const fileData = await this.readFileAsync(values.file.file)
+        await this.$refs.formRef.validate()
+        const fileData = await this.readFileAsync(this.form.file.file)
         const fileDataArr = fileData.split(',')
         const objStr = Base64.decode(Base64.decode(fileDataArr[1]))
         const data = JSON.parse(objStr)
@@ -102,12 +97,10 @@ export default {
           this.loading = false
           return
         }
-        // 检查是否已经创建了dashboard配置
         const optionsCreated = await this.params.checkOptionsCreated()
         if (!optionsCreated) {
           await this.params.initOptions()
         }
-        // 更新options
         const options = [...this.params.options]
         const id = `dashboard-${this.scope}-panel-${uuid(16)}`
         const item = {
@@ -116,7 +109,6 @@ export default {
         }
         options.push(item)
         await this.params.updateOptions(options)
-        // 创建panel数据配置
         const panelData = {}
         for (let i = 0, len = data.items.length; i < len; i++) {
           panelData[`dashboard-item-${uuid(32)}`] = data.items[i]

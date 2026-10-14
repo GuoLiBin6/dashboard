@@ -2,10 +2,10 @@
   <a-form-item :wrapperCol="{ span: 24 }" style="flex: 1;" class="mb-0 mr-1 network-item">
     <base-select
       class="w-100"
-      v-decorator="decorators.storage"
+      :value="storageFieldVal"
       filterable
       resource="storages"
-      @change="change"
+      @change="onStorageChange"
       :params="{ ...storageParams, $t: diskKey }"
       :options="options"
       :dropdownMenuStyle="{ 'min-height': '20px' }">
@@ -27,14 +27,18 @@
 <script>
 import * as R from 'ramda'
 import { sizestr } from '@/utils/utils'
+import diskModelMixin from '../diskModelMixin'
+import { buildDataDiskFieldMap, resolveSystemDiskFieldMap } from '../fields'
 
 export default {
   name: 'DiskStorageSelect',
+  mixins: [diskModelMixin],
   props: {
     diskKey: String,
-    decorators: {
-      type: Object,
-      validator: val => val.storage,
+    /** 独立云盘创建等：直接绑定 model 上的字段名 */
+    storageField: {
+      type: String,
+      default: '',
     },
     storageParams: {
       type: Object,
@@ -42,7 +46,12 @@ export default {
     },
     form: {
       type: Object,
-      validator: val => !val || val.fc, // 不传 或者 传就有fc
+      validator: val => !val || typeof val === 'object',
+    },
+    /** a-form-model end-state：嵌套写 model，不双写 fc */
+    model: {
+      type: Object,
+      default: null,
     },
     storageHostParams: {
       type: Object,
@@ -59,16 +68,34 @@ export default {
     }
   },
   computed: {
+    diskFieldMap () {
+      if (this.storageField) {
+        return { storage: { name: this.storageField } }
+      }
+      if (this.diskKey === 'system') return resolveSystemDiskFieldMap()
+      return buildDataDiskFieldMap(this.diskKey)
+    },
+    storageFieldVal () {
+      return this.diskFieldVal(this.diskFieldMap.storage)
+    },
+    fdSource () {
+      return this.model || this.form?.fd || {}
+    },
     diskSizeParams () {
-      const { systemDiskStorage = '', systemDiskSize = 0, dataDiskSizes = {} } = this.form.fd
+      const fd = this.fdSource
+      const { systemDiskStorage = '', systemDiskSize = 0, dataDiskSizes = {} } = fd
       const ret = {
         systemDiskStorage,
         systemDiskSize,
         dataDiskSizes,
         storageHostParams: this.storageHostParams,
       }
-      if (this.diskKey !== 'system' && this.form.fd.hasOwnProperty(`dataDiskStorages[${this.diskKey}]`)) {
-        ret.currentDiskStorage = this.form.fd[`dataDiskStorages[${this.diskKey}]`]
+      if (this.diskKey !== 'system') {
+        const nested = dataDiskSizes && typeof dataDiskSizes === 'object' ? dataDiskSizes[this.diskKey] : undefined
+        const flatKey = 'dataDiskStorages[' + this.diskKey + ']'
+        if (nested !== undefined || Object.prototype.hasOwnProperty.call(fd, flatKey)) {
+          ret.currentDiskStorage = this.readStorageId(this.diskKey)
+        }
       }
       return ret
     },
@@ -95,6 +122,18 @@ export default {
     this.$s = new this.$Manager('storages', 'v1')
   },
   methods: {
+
+    readStorageId (key) {
+      const fd = this.fdSource
+      if (fd.dataDiskStorages && typeof fd.dataDiskStorages === 'object' && fd.dataDiskStorages[key] !== undefined) {
+        return fd.dataDiskStorages[key]
+      }
+      return fd[`dataDiskStorages[${key}]`]
+    },
+    onStorageChange (v) {
+      this.diskFieldSet(this.diskFieldMap.storage, v)
+      this.change(v)
+    },
     change (v) {
       if (v) {
         this.storageCache = v // 只缓存有值的时候
@@ -137,25 +176,28 @@ export default {
     },
     filterOptions () {
       let filterdList = R.clone(this.opts)
-      if (this.diskKey && this.form && this.form.fd) {
+      const fd = this.fdSource
+      if (this.diskKey && fd && Object.keys(fd).length) {
         // 获取所有已选存储的storeageId和选择这块存储的diskSize
-        const { systemDiskStorage = '', systemDiskSize = 0, dataDiskSizes = {} } = this.form.fd
+        const { systemDiskStorage = '', systemDiskSize = 0, dataDiskSizes = {} } = fd
         const s_d_map = {}
         if (systemDiskStorage && this.diskKey !== 'system') {
           s_d_map[systemDiskStorage] = systemDiskSize
         }
         for (const key in dataDiskSizes) {
-          const decoratorKey = this.form.fd[`dataDiskStorages[${key}]`]
-          if (decoratorKey && key !== this.diskKey) { // 当前数据盘外的其他数据盘
-            if (!s_d_map[decoratorKey]) {
-              s_d_map[decoratorKey] = dataDiskSizes[key]
+          const storageId = this.readStorageId(key)
+          if (storageId && key !== this.diskKey) { // 当前数据盘外的其他数据盘
+            if (!s_d_map[storageId]) {
+              s_d_map[storageId] = dataDiskSizes[key]
             } else {
-              s_d_map[decoratorKey] += dataDiskSizes[key]
+              s_d_map[storageId] += dataDiskSizes[key]
             }
           }
         }
         // 当前磁盘大小
-        const currentDiskSize = this.diskKey === 'system' ? systemDiskSize : (dataDiskSizes[this.diskKey] || this.form.fd[`dataDiskSizes[${this.diskKey}]`])
+        const currentDiskSize = this.diskKey === 'system'
+          ? systemDiskSize
+          : (dataDiskSizes[this.diskKey] || fd[`dataDiskSizes[${this.diskKey}]`])
         // 当前系统盘块存储host
         const { storageHosts = [], disk } = this.storageHostParams
         // 保留 （容量 - 已经选用此块存储的磁盘大小 > 当前磁盘大小）&& 与系统盘相同host 的块存储
@@ -178,14 +220,10 @@ export default {
         })
       }
 
-      if (this.form && this.form.fc) {
-        if (this.storageCache) {
-          const hasCache = filterdList.some(val => val.id === this.storageCache)
-          if (hasCache) { // 如果新的list存在缓存值的话，取缓存值
-            this.form.fc.setFieldsValue({
-              [this.decorators.storage[0]]: this.storageCache,
-            })
-          }
+      if (this.storageCache) {
+        const hasCache = filterdList.some(val => val.id === this.storageCache)
+        if (hasCache) { // 如果新的list存在缓存值的话，取缓存值
+          this.diskFieldSet(this.diskFieldMap.storage, this.storageCache)
         }
       }
       this.options = filterdList

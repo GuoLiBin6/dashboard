@@ -11,7 +11,7 @@
       <p class="mb-2">{{ $t('aice.llm_deployment.restart_confirm') }}</p>
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <div class="mt-3">
-        <a-checkbox v-model="force">{{ $t('aice.llm_deployment.force_restart') }}</a-checkbox>
+        <a-checkbox v-model:checked="force">{{ $t('aice.llm_deployment.force_restart') }}</a-checkbox>
         <div class="mt-1 text-color-help">{{ $t('aice.llm_deployment.force_restart_extra') }}</div>
       </div>
     </div>

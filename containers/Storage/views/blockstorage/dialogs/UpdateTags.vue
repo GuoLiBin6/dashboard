@@ -4,13 +4,13 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="this.params.title" :name="$t('dictionary.blockstorage')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('storage.text_45')">
-          <a-select :loading="schedTagsLoading" allowClear showSearch :filterOption="filterOption" mode="multiple" v-decorator="decorators.schedTags" :placeholder="$t('storage.text_63')">
+      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('storage.text_45')" prop="schedTags">
+          <a-select :loading="schedTagsLoading" allowClear showSearch :filterOption="filterOption" mode="multiple" v-model:value="form.schedTags" :placeholder="$t('storage.text_63')">
             <a-select-option v-for="item in schedTags" :key="item.id" :value="item.id">{{item.name}}</a-select-option>
           </a-select>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
@@ -34,13 +34,8 @@ export default {
       schedTags: [],
       formItemLayout,
       form: {
-        fc: this.$form.createForm(this),
+        schedTags: undefined,
       },
-    }
-  },
-  provide () {
-    return {
-      form: this.form,
     }
   },
   computed: {
@@ -49,16 +44,6 @@ export default {
         return this.params.data[0].storage_type
       }
       return undefined
-    },
-    decorators () {
-      return {
-        schedTags: [
-          'schedTags',
-          {
-            initialValue: undefined,
-          },
-        ],
-      }
     },
   },
   created () {
@@ -80,9 +65,7 @@ export default {
         // 回填表单
         const rowItem = this.params.data[0]
         if (rowItem && rowItem.schedtags && rowItem.schedtags.length > 0) {
-          this.form.fc.setFieldsValue({
-            schedTags: rowItem.schedtags.map(({ id }) => id),
-          })
+          this.form.schedTags = rowItem.schedtags.map(({ id }) => id)
         }
       } catch (err) {
         throw err
@@ -90,19 +73,12 @@ export default {
         this.schedTagsLoading = false
       }
     },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (err) return reject(err)
-          resolve(values)
-        })
-      })
-    },
     async handleConfirm () {
       this.loading = true
       const params = {}
       try {
-        const { schedTags } = await this.validateForm()
+        await this.$refs.formRef.validate()
+        const { schedTags } = this.form
         if (schedTags && schedTags.length > 0) {
           schedTags.forEach((id, i) => {
             params[`schedtag.${i}`] = id

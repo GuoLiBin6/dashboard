@@ -1,7 +1,10 @@
 <template>
-  <a-form-item class="mb-0">
+  <a-form-model-item class="mb-0" :prop="field">
     <span v-if="isEmpty">{{$t('compute.hypervisor_empty_tips')}}</span>
-    <a-radio-group v-else v-decorator="decorator" @change="changeHandle">
+    <a-radio-group
+      v-else
+      v-model:value="model[field]"
+      @change="changeHandle">
       <template v-for="item in hypervisorOpts" :key="item.key">
         <a-tooltip :title="disabledHypervisorMap[item.key]">
           <a-radio-button
@@ -12,20 +15,25 @@
         </a-tooltip>
       </template>
     </a-radio-group>
-  </a-form-item>
+  </a-form-model-item>
 </template>
 
 <script>
 import * as R from 'ramda'
 import { HYPERVISORS_GROUP, HYPERVISORS_MAP } from '@/constants'
+import i18n from '@/locales'
 import createFormFieldDraftMixin from '@/mixins/createFormFieldDraft'
 
 export default {
   name: 'ProviderRadio',
   mixins: [createFormFieldDraftMixin],
   props: {
-    decorator: {
-      type: Array,
+    field: {
+      type: String,
+      default: 'hypervisor',
+    },
+    model: {
+      type: Object,
       required: true,
     },
     type: {
@@ -36,7 +44,7 @@ export default {
       type: Array,
       validator: val => R.isEmpty(val) || val.every(hyper => Object.keys(HYPERVISORS_MAP).includes(hyper)),
     },
-    ignoreBaremetal: { // 忽略裸金属服务器
+    ignoreBaremetal: {
       type: Boolean,
       default: true,
     },
@@ -50,14 +58,10 @@ export default {
       type: String,
       default: '',
     },
-    /** selection：radio/单选 select/switch 类，local + session 双写、可跨 tab 回填 */
     formDraftKind: {
       type: String,
       default: 'selection',
     },
-  },
-  inject: {
-    form: { default: undefined },
   },
   computed: {
     hypervisorOpts () {
@@ -79,25 +83,22 @@ export default {
   watch: {
     hypervisorOpts: {
       immediate: true,
-      handler (opts, oldOpts) {
+      handler (opts) {
         this.$nextTick(() => this.tryRestoreHypervisorDraft(opts))
       },
     },
   },
   methods: {
+    fieldSet (value) {
+      this.$set(this.model, this.field, value)
+    },
     changeHandle (e) {
       const val = e && e.target ? e.target.value : e
-      // 回填触发的 change 不记 touched
       if (!this._hypervisorDraftRestoring) {
         this.markFormFieldDraftTouched()
       }
       this.writeFormFieldDraft(val)
-      // 显式写回表单，确保受控 :value 能更新（不只依赖 decorator emit）
-      if (this.form?.fc?.setFieldsValue) {
-        this.form.fc.setFieldsValue({ [this.fieldName]: val })
-      } else if (this.form?.fd) {
-        this.form.fd[this.fieldName] = val
-      }
+      this.fieldSet(val)
       this.$emit('change', val)
     },
     getLabel (item) {
@@ -109,25 +110,20 @@ export default {
     },
     tryRestoreHypervisorDraft (opts) {
       if (!Array.isArray(opts) || !opts.length) return
-      // 用户已手改：不再用草稿/首项覆盖
       if (this.isFormFieldDraftTouched()) return
       const hit = this.matchFormFieldDraftInOptions(opts)
       let next = hit?.key
       if (next && this.disabledHypervisorMap?.[next]) next = undefined
-      // options 变化：草稿命中则回填，否则第一项（不写草稿）
       if (!next) {
         const first = opts.find(item => item?.key && !this.disabledHypervisorMap?.[item.key])
         next = first?.key
       }
       if (!next) return
-      const fieldName = Array.isArray(this.decorator) ? this.decorator[0] : 'hypervisor'
-      const current = this.form?.fc?.getFieldValue?.(fieldName)
+      const current = this.model[this.field]
       if (current === next) return
       this._hypervisorDraftRestoring = true
       try {
-        if (this.form?.fc) {
-          this.form.fc.setFieldsValue({ [fieldName]: next })
-        }
+        this.fieldSet(next)
         this.$emit('change', next)
       } finally {
         this.$nextTick(() => {
@@ -136,9 +132,47 @@ export default {
       }
     },
     serializeFormFieldDraft () {
-      const fieldName = Array.isArray(this.decorator) ? this.decorator[0] : 'hypervisor'
-      const value = this.form?.fc?.getFieldValue?.(fieldName)
-      return value || undefined
+      return this.model[this.field] || undefined
+    },
+    runFieldRule (rule, value) {
+      return new Promise((resolve, reject) => {
+        if (rule.required) {
+          const empty = value === undefined || value === null || value === '' ||
+            (Array.isArray(value) && !value.length)
+          if (empty) {
+            reject(new Error(rule.message || 'required'))
+            return
+          }
+        }
+        if (typeof rule.validator === 'function') {
+          let settled = false
+          const finish = (err) => {
+            if (settled) return
+            settled = true
+            if (err) reject(err instanceof Error ? err : new Error(String(err)))
+            else resolve()
+          }
+          let ret
+          try {
+            ret = rule.validator(rule, value, finish)
+          } catch (e) {
+            finish(e)
+            return
+          }
+          if (ret && typeof ret.then === 'function') {
+            ret.then(() => finish()).catch(finish)
+          }
+          return
+        }
+        resolve()
+      })
+    },
+    async validate () {
+      await this.runFieldRule(
+        { required: true, message: i18n.t('compute.text_215') },
+        this.model[this.field],
+      )
+      return true
     },
   },
 }

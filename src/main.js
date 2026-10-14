@@ -1,7 +1,7 @@
 import '@/config/compat'
 import '@/config/vue.config'
 import { Buffer } from 'buffer'
-import Vue, { createApp, defineAsyncComponent } from 'vue'
+import { createApp, defineAsyncComponent } from 'vue'
 // dayjs locale 须在 ant-design-vue 之前加载，保证 DatePicker 与业务共用同一实例语言包
 import '@/utils/dayjs'
 import Antd from 'ant-design-vue'
@@ -29,8 +29,6 @@ import router from '@/router'
 import i18n, { i18nPlugin } from '@/locales'
 import App from '@/App.vue'
 import antdGlobalConfig from '@/plugins/antdGlobalConfig'
-import antdFormLegacyCompat, { decoratorDirective } from '@/plugins/antdFormLegacyCompat'
-
 import componentsPlugin from '@/components'
 import '@/directives'
 import '@/plugins'
@@ -119,8 +117,6 @@ function vxeTableI18n (key, args) {
 }
 
 // 使用 Vue 3 createApp + vue-router 4 的标准挂载方式
-// compat：Vue.directive 写入 singletonApp，createApp 会继承
-Vue.directive('decorator', decoratorDirective)
 const app = createApp(App)
 // 勿再写 app.component('a-icon', AIcon)：已移除 AIcon；若运行时报 AIcon is not defined，请删掉上述注册行并保存，重启 dev（清 node_modules/.vite）
 
@@ -176,9 +172,6 @@ app.use(i18nPlugin)
 })
 app.use(Antd)
 app.use(VxeUIBase, { i18n: vxeTableI18n })
-app.use(antdFormLegacyCompat)
-// 显式再挂一次，避免 compat / HMR 下指令丢失
-app.directive('decorator', decoratorDirective)
 app.use(componentsPlugin)
 app.use(VXETable, {
   i18n: vxeTableI18n,

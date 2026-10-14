@@ -4,11 +4,11 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="this.params.title" :name="$t('storage.text_112')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="key" v-for="(val, key) in TYPES" :key="key">
-          <a-input :placeholder="val" v-decorator="decorators[key]" />
-        </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout">
+        <a-form-model-item :label="key" v-for="(val, key) in TYPES" :key="key" :prop="key">
+          <a-input :placeholder="val" v-model:value="form[key]" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
@@ -32,16 +32,11 @@ export default {
       'Content-Disposition': this.$t('storage.text_115'),
       'Cache-Control': this.$t('storage.text_116'),
     }
-    const decorators = {}
+    const form = {}
     const { data } = this.params
     const meta = data[0].meta
     Object.keys(TYPES).forEach(item => {
-      decorators[item] = [
-        item,
-        {
-          initialValue: meta && meta[item] ? meta[item].toString() : undefined,
-        },
-      ]
+      form[item] = meta && meta[item] ? meta[item].toString() : undefined
     })
     return {
       loading: false,
@@ -50,31 +45,16 @@ export default {
         wrapperCol: { span: 19 },
       },
       fileList: [],
-      form: {
-        fc: this.$form.createForm(this),
-      },
+      form,
       TYPES,
-      decorators,
-    }
-  },
-  provide () {
-    return {
-      form: this.form,
     }
   },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (err) return reject(err)
-          resolve(values)
-        })
-      })
-    },
     async handleConfirm () {
       this.loading = true
       try {
-        const valies = await this.validateForm()
+        await this.$refs.formRef.validate()
+        const valies = { ...this.form }
         for (const k in valies) {
           if (!valies[k]) {
             delete valies[k]

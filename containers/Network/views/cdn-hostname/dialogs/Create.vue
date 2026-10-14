@@ -74,7 +74,7 @@
           </a-form-model-item>
         </template>
         <a-form-model-item :label="$t('network.cdn.wildcard_enabled')" required>
-          <a-switch v-model:value="form.wildcard" :disabled="form.method === 'http'" />
+          <a-switch v-model:checked="form.wildcard" :disabled="form.method === 'http'" />
         </a-form-model-item>
         <a-form-model-item :label="$t('network.cdn.origin_server')" prop="origin_server">
           <a-select v-model:value="form.origin_server">

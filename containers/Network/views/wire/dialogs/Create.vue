@@ -2,67 +2,74 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('network.text_696')}}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc">
-        <a-form-item v-bind="formItemLayout" :label="$t('network.text_205', [$t('dictionary.domain')])" v-if="$store.getters.isAdminMode">
-          <domain-select v-decorator="decorators.project_domain" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_21')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.name" :placeholder="$t('validator.resourceName')"  />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')" v-bind="formItemLayout">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
-        <a-form-item label="VPC" v-bind="formItemLayout" :validateStatus="vpcValidateStatus" :help="vpcHelp" :required="true">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules">
+        <a-form-model-item v-bind="formItemLayout" :label="$t('network.text_205', [$t('dictionary.domain')])" v-if="$store.getters.isAdminMode" prop="project_domain">
+          <domain-select v-model:value="form.project_domain" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_21')" v-bind="formItemLayout" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('validator.resourceName')"  />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" v-bind="formItemLayout" prop="description">
+          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.description" :placeholder="$t('common_367')" />
+        </a-form-model-item>
+        <a-form-model-item label="VPC" v-bind="formItemLayout" :validateStatus="vpcValidateStatus" :help="vpcHelp" :required="true">
           <a-row :gutter="8">
             <a-col :span="12">
-              <a-select
-                v-decorator="decorators.area"
-                @change="handleAreaChange"
-                :placeholder="$t('network.text_199')">
-                <a-select-option v-for="item in areas" :value="item.value" :key="item.value">
-                  <span class="text-color-secondary option-prefix">{{ $t('network.text_199') }}:</span>
-                  {{item.label}}
-                </a-select-option>
-              </a-select>
+              <a-form-model-item prop="area" class="mb-0">
+                <a-select
+                  v-model:value="form.area"
+                  @change="handleAreaChange"
+                  :placeholder="$t('network.text_199')">
+                  <a-select-option v-for="item in areas" :value="item.value" :key="item.value">
+                    <span class="text-color-secondary option-prefix">{{ $t('network.text_199') }}:</span>
+                    {{item.label}}
+                  </a-select-option>
+                </a-select>
+              </a-form-model-item>
             </a-col>
             <a-col :span="12">
-              <a-select
-                  v-decorator="decorators.vpc"
+              <a-form-model-item prop="vpc" class="mb-0">
+                <a-select
+                  v-model:value="form.vpc"
                   placeholder="VPC">
-                <a-select-option v-for="item in vpcs" :value="item.value" :key="item.value">
-                  <span class="text-color-secondary option-prefix">VPC:</span>
-                  {{item.label}}
-                </a-select-option>
-              </a-select>
+                  <a-select-option v-for="item in vpcs" :value="item.value" :key="item.value">
+                    <span class="text-color-secondary option-prefix">VPC:</span>
+                    {{item.label}}
+                  </a-select-option>
+                </a-select>
+              </a-form-model-item>
             </a-col>
           </a-row>
-        </a-form-item>
-        <a-form-item :label="$t('network.text_24')" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_24')" v-bind="formItemLayout" prop="zone">
           <a-select
             show-search
             :filterOption="filterOption"
-            v-decorator="decorators.zone"
+            v-model:value="form.zone"
             :placeholder="$t('network.text_24')">
             <a-select-option v-for="item in zones" :value="item.value" :key="item.value">
               {{item.label}}
             </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('network.text_195')" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_195')" v-bind="formItemLayout" prop="bandwidth">
           <a-select
-              v-decorator="decorators.bandwidth"
-              :placeholder="$t('network.text_697')">
+            v-model:value="form.bandwidth"
+            :placeholder="$t('network.text_697')">
             <a-select-option v-for="item in bandwidthOptions" :value="item.value" :key="item.value">
               {{item.label}}
             </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item :label="$t('common.text00012')" class="mb-0" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.text00012')" class="mb-0" v-bind="formItemLayout" prop="__meta__">
           <tag
-            v-decorator="decorators.__meta__" />
-        </a-form-item>
-      </a-form>
+            :value="form.__meta__"
+            @change="v => form.__meta__ = v" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -87,9 +94,7 @@ export default {
   },
   mixins: [DialogMixin, WindowsMixin],
   data () {
-    // 自定义校验名称重复
     const validateName = (rule, value, callback) => {
-      // 编辑模式下不需要校验重复
       if (this.$route.query.id) {
         callback()
       }
@@ -112,68 +117,35 @@ export default {
       vpcValidateStatus: '',
       vpcHelp: '',
       form: {
-        fc: this.$form.createForm(this),
+        project_domain: this.$store.getters.userInfo.projectDomainId,
+        name: '',
+        description: undefined,
+        area: undefined,
+        vpc: undefined,
+        zone: undefined,
+        bandwidth: undefined,
+        __meta__: {},
       },
-      decorators: {
+      rules: {
         area: [
-          'area',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_286') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_286') },
         ],
         vpc: [
-          'vpc',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_274') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_274') },
         ],
         zone: [
-          'zone',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_24') },
-            ],
-          },
+          { required: true, message: this.$t('network.text_24') },
         ],
         name: [
-          'name',
-          {
-            initialValue: '',
-            validateTrigger: ['change', 'blur'],
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('network.text_116') },
-              { validator: this.$validate('resourceName') },
-              { validator: validateName, trigger: ['blur'] },
-            ],
-          },
+          { required: true, message: this.$t('network.text_116') },
+          { validator: this.$validate('resourceName') },
+          { validator: validateName, trigger: ['blur'] },
         ],
-        description: ['description'],
         bandwidth: [
-          'bandwidth',
-          {
-            rules: [
-              { required: true, message: this.$t('network.text_699') },
-            ],
-          },
-        ],
-        project_domain: [
-          'project_domain',
-          {
-            initialValue: this.$store.getters.userInfo.projectDomainId,
-          },
+          { required: true, message: this.$t('network.text_699') },
         ],
         __meta__: [
-          '__meta__',
-          {
-            rules: [
-              { validator: validateForm('tagName') },
-            ],
-          },
+          { validator: validateForm('tagName') },
         ],
       },
       formItemLayout: {
@@ -213,9 +185,7 @@ export default {
         })
         if (this.areas.length) {
           const defaultValue = this.areas[0].value
-          this.form.fc.setFieldsValue({
-            [this.decorators.area[0]]: defaultValue,
-          })
+          this.form.area = defaultValue
           this.handleAreaChange(defaultValue)
         }
       })
@@ -239,9 +209,7 @@ export default {
         })
         if (area === 'default') this.vpcs = this.vpcs.filter(({ value }) => value === 'default')
         if (this.vpcs.length) {
-          this.form.fc.setFieldsValue({
-            [this.decorators.vpc[0]]: this.vpcs[0].value,
-          })
+          this.form.vpc = this.vpcs[0].value
         }
       })
     },
@@ -289,12 +257,12 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        if (!this.form.fc.getFieldValue('area')) {
+        if (!this.form.area) {
           this.vpcValidateStatus = 'error'
           this.vpcHelp = this.$t('network.text_286')
           this.loading = false
           return
-        } else if (!this.form.fc.getFieldValue('vpc')) {
+        } else if (!this.form.vpc) {
           this.vpcValidateStatus = 'error'
           this.vpcHelp = this.$t('network.text_274')
           this.loading = false
@@ -302,8 +270,8 @@ export default {
         }
         this.vpcValidateStatus = ''
         this.vpcHelp = ''
-        const values = await this.form.fc.validateFields()
-        await this.doCreate(values)
+        await this.$refs.formRef.validate()
+        await this.doCreate(this.form)
         this.loading = false
         this.cancelDialog()
       } catch (error) {

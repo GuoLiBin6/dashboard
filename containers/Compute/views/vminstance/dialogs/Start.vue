@@ -4,19 +4,19 @@
     <div slot="body">
       <dialog-selected-tips :name="params.name || $t('dictionary.server')" :count="dataList.length" :action="action" />
       <dialog-table :data="dataList" :columns="columns" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('compute.text_1041')" v-bind="formItemLayout" v-if="isOpenWorkflow">
-          <a-input v-decorator="decorators.reason" :placeholder="$t('compute.text_1105')" />
-        </a-form-item>
-        <a-form-item class="mb-0" v-show="canAutoPrepaid">
+      <a-form-model
+        ref="formRef"
+        :model="form">
+        <a-form-model-item :label="$t('compute.text_1041')" v-bind="formItemLayout" v-if="isOpenWorkflow" prop="reason">
+          <a-input v-model:value="form.reason" :placeholder="$t('compute.text_1105')" />
+        </a-form-model-item>
+        <a-form-model-item class="mb-0" v-show="canAutoPrepaid" prop="auto_prepaid">
           <a-checkbox
-          v-model="form.fd.auto_prepaid"
-          @change="autoPrepaidChange">
+          v-model:checked="form.auto_prepaid">
             {{$t('compute.change_to_prepaid')}}
           </a-checkbox>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -43,25 +43,8 @@ export default {
       type,
       action: type === 'modifyWorkflow' ? this.$t('common.modify_workflow') + `(${this.$t('compute.text_272')})` : this.$t('compute.text_272'),
       form: {
-        fc: this.$form.createForm(this),
-        fd: {
-          auto_prepaid: formData.auto_prepaid || false,
-        },
-      },
-      decorators: {
-        reason: [
-          'reason',
-          {
-            initialValue: formData.reason || '',
-          },
-        ],
-        auto_prepaid: [
-          'stopPaying',
-          {
-            valuePropName: 'checked',
-            initialValue: formData.auto_prepaid || false,
-          },
-        ],
+        reason: formData.reason || '',
+        auto_prepaid: formData.auto_prepaid || false,
       },
       formItemLayout: {
         wrapperCol: {
@@ -112,7 +95,7 @@ export default {
     },
     async doShutDownSubmit () {
       const data = {}
-      if (this.form.fd.auto_prepaid) {
+      if (this.form.auto_prepaid) {
         data.auto_prepaid = true
       }
       const ids = this.dataList.map(item => item.id)
@@ -144,29 +127,25 @@ export default {
         } else {
           await this.doShutDownSubmit()
         }
-        this.loading = false
         this.cancelDialog()
       } catch (error) {
-        this.loading = false
         throw error
+      } finally {
+        this.loading = false
       }
-    },
-    autoPrepaidChange (val) {
-      const { checked } = val.target
-      this.form.fd.auto_prepaid = checked
     },
     async handleShutDownByWorkflowSubmit () {
       const ids = this.dataList.map(item => item.id)
-      const values = await this.form.fc.validateFields()
+      await this.$refs.formRef.validate()
       const params = {}
-      if (this.form.fd.auto_prepaid) params.auto_prepaid = true
+      if (this.form.auto_prepaid) params.auto_prepaid = true
       const variables = {
         project: this.dataList[0].tenant_id,
         project_domain: this.dataList[0].domain_id,
         process_definition_key: this.WORKFLOW_TYPES.APPLY_SERVER_START,
         initiator: this.userInfo.id,
         ids: ids.join(','),
-        description: values.reason,
+        description: this.form.reason,
         paramter: JSON.stringify(params),
       }
       if (this.type === 'modifyWorkflow') {

@@ -3,81 +3,67 @@ import { diskValidator } from '@Compute/utils/createServer'
 import { isRequired } from '@/utils/validate'
 import i18n from '@/locales'
 import Disk from '../index'
-let decorator = null
+let fieldMap = null
 let typesMap = null
 let elements = null
 
 beforeEach(() => {
   elements = ['mount-point', 'snapshot', 'schedtag']
-  decorator = {
-    type: [
-      'dataDiskTypes',
-      {
-        rules: [
-          { validator: isRequired(), message: i18n.t('compute.text_121') },
-        ],
-      },
-    ],
-    size: [
-      'dataDiskSizes',
-      {
-        rules: [
-          { required: true, message: i18n.t('compute.text_122') },
-        ],
-      },
-    ],
-    schedtag: [
-      'dataDiskSchedtags',
-      {
-        validateTrigger: ['change', 'blur'],
-        rules: [{
-          required: true,
-          message: i18n.t('compute.text_123'),
-        }],
-      },
-    ],
-    policy: [
-      'dataDiskPolicys',
-      {
-        validateTrigger: ['blur', 'change'],
-        rules: [{
-          required: true,
-          message: i18n.t('compute.text_123'),
-        }],
-      },
-    ],
-    snapshot: [
-      'dataDiskSnapshots',
-      {
-        validateTrigger: ['blur', 'change'],
-        rules: [{
-          required: true,
-          message: i18n.t('compute.text_124'),
-        }],
-      },
-    ],
-    filetype: [
-      'dataDiskFiletypes',
-      {
-        validateTrigger: ['blur', 'change'],
-        rules: [{
-          required: true,
-          message: i18n.t('compute.text_125'),
-        }],
-      },
-    ],
-    mountPath: [
-      'dataDiskMountPaths',
-      {
-        validateTrigger: ['blur', 'change'],
-        rules: [{
-          required: true,
-          message: i18n.t('compute.text_126'),
-        }, {
-          validator: diskValidator,
-        }],
-      },
-    ],
+  fieldMap = {
+    type: {
+      name: 'dataDiskTypes',
+      rules: [
+        { validator: isRequired(), message: i18n.t('compute.text_121') },
+      ],
+    },
+    size: {
+      name: 'dataDiskSizes',
+      rules: [
+        { required: true, message: i18n.t('compute.text_122') },
+      ],
+    },
+    schedtag: {
+      name: 'dataDiskSchedtags',
+      validateTrigger: ['change', 'blur'],
+      rules: [{
+        required: true,
+        message: i18n.t('compute.text_123'),
+      }],
+    },
+    policy: {
+      name: 'dataDiskPolicys',
+      validateTrigger: ['blur', 'change'],
+      rules: [{
+        required: true,
+        message: i18n.t('compute.text_123'),
+      }],
+    },
+    snapshot: {
+      name: 'dataDiskSnapshots',
+      validateTrigger: ['blur', 'change'],
+      rules: [{
+        required: true,
+        message: i18n.t('compute.text_124'),
+      }],
+    },
+    filetype: {
+      name: 'dataDiskFiletypes',
+      validateTrigger: ['blur', 'change'],
+      rules: [{
+        required: true,
+        message: i18n.t('compute.text_125'),
+      }],
+    },
+    mountPath: {
+      name: 'dataDiskMountPaths',
+      validateTrigger: ['blur', 'change'],
+      rules: [{
+        required: true,
+        message: i18n.t('compute.text_126'),
+      }, {
+        validator: diskValidator,
+      }],
+    },
   }
   typesMap = {
     local: {
@@ -118,7 +104,7 @@ describe('Disk', () => {
       },
       propsData: {
         elements,
-        decorator,
+        fieldMap,
         typesMap,
         min: 30,
         max: 500,
@@ -144,7 +130,7 @@ describe('Disk', () => {
       },
       propsData: {
         elements,
-        decorator,
+        fieldMap,
         typesMap,
         min,
         max: 500,

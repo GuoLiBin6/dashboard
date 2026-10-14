@@ -9,7 +9,7 @@
     <list ref="LIST" @change="handleSkuChange" />
     <!-- aws zone -->
     <a-form-item :label="$t('db.text_133')" v-bind="formItemLayout" v-if="form.fd.provider === 'Aws'">
-      <a-radio-group v-decorator="['multi_az',{initialValue: false}]">
+      <a-radio-group :value="multiAz" @change="onMultiAzChange">
         <a-radio-button key="multi_az_no" :value="false">{{$t('db.zone_single')}}</a-radio-button>
         <a-radio-button key="multi_az_yes" :value="true" :disabled="!zoneMultiEnabled">{{$t('db.zone_multi')}}</a-radio-button>
       </a-radio-group>
@@ -54,6 +54,7 @@ export default {
       fetchFilters: _F,
       fetchSpecs: _F,
       fetchSkus: _F,
+      multiAz: false,
     }
   },
   computed: {
@@ -71,6 +72,11 @@ export default {
       }
       return this.selectedSku ? this.selectedSku.multi_az : false
     },
+  },
+  created () {
+    if (this.form?.fd && this.form.fd.multi_az === undefined) {
+      this.$set(this.form.fd, 'multi_az', false)
+    }
   },
   mounted () {
     const { fetchFilters, getVersion } = this.$refs.FILTERS
@@ -117,10 +123,14 @@ export default {
         return
       }
       if (sku && !sku.multi_az) {
-        this.form.fc.setFieldsValue({
-          multi_az: false,
-        })
+        this.multiAz = false
+        this.$set(this.form.fd, 'multi_az', false)
       }
+    },
+    onMultiAzChange (e) {
+      const val = e && e.target ? e.target.value : e
+      this.multiAz = val
+      this.$set(this.form.fd, 'multi_az', val)
     },
   },
 }

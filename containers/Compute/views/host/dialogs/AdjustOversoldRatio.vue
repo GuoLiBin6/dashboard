@@ -4,35 +4,34 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.host')" :count="params.data.length" :action="$t('compute.text_513')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 2)" />
-       <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('compute.cpu_commit_bound')" v-bind="formItemLayout">
-          <a-input-number v-decorator="decorators.cpu_cmtbound" :min="0.1" :step="0.1" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.memory_commit_bound')" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
+        <a-form-model-item :label="$t('compute.cpu_commit_bound')" v-bind="formItemLayout" prop="cpu_cmtbound">
+          <a-input-number v-model:value="form.cpu_cmtbound" :min="0.1" :step="0.1" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.memory_commit_bound')" v-bind="formItemLayout" prop="mem_cmtbound">
           <template v-if="isOpenPage">
             <a-tooltip>
-              <template slot="title">
+              <template #title>
                 {{ $t('compute.host.open_page_size.tooltip') }}
               </template>
-              <a-input-number v-decorator="decorators.mem_cmtbound" :min="0.1" :max="maxMemCmtBound" :step="0.1" :disabled="true" />
+              <a-input-number v-model:value="form.mem_cmtbound" :min="0.1" :max="maxMemCmtBound" :step="0.1" :disabled="true" />
             </a-tooltip>
           </template>
-          <a-input-number v-else v-decorator="decorators.mem_cmtbound" :min="0.1" :max="maxMemCmtBound" :step="0.1" />
+          <a-input-number v-else v-model:value="form.mem_cmtbound" :min="0.1" :max="maxMemCmtBound" :step="0.1" />
           <div style="font-size:12px" class="add-desc">{{$t('compute.text_544')}}</div>
-        </a-form-item>
-        <a-form-item :label="$t('compute.memory_reserve_gb')" v-bind="formItemLayout">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.memory_reserve_gb')" v-bind="formItemLayout" prop="mem_reserved">
           <template v-if="isOpenPage">
             <a-tooltip>
-              <template slot="title">
+              <template #title>
                 {{ $t('compute.host.open_page_size.tooltip') }}
               </template>
-              <a-input-number v-decorator="decorators.mem_reserved" :min="1" :step="1" :disabled="true" />
+              <a-input-number v-model:value="form.mem_reserved" :min="1" :step="1" :disabled="true" />
             </a-tooltip>
           </template>
-          <a-input-number v-else v-decorator="decorators.mem_reserved" :min="1" :step="1" />
-        </a-form-item>
-      </a-form>
+          <a-input-number v-else v-model:value="form.mem_reserved" :min="1" :step="1" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -53,47 +52,19 @@ export default {
       loading: false,
       scope: this.$store.getters.scope,
       form: {
-        fc: this.$form.createForm(this),
+        cpu_cmtbound: this.params.data[0].cpu_commit_bound,
+        mem_cmtbound: this.params.data[0].mem_commit_bound,
+        mem_reserved: this.params.data[0].mem_reserved / 1024,
       },
-      decorators: {
+      rules: {
         cpu_cmtbound: [
-          'cpu_cmtbound',
-          {
-            validateFirst: true,
-            initialValue: this.params.data[0].cpu_commit_bound,
-            rules: [
-              {
-                required: true,
-                message: this.$t('compute.text_545'),
-              },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_545') },
         ],
         mem_cmtbound: [
-          'mem_cmtbound',
-          {
-            validateFirst: true,
-            initialValue: this.params.data[0].mem_commit_bound,
-            rules: [
-              {
-                required: true,
-                message: this.$t('compute.text_546'),
-              },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_546') },
         ],
         mem_reserved: [
-          'mem_reserved',
-          {
-            validateFirst: true,
-            initialValue: this.params.data[0].mem_reserved / 1024,
-            rules: [
-              {
-                required: true,
-                message: this.$t('compute.memory_reserve_gb.placeholder'),
-              },
-            ],
-          },
+          { required: true, message: this.$t('compute.memory_reserve_gb.placeholder') },
         ],
       },
       formItemLayout: {
@@ -143,18 +114,18 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        let values = await this.form.fc.validateFields()
-        values = {
-          ...values,
-          // name: this.params.data[0].name,
+        await this.$refs.formRef.validate()
+        const values = {
+          ...this.form,
+          mem_reserved: this.form.mem_reserved * 1024,
         }
-        values.mem_reserved = values.mem_reserved * 1024
         await this.doUpdate(values)
         await this.doPerformAction(values)
-        this.loading = false
         this.cancelDialog()
         this.params.refresh()
       } catch (error) {
+        // validate / submit failed
+      } finally {
         this.loading = false
       }
     },

@@ -10,13 +10,13 @@
       </a-alert>
       <dialog-selected-tips :name="$t('dictionary.host')" :count="params.data.length" :action="title" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.executable_file_name')" :extra="$t('compute.executable_file_name.extra')">
-          <a-textarea v-decorator="decorators.processes_prefix" :rows="5" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_1058')" :extra="cpuExtra">
+      <a-form-model ref="formRef" :model="form" hideRequiredMark v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.executable_file_name')" :extra="$t('compute.executable_file_name.extra')" prop="processes_prefix">
+          <a-textarea v-model:value="form.processes_prefix" :rows="5" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_1058')" :extra="cpuExtra" prop="cpus">
           <a-checkbox-group
-            v-decorator="decorators.cpus"
+            v-model:value="form.cpus"
             style="width: 100%; margin-top: 10px;">
             <a-row>
               <a-col :span="4" v-for="v in hostCpus" :key="v">
@@ -24,10 +24,10 @@
               </a-col>
             </a-row>
           </a-checkbox-group>
-        </a-form-item>
-        <a-form-item label="Numa Node">
+        </a-form-model-item>
+        <a-form-model-item label="Numa Node" prop="nodes">
           <a-checkbox-group
-            v-decorator="decorators.nodes"
+            v-model:value="form.nodes"
             style="width: 100%; margin-top: 10px;">
             <a-row>
               <a-col :span="4" v-for="v in hostNodes" :key="v">
@@ -35,8 +35,8 @@
               </a-col>
             </a-row>
           </a-checkbox-group>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -62,18 +62,9 @@ export default {
       title: this.$t('compute.host.set_system_reserve_resource'),
       loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-          },
-        }),
-        fd: {
-          cpus: [],
-          processes_prefix: '',
-          nodes: [],
-        },
+        cpus: [],
+        processes_prefix: '',
+        nodes: [],
       },
       columns: [
         getNameDescriptionTableColumn({
@@ -131,17 +122,6 @@ export default {
           },
         },
       ],
-      decorators: {
-        processes_prefix: [
-          'processes_prefix',
-        ],
-        cpus: [
-          'cpus',
-        ],
-        nodes: [
-          'nodes',
-        ],
-      },
       formItemLayout: {
         wrapperCol: {
           span: 20,
@@ -155,7 +135,7 @@ export default {
   },
   computed: {
     cpuExtra () {
-      return this.form.fd.cpus.length === 0 ? this.$t('compute.host.cpu_reserve_extra') : null
+      return this.form.cpus.length === 0 ? this.$t('compute.host.cpu_reserve_extra') : null
     },
     selectedItem () {
       return this.selectedItems && this.selectedItems[0]
@@ -176,7 +156,6 @@ export default {
     this.init()
   },
   methods: {
-    // split(/\r*\n/)
     async init () {
       try {
         const res = await new this.$Manager('hosts').list({
@@ -198,13 +177,9 @@ export default {
         const mems = item.metadata.reserved_cpus_info ? (reserved_cpus_info?.mems || '').split(',').map(v => parseInt(v)) : []
         return { cpus, mems, processes_prefix }
       })
-      this.$nextTick(() => {
-        this.form.fc.setFieldsValue({
-          cpus: _.intersection(...(arr.map(item => item.cpus))),
-          processes_prefix: _.intersection(...(arr.map(item => item.processes_prefix))).join('\n'),
-          nodes: _.intersection(...(arr.map(item => item.mems))),
-        })
-      })
+      this.form.cpus = _.intersection(...(arr.map(item => item.cpus)))
+      this.form.processes_prefix = _.intersection(...(arr.map(item => item.processes_prefix))).join('\n')
+      this.form.nodes = _.intersection(...(arr.map(item => item.mems)))
     },
     doReserveResourceSubmit (values) {
       const { cpus, nodes, processes_prefix = [] } = values
@@ -252,8 +227,11 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        values.processes_prefix = (values.processes_prefix || '').split(/\r*\n/).filter(v => v.trim() !== '')
+        await this.$refs.formRef.validate()
+        const values = {
+          ...this.form,
+          processes_prefix: (this.form.processes_prefix || '').split(/\r*\n/).filter(v => v.trim() !== ''),
+        }
         await this.doReserveResourceSubmit(values)
         this.params.refresh && this.params.refresh()
         this.cancelDialog()

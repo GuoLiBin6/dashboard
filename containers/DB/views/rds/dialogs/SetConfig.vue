@@ -4,15 +4,16 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.dbinstances')" :count="params.data.length" :action="params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
+      <a-form-model
+        ref="formRef"
         class="mt-3"
-        :form="form.fc">
+        :model="form.fd">
         <s-k-u ref="SKU" :disableds="disableds" :rdsItem="rdsItem">
           <a-radio-group disabled slot="zone" :defaultValue="Object.keys(rdsZone)[0]">
             <a-radio-button :key="key" :value="key" v-for="(value, key) in rdsZone">{{value}}</a-radio-button>
           </a-radio-group>
         </s-k-u>
-      </a-form>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>
@@ -39,23 +40,14 @@ export default {
         labelCol: { span: 6 },
       },
       rdsZone: {},
-    }
-  },
-  computed: {
-    form () {
-      const fc = this.$form.createForm(this, { onValuesChange: this.handleValuesChange })
-      const { getFieldDecorator, getFieldValue, getFieldsValue, setFieldsValue } = fc
-      return {
-        fc,
+      form: {
         fd: {
           provider: this.params.data[0].provider,
         },
-        getFieldDecorator,
-        getFieldValue,
-        getFieldsValue,
-        setFieldsValue,
-      }
-    },
+      },
+    }
+  },
+  computed: {
     rdsItem () {
       const { data } = this.params
       return data[0]
@@ -88,10 +80,6 @@ export default {
     }
   },
   async mounted () {
-    this.form.fc.getFieldDecorator('provider', { preserve: true })
-    this.form.fc.getFieldDecorator('zones', { preserve: true })
-    this.form.fc.getFieldDecorator('cloudregion_id', { preserve: true })
-    this.form.fc.getFieldDecorator('cloudregion', { preserve: true })
     const capability = ['engine', 'engine_version', 'category', 'storage_type']
     const specs = ['vcpu_count', 'vmem_size_mb', 'zones']
     this.keysChange = {
@@ -124,7 +112,7 @@ export default {
       this.rdsZone = {
         [zoneIds.join('+')]: zoneNames.join('+'),
       }
-      this.form.setFieldsValue({
+      const values = {
         provider,
         engine,
         engine_version: this.rdsItem.engine_version,
@@ -135,51 +123,39 @@ export default {
         zones: zoneIds.join('+'),
         cloudregion_id: this.rdsItem.cloudregion_id,
         cloudregion: this.rdsItem.cloudregion_id,
-      }, SKU.linkageValue)
+      }
+      Object.keys(values).forEach((key) => {
+        this.$set(this.form.fd, key, values[key])
+      })
+      this.$nextTick(() => {
+        if (typeof SKU.linkageValue === 'function') SKU.linkageValue()
+      })
     },
-    // 获取CPU核数、内存、可用区
     capability_change () {
       this.skuRef.fetchSpecs()
     },
     specs_change () {
       this.skuRef.fetchSkus()
     },
-    async handleValuesChange (fc, changedFields) {
-      await this.$nextTick()
-      Object.keys(changedFields).forEach(field => {
-        if (changedFields[field] === undefined) return false
-        let _field = field
-        for (const k in this.keysChange) {
-          if (this.keysChange[k].indexOf(_field) > -1) {
-            _field = k
-          }
-        }
-        const handleChange = this[`${_field}_change`]
-        if (this[`${_field}_change`]) {
-          return handleChange()
-        }
-      })
-    },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            if (values.sku) {
-              values.instance_type = values.sku.name
-              delete values.sku
-            }
-            if (values.zones) {
-              values.zones.split('+').forEach((zone, index) => {
-                values[`zone${index + 1}`] = zone
-              })
-              delete values.zones
-            }
-            resolve(values)
-          } else {
-            reject(err)
-          }
+    async validateForm () {
+      if (this.$refs.formRef?.validate) {
+        await this.$refs.formRef.validate()
+      }
+      const merged = { ...this.form.fd }
+      if (!(merged.sku && merged.sku.name)) {
+        throw new Error('sku')
+      }
+      if (merged.sku) {
+        merged.instance_type = merged.sku.name
+        delete merged.sku
+      }
+      if (merged.zones) {
+        merged.zones.split('+').forEach((zone, index) => {
+          merged[`zone${index + 1}`] = zone
         })
-      })
+        delete merged.zones
+      }
+      return merged
     },
     async handleConfirm () {
       this.loading = true

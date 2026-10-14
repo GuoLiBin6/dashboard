@@ -4,27 +4,29 @@
     <div slot="body">
       <dialog-selected-tips v-if="params.data" :count="params.data.length" :name="$t('helm.text_6')" :action="$t('helm.text_90')" />
       <dialog-table v-if="params.columns" :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        v-bind="formItemLayout"
-        :form="form.fc">
-        <a-form-item :label="$t('helm.text_16')">
-          <a-input v-decorator="decorators.name" :placeholder="$t('helm.text_28')" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_297', [$t('dictionary.domain')])" v-if="$store.getters.isAdminMode">
-          <domain-select v-decorator="decorators.project_domain" />
-        </a-form-item>
-        <a-form-item label="URL">
-          <a-input v-decorator="decorators.url" :placeholder="$t('helm.text_91')" />
-        </a-form-item>
-        <a-form-item :label="$t('helm.text_92')">
-          <a-radio-group v-decorator="decorators.type">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('helm.text_16')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('helm.text_28')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.domain')])" v-if="$store.getters.isAdminMode" prop="project_domain">
+          <domain-select v-model:value="form.project_domain" />
+        </a-form-model-item>
+        <a-form-model-item label="URL" prop="url">
+          <a-input v-model:value="form.url" :placeholder="$t('helm.text_91')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('helm.text_92')" prop="type">
+          <a-radio-group v-model:value="form.type">
             <a-radio-button
               v-for="item in typeOpts"
               :value="item.key"
               :key="item.key">{{ item.label }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -53,49 +55,26 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
-        fd: {},
+        name: initialValue.name || '',
+        project_domain: this.$store.getters.userInfo.projectDomainId,
+        type: 'internal',
+        url: initialValue.url || '',
+      },
+      rules: {
+        name: [
+          { required: true, message: this.$t('helm.text_28') },
+          { validator: this.$validate('k8sName') },
+        ],
+        type: [],
+        url: [
+          { required: true, message: this.$t('helm.text_94'), trigger: 'blur' },
+          { validator: this.$validate('url') },
+        ],
       },
       typeOpts: [
         { key: 'internal', label: this.$t('helm.text_14') },
         { key: 'external', label: this.$t('helm.text_15') },
       ],
-      decorators: {
-        name: [
-          'name',
-          {
-            initialValue: initialValue.name,
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('helm.text_28') },
-              { validator: this.$validate('k8sName') },
-            ],
-          },
-        ],
-        project_domain: [
-          'project_domain',
-          {
-            initialValue: this.$store.getters.userInfo.projectDomainId,
-          },
-        ],
-        type: [
-          'type',
-          {
-            initialValue: 'internal',
-          },
-        ],
-        url: [
-          'url',
-          {
-            initialValue: initialValue.url,
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('helm.text_94'), trigger: 'blur' },
-              { validator: this.$validate('url') },
-            ],
-          },
-        ],
-      },
       formItemLayout: {
         wrapperCol: {
           span: 21,
@@ -130,8 +109,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        await this.doCreate(values)
+        await this.$refs.formRef.validate()
+        await this.doCreate({ ...this.form })
         if (this.params.refresh) this.params.refresh()
         this.loading = false
         this.cancelDialog()

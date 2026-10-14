@@ -2,60 +2,76 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{ dialogTitle }}</div>
     <div slot="body">
-      <a-form
-        v-bind="formItemLayout"
-        :form="form.fc">
-        <a-form-item v-if="!isEdit" :label="$t('compute.text_297', [$t('dictionary.project')])" class="mb-0">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item v-if="!isEdit" :label="$t('compute.text_297', [$t('dictionary.project')])" class="mb-0">
           <domain-project
-            :fc="form.fc"
+            :form="form"
             :form-layout="formItemLayout"
-            :decorators="{ project: decorators.project, domain: decorators.domain }"
             @update:domain="handleDomainChange" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_228')" class="mb-0">
-          <a-input :placeholder="$t('validator.resourceName')" v-decorator="decorators.name" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')" class="mb-0">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" :placeholder="$t('common_367')" v-decorator="decorators.description" />
-        </a-form-item>
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_228')" class="mb-0" prop="name">
+          <a-input :placeholder="$t('validator.resourceName')" v-model:value="form.name" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" class="mb-0" prop="description">
+          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" :placeholder="$t('common_367')" v-model:value="form.description" />
+        </a-form-model-item>
         <template v-if="isManaged">
-          <area-selects
-            class="mb-0"
-            ref="areaSelects"
-            :wrapperCol="formItemLayout.wrapperCol"
-            :labelCol="formItemLayout.labelCol"
-            :names="areaselectsName"
-            :providerParams="providerParams"
-            :cloudregionParams="cloudregionParams"
-            :providerMapper="providerMapper"
-            :cloudregionMapper="cloudregionMapper"
-            :cloudregionParamsMapper="cloudregionParamsMapper"
-            :isRequired="true"
-            @change="handleRegionChange" />
-          <a-form-item :label="$t('compute.text_15')" class="mb-0">
+          <a-form-model-item v-if="showProvider" :label="$t('compute.text_176')" class="mb-0" prop="provider">
+            <base-select
+              v-model:value="form.provider"
+              resource="cloudregions"
+              version="v2"
+              idKey="provider"
+              nameKey="provider"
+              filterable
+              :params="providerListParams"
+              :mapper="providerOptionsMapper"
+              :isDefaultSelect="true"
+              :select-props="{ placeholder: $t('compute.text_176') }"
+              @change="onProviderChange"
+              @update:item="onProviderItem" />
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.text_177')" class="mb-0" prop="cloudregion">
+            <base-select
+              v-model:value="form.cloudregion"
+              resource="cloudregions"
+              version="v2"
+              filterable
+              :params="cloudregionSelectParams"
+              :mapper="cloudregionMapper"
+              :isDefaultSelect="true"
+              :select-props="{ placeholder: $t('compute.text_212') }"
+              @change="onCloudregionChange"
+              @update:item="onCloudregionItem" />
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.text_15')" class="mb-0" prop="manager_id">
             <base-select
               resource="cloudproviders"
-              v-decorator="decorators.manager_id"
+              v-model:value="form.manager_id"
               :params="cloudproviderParams"
               :isDefaultSelect="true"
               :needParams="true"
               :showSync="true"
               :select-props="{ placeholder: $t('compute.text_149') }" />
-          </a-form-item>
+          </a-form-model-item>
         </template>
-        <a-form-item :label="$t('compute.text_175')" class="mb-0">
-          <a-radio-group v-decorator="decorators.ip_set_type" @change="ipsetTypeChange" :disabled="isEdit">
+        <a-form-model-item :label="$t('compute.text_175')" class="mb-0" prop="ip_set_type">
+          <a-radio-group v-model:value="form.ip_set_type" @change="ipsetTypeChange" :disabled="isEdit">
             <a-radio value="ipv4_cidr_list">IPv4</a-radio>
             <a-radio value="ipv6_cidr_list">IPv6</a-radio>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="decLabel" :extra="$t('compute.secgroup.secrule.source.prompt')" class="mb-0">
+        </a-form-model-item>
+        <a-form-model-item :label="decLabel" :extra="$t('compute.secgroup.secrule.source.prompt')" class="mb-0" prop="data">
           <a-textarea
             :auto-size="{ minRows: 3, maxRows: 10 }"
-            v-decorator="decorators.data"
+            v-model:value="form.data"
             :placeholder="$t('compute.text_996')" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -67,8 +83,7 @@
 <script>
 import { mapGetters } from 'vuex'
 import { isRequired, REGEXP } from '@/utils/validate'
-import DomainProject from '@/sections/DomainProject'
-import AreaSelects from '@/sections/AreaSelects'
+import DomainProject from '@/sections/DomainProject/model'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 
@@ -78,14 +93,8 @@ export default {
   name: 'EditIpSetsDialog',
   components: {
     DomainProject,
-    AreaSelects,
   },
   mixins: [DialogMixin, WindowsMixin],
-  provide () {
-    return {
-      form: this.form,
-    }
-  },
   data () {
     const selectItem = (this.params.data && this.params.data[0]) || {}
     const ipsetType = selectItem.ip_set_type || selectItem.ipset_type || 'ipv4_cidr_list'
@@ -95,70 +104,40 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        domain: this.$store.getters.userInfo.projectDomainId,
+        project: this.$store.getters.userInfo.projectId,
+        name: selectItem.name,
+        description: selectItem.description || '',
+        provider: undefined,
+        cloudregion: undefined,
+        manager_id: undefined,
+        ip_set_type: ipsetType,
+        data: dataValue,
+      },
+      rules: {
+        domain: [
+          { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
+        ],
+        project: [
+          { validator: isRequired(), message: this.$t('rules.project'), trigger: 'change' },
+        ],
+        name: [
+          { required: true, message: this.$t('compute.text_210') },
+          { validator: this.$validate('resourceName') },
+        ],
+        manager_id: [
+          { required: true, message: this.$t('compute.text_149') },
+        ],
+        cloudregion: [
+          { required: true, message: this.$t('compute.text_212') },
+        ],
+        data: [
+          { required: true, message: this.$t('compute.text_996') },
+          { validator: this.validateCIDR },
+        ],
       },
       allowedPrivateBrands: IPSET_PRIVATE_BRANDS,
       allowedPublicBrands: IPSET_PUBLIC_BRANDS,
-      decorators: {
-        domain: [
-          'domain',
-          {
-            rules: [
-              { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
-            ],
-          },
-        ],
-        project: [
-          'project',
-          {
-            rules: [
-              { validator: isRequired(), message: this.$t('rules.project'), trigger: 'change' },
-            ],
-          },
-        ],
-        name: [
-          'name',
-          {
-            initialValue: selectItem.name,
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_210') },
-              { validator: this.$validate('resourceName') },
-            ],
-          },
-        ],
-        description: [
-          'description',
-          {
-            initialValue: selectItem.description || '',
-          },
-        ],
-        manager_id: [
-          'manager_id',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.text_149') },
-            ],
-          },
-        ],
-        ip_set_type: [
-          'ip_set_type',
-          {
-            initialValue: ipsetType,
-          },
-        ],
-        data: [
-          'data',
-          {
-            initialValue: dataValue,
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_996') },
-              { validator: this.validateCIDR },
-            ],
-          },
-        ],
-      },
       formItemLayout: {
         wrapperCol: {
           span: 20,
@@ -187,6 +166,9 @@ export default {
     isPublic () {
       return this.cloudEnv === 'public'
     },
+    showProvider () {
+      return this.cloudEnv === 'public'
+    },
     isQcloud () {
       return String(this.regionProvider).toLowerCase() === 'qcloud'
     },
@@ -195,12 +177,6 @@ export default {
     },
     skipRegionFilter () {
       return this.isQcloud || this.isCloudpods
-    },
-    areaselectsName () {
-      if (this.cloudEnv === 'private') {
-        return ['cloudregion']
-      }
-      return ['provider', 'cloudregion']
     },
     allowedBrands () {
       if (this.cloudEnv === 'private') {
@@ -218,22 +194,24 @@ export default {
       return `${this.$t('compute.perform_create')}${this.$t('compute.title.ipset')}`
     },
     decLabel () {
-      return this.ipsetType === 'ipv6_cidr_list' ? 'IPv6 CIDR' : 'IPv4 CIDR'
+      return this.form.ip_set_type === 'ipv6_cidr_list' ? 'IPv6 CIDR' : 'IPv4 CIDR'
     },
-    providerParams () {
+    providerListParams () {
       const params = {
-        cloud_env: 'public',
+        scope: this.scope,
+        limit: 0,
         usable: false,
+        show_emulated: true,
         read_only: false,
+        is_public: true,
       }
       if (this.isAdminMode) {
         params.project_domain = this.projectDomain || this.userInfo.projectDomainId
-      } else {
-        params.scope = this.scope
+        delete params.scope
       }
       return params
     },
-    cloudregionParams () {
+    cloudregionSelectParams () {
       const params = {
         scope: this.scope,
         limit: 0,
@@ -246,6 +224,11 @@ export default {
         params.provider = 'Cloudpods'
       } else if (this.cloudEnv === 'public') {
         params.is_public = true
+        if (this.regionProvider) {
+          params.provider = this.regionProvider
+        } else {
+          params.filter = [`provider.in(${this.allowedPublicBrands.join(',')})`]
+        }
       }
       if (this.isAdminMode) {
         params.project_domain = this.projectDomain || this.userInfo.projectDomainId
@@ -283,56 +266,62 @@ export default {
       if (!brand) return false
       return this.allowedBrands.some(item => item.toLowerCase() === String(brand).toLowerCase())
     },
-    providerMapper (list = []) {
-      return list.filter(item => this.isAllowedBrand(item.name || item.provider || item.brand))
+    providerOptionsMapper (list = []) {
+      const seen = new Set()
+      return list.filter(item => {
+        const brand = item.provider || item.brand || item.name
+        if (!this.isAllowedBrand(brand) || seen.has(brand)) return false
+        seen.add(brand)
+        return true
+      }).map(item => ({
+        ...item,
+        id: item.provider || item.brand || item.name,
+        name: item.provider || item.brand || item.name,
+        provider: item.provider || item.brand || item.name,
+      }))
     },
     cloudregionMapper (list = []) {
       return list.filter(item => this.isAllowedBrand(item.provider || item.brand))
     },
-    cloudregionParamsMapper (params = {}) {
-      const next = { ...params }
-      if (this.cloudEnv === 'private') {
-        next.provider = 'Cloudpods'
-        return next
-      }
-      if (this.cloudEnv === 'public' && !next.provider) {
-        const hasProviderFilter = [].concat(next.filter || []).some(item => String(item).includes('provider.in'))
-        if (!hasProviderFilter) {
-          next.filter = [].concat(next.filter || [], [`provider.in(${this.allowedPublicBrands.join(',')})`])
-        }
-      }
-      return next
-    },
     handleDomainChange (val) {
       this.projectDomain = (val && val.key) || val || ''
     },
-    handleRegionChange (data) {
-      const { provider, cloudregion } = data || {}
-      if (data && data.hasOwnProperty('provider')) {
-        const nextProvider = provider ? (provider.id || provider) : ''
-        this.regionProvider = this.isAllowedBrand(nextProvider) ? nextProvider : ''
-        if (!this.regionProvider) {
-          this.regionId = ''
-        }
+    onProviderChange (val) {
+      this.regionProvider = this.isAllowedBrand(val) ? val : ''
+      this.form.cloudregion = undefined
+      this.regionId = ''
+      this.form.manager_id = undefined
+    },
+    onProviderItem (item) {
+      const brand = item && (item.provider || item.brand || item.name || item.id)
+      if (brand && this.isAllowedBrand(brand)) {
+        this.regionProvider = brand
       }
-      if (cloudregion) {
-        const regionInfo = cloudregion.value || cloudregion
-        const brand = regionInfo.provider || regionInfo.brand || this.regionProvider || (this.cloudEnv === 'private' ? 'Cloudpods' : '')
-        if (!this.isAllowedBrand(brand)) {
-          this.regionId = ''
-          return
-        }
-        this.regionId = cloudregion.id || regionInfo.id || cloudregion
-        if (!this.regionProvider && brand) {
-          this.regionProvider = brand
-        }
-      } else if (data && data.hasOwnProperty('cloudregion')) {
+    },
+    onCloudregionChange (val) {
+      this.regionId = val || ''
+      this.form.manager_id = undefined
+    },
+    onCloudregionItem (item) {
+      if (!item) {
         this.regionId = ''
+        return
+      }
+      const brand = item.provider || item.brand || this.regionProvider || (this.cloudEnv === 'private' ? 'Cloudpods' : '')
+      if (!this.isAllowedBrand(brand)) {
+        this.regionId = ''
+        return
+      }
+      this.regionId = item.id
+      if (!this.regionProvider && brand) {
+        this.regionProvider = brand
       }
     },
     ipsetTypeChange (e) {
       this.ipsetType = e.target.value
-      this.form.fc.validateFields(['data'])
+      this.$nextTick(() => {
+        this.$refs.formRef && this.$refs.formRef.validateField('data')
+      })
     },
     parseDataList (value) {
       if (!value) return []
@@ -346,7 +335,7 @@ export default {
         return callback()
       }
       const items = this.parseDataList(value)
-      const isIpv6 = this.ipsetType === 'ipv6_cidr_list'
+      const isIpv6 = this.form.ip_set_type === 'ipv6_cidr_list'
       for (const item of items) {
         if (isIpv6) {
           if (!REGEXP.IPv6.regexp.test(item) && !REGEXP.cidr6.regexp.test(item)) {
@@ -365,10 +354,10 @@ export default {
         data: this.parseDataList(data).join(','),
       }
       if (!this.isEdit) {
-        payload.project_domain = (domain && domain.key) || this.userInfo.projectDomainId
-        payload.project_id = (project && project.key) || this.userInfo.projectId
+        payload.project_domain = (domain && domain.key) || domain || this.userInfo.projectDomainId
+        payload.project_id = (project && project.key) || project || this.userInfo.projectId
         if (this.isManaged) {
-          const providerName = this.regionProvider || (provider && (provider.id || provider)) || ''
+          const providerName = this.regionProvider || provider || ''
           const isQcloud = String(providerName).toLowerCase() === 'qcloud'
           if (!isQcloud) {
             payload.cloudregion_id = this.regionId || cloudregion
@@ -392,8 +381,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        const payload = this.genData(values)
+        await this.$refs.formRef.validate()
+        const payload = this.genData({ ...this.form })
         if (this.isEdit) {
           await this.doUpdate(payload)
         } else {

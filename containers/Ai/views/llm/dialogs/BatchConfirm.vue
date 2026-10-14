@@ -4,13 +4,6 @@
     <div slot="body">
       <dialog-selected-tips :name="instanceLabel" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
-      <!-- <a-form :form="form.fc" v-show="isRestart">
-        <a-form-item class="mb-0">
-          <a-checkbox :checked="form.fd.sync_image" @change="changeSyncImage">
-            {{$t('aice.phone.restart.sync_image.pompt')}}
-          </a-checkbox>
-        </a-form-item>
-      </a-form> -->
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -36,29 +29,7 @@ export default {
       })(),
       loading: false,
       action: this.params.actionText,
-      form: {
-        fc: this.$form.createForm(this),
-        fd: {
-          sync_image: false,
-        },
-      },
-      decorators: {
-        sync_image: [
-          'sync_image',
-          {
-            valuePropName: 'checked',
-            initialValue: false,
-          },
-        ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
-      },
+      sync_image: false,
     }
   },
   computed: {
@@ -72,17 +43,11 @@ export default {
       const showFields = ['name', 'llm_ip', 'status', 'llm_sku']
       return this.params.columns.filter((item) => { return showFields.includes(item.field) })
     },
-    isRestart () {
-      if (this.action === this.$t('aice.action.restart') || this.action === this.$t('aice.action.reset')) {
-        return true
-      }
-      return false
-    },
   },
   methods: {
     async doShutDownSubmit () {
       const data = {}
-      if (this.form.fd.sync_image) {
+      if (this.sync_image) {
         data.sync_image = true
       }
       const ids = this.params.data.map(item => item.id)
@@ -105,10 +70,6 @@ export default {
         this.loading = false
         throw error
       }
-    },
-    changeSyncImage (val) {
-      const { checked } = val.target
-      this.form.fd.sync_image = checked
     },
   },
 }

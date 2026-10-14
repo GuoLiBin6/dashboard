@@ -227,7 +227,7 @@
   "compute.text_218": "Please enter ip",
   "compute.text_219": "Please select",
   "compute.text_220": "Please enter the template name",
-  "compute.text_221": "FE: The decorator {0} is not declared when creating a cloud server",
+  "compute.text_221": "FE: Field metadata {0} is not declared when creating a cloud server",
   "compute.text_222": "{0} hosts are filtered by {1} tag",
   "compute.text_223": "{0} station {1}",
   "compute.text_224": "{0} hosts are filtered by {1} reason",

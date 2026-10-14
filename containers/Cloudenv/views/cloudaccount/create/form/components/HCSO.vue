@@ -1,86 +1,86 @@
 <template>
   <div>
-    <a-form :form="form.fc" v-if="decorators" v-bind="formLayout" :data-oc-label-min-text="$t('cloudenv.project_mapping_effective_scope')">
-      <a-form-item :label="$t('cloudenv.text_95')">
-        <a-input v-decorator="decorators.name" :placeholder="$t('cloudenv.text_190')" />
-      </a-form-item>
-      <a-form-item :label="$t('common.description')">
-        <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-      </a-form-item>
-      <a-form-item :label="keySecretField.label.k">
-        <a-input v-decorator="decorators.username" :placeholder="keySecretField.placeholder.k" />
+    <a-form-model ref="formRef" :model="form.fd" :rules="formRules" v-if="fieldMap" v-bind="formLayout" :data-oc-label-min-text="$t('cloudenv.project_mapping_effective_scope')">
+      <a-form-model-item :label="$t('cloudenv.text_95')">
+        <a-input v-model:value="form.fd.name" :placeholder="$t('cloudenv.text_190')" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('common.description')">
+        <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.fd.description" :placeholder="$t('common_367')" />
+      </a-form-model-item>
+      <a-form-model-item :label="keySecretField.label.k">
+        <a-input v-model:value="form.fd.username" :placeholder="keySecretField.placeholder.k" />
         <div slot="extra" v-if="showDocsLink()">
           {{$t('cloudenv.text_236', [keySecretField.text, keySecretField.label.k])}}
           <help-link :href="docs[provider.toLowerCase()]">{{$t('cloudenv.text_237')}}</help-link>
         </div>
-      </a-form-item>
-      <a-form-item :label="keySecretField.label.s">
-        <a-input-password v-decorator="decorators.password" :placeholder="keySecretField.placeholder.s" />
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.cloudaccount.region_id')">
-        <a-input v-decorator="decorators.region_id" :placeholder="$t('common.tips.input', [$t('cloudenv.cloudaccount.region_id')])" />
+      </a-form-model-item>
+      <a-form-model-item :label="keySecretField.label.s">
+        <a-input-password v-model:value="form.fd.password" :placeholder="keySecretField.placeholder.s" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.cloudaccount.region_id')">
+        <a-input v-model:value="form.fd.region_id" :placeholder="$t('common.tips.input', [$t('cloudenv.cloudaccount.region_id')])" @change="region_id_change" />
         <div slot="extra">
           {{$t('cloudenv.cloudaccount.hcso.endpoint_domain.tips')}}
         </div>
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.cloudaccount.hcso.endpoint_domain')">
-        <a-input v-decorator="decorators.endpoint_domain" :placeholder="$t('common.tips.input', [$t('cloudenv.cloudaccount.hcso.endpoint_domain')])" />
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.cloudaccount.hcso.iam')">
-        <a-input v-decorator="decorators.iam" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.iam')])" />
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.cloudaccount.hcso.ecs')">
-        <a-input v-decorator="decorators.ecs" :placeholder="$t('common.tips.input', [$t('cloudenv.cloudaccount.hcso.ecs')])" />
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.cloudaccount.hcso.vpc')">
-        <a-input v-decorator="decorators.vpc" :placeholder="$t('common.tips.input', [$t('cloudenv.cloudaccount.hcso.vpc')])" />
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.cloudaccount.hcso.ims')">
-        <a-input v-decorator="decorators.ims" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.ims')])" />
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.cloudaccount.hcso.evs')">
-        <a-input v-decorator="decorators.evs" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.evs')])" />
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.cloudaccount.hcso.dcs')">
-        <a-input v-decorator="decorators.dcs" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.dcs')])" />
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.cloudaccount.hcso.elb')">
-        <a-input v-decorator="decorators.elb" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.elb')])" />
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.cloudaccount.hcso.obs')">
-        <a-input v-decorator="decorators.obs" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.obs')])" />
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.cloudaccount.hcso.rds')">
-        <a-input v-decorator="decorators.rds" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.rds')])" />
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.cloudaccount.hcso.nat')">
-        <a-input v-decorator="decorators.nat" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.nat')])" />
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.cloudaccount.hcso.cts')">
-        <a-input v-decorator="decorators.cts" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.cts')])" />
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.cloudaccount.hcso.ces')">
-        <a-input v-decorator="decorators.ces" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.ces')])" />
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.cloudaccount.hcso.eps')">
-        <a-input v-decorator="decorators.eps" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.eps')])" />
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.cloudaccount.hcso.sfs_turbo')">
-        <a-input v-decorator="decorators.sfs_turbo" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.sfs_turbo')])" />
-      </a-form-item>
-      <a-form-item :label="$t('cloudenv.cloudaccount.hcso.default_subnet_dns')">
-        <a-input v-decorator="decorators.default_subnet_dns" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.default_subnet_dns')])" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.cloudaccount.hcso.endpoint_domain')">
+        <a-input v-model:value="form.fd.endpoint_domain" :placeholder="$t('common.tips.input', [$t('cloudenv.cloudaccount.hcso.endpoint_domain')])" @change="endpoint_domain_change" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.cloudaccount.hcso.iam')">
+        <a-input v-model:value="form.fd.iam" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.iam')])" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.cloudaccount.hcso.ecs')">
+        <a-input v-model:value="form.fd.ecs" :placeholder="$t('common.tips.input', [$t('cloudenv.cloudaccount.hcso.ecs')])" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.cloudaccount.hcso.vpc')">
+        <a-input v-model:value="form.fd.vpc" :placeholder="$t('common.tips.input', [$t('cloudenv.cloudaccount.hcso.vpc')])" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.cloudaccount.hcso.ims')">
+        <a-input v-model:value="form.fd.ims" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.ims')])" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.cloudaccount.hcso.evs')">
+        <a-input v-model:value="form.fd.evs" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.evs')])" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.cloudaccount.hcso.dcs')">
+        <a-input v-model:value="form.fd.dcs" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.dcs')])" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.cloudaccount.hcso.elb')">
+        <a-input v-model:value="form.fd.elb" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.elb')])" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.cloudaccount.hcso.obs')">
+        <a-input v-model:value="form.fd.obs" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.obs')])" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.cloudaccount.hcso.rds')">
+        <a-input v-model:value="form.fd.rds" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.rds')])" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.cloudaccount.hcso.nat')">
+        <a-input v-model:value="form.fd.nat" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.nat')])" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.cloudaccount.hcso.cts')">
+        <a-input v-model:value="form.fd.cts" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.cts')])" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.cloudaccount.hcso.ces')">
+        <a-input v-model:value="form.fd.ces" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.ces')])" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.cloudaccount.hcso.eps')">
+        <a-input v-model:value="form.fd.eps" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.eps')])" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.cloudaccount.hcso.sfs_turbo')">
+        <a-input v-model:value="form.fd.sfs_turbo" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.sfs_turbo')])" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('cloudenv.cloudaccount.hcso.default_subnet_dns')">
+        <a-input v-model:value="form.fd.default_subnet_dns" :placeholder="$t('common.tips.optional_input', [$t('cloudenv.cloudaccount.hcso.default_subnet_dns')])" />
         <div slot="extra">
           {{$t('cloudenv.cloudaccount.hcso.default_subnet_dns.tips')}}
         </div>
-      </a-form-item>
-      <domain-project :fc="form.fc" :form-layout="formLayout" :decorators="{ project: decorators.project, domain: decorators.domain, auto_create_project: decorators.auto_create_project }" :cloneData="cloneData" />
-      <blocked-resources :decorators="{ isOpenBlockedResources: decorators.isOpenBlockedResources, blockedResources: decorators.blockedResources }" :cloneData="cloneData" />
-      <proxy-setting :fc="form.fc" :fd="form.fd" ref="proxySetting" :cloneData="cloneData" />
-      <auto-sync :fc="form.fc" :cloneData="cloneData" />
+      </a-form-model-item>
+      <domain-project :form="form.fd" :form-layout="formLayout" :cloneData="cloneData" />
+      <blocked-resources :form="form.fd" :cloneData="cloneData"  />
+      <proxy-setting :form="form.fd" ref="proxySetting" :cloneData="cloneData" />
+      <auto-sync :form="form.fd" :cloneData="cloneData" />
       <read-only :cloneData="cloneData" />
-      <share-mode :fd="form.fd" :cloneData="cloneData" />
-    </a-form>
+      <share-mode :form="form.fd" :cloneData="cloneData" />
+    </a-form-model>
   </div>
 </template>
 
@@ -113,7 +113,7 @@ export default {
     return {
       docs: DOCS_MAP.cloudaccount(),
       showDocsLink,
-      decorators: this.getDecorators(keySecretField),
+      fieldMap: this.getFieldMap(keySecretField),
       services: {
         iam: 'iam',
         ecs: 'ecs',
@@ -137,7 +137,7 @@ export default {
     }
   },
   methods: {
-    getDecorators (initKeySecretFields) {
+    getFieldMap (initKeySecretFields) {
       const keySecretField = this.keySecretField || initKeySecretFields
       let initDomain = {
         key: this.$store.getters.userInfo.projectDomainId,
@@ -171,165 +171,76 @@ export default {
           label: project_domain,
         }
       }
-      const decorators = {
-        name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('cloudenv.text_190') },
-              // { validator: this.$validate('resourceName') },
-            ],
-          },
-        ],
-        description: ['description'],
-        username: [
-          keySecretField.k,
-          {
-            rules: [
-              { required: true, message: keySecretField.placeholder.k },
-            ],
-          },
-        ],
-        password: [
-          keySecretField.s,
-          {
-            rules: [
-              { required: true, message: keySecretField.placeholder.s },
-            ],
-          },
-        ],
-        domain: [
-          'domain',
-          {
-            initialValue: initDomain,
-            rules: [
-              { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
-            ],
-          },
-        ],
-        auto_create_project: [
-          'auto_create_project',
-          {
-            initialValue: initAutoCreateProject,
-            valuePropName: 'checked',
-          },
-        ],
-        endpoint_domain: [
-          'endpoint_domain',
-          {
-            initialValue: initEndpointDomain,
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('cloudenv.cloudaccount.hcso.endpoint_domain')]) },
-            ],
-          },
-        ],
-        region_id: [
-          'region_id',
-          {
-            initialValue: initRegionId,
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('cloudenv.cloudaccount.region_id')]) },
-            ],
-          },
-        ],
-        iam: [
-          'iam',
-          {
-            initialValue: initIam,
-          },
-        ],
-        ecs: [
-          'ecs',
-          {
-            initialValue: initEcs,
-          },
-        ],
-        vpc: [
-          'vpc',
-          {
-            initialValue: initVpc,
-          },
-        ],
-        ims: [
-          'ims',
-          {
-            initialValue: initIms,
-          },
-        ],
-        evs: [
-          'evs',
-          {
-            initialValue: initEvs,
-          },
-        ],
-        dcs: [
-          'dcs',
-          {
-            initialValue: initDcs,
-          },
-        ],
-        elb: [
-          'elb',
-          {
-            initialValue: initElb,
-          },
-        ],
-        obs: [
-          'obs',
-          {
-            initialValue: initObs,
-          },
-        ],
-        rds: [
-          'rds',
-          {
-            initialValue: initRds,
-          },
-        ],
-        nat: [
-          'nat',
-          {
-            initialValue: initNat,
-          },
-        ],
-        cts: [
-          'cts',
-          {
-            initialValue: initCts,
-          },
-        ],
-        ces: [
-          'ces',
-          {
-            initialValue: initCes,
-          },
-        ],
-        eps: [
-          'eps',
-          {
-            initialValue: initEps,
-          },
-        ],
-        sfs_turbo: [
-          'sfs_turbo',
-          {
-            initialValue: initSfsTurbo,
-          },
-        ],
-        default_subnet_dns: [
-          'default_subnet_dns',
-          {
-            initialValue: initDefaultSubnetDns,
-          },
-        ],
+      const fieldMap = {
+        name: {
+          name: 'name',
+          validateFirst: true,
+          rules: [
+            { required: true, message: this.$t('cloudenv.text_190') },
+            // { validator: this.$validate('resourceName') },
+          ],
+        },
+        description: { name: 'description' },
+        username: {
+          name: keySecretField.k,
+          rules: [
+            { required: true, message: keySecretField.placeholder.k },
+          ],
+        },
+        password: {
+          name: keySecretField.s,
+          rules: [
+            { required: true, message: keySecretField.placeholder.s },
+          ],
+        },
+        domain: {
+          name: 'domain',
+          initialValue: initDomain,
+          rules: [
+            { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
+          ],
+        },
+        auto_create_project: {
+          name: 'auto_create_project',
+          initialValue: initAutoCreateProject,
+          valuePropName: 'checked',
+        },
+        endpoint_domain: {
+          name: 'endpoint_domain',
+          initialValue: initEndpointDomain,
+          rules: [
+            { required: true, message: this.$t('common.tips.input', [this.$t('cloudenv.cloudaccount.hcso.endpoint_domain')]) },
+          ],
+        },
+        region_id: {
+          name: 'region_id',
+          initialValue: initRegionId,
+          rules: [
+            { required: true, message: this.$t('common.tips.input', [this.$t('cloudenv.cloudaccount.region_id')]) },
+          ],
+        },
+        iam: { name: 'iam', initialValue: initIam },
+        ecs: { name: 'ecs', initialValue: initEcs },
+        vpc: { name: 'vpc', initialValue: initVpc },
+        ims: { name: 'ims', initialValue: initIms },
+        evs: { name: 'evs', initialValue: initEvs },
+        dcs: { name: 'dcs', initialValue: initDcs },
+        elb: { name: 'elb', initialValue: initElb },
+        obs: { name: 'obs', initialValue: initObs },
+        rds: { name: 'rds', initialValue: initRds },
+        nat: { name: 'nat', initialValue: initNat },
+        cts: { name: 'cts', initialValue: initCts },
+        ces: { name: 'ces', initialValue: initCes },
+        eps: { name: 'eps', initialValue: initEps },
+        sfs_turbo: { name: 'sfs_turbo', initialValue: initSfsTurbo },
+        default_subnet_dns: { name: 'default_subnet_dns', initialValue: initDefaultSubnetDns },
       }
-      return decorators
+      return fieldMap
     },
     endpoints (domain, region) {
       const prevs = {}
       for (const k in this.services) {
-        prevs[k] = this.form.fc.getFieldValue(k)
+        prevs[k] = this.form.fd[k]
       }
 
       const currents = {}
@@ -353,15 +264,15 @@ export default {
       return currents
     },
     endpoint_domain_change () {
-      const d = this.form.fc.getFieldValue('endpoint_domain')
-      const r = this.form.fc.getFieldValue('region_id')
-      this.form.fc.setFieldsValue(this.endpoints(d, r))
+      const d = this.form.fd.endpoint_domain
+      const r = this.form.fd.region_id
+      Object.assign(this.form.fd, this.endpoints(d, r))
       this.prevs.endpoint_domain = d
     },
     region_id_change () {
-      const d = this.form.fc.getFieldValue('endpoint_domain')
-      const r = this.form.fc.getFieldValue('region_id')
-      this.form.fc.setFieldsValue(this.endpoints(d, r))
+      const d = this.form.fd.endpoint_domain
+      const r = this.form.fd.region_id
+      Object.assign(this.form.fd, this.endpoints(d, r))
       this.prevs.region_id = r
     },
   },

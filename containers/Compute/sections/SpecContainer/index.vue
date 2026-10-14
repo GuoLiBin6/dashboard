@@ -9,10 +9,11 @@
         </template>
         <spec-container-form
           :ref="`form_${pane.key}`"
-          :decorators="getDecorators(pane.key)"
+          :pane-key="pane.key"
           :cluster="cluster"
           :namespace="namespace"
           :form="form"
+          :model="model || form.fd"
           :paneKey="pane.key"
           :initItem="initContainers[i] || null" />
       </a-tab-pane>
@@ -26,7 +27,6 @@
 </template>
 
 <script>
-import * as R from 'ramda'
 import { uuid } from '@/utils/utils'
 import SpecContainerForm from './Form'
 
@@ -36,15 +36,16 @@ export default {
     SpecContainerForm,
   },
   props: {
-    decorators: {
-      type: Object,
-      required: true,
-    },
     cluster: String,
     namespace: String,
     form: {
       type: Object,
-      validator: v => v.fc,
+      validator: v => !!v && typeof v === 'object',
+    },
+    /** a-form-model：与动态 field key 对齐（通常为 form.fd） */
+    model: {
+      type: Object,
+      default: null,
     },
     errPanes: {
       type: Array,
@@ -136,14 +137,15 @@ export default {
         this.add()
       }
     },
-    getDecorators (k) {
-      const ret = {}
-      R.forEachObjIndexed((item, key) => {
-        if (R.is(Function, item)) {
-          ret[key] = item(k)
+    async validate () {
+      for (const pane of this.panes) {
+        const formRef = this.$refs[`form_${pane.key}`]
+        const formComp = Array.isArray(formRef) ? formRef[0] : formRef
+        if (typeof formComp?.validate === 'function') {
+          await formComp.validate()
         }
-      }, this.decorators)
-      return ret
+      }
+      return true
     },
   },
 }

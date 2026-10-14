@@ -1,28 +1,31 @@
 <template>
   <div>
     <a-alert :message="$t('k8s.text_286')" banner />
-    <a-form
+    <a-form-model
+      ref="formRef"
       class="mt-3"
-      :form="form.fc">
-      <a-form-item
+      :model="form"
+      :rules="rules"
+      v-bind="formItemLayout">
+      <a-form-model-item
         :label="$t('k8s.text_19')"
-        v-bind="formItemLayout">
+        prop="cluster">
         <cluster-select
+          v-model:value="form.cluster"
           @input="setCluster"
           v-model:clusterObj="clusterObj"
-          v-decorator="decorators.cluster"
           style="width: 140px;" />
-      </a-form-item>
-      <a-form-item
+      </a-form-model-item>
+      <a-form-model-item
         :label="$t('k8s.text_287')"
-        v-bind="formItemLayout">
-        <code-mirror v-decorator="decorators.yaml" :options="cmOptions" />
-      </a-form-item>
-      <a-form-item :wrapper-col="{ span: 20, offset: 3 }">
+        prop="yaml">
+        <code-mirror v-model:value="form.yaml" :options="cmOptions" />
+      </a-form-model-item>
+      <a-form-model-item :wrapper-col="{ span: 20, offset: 3 }">
         <a-button class="mr-2" type="primary" @click="handleConfirm" :loading="loading">{{$t('k8s.text_288')}}</a-button>
         <a-button @click="cancel">{{$t('k8s.text_162')}}</a-button>
-      </a-form-item>
-    </a-form>
+      </a-form-model-item>
+    </a-form-model>
   </div>
 </template>
 
@@ -42,24 +45,15 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        cluster: undefined,
+        yaml: '',
       },
-      decorators: {
+      rules: {
         cluster: [
-          'cluster',
-          {
-            rules: [
-              { required: true, message: this.$t('k8s.text_30') },
-            ],
-          },
+          { required: true, message: this.$t('k8s.text_30') },
         ],
         yaml: [
-          'yaml',
-          {
-            rules: [
-              { required: true, message: this.$t('k8s.text_289') },
-            ],
-          },
+          { required: true, message: this.$t('k8s.text_289') },
         ],
       },
       formItemLayout: {
@@ -96,8 +90,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        await this.doCreate(values)
+        await this.$refs.formRef.validate()
+        await this.doCreate(this.form)
         this.loading = false
         this.$message.success(this.$t('k8s.text_184'))
         this.$router.push('/k8s-namespace')

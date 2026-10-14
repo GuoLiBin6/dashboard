@@ -4,14 +4,14 @@
     <div slot="body">
       <dialog-selected-tips :name="skuName" :count="params.data.length" :action="$t('common.action.clone')" />
       <dialog-table :data="params.data" :columns="tableColumns" />
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('common.name')">
-          <a-input v-decorator="decorators.name" />
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('common.name')" prop="name">
+          <a-input v-model:value="form.name" />
           <template v-slot:extra>
-            <name-repeated res="llm_skus" :name="form.fd.name" :default-text="$t('aice.name_repeat_extra')" />
+            <name-repeated res="llm_skus" :name="form.name" :default-text="$t('aice.name_repeat_extra')" />
           </template>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" :loading="loading" @click="handleConfirm">{{ $t('dialog.ok') }}</a-button>
@@ -37,26 +37,11 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-          },
-        }),
-        fd: {
-          name: source.name ? `${source.name}-copy` : '',
-        },
+        name: source.name ? `${source.name}-copy` : '',
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            initialValue: source.name ? `${source.name}-copy` : '',
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('common.name')]) },
-            ],
-          },
+          { required: true, message: this.$t('common.tips.input', [this.$t('common.name')]) },
         ],
       },
       formItemLayout: {
@@ -80,8 +65,8 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        const name = (values.name || '').trim()
+        await this.$refs.formRef.validate()
+        const name = (this.form.name || '').trim()
         await this.params.onManager('performAction', {
           id: this.params.data[0].id,
           managerArgs: {

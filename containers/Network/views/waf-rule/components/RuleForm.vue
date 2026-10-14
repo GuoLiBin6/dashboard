@@ -46,7 +46,7 @@
                       {{ item.label }}
                     </a-select-option>
                   </a-select>
-                  <a-switch v-if="getRuleConfig(rule).valueType === 'switch'" v-model:value="rule.value" />
+                  <a-switch v-if="getRuleConfig(rule).valueType === 'switch'" v-model:checked="rule.value" />
                 </a-form-model-item>
                 <div class="extra-text" v-if="getRuleConfig(rule).valueExtra">
                   {{ getRuleConfig(rule).valueExtra }}

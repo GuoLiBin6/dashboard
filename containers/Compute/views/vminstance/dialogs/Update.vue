@@ -5,46 +5,45 @@
       <a-alert class="mb-2" :message="$t('compute.need_reboot_prompt')" banner />
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_247')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc"
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
         v-bind="formItemLayout">
-        <!-- <a-form-item :label="$t('common.text00076')" v-bind="formItemLayout">
-          <a-radio-group v-decorator="decorators.disable_delete">
-            <a-radio-button
-              v-for="item of disableDeleteOptions"
-              :key="item.key"
-              :value="item.key">{{ item.label }}</a-radio-button>
-          </a-radio-group>
-        </a-form-item> -->
         <template v-if="isKvm">
-          <!-- <a-form-item :label="$t('compute.text_1269')" v-bind="formItemLayout">
-            <a-radio-group v-decorator="decorators.boot_order">
-              <a-radio-button
-                v-for="item of bootOrderOptions"
-                :key="item.key"
-                :value="item.key">{{ item.label }}</a-radio-button>
+          <a-form-model-item :label="$t('compute.text_1155')" prop="bios">
+            <a-radio-group v-model:value="form.bios">
+              <a-tooltip :title="$t('compute.text_1362')" v-if="isArm">
+                <a-radio-button value="BIOS" :disabled="isArm">BIOS</a-radio-button>
+              </a-tooltip>
+              <a-radio-button v-else value="BIOS">BIOS</a-radio-button>
+              <a-radio-button value="UEFI">UEFI</a-radio-button>
             </a-radio-group>
-          </a-form-item> -->
-          <a-form-item :label="$t('compute.text_1155')">
-            <bios :decorator="decorators.bios" :isArm="isArm" />
-          </a-form-item>
-          <a-form-item :label="$t('compute.vdi_protocol')">
-            <vdi :decorator="decorators.vdi" @change="handleVdiChange" />
-          </a-form-item>
-          <a-form-item :label="$t('compute.vga')">
-            <vga :decorator="decorators.vga" :vdi="vdi" :form="form" />
-          </a-form-item>
-          <a-form-item :label="$t('compute.machine')">
-            <machine :decorator="decorators.machine" :isArm="isArm" />
-          </a-form-item>
-          <a-form-item v-if="isKvm" :label="$t('compute.usb_kbd')">
-            <a-switch v-decorator="decorators.disable_usb_kbd" />
-          </a-form-item>
-          <a-form-item :label="$t('compute.text_494')" :extra="$t('compute.daemon.tooltip')" v-if="canAdminUpdate">
-            <a-switch v-model:value="is_daemon" />
-          </a-form-item>
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.vdi_protocol')" prop="vdi">
+            <a-radio-group v-model:value="form.vdi" @change="handleVdiChange">
+              <a-radio-button value="vnc">VNC</a-radio-button>
+              <a-radio-button value="spice">SPICE</a-radio-button>
+            </a-radio-group>
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.vga')" prop="vga">
+            <a-radio-group v-model:value="form.vga">
+              <a-radio-button :value="opt.value" v-for="opt in vgaOptions" :key="opt.value">{{ opt.text }}</a-radio-button>
+            </a-radio-group>
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.machine')" prop="machine">
+            <a-radio-group v-model:value="form.machine">
+              <a-radio-button :value="opt.value" v-for="opt in machineOptions" :key="opt.value">{{ opt.text }}</a-radio-button>
+            </a-radio-group>
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.usb_kbd')" prop="disable_usb_kbd">
+            <a-switch v-model:checked="form.disable_usb_kbd" />
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.text_494')" :extra="$t('compute.daemon.tooltip')" v-if="canAdminUpdate">
+            <a-switch v-model:checked="form.is_daemon" />
+          </a-form-model-item>
         </template>
-      </a-form>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -54,111 +53,40 @@
 </template>
 
 <script>
-import Bios from '@Compute/sections/BIOS'
-import Vdi from '@Compute/sections/VDI'
-import Vga from '@Compute/sections/VGA'
-import Machine from '@Compute/sections/Machine'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import { hasPermission } from '@/utils/auth'
 export default {
   name: 'VmUpdateDialog',
-  components: {
-    Bios,
-    Vdi,
-    Vga,
-    Machine,
-  },
   mixins: [DialogMixin, WindowsMixin],
   data () {
+    const data = this.params.data[0] || {}
+    const isArm = data.os_arch === 'arm' || data.os_arch === 'aarch64'
+    const vdi = data.vdi || 'vnc'
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        bios: data.bios || (isArm ? 'UEFI' : 'BIOS'),
+        vdi,
+        vga: data.vga || 'std',
+        machine: data.machine || (isArm ? 'virt' : 'pc'),
+        disable_usb_kbd: data?.metadata?.disable_usb_kbd === 'true',
+        is_daemon: !!data.is_daemon,
       },
-      vdi: 'vnc',
-      is_daemon: false,
-      decorators: {
-        disable_delete: [
-          'disable_delete',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.text_1270') },
-            ],
-          },
-        ],
-        // boot_order: [
-        //   'boot_order',
-        //   {
-        //     rules: [
-        //       { required: true, message: this.$t('compute.text_1271') },
-        //     ],
-        //   },
-        // ],
+      rules: {
         bios: [
-          'bios',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.text_1272') },
-            ],
-          },
+          { required: true, message: this.$t('compute.text_1272') },
         ],
         vdi: [
-          'vdi',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.prompt_vdi') },
-            ],
-          },
+          { required: true, message: this.$t('compute.prompt_vdi') },
         ],
         vga: [
-          'vga',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.prompt_vga') },
-            ],
-          },
+          { required: true, message: this.$t('compute.prompt_vga') },
         ],
         machine: [
-          'machine',
-          {
-            rules: [
-              { required: true, message: this.$t('compute.prompt_machine') },
-            ],
-          },
-        ],
-        disable_usb_kbd: [
-          'disable_usb_kbd',
-          {
-            initialValue: this.params.data[0]?.metadata?.disable_usb_kbd === 'true',
-            valuePropName: 'checked',
-          },
+          { required: true, message: this.$t('compute.prompt_machine') },
         ],
       },
-      bootOrderOptions: [
-        {
-          label: this.$t('compute.text_100'),
-          key: 'cdn',
-        },
-        {
-          label: this.$t('compute.text_1273'),
-          key: 'dcn',
-        },
-        {
-          label: this.$t('compute.text_104'),
-          key: 'ncd',
-        },
-      ],
-      disableDeleteOptions: [
-        {
-          label: this.$t('compute.text_656'),
-          key: true,
-        },
-        {
-          label: this.$t('compute.text_569'),
-          key: false,
-        },
-      ],
       formItemLayout: {
         wrapperCol: {
           span: 20,
@@ -179,16 +107,41 @@ export default {
     canAdminUpdate () {
       return hasPermission({ key: 'server_update', resourceData: this.params.data[0] }) && this.$store.getters.isAdminMode
     },
+    vgaOptions () {
+      const options = []
+      if (this.form.vdi === 'vnc') {
+        options.push({ text: 'Standard', value: 'std' })
+      }
+      options.push({ text: 'QXL', value: 'qxl' })
+      return options
+    },
+    machineOptions () {
+      if (this.isArm) {
+        return [{ text: 'VIRT', value: 'virt' }]
+      }
+      return [
+        { text: 'PC', value: 'pc' },
+        { text: 'Q35', value: 'q35' },
+      ]
+    },
   },
-  created () {
-    this.initFormValue(this.params.data[0])
+  watch: {
+    vgaOptions: {
+      immediate: true,
+      handler (opts) {
+        const values = opts.map(o => o.value)
+        if (!values.includes(this.form.vga) && values.length) {
+          this.form.vga = values[0]
+        }
+      },
+    },
   },
   methods: {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        values.is_daemon = this.is_daemon
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         const ids = this.params.data.map(item => item.id)
         await this.params.onManager('batchUpdate', {
           id: ids,
@@ -216,32 +169,15 @@ export default {
             },
           })
         }
-        this.loading = false
         this.cancelDialog()
       } catch (error) {
+        // validation / request error
+      } finally {
         this.loading = false
       }
     },
-    initFormValue (data) {
-      this.$nextTick(() => {
-        const updateObj = {
-          disable_delete: data.disable_delete,
-        }
-        if (this.isKvm) {
-          // updateObj.boot_order = data.boot_order
-          updateObj.bios = data.bios || (this.isArm ? 'UEFI' : 'BIOS')
-          updateObj.vdi = data.vdi ? data.vdi : 'vnc'
-          updateObj.vga = data.vga ? data.vga : 'std'
-          this.vdi = updateObj.vdi
-          updateObj.machine = data.machine ? data.machine : (this.isArm ? 'virt' : 'pc')
-          // updateObj.is_daemon = data.is_daemon
-          this.is_daemon = data.is_daemon
-        }
-        this.form.fc.setFieldsValue(updateObj)
-      })
-    },
-    handleVdiChange (data) {
-      this.vdi = data.value
+    handleVdiChange (e) {
+      this.form.vdi = e.target.value
     },
   },
 }

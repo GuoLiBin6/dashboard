@@ -110,16 +110,15 @@ export default {
     }
   },
   methods: {
-    submitForm (formName) {
-      this.$refs[formName].validate((valid) => {
-        if (valid) {
-          const data = R.clone(this.formData)
-          data.grafana.storage.sizeMB = this.formData.grafana.storage.sizeMB * 1024
-          data.loki.storage.sizeMB = this.formData.loki.storage.sizeMB * 1024
-          data.prometheus.storage.sizeMB = this.formData.prometheus.storage.sizeMB * 1024
-          this.$emit('submit', data)
-        }
-      })
+    async submitForm (formName) {
+      try {
+        await this.$refs[formName].validate()
+        const data = R.clone(this.formData)
+        data.grafana.storage.sizeMB = this.formData.grafana.storage.sizeMB * 1024
+        data.loki.storage.sizeMB = this.formData.loki.storage.sizeMB * 1024
+        data.prometheus.storage.sizeMB = this.formData.prometheus.storage.sizeMB * 1024
+        this.$emit('submit', data)
+      } catch (e) { /* invalid */ }
     },
     cancel () {
       this.$router.push('/k8s-kubecomponent')

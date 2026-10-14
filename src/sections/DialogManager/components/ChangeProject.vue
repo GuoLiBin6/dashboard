@@ -4,19 +4,22 @@
     <template #body>
       <dialog-selected-tips :count="params.data.length" :action="title" :name="name" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="params.projectLabel || $t('dictionary.project')" v-bind="formItemLayout">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="params.projectLabel || $t('dictionary.project')" prop="project">
           <base-select
-            v-decorator="decorators.project"
+            v-model="form.project"
             :params="projectParams"
             version="v1"
             remote
             :select-props="{ placeholder: this.$t('rules.project') }"
             resource="projects"
             :filterable="true" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </template>
     <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -38,17 +41,11 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        project: initialValue,
       },
-      decorators: {
+      rules: {
         project: [
-          'project',
-          {
-            initialValue,
-            rules: [
-              { required: true, message: this.$t('rules.project') },
-            ],
-          },
+          { required: true, message: this.$t('rules.project') },
         ],
       },
       formItemLayout: this.params.formItemLayout || {
@@ -84,17 +81,6 @@ export default {
     },
   },
   methods: {
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
-    },
     async doChangeProject (values, ids) {
       return this.params.onManager('batchPerformAction', {
         id: ids,
@@ -108,10 +94,10 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
+        await this.$refs.formRef.validate()
         const ids = this.params.data.map(item => item.id)
         this.loading = true
-        await this.doChangeProject(values, ids)
+        await this.doChangeProject(this.form, ids)
         this.loading = false
         this.cancelDialog()
       } catch (error) {

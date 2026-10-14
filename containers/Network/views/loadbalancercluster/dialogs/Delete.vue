@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('network.text_19')" :count="params.data.length" :action="params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-checkbox class="mt-2" v-model="canDelete">{{$t('network.text_358')}}</a-checkbox>
+      <a-checkbox class="mt-2" v-model:checked="canDelete">{{$t('network.text_358')}}</a-checkbox>
     </div>
     <div slot="footer">
       <a-button :disabled="!canDelete" type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>

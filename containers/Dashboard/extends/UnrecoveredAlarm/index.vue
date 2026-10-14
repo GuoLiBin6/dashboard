@@ -3,7 +3,7 @@
     <div class="dashboard-card-wrap">
       <div class="dashboard-card-header">
         <div class="dashboard-card-header-left">
-          {{ form.fd.name }}
+          {{ fd.name }}
           <icon class="ml-2" type="loading" v-if="loading" />
           <span v-if="isUsageKeyDeny" class="ml-2">
             <a-tooltip class="mr-2" :title="$t('dashboard.usage_key_deny_tips')">
@@ -34,14 +34,11 @@
       </div>
     </div>
     <base-drawer v-model:visible="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit">
-      <a-form
-        hideRequiredMark
-        :form="form.fc"
-        v-bind="formItemLayout">
-        <a-form-item :label="$t('dashboard.text_6')">
-          <a-input v-decorator="decorators.name" />
-        </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" hideRequiredMark :model="fd" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('dashboard.text_6')" prop="name">
+          <a-input v-model:value="fd.name" />
+        </a-form-model-item>
+      </a-form-model>
     </base-drawer>
   </div>
 </template>
@@ -51,7 +48,6 @@ import * as R from 'ramda'
 import { mapGetters } from 'vuex'
 import BaseDrawer from '@Dashboard/components/BaseDrawer'
 import { chartColors } from '@/constants'
-import { resolveValueChangeField } from '@/utils/common/ant'
 export default {
   name: 'UnrecoveredAlarm',
   components: {
@@ -75,28 +71,12 @@ export default {
       visible: false,
       loading: false,
       seriesData: [],
-      form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            const newField = resolveValueChangeField(values)
-            R.forEachObjIndexed((item, key) => {
-              this.$set(this.form.fd, key, item)
-            }, newField)
-          },
-        }),
-        fd: {
-          name: initialNameValue,
-        },
+      fd: {
+        name: initialNameValue,
       },
-      decorators: {
+      rules: {
         name: [
-          'name',
-          {
-            initialValue: initialNameValue,
-            rules: [
-              { required: true, message: this.$t('dashboard.text_8') },
-            ],
-          },
+          { required: true, message: this.$t('dashboard.text_8') },
         ],
       },
       formItemLayout: {
@@ -168,15 +148,13 @@ export default {
     },
   },
   watch: {
-    'form.fd' (val) {
-      const newVal = { ...val }
-      for (const key in newVal) {
-        this.decorators[key][1].initialValue = newVal[key]
-      }
-      this.form.fc.setFieldsValue(newVal)
-      this.$nextTick(() => {
-        this.fetchData()
-      })
+    fd: {
+      handler () {
+        this.$nextTick(() => {
+          this.fetchData()
+        })
+      },
+      deep: true,
     },
     'dataRangeParams.scope': {
       handler (val) {
@@ -198,7 +176,7 @@ export default {
     },
   },
   created () {
-    const values = { ...this.form.fd }
+    const values = { ...this.fd }
     values.brand = R.join(',', values.brand || [])
     this.$emit('update', this.options.i, values)
     this.fetchData()
@@ -258,10 +236,8 @@ export default {
     },
     async handleSubmit () {
       try {
-        const values = await this.form.fc.validateFields()
-        this.form.fd = values
-        const updateValues = { ...values }
-        this.$emit('update', this.options.i, updateValues)
+        await this.$refs.formRef.validate()
+        this.$emit('update', this.options.i, { ...this.fd })
         this.visible = false
       } catch (error) {
         throw error

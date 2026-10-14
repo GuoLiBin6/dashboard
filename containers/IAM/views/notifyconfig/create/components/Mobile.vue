@@ -1,10 +1,12 @@
 <template>
-  <a-form
-    :form="form.fc"
+  <a-form-model
+    ref="formRef"
+    :model="form.fd"
+    :rules="rules"
     v-bind="formItemLayout"
     hideRequiredMark>
-    <a-form-item :label="$t('notify.configs.sms_driver')">
-      <a-radio-group v-decorator="decorators.sms_driver">
+    <a-form-model-item :label="$t('notify.configs.sms_driver')" prop="sms_driver">
+      <a-radio-group v-model:value="form.fd.sms_driver">
         <a-radio-button
           v-for="item in driverOpts"
           :value="item.key"
@@ -12,13 +14,13 @@
           {{ item.label }}
         </a-radio-button>
       </a-radio-group>
-    </a-form-item>
+    </a-form-model-item>
     <component
       ref="typeRef"
       :is="form.fd.sms_driver"
-      :form="form"
+      :doc-url="docUrl"
       :form-item-layout="formItemLayout" />
-  </a-form>
+  </a-form-model>
 </template>
 
 <script>
@@ -48,34 +50,35 @@ export default {
       submiting: false,
       testLoding: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-          },
-        }),
         fd: {
           sms_driver: 'smsaliyun',
         },
+      },
+      rules: {
+        sms_driver: [
+          { required: true, message: this.$t('common.select') },
+        ],
       },
       driverOpts: [
         { label: this.$t('providers.aliyun'), key: 'smsaliyun' },
         { label: this.$t('providers.huawei'), key: 'smshuawei' },
       ],
-      decorators: {
-        sms_driver: [
-          'sms_driver',
-          {
-            initialValue: 'smsaliyun',
-          },
-        ],
-      },
     }
   },
   computed: {
     is_aliyun () {
       return this.form.fd.sms_driver === 'smsaliyun'
+    },
+  },
+  methods: {
+    async validateForm () {
+      await this.$refs.formRef.validate()
+      const { typeRef } = this.$refs
+      const driverValues = await typeRef.validateForm()
+      return {
+        sms_driver: this.form.fd.sms_driver,
+        ...driverValues,
+      }
     },
   },
 }

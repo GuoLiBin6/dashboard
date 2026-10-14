@@ -1,111 +1,109 @@
 <template>
   <div class="llm-sku-create-form">
-    <a-form :form="form.fc" v-bind="formItemLayout">
-      <a-form-item :label="$t('aice.project')">
+    <!-- end-state: a-form-model + form.fd only -->
+    <a-form-model ref="formRef" :model="form.fd" :rules="formRules" v-bind="formItemLayout">
+      <a-form-model-item :label="$t('aice.project')">
         <domain-project
           v-if="!isEditMode"
-          :fc="form.fc"
-          :fd="form.fd"
-          :form-layout="formItemLayout"
-          :decorators="{ project: decorators.project, domain: decorators.domain }" />
+          :form="form.fd" />
         <a-label v-if="isEditMode">{{ projectName }}</a-label>
-      </a-form-item>
-      <a-form-item :label="$t('common.name')">
-        <a-input v-decorator="decorators.name" v-if="!isEditMode" />
+      </a-form-model-item>
+      <a-form-model-item :label="$t('common.name')" prop="name">
+        <a-input v-model:value="form.fd.name" v-if="!isEditMode" />
         <template v-slot:extra v-if="!isEditMode">
           <name-repeated res="llm_skus" :name="form.fd.name" :default-text="$t('aice.name_repeat_extra')" />
         </template>
         <a-label v-if="isEditMode">{{ modelName }}</a-label>
-      </a-form-item>
-      <a-form-item :label="$t('aice.llm_type')">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('aice.llm_type')" prop="llm_type">
         <a-radio-group
           v-if="!isEditMode && (!isCatalogMode || catalogTypeSelectable)"
           class="llm-type-picker"
           button-style="solid"
-          v-decorator="decorators.llm_type"
+          v-model:value="form.fd.llm_type"
           @change="onLlmTypeChange">
           <a-radio-button v-for="opt in llmTypeOptions" :key="opt.id" :value="opt.id">
             {{ opt.name }}
           </a-radio-button>
         </a-radio-group>
         <a-label v-else-if="isEditMode || isCatalogMode">{{ llmTypeName }}</a-label>
-      </a-form-item>
+      </a-form-model-item>
       <template v-if="form.fd.llm_type === 'dify'">
-        <a-form-item :label="$t('aice.dify_api_image')">
+        <a-form-model-item :label="$t('aice.dify_api_image')">
           <llm-image-select
-            v-decorator="decorators.dify_api_image_id"
+            v-model:value="form.fd.dify_api_image_id"
             :params="{ ...appImageParams, $t: 'dify_api_image' }"
             :select-props="{ placeholder: $t('common.tips.select', [$t('aice.dify_api_image')]) }" />
-        </a-form-item>
-        <a-form-item :label="$t('aice.dify_plugin_image')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('aice.dify_plugin_image')">
           <llm-image-select
-            v-decorator="decorators.dify_plugin_image_id"
+            v-model:value="form.fd.dify_plugin_image_id"
             :params="{ ...appImageParams, $t: 'dify_plugin_image' }"
             :select-props="{ placeholder: $t('common.tips.select', [$t('aice.dify_plugin_image')]) }" />
-        </a-form-item>
-        <a-form-item :label="$t('aice.dify_sandbox_image')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('aice.dify_sandbox_image')">
           <llm-image-select
-            v-decorator="decorators.dify_sandbox_image_id"
+            v-model:value="form.fd.dify_sandbox_image_id"
             :params="{ ...appImageParams, $t: 'dify_sandbox_image' }"
             :select-props="{ placeholder: $t('common.tips.select', [$t('aice.dify_sandbox_image')]) }" />
-        </a-form-item>
-        <a-form-item :label="$t('aice.dify_ssrf_image')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('aice.dify_ssrf_image')">
           <llm-image-select
-            v-decorator="decorators.dify_ssrf_image_id"
+            v-model:value="form.fd.dify_ssrf_image_id"
             :params="{ ...appImageParams, $t: 'dify_ssr_image' }"
             :select-props="{ placeholder: $t('common.tips.select', [$t('aice.dify_ssr_image')]) }" />
-        </a-form-item>
-        <a-form-item :label="$t('aice.dify_weaviate_image')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('aice.dify_weaviate_image')">
           <llm-image-select
-            v-decorator="decorators.dify_weaviate_image_id"
+            v-model:value="form.fd.dify_weaviate_image_id"
             :params="{ ...appImageParams, $t: 'dify_weaviate_image' }"
             :select-props="{ placeholder: $t('common.tips.select', [$t('aice.dify_weaviate_image')]) }" />
-        </a-form-item>
-        <a-form-item :label="$t('aice.dify_web_image')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('aice.dify_web_image')">
           <llm-image-select
-            v-decorator="decorators.dify_web_image_id"
+            v-model:value="form.fd.dify_web_image_id"
             :params="{ ...appImageParams, $t: 'dify_web_image' }"
             :select-props="{ placeholder: $t('common.tips.select', [$t('aice.dify_web_image')]) }" />
-        </a-form-item>
-        <a-form-item :label="$t('aice.nginx_image')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('aice.nginx_image')">
           <llm-image-select
-            v-decorator="decorators.nginx_image_id"
+            v-model:value="form.fd.nginx_image_id"
             :params="{ ...appImageParams, $t: 'nginx_image' }"
             :select-props="{ placeholder: $t('common.tips.select', [$t('aice.nginx_image')]) }" />
-        </a-form-item>
-        <a-form-item :label="$t('aice.postgres_image')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('aice.postgres_image')">
           <llm-image-select
-            v-decorator="decorators.postgres_image_id"
+            v-model:value="form.fd.postgres_image_id"
             :params="{ ...appImageParams, $t: 'postgres_image' }"
             :select-props="{ placeholder: $t('common.tips.select', [$t('aice.postgres_image')]) }" />
-        </a-form-item>
-        <a-form-item :label="$t('aice.redis_image')">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('aice.redis_image')">
           <llm-image-select
-            v-decorator="decorators.redis_image_id"
+            v-model:value="form.fd.redis_image_id"
             :params="{ ...appImageParams, $t: 'redis_image' }"
             :select-props="{ placeholder: $t('common.tips.select', [$t('aice.redis_image')]) }" />
-        </a-form-item>
+        </a-form-model-item>
       </template>
-      <a-form-item v-else :label="$t('aice.llm_image')">
+      <a-form-model-item v-else :label="$t('aice.llm_image')">
         <catalog-llm-image-select
           v-if="isCatalogImportMode"
           :key="`catalog-image-${catalogLlmType}`"
           ref="catalogImageSelect"
-          v-decorator="decorators.llm_image_id"
+          v-model:value="form.fd.llm_image_id"
           :llm-type="catalogLlmType"
           :auto-select-default="false"
           :select-props="{ placeholder: $t('common.tips.select', [$t('aice.llm_image')]) }"
           @catalog-loaded="onCatalogImagesLoaded" />
         <llm-image-select
           v-else
-          v-decorator="decorators.llm_image_id"
+          v-model:value="form.fd.llm_image_id"
           :params="appImageParams"
           :select-props="{ placeholder: $t('common.tips.select', [$t('aice.llm_image')]) }" />
-      </a-form-item>
-      <a-form-item :label="$t('aice.cpu')">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('aice.cpu')">
         <span class="sku-resource-with-limit">
           <a-input-number
-            v-decorator="decorators.cpu"
+            v-model:value="form.fd.cpu"
             :min="2"
             :step="2"
             :precision="0" />
@@ -113,16 +111,16 @@
           <span class="sku-resource-limit">
             {{ $t('aice.enable_cgroup') }}
             <a-switch
-              v-decorator="decorators.enable_cgroup_cpu"
+              v-model:checked="form.fd.enable_cgroup_cpu"
               :checkedChildren="$t('compute.text_115')"
               :unCheckedChildren="$t('compute.text_116')" />
           </span>
         </span>
-      </a-form-item>
-      <a-form-item :label="$t('aice.memory')">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('aice.memory')">
         <span class="sku-resource-with-limit">
           <a-input-number
-            v-decorator="decorators.memory"
+            v-model:value="form.fd.memory"
             :min="2"
             :step="2"
             :precision="0" />
@@ -130,81 +128,81 @@
           <span class="sku-resource-limit">
             {{ $t('aice.enable_cgroup') }}
             <a-switch
-              v-decorator="decorators.enable_cgroup_memory"
+              v-model:checked="form.fd.enable_cgroup_memory"
               :checkedChildren="$t('compute.text_115')"
               :unCheckedChildren="$t('compute.text_116')" />
           </span>
         </span>
         <template v-slot:extra>{{ $t('aice.enable_cgroup_extra') }}</template>
-      </a-form-item>
-      <a-form-item :label="$t('aice.disk')">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('aice.disk')">
         <a-input-number
-          v-decorator="decorators.volume_size"
+          v-model:value="form.fd.volume_size"
           :min="10"
           :step="32"
           :precision="0" /> GB
-      </a-form-item>
-      <a-form-item :label="$t('aice.bandwidth')">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('aice.bandwidth')">
         <a-input-number
-          v-decorator="decorators.bandwidth"
+          v-model:value="form.fd.bandwidth"
           :min="1"
           :max="10000"
           :step="1"
           :precision="0" /> MB
-      </a-form-item>
+      </a-form-model-item>
       <template v-for="field in currentTypeFields">
-        <a-form-item
+        <a-form-model-item
           v-if="field.component === 'base-select'"
           :key="field.fieldKey"
           :label="$t(field.label)">
           <base-select
-            v-decorator="decorators[field.fieldKey]"
+            v-model:value="form.fd[field.fieldKey]"
             v-bind="getBaseSelectProps(field)" />
-        </a-form-item>
-        <a-form-item
+        </a-form-model-item>
+        <a-form-model-item
           v-else-if="field.component === 'llm-gpu-devices-editor'"
           :key="field.fieldKey"
           :label="$t(field.label)">
           <llm-gpu-devices-editor
-            v-decorator="decorators[field.fieldKey]"
+            v-model:value="form.fd[field.fieldKey]"
             :require-hami-memory-mb="requireHamiMemoryMb"
             :allow-empty="!isDeviceRequired"
             :sharing-mode-values="deviceSharingModeValues"
             :default-sharing-mode="deviceDefaultSharingMode" />
-        </a-form-item>
-        <a-form-item v-else-if="field.component === 'input-number'" :key="field.fieldKey" :label="$t(field.label)">
+        </a-form-model-item>
+        <a-form-model-item v-else-if="field.component === 'input-number'" :key="field.fieldKey" :label="$t(field.label)">
           <a-input-number
-            v-decorator="decorators[field.fieldKey]"
+            v-model:value="form.fd[field.fieldKey]"
             v-bind="field.props" />
           <template v-if="field.suffixKey">{{ $t(field.suffixKey) }}</template>
           <template v-else-if="field.suffix">{{ field.suffix }}</template>
-        </a-form-item>
-        <a-form-item
+        </a-form-model-item>
+        <a-form-model-item
           v-else-if="field.component === 'input'"
           :key="field.fieldKey"
           :label="$t(field.label)">
           <a-input
-            v-decorator="decorators[field.fieldKey]"
+            v-model:value="form.fd[field.fieldKey]"
             :placeholder="field.props && field.props.placeholderKey ? $t('common.tips.input', [$t(field.props.placeholderKey)]) : ''" />
-        </a-form-item>
-        <a-form-item
+        </a-form-model-item>
+        <a-form-model-item
           v-else-if="field.component === 'customized-args'"
           :key="field.fieldKey"
           :label="$t('aice.backend_parameters')">
           <a-row v-for="item in customizedArgsRows" :key="item.key" :gutter="4">
             <a-col :span="11">
-              <a-form-item>
+              <a-form-model-item>
                 <a-input
-                  v-decorator="decorators.customized_args.argKey(item.key)"
+                  v-model:value="item.argKey"
                   :placeholder="$t('common.tips.input', [$t('aice.customized_arg_key')])" />
-              </a-form-item>
+              </a-form-model-item>
             </a-col>
             <a-col :span="11">
-              <a-form-item>
+              <a-form-model-item>
                 <a-input
-                  v-decorator="decorators.customized_args.argValue(item.key)"
+                  v-model:value="item.argValue"
                   :placeholder="$t('common.tips.input', [$t('aice.customized_arg_value')])" />
-              </a-form-item>
+              </a-form-model-item>
             </a-col>
             <a-col :span="2">
               <a-button shape="circle" icon="minus" size="small" @click="delCustomizedArg(item)" class="mt-2 ml-2" />
@@ -219,7 +217,7 @@
             </a-col>
           </a-row>
           <div class="text-color-help">{{ $t('aice.backend_parameters.help') }}</div>
-        </a-form-item>
+        </a-form-model-item>
       </template>
       <!-- 暂时隐藏 Agent 个性化配置，恢复时将 showAgentPersonalization 改为 true -->
       <a-divider
@@ -229,47 +227,47 @@
         class="openclaw-section-divider">
         {{ $t('aice.openclaw.section.agent_personalization') }}
       </a-divider>
-      <a-form-item
+      <a-form-model-item
         v-if="form.fd.llm_type === 'openclaw' && showAgentPersonalization"
         :label="$t('aice.openclaw.workspace_templates')"
         :extra="$t('aice.openclaw.workspace_templates_tip')">
         <div class="openclaw-template-item">
           <div class="openclaw-template-title">AGENTS.md</div>
           <a-textarea
-            v-decorator="decorators.openclaw_agents_md"
+            v-model:value="form.fd.openclaw_agents_md"
             :auto-size="{ minRows: 3, maxRows: 10 }"
             :placeholder="'AGENTS.md'" />
         </div>
         <div class="openclaw-template-item">
           <div class="openclaw-template-title">SOUL.md</div>
           <a-textarea
-            v-decorator="decorators.openclaw_soul_md"
+            v-model:value="form.fd.openclaw_soul_md"
             :auto-size="{ minRows: 3, maxRows: 10 }"
             :placeholder="'SOUL.md'" />
         </div>
         <div class="openclaw-template-item mb-0">
           <div class="openclaw-template-title">USER.md</div>
           <a-textarea
-            v-decorator="decorators.openclaw_user_md"
+            v-model:value="form.fd.openclaw_user_md"
             :auto-size="{ minRows: 3, maxRows: 10 }"
             :placeholder="'USER.md'" />
         </div>
-      </a-form-item>
-      <a-form-item :label="$t('aice.container_port_mapping')" :extra="$t('aice.container_port_mapping_tip')">
+      </a-form-model-item>
+      <a-form-model-item :label="$t('aice.container_port_mapping')" :extra="$t('aice.container_port_mapping_tip')">
         <a-row v-for="item in portMappings" :key="item.key" :gutter="4">
           <a-col :span="11">
-            <a-form-item>
+            <a-form-model-item>
               <base-select
-                v-decorator="decorators.port_mapppings.protocol(item.key)"
+                v-model:value="item.protocol"
                 :options="dict.protocolArr" />
-            </a-form-item>
+            </a-form-model-item>
           </a-col>
           <a-col :span="11">
-            <a-form-item>
+            <a-form-model-item>
               <a-input
-                v-decorator="decorators.port_mapppings.container_port(item.key)"
+                v-model:value="item.container_port"
                 :placeholder="$t('common.tips.input', [$t('aice.container_port')])" />
-            </a-form-item>
+            </a-form-model-item>
           </a-col>
           <a-col :span="2">
             <a-button shape="circle" icon="minus" size="small" @click="del(item)" class="mt-2 ml-2" />
@@ -283,23 +281,23 @@
             </div>
           </a-col>
         </a-row>
-      </a-form-item>
+      </a-form-model-item>
 
-      <a-form-item :label="$t('aice.envs')">
+      <a-form-model-item :label="$t('aice.envs')">
         <a-row v-for="item in envVars" :key="item.key" :gutter="4">
           <a-col :span="11">
-            <a-form-item>
+            <a-form-model-item>
               <a-input
-                v-decorator="decorators.envs.envKey(item.key)"
+                v-model:value="item.env_key"
                 :placeholder="$t('common.tips.input', [$t('aice.env_key')])" />
-            </a-form-item>
+            </a-form-model-item>
           </a-col>
           <a-col :span="11">
-            <a-form-item>
+            <a-form-model-item>
               <a-input
-                v-decorator="decorators.envs.envValue(item.key)"
+                v-model:value="item.env_value"
                 :placeholder="$t('common.tips.input', [$t('aice.env_value')])" />
-            </a-form-item>
+            </a-form-model-item>
           </a-col>
           <a-col :span="2">
             <a-button shape="circle" icon="minus" size="small" @click="delEnv(item)" class="mt-2 ml-2" />
@@ -313,27 +311,29 @@
             </div>
           </a-col>
         </a-row>
-      </a-form-item>
+      </a-form-model-item>
 
-      <a-form-item
+      <a-form-model-item
         v-if="isLocalPathSku"
         :label="$t('aice.local_path_import.prefer_hosts')"
+        prop="prefer_hosts"
         :extra="$t('aice.local_path_import.prefer_hosts_extra')">
         <base-select
-          v-decorator="decorators.prefer_hosts"
+          v-model:value="form.fd.prefer_hosts"
           resource="hosts"
           :params="localPathHostParams"
           :select-props="{
             mode: 'multiple',
             placeholder: $t('common.tips.select', [$t('dictionary.host')]),
           }" />
-      </a-form-item>
-      <a-form-item
+      </a-form-model-item>
+      <a-form-model-item
         v-if="isLocalPathImportMode"
         :label="$t('aice.local_path_import.host_model_path')"
+        prop="local_path"
         :extra="$t('aice.local_path_import.host_model_path_extra')">
         <a-input
-          v-decorator="decorators.local_path"
+          v-model:value="form.fd.local_path"
           :placeholder="$t('aice.local_path_import.host_model_path_placeholder')"
           @change="onLocalPathInputChange" />
         <a-alert
@@ -349,59 +349,59 @@
           @click="enableLocalPathAdvancedHostPaths">
           {{ $t('aice.local_path_import.advanced_host_paths') }}
         </a-button>
-      </a-form-item>
+      </a-form-model-item>
 
-      <a-form-item v-if="!isLocalPathImportMode || localPathAdvancedHostPaths" :label="$t('aice.host_paths')" :extra="$t('aice.host_paths.extra')">
+      <a-form-model-item v-if="!isLocalPathImportMode || localPathAdvancedHostPaths" :label="$t('aice.host_paths')" :extra="$t('aice.host_paths.extra')">
         <div v-for="hp in hostPathRows" :key="hp.key" class="host-path-item">
           <div class="host-path-item__body">
             <a-row :gutter="8">
               <a-col :span="8">
-                <a-form-item>
+                <a-form-model-item>
                   <fixed-label-filter :label="$t('aice.host_paths.type')">
-                    <a-select v-decorator="decorators.host_paths.type(hp.key)" :placeholder="$t('common.tips.select', [$t('aice.host_paths.type')])">
+                    <a-select v-model:value="hp.type" :placeholder="$t('common.tips.select', [$t('aice.host_paths.type')])">
                       <a-select-option value="directory">directory</a-select-option>
                       <a-select-option value="file">file</a-select-option>
                     </a-select>
                   </fixed-label-filter>
-                </a-form-item>
+                </a-form-model-item>
               </a-col>
               <a-col :span="16">
-                <a-form-item>
+                <a-form-model-item>
                   <fixed-label-filter :label="$t('aice.host_paths.path')">
-                    <a-input v-decorator="decorators.host_paths.path(hp.key)" :placeholder="$t('aice.host_paths.path.placeholder')" />
+                    <a-input v-model:value="hp.path" :placeholder="$t('aice.host_paths.path.placeholder')" />
                   </fixed-label-filter>
-                </a-form-item>
+                </a-form-model-item>
               </a-col>
             </a-row>
 
             <a-row :gutter="8">
               <a-col :span="24">
-                <a-form-item>
-                  <a-checkbox v-decorator="decorators.host_paths.auto_create(hp.key)">{{ $t('aice.host_paths.auto_create') }}</a-checkbox>
-                </a-form-item>
+                <a-form-model-item>
+                  <a-checkbox v-model:checked="hp.auto_create">{{ $t('aice.host_paths.auto_create') }}</a-checkbox>
+                </a-form-model-item>
               </a-col>
             </a-row>
-            <a-row :gutter="8" v-if="form.fd[`host_path_auto_create_${hp.key}`]">
+            <a-row :gutter="8" v-if="hp.auto_create">
               <a-col :span="8">
-                <a-form-item>
+                <a-form-model-item>
                   <fixed-label-filter :label="$t('aice.host_paths.auto_create_config.uid')">
-                    <a-input v-decorator="decorators.host_paths.auto_uid(hp.key)" :placeholder="$t('aice.host_paths.auto_create_config.uid.placeholder')" />
+                    <a-input v-model:value="hp.auto_create_config.uid" :placeholder="$t('aice.host_paths.auto_create_config.uid.placeholder')" />
                   </fixed-label-filter>
-                </a-form-item>
+                </a-form-model-item>
               </a-col>
               <a-col :span="8">
-                <a-form-item>
+                <a-form-model-item>
                   <fixed-label-filter :label="$t('aice.host_paths.auto_create_config.gid')">
-                    <a-input v-decorator="decorators.host_paths.auto_gid(hp.key)" :placeholder="$t('aice.host_paths.auto_create_config.gid.placeholder')" />
+                    <a-input v-model:value="hp.auto_create_config.gid" :placeholder="$t('aice.host_paths.auto_create_config.gid.placeholder')" />
                   </fixed-label-filter>
-                </a-form-item>
+                </a-form-model-item>
               </a-col>
               <a-col :span="8">
-                <a-form-item>
+                <a-form-model-item>
                   <fixed-label-filter :label="$t('aice.host_paths.permissions')">
-                    <a-input v-decorator="decorators.host_paths.auto_perm(hp.key)" :placeholder="$t('aice.host_paths.permissions.placeholder')" />
+                    <a-input v-model:value="hp.auto_create_config.permissions" :placeholder="$t('aice.host_paths.permissions.placeholder')" />
                   </fixed-label-filter>
-                </a-form-item>
+                </a-form-model-item>
               </a-col>
             </a-row>
 
@@ -409,29 +409,29 @@
             <div v-for="c in hp.containerRows" :key="c.key">
               <a-row :gutter="8">
                 <a-col :span="8" v-if="isApplyType">
-                  <a-form-item>
+                  <a-form-model-item>
                     <fixed-label-filter :label="$t('aice.host_paths.container_index')">
-                      <a-input v-decorator="decorators.host_paths.container_index(hp.key, c.key)" :placeholder="$t('aice.host_paths.container_index.placeholder')" />
+                      <a-input v-model:value="c.containerIndex" :placeholder="$t('aice.host_paths.container_index.placeholder')" />
                     </fixed-label-filter>
-                  </a-form-item>
+                  </a-form-model-item>
                 </a-col>
                 <a-col :span="isApplyType ? 8 : 12">
-                  <a-form-item>
+                  <a-form-model-item>
                     <fixed-label-filter :label="$t('aice.host_paths.mount_path')">
-                      <a-input v-decorator="decorators.host_paths.mount_path(hp.key, c.key)" :placeholder="$t('aice.host_paths.mount_path.placeholder')" />
+                      <a-input v-model:value="c.mount_path" :placeholder="$t('aice.host_paths.mount_path.placeholder')" />
                     </fixed-label-filter>
-                  </a-form-item>
+                  </a-form-model-item>
                 </a-col>
                 <a-col :span="isApplyType ? 8 : 12">
-                  <a-form-item>
+                  <a-form-model-item>
                     <fixed-label-filter :label="$t('aice.host_paths.propagation')">
-                      <a-select v-decorator="decorators.host_paths.propagation(hp.key, c.key)" :placeholder="$t('common.tips.select', [$t('aice.host_paths.propagation')])" optionLabelProp="label" :dropdownMatchSelectWidth="false">
+                      <a-select v-model:value="c.propagation" :placeholder="$t('common.tips.select', [$t('aice.host_paths.propagation')])" optionLabelProp="label" :dropdownMatchSelectWidth="false">
                         <a-select-option value="private" label="private">private - {{ $t('aice.host_paths.propagation.private') }}</a-select-option>
                         <a-select-option value="rslave" label="rslave">rslave - {{ $t('aice.host_paths.propagation.rslave') }}</a-select-option>
                         <a-select-option value="rshared" label="rshared">rshared - {{ $t('aice.host_paths.propagation.rshared') }}</a-select-option>
                       </a-select>
                     </fixed-label-filter>
-                  </a-form-item>
+                  </a-form-model-item>
                 </a-col>
                 <!-- <a-col :span="2">
                   <a-button shape="circle" icon="minus" size="small" class="mt-2 ml-2" @click="delHostPathContainer(hp, c)" />
@@ -439,9 +439,9 @@
               </a-row>
               <a-row :gutter="8">
                 <a-col :span="4">
-                  <a-form-item>
-                    <a-checkbox v-decorator="decorators.host_paths.read_only(hp.key, c.key)">{{ $t('aice.host_paths.read_only') }}</a-checkbox>
-                  </a-form-item>
+                  <a-form-model-item>
+                    <a-checkbox v-model:checked="c.read_only">{{ $t('aice.host_paths.read_only') }}</a-checkbox>
+                  </a-form-model-item>
                 </a-col>
               </a-row>
             </div>
@@ -461,9 +461,9 @@
           <a-button type="primary" shape="circle" icon="plus" size="small" @click="addHostPath" />
           <a-button type="link" @click="addHostPath">{{ $t('aice.host_paths.add') }}</a-button>
         </div>
-      </a-form-item>
+      </a-form-model-item>
 
-    </a-form>
+    </a-form-model>
   </div>
 </template>
 
@@ -472,6 +472,7 @@ import { mapGetters } from 'vuex'
 import LlmImageSelect from '@Ai/sections/LlmImageSelect'
 import CatalogLlmImageSelect from '@Ai/sections/CatalogLlmImageSelect'
 import LlmGpuDevicesEditor from '@Ai/sections/LlmGpuDevicesEditor'
+import { resolveFieldMeta, getInitialValue } from '@/utils/common/ant'
 import {
   buildCatalogImageGroups,
   fetchCommunityImageItems,
@@ -516,7 +517,7 @@ import {
   resolveSkuBackendParameters,
 } from '@Ai/utils/backendParameters'
 import WindowsMixin from '@/mixins/windows'
-import DomainProject from '@/sections/DomainProject'
+import DomainProject from '@/sections/DomainProject/model'
 import NameRepeated from '@/sections/NameRepeated'
 import { isRequired } from '@/utils/validate'
 import { uuid } from '@/utils/utils'
@@ -679,12 +680,31 @@ export default {
     const portMappings = portMappingsSource.map(item => ({ ...item, key: uuid() }))
     const hostPathRows = (Array.isArray(hostPaths) ? hostPaths : []).map(hp => {
       const containerRows = hp && hp.containers && typeof hp.containers === 'object'
-        ? Object.keys(hp.containers).map(k => ({ key: uuid(), containerIndex: String(k), ...(hp.containers[k] || {}) }))
+        ? Object.keys(hp.containers).map(k => ({
+          key: uuid(),
+          containerIndex: String(k),
+          mount_path: hp.containers[k]?.mount_path,
+          propagation: hp.containers[k]?.propagation || 'rslave',
+          read_only: !!hp.containers[k]?.read_only,
+        }))
         : []
       return {
         key: uuid(),
-        ...hp,
-        containerRows: containerRows.length ? containerRows : [{ key: uuid() }],
+        type: hp?.type || 'directory',
+        path: hp?.path,
+        auto_create: !!hp?.auto_create,
+        auto_create_config: {
+          uid: hp?.auto_create_config?.uid,
+          gid: hp?.auto_create_config?.gid,
+          permissions: hp?.auto_create_config?.permissions,
+        },
+        containerRows: containerRows.length ? containerRows : [{
+          key: uuid(),
+          containerIndex: isApplyType ? undefined : '0',
+          mount_path: '',
+          propagation: 'rslave',
+          read_only: false,
+        }],
       }
     })
     const getHostPathRow = (rowKey) => hostPathRows.find(hp => hp.key === rowKey)
@@ -712,413 +732,269 @@ export default {
       localPathAdvancedHostPaths: false,
       customizedArgsRows,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-          },
-        }),
         fd: {
-          // 须与 decorators.llm_type.initialValue 一致，否则 currentTypeFields / v-if 与真实选中类型不同步，初始化不展示类型字段
+          // 须与 fieldMap.llm_type.initialValue 一致，否则 currentTypeFields / v-if 与真实选中类型不同步，初始化不展示类型字段
           llm_type: rowLlmType || defaultLlmType,
         },
       },
-      decorators: {
-        domain: [
-          'domain',
-          {
-            initialValue: { key: domain_id, label: project_domain },
-            rules: [
-              { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
-            ],
-          },
-        ],
-        project: [
-          'project',
-          {
-            initialValue: { key: tenant_id, label: tenant },
-            rules: [
-              { validator: isRequired(), message: this.$t('rules.project'), trigger: 'change' },
-            ],
-          },
-        ],
-        name: [
-          'name',
-          {
-            initialValue: catalogNameInit || name,
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('common.name')]) },
-            ],
-          },
-        ],
-        local_path: [
-          'local_path',
-          {
-            initialValue: '',
-            rules: [
-              { required: true, message: this.$t('aice.local_path_import.path_required') },
-              { pattern: /^\//, message: this.$t('aice.local_path_import.path_absolute') },
-            ],
-          },
-        ],
-        prefer_hosts: [
-          'prefer_hosts',
-          {
-            initialValue: normalizePreferHosts(data.prefer_hosts),
-            rules: [
-              {
-                type: 'array',
-                required: true,
-                min: 1,
-                message: this.$t('aice.local_path_import.prefer_hosts_required'),
-              },
-            ],
-          },
-        ],
-        llm_image_id: [
-          'llm_image_id',
-          {
-            initialValue: isCatalogImport ? undefined : llm_image_id,
-            trigger: 'input',
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('aice.llm_image')]) },
-            ],
-          },
-        ],
-        dify_api_image_id: [
-          'dify_api_image_id',
-          {
-            initialValue: dify_api_image_id,
-            trigger: 'input',
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('aice.dify_api_image')]) },
-            ],
-          },
-        ],
-        dify_plugin_image_id: [
-          'dify_plugin_image_id',
-          {
-            initialValue: dify_plugin_image_id,
-            trigger: 'input',
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('aice.dify_plugin_image')]) },
-            ],
-          },
-        ],
-        dify_sandbox_image_id: [
-          'dify_sandbox_image_id',
-          {
-            initialValue: dify_sandbox_image_id,
-            trigger: 'input',
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('aice.dify_sandbox_image')]) },
-            ],
-          },
-        ],
-        dify_ssrf_image_id: [
-          'dify_ssrf_image_id',
-          {
-            initialValue: dify_ssrf_image_id,
-            trigger: 'input',
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('aice.dify_ssr_image')]) },
-            ],
-          },
-        ],
-        llm_type: [
-          'llm_type',
-          {
-            initialValue: catalogLlmTypeInit || rowLlmType || defaultLlmType,
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('aice.llm_type')]) },
-            ],
-          },
-        ],
-        dify_weaviate_image_id: [
-          'dify_weaviate_image_id',
-          {
-            initialValue: dify_weaviate_image_id,
-            trigger: 'input',
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('aice.dify_weaviate_image')]) },
-            ],
-          },
-        ],
-        dify_web_image_id: [
-          'dify_web_image_id',
-          {
-            initialValue: dify_web_image_id,
-            trigger: 'input',
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('aice.dify_web_image')]) },
-            ],
-          },
-        ],
-        nginx_image_id: [
-          'nginx_image_id',
-          {
-            initialValue: nginx_image_id,
-            trigger: 'input',
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('aice.nginx_image')]) },
-            ],
-          },
-        ],
-        postgres_image_id: [
-          'postgres_image_id',
-          {
-            initialValue: postgres_image_id,
-            trigger: 'input',
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('aice.postgres_image')]) },
-            ],
-          },
-        ],
-        redis_image_id: [
-          'redis_image_id',
-          {
-            initialValue: redis_image_id,
-            trigger: 'input',
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('aice.redis_image')]) },
-            ],
-          },
-        ],
-        openclaw_agents_md: [
-          'openclaw_agents_md',
-          {
-            initialValue: openclawWorkspaceTemplates['AGENTS.md'] || openclawWorkspaceTemplates.agents_md,
-          },
-        ],
-        openclaw_soul_md: [
-          'openclaw_soul_md',
-          {
-            initialValue: openclawWorkspaceTemplates['SOUL.md'] || openclawWorkspaceTemplates.soul_md,
-          },
-        ],
-        openclaw_user_md: [
-          'openclaw_user_md',
-          {
-            initialValue: openclawWorkspaceTemplates['USER.md'] || openclawWorkspaceTemplates.user_md,
-          },
-        ],
-        mounted_models: [
-          'mounted_models',
-          {
-            initialValue: mounted_models || [],
-          },
-        ],
-        preferred_model: [
-          'preferred_model',
-          {
-            initialValue: preferredModelInit,
-          },
-        ],
-        bandwidth: [
-          'bandwidth',
-          {
-            initialValue: 100,
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('aice.bandwidth')]) },
-            ],
-          },
-        ],
-        cpu: [
-          'cpu',
-          {
-            initialValue: cpu,
-            rules: [
-              { required: true, message: this.$t('common.tips.input', ['CPU']) },
-            ],
-          },
-        ],
-        memory: [
-          'memory',
-          {
-            initialValue: memory / 1024,
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('aice.memory')]) },
-            ],
-          },
-        ],
-        enable_cgroup_cpu: [
-          'enable_cgroup_cpu',
-          {
-            valuePropName: 'checked',
-            initialValue: enableCgroupCpuInit,
-          },
-        ],
-        enable_cgroup_memory: [
-          'enable_cgroup_memory',
-          {
-            valuePropName: 'checked',
-            initialValue: enableCgroupMemoryInit,
-          },
-        ],
-        volume_size: [
-          'volume_size',
-          {
-            initialValue: volume.size / 1024,
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('aice.disk')]) },
-            ],
-          },
-        ],
-        phone_image: [
-          'phone_image',
-          {
-            initialValue: image_id,
-            rules: [
-              { required: true, message: this.$t('common.tips.select', [this.$t('aice.image')]) },
-            ],
-          },
-        ],
-        request_sync_image: [
-          'request_sync_image',
-          {
-            initialValue: false,
-          },
-        ],
-        device: [
-          'device',
-          {
-            initialValue: deviceInitialValue,
-            valuePropName: 'value',
-            trigger: 'change',
-            rules: [
-              {
-                validator: (rule, value, callback) => {
-                  const type = (this.isCatalogMode || this.isLocalPathImportMode)
-                    ? this.catalogLlmType
-                    : (this.form?.fd?.llm_type)
-                  const field = (LLM_TYPE_FORM_CONFIG[type] || []).find(f => f.fieldKey === 'device')
-                  const hasInjectedDevice = (this.isCatalogMode && this.catalogSubmitType === 'import' && !this.isApplyType && !this.isDesktopType) || this.isLocalPathSku
-                  const required = !!(field?.rules?.some(r => r.required) || hasInjectedDevice || isCatalogImport || isLocalPathImport)
-                  const requireHamiMemoryMb = !!this.requireHamiMemoryMb
-                  const pciModelTypes = this.podPciModels
-                  if (!isValidDeviceRows(value, { allowEmpty: !required, requireHamiMemoryMb, pciModelTypes })) {
-                    if (requireHamiMemoryMb && Array.isArray(value) && value.some(row => String(row?.model || '').trim() && resolveSharingMode(row.sharing_mode) === 'HAMI' && !(parseInt(row.memory_mb, 10) > 0))) {
-                      callback(new Error(this.$t('aice.devices.memory_mb.required')))
-                      return
-                    }
-                    if (Array.isArray(value) && value.some(row => deviceRowNeedsVendor(row, pciModelTypes))) {
-                      callback(new Error(this.$t('aice.devices.vendor.required')))
-                      return
-                    }
-                    callback(new Error(this.$t('common.tips.select', [this.$t('aice.devices')])))
+      fieldMap: {
+        domain: {
+          name: 'domain',
+          initialValue: { key: domain_id, label: project_domain },
+          rules: [
+            { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
+          ],
+        },
+        project: {
+          name: 'project',
+          initialValue: { key: tenant_id, label: tenant },
+          rules: [
+            { validator: isRequired(), message: this.$t('rules.project'), trigger: 'change' },
+          ],
+        },
+        name: {
+          name: 'name',
+          initialValue: catalogNameInit || name,
+          rules: [
+            { required: true, message: this.$t('common.tips.input', [this.$t('common.name')]) },
+          ],
+        },
+        local_path: {
+          name: 'local_path',
+          initialValue: '',
+          rules: [
+            { required: true, message: this.$t('aice.local_path_import.path_required') },
+            { pattern: /^\//, message: this.$t('aice.local_path_import.path_absolute') },
+          ],
+        },
+        prefer_hosts: {
+          name: 'prefer_hosts',
+          initialValue: normalizePreferHosts(data.prefer_hosts),
+          rules: [
+            {
+              type: 'array',
+              required: true,
+              min: 1,
+              message: this.$t('aice.local_path_import.prefer_hosts_required'),
+            },
+          ],
+        },
+        llm_image_id: {
+          name: 'llm_image_id',
+          initialValue: isCatalogImport ? undefined : llm_image_id,
+          trigger: 'input',
+          rules: [
+            { required: true, message: this.$t('common.tips.select', [this.$t('aice.llm_image')]) },
+          ],
+        },
+        dify_api_image_id: {
+          name: 'dify_api_image_id',
+          initialValue: dify_api_image_id,
+          trigger: 'input',
+          rules: [
+            { required: true, message: this.$t('common.tips.select', [this.$t('aice.dify_api_image')]) },
+          ],
+        },
+        dify_plugin_image_id: {
+          name: 'dify_plugin_image_id',
+          initialValue: dify_plugin_image_id,
+          trigger: 'input',
+          rules: [
+            { required: true, message: this.$t('common.tips.select', [this.$t('aice.dify_plugin_image')]) },
+          ],
+        },
+        dify_sandbox_image_id: {
+          name: 'dify_sandbox_image_id',
+          initialValue: dify_sandbox_image_id,
+          trigger: 'input',
+          rules: [
+            { required: true, message: this.$t('common.tips.select', [this.$t('aice.dify_sandbox_image')]) },
+          ],
+        },
+        dify_ssrf_image_id: {
+          name: 'dify_ssrf_image_id',
+          initialValue: dify_ssrf_image_id,
+          trigger: 'input',
+          rules: [
+            { required: true, message: this.$t('common.tips.select', [this.$t('aice.dify_ssr_image')]) },
+          ],
+        },
+        llm_type: {
+          name: 'llm_type',
+          initialValue: catalogLlmTypeInit || rowLlmType || defaultLlmType,
+          rules: [
+            { required: true, message: this.$t('common.tips.select', [this.$t('aice.llm_type')]) },
+          ],
+        },
+        dify_weaviate_image_id: {
+          name: 'dify_weaviate_image_id',
+          initialValue: dify_weaviate_image_id,
+          trigger: 'input',
+          rules: [
+            { required: true, message: this.$t('common.tips.select', [this.$t('aice.dify_weaviate_image')]) },
+          ],
+        },
+        dify_web_image_id: {
+          name: 'dify_web_image_id',
+          initialValue: dify_web_image_id,
+          trigger: 'input',
+          rules: [
+            { required: true, message: this.$t('common.tips.select', [this.$t('aice.dify_web_image')]) },
+          ],
+        },
+        nginx_image_id: {
+          name: 'nginx_image_id',
+          initialValue: nginx_image_id,
+          trigger: 'input',
+          rules: [
+            { required: true, message: this.$t('common.tips.select', [this.$t('aice.nginx_image')]) },
+          ],
+        },
+        postgres_image_id: {
+          name: 'postgres_image_id',
+          initialValue: postgres_image_id,
+          trigger: 'input',
+          rules: [
+            { required: true, message: this.$t('common.tips.select', [this.$t('aice.postgres_image')]) },
+          ],
+        },
+        redis_image_id: {
+          name: 'redis_image_id',
+          initialValue: redis_image_id,
+          trigger: 'input',
+          rules: [
+            { required: true, message: this.$t('common.tips.select', [this.$t('aice.redis_image')]) },
+          ],
+        },
+        openclaw_agents_md: { name: 'openclaw_agents_md', initialValue: openclawWorkspaceTemplates['AGENTS.md'] || openclawWorkspaceTemplates.agents_md },
+        openclaw_soul_md: { name: 'openclaw_soul_md', initialValue: openclawWorkspaceTemplates['SOUL.md'] || openclawWorkspaceTemplates.soul_md },
+        openclaw_user_md: { name: 'openclaw_user_md', initialValue: openclawWorkspaceTemplates['USER.md'] || openclawWorkspaceTemplates.user_md },
+        mounted_models: { name: 'mounted_models', initialValue: mounted_models || [] },
+        preferred_model: { name: 'preferred_model', initialValue: preferredModelInit },
+        bandwidth: {
+          name: 'bandwidth',
+          initialValue: 100,
+          rules: [
+            { required: true, message: this.$t('common.tips.input', [this.$t('aice.bandwidth')]) },
+          ],
+        },
+        cpu: {
+          name: 'cpu',
+          initialValue: cpu,
+          rules: [
+            { required: true, message: this.$t('common.tips.input', ['CPU']) },
+          ],
+        },
+        memory: {
+          name: 'memory',
+          initialValue: memory / 1024,
+          rules: [
+            { required: true, message: this.$t('common.tips.input', [this.$t('aice.memory')]) },
+          ],
+        },
+        enable_cgroup_cpu: {
+          name: 'enable_cgroup_cpu',
+          valuePropName: 'checked',
+          initialValue: enableCgroupCpuInit,
+        },
+        enable_cgroup_memory: {
+          name: 'enable_cgroup_memory',
+          valuePropName: 'checked',
+          initialValue: enableCgroupMemoryInit,
+        },
+        volume_size: {
+          name: 'volume_size',
+          initialValue: volume.size / 1024,
+          rules: [
+            { required: true, message: this.$t('common.tips.input', [this.$t('aice.disk')]) },
+          ],
+        },
+        phone_image: {
+          name: 'phone_image',
+          initialValue: image_id,
+          rules: [
+            { required: true, message: this.$t('common.tips.select', [this.$t('aice.image')]) },
+          ],
+        },
+        request_sync_image: { name: 'request_sync_image', initialValue: false },
+        device: {
+          name: 'device',
+          initialValue: deviceInitialValue,
+          valuePropName: 'value',
+          trigger: 'change',
+          rules: [
+            {
+              validator: (rule, value, callback) => {
+                const type = (this.isCatalogMode || this.isLocalPathImportMode)
+                  ? this.catalogLlmType
+                  : (this.form?.fd?.llm_type)
+                const field = (LLM_TYPE_FORM_CONFIG[type] || []).find(f => f.fieldKey === 'device')
+                const hasInjectedDevice = (this.isCatalogMode && this.catalogSubmitType === 'import' && !this.isApplyType && !this.isDesktopType) || this.isLocalPathSku
+                const required = !!(field?.rules?.some(r => r.required) || hasInjectedDevice || isCatalogImport || isLocalPathImport)
+                const requireHamiMemoryMb = !!this.requireHamiMemoryMb
+                const pciModelTypes = this.podPciModels
+                if (!isValidDeviceRows(value, { allowEmpty: !required, requireHamiMemoryMb, pciModelTypes })) {
+                  if (requireHamiMemoryMb && Array.isArray(value) && value.some(row => String(row?.model || '').trim() && resolveSharingMode(row.sharing_mode) === 'HAMI' && !(parseInt(row.memory_mb, 10) > 0))) {
+                    callback(new Error(this.$t('aice.devices.memory_mb.required')))
                     return
                   }
-                  callback()
-                },
-                trigger: 'change',
+                  if (Array.isArray(value) && value.some(row => deviceRowNeedsVendor(row, pciModelTypes))) {
+                    callback(new Error(this.$t('aice.devices.vendor.required')))
+                    return
+                  }
+                  callback(new Error(this.$t('common.tips.select', [this.$t('aice.devices')])))
+                  return
+                }
+                callback()
               },
-            ],
-          },
-        ],
-        mounted_apps: [
-          'mounted_apps',
-          {
-            initialValue: mounted_apps || [],
-          },
-        ],
+              trigger: 'change',
+            },
+          ],
+        },
+        mounted_apps: { name: 'mounted_apps', initialValue: mounted_apps || [] },
         port_mapppings: {
-          protocol: i => [
-            `protocol[${i}]`,
-            {
-              initialValue: getInitVal(portMappings, i, 'protocol'),
-            },
-          ],
-          container_port: i => [
-            `container_port[${i}]`,
-            {
-              initialValue: getInitVal(portMappings, i, 'container_port'),
-              rules: [
-                { type: 'number', min: 0, max: 65535, message: this.$t('aice.container_port.message'), trigger: 'blur', transform: (v) => parseInt(v) },
-              ],
-            },
-          ],
+          protocol: i => ({ name: `protocol[${i}]`, initialValue: getInitVal(portMappings, i, 'protocol') }),
+          container_port: i => ({
+            name: `container_port[${i}]`,
+            initialValue: getInitVal(portMappings, i, 'container_port'),
+            rules: [
+              { type: 'number', min: 0, max: 65535, message: this.$t('aice.container_port.message'), trigger: 'blur', transform: (v) => parseInt(v) },
+            ],
+          }),
         },
         customized_args: {
-          argKey: rowKey => [
-            `customized_arg_key[${rowKey}]`,
-            { initialValue: getInitVal(customizedArgsRows, rowKey, 'argKey') },
-          ],
-          argValue: rowKey => [
-            `customized_arg_value[${rowKey}]`,
-            { initialValue: getInitVal(customizedArgsRows, rowKey, 'argValue') },
-          ],
+          argKey: rowKey => ({ name: `customized_arg_key[${rowKey}]`, initialValue: getInitVal(customizedArgsRows, rowKey, 'argKey') }),
+          argValue: rowKey => ({ name: `customized_arg_value[${rowKey}]`, initialValue: getInitVal(customizedArgsRows, rowKey, 'argValue') }),
         },
         envs: {
-          envKey: rowKey => [
-            `env_key[${rowKey}]`,
-            { initialValue: getInitVal(envVars, rowKey, 'env_key') },
-          ],
-          envValue: rowKey => [
-            `env_value[${rowKey}]`,
-            { initialValue: getInitVal(envVars, rowKey, 'env_value') },
-          ],
+          envKey: rowKey => ({ name: `env_key[${rowKey}]`, initialValue: getInitVal(envVars, rowKey, 'env_key') }),
+          envValue: rowKey => ({ name: `env_value[${rowKey}]`, initialValue: getInitVal(envVars, rowKey, 'env_value') }),
         },
         host_paths: {
-          type: rowKey => [
-            `host_path_type_${rowKey}`,
-            {
-              initialValue: getHostPathRow(rowKey)?.type || 'directory',
-            },
-          ],
-          path: rowKey => [
-            `host_path_path_${rowKey}`,
-            {
-              initialValue: getHostPathRow(rowKey)?.path,
-              rules: [{ required: true, message: this.$t('aice.host_paths.path.required') }],
-            },
-          ],
-          auto_create: rowKey => [
-            `host_path_auto_create_${rowKey}`,
-            { valuePropName: 'checked', initialValue: !!getHostPathRow(rowKey)?.auto_create },
-          ],
-          auto_uid: rowKey => [
-            `host_path_auto_uid_${rowKey}`,
-            { initialValue: getHostPathRow(rowKey)?.auto_create_config?.uid },
-          ],
-          auto_gid: rowKey => [
-            `host_path_auto_gid_${rowKey}`,
-            { initialValue: getHostPathRow(rowKey)?.auto_create_config?.gid },
-          ],
-          auto_perm: rowKey => [
-            `host_path_auto_perm_${rowKey}`,
-            { initialValue: getHostPathRow(rowKey)?.auto_create_config?.permissions },
-          ],
-          container_index: (hpKey, cKey) => [
-            `host_path_container_index_${hpKey}__${cKey}`,
-            {
-              initialValue: getHostPathContainerRow(hpKey, cKey)?.containerIndex ?? (isApplyType ? undefined : 0),
-              rules: [{ required: true, message: this.$t('aice.host_paths.container_index.required') }],
-            },
-          ],
-          mount_path: (hpKey, cKey) => [
-            `host_path_mount_path_${hpKey}__${cKey}`,
-            {
-              initialValue: getHostPathContainerRow(hpKey, cKey)?.mount_path,
-              rules: [{ required: true, message: this.$t('aice.host_paths.mount_path.required') }],
-            },
-          ],
-          read_only: (hpKey, cKey) => [
-            `host_path_read_only_${hpKey}__${cKey}`,
-            { valuePropName: 'checked', initialValue: !!getHostPathContainerRow(hpKey, cKey)?.read_only },
-          ],
-          propagation: (hpKey, cKey) => [
-            `host_path_propagation_${hpKey}__${cKey}`,
-            { initialValue: getHostPathContainerRow(hpKey, cKey)?.propagation || 'rslave' },
-          ],
-          fs_user: (hpKey, cKey) => [
-            `host_path_fs_user_${hpKey}__${cKey}`,
-            { initialValue: getHostPathContainerRow(hpKey, cKey)?.fs_user },
-          ],
-          fs_group: (hpKey, cKey) => [
-            `host_path_fs_group_${hpKey}__${cKey}`,
-            { initialValue: getHostPathContainerRow(hpKey, cKey)?.fs_group },
-          ],
+          type: rowKey => ({ name: `host_path_type_${rowKey}`, initialValue: getHostPathRow(rowKey)?.type || 'directory' }),
+          path: rowKey => ({
+            name: `host_path_path_${rowKey}`,
+            initialValue: getHostPathRow(rowKey)?.path,
+            rules: [{ required: true, message: this.$t('aice.host_paths.path.required') }],
+          }),
+          auto_create: rowKey => ({ name: `host_path_auto_create_${rowKey}`, valuePropName: 'checked', initialValue: !!getHostPathRow(rowKey)?.auto_create }),
+          auto_uid: rowKey => ({ name: `host_path_auto_uid_${rowKey}`, initialValue: getHostPathRow(rowKey)?.auto_create_config?.uid }),
+          auto_gid: rowKey => ({ name: `host_path_auto_gid_${rowKey}`, initialValue: getHostPathRow(rowKey)?.auto_create_config?.gid }),
+          auto_perm: rowKey => ({ name: `host_path_auto_perm_${rowKey}`, initialValue: getHostPathRow(rowKey)?.auto_create_config?.permissions }),
+          container_index: (hpKey, cKey) => ({
+            name: `host_path_container_index_${hpKey}__${cKey}`,
+            initialValue: getHostPathContainerRow(hpKey, cKey)?.containerIndex ?? (isApplyType ? undefined : 0),
+            rules: [{ required: true, message: this.$t('aice.host_paths.container_index.required') }],
+          }),
+          mount_path: (hpKey, cKey) => ({
+            name: `host_path_mount_path_${hpKey}__${cKey}`,
+            initialValue: getHostPathContainerRow(hpKey, cKey)?.mount_path,
+            rules: [{ required: true, message: this.$t('aice.host_paths.mount_path.required') }],
+          }),
+          read_only: (hpKey, cKey) => ({ name: `host_path_read_only_${hpKey}__${cKey}`, valuePropName: 'checked', initialValue: !!getHostPathContainerRow(hpKey, cKey)?.read_only }),
+          propagation: (hpKey, cKey) => ({ name: `host_path_propagation_${hpKey}__${cKey}`, initialValue: getHostPathContainerRow(hpKey, cKey)?.propagation || 'rslave' }),
+          fs_user: (hpKey, cKey) => ({ name: `host_path_fs_user_${hpKey}__${cKey}`, initialValue: getHostPathContainerRow(hpKey, cKey)?.fs_user }),
+          fs_group: (hpKey, cKey) => ({ name: `host_path_fs_group_${hpKey}__${cKey}`, initialValue: getHostPathContainerRow(hpKey, cKey)?.fs_group }),
         },
       },
       formItemLayout: {
@@ -1136,6 +1012,22 @@ export default {
   },
   computed: {
     ...mapGetters(['userInfo']),
+    formRules () {
+      const pick = (key) => resolveFieldMeta(this.fieldMap?.[key], key)?.rules || []
+      const rules = {
+        name: pick('name'),
+        llm_type: pick('llm_type'),
+        llm_image_id: pick('llm_image_id'),
+        cpu: pick('cpu'),
+        memory: pick('memory'),
+        volume_size: pick('volume_size'),
+      }
+      if (this.isLocalPathSku || this.isLocalPathImportMode) {
+        rules.prefer_hosts = pick('prefer_hosts')
+        rules.local_path = pick('local_path')
+      }
+      return rules
+    },
     isCatalogImportMode () {
       return this.isCatalogMode && this.catalogSubmitType === 'import' && !this.isApplyType && !this.isDesktopType && !this.isLocalPathImportMode
     },
@@ -1282,26 +1174,14 @@ export default {
     'form.fd.llm_type' (val, oldVal) {
       if (val === oldVal) return
       if (oldVal === 'openclaw' && val !== 'openclaw') {
-        this.form.fc.setFieldsValue({
-          openclaw_agents_md: undefined,
-          openclaw_soul_md: undefined,
-          openclaw_user_md: undefined,
-        })
+        this.$set(this.form.fd, 'openclaw_agents_md', undefined)
+        this.$set(this.form.fd, 'openclaw_soul_md', undefined)
+        this.$set(this.form.fd, 'openclaw_user_md', undefined)
       }
-      // 切换 llm_type 时重置端口映射为新类型的默认值（仅 create 模式）。
-      // 用 splice 原地修改以保留 decorator 闭包对 portMappings 的引用；
-      // 再调一次 setFieldsValue 确保新行的 protocol/container_port 初值被写入 form。
+      // 切换 llm_type 时重置端口映射为新类型的默认值（仅 create 模式）
       if (!this.isEditMode) {
         const next = getDefaultPortMappingsForType(val).map(item => ({ ...item, key: uuid() }))
         this.portMappings.splice(0, this.portMappings.length, ...next)
-        this.$nextTick(() => {
-          const fields = {}
-          next.forEach(item => {
-            fields[`protocol[${item.key}]`] = item.protocol
-            fields[`container_port[${item.key}]`] = item.container_port
-          })
-          this.form.fc.setFieldsValue(fields)
-        })
       }
       if (this.isLocalPathImportMode && this.localPathAdvancedHostPaths) {
         const path = String(this.form.fd.local_path || '').trim()
@@ -1310,15 +1190,13 @@ export default {
         }
       }
       if (this.catalogTypeSelectable && this.catalogSpec && oldVal) {
-        this.form.fc.setFieldsValue({
-          llm_image_id: undefined,
-          name: defaultNameFromSpec(this.catalogSpec, this.catalogSet, val),
-        })
         this.form.fd.llm_image_id = undefined
+        this.form.fd.name = defaultNameFromSpec(this.catalogSpec, this.catalogSet, val)
       }
     },
   },
   mounted () {
+    this.hydrateFormFdFromDecorators()
     if (this.isCatalogMode) {
       this.$store.dispatch('auth/getCapabilities').catch(() => {})
       this.$nextTick(() => this.applyCatalogSpec())
@@ -1327,11 +1205,16 @@ export default {
     }
   },
   methods: {
+    hydrateFormFdFromDecorators () {
+      const initials = getInitialValue(this.fieldMap || {})
+      Object.keys(initials).forEach((key) => {
+        if (initials[key] !== undefined) this.$set(this.form.fd, key, initials[key])
+      })
+    },
     resolveCreateLlmType (values = {}) {
       if (this.isCatalogMode) {
         if (this.catalogTypeSelectable) {
           const raw = values.llm_type ??
-            this.form.fc?.getFieldValue?.('llm_type') ??
             this.form.fd?.llm_type ??
             this.catalogLlmType
           const llmType = String(raw || '').trim()
@@ -1341,7 +1224,6 @@ export default {
         return this.catalogLlmType
       }
       const raw = values.llm_type ??
-        this.form.fc?.getFieldValue?.('llm_type') ??
         this.form.fd?.llm_type
       const llmType = String(raw || '').trim()
       if (this.isLocalPathImportMode) {
@@ -1351,42 +1233,27 @@ export default {
       return llmType || 'ollama'
     },
     applyLocalPathImportDefaults () {
-      if (!this.form?.fc) return
+      if (!this.form?.fd) return
       const llmType = this.resolveCreateLlmType()
       const defaults = { ...getDefaultSkuSpecForType('vllm'), memory: 8192 }
-      this.form.fc.setFieldsValue({
-        llm_type: llmType,
-        cpu: defaults.cpu,
-        memory: defaults.memory / 1024,
-      })
       this.form.fd.llm_type = llmType
+      this.form.fd.cpu = defaults.cpu
+      this.form.fd.memory = defaults.memory / 1024
     },
     applyCatalogSpec () {
-      if (!this.catalogSpec || !this.form?.fc) return
+      if (!this.catalogSpec || !this.form?.fd) return
       const llmType = this.catalogLlmType
-      this.form.fc.setFieldsValue({
-        llm_type: llmType,
-        name: defaultNameFromSpec(this.catalogSpec, this.catalogSet, llmType),
-      })
+      this.form.fd.llm_type = llmType
+      this.form.fd.name = defaultNameFromSpec(this.catalogSpec, this.catalogSet, llmType)
       if (this.isCatalogImportMode) {
         this.loadCatalogImportDefaults(llmType)
         return
       }
-      this.form.fc.setFieldsValue({
-        cpu: 4,
-        memory: 8,
-      })
+      this.form.fd.cpu = 4
+      this.form.fd.memory = 8
       if (!this.isEditMode) {
         const next = getDefaultPortMappingsForType(llmType).map(item => ({ ...item, key: uuid() }))
         this.portMappings.splice(0, this.portMappings.length, ...next)
-        this.$nextTick(() => {
-          const pmFields = {}
-          next.forEach(item => {
-            pmFields[`protocol[${item.key}]`] = item.protocol
-            pmFields[`container_port[${item.key}]`] = item.container_port
-          })
-          this.form.fc.setFieldsValue(pmFields)
-        })
       }
     },
     async loadCatalogImportDefaults (llmType) {
@@ -1409,23 +1276,13 @@ export default {
         catalogItems.forEach(item => {
           if (item?.id) this.catalogImageItemsById[item.id] = item
         })
-        this.form.fc.setFieldsValue({
-          cpu: defaults.cpu,
-          memory: defaults.memory,
-          volume_size: defaults.volume_size,
-          bandwidth: defaults.bandwidth,
-        })
+        this.form.fd.cpu = defaults.cpu
+        this.form.fd.memory = defaults.memory
+        this.form.fd.volume_size = defaults.volume_size
+        this.form.fd.bandwidth = defaults.bandwidth
         if (!this.isEditMode && defaults.portMappings?.length) {
           const next = defaults.portMappings.map(item => ({ ...item, key: uuid() }))
           this.portMappings.splice(0, this.portMappings.length, ...next)
-          this.$nextTick(() => {
-            const pmFields = {}
-            next.forEach(item => {
-              pmFields[`protocol[${item.key}]`] = item.protocol
-              pmFields[`container_port[${item.key}]`] = item.container_port
-            })
-            this.form.fc.setFieldsValue(pmFields)
-          })
         }
         this.catalogImportDefaultsApplied = true
       } catch (e) {
@@ -1465,12 +1322,6 @@ export default {
         bandwidth,
         enable_cgroup_cpu,
         enable_cgroup_memory,
-        protocol,
-        container_port,
-        customized_arg_key,
-        customized_arg_value,
-        env_key,
-        env_value,
       } = values
       const effectiveLlmType = this.isEditMode
         ? (this.form.fd.llm_type || llm_type)
@@ -1484,20 +1335,14 @@ export default {
       const sizeMb = (volume_size ?? 10) * 1024
       const volumes = [{ size_mb: sizeMb }]
       const port_mappings = this.portMappings.map(item => ({
-        protocol: protocol[item.key],
-        container_port: container_port[item.key],
+        protocol: item.protocol,
+        container_port: item.container_port,
       }))
       const host_paths = this.hostPathRows.map(hp => {
-        const hpKey = hp.key
-        const type = values[`host_path_type_${hpKey}`]
-        const path = values[`host_path_path_${hpKey}`]
-        const autoCreate = !!values[`host_path_auto_create_${hpKey}`]
-        const out = { type, path }
-        if (autoCreate) {
+        const out = { type: hp.type, path: hp.path }
+        if (hp.auto_create) {
           out.auto_create = true
-          const uid = values[`host_path_auto_uid_${hpKey}`]
-          const gid = values[`host_path_auto_gid_${hpKey}`]
-          const perm = values[`host_path_auto_perm_${hpKey}`]
+          const { uid, gid, permissions: perm } = hp.auto_create_config || {}
           const cfg = {}
           if (uid !== undefined && uid !== null && uid !== '') cfg.uid = uid
           if (gid !== undefined && gid !== null && gid !== '') cfg.gid = gid
@@ -1506,14 +1351,13 @@ export default {
         }
         const containers = {};
         (hp.containerRows || []).forEach(c => {
-          const composite = `${hpKey}__${c.key}`
-          const idx = values[`host_path_container_index_${composite}`] ?? (this.isApplyType ? undefined : 0)
-          const mountPath = values[`host_path_mount_path_${composite}`]
+          const idx = c.containerIndex ?? (this.isApplyType ? undefined : 0)
+          const mountPath = c.mount_path
           if (idx == null || mountPath == null || String(mountPath).trim() === '') return
           const k = String(idx).trim()
           if (!k) return
-          const m = { mount_path: String(mountPath).trim(), read_only: !!values[`host_path_read_only_${composite}`] }
-          const prop = values[`host_path_propagation_${composite}`]
+          const m = { mount_path: String(mountPath).trim(), read_only: !!c.read_only }
+          const prop = c.propagation
           if (prop != null && String(prop).trim() !== '') m.propagation = String(prop).trim()
           containers[k] = m
         })
@@ -1535,9 +1379,9 @@ export default {
       if (port_mappings.length > 0) data.port_mappings = port_mappings
       if (host_paths.length > 0) data.host_paths = host_paths
       const envs = (this.envVars || []).map((item) => {
-        const k = String(env_key?.[item.key] ?? item.env_key ?? '').trim()
+        const k = String(item.env_key ?? '').trim()
         if (!k) return null
-        const v = env_value?.[item.key] ?? item.env_value
+        const v = item.env_value
         return { key: k, value: v == null ? '' : String(v) }
       }).filter(Boolean)
       if (envs.length > 0 || this.isEditMode) {
@@ -1572,6 +1416,12 @@ export default {
           if (preferredStr !== '') typeSpec.preferred_model = preferredStr
         }
         if (effectiveLlmType === 'vllm' || effectiveLlmType === 'sglang') {
+          const customized_arg_key = {}
+          const customized_arg_value = {}
+          this.customizedArgsRows.forEach((row) => {
+            customized_arg_key[row.key] = row.argKey
+            customized_arg_value[row.key] = row.argValue
+          })
           const backend_parameters = formValuesToBackendParameters(
             this.customizedArgsRows,
             customized_arg_key,
@@ -1650,7 +1500,8 @@ export default {
       return data
     },
     async buildCatalogSkuPayload () {
-      const values = await this.form.fc.validateFields()
+      if (this.$refs.formRef) await this.$refs.formRef.validate()
+      const values = { ...this.form.fd }
       if (this.isCatalogImportMode && values.llm_image_id) {
         values.llm_image_id = await this.resolveImportFormImageId(values.llm_image_id)
       }
@@ -1709,8 +1560,8 @@ export default {
       }
     },
     async buildLocalPathSkuPayload () {
-      const values = await this.form.fc.validateFields()
-      const mergedValues = { ...this.form.fc.getFieldsValue(), ...values }
+      if (this.$refs.formRef) await this.$refs.formRef.validate()
+      const mergedValues = { ...this.form.fd }
       const llmType = this.resolveCreateLlmType(mergedValues)
       const data = this._assembleSkuData({ ...mergedValues, llm_type: llmType })
       delete data.llm_sku
@@ -1757,12 +1608,10 @@ export default {
       if (val) {
         this.form.fd.llm_type = val
       }
-      if (!this.isEditMode && this.form.fc && val) {
+      if (!this.isEditMode && val) {
         const enable = !['vllm', 'sglang', 'ollama'].includes(val)
-        this.form.fc.setFieldsValue({
-          enable_cgroup_cpu: enable,
-          enable_cgroup_memory: enable,
-        })
+        this.form.fd.enable_cgroup_cpu = enable
+        this.form.fd.enable_cgroup_memory = enable
       }
     },
     onLocalPathInputChange (e) {
@@ -1786,22 +1635,16 @@ export default {
       const hp = paths[0]
       if (!hp || !this.hostPathRows.length) return
       const row = this.hostPathRows[0]
-      const hpKey = row.key
-      this.form.fc.setFieldsValue({
-        [`host_path_type_${hpKey}`]: hp.type,
-        [`host_path_path_${hpKey}`]: hp.path,
-        [`host_path_auto_create_${hpKey}`]: hp.auto_create,
-      })
+      row.type = hp.type
+      row.path = hp.path
+      row.auto_create = !!hp.auto_create
       const container = hp.containers?.[0]
       const cRow = row.containerRows?.[0]
       if (container && cRow) {
-        const composite = `${hpKey}__${cRow.key}`
-        this.form.fc.setFieldsValue({
-          [`host_path_container_index_${composite}`]: '0',
-          [`host_path_mount_path_${composite}`]: container.mount_path,
-          [`host_path_read_only_${composite}`]: container.read_only,
-          [`host_path_propagation_${composite}`]: container.propagation,
-        })
+        cRow.containerIndex = '0'
+        cRow.mount_path = container.mount_path
+        cRow.read_only = container.read_only
+        cRow.propagation = container.propagation
       }
     },
     add () {
@@ -1826,7 +1669,20 @@ export default {
       if (idx >= 0) this.envVars.splice(idx, 1)
     },
     addHostPath () {
-      this.hostPathRows.push({ key: uuid(), containerRows: [{ key: uuid() }] })
+      this.hostPathRows.push({
+        key: uuid(),
+        type: 'directory',
+        path: '',
+        auto_create: false,
+        auto_create_config: { uid: '', gid: '', permissions: '' },
+        containerRows: [{
+          key: uuid(),
+          containerIndex: this.isApplyType ? undefined : '0',
+          mount_path: '',
+          propagation: 'rslave',
+          read_only: false,
+        }],
+      })
     },
     delHostPath (hp) {
       const idx = this.hostPathRows.findIndex(v => v.key === hp.key)
@@ -1871,7 +1727,8 @@ export default {
       this.loading = true
       try {
         const manager = new this.$Manager('llm_skus')
-        const values = await this.form.fc.validateFields()
+        if (this.$refs.formRef) await this.$refs.formRef.validate()
+        const values = { ...this.form.fd }
         const {
           request_sync_image,
           dify_api_image_id,
@@ -1917,8 +1774,7 @@ export default {
         if (this.mode === 'edit' && this.onManager && this.editData) {
           if (request_sync_image) data.request_sync_image = true
           if (this.isLocalPathSku) {
-            const mergedValues = { ...this.form.fc.getFieldsValue(), ...values }
-            data.prefer_hosts = normalizePreferHosts(mergedValues.prefer_hosts)
+            data.prefer_hosts = normalizePreferHosts(values.prefer_hosts)
           }
           await this.onManager('update', {
             id: this.editData.id,

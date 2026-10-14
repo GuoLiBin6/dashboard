@@ -2,40 +2,41 @@
   <div>
     <page-header :title="$t('system.text_130', [$t('system.notify_channels')])" />
     <page-body>
-      <a-form
+      <a-form-model
+        ref="formRef"
         class="mt-3"
-        :form="form.fc"
+        :model="form"
+        :rules="rules"
         v-bind="formItemLayout"
         hideRequiredMark>
         <scope-radio
-          :decorators="decorators"
-          :form="form"
+          :model="form"
           :hidden-scope="['project']"
           :label="$t('common_547', [])"
-          @change="scopeChange"  />
-        <a-form-item :label="$t('common.name')">
-          <a-input v-decorator="decorators.name" :placeholder="$t('validator.resourceName')" />
+          @change="scopeChange" />
+        <a-form-model-item :label="$t('common.name')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('validator.resourceName')" />
           <name-repeated
               v-slot:extra
               res="notifyconfigs"
               version="v1"
-              :name="form.fd.name" />
-        </a-form-item>
-        <a-form-item :label="$t('system.text_48')">
-          <a-radio-group v-decorator="decorators.type">
+              :name="form.name" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('system.text_48')" prop="type">
+          <a-radio-group v-model:value="form.type">
             <a-radio-button
               v-for="item in typesOpts"
               :value="item.key"
               :key="item.key"
               :disabled="existTypes.includes(item.key)">{{ item.label }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
       <component
         ref="typeRef"
-        :is="form.fd.type"
+        :is="form.type"
         :form-item-layout="formItemLayout"
-        :docUrl="DOCS_MAP.mailConfig(form.fd.type)" />
+        :docUrl="DOCS_MAP.mailConfig(form.type)" />
     </page-body>
     <page-footer>
       <div slot="right">
@@ -86,51 +87,11 @@ export default {
         { label: this.$t('system.wecom.1'), key: 'workwx' },
       ],
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-          },
-        }),
-        fd: {
-          scope,
-          type: '',
-        },
-      },
-      decorators: {
-        scope: [
-          'scope',
-          {
-            initialValue: scope,
-            rules: [{ required: true, message: `${this.$t('common.select')}` }],
-          },
-        ],
-        domain: [
-          'domain',
-          {
-            rules: [
-              { required: true, message: `${this.$t('common.select')}` },
-            ],
-          },
-        ],
-        name: [
-          'name',
-          {
-            rules: [
-              { required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` },
-              { validator: this.$validate('resourceName') },
-            ],
-          },
-        ],
-        type: [
-          'type',
-          {
-            rules: [
-              { required: true, message: `${this.$t('common.select')}` },
-            ],
-          },
-        ],
+        scope,
+        domain: undefined,
+        project: undefined,
+        name: undefined,
+        type: '',
       },
       formItemLayout: {
         wrapperCol: {
@@ -144,16 +105,34 @@ export default {
   },
   computed: {
     typesOpts () {
-      if (this.form.fd.scope === 'system') return this.types
+      if (this.form.scope === 'system') return this.types
       return this.types.filter(v => !['email', 'mobile'].includes(v.key))
+    },
+    rules () {
+      const rules = {
+        scope: [
+          { required: true, message: `${this.$t('common.select')}` },
+        ],
+        name: [
+          { required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` },
+          { validator: this.$validate('resourceName') },
+        ],
+        type: [
+          { required: true, message: `${this.$t('common.select')}` },
+        ],
+      }
+      if (this.form.scope === 'domain') {
+        rules.domain = [
+          { required: true, message: `${this.$t('common.select')}` },
+        ]
+      }
+      return rules
     },
   },
   watch: {
-    'form.fd.scope' (val) {
-      if (!this.typesOpts.some(item => item.key === val)) {
-        this.form.fc.setFieldsValue({
-          type: '',
-        })
+    'form.scope' (val) {
+      if (!this.typesOpts.some(item => item.key === this.form.type)) {
+        this.form.type = ''
       }
     },
   },
@@ -185,27 +164,16 @@ export default {
         console.error(err)
       })
     },
+    async validateCommonForm () {
+      await this.$refs.formRef.validate()
+      return { ...this.form }
+    },
+    async validateTypeForm (typeRef) {
+      return typeRef.validateForm()
+    },
     doOk () {
       const { $refs: { typeRef } } = this
-      const commonForm = new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (err) {
-            reject(err)
-            return
-          }
-          resolve(values)
-        })
-      })
-      const typeForm = new Promise((resolve, reject) => {
-        typeRef.form.fc.validateFields((err, values) => {
-          if (err) {
-            reject(err)
-            return
-          }
-          resolve(values)
-        })
-      })
-      Promise.all([commonForm, typeForm]).then(async values => {
+      Promise.all([this.validateCommonForm(), this.validateTypeForm(typeRef)]).then(async values => {
         const [common, content] = values
         const { scope, domain, name, type } = common
         const { verifiyCode, alertsCode, errorCode, verifiyCodeChannel, alertsCodeChannel, errorCodeChannel, verifiyCodeEn, alertsCodeEn, errorCodeEn, verifiyCodeEnChannel, alertsCodeEnChannel, errorCodeEnChannel, ...rest } = content
@@ -237,25 +205,7 @@ export default {
     async doTest () {
       try {
         const { $refs: { typeRef } } = this
-        const commonForm = new Promise((resolve, reject) => {
-          this.form.fc.validateFields((err, values) => {
-            if (err) {
-              reject(err)
-              return
-            }
-            resolve(values)
-          })
-        })
-        const typeForm = new Promise((resolve, reject) => {
-          typeRef.form.fc.validateFields((err, values) => {
-            if (err) {
-              reject(err)
-              return
-            }
-            resolve(values)
-          })
-        })
-        Promise.all([commonForm, typeForm]).then(async values => {
+        Promise.all([this.validateCommonForm(), this.validateTypeForm(typeRef)]).then(async values => {
           const [common, content] = values
           const { type } = common
           if (type === 'mobile') {

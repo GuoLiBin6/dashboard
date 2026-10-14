@@ -2,35 +2,37 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('compute.add_tap_flow')}}</div>
     <div slot="body">
-      <a-form
-        v-bind="formItemLayout"
-        :form="form.fc">
-        <a-form-item :label="$t('compute.text_228')">
-          <a-input :placeholder="$t('validator.serverCreateName')" v-decorator="decorators.name" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')">
-          <a-input :placeholder="$t('scope.text_55')" v-decorator="decorators.description" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.tap')">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.text_228')" prop="name">
+          <a-input :placeholder="$t('validator.serverCreateName')" v-model:value="form.name" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" prop="description">
+          <a-input :placeholder="$t('scope.text_55')" v-model:value="form.description" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.tap')">
           {{params.tapService.name}}
-        </a-form-item>
-        <a-form-item :label="$t('compute.tap_direction')">
-          <a-radio-group v-decorator="decorators.direction">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.tap_direction')" prop="direction">
+          <a-radio-group v-model:value="form.direction">
             <a-radio-button value="BOTH">{{ $t('compute.direction_both') }}</a-radio-button>
             <a-radio-button value="IN">{{ $t('compute.direction_in') }}</a-radio-button>
             <a-radio-button value="OUT">{{ $t('compute.direction_out') }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_175')">
-          <a-radio-group v-decorator="decorators.type">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_175')" prop="type">
+          <a-radio-group v-model:value="form.type">
             <a-radio-button value="vnic">{{ $t('compute.vnic') }}</a-radio-button>
             <a-radio-button value="vswitch">{{ $t('compute.vswitch') }}</a-radio-button>
           </a-radio-group>
-        </a-form-item>
-        <template v-if="serverType === 'vswitch'">
-          <a-form-item :label="$t('compute.text_111')">
+        </a-form-model-item>
+        <template v-if="form.type === 'vswitch'">
+          <a-form-model-item :label="$t('compute.text_111')" prop="host_id">
             <base-select
-                v-decorator="decorators.host_id"
+                v-model:value="form.host_id"
                 class="w-100"
                 remote
                 resource="hosts"
@@ -40,25 +42,25 @@
                 isDefaultSelect
                 :select-props="{ placeholder: $t('compute.text_148', [$t('compute.text_111')]) }"
                 @update:item="hostChange" />
-          </a-form-item>
-          <a-form-item :label="$t('compute.text_844')">
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.text_844')" prop="wire_id">
             <base-select
-                v-decorator="decorators.wire_id"
+                v-model:value="form.wire_id"
                 class="w-100"
                 :options="hostWires"
                 idKey="wire_id"
                 nameKey="wire"
                 isDefaultSelect
                 :select-props="{ placeholder: $t('compute.text_148', [$t('compute.text_844')]) }" />
-          </a-form-item>
-          <a-form-item :label="$t('compute.vlan_id')">
-            <a-input-number :max="4095" :step="1" :min="0" v-decorator="decorators.vlan_id" />
-          </a-form-item>
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.vlan_id')" prop="vlan_id">
+            <a-input-number :max="4095" :step="1" :min="0" v-model:value="form.vlan_id" />
+          </a-form-model-item>
         </template>
         <template v-else>
-          <a-form-item :label="$t('compute.text_91')">
+          <a-form-model-item :label="$t('compute.text_91')" prop="guest_id">
             <base-select
-                v-decorator="decorators.guest_id"
+                v-model:value="form.guest_id"
                 class="w-100"
                 remote
                 resource="servers"
@@ -68,19 +70,19 @@
                 isDefaultSelect
                 :select-props="{ placeholder: $t('compute.text_148', [$t('compute.text_91')]) }"
                 @update:item="serverChange" />
-          </a-form-item>
-          <a-form-item :label="$t('compute.vm_mac')">
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.vm_mac')" prop="mac_addr">
             <base-select
-                v-decorator="decorators.mac_addr"
+                v-model:value="form.mac_addr"
                 class="w-100"
                 :options="vmMac"
                 idKey="mac"
                 nameKey="macLabel"
                 isDefaultSelect
                 :select-props="{ placeholder: $t('compute.text_148', [$t('compute.vm_mac')]) }" />
-          </a-form-item>
+          </a-form-model-item>
         </template>
-      </a-form>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -102,67 +104,36 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: this.handleValuesChange,
-        }),
-        fd: {
-          type: 'vnic',
-        },
+        name: '',
+        description: undefined,
+        direction: 'BOTH',
+        type: 'vnic',
+        host_id: undefined,
+        wire_id: undefined,
+        vlan_id: undefined,
+        guest_id: undefined,
+        mac_addr: undefined,
+      },
+      rules: {
+        name: [
+          { required: true, message: this.$t('compute.text_210') },
+          { validator: validateForm('serverCreateName') },
+        ],
+        host_id: [
+          { required: true, message: this.$t('compute.text_148', [this.$t('compute.text_111')]) },
+        ],
+        wire_id: [
+          { required: true, message: this.$t('compute.text_148', [this.$t('compute.text_844')]) },
+        ],
+        guest_id: [
+          { required: true, message: this.$t('compute.text_148', [this.$t('compute.text_91')]) },
+        ],
+        mac_addr: [
+          { required: true, message: this.$t('compute.text_148', [this.$t('compute.vm_mac')]) },
+        ],
       },
       currentHost: {},
       currentServer: {},
-      decorators: {
-        name: [
-          'name',
-          {
-            initialValue: '',
-            validateTrigger: ['change', 'blur'],
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('compute.text_210') },
-              { validator: validateForm('serverCreateName') },
-            ],
-          },
-        ],
-        description: [
-          'description',
-        ],
-        direction: [
-          'direction',
-          { initialValue: 'BOTH' },
-        ],
-        type: [
-          'type',
-          {
-            initialValue: 'vnic',
-          },
-        ],
-        host_id: [
-          'host_id',
-          {
-            rules: [{ required: true, message: this.$t('compute.text_148', [this.$t('compute.text_111')]) }],
-          },
-        ],
-        wire_id: [
-          'wire_id',
-          {
-            rules: [{ required: true, message: this.$t('compute.text_148', [this.$t('compute.text_844')]) }],
-          },
-        ],
-        vlan_id: ['vlan_id'],
-        guest_id: [
-          'guest_id',
-          {
-            rules: [{ required: true, message: this.$t('compute.text_148', [this.$t('compute.text_91')]) }],
-          },
-        ],
-        mac_addr: [
-          'mac_addr',
-          {
-            rules: [{ required: true, message: this.$t('compute.text_148', [this.$t('compute.vm_mac')]) }],
-          },
-        ],
-      },
       formItemLayout: {
         wrapperCol: {
           span: 18,
@@ -175,9 +146,6 @@ export default {
   },
   computed: {
     ...mapGetters(['isAdminMode', 'isDomainMode', 'scope']),
-    serverType () {
-      return this.form.fd.type
-    },
     hostWires () {
       const { nic_info = [] } = this.currentHost
       return nic_info.filter(item => item.wire_id)
@@ -220,53 +188,35 @@ export default {
       return ret
     },
   },
+  watch: {
+    'form.guest_id' (val, oldVal) {
+      if (val !== oldVal) {
+        this.form.mac_addr = undefined
+      }
+    },
+    'form.host_id' (val, oldVal) {
+      if (val !== oldVal && !this.hostWires.some(item => item.wire_id === this.form.wire_id)) {
+        this.form.wire_id = undefined
+      }
+    },
+  },
   created () {
     this.$m = new this.$Manager('tap_flows', 'v1')
   },
   methods: {
-    async handleValuesChange (vm, changedFields) {
-      this.form.fd = {
-        ...this.form.fd,
-        ...changedFields,
-      }
-      await this.$nextTick()
-      if (changedFields.guest_id) {
-        this.form.fc.setFieldsValue({
-          mac_addr: '',
-        })
-      }
-      if (changedFields.host_id) {
-        if (!this.hostWires.some(item => item.wire_id === this.form.fd.wire_id)) {
-          this.form.fc.setFieldsValue({
-            wire_id: '',
-          })
-        }
-      }
-    },
     hostChange (data) {
-      if (this.serverType === 'vswitch') {
+      if (this.form.type === 'vswitch') {
         this.currentHost = data
       } else {
         this.currentHost = {}
       }
     },
     serverChange (data) {
-      if (this.serverType === 'vnic') {
+      if (this.form.type === 'vnic') {
         this.currentServer = data
       } else {
         this.currentServer = {}
       }
-    },
-    validateForm () {
-      return new Promise((resolve, reject) => {
-        this.form.fc.validateFields((err, values) => {
-          if (!err) {
-            resolve(values)
-          } else {
-            reject(err)
-          }
-        })
-      })
     },
     doCreate (data) {
       return this.$m.create({
@@ -276,15 +226,16 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.validateForm()
-        this.loading = true
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         values.tap_id = this.params.tapService.id
         await this.doCreate(values)
-        this.loading = false
         this.$bus.$emit('tap-service-refresh')
         this.params.success && this.params.success()
         this.cancelDialog()
       } catch (error) {
+        // validation / request error
+      } finally {
         this.loading = false
       }
     },

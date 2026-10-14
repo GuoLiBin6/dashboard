@@ -2,8 +2,10 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('network.mac_ip.import_mapping_table')}}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc">
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules">
         <a-alert type="warning" class="mb-2">
           <template v-slot:message>
             <div class="messages-list">
@@ -12,9 +14,9 @@
           </template>
         </a-alert>
         <div class="pt-3 pb-3">
-          <a-form-item>
+          <a-form-model-item prop="fileList">
             <a-upload-dragger
-              v-decorator="decorators.fileList"
+              v-model:fileList="form.fileList"
               :beforeUpload="beforeUpload"
               :fileList="fileList"
               :accept="accept"
@@ -25,9 +27,9 @@
                 <p class="ant-upload-hint">{{$t('network.file_type_validate')}}</p>
               </div>
             </a-upload-dragger>
-          </a-form-item>
+          </a-form-model-item>
         </div>
-     </a-form>
+     </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -51,24 +53,24 @@ export default {
       fileList: [],
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        fileList: [],
       },
-      decorators: {
-        fileList: ['fileList', {
-          rules: [
-            { required: true, message: this.$t('network.import_tpl_file') },
-          ],
-        }],
+      rules: {
+        fileList: [
+          { required: true, message: this.$t('network.import_tpl_file') },
+        ],
       },
     }
   },
   methods: {
     beforeUpload (file) {
       this.fileList = [file]
+      this.form.fileList = [file]
       return false
     },
     handleClearFile () {
       this.fileList = []
+      this.form.fileList = []
     },
     handleRemove () {
       this.handleClearFile()
@@ -113,12 +115,12 @@ export default {
     async handleConfirm () {
       try {
         if (!this.fileList || this.fileList.length === 0) {
-          this.form.fc.setFieldsValue({
-            fileList: undefined,
-          })
+          this.form.fileList = undefined
+        } else {
+          this.form.fileList = this.fileList
         }
         const that = this
-        await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         this.loading = true
         var fileReader = new FileReader()
         fileReader.onload = async function (ev) {

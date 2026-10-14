@@ -1,42 +1,43 @@
 <template>
   <div>
-    <a-form-item v-if="!inDialog" :label="$t('compute.bastionHost.bastion_host')">
+    <a-form-model-item v-if="!inDialog" :label="$t('compute.bastionHost.bastion_host')" prop="bastion_host_enable">
       <a-tooltip
         :title="switchDisabled ? $t('compute.bastionHost.bastion_host.switch_disabled') : null">
         <a-switch
-          v-decorator="decorator.bastion_host_enable"
+          :checked="bastionHostEnable"
           :checkedChildren="$t('compute.text_115')"
           :unCheckedChildren="$t('compute.text_116')"
           :disabled="switchDisabled"
           @change="changeHandle" />
       </a-tooltip>
-    </a-form-item>
+    </a-form-model-item>
     <template v-if="inDialog || bastionHostEnable">
-      <a-form-item class="mt-2" :label="inDialog ? $t('compute.bastionHost.bastion_host') : $t('compute.bastionHost.add_bastion_host')">
+      <a-form-model-item class="mt-2" :label="inDialog ? $t('compute.bastionHost.bastion_host') : $t('compute.bastionHost.add_bastion_host')" prop="bastion_host_id">
         <base-select
-          v-decorator="decorator.bastion_host_id"
+          :value="fieldGet('bastion_host_id')"
           :options="bastionHosts"
           :filterable="true"
           :select-props="{
             placeholder: $t('compute.bastionHost.bastion_host.placeholder'),
             loading: bastionHostLoading
           }"
-          @change="bastionHostChangeHandle" />
-      </a-form-item>
-      <a-form-item class="mt-2" :label="$t('compute.bastion_host_org')">
+          @change="onBastionHostIdChange" />
+      </a-form-model-item>
+      <a-form-model-item class="mt-2" :label="$t('compute.bastion_host_org')" prop="bastion_org_id">
         <base-select
-          v-decorator="decorator.bastion_org_id"
+          :value="fieldGet('bastion_org_id')"
           :options="orgs"
           :filterable="true"
           :select-props="{
             placeholder: $t('compute.bastionHost.bastion_org.placeholder'),
             loading: orgLoading
           }"
-          @change="bastionOrgChangeHandle" />
-      </a-form-item>
-      <a-form-item class="mt-2" :label="$t('compute.bastionHost.node')">
+          @change="onBastionOrgChange" />
+      </a-form-model-item>
+      <a-form-model-item class="mt-2" :label="$t('compute.bastionHost.node')" prop="nodes">
         <base-select
-          v-decorator="decorator.nodes"
+          :value="fieldGet('nodes')"
+          @change="v => fieldPut('nodes', v)"
           :options="nodes"
           :filterable="true"
           :select-props="{
@@ -45,15 +46,16 @@
             mode: 'multiple',
             loading: nodeLoading
           }" />
-      </a-form-item>
-      <a-form-item class="mt-2" :label="$t('compute.bastionHost.port')">
+      </a-form-model-item>
+      <a-form-model-item class="mt-2" :label="$t('compute.bastionHost.port')" prop="port">
         <a-input-number
-          v-decorator="decorator.port"
+          :value="fieldGet('port')"
+          @change="v => fieldPut('port', v)"
           :placeholder="$t('compute.bastionHost.port.placeholder')" />
-      </a-form-item>
-      <a-form-item class="mt-2" :label="$t('compute.bastionHost.privileged_account')">
+      </a-form-model-item>
+      <a-form-model-item class="mt-2" :label="$t('compute.bastionHost.privileged_account')" prop="privileged_accounts">
         <base-select
-          v-decorator="decorator.privileged_accounts"
+          :value="fieldGet('privileged_accounts')"
           :options="privilegedAccounts"
           :filterable="true"
           :select-props="{
@@ -61,11 +63,12 @@
             allowClear: true,
             loading: accountLoading
           }"
-          @change="bastionPrivilegedChangeHandle" />
-      </a-form-item>
-      <a-form-item class="mt-2" :label="$t('compute.bastionHost.account')">
+          @change="onPrivilegedAccountsChange" />
+      </a-form-model-item>
+      <a-form-model-item class="mt-2" :label="$t('compute.bastionHost.account')" prop="accounts">
         <base-select
-          v-decorator="decorator.accounts"
+          :value="fieldGet('accounts')"
+          @change="v => fieldPut('accounts', v)"
           :options="accounts"
           :filterable="true"
           :select-props="{
@@ -74,10 +77,10 @@
             mode: 'multiple',
             loading: accountLoading
             }" />
-      </a-form-item>
-      <a-form-item class="mt-2" :label="$t('compute.bastionHost.domain')">
+      </a-form-model-item>
+      <a-form-model-item class="mt-2" :label="$t('compute.bastionHost.domain')" prop="bastion_domain_id">
         <base-select
-          v-decorator="decorator.bastion_domain_id"
+          :value="fieldGet('bastion_domain_id')"
           :options="domains"
           :filterable="true"
           :select-props="{
@@ -85,8 +88,8 @@
             allowClear: true,
             loading: domainLoading
             }"
-          @change="bastionDomainChangeHandle" />
-      </a-form-item>
+          @change="onBastionDomainChange" />
+      </a-form-model-item>
     </template>
   </div>
 </template>
@@ -110,11 +113,11 @@ export default {
     form: {
       type: Object,
       required: true,
-      validator: val => val.fd && val.fc,
+      validator: val => val && val.fd,
     },
-    decorator: {
+    model: {
       type: Object,
-      required: true,
+      default: null,
     },
     inDialog: {
       type: Boolean,
@@ -139,6 +142,12 @@ export default {
     }
   },
   computed: {
+    /** :model / form.fd：切 model-item，读写优先 model */
+    resolvedModel () {
+      if (this.model && typeof this.model === 'object') return this.model
+      if (this.form?.fd && typeof this.form.fd === 'object') return this.form.fd
+      return null
+    },
     switchDisabled () {
       return !this.bastionHosts.length
     },
@@ -197,6 +206,7 @@ export default {
       privileged: false,
       domain: false,
     }
+    this.initModelFields()
     if (this.isFormDraftKeyWired() || (this.$appConfig.isPrivate && !this.$store.getters.isSysCE)) {
       this.fetchBastionHosts()
     }
@@ -205,6 +215,57 @@ export default {
     this.$nextTick(() => this.tryRestoreBastionDraft({ includeHost: true }))
   },
   methods: {
+
+    fieldGet (name) {
+      if (!this.resolvedModel || !name) return undefined
+      return this.resolvedModel[name]
+    },
+    fieldPut (name, value) {
+      if (!this.resolvedModel || !name) return
+      this.$set(this.resolvedModel, name, value)
+    },
+    initModelFields () {
+      this.bastionHostEnable = !!this.resolvedModel?.bastion_host_enable
+    },
+    /** model 适配：供草稿 mixin applyFormFieldValues / getFieldValue 使用 */
+    resolveFormDraftStore () {
+      const model = this.resolvedModel
+      if (!model) return null
+      if (this._modelDraftStoreAdapter && this._modelDraftStoreAdapterFd === model) {
+        return this._modelDraftStoreAdapter
+      }
+      const vm = this
+      this._modelDraftStoreAdapterFd = model
+      this._modelDraftStoreAdapter = {
+        getFieldValue (name) {
+          return vm.resolvedModel?.[name]
+        },
+        getFieldsValue () {
+          return { ...(vm.resolvedModel || {}) }
+        },
+        setFieldsValue (vals) {
+          if (!vals || typeof vals !== 'object' || !vm.resolvedModel) return
+          Object.keys(vals).forEach((key) => {
+            vm.$set(vm.resolvedModel, key, vals[key])
+          })
+        },
+        setFields (fields) {
+          if (!fields || typeof fields !== 'object' || !vm.resolvedModel) return
+          Object.keys(fields).forEach((key) => {
+            const entry = fields[key]
+            const val = entry && typeof entry === 'object' && 'value' in entry ? entry.value : entry
+            if (val === undefined) {
+              if (Object.prototype.hasOwnProperty.call(vm.resolvedModel, key)) {
+                vm.$delete(vm.resolvedModel, key)
+              }
+            } else {
+              vm.$set(vm.resolvedModel, key, val)
+            }
+          })
+        },
+      }
+      return this._modelDraftStoreAdapter
+    },
     resetBastionFieldTouched () {
       this._bastionFieldTouched = {
         enable: false,
@@ -242,19 +303,19 @@ export default {
     },
     getCurrentBastionHostId () {
       return this.normalizeOptionId(
-        this.form?.fc?.getFieldValue?.('bastion_host_id') || this.currentBastionHostId,
+        this.resolvedModel?.bastion_host_id || this.currentBastionHostId,
       )
     },
     getCurrentBastionOrgId () {
-      return this.normalizeOptionId(this.form?.fc?.getFieldValue?.('bastion_org_id'))
+      return this.normalizeOptionId(this.resolvedModel?.bastion_org_id)
     },
     /**
      * opts 为空或当前值不在 opts 中时清空/裁剪对应表单字段（含 nodes、accounts）
      */
     pruneBastionFieldByOptions (field, options, { idKey = 'key', multiple = false } = {}) {
-      if (!this.form?.fc || !field || this._bastionDraftWriting) return
+      if (!this.resolvedModel || !field || this._bastionDraftWriting) return
       const list = Array.isArray(options) ? options : []
-      const cur = this.form.fc.getFieldValue(field)
+      const cur = this.resolvedModel[field]
       const emptyVal = multiple ? [] : undefined
       const isEmptyCur = cur == null || cur === '' || (Array.isArray(cur) && !cur.length)
       if (isEmptyCur) return
@@ -310,16 +371,18 @@ export default {
     },
     /** 允许清空 nodes / accounts（setBastionFields 故意不写这两项） */
     clearBastionFormFields (values) {
-      if (!this.form?.fc || !values) return
-      // setFieldsValue 会忽略 undefined；用 setFields 才能真正清空，从而露出 placeholder
-      const fields = {}
+      if (!values || !this.resolvedModel) return
+      // setFieldsValue 会忽略 undefined；直接 $delete / $set
       Object.keys(values).forEach((key) => {
         const val = values[key]
-        this.ensureFieldDecorator(key, val)
-        fields[key] = { value: val }
+        if (val === undefined) {
+          if (Object.prototype.hasOwnProperty.call(this.resolvedModel, key)) {
+            this.$delete(this.resolvedModel, key)
+          }
+        } else {
+          this.$set(this.resolvedModel, key, val)
+        }
       })
-      this.form.fc.setFields(fields)
-      this.syncFormFieldValuesToFd(values)
     },
     normalizeBastionDraft (data) {
       if (!data || typeof data !== 'object') return null
@@ -346,15 +409,15 @@ export default {
       return this.normalizeBastionDraft(raw)
     },
     getCreateFormFieldDraftSnapshot () {
-      const f = this.form?.fc
-      if (!f || !this.bastionHostEnable) return { bastionHostEnable: false }
+      const model = this.resolvedModel
+      if (!model || !this.bastionHostEnable) return { bastionHostEnable: false }
       return {
         bastionHostEnable: true,
-        bastion_host_id: f.getFieldValue('bastion_host_id') || this.currentBastionHostId,
-        bastion_org_id: f.getFieldValue('bastion_org_id'),
+        bastion_host_id: model.bastion_host_id || this.currentBastionHostId,
+        bastion_org_id: model.bastion_org_id,
         // 多选 nodes / accounts、输入 port：不落盘不回填
-        privileged_accounts: this.normalizeOptionId(f.getFieldValue('privileged_accounts')),
-        bastion_domain_id: this.normalizeOptionId(f.getFieldValue('bastion_domain_id')),
+        privileged_accounts: this.normalizeOptionId(model.privileged_accounts),
+        bastion_domain_id: this.normalizeOptionId(model.bastion_domain_id),
       }
     },
     applyCreateFormFieldDraft (draft) {
@@ -394,7 +457,8 @@ export default {
      * - 特权/网域：当前组织与草稿组织一致时再写
      */
     tryRestoreBastionSelections (draft, options = {}) {
-      if (!draft || !this.form?.fc) return
+      const model = this.resolvedModel
+      if (!draft || !model) return
       const includeHost = options.includeHost !== false
 
       if (!this.bastionHosts.length) {
@@ -402,13 +466,12 @@ export default {
         return
       }
 
-      const fc = this.form.fc
       const draftHostId = this.pickValidOptionId(this.bastionHosts, draft.bastion_host_id, 'id')
 
       // —— 主机（仅 includeHost 且未手改）——
       if (includeHost && !this.isBastionFieldTouched('host') && draftHostId) {
         this.currentBastionHostId = draftHostId
-        if (!this.sameBastionId(fc.getFieldValue('bastion_host_id'), draftHostId)) {
+        if (!this.sameBastionId(model.bastion_host_id, draftHostId)) {
           this.withBastionDraftWriting(() => {
             this.setBastionFields({ bastion_host_id: draftHostId })
           })
@@ -429,7 +492,7 @@ export default {
         ? this.pickValidOptionId(this.orgs, draft.bastion_org_id)
         : undefined
       if (!this.isBastionFieldTouched('org') && draftOrgId) {
-        if (!this.sameBastionId(fc.getFieldValue('bastion_org_id'), draftOrgId)) {
+        if (!this.sameBastionId(model.bastion_org_id, draftOrgId)) {
           this.withBastionDraftWriting(() => {
             this.setBastionFields({ bastion_org_id: draftOrgId })
           })
@@ -470,7 +533,7 @@ export default {
       }
     },
     writeBastionSelectionFields (draft) {
-      if (!draft || !this.form?.fc) return
+      if (!draft || !this.resolvedModel) return
       const draftOrgId = this.normalizeOptionId(draft.bastion_org_id)
       const currentOrgId = this.getCurrentBastionOrgId()
       // 当前组织与草稿组织不一致：用户在别的组织下，不盖特权/网域
@@ -527,24 +590,17 @@ export default {
       })
       return ret
     },
-    ensureFieldDecorator (field, initialValue) {
-      if (!this.form?.fc || !field) return
-      const dec = this.decorator?.[field]
-      const opts = (Array.isArray(dec) && dec[1]) ? { ...dec[1] } : {}
-      if (initialValue !== undefined) opts.initialValue = initialValue
-      this.form.fc.getFieldDecorator(field, opts)
-    },
+
     setBastionFields (values) {
-      if (!this.form?.fc || !values) return
+      if (!values || !this.resolvedModel) return
       // 明确不写 port / 多选 nodes、accounts
       const next = { ...values }
       delete next.port
       delete next.nodes
       delete next.accounts
       Object.keys(next).forEach((key) => {
-        if (next[key] !== undefined) this.ensureFieldDecorator(key, next[key])
+        if (next[key] !== undefined) this.$set(this.resolvedModel, key, next[key])
       })
-      this.applyFormFieldValues(next)
     },
     /** 工单回填入口（bastion_server.accounts = [特权, ...普通]） */
     async initData (data) {
@@ -567,7 +623,24 @@ export default {
       }
       this.tryRestoreBastionSelections(draft, { includeHost: true })
     },
+    onBastionHostIdChange (v) {
+      this.fieldPut('bastion_host_id', v)
+      this.bastionHostChangeHandle(v)
+    },
+    onBastionOrgChange (v) {
+      this.fieldPut('bastion_org_id', v)
+      this.bastionOrgChangeHandle(v)
+    },
+    onPrivilegedAccountsChange (v) {
+      this.fieldPut('privileged_accounts', v)
+      this.bastionPrivilegedChangeHandle(v)
+    },
+    onBastionDomainChange (v) {
+      this.fieldPut('bastion_domain_id', v)
+      this.bastionDomainChangeHandle(v)
+    },
     changeHandle (v) {
+      this.fieldPut('bastion_host_enable', v)
       this.bastionHostEnable = v
       // 关闭开关视为手改，避免列表 watch 再自动打开
       if (!v && !this._bastionDraftWriting) {
@@ -711,6 +784,53 @@ export default {
         const draft = this.readBastionDraft()
         if (draft) this.writeBastionSelectionFields(draft)
       }
+    },
+    runFieldRule (rule, value) {
+      return new Promise((resolve, reject) => {
+        if (rule.required) {
+          const empty = value === undefined || value === null || value === '' ||
+            (Array.isArray(value) && !value.length)
+          if (empty) {
+            reject(new Error(rule.message || 'required'))
+            return
+          }
+        }
+        if (typeof rule.validator === 'function') {
+          let settled = false
+          const finish = (err) => {
+            if (settled) return
+            settled = true
+            if (err) reject(err instanceof Error ? err : new Error(String(err)))
+            else resolve()
+          }
+          let ret
+          try {
+            ret = rule.validator(rule, value, finish)
+          } catch (e) {
+            finish(e)
+            return
+          }
+          if (ret && typeof ret.then === 'function') {
+            ret.then(() => finish()).catch(finish)
+          }
+          return
+        }
+        resolve()
+      })
+    },
+    async validate () {
+      if (!this.inDialog && !this.bastionHostEnable) return true
+      const required = [
+        ['bastion_host_id', this.$t('compute.bastionHost.bastion_host.placeholder')],
+        ['bastion_org_id', this.$t('compute.bastionHost.bastion_org.placeholder')],
+        ['nodes', this.$t('compute.bastionHost.node.placeholder')],
+        ['privileged_accounts', this.$t('compute.bastionHost.privileged_account.placeholder')],
+        ['accounts', this.$t('compute.bastionHost.account.placeholder')],
+      ]
+      for (const [name, message] of required) {
+        await this.runFieldRule({ required: true, message }, this.fieldGet(name))
+      }
+      return true
     },
   },
 }

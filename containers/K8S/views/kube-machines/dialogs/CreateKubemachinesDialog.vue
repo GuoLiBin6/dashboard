@@ -10,30 +10,35 @@
           </div>
         </template>
       </a-alert>
-      <a-form
-      class="mt-3"
-      :form="form.fc">
-        <a-form-item :label="$t('k8s.text_152')" v-bind="formItemLayout">
+      <a-form-model
+        ref="formRef"
+        class="mt-3"
+        :model="form.fd"
+        v-bind="formItemLayout">
+        <a-form-model-item :label="$t('k8s.text_152')">
           <server-config
-            :decorator="decorators.serverConfig"
+            ref="serverConfigRef"
             :networkParams="networkParams"
             :form="form"
+            :model="form.fd"
             :cloudregionId="params.data.cloudregion_id"
             :hypervisor="hypervisor"
             :platform="platform"
             @vmAdd="vmAdd">
             <template v-slot:hypervisor="slotProps">
-              <a-form-item :label="$t('k8s.platform')" v-if="hypervisorsC.length" v-bind="slotProps.formItemLayout">
-                <a-radio-group v-decorator="decorators.serverConfig.hypervisor(slotProps.i)">
+              <a-form-model-item :label="$t('k8s.platform')" v-if="hypervisorsC.length" v-bind="slotProps.formItemLayout">
+                <a-radio-group
+                  :value="(form.fd.hypervisors && form.fd.hypervisors[slotProps.i]) || hypervisor"
+                  @change="e => onHypervisorChange(slotProps.i, e.target.value)">
                   <a-radio-button v-for="item in hypervisorsC" :key="item.value" :value="item.value">
                     {{ item.label }}
                   </a-radio-button>
                 </a-radio-group>
-              </a-form-item>
+              </a-form-model-item>
             </template>
           </server-config>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{$t('common.create')}}</a-button>
@@ -47,23 +52,11 @@ import _ from 'lodash'
 import { mapGetters } from 'vuex'
 import ServerConfig from '@K8S/sections/serverConfig'
 import { hyperOpts } from '@K8S/views/cluster/constants'
-import { IMAGES_TYPE_MAP } from '@/constants/compute'
 import { HYPERVISORS_MAP } from '@/constants'
-import { isWithinRange, isRequired } from '@/utils/validate'
+import { expandBracketFd, setBracketValue } from '@/utils/bracketModel'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import { typeClouds, findPlatform } from '@/utils/common/hypervisor'
-import i18n from '@/locales'
-function checkIpInSegment (i, networkData) {
-  return (rule, value, _callback) => {
-    const isIn = isWithinRange(value, networkData.guest_ip_start, networkData.guest_ip_end)
-    if (isIn) {
-      _callback()
-    } else {
-      _callback(this.$t('k8s.text_163'))
-    }
-  }
-}
 
 export default {
   name: 'CreateKubemachinesDialog',
@@ -75,159 +68,14 @@ export default {
     const hypervisor = _.get(typeClouds.providerlowcaseMap, `[${this.params.data.provider}].hypervisor`) || 'kvm'
     return {
       loading: false,
+      hypervisor,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            /*
-             * if (values.zone && values.zone.key) {
-             *   this.param.network = {
-             *     vpc: this.data.vpc_id,
-             *     filter: 'server_type.notin(ipmi, pxe)',
-             *     scope: this.scope,
-             *   }
-             *   this.fetchCapability(values.zone.key, 'zone')
-             * }
-             */
-            /*
-             * if (values.cloudregion && values.cloudregion.key) {
-             *   this.fetchCapability(values.cloudregion.key, 'cloudregion')
-             * }
-             */
-            Object.keys(values).forEach((key) => {
-              this.form.fd[key] = values[key]
-            })
-          },
-        }),
         fi: {
           capability: {},
           clusterHypervisor: hypervisor, // 该集群的默认 hypervisor
         },
         fd: {
           hypervisor,
-        },
-      },
-      decorators: {
-        serverConfig: {
-          hypervisor: i => [
-            `hypervisors[${i}]`,
-            {
-              initialValue: hypervisor,
-              rules: [
-                { required: true, message: this.$t('k8s.text_99') },
-              ],
-            },
-          ],
-          sku: i => [
-            `sku[${i}]`,
-            {
-              rules: [
-                { validator: isRequired(true, 'id'), message: this.$t('compute.text_216') },
-              ],
-            },
-          ],
-          disk: i => ({
-            type: [
-              `systemDiskType[${i}]`,
-              {
-                rules: [
-                  { validator: isRequired(), message: this.$t('compute.text_121') },
-                ],
-              },
-            ],
-            size: [
-              `systemDiskSize[${i}]`,
-              {
-                rules: [
-                  { required: true, message: this.$t('compute.text_122') },
-                ],
-              },
-            ],
-            schedtag: [
-              `systemDiskSchedtag[${i}]`,
-              {
-                validateTrigger: ['change', 'blur'],
-                rules: [{
-                  required: true,
-                  message: this.$t('compute.text_123'),
-                }],
-              },
-            ],
-            policy: [
-              `systemDiskPolicy[${i}]`,
-              {
-                validateTrigger: ['blur', 'change'],
-                rules: [{
-                  required: true,
-                  message: this.$t('compute.text_123'),
-                }],
-              },
-            ],
-          }),
-          network: i => [
-            `network[${i}]`,
-            {
-              rules: [
-                { required: true, message: this.$t('k8s.text_122') },
-              ],
-            },
-          ],
-          ip: (i, networkData) => [
-            `ip[${i}]`,
-            {
-              validateFirst: true,
-              validateTrigger: ['blur', 'change'],
-              rules: [{
-                required: true,
-                message: this.$t('k8s.text_169'),
-              }, {
-                validator: checkIpInSegment(i, networkData),
-              }],
-            },
-          ],
-          num: i => [
-            `num[${i}]`,
-            {
-              initialValue: 1,
-              rules: [
-                { required: true, message: this.$t('k8s.text_170') },
-              ],
-            },
-          ],
-          role: i => [
-            `role[${i}]`,
-            {
-              initialValue: 'controlplane',
-            },
-          ],
-          imageOS: i => [
-            `imageOS[${i}]`,
-            {
-              os: [
-                `os[${i}]`,
-                {
-                  initialValue: '',
-                  rules: [
-                    { required: true, message: i18n.t('compute.text_153') },
-                  ],
-                },
-              ],
-              image: [
-                `image[${i}]`,
-                {
-                  initialValue: { key: '', label: '' },
-                  rules: [
-                    { validator: isRequired(), message: i18n.t('compute.text_214') },
-                  ],
-                },
-              ],
-              imageType: [
-                `imageType[${i}]`,
-                {
-                  initialValue: IMAGES_TYPE_MAP.standard.key,
-                },
-              ],
-            },
-          ],
         },
       },
       formItemLayout: {
@@ -275,18 +123,14 @@ export default {
         scope: this.scope,
       }
     },
-    hypervisor () {
-      return this.form.fd.hypervisor
-    },
     platform () {
-      return findPlatform(this.hypervisor, 'hypervisor')
+      return findPlatform(this.form.fd.hypervisor, 'hypervisor')
     },
-  },
-  created () {
-    this.form.fc.getFieldDecorator('cloudregion', { preserve: true })
-    this.form.fc.getFieldDecorator('zone', { preserve: true })
   },
   methods: {
+    onHypervisorChange (i, val) {
+      setBracketValue(this, this.form.fd, `hypervisors[${i}]`, val)
+    },
     validator (type) {
       return (rule, value, _callback) => {
         if (type === 'vcpu_count') {
@@ -361,7 +205,13 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        if (this.$refs.formRef) {
+          await this.$refs.formRef.validate()
+        }
+        if (typeof this.$refs.serverConfigRef?.validate === 'function') {
+          await this.$refs.serverConfigRef.validate()
+        }
+        const values = expandBracketFd(this.form.fd)
         const genValues = this.genData(values)
         await this.doCreate(genValues)
         this.loading = false
@@ -389,12 +239,10 @@ export default {
         if (this.hypervisorsC.length) {
           const hasDefaultHypervisor = this.hypervisorsC.find(val => val.value === this.form.fi.clusterHypervisor)
           if (!hasDefaultHypervisor) {
-            const { hypervisors } = this.form.fc.getFieldsValue()
-            const values = {}
-            for (const key in hypervisors) {
-              values[`hypervisors[${key}]`] = this.hypervisorsC[0].value
-            }
-            this.form.fc.setFieldsValue(values)
+            const hypervisors = this.form.fd.hypervisors || {}
+            Object.keys(hypervisors).forEach((key) => {
+              setBracketValue(this, this.form.fd, `hypervisors[${key}]`, this.hypervisorsC[0].value)
+            })
           }
         }
       } catch (error) {
@@ -403,9 +251,7 @@ export default {
     },
     vmAdd ({ key }) {
       if (this.hypervisorsC.length) {
-        this.form.fc.setFieldsValue({
-          [`hypervisors[${key}]`]: this.hypervisorsC[0].value,
-        })
+        setBracketValue(this, this.form.fd, `hypervisors[${key}]`, this.hypervisorsC[0].value)
       }
     },
   },

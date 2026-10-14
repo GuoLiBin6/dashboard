@@ -70,7 +70,7 @@ export default {
   inheritAttrs: false,
   props: {
     value: {
-      // v-decorator 在挂载后才注入，初始可为空
+      // 受控 value，初始可为空
       default: undefined,
     },
     disabled: {
@@ -467,6 +467,7 @@ export default {
       // 同步当前选择项obj
       this.syncItem(changeValue)
       this.$emit('input', changeValue)
+      this.$emit('update:value', changeValue)
       this.$emit('change', changeValue, isNative)
     },
     syncItem (value) {

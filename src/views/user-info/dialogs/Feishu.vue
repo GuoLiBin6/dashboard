@@ -1,20 +1,15 @@
 <template>
-    <a-form :form="form" v-bind="formItemLayout">
-      <a-form-item :label="$t('scope.text_200')">
-        {{ imobile }}
-      </a-form-item>
-    </a-form>
+  <a-form-model v-bind="formItemLayout">
+    <a-form-model-item :label="$t('scope.text_200')">
+      {{ imobile }}
+    </a-form-model-item>
+  </a-form-model>
 </template>
 
 <script>
 export default {
   name: 'feishu',
-  inject: ['userId', 'manager', 'imobile', 'decorators', 'formItemLayout'],
-  data () {
-    return {
-      form: this.$form.createForm(this),
-    }
-  },
+  inject: ['userId', 'manager', 'imobile', 'formItemLayout'],
   methods: {
     async submit () {
       await this.manager.performAction({

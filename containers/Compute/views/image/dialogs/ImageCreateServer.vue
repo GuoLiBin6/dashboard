@@ -4,16 +4,17 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :name="$t('dictionary.image')" :action="action" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('compute.text_176')" v-bind="formItemLayout">
-          <a-radio-group v-decorator="decorators.platform">
+      <a-form-model
+        ref="formRef"
+        :model="form">
+        <a-form-model-item :label="$t('compute.text_176')" v-bind="formItemLayout" prop="platform">
+          <a-radio-group v-model:value="form.platform">
             <a-radio-button v-for="obj in cloudEnvOpts" :value="obj.key" :key="obj.key" v-show="obj.key">
               {{ obj.label }}
             </a-radio-button>
           </a-radio-group>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -38,15 +39,7 @@ export default {
       action: this.$t('compute.text_663'),
       cloudEnvOptions: getCloudEnvOptions('compute_engine_brands'),
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        platform: [
-          'platform',
-          {
-            initialValue: 'idc',
-          },
-        ],
+        platform: 'idc',
       },
       formItemLayout: {
         wrapperCol: {
@@ -82,7 +75,6 @@ export default {
   },
   methods: {
     handleConfirm () {
-      const values = this.form.fc.getFieldsValue()
       const obj = this.params.data[0]
       const prop = obj.properties
       let os = prop.os_type
@@ -99,7 +91,7 @@ export default {
       this.$router.push({
         path: '/vminstance/create',
         query: {
-          type: values.platform,
+          type: this.form.platform,
           imageId: obj.id,
           imageType: type,
           imageOs: os,

@@ -4,11 +4,11 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('aice.llm_instantmodel.menu')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('aice.mounted_apps.auto_cache.enable')">
-          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-decorator="decorators.auto_cache" />
-        </a-form-item>
-      </a-form>
+      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('aice.mounted_apps.auto_cache.enable')">
+          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-model:checked="form.auto_cache" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -30,16 +30,7 @@ export default {
       loading: false,
       action: this.$t('aice.mounted_apps.auto_cache.enable'),
       form: {
-        fc: this.$form.createForm(this),
-      },
-      decorators: {
-        auto_cache: [
-          'auto_cache',
-          {
-            initialValue: !isAllClose,
-            valuePropName: 'checked',
-          },
-        ],
+        auto_cache: !isAllClose,
       },
       formItemLayout: {
         wrapperCol: {
@@ -60,8 +51,7 @@ export default {
   methods: {
     async doSubmit () {
       const ids = this.params.data.map(item => item.id)
-      const values = await this.form.fc.validateFields()
-      const params = { auto_cache: values.auto_cache }
+      const params = { auto_cache: this.form.auto_cache }
       return this.params.onManager('batchPerformAction', {
         id: ids,
         managerArgs: {

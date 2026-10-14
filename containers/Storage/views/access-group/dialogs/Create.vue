@@ -2,37 +2,39 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('storage.access.group.create')}}</div>
     <div slot="body">
-      <a-form
-        v-bind="formItemLayout"
-        :form="form.fc">
-        <a-form-item :label="$t('storage.text_40')">
-          <a-input v-decorator="decorators.name" :placeholder="$t('storage.text_56')" />
-        </a-form-item>
+      <a-form-model
+        ref="formRef"
+        :model="form"
+        :rules="rules"
+        v-bind="formItemLayout">
         <area-selects
           class="mb-0"
           ref="areaSelects"
+          :model="form"
           :wrapperCol="formItemLayout.wrapperCol"
           :labelCol="formItemLayout.labelCol"
           :names="['provider', 'cloudregion']"
-          :cloudregionParams="cloudregionParams"
+          :cloudregionParams="cloudRegionParams"
           :isRequired="true"
           :providerParams="providerParams"
           filterBrandResource="nas"
           @change="handleRegionChange" />
-        <a-form-item :label="$t('compute.text_15')">
-        <base-select
-          resource="cloudproviders"
-          v-decorator="decorators.cloudprovider"
-          :params="cloudproviderParams"
-          :isDefaultSelect="true"
-          :showSync="true"
-          :select-props="{ placeholder: $t('compute.text_149') }"
-          @update:item="cloudproviderSelected" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
-      </a-form>
+        <a-form-model-item :label="$t('storage.text_40')" prop="name">
+          <a-input v-model:value="form.name" :placeholder="$t('storage.text_56')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_15')" prop="cloudprovider">
+          <base-select
+            resource="cloudproviders"
+            v-model="form.cloudprovider"
+            :params="cloudproviderParams"
+            :isDefaultSelect="true"
+            :showSync="true"
+            :select-props="{ placeholder: $t('compute.text_149') }" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" prop="description">
+          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.description" :placeholder="$t('common_367')" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -44,8 +46,7 @@
 <script>
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
-import { isRequired } from '@/utils/validate'
-import AreaSelects from '@/sections/AreaSelects'
+import AreaSelects from '@/sections/AreaSelects/model'
 
 export default {
   name: 'AccessGroupCreateDialog',
@@ -57,34 +58,19 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        provider: undefined,
+        cloudregion: undefined,
+        name: undefined,
+        cloudprovider: undefined,
+        description: undefined,
       },
-      decorators: {
-        domain: [
-          'domain',
-          {
-            // initialValue: domain || this.$store.getters.userInfo.projectDomainId,
-            rules: [
-              { validator: isRequired(), message: this.$t('rules.domain'), trigger: 'change' },
-            ],
-          },
-        ],
+      rules: {
         name: [
-          'name',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('storage.text_56') },
-            ],
-          },
+          { required: true, message: this.$t('storage.text_56') },
         ],
         cloudprovider: [
-          'cloudprovider',
-          {
-            rules: [{ required: true, message: this.$t('common.tips.input', [this.$t('storage.text_40')]) }],
-          },
+          { required: true, message: this.$t('common.tips.input', [this.$t('storage.text_40')]) },
         ],
-        description: ['description'],
       },
       formItemLayout: {
         wrapperCol: {
@@ -110,22 +96,20 @@ export default {
   },
   computed: {
     cloudproviderParams () {
-      const params = {
+      return {
         limit: 20,
-        // brand: this.form.fd.provider,
         cloudregion: this.regionId,
         enabled: true,
         read_only: false,
         scope: this.$store.getters.scope,
       }
-      return params
     },
   },
   methods: {
     handleRegionChange (data) {
       const { cloudregion } = data
       if (cloudregion) {
-        const { provider } = cloudregion.value
+        const { provider } = cloudregion.value || {}
         this.regionProvider = provider
         this.regionId = cloudregion.id
       }
@@ -136,8 +120,14 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
-        await this.doCreate({ ...values, cloudregion: this.regionId })
+        await this.$refs.formRef.validate()
+        const values = {
+          name: this.form.name,
+          cloudprovider: this.form.cloudprovider,
+          description: this.form.description,
+          cloudregion: this.regionId || this.form.cloudregion,
+        }
+        await this.doCreate(values)
         this.loading = false
         this.cancelDialog()
         this.params.refresh && this.params.refresh()

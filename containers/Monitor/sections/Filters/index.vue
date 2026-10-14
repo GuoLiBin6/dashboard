@@ -8,11 +8,10 @@
           optionLabelProp="label"
           idKey="key"
           nameKey="label"
-          v-decorator="decorators.tagCondition(item.key)"
-          :value="getFilterValue(decorators.tagCondition(item.key)[0])"
+          :value="getFilterValue(resolvedFieldMap.tagCondition(item.key)[0])"
           :options="conditionOpts"
           :disabled="disabled"
-          @change="() => handleFilterFieldChange()"
+          @change="val => onFilterFieldChange(resolvedFieldMap.tagCondition(item.key), val, () => handleFilterFieldChange())"
           :select-props="{ placeholder: $t('common.select') }" />
       </div>
       <div class="explorer-filters__key">
@@ -22,12 +21,11 @@
           optionLabelProp="label"
           idKey="key"
           nameKey="label"
-          v-decorator="decorators.tagKey(item.key)"
-          :value="getFilterValue(decorators.tagKey(item.key)[0])"
+          :value="getFilterValue(resolvedFieldMap.tagKey(item.key)[0])"
           :options="tagKeyOpts"
           filterable
           :disabled="disabled"
-          @change="val => tagKeyChange(val, i, item)"
+          @change="val => { onFilterFieldChange(resolvedFieldMap.tagKey(item.key), val); tagKeyChange(val, i, item) }"
           :select-props="{ placeholder: $t('monitor.text_109'), allowClear: true, loading }" />
       </div>
       <div class="explorer-filters__operator">
@@ -37,11 +35,10 @@
           optionLabelProp="label"
           idKey="key"
           nameKey="label"
-          v-decorator="decorators.tagOperator(item.key)"
-          :value="getFilterValue(decorators.tagOperator(item.key)[0])"
+          :value="getFilterValue(resolvedFieldMap.tagOperator(item.key)[0])"
           :options="tagOperatorOpts"
           :disabled="disabled"
-          @change="() => handleFilterFieldChange()"
+          @change="val => onFilterFieldChange(resolvedFieldMap.tagOperator(item.key), val, () => handleFilterFieldChange())"
           :select-props="{ placeholder: $t('common.select') }" />
       </div>
       <div class="explorer-filters__value">
@@ -51,16 +48,15 @@
           optionLabelProp="label"
           idKey="key"
           nameKey="label"
-          v-decorator="decorators.tagValue(item.key)"
-          :value="getFilterValue(decorators.tagValue(item.key)[0])"
+          :value="getFilterValue(resolvedFieldMap.tagValue(item.key)[0])"
           :options="item.tagValueOpts"
           filterable
           needBlur
           :disabled="disabled"
           :select-props="{ mode: 'multiple', placeholder: $t('monitor.text_110'), allowClear: true, loading }"
-          @change="val => tagValuesChange(val, i, item)"
+          @change="val => { onFilterFieldChange(resolvedFieldMap.tagValue(item.key), val); tagValuesChange(val, i, item) }"
           @dropdownChange="val => tagValuesDropdownChange(val, i, item)"
-          @blur="val => tagValuesChange(val, i, item)" />
+          @blur="val => { onFilterFieldChange(resolvedFieldMap.tagValue(item.key), val); tagValuesChange(val, i, item) }" />
       </div>
       <div v-if="!disabled && i !== 0" class="explorer-filters__remove">
         <a-button shape="circle" size="small" @click="remove(i)">
@@ -81,21 +77,28 @@
 import * as R from 'ramda'
 import { filterKeyMap } from '@Monitor/constants'
 import { uuid } from '@/utils/utils'
+import { resolveFieldMeta } from '@/utils/common/ant'
+import { buildFilterFieldMap } from '../fields'
 export default {
   name: 'ExplorerFormFilters',
   props: {
     form: {
       type: Object,
-      validator: val => val.fc,
+      default: null,
+    },
+    /** a-form-model：与 field 字段名对齐的受控对象（通常为 form.fd） */
+    model: {
+      type: Object,
+      default: null,
     },
     initFilters: {
       type: [],
       default: () => ([]),
     },
-    decorators: {
+    fieldMap: {
       type: Object,
-      required: true,
-      validator: val => R.is(Function, val.tagCondition) && R.is(Function, val.tagKey) && R.is(Function, val.tagValue) && R.is(Function, val.tagOperator),
+      default: null,
+      validator: val => !val || (R.is(Function, val.tagCondition) && R.is(Function, val.tagKey) && R.is(Function, val.tagValue) && R.is(Function, val.tagOperator)),
     },
     metricInfo: {
       type: Object,
@@ -138,6 +141,12 @@ export default {
     }
   },
   computed: {
+    resolvedFieldMap () {
+      return this.fieldMap || buildFilterFieldMap()
+    },
+    fdModel () {
+      return this.model
+    },
     tagKeyOpts () {
       if (R.is(Array, this.metricInfo.tag_key)) {
         return this.metricInfo.tag_key.map(v => {
@@ -164,19 +173,135 @@ export default {
         }
       },
     },
+    filters: {
+      handler () {
+        this.$nextTick(() => this.registerExplorerFilterFields())
+      },
+      deep: true,
+    },
   },
   mounted () {
+    this.registerExplorerFilterFields()
     if (this.tags && this.tags.length) {
       this.fillFilters(this.tags)
     }
   },
   methods: {
+
+    /** 解析 tagKeys[uuid] → { root, key }；非嵌套返回 null */
+    parseBracketName (name) {
+      const m = typeof name === 'string' && name.match(/^(\w+)\[([^\]]+)\]$/)
+      if (!m) return null
+      return { root: m[1], key: m[2] }
+    },
+    fieldVal (fieldTuple) {
+      const meta = resolveFieldMeta(fieldTuple)
+      if (!meta) return undefined
+      const { name, ...opts } = meta
+      const target = this.fdModel
+      if (target) {
+        const nested = this.parseBracketName(name)
+        let v
+        if (nested && target[nested.root] && typeof target[nested.root] === 'object') {
+          v = target[nested.root][nested.key]
+        } else if (Object.prototype.hasOwnProperty.call(target, name)) {
+          v = target[name]
+        }
+        if (v !== undefined) return v
+        if (opts.initialValue !== undefined) return opts.initialValue
+      }
+      return undefined
+    },
+    fieldSet (fieldTuple, value) {
+      const meta = resolveFieldMeta(fieldTuple)
+      if (!meta) return
+      const { name } = meta
+      const target = this.fdModel
+      if (!target) return
+      const nested = this.parseBracketName(name)
+      if (nested) {
+        if (!target[nested.root] || typeof target[nested.root] !== 'object') {
+          this.$set(target, nested.root, {})
+        }
+        this.$set(target[nested.root], nested.key, value)
+      } else {
+        this.$set(target, name, value)
+      }
+    },
+    runFieldRule (rule, value) {
+      return new Promise((resolve, reject) => {
+        if (rule.required) {
+          const empty = value === undefined || value === null || value === '' ||
+            (Array.isArray(value) && !value.length)
+          if (empty) {
+            reject(new Error(rule.message || 'required'))
+            return
+          }
+        }
+        if (typeof rule.validator === 'function') {
+          rule.validator(rule, value, (err) => {
+            if (err) reject(err instanceof Error ? err : new Error(String(err)))
+            else resolve()
+          })
+          return
+        }
+        resolve()
+      })
+    },
+    async runFieldMapRules (fieldTuple, value) {
+      const meta = resolveFieldMeta(fieldTuple)
+      if (!meta) return
+      const rules = meta.rules || []
+      for (const rule of rules) {
+        await this.runFieldRule(rule, value)
+      }
+    },
+    async validate () {
+      for (const item of this.filters) {
+        const tuples = [
+          this.resolvedFieldMap.tagCondition(item.key),
+          this.resolvedFieldMap.tagKey(item.key),
+          this.resolvedFieldMap.tagOperator(item.key),
+          this.resolvedFieldMap.tagValue(item.key),
+        ]
+        for (const fieldDef of tuples) {
+          await this.runFieldMapRules(fieldDef, this.fieldVal(fieldDef))
+        }
+      }
+      return true
+    },
+    registerExplorerFilterFields () {
+      this.filters.forEach(item => {
+        const tuples = [
+          this.resolvedFieldMap.tagCondition(item.key),
+          this.resolvedFieldMap.tagKey(item.key),
+          this.resolvedFieldMap.tagOperator(item.key),
+          this.resolvedFieldMap.tagValue(item.key),
+        ]
+        tuples.forEach((fieldDef) => {
+          if (this.fdModel && Array.isArray(fieldDef)) {
+            const [, opts = {}] = fieldDef
+            if (opts.initialValue !== undefined) {
+              const nested = this.parseBracketName(fieldDef[0])
+              if (nested) {
+                const root = this.fdModel[nested.root]
+                if (!root || root[nested.key] === undefined) {
+                  this.fieldSet(fieldDef, opts.initialValue)
+                }
+              } else if (this.fdModel[fieldDef[0]] === undefined) {
+                this.fieldSet(fieldDef, opts.initialValue)
+              }
+            }
+          }
+        })
+      })
+    },
+    onFilterFieldChange (fieldTuple, val, callback) {
+      this.fieldSet(fieldTuple, val)
+      if (callback) callback()
+    },
     getFilterValue (name) {
-      const fd = this.form.fd || {}
-      // 优先读扁平 key，保证对 form.fd 的响应式依赖
-      const val = Object.prototype.hasOwnProperty.call(fd, name)
-        ? fd[name]
-        : this.form.fc.getFieldValue(name)
+      const val = this.fieldVal({ name: name })
       // 空串/null 当作未选，避免与 placeholder 叠字
       if (val === '' || val === null) return undefined
       return val
@@ -185,7 +310,7 @@ export default {
       const tagFields = {}
       this.filters = tags.map(item => {
         const key = uuid()
-        const { tagCondition, tagKey, tagValue, tagOperator } = this.decorators
+        const { tagCondition, tagKey, tagValue, tagOperator } = this.resolvedFieldMap
         let operator = item.operator
         let value = item.value
         if (operator === '=') {
@@ -220,12 +345,16 @@ export default {
         }
       })
       this.$nextTick(() => {
-        this.form.fc.setFieldsValue(tagFields)
+        Object.keys(tagFields).forEach((name) => {
+          this.fieldSet([name], tagFields[name])
+        })
         this.$forceUpdate()
       })
     },
     fillFilterValues () {
-      const values = this.form.fc.getFieldsValue()
+      const values = {
+        ...(this.fdModel || {}),
+      }
       const filters = R.clone(this.filters)
       this.filters = filters.map(item => {
         const { key = '', tagValueOpts = [] } = item
@@ -260,9 +389,7 @@ export default {
       this.$emit('remove', i)
     },
     tagKeyChange (val, i, item) {
-      this.form.fc.setFieldsValue({
-        [this.decorators.tagValue(item.key)[0]]: undefined,
-      })
+      this.fieldSet(this.resolvedFieldMap.tagValue(item.key), undefined)
       if (val) {
         this.filters[i].tagValueOpts = this.tagValueOpts(val)
       }

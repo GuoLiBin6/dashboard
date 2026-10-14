@@ -2,11 +2,12 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{ $t('compute.bastionHost.add_bastion_host') }}</div>
     <div slot="body">
-      <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form.fd" :rules="rules" hideRequiredMark v-bind="formItemLayout">
         <bastion-host
-          :decorator="decorator.bastion_host"
+          :form="form"
+          :model="form.fd"
           :inDialog="true" />
-      </a-form>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -27,9 +28,20 @@ export default {
   },
   mixins: [DialogMixin, WindowsMixin],
   data () {
+    const fd = {
+      bastion_host_enable: false,
+      bastion_host_id: undefined,
+      bastion_org_id: undefined,
+      nodes: undefined,
+      port: 22,
+      privileged_accounts: undefined,
+      accounts: undefined,
+      bastion_domain_id: undefined,
+    }
     return {
+      loading: false,
       form: {
-        fc: this.$form.createForm(this),
+        fd,
       },
       formItemLayout: {
         wrapperCol: {
@@ -39,68 +51,25 @@ export default {
           span: 4,
         },
       },
-      decorator: {
-        bastion_host: {
-          bastion_host_enable: [
-            'bastion_host_enable',
-            {
-              valuePropName: 'checked',
-              initialValue: false,
-            },
-          ],
-          bastion_host_id: [
-            'bastion_host_id',
-            {
-              rules: [
-                { required: true, message: this.$t('compute.bastionHost.bastion_host.placeholder') },
-              ],
-            },
-          ],
-          bastion_org_id: [
-            'bastion_org_id',
-            {
-              rules: [
-                { required: true, message: this.$t('compute.bastionHost.bastion_org.placeholder') },
-              ],
-            },
-          ],
-          nodes: [
-            'nodes',
-            {
-              rules: [
-                { required: true, message: this.$t('compute.bastionHost.node.placeholder') },
-              ],
-            },
-          ],
-          port: [
-            'port',
-            {
-              initialValue: 22,
-              rules: [
-                { type: 'number', min: 0, max: 65535, message: this.$t('compute.bastionHost.port.placeholder'), trigger: 'blur', transform: (v) => parseInt(v) },
-              ],
-            },
-          ],
-          privileged_accounts: [
-            'privileged_accounts',
-            {
-              rules: [
-                { required: true, message: this.$t('compute.bastionHost.privileged_account.placeholder') },
-              ],
-            },
-          ],
-          accounts: [
-            'accounts',
-            {
-              rules: [
-                { required: true, message: this.$t('compute.bastionHost.account.placeholder') },
-              ],
-            },
-          ],
-          bastion_domain_id: [
-            'bastion_domain_id',
-          ],
-        },
+      rules: {
+        bastion_host_id: [
+          { required: true, message: this.$t('compute.bastionHost.bastion_host.placeholder') },
+        ],
+        bastion_org_id: [
+          { required: true, message: this.$t('compute.bastionHost.bastion_org.placeholder') },
+        ],
+        nodes: [
+          { required: true, message: this.$t('compute.bastionHost.node.placeholder') },
+        ],
+        port: [
+          { type: 'number', min: 0, max: 65535, message: this.$t('compute.bastionHost.port.placeholder'), trigger: 'blur', transform: (v) => parseInt(v) },
+        ],
+        privileged_accounts: [
+          { required: true, message: this.$t('compute.bastionHost.privileged_account.placeholder') },
+        ],
+        accounts: [
+          { required: true, message: this.$t('compute.bastionHost.account.placeholder') },
+        ],
       },
     }
   },
@@ -109,8 +78,9 @@ export default {
       try {
         const curItem = this.params.data[0]
         const bsManager = new this.$Manager('bastion_servers')
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         this.loading = true
+        const values = this.form.fd
         const data = {
           bastion_host_id: values.bastion_host_id,
           bastion_org_id: values.bastion_org_id,

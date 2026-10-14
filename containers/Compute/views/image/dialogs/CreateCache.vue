@@ -2,20 +2,12 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('compute.image_cache.perform_precache')}}</div>
     <div slot="body">
-      <a-form
-        :form="form.fc">
-        <!-- <a-form-item :label="$t('compute.text_228')" v-bind="formItemLayout" v-if="params.title === 'onpremise'">
-          <a-input v-decorator="decorators.name" :placeholder="$t('compute.text_228')" @change="handleChange" />
-        </a-form-item>
-        <a-form-item label="IP" v-bind="formItemLayout" v-if="params.title === 'onpremise'">
-          <a-input v-decorator="decorators.access_ip" placeholder="IP" @change="handleChange" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_591')" v-bind="formItemLayout" v-if="params.title === 'onpremise'">
-          <a-input v-decorator="decorators.sn" :placeholder="$t('compute.text_591')" @change="handleChange" />
-        </a-form-item> -->
-        <a-form-item :label="$t('compute.text_176')" v-bind="formItemLayout">
+      <a-form-model
+        ref="formRef"
+        :model="form">
+        <a-form-model-item :label="$t('compute.text_176')" v-bind="formItemLayout" prop="platform">
           <a-select
-            v-decorator="decorators.platform"
+            v-model:value="form.platform"
             @change="handlePlatformChange"
             :placeholder="$t('compute.text_219')"
             allowClear>
@@ -26,46 +18,46 @@
               {{ item.name }}
             </a-select-option>
           </a-select>
-        </a-form-item>
+        </a-form-model-item>
         <template v-if="params.title === 'onpremise'">
-          <a-form-item :label="$t('compute.text_111')" v-bind="formItemLayout">
+          <a-form-model-item :label="$t('compute.text_111')" v-bind="formItemLayout" prop="host">
             <base-select
               :remote="true"
               class="w-100"
               :needParams="true"
-              v-decorator="decorators.host"
+              v-model:value="form.host"
               resource="hosts"
               :params="hostParams"
               :remote-fn="q => ({ filter: `name.contains(${q})` })"
               @change="handleHostChange"
               :select-props="{ placeholder: $t('compute.text_314'), allowClear: true }" />
-          </a-form-item>
+          </a-form-model-item>
         </template>
-        <a-form-item :label="$t('compute.text_653')" v-bind="formItemLayout" v-if="params.title !== 'onpremise'">
+        <a-form-model-item :label="$t('compute.text_653')" v-bind="formItemLayout" v-if="params.title !== 'onpremise'" prop="manager">
           <base-select
             :remote="true"
             class="w-100"
             :needParams="true"
-            v-decorator="decorators.manager"
+            v-model:value="form.manager"
             resource="cloudproviders"
             :params="providerParams"
             :remote-fn="q => ({ filter: `name.contains(${q})` })"
             @change="handleManagerChange"
             :select-props="{ placeholder: $t('compute.text_219') }" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_177')" v-bind="formItemLayout" v-if="params.title !== 'onpremise'">
+        </a-form-model-item>
+        <a-form-model-item :label="$t('compute.text_177')" v-bind="formItemLayout" v-if="params.title !== 'onpremise'" prop="region">
           <base-select
             :remote="true"
             class="w-100"
             :needParams="true"
-            v-decorator="decorators.region"
+            v-model:value="form.region"
             resource="cloudregions"
             :params="regionParams"
             :remote-fn="q => ({ search: q })"
             @change="handleRegionChange"
             :select-props="{ placeholder: $t('compute.text_219') }" />
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
       <div class="d-flex flex-fill mb-2">
         <!-- 刷新 -->
         <a-button
@@ -104,37 +96,10 @@ export default {
     return {
       loading: false,
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.$set(this.form.fd, key, values[key])
-            })
-          },
-        }),
-        fd: {},
-      },
-      decorators: {
-        name: [
-          'name',
-        ],
-        access_ip: [
-          'access_ip',
-        ],
-        sn: [
-          'sn',
-        ],
-        platform: [
-          'platform',
-        ],
-        manager: [
-          'manager',
-        ],
-        region: [
-          'region',
-        ],
-        host: [
-          'host',
-        ],
+        platform: undefined,
+        manager: undefined,
+        region: undefined,
+        host: undefined,
       },
       formItemLayout: {
         wrapperCol: {
@@ -267,24 +232,6 @@ export default {
     this.list.fetchData()
   },
   methods: {
-    // handleChange (e) {
-    //   if (e.target.value) {
-    //     this.filters.push([e.target.id] + `.contains(${e.target.value})`)
-    //     this.list.getParams = {
-    //       ...this.list.getParams,
-    //       // [e.target.id]: e.target.value,
-    //       // 'filter.1': [e.target.id] + `.contains(${e.target.value})`,
-    //     }
-    //   } else {
-    //     if (Reflect.has(this.list.getParams, e.target.id)) {
-    //       Reflect.deleteProperty(this.list.getParams, e.target.id)
-    //     }
-    //   }
-    //   clearTimeout(this.timeout)
-    //   this.timeout = setTimeout(() => {
-    //     this.list.fetchData()
-    //   }, 4000)
-    // },
     handleRefresh () {
       this.list.refresh()
     },
@@ -344,7 +291,7 @@ export default {
           usable: true,
           cloud_env: this.params.title,
           show_emulated: true,
-          brand: this.form.fd.platform,
+          brand: this.form.platform,
           manager: e,
           scope: this.$store.getters.scope,
         }
@@ -382,12 +329,12 @@ export default {
           return
         }
         await this.doSave()
-        this.loading = false
         this.params.refresh()
         this.cancelDialog()
       } catch (error) {
-        this.loading = false
         throw error
+      } finally {
+        this.loading = false
       }
     },
   },

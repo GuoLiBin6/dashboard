@@ -1,20 +1,20 @@
 <template>
-  <a-form :form="form.fc" v-bind="formItemLayout">
-    <a-form-item :label="$t('scope.text_244')">
+  <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+    <a-form-model-item :label="$t('scope.text_244')">
       {{ userInfo.name }}
-    </a-form-item>
-    <a-form-item :label="$t('scope.text_226')">
-      <mobile-input v-decorator="decorators.international_mobile" />
-    </a-form-item>
-    <a-form-item :label="$t('scope.text_204')">
-      <a-input v-decorator="decorators.email" />
-    </a-form-item>
-    <a-form-item :label="$t('common_599')">
+    </a-form-model-item>
+    <a-form-model-item :label="$t('scope.text_226')" prop="international_mobile">
+      <mobile-input :value="form.international_mobile" @change="val => form.international_mobile = val" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('scope.text_204')" prop="email">
+      <a-input v-model:value="form.email" />
+    </a-form-model-item>
+    <a-form-model-item :label="$t('common_599')" prop="enabled_contact_types">
       <a-checkbox-group
-        v-decorator="decorators.enabled_contact_types"
+        v-model:value="form.enabled_contact_types"
         :options="contactArrOpts" />
-    </a-form-item>
-  </a-form>
+    </a-form-model-item>
+  </a-form-model>
 </template>
 
 <script>
@@ -35,38 +35,21 @@ export default {
     return {
       contactArrOpts: [],
       form: {
-        fc: this.$form.createForm(this),
+        international_mobile: this.contacts.international_mobile || {},
+        email: this.contacts.email || '',
+        enabled_contact_types: this.contacts.enabled_contact_types || ['webconsole'],
       },
-      decorators: {
+      rules: {
         international_mobile: [
-          'international_mobile',
           {
-            initialValue: this.contacts.international_mobile || {},
-            rules: [
-              {
-                type: 'object',
-                required: true,
-              },
-              { validator: this.checkInternationalMobile },
-            ],
+            type: 'object',
+            required: true,
           },
+          { validator: this.checkInternationalMobile },
         ],
         email: [
-          'email',
-          {
-            validateFirst: true,
-            initialValue: this.contacts.email || '',
-            rules: [
-              { required: true, message: this.$t('scope.text_228') },
-              { validator: this.$validate('email') },
-            ],
-          },
-        ],
-        enabled_contact_types: [
-          'enabled_contact_types',
-          {
-            initialValue: this.contacts.enabled_contact_types || ['webconsole'],
-          },
+          { required: true, message: this.$t('scope.text_228') },
+          { validator: this.$validate('email') },
         ],
       },
       formItemLayout: {
@@ -86,8 +69,8 @@ export default {
   methods: {
     async getValues () {
       try {
-        const values = await this.form.fc.validateFields()
-        return { ...values }
+        await this.$refs.formRef.validate()
+        return { ...this.form }
       } catch (error) {
         throw error
       }

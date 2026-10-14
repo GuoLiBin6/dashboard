@@ -10,62 +10,63 @@
       </a-alert>
       <dialog-selected-tips :name="params.name || $t('dictionary.server')" :count="dataList.length" :action="this.params.title || (formType === 'modifyWorkflow' ? this.$t('common.modify_workflow') + `(${$t('compute.perform_delete')})` : $t('compute.perform_delete'))" />
       <dialog-table v-if="columns.length" :data="dataList" :columns="columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc">
-        <a-form-item :label="$t('compute.text_1041')" v-bind="formItemLayout" v-if="isOpenWorkflow">
-          <a-input v-decorator="decorators.reason" :placeholder="$t('compute.text_1105')" />
-        </a-form-item>
+      <a-form-model
+        ref="formRef"
+        :model="form">
+        <a-form-model-item :label="$t('compute.text_1041')" v-bind="formItemLayout" v-if="isOpenWorkflow" prop="reason">
+          <a-input v-model:value="form.reason" :placeholder="$t('compute.text_1105')" />
+        </a-form-model-item>
         <template v-if="isShowAutoDelete">
           <!-- 快照 -->
-          <a-form-item class="mb-0">
+          <a-form-model-item class="mb-0">
             <a-tooltip>
               <template v-if="deleteSnapshotLimit.mustDelete" slot="title">
                 {{deleteSnapshotLimit.tip}}
               </template>
               <a-checkbox
-              :checked="form.fd.deleteSnapshot || (deleteSnapshotLimit.support && deleteSnapshotLimit.mustDelete)"
+              :checked="form.deleteSnapshot || (deleteSnapshotLimit.support && deleteSnapshotLimit.mustDelete)"
               :disabled="deleteSnapshotLimit.mustDelete"
               @change="deleteSnapshotChange">
                 {{$t('compute.text_420')}}
               </a-checkbox>
             </a-tooltip>
-          </a-form-item>
+          </a-form-model-item>
           <!-- 数据盘 -->
-          <a-form-item class="mb-0">
+          <a-form-model-item class="mb-0">
             <a-tooltip>
               <template v-if="deleteDiskLimit.mustDelete" slot="title">
                 {{deleteDiskLimit.tip}}
               </template>
               <a-checkbox
-              :checked="form.fd.deleteDisk || (deleteDiskLimit.support && deleteDiskLimit.mustDelete)"
+              :checked="form.deleteDisk || (deleteDiskLimit.support && deleteDiskLimit.mustDelete)"
               :disabled="deleteDiskLimit.mustDelete"
               @change="deleteDiskChange">
                 {{$t('compute.text_1385')}}
               </a-checkbox>
             </a-tooltip>
             <help-tooltip name="deleteDiskAtTheSameTime" />
-          </a-form-item>
+          </a-form-model-item>
           <!-- EIP -->
-          <a-form-item class="mb-0">
+          <a-form-model-item class="mb-0">
             <a-tooltip>
               <template v-if="deleteEipLimit.mustDelete || !deleteEipLimit.support" slot="title">
                 {{deleteEipLimit.tip}}
               </template>
               <a-checkbox
-              :checked="form.fd.deleteEip || (deleteEipLimit.support && deleteEipLimit.mustDelete)"
+              :checked="form.deleteEip || (deleteEipLimit.support && deleteEipLimit.mustDelete)"
               :disabled="deleteEipLimit.mustDelete || !deleteEipLimit.support"
               @change="deleteEipChange">
                 {{$t('compute.text_1386')}}
               </a-checkbox>
             </a-tooltip>
-          </a-form-item>
+          </a-form-model-item>
         </template>
         <!-- 堡垒机 -->
         <a-form-model-item v-if="isShowDeleteBastionServer">
-          <a-checkbox v-model="form.fd.delete_bastion_server">{{ $t('compute.delete_bastion_host') }}</a-checkbox>
+          <a-checkbox v-model:checked="form.delete_bastion_server">{{ $t('compute.delete_bastion_host') }}</a-checkbox>
         </a-form-model-item>
-      </a-form>
-      <dialog-table v-if="form.fd.autoDelete" :data="snapshot.list" :columns="snapshot.columns" />
+      </a-form-model>
+      <dialog-table v-if="form.autoDelete" :data="snapshot.list" :columns="snapshot.columns" />
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ confirmText }}</a-button>
@@ -133,31 +134,13 @@ export default {
       loading: false,
       formType: type,
       snapshotList: [],
-      // diskList: [],
       form: {
-        fc: this.$form.createForm(this),
-        fd: {
-          autoDelete: formData.auto_delete || false,
-          deleteEip: formData.delete_eip || false,
-          deleteSnapshot: formData.delete_snapshots || false,
-          deleteDisk: formData.delete_disks || false,
-          delete_bastion_server: formData.delete_bastion_server || false,
-        },
-      },
-      decorators: {
-        autoDelete: [
-          'autoDelete',
-          {
-            valuePropName: 'checked',
-            initialValue: false,
-          },
-        ],
-        reason: [
-          'reason',
-          {
-            initialValue: formData.reason || '',
-          },
-        ],
+        autoDelete: formData.auto_delete || false,
+        deleteEip: formData.delete_eip || false,
+        deleteSnapshot: formData.delete_snapshots || false,
+        deleteDisk: formData.delete_disks || false,
+        delete_bastion_server: formData.delete_bastion_server || false,
+        reason: formData.reason || '',
       },
       formItemLayout: {
         wrapperCol: {
@@ -291,23 +274,23 @@ export default {
         } else {
           await this.handleDelete()
         }
-        this.loading = false
         this.cancelDialog()
       } catch (error) {
-        this.loading = false
         throw error
+      } finally {
+        this.loading = false
       }
     },
     async handleDeleteByWorkflowSubmit () {
       const ids = this.dataList.map(item => item.id)
-      const values = await this.form.fc.validateFields()
+      await this.$refs.formRef.validate()
       const variables = {
         project: this.dataList[0].tenant_id,
         project_domain: this.dataList[0].domain_id,
         process_definition_key: this.WORKFLOW_TYPES.APPLY_SERVER_DELETE,
         initiator: this.userInfo.id,
         ids: ids.join(','),
-        description: values.reason,
+        description: this.form.reason,
         paramter: JSON.stringify(this.getFormParams()),
       }
       if (this.formType === 'modifyWorkflow') {
@@ -321,16 +304,16 @@ export default {
     },
     getFormParams () {
       const params = {}
-      if (this.form.fd.deleteSnapshot || (this.deleteSnapshotLimit.support && this.deleteSnapshotLimit.mustDelete)) {
+      if (this.form.deleteSnapshot || (this.deleteSnapshotLimit.support && this.deleteSnapshotLimit.mustDelete)) {
         params.delete_snapshots = true
       }
-      if (this.form.fd.deleteDisk || (this.deleteDiskLimit.support && this.deleteDiskLimit.mustDelete)) {
+      if (this.form.deleteDisk || (this.deleteDiskLimit.support && this.deleteDiskLimit.mustDelete)) {
         params.delete_disks = true
       }
-      if (this.form.fd.deleteEip || (this.deleteEipLimit.support && this.deleteEipLimit.mustDelete)) {
+      if (this.form.deleteEip || (this.deleteEipLimit.support && this.deleteEipLimit.mustDelete)) {
         params.delete_eip = true
       }
-      if (this.form.fd.delete_bastion_server) {
+      if (this.form.delete_bastion_server) {
         params.delete_bastion_server = true
       }
       return params
@@ -340,7 +323,7 @@ export default {
         await this.params.ok()
       } else {
         const ids = this.dataList.map(item => item.id)
-        await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
         let params = {}
         params = {
           ...params,
@@ -361,7 +344,7 @@ export default {
       this.$message.success(this.$t('compute.text_423'))
     },
     autoDeleteChangeHandle (val) {
-      this.form.fd.autoDelete = val
+      this.form.autoDelete = val
     },
     async fetchSnapshotsByVmId (id) {
       try {
@@ -395,7 +378,6 @@ export default {
       const diskManager = new this.$Manager('disks')
       const params = {
         filter: `server_id.in(${id})`,
-        // server_id: id,
       }
       if (this.isAdminMode) { params.admin = true }
       return diskManager.list({ params })
@@ -407,15 +389,15 @@ export default {
     },
     deleteEipChange (val) {
       const { checked } = val.target
-      this.form.fd.deleteEip = checked
+      this.form.deleteEip = checked
     },
     deleteDiskChange (val) {
       const { checked } = val.target
-      this.form.fd.deleteDisk = checked
+      this.form.deleteDisk = checked
     },
     deleteSnapshotChange (val) {
       const { checked } = val.target
-      this.form.fd.deleteSnapshot = checked
+      this.form.deleteSnapshot = checked
     },
     checkDiskType ({ disks_info = [] }, type) {
       const isSomeType = disks_info.some(item => {

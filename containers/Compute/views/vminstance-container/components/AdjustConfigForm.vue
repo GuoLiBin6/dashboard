@@ -9,12 +9,15 @@
     </a-card>
     <page-body>
       <div class="form-wrapper">
-        <a-form
+        <!-- end-state: a-form-model + form.fd；无 createForm / fc -->
+        <a-form-model
+          ref="formRef"
           v-bind="formItemLayout"
-          :form="form.fc">
-          <a-form-item :label="$t('compute.text_1058')" class="mb-0">
+          :model="form.fd">
+          <a-form-model-item :label="$t('compute.text_1058')" class="mb-0">
             <cpu-radio
-              :decorator="decorators.vcpu"
+              :model="form.fd"
+
               :options="form.fi.cpuMem.cpus || []"
               :disable-options="disableCpus"
               :disabled="runningArm"
@@ -26,17 +29,17 @@
               :cpuSocketsInit="selectedItem.vcpu_count / selectedItem.cpu_sockets"
               :serverStatus="selectedItem.status"
               @change="cpuChange" />
-          </a-form-item>
-          <a-form-item :label="$t('compute.text_369')" class="mb-0">
-            <mem-radio :decorator="decorators.vmem" :options="form.fi.cpuMem.mems_mb || []" :disable-options="disableMems" :disabled="runningArm" :extra="cpuExtra" />
-          </a-form-item>
-          <a-form-item :label="$t('compute.text_1041')" v-if="isOpenWorkflow">
-            <a-input v-decorator="decorators.reason" :placeholder="$t('compute.text_1105')" />
-          </a-form-item>
-          <a-form-item :label="$t('compute.text_494')" :extra="$t('compute.text_1106')">
-            <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-decorator="decorators.autoStart" :disabled="isSomeRunning" />
-          </a-form-item>
-        </a-form>
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.text_369')" class="mb-0">
+            <mem-radio :model="form.fd" :options="form.fi.cpuMem.mems_mb || []" :disable-options="disableMems" :disabled="runningArm" :extra="cpuExtra" />
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.text_1041')" v-if="isOpenWorkflow" prop="reason">
+            <a-input v-model:value="form.fd.reason" :placeholder="$t('compute.text_1105')" />
+          </a-form-model-item>
+          <a-form-model-item :label="$t('compute.text_494')" :extra="$t('compute.text_1106')" prop="autoStart">
+            <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-model:checked="form.fd.autoStart" :disabled="isSomeRunning" />
+          </a-form-model-item>
+        </a-form-model>
       </div>
     </page-body>
     <page-footer>
@@ -70,6 +73,7 @@ import { h } from 'vue'
 import { mapGetters } from 'vuex'
 import * as R from 'ramda'
 import _ from 'lodash'
+import { VM_FORM_DEFAULTS } from '@Compute/utils/createServer'
 import CpuRadio from '@Compute/sections/CpuRadio'
 import MemRadio from '@Compute/sections/MemRadio'
 import { SERVER_TYPE } from '@Compute/constants'
@@ -108,13 +112,13 @@ export default {
       loading: false,
       action: this.$t('compute.text_1100'),
       form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: this.onValuesChange,
-        }),
+        // end-state：无 createForm；Cpu/Mem 已 :model="form.fd"
         fd: {
-          vcpu: 2,
-          vmem: 2048,
+          vcpu: itemData.vcpu_count || VM_FORM_DEFAULTS.vcpu,
+          vmem: itemData.vmem_size || VM_FORM_DEFAULTS.vmem,
           hypervisor: itemData.hypervisor,
+          reason: '',
+          autoStart,
         },
         fi: {
           cpuMem: {}, // cpu 和 内存 的关联关系
@@ -125,33 +129,6 @@ export default {
         },
       },
       beforeDataDisks: [],
-      decorators: {
-        vcpu: [
-          'vcpu',
-          {
-            initialValue: itemData.vcpu_count,
-          },
-        ],
-        vmem: [
-          'vmem',
-          {
-            initialValue: itemData.vmem_size,
-          },
-        ],
-        reason: [
-          'reason',
-          {
-            initialValue: '',
-          },
-        ],
-        autoStart: [
-          'autoStart',
-          {
-            valuePropName: 'checked',
-            initialValue: autoStart,
-          },
-        ],
-      },
       formItemLayout: {
         wrapperCol: {
           span: 20,
@@ -351,10 +328,8 @@ export default {
       }
       const conf = this.maxConfig()
       this.form.fd.vcpu_count = conf[0]
+      this.form.fd.vcpu = conf[0]
       this.form.fd.vmem = Math.ceil(conf[1]) * 1024
-      this.$nextTick(() => {
-        this.form.fc.setFieldsValue({ vcpu: this.form.fd.vcpu_count, vmem: this.form.fd.vmem })
-      })
     },
     maxConfig () {
       let cpu = 0
@@ -388,7 +363,10 @@ export default {
     async handleConfirm () {
       this.loading = true
       try {
-        const values = await this.form.fc.validateFields()
+        if (this.$refs.formRef?.validate) {
+          await this.$refs.formRef.validate()
+        }
+        const values = { ...this.form.fd }
         const res = await this.doChangeSettingsSubmit(values)
         const isOk = res.data.data.every(item => item.status === 200)
         if (isOk) {
@@ -407,9 +385,9 @@ export default {
         if (R.is(Object, this.form.fi.cpuMem)) {
           const memOpts = _.get(this.form.fi, `cpuMem.cpu_mems_mb[${cpu}]`) || []
           this.form.fi.cpuMem.mems_mb = memOpts
-          this.form.fc.setFieldsValue({
-            vmem: Math.max(this.selectedItem.vmem_size, memOpts[0]),
-          })
+          // end-state：Cpu/Mem 只写 form.fd
+          this.form.fd.vcpu = cpu
+          this.form.fd.vmem = Math.max(this.selectedItem.vmem_size, memOpts[0])
         }
       }
     },
@@ -422,15 +400,8 @@ export default {
       this.serverskusM.get({ id: 'instance-specs', params })
         .then(({ data }) => {
           this.form.fi.cpuMem = data
-          const vcpuDecorator = this.decorators.vcpu
-          const vcpuInit = vcpuDecorator[1].initialValue
-          this.cpuChange(vcpuInit)
+          this.cpuChange(this.form.fd.vcpu || VM_FORM_DEFAULTS.vcpu)
         })
-    },
-    onValuesChange (props, values) {
-      Object.keys(values).forEach((key) => {
-        this.$set(this.form.fd, key, values[key])
-      })
     },
     async capability (v) { // 可用区查询
       const params = {

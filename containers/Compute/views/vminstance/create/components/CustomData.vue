@@ -1,16 +1,16 @@
 <template>
-  <a-form-item :label="$t('compute.custom_data')" :extra="form.fd.custom_data_type ? customDataExtra : ''">
-    <a-radio-group v-decorator="decorators.custom_data_type" class="mb-2" @change="handleTypeChange">
+  <a-form-model-item :label="$t('compute.custom_data')" :extra="customDataTypeValue ? customDataExtra : ''" prop="custom_data_type">
+    <a-radio-group :value="customDataTypeValue" class="mb-2" @change="handleTypeChange">
       <a-radio-button value="">{{ $t('compute.text_116') }}</a-radio-button>
       <a-radio-button value="input">{{ $t('compute.custom_data_input') }}</a-radio-button>
       <a-radio-button value="file">{{ $t('compute.custom_data_file') }}</a-radio-button>
     </a-radio-group>
     <div style="max-width: 800px" class="mt-2">
-      <code-mirror v-if="form.fd.custom_data_type === 'input'" v-model="codeMirrorData" :options="cmOptions" @input="handleCodeInput" />
+      <code-mirror v-if="customDataTypeValue === 'input'" v-model="codeMirrorData" :options="cmOptions" @input="handleCodeInput" />
     </div>
     <div style="max-width: 800px" class="mt-2 mb-2">
       <a-upload-dragger
-        v-if="form.fd.custom_data_type === 'file'"
+        v-if="customDataTypeValue === 'file'"
         list-type="text"
         :beforeUpload="beforeUpload"
         @remove="handleRemove"
@@ -26,20 +26,21 @@
     <div v-if="errorTip" class="err-tip">
       {{errorTip}}
     </div>
-  </a-form-item>
+  </a-form-model-item>
 </template>
 
 <script>
 import 'codemirror/theme/material.css'
 import 'codemirror/addon/edit/matchbrackets'
 import { HYPERVISORS_MAP } from '@/constants'
-// import yaml from 'js-yaml'
-// import * as R from 'ramda'
 
 export default {
   props: {
-    decorators: Object,
     form: Object,
+    model: {
+      type: Object,
+      required: true,
+    },
   },
   data () {
     return {
@@ -70,12 +71,14 @@ export default {
     customDataExtra () {
       return this.isEsxi ? this.$t('compute.custom_data.esxi_extra') : this.$t('compute.custom_data.extra')
     },
+    customDataTypeValue () {
+      return this.model.custom_data_type
+    },
   },
   methods: {
     normalizeUserData (content) {
       if (content == null || content === '') return ''
       if (typeof content === 'string') return content
-      // 组件初始值为 []，勿当正文
       if (Array.isArray(content)) return content.length ? content.join('\n') : ''
       return String(content)
     },
@@ -90,8 +93,8 @@ export default {
         this.$message.error(this.$t('compute.custom_data_file_limit'))
         return false
       }
-      var reader = new FileReader()// 这里是核心！！！读取操作就是由它完成的。
-      reader.readAsText(file)// 读取文件的内容
+      var reader = new FileReader()
+      reader.readAsText(file)
 
       reader.onload = (info) => {
         const result = info.target.result
@@ -100,7 +103,9 @@ export default {
       }
       return false
     },
-    handleTypeChange () {
+    handleTypeChange (e) {
+      const val = e?.target?.value ?? e
+      this.$set(this.model, 'custom_data_type', val)
       this.errorTip = ''
       this.fileList = []
       this.codeMirrorData = ''
@@ -115,6 +120,9 @@ export default {
       const text = this.normalizeUserData(_value)
       this.codeMirrorData = text
       this.customData = text
+    },
+    async validate () {
+      return true
     },
   },
 }

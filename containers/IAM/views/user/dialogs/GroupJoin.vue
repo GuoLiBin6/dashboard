@@ -4,28 +4,26 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.user')" :count="params.data.length" :action="params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form
-        :form="form.fc"
-        v-bind="formItemLayout">
-        <a-form-item :label="$t('dictionary.group')">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('dictionary.group')" prop="groups">
           <a-select
             :filterOption="filterOption"
             :loading="groupLoading"
-            v-decorator="decorators.groups"
+            v-model:value="form.groups"
             mode="multiple"
             :placeholder="$t('rules.group')">
             <a-select-option v-for="item in groups" :key="item.id">
               {{item.name}}
             </a-select-option>
           </a-select>
-        </a-form-item>
-        <a-form-item v-if="isUserDisabled" :label="$t('iam.enabled_user')" v-bind="formItemLayout" :extra="$t('iam.user_can_enabled')">
+        </a-form-model-item>
+        <a-form-model-item v-if="isUserDisabled" :label="$t('iam.enabled_user')" :extra="$t('iam.user_can_enabled')" prop="enabled">
           <a-switch
             :checkedChildren="$t('common_292')"
             :unCheckedChildren="$t('common_293')"
-            v-decorator="decorators.enabled" />
-        </a-form-item>
-      </a-form>
+            v-model:checked="form.enabled" />
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
@@ -47,23 +45,12 @@ export default {
       groups: [],
       groupLoading: false,
       form: {
-        fc: this.$form.createForm(this),
+        groups: [],
+        enabled: false,
       },
-      decorators: {
+      rules: {
         groups: [
-          'groups',
-          {
-            validateFirst: true,
-            rules: [
-              { required: true, message: this.$t('system.text_499') },
-            ],
-          },
-        ],
-        enabled: [
-          'enabled',
-          {
-            initialValue: false,
-          },
+          { required: true, message: this.$t('system.text_499') },
         ],
       },
       formItemLayout: {
@@ -109,23 +96,14 @@ export default {
     },
     async handleConfirm () {
       this.loading = true
-      const { refresh } = this.params
       try {
-        const values = await this.form.fc.validateFields()
-        const data = {
-          gids: values.groups,
-          action: 'join',
-        }
-        if (values.enabled) data.enabled = true
-        await new this.$Manager('users', 'v1').objectRpc({
-          objId: this.params.resItem.id,
-          methodname: 'DoJoinGroups',
-          params: data,
+        await this.$refs.formRef.validate()
+        await new this.$Manager('users', 'v1').performAction({
+          id: this.params.data[0].id,
+          action: 'join-groups',
+          data: this.form,
         })
-        if (values.enabled) {
-          this.$bus.$emit('RefreshUser', this.params.resItem.id)
-        }
-        refresh()
+        this.params.success()
         this.cancelDialog()
       } catch (error) {
         this.loading = false

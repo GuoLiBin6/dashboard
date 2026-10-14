@@ -2,29 +2,35 @@
   <div>
     <page-header :title="$t('network.create_nat')" />
     <page-body>
-      <a-form
+      <a-form-model
+        ref="formRef"
         class="mt-3"
         v-bind="formItemLayout"
-        :form="form.fc"
+        :model="form.fd"
+        :rules="rules"
         hideRequiredMark>
-        <a-form-item :label="$t('network.text_205', [$t('dictionary.domain')])" v-if="$store.getters.isAdminMode">
-          <domain-select v-decorator="decorators.project_domain" @change="handleDomainChange" />
-        </a-form-item>
-        <a-form-item :label="$t('network.text_21')" v-bind="formItemLayout">
-          <a-input v-decorator="decorators.name" :placeholder="$t('network.text_44')" />
-        </a-form-item>
-        <a-form-item :label="$t('common.description')" v-bind="formItemLayout">
-          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-        </a-form-item>
+        <a-form-model-item :label="$t('network.text_205', [$t('dictionary.domain')])" v-if="$store.getters.isAdminMode" prop="project_domain">
+          <domain-select v-model:value="form.fd.project_domain" @change="handleDomainChange" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('network.text_21')" v-bind="formItemLayout" prop="name">
+          <a-input v-model:value="form.fd.name" :placeholder="$t('network.text_44')" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('common.description')" v-bind="formItemLayout" prop="description">
+          <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.fd.description" :placeholder="$t('common_367')" />
+        </a-form-model-item>
         <!-- 计费方式 -->
-        <clearing-radios v-bind="formItemLayout" :auto_renew="false" />
-        <a-form-item :label="$t('network.expired_release')" v-if="form.fd.billing_type !== 'prepaid'">
-          <duration :decorators="decorators.duration" :form="form" />
-        </a-form-item>
-        <a-form-item :label="$t('regionMap.enable_world_map')">
-          <a-switch v-decorator="decorators.enableWorldMap" />
-        </a-form-item>
-        <a-form-item v-if="form.fd.enableWorldMap" :label="$t('compute.region_map')">
+        <clearing-radios :model="form.fd" v-bind="formItemLayout" :auto_renew="false" />
+        <a-form-model-item :label="$t('network.expired_release')" v-if="form.fd.billing_type !== 'prepaid'">
+          <duration
+            :model="form.fd"
+            :form="form"
+            v-model:durationStandard="form.fd.durationStandard"
+            v-model:duration="form.fd.duration" />
+        </a-form-model-item>
+        <a-form-model-item :label="$t('regionMap.enable_world_map')" prop="enableWorldMap">
+          <a-switch v-model:checked="form.fd.enableWorldMap" />
+        </a-form-model-item>
+        <a-form-model-item v-if="form.fd.enableWorldMap" :label="$t('compute.region_map')">
           <region-map
             :region-filter-params="regionMapParams"
             filter-brand-resource="nat"
@@ -32,10 +38,11 @@
             split-key="provider"
             @select="onRegionSelect"
             @params-change="onRegionMapParamsChange" />
-        </a-form-item>
+        </a-form-model-item>
         <area-selects
           class="mb-0"
           ref="areaSelects"
+          :model="form.fd"
           :wrapperCol="formItemLayout.wrapperCol"
           :labelCol="formItemLayout.labelCol"
           :names="areaselectsName"
@@ -54,6 +61,7 @@
         <template>
           <network-selects
             ref="REF_NETWORK"
+            :model="form.fd"
             :label="$t('network.text_16')"
             :isDefaultFetch="false"
             :vpcFormat="vpcFormat"
@@ -64,7 +72,9 @@
         <template>
           <eip-config
             v-if="resolvedProvider && resolvedProvider !== 'Huawei'"
-            :decorators="decorators.eip"
+            ref="eipConfigRef"
+            :model="form.fd"
+
             :eip-params="eipParams"
             :hypervisor="hypervisor"
             :showBind="false"
@@ -74,12 +84,12 @@
             :hasPublicIp="false"
             :formItemLayout="formItemLayout" />
         </template>
-        <a-form-item :label="$t('common.text00012')" class="mb-0" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('common.text00012')" class="mb-0" v-bind="formItemLayout" prop="__meta__">
           <tag
-            v-decorator="decorators.__meta__" />
-        </a-form-item>
-      </a-form>
-      <bottom-bar :values="form.fc.getFieldsValue()" :cloudAccountId="cloudAccountId" />
+            :value="form.fd.__meta__" @change="v => { form.fd.__meta__ = v }" />
+        </a-form-model-item>
+      </a-form-model>
+      <bottom-bar :values="form.fd" :cloudAccountId="cloudAccountId" />
     </page-body>
   </div>
 </template>
@@ -87,13 +97,12 @@
 <script lang="jsx">
 import * as R from 'ramda'
 import { mapGetters } from 'vuex'
-import { DECORATORS } from '@Network/views/nats/constants'
 import Duration from '@Compute/sections/Duration'
 import EipConfig from '@Compute/sections/EipConfig'
 import RegionMap from '@Compute/sections/RegionMap'
 import DomainSelect from '@/sections/DomainSelect'
-import NetworkSelects from '@/sections/NetworkSelects'
-import AreaSelects from '@/sections/AreaSelects'
+import NetworkSelects from '@/sections/NetworkSelects/model'
+import AreaSelects from '@/sections/AreaSelects/model'
 import Tag from '@/sections/Tag'
 import { HYPERVISORS_MAP, PROVIDER_MAP, resolveHypervisorKey } from '@/constants'
 import { cloudregionFilterByCapability } from '@/utils/common/capability'
@@ -118,14 +127,12 @@ export default {
   data () {
     return {
       loading: false,
-      decorators: {
-        ...DECORATORS,
-        enableWorldMap: [
-          'enableWorldMap',
-          {
-            valuePropName: 'checked',
-            initialValue: false,
-          },
+      rules: {
+        name: [
+          { required: true, message: this.$t('network.text_218') },
+        ],
+        project_domain: [
+          { required: true, message: this.$t('rules.domain') },
         ],
       },
       selectedRegionItem: {},
@@ -185,14 +192,10 @@ export default {
       return this.pickSingleAreaValue(this.form.fd.provider)
     },
     resolvedAreaFilterParams () {
-      const sku = this.form.fd.sku || this.form.fc.getFieldValue('sku')
+      const sku = this.form.fd.sku
       const fromForm = {
-        provider: this.pickSingleAreaValue(
-          this.form.fc.getFieldValue('provider') || this.form.fd.provider,
-        ),
-        cloudregion: this.pickSingleAreaValue(
-          this.form.fc.getFieldValue('cloudregion') || this.form.fd.cloudregion,
-        ),
+        provider: this.pickSingleAreaValue(this.form.fd.provider),
+        cloudregion: this.pickSingleAreaValue(this.form.fd.cloudregion),
       }
       if (R.is(Object, sku)) {
         const skuZones = this.parseSkuZoneIds(sku)
@@ -216,8 +219,7 @@ export default {
       return ''
     },
     cloudAccountId () {
-      const values = this.form.getFieldsValue()
-      const currentVpc = this.vpcList.filter(item => item.id === values.vpc)
+      const currentVpc = this.vpcList.filter(item => item.id === this.form.fd.vpc)
       if (currentVpc[0]) {
         return currentVpc[0].account_id
       }
@@ -281,7 +283,7 @@ export default {
       const { zones: resolvedZones } = this.resolvedAreaFilterParams
       const zones = (resolvedZones && resolvedZones.length)
         ? resolvedZones
-        : this.normalizeAreaValues(this.form.fc.getFieldValue('zone') || this.form.fd.zone)
+        : this.normalizeAreaValues(this.form.fd.zone)
       if (zones && zones.length) {
         params.zones = zones
       }
@@ -312,9 +314,7 @@ export default {
   },
   created () {
     this.initScopeParams()
-    this.$nextTick(() => {
-      this.form.fc.setFieldsValue({ project_domain: this.$store.getters.userInfo.projectDomainId })
-    })
+    this.form.fd.project_domain = this.$store.getters.userInfo.projectDomainId
   },
   methods: {
     initScopeParams () {
@@ -338,9 +338,7 @@ export default {
     getVpcNetworkRegionIds () {
       const { cloudregion: resolvedRegion } = this.resolvedAreaFilterParams
       if (resolvedRegion) return [resolvedRegion]
-      return this.normalizeAreaValues(
-        this.form.fc.getFieldValue('cloudregion') || this.form.fd.cloudregion,
-      )
+      return this.normalizeAreaValues(this.form.fd.cloudregion)
     },
     applyCloudregionListParam (params, regionIds = []) {
       if (!regionIds.length) return
@@ -406,17 +404,17 @@ export default {
       }) || null
     },
     syncAreaHiddenFields () {
-      const cloudregionIds = this.normalizeAreaValues(
-        this.form.fc.getFieldValue('cloudregion') || this.form.fd.cloudregion,
+      const cloudregionIds = this.normalizeAreaValues(this.form.fd.cloudregion)
+      this.$set(
+        this.form.fd,
+        'cloudregion_id',
+        cloudregionIds.length === 1 ? cloudregionIds[0] : undefined,
       )
-      this.form.fc.setFieldsValue({
-        cloudregion_id: cloudregionIds.length === 1 ? cloudregionIds[0] : undefined,
-      })
     },
     syncResolvedLocationFields () {
       const { cloudregion } = this.resolvedAreaFilterParams
       if (cloudregion) {
-        this.form.fc.setFieldsValue({ cloudregion_id: cloudregion })
+        this.$set(this.form.fd, 'cloudregion_id', cloudregion)
       }
     },
     appendSkuFilter (params, filter) {
@@ -431,9 +429,7 @@ export default {
     },
     buildSkuFetchParams () {
       // 直接读表单字段，避免 computed form.fd 非响应导致区域一直为空
-      const regionIds = this.normalizeAreaValues(
-        this.form.fc.getFieldValue('cloudregion') || this.form.fd.cloudregion,
-      )
+      const regionIds = this.normalizeAreaValues(this.form.fd.cloudregion)
       if (!regionIds.length) return null
       const params = {
         scope: 'domain',
@@ -443,14 +439,12 @@ export default {
       } else {
         this.appendSkuFilter(params, `cloudregion_id.in(${regionIds.join(',')})`)
       }
-      if (this.form.fc.getFieldValue('billing_type') === 'postpaid') {
+      if (this.form.fd.billing_type === 'postpaid') {
         params.postpaid_status = 'available'
       } else {
         params.prepaid_status = 'available'
       }
-      const providerValues = this.normalizeAreaValues(
-        this.form.fc.getFieldValue('provider') || this.form.fd.provider,
-      )
+      const providerValues = this.normalizeAreaValues(this.form.fd.provider)
       if (providerValues.length === 1) {
         params.provider = providerValues[0]
       } else if (providerValues.length > 1) {
@@ -460,9 +454,6 @@ export default {
       return params
     },
     refreshSkuByAreaSelection () {
-      this.form.fc.setFieldsValue({
-        sku: undefined,
-      })
       this.$set(this.form.fd, 'sku', undefined)
       this.$nextTick(() => {
         const params = this.buildSkuFetchParams()
@@ -474,13 +465,10 @@ export default {
       })
     },
     clearPublicLocationFields () {
-      this.form.fc.setFieldsValue({
-        provider: [],
-        cloudregion: [],
-        sku: undefined,
-        cloudregion_id: undefined,
-      })
+      this.$set(this.form.fd, 'provider', [])
+      this.$set(this.form.fd, 'cloudregion', [])
       this.$set(this.form.fd, 'sku', undefined)
+      this.$set(this.form.fd, 'cloudregion_id', undefined)
     },
     onRegionSelect (payload) {
       const regions = payload?.nearbyRegions || []
@@ -511,9 +499,6 @@ export default {
         return matched ? matched.name : hvKey
       }).filter(Boolean))]
       const cloudregionIds = regions.map(item => item.id).filter(Boolean)
-      this.form.fc.setFieldsValue({
-        sku: undefined,
-      })
       this.$set(this.form.fd, 'sku', undefined)
       await this.$nextTick()
       const areaRef = this.$refs.areaSelects

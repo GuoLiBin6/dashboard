@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="this.params.title" :name="$t('dictionary.image')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-checkbox v-model="force_checked">{{$t('compute.force_delete.extra')}}</a-checkbox>
+      <a-checkbox v-model:checked="force_checked">{{$t('compute.force_delete.extra')}}</a-checkbox>
     </div>
     <div slot="footer">
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t("dialog.ok") }}</a-button>

@@ -2,13 +2,13 @@
   <base-dialog :width="700" @cancel="cancelDialog">
     <div slot="header">{{ $t('common.create') }} - {{ $t('aice.container_secret') }}</div>
     <div slot="body">
-      <a-form :form="form.fc" hideRequiredMark v-bind="formItemLayout">
-        <a-form-item :label="$t('common.name')">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-bind="formItemLayout">
+        <a-form-model-item :label="$t('common.name')" prop="name">
           <a-input
-            v-decorator="decorators.name"
+            v-model:value="form.name"
             :placeholder="$t('common.tips.input', [$t('common.name')])" />
-        </a-form-item>
-          <a-form-item :label="$t('aice.container_secret')" :extra="$t('aice.container_secret.env_hint') + ' ' + $t('aice.container_secret.add_pair')">
+        </a-form-model-item>
+          <a-form-model-item :label="$t('aice.container_secret')" :extra="$t('aice.container_secret.env_hint') + ' ' + $t('aice.container_secret.add_pair')">
           <div v-for="(item, index) in items" :key="item.id" class="d-flex align-items-start mb-2">
             <a-input
               v-model:value="item.key"
@@ -34,8 +34,8 @@
             {{ $t('aice.container_secret.add_pair') }}
           </a-button>
           <div v-if="blobError" class="text-danger mt-1">{{ blobError }}</div>
-        </a-form-item>
-      </a-form>
+        </a-form-model-item>
+      </a-form-model>
     </div>
     <div slot="footer">
       <a-button type="primary" :loading="loading" @click="handleConfirm">{{ $t('dialog.ok') }}</a-button>
@@ -56,29 +56,17 @@ export default {
     return {
       loading: false,
       blobError: '',
+      form: {
+        name: '',
+      },
+      rules: {
+        name: [
+          { required: true, message: this.$t('common.tips.input', [this.$t('common.name')]) },
+        ],
+      },
       items: [
         { id: uuid(), key: '', value: '' },
       ],
-      form: {
-        fc: this.$form.createForm(this, {
-          onValuesChange: (props, values) => {
-            Object.keys(values).forEach((key) => {
-              this.$set(this.form.fd, key, values[key])
-            })
-          },
-        }),
-        fd: {},
-      },
-      decorators: {
-        name: [
-          'name',
-          {
-            rules: [
-              { required: true, message: this.$t('common.tips.input', [this.$t('common.name')]) },
-            ],
-          },
-        ],
-      },
       formItemLayout: {
         wrapperCol: { span: 20 },
         labelCol: { span: 4 },
@@ -106,8 +94,11 @@ export default {
     },
     async handleConfirm () {
       this.blobError = ''
-      const values = await this.form.fc.validateFields().catch(() => null)
-      if (!values) return
+      try {
+        await this.$refs.formRef.validate()
+      } catch (e) {
+        return
+      }
       const blob = this.buildBlob()
       if (Object.keys(blob).length === 0) {
         this.blobError = this.$t('common.tips.input', [this.$t('aice.container_secret')])
@@ -118,7 +109,7 @@ export default {
         const manager = new this.$Manager('credentials', 'v1')
         const createData = {
           type: 'container_secret',
-          name: values.name || '',
+          name: this.form.name || '',
           blob,
         }
         if (this.$store.getters.scope === 'project') {

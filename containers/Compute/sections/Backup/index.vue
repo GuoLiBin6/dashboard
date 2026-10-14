@@ -1,20 +1,20 @@
 <template>
   <div>
-    <a-form-item class="mb-0">
+    <a-form-model-item class="mb-0" :prop="enableField">
       <a-switch
-        :checked="backupEnable"
+        v-model:checked="model[enableField]"
         :checkedChildren="$t('compute.text_115')"
         :unCheckedChildren="$t('compute.text_116')"
         :disabled="switchDisabled"
         @change="change" />
-    </a-form-item>
-    <a-form-item class="mt-2" v-if="backupEnable && !isProjectMode">
+    </a-form-model-item>
+    <a-form-model-item class="mt-2" v-if="backupEnable && !isProjectMode" :prop="backupField">
       <base-select
-        v-decorator="decorator.backup"
+        v-model:value="model[backupField]"
         :options="hostList"
         :select-props="{ placeholder: $t('compute.text_117') }"
         :disabled-items="disabledItems" />
-    </a-form-item>
+    </a-form-model-item>
   </div>
 </template>
 
@@ -38,10 +38,17 @@ export default {
       type: String,
       default: 'selection',
     },
-    decorator: {
+    enableField: {
+      type: String,
+      default: 'backupEnable',
+    },
+    backupField: {
+      type: String,
+      default: 'backup',
+    },
+    model: {
       type: Object,
       required: true,
-      validator: val => R.is(Array, val.backupEnable) && R.is(Array, val.backup),
     },
     disabledItems: {
       type: Array,
@@ -59,7 +66,7 @@ export default {
   data () {
     return {
       hostList: [],
-      backupEnable: this.decorator.backupEnable[1].initialValue,
+      backupEnable: !!this.model[this.enableField],
     }
   },
   computed: {
@@ -76,6 +83,14 @@ export default {
         if (val) this.fetchBackupHosts()
       },
       immediate: true,
+    },
+    model: {
+      deep: true,
+      handler (m) {
+        if (!m) return
+        const next = !!m[this.enableField]
+        if (this.backupEnable !== next) this.backupEnable = next
+      },
     },
     hostList: {
       immediate: true,
@@ -97,6 +112,9 @@ export default {
       },
     },
   },
+  created () {
+    this.backupEnable = !!this.model[this.enableField]
+  },
   methods: {
     normalizeBackupId (val) {
       if (!val) return ''
@@ -104,19 +122,15 @@ export default {
       return val
     },
     getCreateFormFieldDraftSnapshot () {
-      const f = this.form?.fc
-      if (!f) return { backupEnable: this.backupEnable, backup: '' }
-      const backupEnable = !!f.getFieldValue(this.decorator.backupEnable[0])
-      if (!backupEnable) {
-        return { backupEnable: false, backup: '' }
-      }
+      const backupEnable = !!this.model[this.enableField]
+      if (!backupEnable) return { backupEnable: false, backup: '' }
       return {
         backupEnable: true,
-        backup: this.normalizeBackupId(f.getFieldValue(this.decorator.backup[0])) || '',
+        backup: this.normalizeBackupId(this.model[this.backupField]) || '',
       }
     },
     applyCreateFormFieldDraft (draft) {
-      if (!draft || !this.form?.fc) return
+      if (!draft) return
       // 跨 tab：不自动开开关；开关已开时（用户打开后拉列表）再回填宿主机
       if (this.isFormFieldDraftFromLocal()) {
         if (!this.backupEnable) return
@@ -125,39 +139,27 @@ export default {
       }
       if (draft.backupEnable) {
         this.backupEnable = true
-        this.applyFormFieldValues({ [this.decorator.backupEnable[0]]: true })
+        this.$set(this.model, this.enableField, true)
         this.writeBackupIfInHostList(draft.backup)
       } else if (draft.backupEnable === false) {
         this.backupEnable = false
-        this.applyFormFieldValues({ [this.decorator.backupEnable[0]]: false })
-        const backupField = this.decorator.backup[0]
-        this.applyFormFieldValues({ [backupField]: undefined })
-        if (this.form?.fd) this.$delete(this.form.fd, backupField)
+        this.$set(this.model, this.enableField, false)
+        this.$delete(this.model, this.backupField)
       }
     },
     /** hostList 命中才写备份机 */
     writeBackupIfInHostList (backupId) {
       const id = this.normalizeBackupId(backupId)
-      if (!id || !this.form?.fc || !this.backupEnable) return
+      if (!id || !this.backupEnable) return
       const hostList = Array.isArray(this.hostList) ? this.hostList : []
       if (!hostList.length || !hostList.some(item => item.id === id)) return
-      const field = this.decorator.backup[0]
-      const current = this.normalizeBackupId(this.form.fc.getFieldValue(field))
-      if (current === id) return
-      this.form.fc.getFieldDecorator(field, {
-        ...(this.decorator.backup[1] || {}),
-        initialValue: id,
-      })
-      this.applyFormFieldValues({ [field]: id })
+      if (this.normalizeBackupId(this.model[this.backupField]) === id) return
+      this.$set(this.model, this.backupField, id)
     },
     change (val) {
       this.backupEnable = val
-      this.applyFormFieldValues({ [this.decorator.backupEnable[0]]: val })
-      if (!val) {
-        const backupField = this.decorator.backup[0]
-        this.applyFormFieldValues({ [backupField]: undefined })
-        if (this.form?.fd) this.$delete(this.form.fd, backupField)
-      }
+      this.$set(this.model, this.enableField, val)
+      if (!val) this.$delete(this.model, this.backupField)
     },
     async fetchBackupHosts () {
       if (!R.is(Object, this.hostParams) || this.isProjectMode) return

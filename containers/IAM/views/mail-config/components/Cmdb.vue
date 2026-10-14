@@ -1,18 +1,20 @@
 <template>
-  <a-form
-    :form="form.fc"
+  <a-form-model
+    ref="formRef"
+    :model="form"
+    :rules="rules"
     v-bind="formItemLayout">
-    <a-form-item label="URL">
+    <a-form-model-item label="URL" prop="webhook">
       <template v-slot:extra>
         <div>{{$t('system.text_579')}}</div>
       </template>
-      <a-input v-decorator="decorators.webhook" />
-    </a-form-item>
-    <a-form-item :wrapper-col="offsetWrapperCol">
+      <a-input v-model:value="form.webhook" />
+    </a-form-model-item>
+    <a-form-model-item :wrapper-col="offsetWrapperCol">
       <a-button type="primary" @click="handleSubmit" :loading="submiting">{{ $t('common.ok') }}</a-button>
       <test-button v-if="false" class="ml-3" :post="testPost" />
-    </a-form-item>
-  </a-form>
+    </a-form-model-item>
+  </a-form-model>
 </template>
 
 <script>
@@ -37,16 +39,11 @@ export default {
     return {
       submiting: false,
       form: {
-        fc: this.$form.createForm(this),
+        webhook: undefined,
       },
-      decorators: {
+      rules: {
         webhook: [
-          'webhook',
-          {
-            rules: [
-              { required: true, message: this.$t('system.text_267') },
-            ],
-          },
+          { required: true, message: this.$t('system.text_267') },
         ],
       },
       contactData: null,
@@ -71,7 +68,7 @@ export default {
         const data = response.data.data[0] || {}
         this.contactData = data
         this.$nextTick(() => {
-          this.form.fc.setFieldsValue(data.content)
+          Object.assign(this.form, data.content || {})
         })
       } catch (error) {
         throw error
@@ -80,7 +77,8 @@ export default {
       }
     },
     async handleSubmit () {
-      const values = await this.form.fc.validateFields()
+      await this.$refs.formRef.validate()
+      const values = { ...this.form }
       try {
         this.submiting = true
         if (this.contactData && this.contactData.id) {
@@ -110,7 +108,8 @@ export default {
     },
     async testPost () {
       try {
-        const values = await this.form.fc.validateFields()
+        await this.$refs.formRef.validate()
+        const values = { ...this.form }
         await new this.$Manager('notifyconfigs', 'v1').performClassAction({
           action: 'validate',
           data: {
