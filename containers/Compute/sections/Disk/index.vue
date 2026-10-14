@@ -4,7 +4,7 @@
       <div class="disk-wrapper__selects">
         <a-form-item :wrapperCol="{ span: 24 }" :validate-status="storageStatusMap.type" class="mb-0 disk-wrapper__type">
           <a-tag class="disk-type-tag" v-if="diskTypeLabel && !disabled">{{ diskTypeLabel }}</a-tag>
-                    <a-select
+          <a-select
             v-else
             :value="diskFieldVal(diskFieldMap.type)"
             labelInValue
