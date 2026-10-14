@@ -1394,12 +1394,12 @@ export default {
       if (Object.prototype.hasOwnProperty.call(initData, 'is_daemon')) {
         kvmAdvance.is_daemon = !!initData.is_daemon
       }
-      if (Object.keys(kvmAdvance).length) {
+      if (Object.keys(kvmAdvance).length && this.form?.fd) {
         await this.$nextTick()
-        this.form.fc.setFieldsValue(kvmAdvance)
+        Object.assign(this.form.fd, kvmAdvance)
         // isKvm 异步到位后再补一次
         setTimeout(() => {
-          if (this.form?.fc) this.form.fc.setFieldsValue(kvmAdvance)
+          if (this.form?.fd) Object.assign(this.form.fd, kvmAdvance)
         }, 1500)
       }
     },
