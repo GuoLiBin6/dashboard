@@ -5,7 +5,7 @@
     :base-info="baseInfo" />
 </template>
 
-<script>
+<script lang="jsx">
 import { getCopyWithContentTableColumn, getPublicScopeTableColumn } from '@/utils/common/tableColumn'
 
 export default {

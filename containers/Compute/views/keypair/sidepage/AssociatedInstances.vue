@@ -8,7 +8,7 @@
     :export-data-options="exportDataOptions" />
 </template>
 
-<script>
+<script lang="jsx">
 import SystemIcon from '@/sections/SystemIcon'
 import ListMixin from '@/mixins/list'
 import WindowsMixin from '@/mixins/windows'

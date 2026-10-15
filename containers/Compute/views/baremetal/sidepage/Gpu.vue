@@ -53,8 +53,12 @@ export default {
                 return cellValue
               }
               return [
-                <span>{row.model}</span>,
-                <icon type={ DEVICE_MAP[device] } />,
+                h('span', row.model),
+                h('icon', {
+                  props: {
+                    type: DEVICE_MAP[device],
+                  },
+                }),
               ]
             },
           },

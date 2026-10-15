@@ -8,7 +8,7 @@
     :base-info="baseInfo" />
 </template>
 
-<script>
+<script lang="jsx">
 import { k8sStatusColumn } from '@K8S/utils/tableColumns'
 
 export default {

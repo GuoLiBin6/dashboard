@@ -8,7 +8,7 @@
     :base-info="baseInfo" />
 </template>
 
-<script>
+<script lang="jsx">
 export default {
   name: 'K8SPriorityClassDetail',
   props: {
