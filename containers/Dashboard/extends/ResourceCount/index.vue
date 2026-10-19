@@ -121,7 +121,7 @@ export default {
           required: false,
         },
         {
-          label: this.$t('usage')['all.running_containers'],
+          label: (this.$tm('usage') || {})['all.running_containers'],
           key: ['all.running_containers', 'domain.running_containers', 'running_containers'],
           required: false,
         },

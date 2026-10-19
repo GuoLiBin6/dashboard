@@ -39,7 +39,7 @@
           filterBrandResource="compute_engine" />
       </a-form-model-item>
       <a-form-model-item :label="$t('compute.text_228')" v-if="!isServertemplate" prop="name">
-        <a-input v-model:value="form.fd.name" />
+        <a-input v-model:value="form.fd.name" :placeholder="$t('compute.text_210')" />
         <template v-slot:extra>
           <name-repeated res="servers" :name="form.fd.name" :default-text="$t('compute.text_893')" />
         </template>
@@ -268,20 +268,6 @@
             :init-schedtags="workflowInitSchedtags"
             :form-draft-key="vmDraftFields.schedPolicy" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.repo.port_mapping')" v-if="showPortMapping">
-          <labels
-            ref="labelRef"
-            :model="form.fd"
-            :disableConf="portMappingDisableConf"
-            :init-pairs="workflowInitPortMappings"
-            :title="$t('compute.repo.port_mapping')"
-            :keyLabel="$t('compute.repo.container_port')"
-            :valueLabel="$t('compute.repo.host_port')"
-            :keyPlaceholder="$t('compute.repo.example', ['443'])"
-            :valuePlaceholder="$t('compute.repo.example', ['443'])"
-            :valueTooltip="$t('compute.port_mappings.host_port_tip', [20000, 25000])"
-            show-protocol />
-        </a-form-model-item>
         <a-form-model-item :label="$t('compute.text_1155')" class="mb-0" v-if="isKvm">
           <bios
             ref="biosRef"
@@ -337,10 +323,12 @@
         </a-form-model-item>
         <a-form-model-item v-if="isKvm" :label="$t('compute.qemu_version')">
           <a-select
-            v-model:value="form.fd.qemu_version"
+            :value="form.fd.qemu_version || 'default'"
             style="width: 200px"
-            :placeholder="$t('common.select')">
-            <a-select-option value="">{{ $t('compute.text_1') }}</a-select-option>
+            :placeholder="$t('common.select')"
+            @change="v => { form.fd.qemu_version = v }">
+            <!-- antdv4：空字符串会被当成未选，默认项用 default，提交时再忽略 -->
+            <a-select-option value="default">{{ $t('compute.text_1') }}</a-select-option>
             <a-select-option value="4.2.0">4.2.0</a-select-option>
             <a-select-option value="10.0.7">10.0.7</a-select-option>
           </a-select>

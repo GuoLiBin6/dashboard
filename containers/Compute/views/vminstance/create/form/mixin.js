@@ -1388,8 +1388,10 @@ export default {
       if (initData.vdi) kvmAdvance.vdi = initData.vdi
       if (initData.vga) kvmAdvance.vga = initData.vga
       if (initData.machine) kvmAdvance.machine = initData.machine
-      if (initData.qemu_version) {
+      if (initData.qemu_version && initData.qemu_version !== 'default') {
         this.form.fd.qemu_version = initData.qemu_version
+      } else if (!this.form.fd.qemu_version) {
+        this.form.fd.qemu_version = 'default'
       }
       if (Object.prototype.hasOwnProperty.call(initData, 'is_daemon')) {
         kvmAdvance.is_daemon = !!initData.is_daemon
@@ -1958,9 +1960,6 @@ export default {
           await this.$refs.osArchRef.validate([
             { required: true, message: i18n.t('compute.text_1363') },
           ])
-        }
-        if (typeof this.$refs.labelRef?.validate === 'function') {
-          await this.$refs.labelRef.validate()
         }
         return { ...this.form.fd }
       }

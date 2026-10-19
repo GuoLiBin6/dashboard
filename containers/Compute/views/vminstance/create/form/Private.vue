@@ -48,7 +48,7 @@
           :select-props="{ placeholder: $t('compute.text_149') }" />
       </a-form-model-item>
       <a-form-model-item :label="$t('compute.text_228')" v-if="!isServertemplate" prop="name">
-        <a-input v-model:value="form.fd.name" />
+        <a-input v-model:value="form.fd.name" :placeholder="$t('compute.text_210')" />
         <template v-slot:extra>
           <name-repeated
             res="servers"
@@ -206,20 +206,6 @@
             :preserve-init-prefer-host="preserveAdvanceInitProps"
             :init-schedtags="workflowInitSchedtags"
             :form-draft-key="vmDraftFields.schedPolicy" />
-        </a-form-model-item>
-        <a-form-model-item :label="$t('compute.repo.port_mapping')" v-if="showPortMapping">
-          <labels
-            ref="labelRef"
-            :model="form.fd"
-            :disableConf="portMappingDisableConf"
-            :init-pairs="workflowInitPortMappings"
-            :title="$t('compute.repo.port_mapping')"
-            :keyLabel="$t('compute.repo.container_port')"
-            :valueLabel="$t('compute.repo.host_port')"
-            :keyPlaceholder="$t('compute.repo.example', ['443'])"
-            :valuePlaceholder="$t('compute.repo.example', ['443'])"
-            :valueTooltip="$t('compute.port_mappings.host_port_tip', [20000, 25000])"
-            show-protocol />
         </a-form-model-item>
         <custom-data v-if="showCustomData" ref="customData" :model="form.fd" :form="form" />
         <bastion-host ref="bastionHostRef" v-if="!isOpenSourceVersion && hasBastionService" :form="form" :model="form.fd" :form-draft-key="vmDraftFields.bastionHost" />

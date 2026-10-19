@@ -47,7 +47,7 @@
         <a-form-model-item :label="$t('dashboard.text_6')" prop="name">
           <a-input v-model:value="form.fd.name" />
         </a-form-model-item>
-        <k8s-config :model="form.fd" :fd="form.fd" />
+        <k8s-config :model="form.fd" :fd="form.fd" :field-map="fieldMap" />
         <a-form-model-item prop="all_usage_key" class="d-none">
           <a-input v-model:value="form.fd.all_usage_key" />
         </a-form-model-item>

@@ -250,7 +250,7 @@ export default {
         }
       }
       this._setInitCloudEnv(defaultData)
-      this.cloudEnvChange(defaultData || {})
+      this.cloudEnvChange(defaultData)
     },
     fetchBrands () {
       let brands = []
@@ -270,7 +270,7 @@ export default {
         }
       }
       this._setInitBrand(defaultData)
-      this.brandChange(defaultData || {})
+      this.brandChange(defaultData)
     },
     async fetchAccounts () {
       this.accountLoading = true
@@ -291,8 +291,8 @@ export default {
             defaultData = { key: findInitValue.key, label: findInitValue.label }
           }
         }
-        this.accountChange(defaultData || {})
-        this._setInitAccount(defaultData || {})
+        this.accountChange(defaultData)
+        this._setInitAccount(defaultData)
       } catch (error) {
         throw error
       } finally {

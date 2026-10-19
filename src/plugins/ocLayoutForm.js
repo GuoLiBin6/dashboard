@@ -13,6 +13,7 @@
  */
 const ROOT_CLASS = 'oc-layout-form'
 const ROOT_SELECTOR = '.oc-layout-form:not(.oc-layout-form-off), .ant-form.ant-form-horizontal:not(.oc-layout-form-off)'
+const READY_CLASS = 'oc-layout-form-ready'
 const WIDTH_VAR = '--oc-form-label-width'
 const GAP_VAR = '--oc-form-label-gap'
 const MIN_TEXT_ATTR = 'data-oc-label-min-text'
@@ -20,7 +21,12 @@ const DEFAULT_GAP = 50
 
 let started = false
 let timer = 0
+let settleTimer = 0
+let settleStartedAt = 0
 let measureHost = null
+/** 首屏测量：mutation 安静后再显示，避免 label 分批挂载导致先窄后宽 */
+const SETTLE_MS = 80
+const SETTLE_MAX_MS = 240
 /** @type {WeakMap<Element, number>} 每个表单根节点历史最大 label 文字宽（不含 gap） */
 const maxLabelByRoot = new WeakMap()
 
@@ -200,6 +206,50 @@ function applyWidth (root, labelWidth) {
   }
 }
 
+function markReady (root) {
+  if (root && root.classList && !root.classList.contains(READY_CLASS)) {
+    root.classList.add(READY_CLASS)
+  }
+}
+
+function markReadyRoots () {
+  const roots = getRoots()
+  for (let i = 0; i < roots.length; i++) {
+    const root = roots[i]
+    // 已量到宽度再显示；仍无宽度时留给后续 settle / 超时兜底
+    if (root.style.getPropertyValue(WIDTH_VAR) || !collectLabels(root).length) {
+      markReady(root)
+    }
+  }
+}
+
+function requestMarkReady () {
+  const now = Date.now()
+  if (!settleStartedAt) {
+    settleStartedAt = now
+    // 硬超时：分批挂载再久也要显示，避免一直 opacity:0
+    window.setTimeout(() => {
+      if (!settleStartedAt) return
+      settleStartedAt = 0
+      if (settleTimer) {
+        window.clearTimeout(settleTimer)
+        settleTimer = 0
+      }
+      markReadyRoots()
+    }, SETTLE_MAX_MS)
+  }
+  if (settleTimer) {
+    window.clearTimeout(settleTimer)
+    settleTimer = 0
+  }
+  // mutation 安静 SETTLE_MS 后再显示（宽度已在 sync 里写好）
+  settleTimer = window.setTimeout(() => {
+    settleTimer = 0
+    settleStartedAt = 0
+    markReadyRoots()
+  }, SETTLE_MS)
+}
+
 function syncRoot (root) {
   if (!root.isConnected) return
   const labels = collectLabels(root)
@@ -214,6 +264,7 @@ function syncRoot (root) {
 function syncAll () {
   const roots = getRoots()
   for (let i = 0; i < roots.length; i++) syncRoot(roots[i])
+  requestMarkReady()
 }
 
 function schedule (immediate) {
@@ -222,7 +273,12 @@ function schedule (immediate) {
       window.clearTimeout(timer)
       timer = 0
     }
-    window.requestAnimationFrame(syncAll)
+    // 同步测量 + 再跟两帧，吃掉同一次路由进入后分批挂载的 label
+    syncAll()
+    window.requestAnimationFrame(() => {
+      syncAll()
+      window.requestAnimationFrame(syncAll)
+    })
     return
   }
   if (timer) return

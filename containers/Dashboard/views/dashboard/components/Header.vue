@@ -41,12 +41,12 @@
 </template>
 
 <script>
-import { h } from 'vue'
 import * as R from 'ramda'
 import { mapGetters } from 'vuex'
 import { Base64 } from 'js-base64'
 import Sortable from 'sortablejs'
 import { download, uuid } from '@/utils/utils'
+import legacyH from '@/utils/legacyCreateElement'
 import WindowsMixin from '@/mixins/windows'
 import DataRange from './DataRange.vue'
 
@@ -209,15 +209,16 @@ export default {
             ...this.current,
             number,
           }]
+          // 须用 legacyH：Vue3 h 的 { props } 不会落到组件 props，弹窗 body 会空白
           return [
-            h('dialog-selected-tips', {
+            legacyH('dialog-selected-tips', {
               props: {
                 count: 1,
                 action: this.deleteText,
                 name: this.$t('dashboard.text_109'),
               },
             }),
-            h('dialog-table', {
+            legacyH('dialog-table', {
               props: {
                 vxeGridProps: { showOverflow: 'title' },
                 data: data,
@@ -326,17 +327,16 @@ export default {
         header: this.$t('common_104', ['']),
         body: () => {
           return [
-            h('a-alert', {
+            legacyH('a-alert', {
               class: 'mb-2',
               props: {
                 type: 'warning',
               },
-            }, [
-              h('div', {
-                slot: 'message',
-              }, this.$t('dashbaord.panel_shared_tip')),
-            ]),
-            h('dialog-selected-tips', {
+              scopedSlots: {
+                message: () => this.$t('dashbaord.panel_shared_tip'),
+              },
+            }),
+            legacyH('dialog-selected-tips', {
               props: {
                 count: 1,
                 action: this.$t('common_104', ['']),

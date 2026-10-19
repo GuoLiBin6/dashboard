@@ -1,13 +1,15 @@
 <template>
   <div class="network-config">
-    <!-- 适配大、小屏幕 -->
-    <div class="network-config-row" :class="{ 'd-flex align-items-start' : isBigScreen && !isDialog }" v-for="(item, i) in networkList" :key="item.key">
-      <div class="d-flex align-items-start network-config-main">
+    <div
+      class="network-config-row"
+      v-for="(item, i) in networkList"
+      :key="item.key">
+      <div class="network-config-row__top d-flex align-items-start">
         <a-tag class="network-nic-tag">{{ isBonding ? 'bond' : $t('compute.text_193')}}{{i + count}}</a-tag>
         <a-form-item
           v-show="showVpc"
           :wrapperCol="{ span: 24 }"
-          class="mb-0 mr-1 network-vpc-item">
+          class="mb-0 network-vpc-item">
           <oc-select
             v-if="i === 0"
             :value="fieldVal(networkFieldMap.vpcs(item.key))"
@@ -27,7 +29,7 @@
         <a-form-item
           :wrapperCol="{ span: 24 }"
           :style="isDialog ? { flex: 1 } : ''"
-          class="mb-0 mr-1 network-item">
+          class="mb-0 network-item">
           <base-select
             class="w-100"
             :value="fieldVal(networkFieldMap.networks(item.key))"
@@ -49,57 +51,136 @@
             {{$t('compute.text_196')}}<help-link href="/network">{{$t('compute.perform_create')}}</help-link>
           </template>
         </a-form-item>
+        <!-- 贴着子网内容，不靠右拉开 -->
+        <div class="network-config-aside">
+          <a-button type="link" size="small" @click="toggleAdvanced">
+            {{ showAdvanced ? $t('compute.hide_advanced') : $t('compute.advanced') }}
+          </a-button>
+          <span v-if="i !== 0" class="network-row-remove-wrap">
+            <a-button shape="circle" icon="minus" size="small" @click="decrease(item.key, i)" />
+          </span>
+        </div>
       </div>
-      <div class="network-advanced" :class="{ 'network-advanced--inline' : isBigScreen && !isDialog }">
-        <!-- 高级 -->
-        <template v-if="showAdvanced">
-          <!-- ip -->
-          <template v-if="isSupportIPv4(item) && !(isSupportIPv6(item) && item.ipv6Mode === 'only' && item.requireIpv6)">
-            <template v-if="item.ipShow">
-              <a-form-item class="mb-0" style="display:inline-block" :wrapperCol="{ span: 24 }">
-                <ip-select :value="fieldVal(networkFieldMap.ips(item.key, item.network))" :network="item.network" @change="e => { fieldSet(networkFieldMap.ips(item.key, item.network), e); ipChange(e, i) }" />
-              </a-form-item>
-              <a-button type="link" @click="triggerShowIp(item)">{{$t('compute.text_135')}}</a-button>
-            </template>
-            <a-tooltip v-else :title="ipBtnTooltip">
-              <a-button type="link" class="mr-1" :disabled="ipsDisabled" @click="triggerShowIp(item)">{{$t('compute.text_198')}}</a-button>
+
+      <!-- 与磁盘高级区一致：展开后 checkbox 开关，勾选后再出表单项 -->
+      <div v-if="showAdvanced" class="network-advanced-panel">
+        <div class="network-advanced-panel__toggles">
+          <template v-if="canShowIpConfig(item)">
+            <a-tooltip :title="ipBtnTooltip || undefined">
+              <span class="network-advanced-panel__toggle">
+                <a-checkbox
+                  :checked="item.ipShow"
+                  :disabled="ipsDisabled"
+                  @change="() => triggerShowIp(item)">
+                  {{ $t('compute.text_198') }}
+                </a-checkbox>
+              </span>
             </a-tooltip>
           </template>
-          <!-- mac -->
           <template v-if="showMacConfig">
-            <template v-if="item.macShow">
-              <a-form-item class="mb-0" style="display:inline-block" :wrapperCol="{ span: 24 }">
-                <a-input
-                  style="width: 164px"
-                  :placeholder="$t('compute.text_806')"
-                  :value="fieldVal(networkFieldMap.macs(item.key, item.network))"
-                  @change="e => { fieldSet(networkFieldMap.macs(item.key, item.network), e.target.value); macChange(e, i) }" />
-              </a-form-item>
-              <a-button type="link" @click="triggerShowMac(item)">{{$t('compute.text_135')}}</a-button>
-            </template>
-            <a-tooltip v-else :title="ipBtnTooltip">
-              <a-button type="link" class="mr-1" :disabled="ipsDisabled" @click="triggerShowMac(item)">{{$t('compute.mac_config')}}</a-button>
+            <a-tooltip :title="ipBtnTooltip || undefined">
+              <span class="network-advanced-panel__toggle">
+                <a-checkbox
+                  :checked="item.macShow"
+                  :disabled="ipsDisabled"
+                  @change="() => triggerShowMac(item)">
+                  {{ $t('compute.mac_config') }}
+                </a-checkbox>
+              </span>
             </a-tooltip>
           </template>
-          <!-- 透传设备 -->
           <template v-if="showDeviceConfig">
-            <template v-if="item.deviceShow">
-              <a-form-item class="mb-0" style="display:inline-block" :wrapperCol="{ span: 24 }">
-                <oc-select
-                  style="width: 164px"
-                  :value="fieldVal(networkFieldMap.devices(item.key))"
-                  @change="v => fieldSet(networkFieldMap.devices(item.key), v)"
-                  :data="gpuOptions"
-                  :placeholder="$t('compute.sriov_device_tips')" />
-              </a-form-item>
-              <a-button type="link" @click="triggerShowDevice(item)">{{$t('compute.text_135')}}</a-button>
-            </template>
-            <a-button v-else type="link" class="mr-1" @click="triggerShowDevice(item)">{{ $t('compute.config_transparent_net') }}</a-button>
+            <span class="network-advanced-panel__toggle">
+              <a-checkbox
+                :checked="item.deviceShow"
+                @change="() => triggerShowDevice(item)">
+                {{ $t('compute.config_transparent_net') }}
+              </a-checkbox>
+            </span>
           </template>
-          <!-- 安全组 -->
-        <template v-if="showSecgroupConfig">
-          <template v-if="item.secgroupShow">
-            <a-form-item class="mb-0" style="display:inline-block" :wrapperCol="{ span: 24 }">
+          <template v-if="showSecgroupConfig">
+            <span class="network-advanced-panel__toggle">
+              <a-checkbox
+                :checked="item.secgroupShow"
+                @change="() => triggerShowSecgroup(item)">
+                {{ $t('compute.config_secgroup') }}
+              </a-checkbox>
+            </span>
+          </template>
+          <template v-if="canShowIpv6Require(item)">
+            <span class="network-advanced-panel__toggle network-advanced-panel__toggle--ipv6">
+              <a-checkbox
+                :checked="fieldVal(networkFieldMap.ipv6s(item.key, item.network))"
+                @change="(e) => { fieldSet(networkFieldMap.ipv6s(item.key, item.network), e.target.checked); triggerRequireIpv6(item, e) }" />
+              <a-dropdown :trigger="['click']">
+                <a class="ant-dropdown-link network-ipv6-dropdown-link" @click.prevent>
+                  {{ item.ipv6Mode === 'only' ? $t('compute.server_create.require_ipv6_only') : $t('compute.server_create.require_ipv6_all') }}
+                  <icon type="pull-down" />
+                </a>
+                <template #overlay>
+                  <a-menu @click="(e) => triggerIpv6Mode(item, e, i)">
+                    <a-menu-item key="all">{{ $t('compute.server_create.require_ipv6_all') }}</a-menu-item>
+                    <a-menu-item key="only">{{ $t('compute.server_create.require_ipv6_only') }}</a-menu-item>
+                  </a-menu>
+                </template>
+              </a-dropdown>
+              <a-input type="hidden" :value="fieldVal(networkFieldMap.ipv6_mode(item.key, item.network))" />
+            </span>
+          </template>
+          <template v-if="canShowIpv6Address(item)">
+            <span class="network-advanced-panel__toggle">
+              <a-checkbox
+                :checked="item.ipv6Show"
+                @change="() => triggerShowIpv6(item)">
+                {{ $t('compute.ipv6_config') }}
+              </a-checkbox>
+            </span>
+          </template>
+          <template v-if="showPortMapping">
+            <span class="network-advanced-panel__toggle">
+              <a-checkbox
+                :checked="item.portMappingShow"
+                @change="() => triggerShowPortMapping(item)">
+                {{ $t('compute.port_mappings.set') }}
+              </a-checkbox>
+            </span>
+          </template>
+        </div>
+
+        <div v-if="hasExpandedBasicFields(item)" class="network-advanced-panel__fields">
+          <div v-if="canShowIpConfig(item) && item.ipShow" class="network-advanced-panel__field">
+            <div class="network-advanced-panel__field-label">IP</div>
+            <a-form-item class="mb-0" :wrapperCol="{ span: 24 }">
+              <ip-select
+                :value="fieldVal(networkFieldMap.ips(item.key, item.network))"
+                :network="item.network"
+                @change="e => { fieldSet(networkFieldMap.ips(item.key, item.network), e); ipChange(e, i) }" />
+            </a-form-item>
+          </div>
+          <div v-if="showMacConfig && item.macShow" class="network-advanced-panel__field">
+            <div class="network-advanced-panel__field-label">{{ $t('compute.text_385') }}</div>
+            <a-form-item class="mb-0" :wrapperCol="{ span: 24 }">
+              <a-input
+                class="network-advanced-panel__control"
+                :placeholder="$t('compute.text_806')"
+                :value="fieldVal(networkFieldMap.macs(item.key, item.network))"
+                @change="e => { fieldSet(networkFieldMap.macs(item.key, item.network), e.target.value); macChange(e, i) }" />
+            </a-form-item>
+          </div>
+          <div v-if="showDeviceConfig && item.deviceShow" class="network-advanced-panel__field">
+            <div class="network-advanced-panel__field-label">{{ $t('compute.text_113') }}</div>
+            <a-form-item class="mb-0" :wrapperCol="{ span: 24 }">
+              <oc-select
+                class="network-advanced-panel__control"
+                :value="fieldVal(networkFieldMap.devices(item.key))"
+                @change="v => fieldSet(networkFieldMap.devices(item.key), v)"
+                :data="gpuOptions"
+                :placeholder="$t('compute.sriov_device_tips')" />
+            </a-form-item>
+          </div>
+          <div v-if="showSecgroupConfig && item.secgroupShow" class="network-advanced-panel__field network-advanced-panel__field--wide">
+            <div class="network-advanced-panel__field-label">{{ $t('compute.text_105') }}</div>
+            <a-form-item class="mb-0" :wrapperCol="{ span: 24 }">
               <base-select
                 :value="fieldVal(networkFieldMap.secgroups(item.key))"
                 @change="v => fieldSet(networkFieldMap.secgroups(item.key), v)"
@@ -107,77 +188,44 @@
                 :params="secgroupParams"
                 :select-props="{ allowClear: true, placeholder: $t('compute.secgroup_tips'), mode: 'multiple' }" />
             </a-form-item>
-          </template>
-          <a-button v-else type="link" class="mr-1" @click="triggerShowSecgroup(item)">{{ $t('compute.config_secgroup') }}</a-button>
-        </template>
-          <!-- ipv6 -->
-          <template>
-            <a-form-item class="mb-0 network-ipv6-item" style="display:inline-block" :wrapperCol="{ span: 24 }" v-if="isSupportIPv6(item) && isSupportIPv4(item)">
-              <div class="d-flex align-items-center network-ipv6-switch">
-                <a-checkbox style="width: max-content" :checked="fieldVal(networkFieldMap.ipv6s(item.key, item.network))" @change="(e) => { fieldSet(networkFieldMap.ipv6s(item.key, item.network), e.target.checked); triggerRequireIpv6(item, e) }" />
-                <a-dropdown :trigger="['click']">
-                  <a class="ant-dropdown-link network-ipv6-dropdown-link" @click.prevent>
-                    {{ item.ipv6Mode === 'only' ? $t('compute.server_create.require_ipv6_only') : $t('compute.server_create.require_ipv6_all') }}
-                    <icon type="pull-down" />
-                  </a>
-                  <template #overlay>
-                    <a-menu @click="(e) => triggerIpv6Mode(item, e, i)">
-                      <a-menu-item key="all">{{ $t('compute.server_create.require_ipv6_all') }}</a-menu-item>
-                      <a-menu-item key="only">{{ $t('compute.server_create.require_ipv6_only') }}</a-menu-item>
-                    </a-menu>
-                  </template>
-                </a-dropdown>
-                <!-- 保留表单字段，供提交 / setFieldsValue -->
-                <a-input type="hidden" :value="fieldVal(networkFieldMap.ipv6_mode(item.key, item.network))" />
+          </div>
+          <div v-if="canShowIpv6Address(item) && item.ipv6Show" class="network-advanced-panel__field network-advanced-panel__field--ipv6">
+            <div class="network-advanced-panel__field-label">{{ $t('compute.ipv6_config') }}</div>
+            <a-form-item class="mb-0 network-ipv6-address-item" :wrapperCol="{ span: 24 }">
+              <div class="network-ipv6-address">
+                <span class="network-ipv6-prefix">{{ getIpv6Prefix(item.network?.guest_ip6_start) }}</span>
+                <a-form-item class="mb-0 network-ipv6-input-item" :wrapperCol="{ span: 24 }">
+                  <a-input
+                    class="network-advanced-panel__control"
+                    :placeholder="$t('compute.complete_ipv6_address')"
+                    :value="fieldVal(networkFieldMap.ips6(item.key, item.network))"
+                    @change="e => { fieldSet(networkFieldMap.ips6(item.key, item.network), e.target.value); ipv6Change(e, i) }" />
+                </a-form-item>
               </div>
             </a-form-item>
-            <template v-if="(isSupportIPv6(item) && item.requireIpv6) || (!isSupportIPv4(item) && isSupportIPv6(item))">
-              <template v-if="item.ipv6Show">
-                <a-form-item class="mb-0 ml-1 network-ipv6-address-item" :wrapperCol="{ span: 24 }">
-                  <div class="network-ipv6-address">
-                    <span class="network-ipv6-prefix">{{ getIpv6Prefix(item.network?.guest_ip6_start) }}</span>
-                    <a-form-item class="mb-0 network-ipv6-input-item" :wrapperCol="{ span: 24 }">
-                      <a-input
-                        style="width: 164px"
-                        :placeholder="$t('compute.complete_ipv6_address')"
-                        :value="fieldVal(networkFieldMap.ips6(item.key, item.network))"
-                        @change="e => { fieldSet(networkFieldMap.ips6(item.key, item.network), e.target.value); ipv6Change(e, i) }" />
-                    </a-form-item>
-                    <a-button type="link" class="network-ipv6-cancel" @click="triggerShowIpv6(item)">{{$t('compute.text_135')}}</a-button>
-                  </div>
-                </a-form-item>
-              </template>
-              <a-button v-else type="link" @click="triggerShowIpv6(item)">{{$t('compute.ipv6_config')}}</a-button>
-            </template>
-            <template v-if="showPortMapping">
-              <template v-if="item.portMappingShow">
-                <div class="network-port-mapping">
-                  <div class="network-port-mapping__title">{{ $t('compute.repo.port_mapping') }}</div>
-                  <labels
-                    class="network-port-mapping__labels"
-                    :ref="'portMappingRef_' + item.key"
-                    :model="model"
-                    :fields="getPortMappingFields(item.key)"
-                    :init-pairs="item.port_mappings || []"
-                    :title="$t('compute.repo.port_mapping')"
-                    :keyLabel="$t('compute.repo.container_port')"
-                    :valueLabel="$t('compute.repo.host_port')"
-                    :keyPlaceholder="$t('compute.repo.example', ['443'])"
-                    :valuePlaceholder="$t('compute.repo.example', ['443'])"
-                    :valueTooltip="$t('compute.port_mappings.host_port_tip', [20000, 25000])"
-                    show-protocol
-                    @label-change="list => onPortMappingLabelChange(item, list)" />
-                </div>
-                <a-button type="link" @click="triggerShowPortMapping(item)">{{$t('compute.text_135')}}</a-button>
-              </template>
-              <a-button v-else type="link" class="mr-1" @click="triggerShowPortMapping(item)">{{ $t('compute.port_mappings.set') }}</a-button>
-            </template>
-          </template>
-        </template>
-        <a-button type="link" @click="toggleAdvanced">{{ showAdvanced ? $t('compute.hide_advanced') : $t('compute.advanced') }}</a-button>
-        <span v-if="i !== 0" class="network-row-remove-wrap">
-          <a-button shape="circle" icon="minus" size="small" @click="decrease(item.key, i)" />
-        </span>
+          </div>
+        </div>
+
+        <!-- 端口映射始终独占一行；条目与「添加」可同行排列 -->
+        <div v-if="showPortMapping && item.portMappingShow" class="network-advanced-panel__port">
+          <div class="network-advanced-panel__field-label">{{ $t('compute.port_mappings.title') }}</div>
+          <div class="network-port-mapping">
+            <labels
+              class="network-port-mapping__labels"
+              :ref="'portMappingRef_' + item.key"
+              :model="model"
+              :fields="getPortMappingFields(item.key)"
+              :init-pairs="item.port_mappings || []"
+              :title="$t('compute.repo.port_mapping')"
+              :keyLabel="$t('compute.repo.container_port')"
+              :valueLabel="$t('compute.repo.host_port')"
+              :keyPlaceholder="$t('compute.repo.example', ['443'])"
+              :valuePlaceholder="$t('compute.repo.example', ['443'])"
+              :valueTooltip="$t('compute.port_mappings.host_port_tip', [20000, 25000])"
+              show-protocol
+              @label-change="list => onPortMappingLabelChange(item, list)" />
+          </div>
+        </div>
       </div>
     </div>
     <div class="d-flex align-items-center" v-if="networkCountRemaining > 0">
@@ -306,7 +354,6 @@ export default {
       ipsDisabled: this.ipsDisable,
       networkLoading: false,
       networkOpts: [],
-      screenWidth: document.body.clientWidth,
       showAdvanced: false,
       canDefaultSelect: true,
     }
@@ -349,9 +396,6 @@ export default {
       }
       return ret
     },
-    isBigScreen () {
-      return this.screenWidth > 1650
-    },
   },
   watch: {
     vpcObj (val) {
@@ -367,12 +411,6 @@ export default {
   created () {
     NIC_MAP_ROOTS.forEach(root => this.ensureMap(root))
     this.add()
-  },
-  mounted () {
-    window.addEventListener('resize', this.onResize)
-  },
-  beforeUnmount () {
-    window.removeEventListener('resize', this.onResize)
   },
   methods: {
 
@@ -637,29 +675,54 @@ export default {
         }
       })
     },
-    triggerShowIp (item, i) {
+    canShowIpConfig (item) {
+      return this.isSupportIPv4(item) && !(this.isSupportIPv6(item) && item.ipv6Mode === 'only' && item.requireIpv6)
+    },
+    canShowIpv6Require (item) {
+      return this.isSupportIPv6(item) && this.isSupportIPv4(item)
+    },
+    canShowIpv6Address (item) {
+      return (this.isSupportIPv6(item) && item.requireIpv6) || (!this.isSupportIPv4(item) && this.isSupportIPv6(item))
+    },
+    hasExpandedBasicFields (item) {
+      return !!(
+        (this.canShowIpConfig(item) && item.ipShow) ||
+        (this.showMacConfig && item.macShow) ||
+        (this.showDeviceConfig && item.deviceShow) ||
+        (this.showSecgroupConfig && item.secgroupShow) ||
+        (this.canShowIpv6Address(item) && item.ipv6Show)
+      )
+    },
+    triggerShowIp (item) {
       item.ipShow = !item.ipShow
       this.$emit('optionalChange', { flag: 'ip', key: item.key, show: item.ipShow })
     },
-    triggerShowIpv6 (item, i) {
+    triggerShowIpv6 (item) {
       item.ipv6Show = !item.ipv6Show
       this.$emit('optionalChange', { flag: 'ipv6', key: item.key, show: item.ipv6Show })
     },
-    triggerIpv6Mode (item, e, i) {
+    triggerIpv6Mode (item, e) {
       item.ipv6Mode = e.key
       this.$nextTick(() => {
         this.setNicField('networkIPv6Modes', item.key, e.key)
       })
     },
-    triggerShowMac (item, i) {
+    triggerRequireIpv6 (item, e) {
+      item.requireIpv6 = e.target.checked
+      if (!item.requireIpv6) {
+        item.ipv6Show = false
+        this.$emit('optionalChange', { flag: 'ipv6', key: item.key, show: false })
+      }
+    },
+    triggerShowMac (item) {
       item.macShow = !item.macShow
       this.$emit('optionalChange', { flag: 'mac', key: item.key, show: item.macShow })
     },
-    triggerShowDevice (item, i) {
+    triggerShowDevice (item) {
       item.deviceShow = !item.deviceShow
       this.$emit('optionalChange', { flag: 'device', key: item.key, show: item.deviceShow })
     },
-    triggerShowSecgroup (item, i) {
+    triggerShowSecgroup (item) {
       item.secgroupShow = !item.secgroupShow
       this.$emit('optionalChange', { flag: 'secgroup', key: item.key, show: item.secgroupShow })
     },
@@ -851,14 +914,11 @@ export default {
         })
       }
     },
-    onResize () {
-      this.screenWidth = document.body.clientWidth
-    },
     isSupportIPv6 (item) {
-      return !!item.network.guest_ip6_start && !!item.network.guest_ip6_end
+      return !!item.network?.guest_ip6_start && !!item.network?.guest_ip6_end
     },
     isSupportIPv4 (item) {
-      return !!item.network.guest_ip_start && !!item.network.guest_ip_end
+      return !!item.network?.guest_ip_start && !!item.network?.guest_ip_end
     },
   },
 }
@@ -873,21 +933,40 @@ export default {
       color: @primary-color;
     }
   }
+
   .network-config-row {
     margin-bottom: 16px;
+    width: 100%;
+    padding: 12px 14px;
+    background: #fafafa;
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+    -webkit-font-smoothing: antialiased;
+
+    &__top {
+      flex-wrap: wrap;
+      /* 统一间距：网卡序号 / VPC / 网络 / 高级，避免 tag margin + mr-1 + gap 叠加 */
+      gap: 8px;
+      column-gap: 8px;
+      row-gap: 8px;
+    }
   }
-  // 保持内容宽度（不拉满），右侧留给「高级」；仅钉死 VPC 列宽与 oc-select 默认 200px 对齐
-  .network-config-main {
-    flex: 0 0 auto;
-    width: auto;
+
+  .network-config-aside {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 4px;
+    height: 32px;
   }
+
   .network-nic-tag.ant-tag {
     display: inline-flex !important;
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
     height: 32px !important;
-    margin: 0 8px 0 0 !important;
+    margin: 0 !important;
     padding: 0 10px !important;
     line-height: 30px !important;
     font-size: 14px;
@@ -897,11 +976,13 @@ export default {
     background: color-mix(in srgb, var(--ant-color-primary, #1890ff) 10%, #fff);
     border-color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 40%, #fff);
   }
+
   .network-vpc-item {
     flex: 0 0 200px;
     width: 200px;
     min-width: 200px;
     max-width: 200px;
+    margin-right: 0 !important;
     :deep(.ant-form-item-control),
     :deep(.ant-form-item-control-input),
     :deep(.ant-form-item-control-input-content) {
@@ -914,6 +995,7 @@ export default {
       max-width: 200px !important;
     }
   }
+
   .network-vpc-tag.ant-tag {
     display: inline-flex !important;
     align-items: center;
@@ -932,35 +1014,15 @@ export default {
     background: color-mix(in srgb, var(--ant-color-primary, #1890ff) 10%, #fff);
     border-color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 40%, #fff);
   }
+
   .network-item {
     flex: 0 0 auto;
+    margin-right: 0 !important;
     :deep(.ant-form-item-extra) {
       margin-top: 4px;
     }
   }
-  // 高级区顶部对齐：校验错误撑高时不把旁边按钮挤到垂直居中
-  .network-advanced--inline {
-    display: flex;
-    align-items: flex-start;
-    flex-wrap: wrap;
-    margin-left: 8px;
-    min-height: 32px;
-    :deep(.ant-form-item) {
-      margin-bottom: 0;
-    }
-    :deep(.ant-btn-link) {
-      height: 32px;
-      padding-top: 0;
-      padding-bottom: 0;
-      line-height: 32px;
-    }
-    :deep(.ant-checkbox-wrapper) {
-      display: inline-flex;
-      align-items: center;
-      height: 32px;
-      margin-inline-end: 0;
-    }
-  }
+
   .network-row-remove-wrap {
     display: inline-flex;
     align-items: center;
@@ -968,12 +1030,147 @@ export default {
     height: 32px;
     margin-left: 4px;
   }
-  .network-ipv6-switch {
-    height: 32px;
-    :deep(input[type='hidden']) {
-      display: none;
+
+  .network-advanced-panel {
+    margin-top: 10px;
+    padding: 8px 0 4px;
+    border-top: 1px solid #f0f0f0;
+
+    &__toggles {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      min-height: 32px;
+      column-gap: 16px;
+      row-gap: 4px;
+    }
+
+    &__toggle {
+      display: inline-flex;
+      align-items: center;
+      height: 32px;
+      margin: 0;
+      color: rgba(0, 0, 0, 0.45);
+
+      :deep(.ant-checkbox + span) {
+        color: rgba(0, 0, 0, 0.45);
+        padding-right: 0;
+      }
+
+      :deep(.ant-checkbox-wrapper) {
+        margin: 0;
+        color: rgba(0, 0, 0, 0.45);
+      }
+
+      &--ipv6 {
+        gap: 4px;
+
+        :deep(input[type='hidden']) {
+          display: none;
+        }
+      }
+    }
+
+    &__fields {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      gap: 16px 20px;
+      margin-top: 10px;
+    }
+
+    &__field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex: 0 0 auto;
+      width: 300px;
+
+      &-label {
+        color: rgba(0, 0, 0, 0.45);
+        font-size: 12px;
+        line-height: 20px;
+      }
+
+      &--wide {
+        width: 420px;
+      }
+
+      &--ipv6 {
+        width: auto;
+        min-width: 360px;
+      }
+
+      :deep(.ant-select),
+      :deep(.base-select),
+      :deep(.base-select-wrap),
+      :deep(.oc-select) {
+        width: 100% !important;
+        min-width: 0 !important;
+      }
+
+      :deep(.ant-input) {
+        width: 100%;
+      }
+    }
+
+    &__control {
+      width: 100%;
+    }
+
+    &__port {
+      width: 100%;
+      margin-top: 12px;
     }
   }
+
+  .network-port-mapping {
+    width: 100%;
+
+    // Labels 根节点：映射行与「添加」同一行可排多个，彼此留间距
+    :deep(> div) {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      column-gap: 16px;
+      row-gap: 12px;
+    }
+
+    :deep(> div > .d-flex),
+    :deep(> div > .labels-row) {
+      flex: 0 0 auto;
+      align-items: center;
+      column-gap: 8px;
+    }
+
+    :deep(.ant-form-item) {
+      margin-bottom: 0;
+      flex: 0 0 auto;
+    }
+
+    // 端口输入整体收窄；勿单独压 .ant-input，否则 addonBefore 会叠在一起
+    :deep(.ant-form-item:not(.labels-protocol)) {
+      width: 200px;
+    }
+
+    :deep(.ant-form-item:not(.labels-protocol) .ant-input-group-wrapper) {
+      width: 100%;
+    }
+
+    :deep(.ant-btn-circle) {
+      flex-shrink: 0;
+      align-self: center;
+      margin-top: 0 !important;
+    }
+
+    :deep(.mx-3) {
+      flex-shrink: 0;
+      line-height: 32px;
+      margin-left: 8px !important;
+      margin-right: 8px !important;
+    }
+  }
+
   .network-ipv6-dropdown-link {
     display: inline-flex;
     align-items: center;
@@ -983,17 +1180,20 @@ export default {
     white-space: nowrap;
     cursor: pointer;
   }
+
   .network-ipv6-address-item {
     :deep(.ant-form-item-control-input-content) {
       display: block;
     }
   }
+
   .network-ipv6-address {
     display: inline-flex;
     align-items: flex-start;
     flex-wrap: nowrap;
     min-height: 32px;
   }
+
   .network-ipv6-prefix {
     flex: 0 0 auto;
     margin-right: 8px;
@@ -1001,10 +1201,10 @@ export default {
     height: 32px;
     line-height: 32px;
   }
+
   .network-ipv6-input-item {
     flex: 0 0 auto;
     margin: 0 !important;
-    // 错误文案只出现在输入框下方，不参与和「取消」的垂直居中
     :deep(.ant-form-item-row) {
       display: block;
     }
@@ -1016,20 +1216,6 @@ export default {
       min-height: 0;
       margin-top: 2px;
       line-height: 20px;
-    }
-  }
-  .network-ipv6-cancel {
-    flex: 0 0 auto;
-    height: 32px !important;
-    line-height: 32px !important;
-  }
-  .network-port-mapping {
-    display: block;
-    width: 100%;
-    margin-top: 8px;
-    &__title {
-      margin-bottom: 8px;
-      font-weight: 500;
     }
   }
 }

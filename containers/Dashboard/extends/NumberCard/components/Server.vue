@@ -29,7 +29,7 @@
         <a-form-model-item :label="$t('dashboard.text_6')" prop="name">
           <a-input v-model:value="form.fd.name" @change="onNameInput" />
         </a-form-model-item>
-        <quota-config :model="form.fd" :fd="form.fd" :usage-label="$t('dashboard.text_20')" @update:usage_key="setDefaultName" />
+        <quota-config :model="form.fd" :fd="form.fd" :field-map="fieldMap" :usage-label="$t('dashboard.text_20')" @update:usage_key="setDefaultName" />
         <a-form-model-item prop="usage_key" class="d-none">
           <a-input v-model:value="form.fd.usage_key" />
         </a-form-model-item>
@@ -71,7 +71,7 @@ export default {
   data () {
     const usage_key = this.$store.getters.isAdminMode ? 'all.servers' : this.$store.getters.isDomainMode ? 'domain.servers' : 'servers'
     const initialUsageKeyValue = ((this.params && this.params.type !== 'k8s') && this.params.usage_key) || usage_key
-    const initialNameValue = ((this.params && this.params.type !== 'k8s') && this.params.name) || this.$t('usage')[initialUsageKeyValue]
+    const initialNameValue = ((this.params && this.params.type !== 'k8s') && this.params.name) || (this.$tm('usage') || {})[initialUsageKeyValue]
     const initialRegionAccountType = ((this.params && this.params.type !== 'k8s') && this.params.regionAccountType) || 'region'
     const initUnitValue = (this.params && this.params.unit) || 'auto'
     return {

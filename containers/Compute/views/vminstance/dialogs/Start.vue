@@ -15,7 +15,7 @@
             v-model:value="form.qemu_version"
             style="width: 200px"
             :placeholder="$t('common.select')">
-            <a-select-option value="">{{ $t('compute.text_1') }}</a-select-option>
+            <a-select-option value="default">{{ $t('compute.text_1') }}</a-select-option>
             <a-select-option value="4.2.0">4.2.0</a-select-option>
             <a-select-option value="10.0.7">10.0.7</a-select-option>
           </a-select>
@@ -55,7 +55,9 @@ export default {
       form: {
         reason: formData.reason || '',
         auto_prepaid: formData.auto_prepaid || false,
-        qemu_version: formData.qemu_version || '',
+        qemu_version: (formData.qemu_version && formData.qemu_version !== 'default')
+          ? formData.qemu_version
+          : 'default',
       },
       formItemLayout: {
         wrapperCol: {
@@ -113,7 +115,7 @@ export default {
       if (this.form.auto_prepaid) {
         data.auto_prepaid = true
       }
-      if (this.showQemuVersion && this.form.qemu_version) {
+      if (this.showQemuVersion && this.form.qemu_version && this.form.qemu_version !== 'default') {
         data.qemu_version = this.form.qemu_version
       }
       return data

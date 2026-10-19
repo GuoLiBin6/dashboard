@@ -30,7 +30,7 @@
           @fetchProjectCallback="fetchProjectCallback" />
       </a-form-model-item>
       <a-form-model-item :label="$t('compute.text_228')" v-if="!isServertemplate" prop="name">
-        <a-input v-model:value="form.fd.name" />
+        <a-input v-model:value="form.fd.name" :placeholder="$t('compute.text_210')" />
         <template v-slot:extra>
           <name-repeated
             res="servers"

@@ -14,15 +14,18 @@
             :disabled="disabled || imageType === 'snapshot'" />
         </a-form-item>
         <a-form-item v-show="!hideSize" class="mb-0 disk-wrapper__size" :wrapperCol="{ span: 24 }">
+          <!-- antdv4 Tooltip 需挂在原生节点上，自定义组件/ disabled 控件否则无 hover -->
           <a-tooltip :title="tooltip" placement="top">
-            <disk-size-input
-              :value="sizeFieldValue"
-              @change="v => diskFieldSet(diskFieldMap.size, v)"
-              :step="10"
-              :min="minSize"
-              :max="max"
-              :normalizeGb="normalizeDiskSizeGb"
-              :disabled="sizeDisabled || (imageType === 'backup' || imageType === 'snapshot')" />
+            <span class="disk-wrapper__size-tip">
+              <disk-size-input
+                :value="sizeFieldValue"
+                @change="v => diskFieldSet(diskFieldMap.size, v)"
+                :step="10"
+                :min="minSize"
+                :max="max"
+                :normalizeGb="normalizeDiskSizeGb"
+                :disabled="sizeDisabled || (imageType === 'backup' || imageType === 'snapshot')" />
+            </span>
           </a-tooltip>
         </a-form-item>
         <template v-if="has('iops') && disabled && isIopsShow && defaultIops && imageType !== 'backup' && imageType !== 'snapshot'">
@@ -503,8 +506,13 @@ export default {
   methods: {
 
     onTypeChange (v) {
-      this.diskFieldSet(this.diskFieldMap.type, v)
-      this.typeChange(v)
+      // antdv4 labelInValue 出参为 { value, label }；业务侧统一存 { key, label }
+      const key = v?.key ?? v?.value
+      const normalized = (key === undefined || key === null || key === '')
+        ? v
+        : { key, label: typeof v?.label === 'string' ? v.label : key }
+      this.diskFieldSet(this.diskFieldMap.type, normalized)
+      this.typeChange(normalized)
     },
     setDiskFormFields (values) {
       this.diskWriteFields(values)
@@ -779,6 +787,7 @@ export default {
   padding: 12px 14px;
   background: #fafafa;
   border: 1px solid #f0f0f0;
+  border-radius: 8px;
   -webkit-font-smoothing: antialiased;
 
   &__top {
@@ -803,6 +812,12 @@ export default {
     ::v-deep .ant-form-item-control {
       line-height: 32px;
     }
+  }
+
+  &__size-tip {
+    display: inline-flex;
+    align-items: center;
+    vertical-align: top;
   }
 
   &__meta {

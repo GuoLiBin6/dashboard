@@ -9,16 +9,14 @@
     @update="update"
     :params="params"
     :edit="edit">
-    <a-row class="mb-4">
-      <a-col :span="formItemLayout.labelCol.span" class="ant-form-item-label">
-        <label>{{$t('dashboard.text_24')}}</label>
-      </a-col>
-      <a-col :span="formItemLayout.wrapperCol.span">
-        <a-radio-group v-model:value="type">
-          <a-radio-button v-for="item in typeOpts" :key="item.key" :value="item.key">{{ item.label }}</a-radio-button>
-        </a-radio-group>
-      </a-col>
-    </a-row>
+    <a-form-model-item
+      :label="$t('dashboard.text_24')"
+      :label-col="formItemLayout.labelCol"
+      :wrapper-col="formItemLayout.wrapperCol">
+      <a-radio-group v-model:value="type">
+        <a-radio-button v-for="item in typeOpts" :key="item.key" :value="item.key">{{ item.label }}</a-radio-button>
+      </a-radio-group>
+    </a-form-model-item>
     <template v-slot:actions="{ handleEdit }"><slot name="actions" :handleEdit="handleEdit" /></template>
   </component>
 </template>

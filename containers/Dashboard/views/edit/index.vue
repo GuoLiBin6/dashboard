@@ -258,41 +258,84 @@ export default {
         this.currentOption.h,
       )
     },
+    clearDragCopy () {
+      if (this.copy) {
+        if (this.copy.parentNode) this.copy.parentNode.removeChild(this.copy)
+        this.copy = null
+      }
+      document.querySelectorAll('body > .extend-gallery-item.drag').forEach(el => el.remove())
+    },
+    // 进入画布后画布已有真实磁贴预览，库条目幽灵压到磁贴下方（勿盖住）
+    setDragCopyOverCanvas (over) {
+      if (!this.copy) return
+      this.copy.style.zIndex = over ? '0' : '10050'
+      this.copy.style.opacity = over ? '0' : '1'
+    },
+    // 放置后关闭 isTemplate，否则 :is-draggable="!item.isTemplate" 一直为 false，无法再拖
+    commitTemplateItem () {
+      const idx = this.layout.findIndex(item => item.i === this.tempId)
+      if (idx === -1) return
+      const item = this.layout[idx]
+      if (!item.isTemplate) return
+      this.layout.splice(idx, 1, { ...item, isTemplate: false })
+    },
     initItemInteract () {
       interact('.extend-gallery-item').draggable({
         inertia: true,
         listeners: {
           start: event => {
-            event.target.parentNode.parentNode.classList.add('overflow-hidden')
+            // 清除已有选区，避免拖拽过程触发浏览器复制提示
+            const sel = window.getSelection && window.getSelection()
+            if (sel && sel.removeAllRanges) sel.removeAllRanges()
             const component = event.target.dataset.component
             this.setCurrentOption(component)
+            const rect = event.target.getBoundingClientRect()
+            // 挂到 body + fixed，避免落在侧栏 stacking context 下被编辑区盖住
             this.copy = event.target.cloneNode(true)
             this.copy.classList.add('drag')
-            this.copy.style.top = `${event.target.offsetTop}px`
-            event.target.parentNode.appendChild(this.copy)
-            this.movingGridDeltaY = event.target.getBoundingClientRect().y
+            this.copy.style.cssText = [
+              'position:fixed',
+              `left:${rect.left}px`,
+              `top:${rect.top}px`,
+              `width:${rect.width}px`,
+              'margin:0',
+              'z-index:10050',
+              'pointer-events:none',
+              'user-select:none',
+              '-webkit-user-select:none',
+              'outline:1px dashed darkmagenta',
+              'box-shadow:0 4px 12px rgba(0,0,0,.12)',
+              'background:#fff',
+            ].join(';')
+            document.body.appendChild(this.copy)
+            this.movingGridDeltaY = rect.y
             this.tempId = `dashboard-item-${uuid(32)}`
           },
           move: event => {
             this.position.x += event.dx
             this.position.y += event.dy
-            this.copy.style.transform = `translate(${this.position.x}px, ${this.position.y}px)`
-            this.copy.style.outline = '1px dashed darkmagenta'
+            if (this.copy) {
+              this.copy.style.transform = `translate(${this.position.x}px, ${this.position.y}px)`
+            }
             const editContainerScrollTop = document.querySelector('.grid-shadow-wrap').scrollTop
             const { x: _x, y: _y } = (this.calcXY(this.position.y + (this.movingGridDeltaY - 60 + editContainerScrollTop) - this.dropzoneY, this.position.x - this.dropzoneX))
             this.x = _x
             this.y = _y
             if (this.entered) {
-              const currentDragGridData = this.layout[this.layout.length - 1]
-              currentDragGridData.x = _x
-              currentDragGridData.y = _y
-              this.debounceUpdateGridItem(_x, _y)
+              const currentDragGridData = this.layout.find(item => item.i === this.tempId)
+              if (currentDragGridData) {
+                currentDragGridData.x = _x
+                currentDragGridData.y = _y
+                this.debounceUpdateGridItem(_x, _y)
+              }
             }
           },
-          end: event => {
-            event.target.parentNode.removeChild(this.copy)
-            event.target.parentNode.parentNode.classList.remove('overflow-hidden')
-            this.copy = null
+          end: () => {
+            if (this.entered) {
+              this.commitTemplateItem()
+              this.entered = false
+            }
+            this.clearDragCopy()
             this.movingGridDeltaY = 0
             this.position = { x: 0, y: 0 }
             this.x = 0
@@ -307,8 +350,11 @@ export default {
         ondropactivate: event => {
           event.target.classList.add('drop-active')
         },
-        ondragenter: event => {
+        ondragenter: () => {
           this.entered = true
+          // 画布已渲染真实磁贴预览，幽灵降到其下（不可见），避免小磁铁盖住磁贴
+          this.setDragCopyOverCanvas(true)
+          if (this.layout.some(item => item.i === this.tempId)) return
           this.layout.push({
             x: 9999,
             y: this.y,
@@ -322,11 +368,13 @@ export default {
         },
         ondragleave: () => {
           this.entered = false
-          this.layout.splice(this.layout.length - 1, 1)
+          this.setDragCopyOverCanvas(false)
+          const idx = this.layout.findIndex(item => item.i === this.tempId)
+          if (idx !== -1) this.layout.splice(idx, 1)
         },
         ondrop: () => {
           this.entered = false
-          this.layout[this.layout.length - 1].isTemplate = false
+          this.commitTemplateItem()
         },
         ondropdeactivate: event => {
           event.target.classList.remove('drop-active')

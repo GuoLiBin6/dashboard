@@ -5,7 +5,7 @@
     :single-actions="singleActions"
     :export-data-options="exportDataOptions">
     <template v-slot:group-actions-append>
-      <a-radio-group class="ml-3" v-model:value="time">
+      <a-radio-group v-model:value="time">
         <a-radio-button value="1">{{ $t('common_167') }}</a-radio-button>
         <a-radio-button value="6">{{ $t('common_nearly_num_hours', [6]) }}</a-radio-button>
         <a-radio-button value="12">{{ $t('common_nearly_num_hours', [12]) }}</a-radio-button>

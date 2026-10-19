@@ -758,6 +758,13 @@ h1, h2, h3, h4, h5, h6 {
   fill: currentColor;
 }
 
+/* antd Upload.Dragger 默认只给 .anticon 设 uploadThumbnailSize(≈48px)；
+ * 项目拖拽区用 <icon class="oc-icon">：对齐尺寸，颜色略浅 */
+.ant-upload-drag-icon .oc-icon {
+  font-size: 48px;
+  color: rgba(0, 0, 0, 0.25);
+}
+
 // 兼容原 a-icon spin / anticon-spin：列表 loading、status 中间态、刷新按钮等
 @keyframes oc-icon-spin {
   100% {

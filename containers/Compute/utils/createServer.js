@@ -488,7 +488,10 @@ function createVmFieldMap (type, initData = {}) {
     },
     qemu_version: {
       name: 'qemu_version',
-      initialValue: initData.qemu_version || '',
+      // Select 默认项 value 不能用 ''（antdv4 会当成未选），用 default 展示「默认」
+      initialValue: (initData.qemu_version && initData.qemu_version !== 'default')
+        ? initData.qemu_version
+        : 'default',
     },
   }
 }
@@ -1369,7 +1372,7 @@ export class GenCreateData {
       if (this.fd.is_daemon) {
         data.is_daemon = this.fd.is_daemon
       }
-      if (this.fd.qemu_version) {
+      if (this.fd.qemu_version && this.fd.qemu_version !== 'default') {
         data.qemu_version = this.fd.qemu_version
       }
     }

@@ -79,6 +79,9 @@ export default {
   min-width: 300px;
 }
 .extend-gallery-item {
+  // 拖拽时禁止选中文字，避免触发浏览器复制等提示
+  user-select: none;
+  -webkit-user-select: none;
   &.drag {
     position: absolute;
     top: 0;

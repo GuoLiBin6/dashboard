@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div class="d-flex" v-for="(item) in labelList" :key="item.key">
+    <div class="d-flex align-items-center labels-row" v-for="(item) in labelList" :key="item.key">
       <a-form-item v-if="showProtocol && resolvedFields.protocol" :wrapperCol="{ span: 24 }" class="labels-protocol mb-0">
         <a-select
           :value="fieldVal(fieldName(item.key, 'protocol'))"
@@ -28,7 +28,7 @@
         </a-tooltip>
         <a-input v-else :addonBefore="valueLabel" :value="fieldVal(fieldName(item.key, 'value'))" @change="e => fieldSet(fieldName(item.key, 'value'), e.target.value)" :placeholder="valuePlaceholder" :disabled="isLocked(item)" />
       </a-form-item>
-      <a-button v-if="(firstCanDelete || labelList.length > 1) && !isLocked(item)" shape="circle" icon="minus" size="small" @click="del(item)" class="mt-2 ml-2" />
+      <a-button v-if="(firstCanDelete || labelList.length > 1) && !isLocked(item)" shape="circle" icon="minus" size="small" @click="del(item)" class="labels-row-minus ml-2" />
     </div>
     <div class="d-flex align-items-center">
       <a-tooltip :title="disableConf?.tooltip">
@@ -265,6 +265,10 @@ export default {
     add () {
       const rowKey = uuid()
       this.labelList.push({ key: rowKey })
+      // 端口协议默认 TCP，避免 Select 空值无展示
+      if (this.showProtocol && this.resolvedFields.protocol) {
+        this.fieldSet(this.fieldName(rowKey, 'protocol'), 'tcp')
+      }
     },
     del (item) {
       const index = this.labelList.findIndex(val => val.key === item.key)
@@ -422,6 +426,27 @@ export default {
 
 <style lang="less" scoped>
 .labels-protocol {
-  margin-right: 8px;
+  margin-right: 0;
+}
+
+.labels-row {
+  gap: 8px;
+
+  :deep(.ant-form-item) {
+    margin-bottom: 0;
+  }
+
+  .mx-3 {
+    margin-left: 4px !important;
+    margin-right: 4px !important;
+  }
+}
+
+.labels-row-minus {
+  flex-shrink: 0;
+  /* 与 32px 输入行垂直居中，勿用 mt-2 */
+  align-self: center;
+  margin-top: 0 !important;
+  margin-left: 0 !important;
 }
 </style>

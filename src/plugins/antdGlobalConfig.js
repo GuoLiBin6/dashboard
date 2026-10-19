@@ -1,6 +1,6 @@
 // 全局配置 ant-design-vue
 import { h, defineComponent, mergeProps, shallowRef, watch, triggerRef } from 'vue'
-import { Spin, Form, Button, Input, InputNumber, Alert, Radio } from 'ant-design-vue'
+import { Spin, Form, Button, Input, InputNumber, Alert, Radio, Select } from 'ant-design-vue'
 import InfoCircleFilled from '@ant-design/icons-vue/es/icons/InfoCircleFilled'
 import Icon from '@/components/Icon'
 
@@ -433,6 +433,97 @@ function createLegacyRadioGroup (RawRadioGroup) {
 }
 
 /**
+ * antdv4 Select：placeholder 仅在 value === undefined 时展示；
+ * 旧代码大量用 '' / null / 空 {}（labelInValue）作为「未选」，会导致 placeholder 消失。
+ * 包装 ASelect：把这些空值规范成 undefined，再交给原生 Select。
+ */
+function isEmptySelectValue (value) {
+  if (value === undefined || value === null || value === '') return true
+  if (Array.isArray(value)) return value.length === 0
+  // labelInValue 空对象 / { key|value: ''|null|undefined }
+  if (typeof value === 'object') {
+    const keys = Object.keys(value)
+    if (keys.length === 0 || 'key' in value || 'value' in value) {
+      const id = value.value !== undefined ? value.value : value.key
+      return id === undefined || id === null || id === ''
+    }
+  }
+  return false
+}
+
+/**
+ * antdv4 labelInValue 只认 { value, label }；业务侧大量仍写 { key, label }。
+ * 入参统一成 antdv4 形状，保留 key 兼容下游。
+ */
+function normalizeLabelInValueForSelect (value) {
+  if (isEmptySelectValue(value)) return undefined
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value
+  const id = value.value !== undefined && value.value !== null && value.value !== ''
+    ? value.value
+    : value.key
+  if (id === undefined || id === null || id === '') return undefined
+  return {
+    value: id,
+    label: value.label,
+    ...(value.key !== undefined ? { key: value.key } : { key: id }),
+  }
+}
+
+function createLegacySelect (RawSelect) {
+  const LegacySelect = defineComponent({
+    name: 'ASelect',
+    inheritAttrs: false,
+    props: {
+      value: { default: undefined },
+      labelInValue: { type: Boolean, default: undefined },
+    },
+    emits: ['change', 'update:value', 'search', 'select', 'deselect', 'clear', 'blur', 'focus', 'dropdownVisibleChange', 'popupScroll'],
+    setup (props, { attrs, slots, emit, expose }) {
+      const innerRef = shallowRef(null)
+      expose({
+        focus: () => innerRef.value?.focus?.(),
+        blur: () => innerRef.value?.blur?.(),
+        scrollTo: (...args) => innerRef.value?.scrollTo?.(...args),
+      })
+      return () => {
+        const {
+          onChange,
+          'onUpdate:value': onUpdateValue,
+          value: attrValue,
+          labelInValue: attrLabelInValue,
+          ...restAttrs
+        } = attrs
+        const labelInValue = props.labelInValue !== undefined ? props.labelInValue : attrLabelInValue
+        const rawValue = props.value !== undefined ? props.value : attrValue
+        let value = isEmptySelectValue(rawValue) ? undefined : rawValue
+        if (labelInValue && value !== undefined) {
+          value = normalizeLabelInValueForSelect(value)
+        }
+        return h(RawSelect, mergeProps(restAttrs, {
+          ref: innerRef,
+          value,
+          ...(labelInValue !== undefined ? { labelInValue } : {}),
+          onChange: (...args) => {
+            emit('change', ...args)
+            if (typeof onChange === 'function') onChange(...args)
+          },
+          'onUpdate:value': (v) => {
+            emit('update:value', v)
+            if (typeof onUpdateValue === 'function') onUpdateValue(v)
+          },
+        }), slots)
+      }
+    },
+  })
+  LegacySelect.Option = RawSelect.Option
+  LegacySelect.OptGroup = RawSelect.OptGroup
+  if (RawSelect.SECRET_COMBOBOX_MODE_DO_NOT_USE) {
+    LegacySelect.SECRET_COMBOBOX_MODE_DO_NOT_USE = RawSelect.SECRET_COMBOBOX_MODE_DO_NOT_USE
+  }
+  return LegacySelect
+}
+
+/**
  * antdv4 InputNumber 用内部 mergedValue；挂载后仅靠 props 写入有时不刷新展示。
  * 包装本地值保持受控同步（a-form-model / v-model）；
  * expose __decoratorSyncValue 供程序化回填（不派发 DOM 事件）。
@@ -531,5 +622,7 @@ export default {
     app.component('AInput', createLegacyInput(Input))
     app.component('AInputNumber', createLegacyInputNumber(InputNumber))
     app.component('ARadioGroup', createLegacyRadioGroup(Radio.Group))
+    // Select：空值 → undefined，恢复 placeholder（antdv4 仅 undefined 展示）
+    app.component('ASelect', createLegacySelect(Select))
   },
 }

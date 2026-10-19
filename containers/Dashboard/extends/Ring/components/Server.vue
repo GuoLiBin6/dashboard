@@ -63,7 +63,7 @@
         <a-form-model-item :label="$t('dashboard.text_6')" prop="name">
           <a-input v-model:value="form.fd.name" @change="onNameInput" />
         </a-form-model-item>
-        <quota-config :model="form.fd" :fd="form.fd" @update:usage_key="setDefaultName" />
+        <quota-config :model="form.fd" :fd="form.fd" :field-map="fieldMap" @update:usage_key="setDefaultName" />
         <a-form-model-item prop="all_usage_key" class="d-none">
           <a-input v-model:value="form.fd.all_usage_key" />
         </a-form-model-item>
@@ -125,10 +125,11 @@ export default {
   data () {
     const all_usage_key = this.$store.getters.isAdminMode ? 'all.servers' : this.$store.getters.isDomainMode ? 'domain.servers' : 'servers'
     const usage_key = this.$store.getters.isAdminMode ? 'all.running_servers' : this.$store.getters.isDomainMode ? 'domain.running_servers' : 'running_servers'
-    const initialNameValue = ((this.params && this.params.type !== 'k8s') && this.params.name) || this.$t('usage')[usage_key]
-    const initialCloudEnvValue = ((this.params && this.params.type !== 'k8s') && this.params.cloud_env) || ''
-    const initialBrandValue = ((this.params && this.params.type !== 'k8s') && this.params.brand) || ''
-    const initialRegionValue = ((this.params && this.params.type !== 'k8s') && this.params.region) || ''
+    const initialNameValue = ((this.params && this.params.type !== 'k8s') && this.params.name) || (this.$tm('usage') || {})[usage_key]
+    // antdv4 Select：空字符串会挡住 placeholder，未配置时用 undefined
+    const initialCloudEnvValue = ((this.params && this.params.type !== 'k8s') && this.params.cloud_env) || undefined
+    const initialBrandValue = ((this.params && this.params.type !== 'k8s') && this.params.brand) || undefined
+    const initialRegionValue = ((this.params && this.params.type !== 'k8s') && this.params.region) || undefined
     const initialAllUsageKeyValue = ((this.params && this.params.type !== 'k8s') && this.params.all_usage_key) || all_usage_key
     const initialUsageKeyValue = ((this.params && this.params.type !== 'k8s') && this.params.usage_key) || usage_key
     const initialRegionAccountType = ((this.params && this.params.type !== 'k8s') && this.params.regionAccountType) || 'region'

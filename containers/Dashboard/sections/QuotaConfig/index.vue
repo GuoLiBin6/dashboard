@@ -32,13 +32,13 @@
         </a-col>
       </a-row>
     </a-form-item>
-    <a-form-item :label="$t('dashboard.text_100')" class="mb-0">
+    <a-form-item :label="$t('dashboard.text_100')">
       <a-radio-group :value="regionAccountType" @change="regionAccountTypeChange">
         <a-radio-button value="region">{{$t('dashboard.text_101')}}</a-radio-button>
         <a-radio-button value="account">{{$t('dashboard.text_102')}}</a-radio-button>
         <a-radio-button v-if="showTag" value="schedtag">{{ $t('dictionary.schedtag') }}</a-radio-button>
       </a-radio-group>
-      <a-form-item :wrapperCol="{ span: 24 }" v-if="regionAccountType === 'region'">
+      <a-form-item :wrapperCol="{ span: 24 }" class="mb-0 mt-2" v-if="regionAccountType === 'region'">
         <a-select
           allowClear
           class="w-100"
@@ -51,7 +51,7 @@
           <a-select-option v-for="item of regions" :value="item.key" :key="item.key">{{ item.label }}</a-select-option>
         </a-select>
       </a-form-item>
-      <a-form-item :wrapperCol="{ span: 24 }" v-if="regionAccountType === 'account'">
+      <a-form-item :wrapperCol="{ span: 24 }" class="mb-0 mt-2" v-if="regionAccountType === 'account'">
         <a-select
           allowClear
           class="w-100"
@@ -64,7 +64,7 @@
           <a-select-option v-for="item of accounts" :value="item.key" :key="item.key">{{ item.label }}</a-select-option>
         </a-select>
       </a-form-item>
-      <a-form-item :wrapperCol="{ span: 24 }" v-if="showTag && regionAccountType === 'schedtag'">
+      <a-form-item :wrapperCol="{ span: 24 }" class="mb-0 mt-2" v-if="showTag && regionAccountType === 'schedtag'">
         <a-select
           allowClear
           class="w-100"
@@ -191,7 +191,8 @@ export default {
       accountLoading: false,
       regions: [],
       regionLoading: false,
-      translateUsage: this.$t('usage'),
+      // vue-i18n v9+：$t('usage') 对对象消息返回 key 字符串，需 $tm 取整表
+      translateUsage: this.$tm('usage') || {},
       totalUsageOptions: [],
       partUsageOptions: [],
       metricDoc: getMetricDocs(this.$store.getters.scope),
@@ -420,7 +421,7 @@ export default {
         }
       }
       this._setInitCloudEnv(defaultData)
-      this.cloudEnvChange(defaultData || {})
+      this.cloudEnvChange(defaultData)
     },
     fetchBrands () {
       let brands = []
@@ -440,7 +441,7 @@ export default {
         }
       }
       this._setInitBrand(defaultData)
-      this.brandChange(defaultData || {})
+      this.brandChange(defaultData)
     },
     async fetchRegions () {
       this.regionLoading = true
@@ -461,8 +462,8 @@ export default {
             defaultData = { key: findInitValue.key, label: findInitValue.label }
           }
         }
-        this.regionChange(defaultData || {})
-        this._setInitRegion(defaultData || {})
+        this.regionChange(defaultData)
+        this._setInitRegion(defaultData)
       } catch (error) {
         throw error
       } finally {
@@ -488,8 +489,8 @@ export default {
             defaultData = { key: findInitValue.key, label: findInitValue.label }
           }
         }
-        this.accountChange(defaultData || {})
-        this._setInitAccount(defaultData || {})
+        this.accountChange(defaultData)
+        this._setInitAccount(defaultData)
       } catch (error) {
         throw error
       } finally {
@@ -703,7 +704,7 @@ export default {
             defaultData = { key: findInitValue.key, label: findInitValue.label }
           }
         }
-        this.schedtagChange(defaultData || {})
+        this.schedtagChange(defaultData)
         this._setInitSchedtag()
       } catch (error) {
         throw error

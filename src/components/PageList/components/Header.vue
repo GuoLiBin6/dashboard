@@ -13,8 +13,8 @@
         </a-button>
         <!-- 批量前面追加内容 slot -->
         <slot name="group-actions-prepend" />
-        <!-- 批量操作 -->
-        <template v-if="showGroupActions && groupActions">
+        <!-- 批量操作（空数组不渲染，避免与 append 之间多出一段 gap） -->
+        <template v-if="showGroupActions && groupActions && groupActions.length">
           <actions
             group
             class="flex-shrink-0"

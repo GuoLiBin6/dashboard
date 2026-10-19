@@ -1,6 +1,6 @@
 <template>
   <div>
-    <a-form-item :label="$t('dashboard.text_96')">
+    <a-form-item :label="$t('dashboard.text_96')" v-if="hasField('all_usage_key')">
       <usage-select
         class="w-100"
         :value="boundModel.all_usage_key"
@@ -14,7 +14,7 @@
         </i18n>
       </div>
     </a-form-item>
-    <a-form-item :label="usageLabel || $t('dashboard.text_97')">
+    <a-form-item :label="usageLabel || $t('dashboard.text_97')" v-if="hasField('usage_key')">
       <usage-select
         class="w-100"
         :value="boundModel.usage_key"
@@ -28,12 +28,12 @@
         </i18n>
       </div>
     </a-form-item>
-    <a-form-item :label="$t('dashboard.usage_metric_name')" class="mb-0">
+    <a-form-item :label="$t('dashboard.usage_metric_name')" class="mb-0" v-if="hasField('usage_label')">
       <a-form-item :wrapperCol="{ span: 24 }">
         <a-input class="w-100" :value="boundModel.usage_label" @change="e => onInputChange('usage_label', e.target.value)" />
       </a-form-item>
     </a-form-item>
-    <a-form-item :label="$t('dashboard.remaining_usage_metric_name')" class="mb-0">
+    <a-form-item :label="$t('dashboard.remaining_usage_metric_name')" class="mb-0" v-if="hasField('un_usage_label')">
       <a-form-item :wrapperCol="{ span: 24 }">
         <a-input class="w-100" :value="boundModel.un_usage_label" @change="e => onInputChange('un_usage_label', e.target.value)" />
       </a-form-item>
@@ -58,6 +58,10 @@ export default {
       type: Object,
       required: true,
     },
+    /** 有 fieldMap 时按 key 显隐；无则兼容旧行为全显示 */
+    fieldMap: {
+      type: Object,
+    },
     fc: {
       type: Object,
       default: null,
@@ -71,7 +75,7 @@ export default {
   data () {
     return {
       showDocsLink,
-      translateUsage: this.$t('k8s_usage'),
+      translateUsage: this.$tm('k8s_usage') || {},
       metricDoc: getMetricDocs(this.$store.getters.scope),
     }
   },
@@ -108,13 +112,18 @@ export default {
           })
         }
       }
-      if (!ret.length) {
+      // 数字图只有 usage_key、无总量指标时，直接给出全部可选指标
+      if (!ret.length && this.hasField('usage_key') && !this.hasField('all_usage_key')) {
         return this.allUsages
       }
       return ret
     },
   },
   methods: {
+    hasField (key) {
+      if (!this.fieldMap) return true
+      return !!this.fieldMap[key]
+    },
     setModelFields (values) {
       if (!this.boundModel || !values) return
       Object.keys(values).forEach((k) => {

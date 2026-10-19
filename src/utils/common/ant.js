@@ -57,7 +57,8 @@ export function isFieldMeta (value) {
 
 /**
  * 统一字段定义 → { name, initialValue, rules, label, ... }
- * 仅支持 object meta：{ name?, initialValue, rules, ... }（name 默认取 map 的 key）
+ * 支持 object meta：{ name?, initialValue, rules, ... }（name 默认取 map 的 key）
+ * 以及历史 decorator 二元组：[name, { initialValue, rules, ... }]
  */
 export function normalizeFieldDef (key, def) {
   if (isFieldMeta(def)) {
@@ -69,6 +70,16 @@ export function normalizeFieldDef (key, def) {
 /** 解析字段定义；非字段则返回 null */
 export function resolveFieldMeta (fieldDef, key = '') {
   if (fieldDef == null) return null
+  // 历史 a-form decorator 二元组：[fieldName, opts]
+  if (Array.isArray(fieldDef)) {
+    const name = fieldDef[0]
+    const opts = (fieldDef[1] && typeof fieldDef[1] === 'object' && !Array.isArray(fieldDef[1]))
+      ? fieldDef[1]
+      : {}
+    if (name == null || name === '') return null
+    // opts 可能只有 rules 等；强制带 name，避免 isFieldMeta 因无 FIELD_META_KEYS 而失败
+    return { name, ...opts }
+  }
   if (isFieldMeta(fieldDef)) {
     return normalizeFieldDef(key, fieldDef)
   }

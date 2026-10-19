@@ -66,7 +66,7 @@ export default {
   data () {
     return {
       showDocsLink,
-      translateUsage: this.$t('project_quota_usage'),
+      translateUsage: this.$tm('project_quota_usage') || {},
       metricDoc: getMetricDocs(this.$store.getters.scope),
     }
   },

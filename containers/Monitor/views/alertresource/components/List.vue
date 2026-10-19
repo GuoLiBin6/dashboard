@@ -20,7 +20,6 @@
       :show-page="!isTemplate">
       <template v-slot:group-actions-append>
         <monitor-header
-          class-name="ml-2"
           v-model:time="time"
           v-model:customTime="customTime"
           :allow-empty-time="allowEmptyTime"
