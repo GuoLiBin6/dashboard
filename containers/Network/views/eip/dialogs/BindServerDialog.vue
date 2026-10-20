@@ -5,7 +5,6 @@
       <dialog-selected-tips :name="$t('dictionary.eip')" :count="params.data.length" :action="$t('network.text_202')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-form-model
-        v-bind="formItemLayout"
         ref="formRef"
         :model="form"
         :rules="rules">
@@ -55,14 +54,6 @@ export default {
         instance_id: [
           { required: true, message: this.$t('network.text_204') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

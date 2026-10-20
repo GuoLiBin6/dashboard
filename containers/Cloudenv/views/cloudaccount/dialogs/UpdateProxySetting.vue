@@ -6,7 +6,6 @@
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-form-model
         ref="formRef"
-        v-bind="formItemLayout"
         :model="form.fd"
         :rules="rules">
         <proxy-setting :form="form.fd" :account="params.data[0]" />
@@ -42,14 +41,6 @@ export default {
         proxy_setting: [
           { required: true, message: this.$t('common.tips.select', [this.$t('cloudenv.text_14')]) },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="skuName" :count="params.data.length" :action="$t('common.action.clone')" />
       <dialog-table :data="params.data" :columns="tableColumns" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('common.name')" prop="name">
           <a-input v-model:value="form.name" />
           <template v-slot:extra>
@@ -43,10 +43,6 @@ export default {
         name: [
           { required: true, message: this.$t('common.tips.input', [this.$t('common.name')]) },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: { span: 21 },
-        labelCol: { span: 3 },
       },
     }
   },

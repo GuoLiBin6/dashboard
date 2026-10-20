@@ -2,7 +2,7 @@
   <base-dialog :width="1000" @cancel="cancelDialog">
     <template #header>{{$t('network.ssl_certificate.create')}}</template>
     <template #body>
-      <a-form-model :model="form" :rules="rules" ref="form" :label-col="{ span: 4 }" :wrapper-col="{ span: 20 }">
+      <a-form-model :model="form" :rules="rules" ref="form">
         <a-form-model-item :label="$t('network.ssl_certificate.name')" prop="name">
           <a-input v-model:value="form.name" :placeholder="$t('common.tips.input', [$t('network.ssl_certificate.name')])" />
         </a-form-model-item>

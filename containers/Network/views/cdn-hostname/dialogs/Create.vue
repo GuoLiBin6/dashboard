@@ -5,8 +5,7 @@
       <a-form-model
         :model="form"
         :rules="rules"
-        ref="form"
-        v-bind="formItemLayout">
+        ref="form">
         <a-form-model-item :label="$t('network.cdn.hostname')" prop="hostname">
           <a-input v-model:value="form.hostname" />
         </a-form-model-item>
@@ -112,14 +111,6 @@ export default {
     return {
       loading: false,
       MIN_TLS_VERSIONS,
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
       form: {
         hostname: data.hostname,
         min_tls_version: data.ssl?.settings?.min_tls_version || '1.0',

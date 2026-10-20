@@ -5,8 +5,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('compute.text_175')" v-if="params.title !== 'edit'" prop="type">
           <a-select
             v-model:value="form.type"
@@ -148,14 +147,6 @@ export default {
             },
           },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 15,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
       typeOptions: [
         { label: this.$t('compute.text_144'), value: 'custom', description: '' },

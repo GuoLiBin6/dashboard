@@ -7,8 +7,7 @@
       <a-form-model
         ref="formRef"
         class="mt-3"
-        :model="form"
-        v-bind="formItemLayout">
+        :model="form">
         <a-form-model-item :label="$t('common.text00076')" prop="disable_delete">
           <a-radio-group v-model:value="form.disable_delete">
             <a-radio :value="true">{{$t('db.text_146')}}</a-radio>
@@ -25,7 +24,6 @@
 </template>
 
 <script>
-import { CreateServerForm } from '@Compute/constants'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 
@@ -42,10 +40,6 @@ export default {
       loading: false,
       form: {
         disable_delete: initialValueDisableDelete,
-      },
-      formItemLayout: {
-        wrapperCol: { span: CreateServerForm.wrapperCol },
-        labelCol: { span: CreateServerForm.labelCol },
       },
     }
   },

@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.network')" :count="params.data.length" :action="params.title" />
       <dialog-table class="mb-2" :data="params.data" :columns="columns" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('network.text_571')" prop="wire">
           <base-select
             resource="wires"
@@ -39,14 +39,6 @@ export default {
         wire: [
           { required: true, message: this.$t('network.text_572') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
       },
     }
   },

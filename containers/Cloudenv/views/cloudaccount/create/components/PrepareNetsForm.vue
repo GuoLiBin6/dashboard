@@ -137,18 +137,6 @@ export default {
         { label: '29', value: '29' },
         { label: '30', value: '30' },
       ],
-      formLayout: {
-        wrapperCol: {
-          md: { span: 18 },
-          xl: { span: 20 },
-          xxl: { span: 22 },
-        },
-        labelCol: {
-          md: { span: 6 },
-          xl: { span: 3 },
-          xxl: { span: 2 },
-        },
-      },
       options: {
         name: {
           initialValue: undefined,

@@ -7,8 +7,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('common.text00105')" :extra="$t(`shareScopeDesc.${formScope}`)">
           <a-radio-group v-model:value="formScope">
             <a-radio-button
@@ -92,14 +91,6 @@ export default {
         project: [
           { required: true, message: this.$t('rules.project'), trigger: 'blur' },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
       },
     }
   },

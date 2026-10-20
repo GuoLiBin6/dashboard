@@ -5,7 +5,6 @@
       class="mt-3"
       :model="form.fd"
       :rules="rules"
-      v-bind="formItemLayout"
       @submit="submit"
       hideRequiredMark>
       <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-show="false">
@@ -25,8 +24,6 @@
         class="mb-0"
         v-if="showAreaSelect"
         :model="form.fd"
-        :wrapperCol="formItemLayout.wrapperCol"
-        :labelCol="formItemLayout.labelCol"
         ref="areaSelectRef"
         :providerParams="providerParams"
         :cloudregionParams="cloudregionParams"

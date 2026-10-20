@@ -1,5 +1,5 @@
 <template>
-  <a-form-model :model="form.fd" class="mt-3" v-bind="formItemLayout">
+  <a-form-model :model="form.fd" class="mt-3">
     <a-divider orientation="left">{{$t('network.text_397')}}</a-divider>
     <a-form-model-item :label="$t('network.text_21')">
       <a-input :disabled="isUpdate" :value="form.fd.generate_name" @update:value="v => setField('generate_name', v)" :placeholder="$t('validator.resourceName')" />

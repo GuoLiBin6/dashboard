@@ -14,8 +14,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('cloudenv.text_344')" prop="enrollment_account_id">
           <base-select
             v-model:value="form.enrollment_account_id"
@@ -68,14 +67,6 @@ export default {
         offer_type: [
           { required: true, message: this.$t('cloudenv.text_350') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

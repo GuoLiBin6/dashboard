@@ -7,7 +7,7 @@
       </a-alert>
       <dialog-selected-tips :name="$t('dictionary.elasticcaches')" :count="params.data.length" :action="this.params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" class="mt-3" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules" class="mt-3">
         <a-form-model-item v-if="params.data[0].provider === 'Qcloud' && params.data[0].auth_mode === 'on'" :label="$t('db.text_195')" prop="password">
           <a-input-password v-model:value="form.password" :plcaeholder="$t('db.text_360')" />
         </a-form-model-item>
@@ -32,10 +32,6 @@ export default {
     return {
       form: {
         password: undefined,
-      },
-      formItemLayout: {
-        wrapperCol: { span: 20 },
-        labelCol: { span: 4 },
       },
       loading: false,
     }

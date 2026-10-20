@@ -6,8 +6,7 @@
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-form-model
         ref="formRef"
-        :model="form"
-        v-bind="formItemLayout">
+        :model="form">
         <a-form-model-item :label="$t('cloudenv.read_only')" :extra="$t('cloudenv.read_only_extra')">
           <a-switch
             v-model:checked="form.read_only"
@@ -36,14 +35,6 @@ export default {
       loading: false,
       form: {
         read_only: !!data.read_only,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

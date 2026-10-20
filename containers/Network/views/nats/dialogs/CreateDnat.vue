@@ -6,10 +6,10 @@
         ref="formRef"
         :model="form"
         :rules="rules">
-        <a-form-model-item :label="$t('network.text_21')" v-bind="formItemLayout" prop="name">
+        <a-form-model-item :label="$t('network.text_21')" prop="name">
           <a-input v-model:value="form.name" :placeholder="$t('network.text_44')" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('network.text_539')" v-bind="formItemLayout" prop="ip">
+        <a-form-model-item :label="$t('network.text_539')" prop="ip">
           <template #extra>{{$t('network.text_540')}}<router-link :to="{ path: '/eip' }" target="_blank">{{$t('dictionary.eip')}}</router-link>
           </template>
           <base-select
@@ -21,7 +21,7 @@
             :labelFormat="eiplabelFormat"
             v-model:resList="eipOptions" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('network.text_542')" v-bind="formItemLayout" prop="server">
+        <a-form-model-item :label="$t('network.text_542')" prop="server">
           <base-select
             v-model:value="form.server"
             :params="serverParams"
@@ -32,13 +32,13 @@
             v-model:resList="serverOptions"
             :mapper="serversMapper" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('network.text_544')" v-bind="formItemLayout" :extra="$t('network.text_545')" prop="externalPort">
+        <a-form-model-item :label="$t('network.text_544')" :extra="$t('network.text_545')" prop="externalPort">
           <a-input-number :min="1" :max="65535" v-model:value="form.externalPort" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('network.text_546')" v-bind="formItemLayout" :extra="$t('network.text_545')" prop="internalPort">
+        <a-form-model-item :label="$t('network.text_546')" :extra="$t('network.text_545')" prop="internalPort">
           <a-input-number :min="1" :max="65535" v-model:value="form.internalPort" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('network.text_547')" v-bind="formItemLayout" prop="protocol">
+        <a-form-model-item :label="$t('network.text_547')" prop="protocol">
           <a-select v-model:value="form.protocol">
             <a-select-option value="tcp">TCP</a-select-option>
             <a-select-option value="udp">UDP</a-select-option>
@@ -92,14 +92,6 @@ export default {
         protocol: [
           { required: true, message: this.$t('network.text_550') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
       },
       tailFormItemLayout: {
         wrapperCol: {

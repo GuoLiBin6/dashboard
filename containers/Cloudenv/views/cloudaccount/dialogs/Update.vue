@@ -7,8 +7,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <template v-if="isGoogle">
           <upload-json-file :form="form">
             <a-form-model-item :label="field.label.k" :prop="credKey">
@@ -227,21 +226,6 @@ export default {
     },
     isOraclecloud () {
       return this.provider === HYPERVISORS_MAP.oracle.provider.toLowerCase()
-    },
-    formItemLayout () {
-      const ret = {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
-      }
-      if (this.isAzure || this.isGoogle) {
-        ret.wrapperCol.span = 19
-        ret.labelCol.span = 5
-      }
-      return ret
     },
   },
   created () {

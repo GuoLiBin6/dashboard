@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{this.params.title}}</div>
     <div slot="body">
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('storage.text_103')" v-if="isPrivate" prop="expire_seconds">
           <a-input class="w-50" @change="getUrl" v-model:value="form.expire_seconds" :placeholder="$t('storage.text_104')">
             <span slot="addonAfter">{{$t('storage.text_105')}}</span>
@@ -23,7 +23,6 @@
 </template>
 
 <script>
-import { formItemLayout } from '@Storage/constants/index.js'
 import { objectsModel } from '@Storage/views/bucket/utils/controller.js'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
@@ -34,7 +33,6 @@ export default {
   data () {
     return {
       loading: false,
-      formItemLayout,
       fileList: [],
       url: '',
       form: {

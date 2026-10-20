@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="this.params.title" :name="$t('dictionary.blockstorage')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form">
        <a-form-model-item :label="$t('storage.text_59')" prop="capacity">
           <a-input style="width: 150px" name="capacity" v-model:value="form.capacity" @blur="handelBlur">
             <span slot="addonAfter">
@@ -22,7 +22,6 @@
 </template>
 
 <script>
-import { formItemLayout } from '@Storage/constants/index.js'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 
@@ -34,7 +33,6 @@ export default {
     const initCapacity = data.length > 0 ? Math.round(parseFloat(data[0].capacity / 1024)) : 0
     return {
       loading: false,
-      formItemLayout,
       form: {
         capacity: initCapacity,
       },

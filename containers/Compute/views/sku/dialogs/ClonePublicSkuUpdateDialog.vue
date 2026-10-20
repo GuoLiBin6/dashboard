@@ -7,8 +7,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('compute.text_177')" class="mb-0" prop="cloudregion">
           <a-row :gutter="8">
             <a-col :span="12">
@@ -109,14 +108,6 @@ export default {
         zone: [
           { validator: isRequired(), message: this.$t('compute.text_213') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

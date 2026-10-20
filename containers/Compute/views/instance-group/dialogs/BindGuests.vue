@@ -9,7 +9,7 @@
         </template>
       </a-alert>
       <dialog-selected-tips :name="$t('dictionary.instancegroup')" :count="1" :action="$t('compute.text_902')" />
-      <a-form-item :label="resourceName" v-bind="formItemLayout">
+      <a-form-item :label="resourceName">
         <base-select
           v-if="bindedServersLoaded"
           v-show="serversInitLoaded"
@@ -46,14 +46,6 @@ export default {
       bindedServersLoaded: false,
       bindedServerIds: [],
       selectedServers: [],
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
     }
   },
   computed: {

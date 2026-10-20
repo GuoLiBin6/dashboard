@@ -5,7 +5,7 @@
       <dialog-selected-tips :name="$t('dictionary.instancegroup')" :count="params.data.length" :action="$t('compute.text_1264')" />
       <dialog-table :data="params.data" :columns="columns" />
       <a-form-model ref="formRef" :model="form" hideRequiredMark>
-        <a-form-model-item :label="$t('compute.text_1265')" v-bind="formItemLayout" :extra="$t('compute.text_1266')" prop="auto_delete">
+        <a-form-model-item :label="$t('compute.text_1265')" :extra="$t('compute.text_1266')" prop="auto_delete">
           <a-switch v-model:checked="form.auto_delete" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
         </a-form-model-item>
       </a-form-model>
@@ -29,10 +29,6 @@ export default {
       loading: false,
       form: {
         auto_delete: false,
-      },
-      formItemLayout: {
-        wrapperCol: { span: 21 },
-        labelCol: { span: 3 },
       },
     }
   },

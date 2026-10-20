@@ -1,7 +1,7 @@
 <template>
   <base-dialog @cancel="cancelDialog" :width="900">
     <div slot="header">{{$t('db.text_215')}}</div>
-    <a-form-model ref="formRef" slot="body" :model="form" :rules="rules" class="mt-3" v-bind="formItemLayout">
+    <a-form-model ref="formRef" slot="body" :model="form" :rules="rules" class="mt-3">
       <a-form-model-item :label="$t('db.text_60')" prop="generate_name">
         <a-input v-model:value="form.generate_name" :placeholder="$t('db.text_216')" />
         <name-repeated v-slot:extra res="dbinstancebackups" :name="form.generate_name" />
@@ -23,7 +23,6 @@
 </template>
 
 <script>
-import { CreateServerForm } from '@Compute/constants'
 import NameRepeated from '@/sections/NameRepeated'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
@@ -42,10 +41,6 @@ export default {
         generate_name: undefined,
         description: undefined,
         dbinstance: undefined,
-      },
-      formItemLayout: {
-        wrapperCol: { span: CreateServerForm.wrapperCol },
-        labelCol: { span: CreateServerForm.labelCol },
       },
       rdsListLoading: false,
       rdsList: [],

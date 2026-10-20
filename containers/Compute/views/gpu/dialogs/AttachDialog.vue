@@ -8,20 +8,19 @@
         ref="formRef"
         :model="form"
         :rules="rules">
-        <a-form-model-item :label="$t('compute.text_492', [params.resourceType === 'server_container' ? this.$t('dictionary.server_container') : this.$t('dictionary.server')])" v-bind="formItemLayout" :extra="$t('compute.text_493')" prop="guest">
+        <a-form-model-item :label="$t('compute.text_492', [params.resourceType === 'server_container' ? this.$t('dictionary.server_container') : this.$t('dictionary.server')])" :extra="$t('compute.text_493')" prop="guest">
           <a-select v-model:value="form.guest">
             <a-select-option v-for="item in guestesOpts" :key="item.id">
               {{item.name}}
             </a-select-option>
           </a-select>
         </a-form-model-item>
-        <a-form-model-item v-if="showGpuType" :label="$t('gpu.device_type')" v-bind="formItemLayout" prop="gpu_type">
+        <a-form-model-item v-if="showGpuType" :label="$t('gpu.device_type')" prop="gpu_type">
           <base-select v-model:value="form.gpu_type" :options="gpuTypeOptions" />
         </a-form-model-item>
         <a-form-model-item
           v-if="showMemoryRequest"
           :label="$t('compute.pci.memory_request')"
-          v-bind="formItemLayout"
           prop="memory_request">
           <a-tooltip
             :title="memoryRangeTooltip"
@@ -39,7 +38,7 @@
               @unitChange="onMemoryUnitChange" />
           </a-tooltip>
         </a-form-model-item>
-        <a-form-model-item v-if="isShowAutoStart" :label="$t('compute.text_494')" v-bind="formItemLayout" :extra="$t('compute.text_495')" prop="autoStart">
+        <a-form-model-item v-if="isShowAutoStart" :label="$t('compute.text_494')" :extra="$t('compute.text_495')" prop="autoStart">
           <a-switch v-model:checked="form.autoStart" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
         </a-form-model-item>
       </a-form-model>
@@ -96,14 +95,6 @@ export default {
       },
       guestesOpts: [],
       memoryUnit: 'GB',
-      formItemLayout: {
-        wrapperCol: {
-          span: 18,
-        },
-        labelCol: {
-          span: 6,
-        },
-      },
     }
   },
   computed: {

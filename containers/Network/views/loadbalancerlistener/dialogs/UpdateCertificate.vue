@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.lb_listener')" :count="params.data.length" :action="$t('network.text_470')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('network.text_471')" prop="certificate">
           <base-select
             v-model:value="form.certificate"
@@ -40,14 +40,6 @@ export default {
         certificate: [
           { required: true, message: this.$t('network.text_421') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- 限制 -->
-    <a-form-item :label="$t('network_waf_statement.label.limit')" v-bind="formLayout">
+    <a-form-item :label="$t('network_waf_statement.label.limit')">
       <a-input v-if="isEdit" :value="value" />
       <box-show v-else :value="value" />
     </a-form-item>
@@ -26,14 +26,6 @@ export default {
   },
   data () {
     return {
-      formLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
     }
   },
   computed: {

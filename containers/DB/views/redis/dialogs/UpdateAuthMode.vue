@@ -12,8 +12,7 @@
         ref="formRef"
         :model="form"
         :rules="rules"
-        class="mt-3"
-        v-bind="formItemLayout">
+        class="mt-3">
         <a-form-model-item :label="$t('db.text_286')" :extra="$t('db.text_359')">
           <server-password :loginTypes="['random', 'password']" :form="form" />
         </a-form-model-item>
@@ -43,10 +42,6 @@ export default {
       form: {
         loginType: 'random',
         password: undefined,
-      },
-      formItemLayout: {
-        wrapperCol: { span: 19 },
-        labelCol: { span: 5 },
       },
     }
   },

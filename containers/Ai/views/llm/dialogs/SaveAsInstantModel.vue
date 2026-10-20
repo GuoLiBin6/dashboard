@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('aice.model')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 4 }" :wrapper-col="{ span: 15 }">
+      <a-form-model ref="form" :model="form" :rules="rules">
         <a-form-model-item :label="$t('table.title.name')" prop="name">
           <a-input v-model:value="form.name" :placeholder="$t('common.tips.input', [$t('table.title.name')])" />
         </a-form-model-item>

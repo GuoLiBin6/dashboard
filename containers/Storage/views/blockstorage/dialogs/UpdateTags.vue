@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="this.params.title" :name="$t('dictionary.blockstorage')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form">
         <a-form-model-item :label="$t('storage.text_45')" prop="schedTags">
           <a-select :loading="schedTagsLoading" allowClear showSearch :filterOption="filterOption" mode="multiple" v-model:value="form.schedTags" :placeholder="$t('storage.text_63')">
             <a-select-option v-for="item in schedTags" :key="item.id" :value="item.id">{{item.name}}</a-select-option>
@@ -20,7 +20,6 @@
 </template>
 
 <script>
-import { formItemLayout } from '@Storage/constants/index.js'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 
@@ -32,7 +31,6 @@ export default {
       loading: false,
       schedTagsLoading: false,
       schedTags: [],
-      formItemLayout,
       form: {
         schedTags: undefined,
       },

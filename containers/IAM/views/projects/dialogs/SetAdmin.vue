@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.project')" :count="params.data.length" :action="params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="form" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="form" :model="form" :rules="rules">
         <a-form-model-item :label="$t('iam.project_admin')">
           <base-select
             v-model="form.admin_id"
@@ -39,14 +39,6 @@ export default {
       },
       form: {
         admin_id: this.params.data[0].admin_id || undefined,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

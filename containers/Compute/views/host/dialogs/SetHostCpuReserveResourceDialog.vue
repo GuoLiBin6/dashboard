@@ -10,7 +10,7 @@
       </a-alert>
       <dialog-selected-tips :name="$t('dictionary.host')" :count="params.data.length" :action="title" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form-model ref="formRef" :model="form" hideRequiredMark v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" hideRequiredMark>
         <a-form-model-item :label="$t('compute.executable_file_name')" :extra="$t('compute.executable_file_name.extra')" prop="processes_prefix">
           <a-textarea v-model:value="form.processes_prefix" :rows="5" />
         </a-form-model-item>
@@ -122,14 +122,6 @@ export default {
           },
         },
       ],
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
       selectedItems: [],
     }
   },

@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.v2vtransfer.label')" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form-model ref="formRef" :model="form.fd" :rules="modelRules" hideRequiredMark v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form.fd" :rules="modelRules" hideRequiredMark>
         <a-form-model-item :label="$t('compute.v2vtransfer.type')">
           <a-radio v-model:checked="form.fd.type">{{ $t('compute.v2vtransfer.kvm') }} <help-tooltip name="v2vTransferType" /></a-radio>
         </a-form-model-item>
@@ -189,14 +189,6 @@ export default {
       },
       hosts: [],
       message: '',
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
       checkNetworkResultSuccess: false,
       dataDiskInterval: null,
       sysdisk: {},

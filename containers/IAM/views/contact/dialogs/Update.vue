@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="$t('system.text_142')" :name="$t('system.text_317')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 5)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('system.text_131')" prop="international_mobile">
           <mobile-input :value="form.international_mobile" @change="v => { form.international_mobile = v }" />
         </a-form-model-item>
@@ -74,14 +74,6 @@ export default {
         ],
       },
       contactArrOpts: [],
-      formItemLayout: {
-        wrapperCol: {
-          span: 18,
-        },
-        labelCol: {
-          span: 6,
-        },
-      },
     }
   },
   unmounted () {

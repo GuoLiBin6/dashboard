@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('aice.llm_instantmodel.menu')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form">
         <a-form-model-item :label="$t('aice.mounted_apps.auto_cache.enable')">
           <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-model:checked="form.auto_cache" />
         </a-form-model-item>
@@ -31,14 +31,6 @@ export default {
       action: this.$t('aice.mounted_apps.auto_cache.enable'),
       form: {
         auto_cache: !isAllClose,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
       },
     }
   },

@@ -6,7 +6,7 @@
       :model="form.fd"
       :rules="modelRules"
       @submit="handleConfirm">
-      <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-bind="formItemLayout">
+      <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])">
         <domain-project
           ref="domainProjectRef"
           :form="form.fd"
@@ -15,7 +15,7 @@
           :ignoreStorage="ignoreLocalFormStorage"
           :form-draft-key="baremetalDraftFields.domainProject" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('compute.text_177')" class="mb-0" v-bind="formItemLayout" v-if="!isInstallOperationSystem" prop="zone">
+      <a-form-model-item :label="$t('compute.text_177')" class="mb-0" v-if="!isInstallOperationSystem" prop="zone">
         <cloudregion-zone
           ref="cloudregionZoneRef"
           :model="form.fd"
@@ -28,18 +28,17 @@
       </a-form-model-item>
       <a-form-model-item
         :label="$t('compute.text_228')"
-        v-bind="formItemLayout"
         :extra="$t('compute.text_301')"
         prop="name">
         <a-input v-model:value="form.fd.name" :placeholder="$t('validator.resourceCreateName')" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('compute.text_312')" v-bind="formItemLayout" v-if="!isInstallOperationSystem" prop="description">
+      <a-form-model-item :label="$t('compute.text_312')" v-if="!isInstallOperationSystem" prop="description">
         <a-input v-model:value="form.fd.description" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('compute.text_294')" v-bind="formItemLayout" prop="count">
+      <a-form-model-item :label="$t('compute.text_294')" prop="count">
         <a-input-number v-model:value="form.fd.count" :min="1" :max="100" :disabled="isInstallOperationSystem" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('compute.server_package.fake_create_from_bm_import')" v-bind="formItemLayout" v-if="!isInstallOperationSystem">
+      <a-form-model-item :label="$t('compute.server_package.fake_create_from_bm_import')" v-if="!isInstallOperationSystem">
         <a-switch
           v-model:checked="fakeCreateFromBmImport"
           :disabled="isInitForm"
@@ -47,7 +46,7 @@
           :un-checked-children="$t('table.title.off')" />
       </a-form-model-item>
       <!-- ServerPassword / ServerNetwork / OsSelect 已 end-state（:model + validate） -->
-      <a-form-model-item v-if="showBaremetalInstallFields" v-bind="formItemLayout" :label="$t('compute.text_267')" :extra="$t('compute.text_302')">
+      <a-form-model-item v-if="showBaremetalInstallFields" :label="$t('compute.text_267')" :extra="$t('compute.text_302')">
         <os-select
           ref="osSelectRef"
           type="baremetal"
@@ -61,7 +60,7 @@
           @updateImageMsg="setSelectedImage"
           v-model:imageType="osSelectImageType" />
       </a-form-model-item>
-      <a-form-model-item v-bind="formItemLayout" :label="$t('compute.text_178')" prop="specifications">
+      <a-form-model-item :label="$t('compute.text_178')" prop="specifications">
         <a-select v-model:value="form.fd.specifications" @change="specificationChange" :disabled="isInstallOperationSystem">
           <a-select-option v-for="i in specOptions" :key="i.value" :value="i.value">
             {{i.text}}
@@ -69,7 +68,7 @@
         </a-select>
       </a-form-model-item>
       <template v-if="showBaremetalInstallFields">
-        <a-form-model-item v-bind="formItemLayout" :label="$t('compute.text_303')">
+        <a-form-model-item :label="$t('compute.text_303')">
           <div class="d-flex flex-wrap">
             <template v-for="(item, idx) of diskOptionsDate" :key="idx">
               <div class="disk-option-item">
@@ -106,11 +105,11 @@
         <a-form-model-item v-bind="offsetFormItemLayout">
           <a-button type="primary" @click="addDisk" :disabled="specOptions.length === 0">{{$t('compute.text_307')}}</a-button>
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_308')" v-bind="formItemLayout" v-if="!isCheckedIso">
+        <a-form-model-item :label="$t('compute.text_308')" v-if="!isCheckedIso">
           <server-password ref="passwordRef" :form="form" :model="form.fd" :login-types="loginTypes" :isSnapshotImageType="false" :form-draft-key="baremetalDraftFields.loginConfig" />
         </a-form-model-item>
       </template>
-      <a-form-model-item :label="$t('compute.text_1154')" class="mb-0" v-bind="formItemLayout" prop="__meta__">
+      <a-form-model-item :label="$t('compute.text_1154')" class="mb-0" prop="__meta__">
         <tag
           v-model:value="form.fd.__meta__"
           :allowNoValue="false"
@@ -118,7 +117,7 @@
       </a-form-model-item>
       <a-divider orientation="left">{{$t('compute.text_309')}}</a-divider>
       <template v-if="showBaremetalInstallFields">
-        <a-form-model-item :label="$t('compute.text_104')" v-bind="formItemLayout" class="mb-0">
+        <a-form-model-item :label="$t('compute.text_104')" class="mb-0">
           <server-network
             ref="networkRef"
             :model="form.fd"
@@ -137,7 +136,7 @@
           <a-checkbox v-model:checked="isBonding">{{$t('compute.text_310')}}</a-checkbox>
         </a-form-model-item>
       </template>
-      <a-form-model-item :label="$t('compute.text_311')" v-bind="formItemLayout" class="mb-0" v-if="!isInstallOperationSystem">
+      <a-form-model-item :label="$t('compute.text_311')" class="mb-0" v-if="!isInstallOperationSystem">
         <sched-policy
           ref="schedPolicyRef"
           :form="form"
@@ -154,7 +153,7 @@
           @change="hostChange"
           :hostData="filterHostData" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('compute.text_312')" v-bind="formItemLayout" v-if="isInstallOperationSystem" prop="description">
+      <a-form-model-item :label="$t('compute.text_312')" v-if="isInstallOperationSystem" prop="description">
         <a-input v-model:value="form.fd.description" />
       </a-form-model-item>
       <bottom-bar

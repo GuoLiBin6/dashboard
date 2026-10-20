@@ -4,8 +4,7 @@
     <a-form-model
       ref="form"
       :model="model"
-      :rules="rules"
-      v-bind="formItemLayout">
+      :rules="rules">
       <a-form-model-item :label="$t('dictionary.domain')" v-if="!isUpdate && isAdminMode && l3PermissionEnable" prop="domain">
         <base-select
           v-model="model.domain"
@@ -213,14 +212,6 @@ export default {
         name: [
           { required: true, message: this.$t('common.text00042') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
       editTypeOptions: [
         { key: 'yaml', label: this.$t('system.policy_edit_type_yaml') },

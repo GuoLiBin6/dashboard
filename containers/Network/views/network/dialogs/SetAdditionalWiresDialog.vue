@@ -3,7 +3,7 @@
     <div slot="header">{{ $t('network.additional_wires.set') }}</div>
     <div slot="body">
       <a-form-model ref="formRef" :model="form" :rules="rules">
-        <a-form-model-item :label="$t('network.text_571')" v-bind="formItemLayout" prop="type">
+        <a-form-model-item :label="$t('network.text_571')" prop="type">
           <a-radio-group v-model:value="form.type">
             <a-radio-button value="auto">{{ $t('network.additional_wires.type.auto') }}</a-radio-button>
             <a-radio-button value="manual">{{ $t('network.additional_wires.type.manual') }}</a-radio-button>
@@ -50,14 +50,6 @@ export default {
         wires: [
           { required: true, message: this.$t('network.text_572') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
       },
       formItemLayoutWithOutLabel: {
         wrapperCol: {

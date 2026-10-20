@@ -7,8 +7,7 @@
       <a-form-model
         ref="form"
         :model="fd"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('cloudenv.text_580')" prop="project_mapping_id">
           <base-select
             v-model="fd.project_mapping_id"
@@ -62,14 +61,6 @@ export default {
         project_mapping_id: [
           { required: false, message: this.$t('common.tips.select', [this.$t('cloudenv.text_580')]) },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

@@ -4,7 +4,7 @@
         <div slot="body">
            <dialog-selected-tips :name="$t('dictionary.elasticcaches')" :count="params.data.length" :action="params.title" />
            <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-           <a-form-model ref="formRef" :model="form" class="mt-5" v-bind="formItemLayout">
+           <a-form-model ref="formRef" :model="form" class="mt-5">
               <a-form-model-item :label="$t('db.text_284')" prop="account_privilege">
                 <a-radio-group v-model:value="form.account_privilege">
                     <a-radio v-for="k in Object.keys(privileges)" :key="k" :value="k">
@@ -22,7 +22,6 @@
 </template>
 
 <script>
-import { CreateServerForm } from '@Compute/constants'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import { ACCOUNT_PRIVILEGES } from '../constants'
@@ -35,10 +34,6 @@ export default {
       loading: false,
       form: {
         account_privilege: initialValues.account_privilege,
-      },
-      formItemLayout: {
-        wrapperCol: { span: CreateServerForm.wrapperCol },
-        labelCol: { span: CreateServerForm.labelCol },
       },
     }
   },

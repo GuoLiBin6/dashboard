@@ -17,8 +17,7 @@
           <a-form-model
             ref="shellFormRef"
             :model="shellForm"
-            :rules="shellRules"
-            v-bind="formItemLayout">
+            :rules="shellRules">
             <a-form-model-item :label="$t('helm.text_16')" prop="release_name">
               <a-input v-model:value="shellForm.release_name" :placeholder="$t('helm.text_28')" />
             </a-form-model-item>
@@ -116,10 +115,6 @@ export default {
         chart: {},
       },
       namespaceObj: {},
-      formItemLayout: {
-        labelCol: { span: 4 },
-        wrapperCol: { span: 20 },
-      },
       isVm: this.$route.query.type === 'internal',
       loadingLayout: [
         [10],

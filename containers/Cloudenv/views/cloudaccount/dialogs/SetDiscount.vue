@@ -7,8 +7,7 @@
       <a-form-model
         ref="form"
         :model="fd"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('cloudaccount.table.title.discount')" prop="discount" :extra="$t('cloudenv.text_571')">
           <a-input-number
             :value="fd.discount"
@@ -47,14 +46,6 @@ export default {
         discount: [
           { required: true, message: this.$t('cloudaccount.validate.discount') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

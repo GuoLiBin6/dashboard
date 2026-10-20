@@ -3,7 +3,7 @@
     <div slot="header">{{ $t('aice.llm_update_config') }}</div>
     <div slot="body">
       <dialog-selected-tips :name="instanceLabel" :count="1" :action="$t('aice.llm_update_config')" />
-      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout" hideRequiredMark>
+      <a-form-model ref="formRef" :model="form" hideRequiredMark>
         <a-form-model-item v-if="supportMountedModels" :label="$t('aice.model')" :extra="$t('aice.llm_override_sku_extra')">
           <base-select
             v-model:value="form.mounted_models"
@@ -184,10 +184,6 @@ export default {
       form: {
         device: devices.map(v => v.model),
         mounted_models: mountedModels.map(v => v.id),
-      },
-      formItemLayout: {
-        wrapperCol: { span: 20 },
-        labelCol: { span: 4 },
       },
     }
   },

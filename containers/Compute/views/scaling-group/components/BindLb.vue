@@ -1,12 +1,12 @@
 <template>
   <a-input-group compact>
-    <a-form-model-item style="width: 28%" :wrapperCol="{ span: 24 }" prop="loadbalancer_id">
+    <a-form-model-item style="width: 28%" prop="loadbalancer_id">
       <a-select class="w-100" v-model:value="model.loadbalancer_id" @change="handleLbChange" :placeholder="$t('compute.text_866')">
         <a-select-option v-for="item in loadbalancerList" :key="item.id" :value="item.id">{{item.name}}</a-select-option>
       </a-select>
       <div slot="extra" style="white-space:nowrap;">{{$t('compute.text_867')}}</div>
     </a-form-model-item>
-    <a-form-model-item style="width: 28%" :wrapperCol="{ span: 24 }" prop="lb_backend_group">
+    <a-form-model-item style="width: 28%" prop="lb_backend_group">
       <a-select class="w-100" v-model:value="model.lb_backend_group" :placeholder="$t('compute.text_868')">
         <a-select-option v-for="item in groupList" :key="item.id" :value="item.id">{{item.name}}</a-select-option>
       </a-select>
@@ -16,7 +16,7 @@
         <span class="ant-form-item-label">{{$t('compute.text_869')}}</span>
       </a-col>
       <a-col :span="12">
-        <a-form-model-item :wrapperCol="{ span: 24 }" prop="loadbalancer_backend_port">
+        <a-form-model-item prop="loadbalancer_backend_port">
           <a-tooltip :title="$t('compute.text_870')" placement="top">
             <a-input-number class="w-100" :min="1" :max="65535" v-model:value="model.loadbalancer_backend_port" />
           </a-tooltip>
@@ -28,7 +28,7 @@
         <span class="ant-form-item-label">{{$t('compute.text_871')}}</span>
       </a-col>
       <a-col :span="14">
-        <a-form-model-item :wrapperCol="{ span: 24 }" prop="loadbalancer_backend_weight">
+        <a-form-model-item prop="loadbalancer_backend_weight">
           <a-tooltip :title="$t('compute.text_872')" placement="top">
             <a-input-number class="w-100" :min="1" :max="256" v-model:value="model.loadbalancer_backend_weight" />
           </a-tooltip>

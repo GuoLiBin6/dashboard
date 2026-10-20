@@ -1,6 +1,6 @@
 <template>
   <div class="k8s-deployment-create">
-    <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+    <a-form-model ref="formRef" :model="form" :rules="rules">
       <a-form-model-item :label="$t('k8s.text_41')" prop="name">
         <a-input :placeholder="$t('k8s.text_60')" v-model:value="form.name" class="w-75" />
       </a-form-model-item>
@@ -50,10 +50,6 @@ export default {
         namespace: [
           { required: true, message: this.$t('k8s.text_61'), trigger: 'blur' },
         ],
-      },
-      formItemLayout: {
-        labelCol: { span: 4 },
-        wrapperCol: { span: 20 },
       },
       clusterObj: {},
       namespaceObj: {},

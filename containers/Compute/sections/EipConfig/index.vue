@@ -1,6 +1,6 @@
 <template>
   <div>
-    <a-form-model-item :label="label" prop="eip_type" v-bind="formItemLayout">
+    <a-form-model-item :label="label" prop="eip_type">
       <a-row>
         <a-radio-group v-model:value="model.eip_type" @change="handleTypeChange">
           <a-radio-button
@@ -19,12 +19,12 @@
           :select-props="{ allowClear: true, placeholder: $t('compute.text_145') }" />
       </a-row>
     </a-form-model-item>
-    <a-form-model-item :label="$t('compute.text_1359')" prop="eip_bgp_type" v-if="isNew && showBgpTypes" v-bind="formItemLayout">
+    <a-form-model-item :label="$t('compute.text_1359')" prop="eip_bgp_type" v-if="isNew && showBgpTypes">
       <a-select v-model:value="model.eip_bgp_type">
         <a-select-option v-for="item in bgpTypeOptions" :value="item" :key="item">{{ item === '' ? $t('compute.text_1352') : BGP_TYPES_MAP[item] ? BGP_TYPES_MAP[item].label : item }}</a-select-option>
       </a-select>
     </a-form-model-item>
-    <a-form-model-item :label="$t('compute.text_1360')" prop="eip_charge_type" v-if="isNew" v-bind="formItemLayout">
+    <a-form-model-item :label="$t('compute.text_1360')" prop="eip_charge_type" v-if="isNew">
       <a-radio-group v-model:value="model.eip_charge_type" @change="handleChargeTypeChange">
         <a-radio-button
           v-for="item of chargeTypes"
@@ -32,7 +32,7 @@
           :value="item.key">{{ item.label }}</a-radio-button>
       </a-radio-group>
     </a-form-model-item>
-    <a-form-model-item :label="$t('compute.bandwidth.title')" prop="eip_bw" v-if="isNew" v-bind="formItemLayout">
+    <a-form-model-item :label="$t('compute.bandwidth.title')" prop="eip_bw" v-if="isNew">
       <div class="d-flex">
         <a-tooltip placement="top" :title="$t('compute.text_1324', [maxBindWidth])">
           <a-input-number
@@ -92,21 +92,6 @@ export default {
     model: {
       type: Object,
       required: true,
-    },
-    formItemLayout: {
-      type: Object,
-      default: () => ({
-        wrapperCol: {
-          md: { span: 18 },
-          xl: { span: 20 },
-          xxl: { span: 22 },
-        },
-        labelCol: {
-          md: { span: 6 },
-          xl: { span: 4 },
-          xxl: { span: 2 },
-        },
-      }),
     },
     showBind: {
       type: Boolean,

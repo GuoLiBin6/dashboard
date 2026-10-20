@@ -8,7 +8,6 @@
         :model="form"
         :rules="rules"
         @submit.prevent="handleSubmit"
-        v-bind="formItemLayout"
         hideRequiredMark>
         <a-form-model-item :label="$t('network.text_205', [$t('dictionary.project')])" class="mt-3" prop="project">
           <domain-project
@@ -27,8 +26,6 @@
             class="mb-0"
             ref="areaSelects"
             :model="form"
-            :wrapperCol="formItemLayout.wrapperCol"
-            :labelCol="formItemLayout.labelCol"
             :names="areaselectsName"
             :providerParams="providerParams"
             :cloudregionParams="cloudregionParams"
@@ -105,18 +102,6 @@ export default {
       },
       guestIpPrefixValidateStatus: '',
       guestIpPrefixHelp: '',
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 18 },
-          xl: { span: 20 },
-          xxl: { span: 22 },
-        },
-        labelCol: {
-          md: { span: 6 },
-          xl: { span: 4 },
-          xxl: { span: 2 },
-        },
-      },
       show: true,
       regionProvider: '',
       regionId: '',

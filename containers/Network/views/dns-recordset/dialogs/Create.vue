@@ -9,8 +9,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('common_664')" prop="name">
           <a-input v-model:value="form.name" :addon-after="params.detailData.name" :placeholder="$t('common_695')" />
         </a-form-model-item>
@@ -300,14 +299,6 @@ export default {
           { required: false, message: this.$t('cloudenv.text_451') },
           { validator: validateForm('tagName') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       isAliyunEE,
     }

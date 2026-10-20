@@ -6,7 +6,7 @@
         ref="formRef"
         :model="form"
         :rules="rules">
-        <a-form-model-item v-if="isConvert" :label="$t('compute.text_327')" v-bind="formItemLayout" prop="name">
+        <a-form-model-item v-if="isConvert" :label="$t('compute.text_327')" prop="name">
           <a-input v-model:value="form.name" v-if="!isDisabled" class="workspace-prefix-wrapper">
             <span class="workspace-prefix" slot="prefix">{{prefix}}</span>
           </a-input>
@@ -15,13 +15,13 @@
             {{$t('compute.text_1361', ['/opt/cloud/workspace'])}}
           </template>
         </a-form-model-item>
-        <a-form-model-item v-else :label="$t('compute.text_327')" v-bind="formItemLayout" prop="name">
+        <a-form-model-item v-else :label="$t('compute.text_327')" prop="name">
           <a-input v-model:value="form.name" :disabled="isDisabled" />
           <template #extra v-if="!isDisabled">
             {{$t('compute.mount_point_tips', ['/opt/cloud/workspace'])}}
           </template>
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_328')" v-bind="formItemLayout" v-if="!isDisabled" prop="format">
+        <a-form-model-item :label="$t('compute.text_328')" v-if="!isDisabled" prop="format">
           <a-select v-model:value="form.format" :placeholder="$t('compute.text_329')">
             <a-select-option value="ext4">ext4</a-select-option>
             <a-select-option value="xfs">xfs</a-select-option>
@@ -29,7 +29,7 @@
             <a-select-option value="swap">swap</a-select-option>
           </a-select>
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_330')" v-bind="formItemLayout" prop="method">
+        <a-form-model-item :label="$t('compute.text_330')" prop="method">
           <a-radio-group v-model:value="form.method" @change="handleMethodChange">
             <a-radio value="autoextend" v-show="this.params.item.remainder !== 0">{{$t('compute.text_331')}}</a-radio>
             <a-radio value="manual">{{$t('compute.text_332')}}</a-radio>
@@ -71,14 +71,6 @@ export default {
     return {
       loading: false,
       prefix,
-      formItemLayout: {
-        wrapperCol: {
-          span: 16,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
       tailFormItemLayout: {
         wrapperCol: {
           sm: {

@@ -6,7 +6,7 @@
          <h2>{{$t('common_120', [companyInfo.name])}}</h2>
          <p v-if="updateInfo.current_version">{{$t('common_121', [updateInfo.current_version])}}</p>
       </div>
-      <a-form class="form" label-align="right" v-bind="formItemLayout">
+      <a-form class="form" label-align="right">
         <a-form-item v-if="allSn && allSn.length > 0" :label="$t('common_122')">
           <div>
             <div class="flex-fill d-flex all-sn align-items-end">
@@ -69,14 +69,6 @@ export default {
       fileList: [],
       updateInfo: {},
       // allSn: [],
-      formItemLayout: {
-        wrapperCol: {
-          span: 17,
-        },
-        labelCol: {
-          span: 7,
-        },
-      },
       formItemOffset: {
         wrapperCol: {
           span: 17,

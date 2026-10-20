@@ -2,7 +2,7 @@
   <div>
     <page-header :title="$t('common.create') + $t('aice.aiproxy.proxy_node')" />
     <page-body>
-      <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 4 }" :wrapper-col="{ span: 16 }" class="mt-4">
+      <a-form-model ref="form" :model="form" :rules="rules" class="mt-4">
         <a-form-model-item :label="$t('common.name')" prop="generate_name">
           <a-input v-model:value="form.generate_name" :placeholder="$t('common.placeholder')" />
         </a-form-model-item>

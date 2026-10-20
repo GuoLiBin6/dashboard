@@ -9,6 +9,7 @@
  */
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
+import legacyH from '@/utils/legacyCreateElement'
 
 export default {
   name: 'CommonDialog',
@@ -21,7 +22,8 @@ export default {
   methods: {
     renderBody () {
       if (!this.params.body) return null
-      return this.params.body()
+      // 传入 legacyH：调用方 body:(h)=>h('dialog-table',{props}) 才能正确落到组件 props
+      return this.params.body(legacyH)
     },
     async handleConfirm () {
       this.loading = true
@@ -35,7 +37,8 @@ export default {
       }
     },
   },
-  render (h) {
+  render () {
+    const h = legacyH
     const header = h('div', { slot: 'header' }, [this.params.header])
     const body = h('div', { slot: 'body' }, [this.renderBody()])
     const footerChildren = [

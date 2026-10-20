@@ -9,8 +9,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('storage.text_55', [$t('dictionary.domain')])" prop="project_domain">
           <domain-select v-if="isAdminMode && l3PermissionEnable" v-model:value="form.project_domain" />
           <template v-else> {{userInfo.domain.name}} </template>
@@ -57,7 +56,7 @@
 
 <script>
 import { mapGetters } from 'vuex'
-import { MEDIUM_TYPES, STORAGE_TYPES, formItemLayout } from '@Storage/constants/index.js'
+import { MEDIUM_TYPES, STORAGE_TYPES } from '@Storage/constants/index.js'
 import FormItems from '@Storage/views/blockstorage/components/FormItems'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
@@ -92,7 +91,6 @@ export default {
         zone: undefined,
         __meta__: {},
       },
-      formItemLayout,
     }
   },
   computed: {

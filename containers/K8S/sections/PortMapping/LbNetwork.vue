@@ -1,7 +1,6 @@
 <template>
   <div>
     <a-form-item
-      :wrapperCol="{ span: 24 }"
       class="mb-0 mr-1">
       <base-select
         class="w-100"
@@ -15,7 +14,7 @@
       <a-button type="link" class="mr-1 mt-1" @click="triggerConfigIp">{{$t('compute.text_198')}}</a-button>
     </a-form-item>
     <template v-if="configIp">
-      <a-form-item class="mb-0" :wrapperCol="{ span: 24 }">
+      <a-form-item class="mb-0">
         <a-input
           style="width: 300px"
           :value="fieldVal('loadBalancerAddress')"

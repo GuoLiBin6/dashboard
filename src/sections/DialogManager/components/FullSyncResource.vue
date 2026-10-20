@@ -4,7 +4,7 @@
     <template #body>
       <dialog-selected-tips :name="params.name" class="mt-3" :count="params.data.length" :action="params.action" />
       <dialog-table v-if="params.columns && params.columns.length" :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('common.sync_mode')" :help="$t('common.increment_sync_tip')">
           <a-radio-group v-model:value="form.sync_mode">
             <a-radio-button value="full">{{$t('common.full_sync')}}</a-radio-button>
@@ -47,14 +47,6 @@ export default {
       },
       rules: {
         resource: [{ required: true, message: this.$t('cloudenv.text_284', [this.$t('common.full_sync_resource_type')]) }],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
       },
     }
   },

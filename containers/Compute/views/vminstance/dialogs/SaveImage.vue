@@ -9,7 +9,7 @@
       </a-alert>
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_1236')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
         <a-form-model-item :label="$t('compute.text_1237')" prop="type" v-if="isKvm">
           <a-radio-group v-model:value="form.type">
             <a-radio-button :value="types.system.key">{{ types.system.label }}</a-radio-button>
@@ -72,14 +72,6 @@ export default {
           { validator: this.$validate('imageName') },
           { validator: this.checkTemplateName },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

@@ -7,12 +7,10 @@
         :model="form.fd"
         :rules="rules"
         class="mt-3"
-        v-bind="formItemLayout"
         hideRequiredMark>
         <a-form-model-item :label="$t('network.text_205', [$t('dictionary.project')])" prop="project">
           <domain-project
             :form="form.fd"
-            :form-layout="formItemLayout"
             :labelInValue="true" />
         </a-form-model-item>
         <a-form-model-item :label="$t('network.cdn.cloudprovider')" prop="cloudprovider">
@@ -50,13 +48,12 @@
         <a-form-model-item
           v-for="(k, index) in form.fd.keys"
           :key="k"
-          v-bind="index === 0 ? formItemLayout : formItemLayoutWithOutLabel"
+          v-bind="index === 0 ? undefined : formItemLayoutWithOutLabel"
           :label="index === 0 ? $t('network.cdn.source_origin') : ''"
           :required="false">
           <a-row :gutter="6">
             <a-col :span="8">
               <a-form-model-item
-                :wrapperCol="{ span: 24 }"
                 class="mb-0 mr-1"
                 :prop="`origin.${k}`"
                 :rules="originRules">
@@ -65,7 +62,6 @@
             </a-col>
             <a-col :span="8">
               <a-form-model-item
-                :wrapperCol="{ span: 24 }"
                 class="mb-0 mr-1"
                 :prop="`port.${k}`">
                 <a-input v-model:value="form.fd.port[k]" :placeholder="$t('network.text_165')" />
@@ -73,7 +69,6 @@
             </a-col>
             <a-col :span="7">
               <a-form-model-item
-                :wrapperCol="{ span: 24 }"
                 class="mb-0 mr-1"
                 :prop="`priority.${k}`"
                 :rules="priorityRules">
@@ -168,18 +163,6 @@ export default {
         cloudprovider: {
           scope: this.$store.getters.scope,
           brand: 'Qcloud',
-        },
-      },
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 18 },
-          xl: { span: 20 },
-          xxl: { span: 22 },
-        },
-        labelCol: {
-          md: { span: 6 },
-          xl: { span: 4 },
-          xxl: { span: 2 },
         },
       },
       formItemLayoutWithOutLabel: {

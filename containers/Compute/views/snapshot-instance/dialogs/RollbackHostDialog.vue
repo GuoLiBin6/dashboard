@@ -8,7 +8,7 @@
       <a-form-model
         ref="formRef"
         :model="form">
-        <a-form-model-item :label="$t('compute.text_494')" :extra="$t('compute.text_1356')" v-bind="formItemLayout" prop="auto_start">
+        <a-form-model-item :label="$t('compute.text_494')" :extra="$t('compute.text_1356')" prop="auto_start">
           <a-switch v-model:checked="form.auto_start" :checked-children="$t('compute.text_115')" :un-checked-children="$t('compute.text_116')" />
         </a-form-model-item>
         <a-form-model-item v-if="hasMemorySnapshot" prop="with_memory">
@@ -39,14 +39,6 @@ export default {
       form: {
         auto_start: true,
         with_memory: undefined,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

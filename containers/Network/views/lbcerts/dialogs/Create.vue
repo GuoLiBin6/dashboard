@@ -5,8 +5,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('network.text_205', [$t('dictionary.project')])" class="mt-3">
           <domain-project :form="form" />
         </a-form-model-item>
@@ -99,14 +98,6 @@ export default {
         __meta__: [
           { validator: validateForm('tagName') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 18,
-        },
-        labelCol: {
-          span: 6,
-        },
       },
     }
   },

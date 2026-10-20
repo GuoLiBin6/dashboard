@@ -6,8 +6,7 @@
       <dialog-table :data="params.data" :columns="columns" />
       <a-form-model
         ref="formRef"
-        :model="form"
-        v-bind="formItemLayout">
+        :model="form">
         <a-form-model-item :label="$t('compute.text_1257')" :help="$t('compute.text_1258_1')" prop="open">
           <a-switch v-model:checked="form.open" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
         </a-form-model-item>
@@ -34,14 +33,6 @@ export default {
       action: this.$t('compute.text_1124'),
       form: {
         open: !isAllClose,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
       },
     }
   },

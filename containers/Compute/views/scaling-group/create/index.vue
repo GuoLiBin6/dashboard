@@ -7,7 +7,6 @@
         class="mt-3"
         :model="form.fd"
         :rules="formRules"
-        v-bind="formItemLayout"
         hideRequiredMark>
         <a-form-model-item class="mb-0" :label="$t('compute.text_297', [$t('dictionary.project')])" prop="project">
           <domain-project :form="form.fd" :labelInValue="false" @update:project="projectChange" />
@@ -42,7 +41,6 @@
           ref="NETWORK"
           :label="$t('compute.text_104')"
           :model="form.fd"
-          v-bind="formItemLayout"
           :networkParams="networkParams"
           :vpcParams="vpcParams" />
         <a-form-model-item :label="$t('compute.text_877')" prop="max_instance_number">
@@ -136,18 +134,6 @@ export default {
       form: {
         fd: { ...getInitialValue(SCALING_GROUP_FIELD_MAP) },
         fi: {},
-      },
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 16 },
-          xl: { span: 18 },
-          xxl: { span: 20 },
-        },
-        labelCol: {
-          md: { span: 8 },
-          xl: { span: 6 },
-          xxl: { span: 4 },
-        },
       },
       isDeleteVpc: false,
       isDeleteNetwork: false,

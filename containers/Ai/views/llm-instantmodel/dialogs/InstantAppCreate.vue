@@ -2,7 +2,7 @@
   <base-dialog :width="900" @cancel="cancelDialog">
     <div slot="header">{{ $t('common.create') }}</div>
     <div slot="body">
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout" hideRequiredMark>
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
         <a-form-model-item :label="$t('aice.project')">
           <domain-project :form="form" />
         </a-form-model-item>
@@ -87,14 +87,6 @@ export default {
         image_id: [
           { required: true, message: this.$t('common.tips.input', [this.$t('aice.template')]) },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

@@ -12,7 +12,6 @@
         <!-- end-state: a-form-model + form.fd；无 createForm / fc -->
         <a-form-model
           ref="formRef"
-          v-bind="formItemLayout"
           :model="form.fd"
           :rules="modelRules">
           <a-form-model-item v-if="isShowCpu" :label="$t('compute.text_1058')" class="mb-0">
@@ -299,20 +298,6 @@ export default {
         ],
       },
       beforeDataDisks: [],
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-          xxl: {
-            span: 22,
-          },
-        },
-        labelCol: {
-          span: 4,
-          xxl: {
-            span: 2,
-          },
-        },
-      },
       diskLoaded: false,
       domain: itemData.domain_id,
       cloudaccountId: itemData.account_id,

@@ -1,18 +1,18 @@
 <template>
   <div>
     <div class="d-flex" v-for="(item) in rows" :key="item._id">
-      <a-form-model-item v-if="showProtocol" :wrapperCol="{ span: 24 }" class="labels-protocol mb-0">
+      <a-form-model-item v-if="showProtocol" class="labels-protocol mb-0">
         <a-select v-model:value="item.protocol" style="width: 88px" :disabled="isLocked(item)" @change="emitChange">
           <a-select-option v-for="opt in protocolOptions" :key="opt.id" :value="opt.id">
             {{ opt.name }}
           </a-select-option>
         </a-select>
       </a-form-model-item>
-      <a-form-model-item :wrapperCol="{ span: 24 }">
+      <a-form-model-item>
         <a-input :addonBefore="keyLabel" v-model:value="item.key" :placeholder="keyPlaceholder" :disabled="isLocked(item)" @change="emitChange" />
       </a-form-model-item>
       <div class="mx-3"> = </div>
-      <a-form-model-item :wrapperCol="{ span: 24 }">
+      <a-form-model-item>
         <a-tooltip v-if="valueTooltip" :title="valueTooltip" placement="top">
           <a-input :addonBefore="valueLabel" v-model:value="item.value" :placeholder="valuePlaceholder" :disabled="isLocked(item)" @change="emitChange" />
         </a-tooltip>

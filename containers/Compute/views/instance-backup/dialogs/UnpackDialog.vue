@@ -9,7 +9,7 @@
       </a-alert>
       <dialog-selected-tips :name="$t('compute.instance_backup')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
         <a-form-model-item :label="$t('compute.unpack_name')" prop="name">
           <a-input
             v-model:value="form.name"
@@ -42,14 +42,6 @@ export default {
         name: [
           { required: true, message: this.$t('common.tips.input', [this.$t('compute.unpack_name')]) },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.sku')" :count="params.data.length" :action="$t('compute.text_983')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form">
         <a-form-model-item :label="$t('compute.text_1051')" prop="cpu_core_count">
           <a-input-number :min="1" v-model:value="form.cpu_core_count" />{{$t('compute.text_167')}}
         </a-form-model-item>
@@ -33,14 +33,6 @@ export default {
       form: {
         cpu_core_count: this.params.data[0].cpu_core_count,
         memory_size_mb: this.params.data[0].memory_size_mb / 1024,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

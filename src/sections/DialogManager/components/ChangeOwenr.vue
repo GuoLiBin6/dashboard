@@ -11,7 +11,7 @@
         ref="formRef"
         :model="form"
         :rules="rules">
-        <a-form-model-item :label="params.projectLabel || $t('dictionary.project')" v-bind="formItemLayout">
+        <a-form-model-item :label="params.projectLabel || $t('dictionary.project')">
           <domain-project
             :form="form"
             :labelInValue="false"
@@ -56,14 +56,6 @@ export default {
         project: [
           { required: true, message: this.$t('rules.project'), trigger: 'change' },
         ],
-      },
-      formItemLayout: this.params.formItemLayout || {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

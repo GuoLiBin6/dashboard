@@ -1,5 +1,5 @@
 <template>
-  <a-form-model ref="formRef" :model="form.fd" :rules="rules" class="mt-3" v-bind="formItemLayout">
+  <a-form-model ref="formRef" :model="form.fd" :rules="rules" class="mt-3">
     <a-form-model-item :label="$t('network.text_205', [$t('dictionary.project')])">
       <domain-project :form="form.fd" v-model:domain="domain" v-model:project="project" :labelInValue="false" />
     </a-form-model-item>
@@ -71,8 +71,7 @@
       hypervisor="kvm"
       cloud-env="idc"
       :form="form"
-      :model="form.fd"
-      :formItemLayout="formItemLayout" />
+      :model="form.fd" />
     <a-form-model-item :label="$t('table.title.tag')">
       <tag :value="form.fd.__meta__" @change="v => { form.fd.__meta__ = v }" :allowNoValue="false" />
     </a-form-model-item>

@@ -130,6 +130,7 @@ function wrapTooltipTrigger (children) {
 
 /**
  * 兼容 Vue2 createElement 签名的 h。
+ * 同时兼容 Vue3：第三参已是 slots 对象（{ default, title, ... }）时不得再当 children 包一层。
  */
 export function legacyH (type, data, children) {
   const resolvedType = resolveAppComponent(type)
@@ -142,22 +143,26 @@ export function legacyH (type, data, children) {
     return vueH(resolvedType, null, asChildrenOrSlots(resolvedType, data))
   }
 
-  const slots = normalizeLegacySlots(data)
+  const slotsFromData = normalizeLegacySlots(data)
   const props = normalizeLegacyData(data)
+  const slotsFromChildren = isSlotsObject(children) ? children : null
 
   if (isTooltip) {
-    const slotObj = { ...(slots || {}) }
-    if (slotObj.default == null) {
+    const slotObj = { ...(slotsFromData || {}), ...(slotsFromChildren || {}) }
+    if (slotObj.default != null) {
+      slotObj.default = wrapTooltipTrigger(slotObj.default)
+    } else if (!slotsFromChildren && children != null) {
       slotObj.default = wrapTooltipTrigger(children)
-    } else {
-      const originDefault = slotObj.default
-      slotObj.default = wrapTooltipTrigger(originDefault)
     }
-    return vueH(ATooltip, props || null, slotObj)
+    return vueH(ATooltip, props || null, Object.keys(slotObj).length ? slotObj : null)
   }
 
-  if (slots) {
-    const slotObj = { ...slots }
+  if (slotsFromChildren) {
+    return vueH(resolvedType, props || null, { ...(slotsFromData || {}), ...slotsFromChildren })
+  }
+
+  if (slotsFromData) {
+    const slotObj = { ...slotsFromData }
     if (children != null && slotObj.default == null) {
       slotObj.default = () => children
     }

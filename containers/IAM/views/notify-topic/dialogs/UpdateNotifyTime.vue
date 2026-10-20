@@ -7,7 +7,6 @@
       <dialog-table v-if="params.columns && params.columns.length" :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-form-model
         ref="form"
-        v-bind="formItemLayout"
         :model="form"
         :rules="rules">
         <a-form-model-item prop="advance_days" class="mb-3">
@@ -44,14 +43,6 @@ export default {
       },
       rules: {
         advance_days: { required: true, validator: this.validatorDays },
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

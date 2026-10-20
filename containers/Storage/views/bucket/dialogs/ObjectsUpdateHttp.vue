@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="this.params.title" :name="$t('storage.text_112')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form">
         <a-form-model-item :label="key" v-for="(val, key) in TYPES" :key="key" :prop="key">
           <a-input :placeholder="val" v-model:value="form[key]" />
         </a-form-model-item>
@@ -40,10 +40,6 @@ export default {
     })
     return {
       loading: false,
-      formItemLayout: {
-        labelCol: { span: 5 },
-        wrapperCol: { span: 19 },
-      },
       fileList: [],
       form,
       TYPES,

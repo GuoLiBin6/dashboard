@@ -2,7 +2,7 @@
   <div>
     <page-header :title="$t('common.create') + $t('aice.aiproxy.provider')" />
     <page-body>
-      <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 4 }" :wrapper-col="{ span: 16 }" class="mt-4">
+      <a-form-model ref="form" :model="form" :rules="rules" class="mt-4">
         <a-form-model-item :label="$t('aice.aiproxy.provider_type')">
           <a-radio-group v-model:value="form.provider_type" :options="providerTypeOptions" />
         </a-form-model-item>

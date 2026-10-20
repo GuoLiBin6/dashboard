@@ -13,7 +13,7 @@
       <a-form-model
         ref="formRef"
         :model="form">
-        <a-form-model-item :label="$t('compute.text_1041')" v-bind="formItemLayout" v-if="isOpenWorkflow" prop="reason">
+        <a-form-model-item :label="$t('compute.text_1041')" v-if="isOpenWorkflow" prop="reason">
           <a-input v-model:value="form.reason" :placeholder="$t('compute.text_1105')" />
         </a-form-model-item>
         <template v-if="isShowAutoDelete">
@@ -141,14 +141,6 @@ export default {
         deleteDisk: formData.delete_disks || false,
         delete_bastion_server: formData.delete_bastion_server || false,
         reason: formData.reason || '',
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
       },
       formItemLayoutWithoutLabel: {
         wrapperCol: {

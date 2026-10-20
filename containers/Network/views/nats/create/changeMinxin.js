@@ -20,7 +20,6 @@ export default {
     return {
       form: this.form,
       scopeParams: this.scopeParams,
-      formItemLayout: this.formItemLayout,
       tailFormItemLayout: this.tailFormItemLayout,
       validateCreateForm: () => this.validateCreateForm(),
     }

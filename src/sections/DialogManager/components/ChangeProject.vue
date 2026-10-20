@@ -7,8 +7,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="params.projectLabel || $t('dictionary.project')" prop="project">
           <base-select
             v-model="form.project"
@@ -47,14 +46,6 @@ export default {
         project: [
           { required: true, message: this.$t('rules.project') },
         ],
-      },
-      formItemLayout: this.params.formItemLayout || {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

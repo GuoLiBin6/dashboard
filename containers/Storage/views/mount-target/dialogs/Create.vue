@@ -5,8 +5,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('dictionary.filesystem')">
           <a-input :value="filesystem" disabled />
         </a-form-model-item>
@@ -30,7 +29,7 @@
           required>
           <a-row :gutter="8">
             <a-col :span="12">
-              <a-form-model-item prop="vpc" :wrapperCol="{ span: 24 }" class="mb-0">
+              <a-form-model-item prop="vpc" class="mb-0">
                 <base-select
                   v-model="form.vpc"
                   resource="vpcs"
@@ -42,7 +41,7 @@
               </a-form-model-item>
             </a-col>
             <a-col :span="12">
-              <a-form-model-item prop="network" :wrapperCol="{ span: 24 }" class="mb-0">
+              <a-form-model-item prop="network" class="mb-0">
                 <base-select
                   v-model="form.network"
                   resource="networks"
@@ -82,14 +81,6 @@ export default {
         access_group_id: undefined,
         vpc: undefined,
         network: undefined,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       filesystem: this.params.data.name,
     }

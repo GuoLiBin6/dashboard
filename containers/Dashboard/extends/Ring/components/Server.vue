@@ -59,7 +59,7 @@
     </div>
     <base-drawer class="ring-drawer-wrapper" @update:visible="updateVisible" :visible="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit">
       <slot />
-      <a-form-model ref="formRef" hideRequiredMark :model="form.fd" :rules="drawerRules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" hideRequiredMark :model="form.fd" :rules="drawerRules">
         <a-form-model-item :label="$t('dashboard.text_6')" prop="name">
           <a-input v-model:value="form.fd.name" @change="onNameInput" />
         </a-form-model-item>

@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{ $t('system.text_130', [$t('system.text_317')]) }}</div>
     <div slot="body">
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item v-if="isAdminMode" :label="$t('dictionary.domain')" prop="domain">
           <base-select
             style="width: 300px;"
@@ -114,14 +114,6 @@ export default {
       },
       contactArrOpts: [],
       userOptions: [],
-      formItemLayout: {
-        wrapperCol: {
-          span: 18,
-        },
-        labelCol: {
-          span: 6,
-        },
-      },
       receiverUserIds: [],
     }
   },

@@ -5,8 +5,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('k8s.text_50')" prop="name">
           <a-input v-model:value="form.name" :placeholder="$t('k8s.text_51')" />
         </a-form-model-item>
@@ -100,14 +99,6 @@ export default {
         email: [
           { validator: validateEmail, trigger: 'blur' },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

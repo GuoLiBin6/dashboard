@@ -2,7 +2,7 @@
   <base-dialog :width="720" @cancel="cancelDialog">
     <div slot="header">{{ $t('table.action.modify') }}</div>
     <div slot="body">
-      <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 5 }" :wrapper-col="{ span: 17 }">
+      <a-form-model ref="form" :model="form" :rules="rules">
         <a-form-model-item :label="$t('common.name')" prop="name">
           <a-input v-model:value="form.name" disabled />
         </a-form-model-item>

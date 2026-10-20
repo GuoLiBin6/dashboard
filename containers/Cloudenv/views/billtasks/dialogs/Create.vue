@@ -7,7 +7,7 @@
         class="mt-3"
         :model="form"
         :rules="rules">
-        <a-form-model-item :label="$t('cloudenv.task_type')" v-bind="formItemLayout" prop="task_type">
+        <a-form-model-item :label="$t('cloudenv.task_type')" prop="task_type">
           <base-select
             v-model="form.task_type"
             :options="taskTypeOpts"
@@ -15,7 +15,7 @@
             :disabled-items="disabledActions"
             @change="taskTypeChange" />
         </a-form-model-item>
-        <a-form-model-item v-if="isMonthShow" :label="$t('cloudenv.text_212')" v-bind="formItemLayout" prop="start_day">
+        <a-form-model-item v-if="isMonthShow" :label="$t('cloudenv.text_212')" prop="start_day">
           <span slot="extra" style="color:red;">{{ blockTip }}</span>
           <a-form-model-item style="display:inline-block" prop="start_day">
             <a-month-picker v-model:value="form.start_day" :disabled-date="dateDisabledStart" @change="startChange" :disabled="ignore_time" />
@@ -66,14 +66,6 @@ export default {
     return {
       loading: false,
       accountLoading: false,
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
-      },
       form: {
         account_id: data.map(item => item.id),
         task_type: initTaskType,

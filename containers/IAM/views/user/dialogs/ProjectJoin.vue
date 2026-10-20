@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.user')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item v-if="isAdminMode" :label="$t('dictionary.domain')" prop="domain">
           <a-radio-group v-if="!l3PermissionEnable" v-model:value="form.domain" @change="domainChange">
             <a-radio-button v-for="item in domainOptions" :value="item.key" :key="item.key">{{ item.label }}</a-radio-button>
@@ -86,14 +86,6 @@ export default {
         roles: [
           { required: true, message: this.$t('rules.role') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

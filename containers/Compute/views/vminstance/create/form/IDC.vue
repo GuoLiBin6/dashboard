@@ -5,7 +5,6 @@
       class="mt-3"
       :model="form.fd"
       :rules="rules"
-      v-bind="formItemLayout"
       @submit="submit"
       hideRequiredMark>
       <servertemplate v-if="isServertemplate" :form="form">
@@ -224,7 +223,6 @@
           :isServertemplate="isServertemplate"
           :cloud-env="type"
           :form="form"
-          :formItemLayout="formItemLayout"
           :form-draft-key="vmDraftFields.eip" />
         <a-form-model-item
           v-if="!isServertemplate"

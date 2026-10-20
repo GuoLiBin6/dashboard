@@ -5,14 +5,14 @@
       <dialog-selected-tips :name="$t('monitor.text_1')" :count="params.data.length" :action="$t('monitor.alerts.shield.shield')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 4)" />
       <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
-        <a-form-model-item :label="$t('monitor.alerts.shield.time')" v-bind="formItemLayout" prop="time">
+        <a-form-model-item :label="$t('monitor.alerts.shield.time')" prop="time">
           <a-radio-group class="mr-3" v-model:value="form.time">
             <a-radio-button key="unset" value="unset">{{ $t('compute.text_138') }}</a-radio-button>
             <a-radio-button v-for="item in timeOpts" v-show="!item.hidden" :key="item.key" :value="item.key">{{ item.label }}</a-radio-button>
             <custom-date v-model:customTime="customTime" @click="handleSelected" v-model:time="time" :startTime="moment()" :endTime="moment().add(1, 'days')" :allow-future-time="true" />
           </a-radio-group>
         </a-form-model-item>
-        <a-form-model-item :label="$t('monitor.alerts.shield.reason')" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('monitor.alerts.shield.reason')">
           <a-input v-model:value="form.description" :placeholder="$t('common.tips.optional_input', [$t('monitor.alerts.shield.reason')])" />
         </a-form-model-item>
       </a-form-model>
@@ -50,14 +50,6 @@ export default {
         time: [
           { required: true, message: `${this.$t('common.select')}` },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

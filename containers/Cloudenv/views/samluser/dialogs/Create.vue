@@ -5,8 +5,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('cloudenv.clouduser_list_t4')" :extra="$t('common_625')" prop="owner_id">
           <user-select
             v-model="form.owner_id"
@@ -152,14 +151,6 @@ export default {
             },
           },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

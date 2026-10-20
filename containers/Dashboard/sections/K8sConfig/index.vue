@@ -29,12 +29,12 @@
       </div>
     </a-form-item>
     <a-form-item :label="$t('dashboard.usage_metric_name')" class="mb-0" v-if="hasField('usage_label')">
-      <a-form-item :wrapperCol="{ span: 24 }">
+      <a-form-item>
         <a-input class="w-100" :value="boundModel.usage_label" @change="e => onInputChange('usage_label', e.target.value)" />
       </a-form-item>
     </a-form-item>
     <a-form-item :label="$t('dashboard.remaining_usage_metric_name')" class="mb-0" v-if="hasField('un_usage_label')">
-      <a-form-item :wrapperCol="{ span: 24 }">
+      <a-form-item>
         <a-input class="w-100" :value="boundModel.un_usage_label" @change="e => onInputChange('un_usage_label', e.target.value)" />
       </a-form-item>
     </a-form-item>

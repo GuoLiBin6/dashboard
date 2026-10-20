@@ -1,6 +1,6 @@
 <template>
   <div>
-    <a-form-item v-if="transformations && transformations.length" :label="$t('network_waf_statement.label.transformations')" v-bind="formLayout">
+    <a-form-item v-if="transformations && transformations.length" :label="$t('network_waf_statement.label.transformations')">
       <template v-for="(transformation, index) in transformations" :key="index">
         <a-select v-if="isEdit" v-model:value="transformations[index]">
           <a-select-option v-for="item in transformationOptions" :value="item.value" :key="item.value">
@@ -34,14 +34,6 @@ export default {
   data () {
     return {
       transformations: this.valueList,
-      formLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
     }
   },
   computed: {

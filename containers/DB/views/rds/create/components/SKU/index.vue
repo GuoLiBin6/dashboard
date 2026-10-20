@@ -8,7 +8,7 @@
     </size-filters>
     <list ref="LIST" @change="handleSkuChange" />
     <!-- aws zone -->
-    <a-form-item :label="$t('db.text_133')" v-bind="formItemLayout" v-if="form.fd.provider === 'Aws'">
+    <a-form-item :label="$t('db.text_133')" v-if="form.fd.provider === 'Aws'">
       <a-radio-group :value="multiAz" @change="onMultiAzChange">
         <a-radio-button key="multi_az_no" :value="false">{{$t('db.zone_single')}}</a-radio-button>
         <a-radio-button key="multi_az_yes" :value="true" :disabled="!zoneMultiEnabled">{{$t('db.zone_multi')}}</a-radio-button>
@@ -41,7 +41,7 @@ export default {
       type: Object,
     },
   },
-  inject: ['form', 'formItemLayout'],
+  inject: ['form'],
   provide () {
     return {
       disableds: this.disabledData,

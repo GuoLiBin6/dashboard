@@ -1,6 +1,6 @@
 <template>
   <div>
-    <a-form-item :label="$t('db.text_54')" v-bind="formItemLayout">
+    <a-form-item :label="$t('db.text_54')">
       <a-radio-group :value="fieldVal(fieldMap.billing_type)" @change="e => onBillTypeChange(e.target.value)">
         <a-radio-button
           :key="key"
@@ -20,7 +20,6 @@
   </div>
 </template>
 <script>
-import { CreateServerForm } from '@Compute/constants'
 import { resolveFieldMeta } from '@/utils/common/ant'
 import { BILL_TYPES_MAP, BUY_DURATIONS_OPTIONS } from '../constants/index.js'
 const defaultFieldMap = {
@@ -42,10 +41,6 @@ export default {
     return {
       BILL_TYPES_MAP,
       BUY_DURATIONS_OPTIONS,
-      formItemLayout: {
-        wrapperCol: { span: CreateServerForm.wrapperCol },
-        labelCol: { span: CreateServerForm.labelCol },
-      },
     }
   },
   computed: {

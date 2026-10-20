@@ -1,7 +1,7 @@
 <template>
     <base-dialog @cancel="cancelDialog">
         <div slot="header">{{params.title}}</div>
-        <a-form-model ref="formRef" slot="body" :model="form" :rules="rules" class="mt-3" v-bind="formItemLayout">
+        <a-form-model ref="formRef" slot="body" :model="form" :rules="rules" class="mt-3">
           <template v-if="params.data && params.data.length > 0">
             <dialog-selected-tips :name="$t('dictionary.elasticcaches')" :count="params.data.length" :action="params.title" />
             <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
@@ -52,10 +52,6 @@ export default {
           { required: true, message: this.$t('db.text_298') },
           { validator: this.validateIps },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: { span: 20 },
-        labelCol: { span: 4 },
       },
       ipsLength: 0,
     }

@@ -6,8 +6,7 @@
         ref="formRef"
         class="mt-3"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('network.text_205', [$t('dictionary.domain')])" prop="project_domain" v-if="$store.getters.isAdminMode">
           <domain-select v-model:value="form.project_domain" @change="handleDomainChange" />
         </a-form-model-item>
@@ -77,18 +76,6 @@ export default {
         cloudprovider: [
           { required: true, message: this.$t('network.text_689') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 17 },
-          xl: { span: 19 },
-          xxl: { span: 21 },
-        },
-        labelCol: {
-          md: { span: 7 },
-          xl: { span: 5 },
-          xxl: { span: 3 },
-        },
       },
       project_domain: this.$store.getters.userInfo.projectDomainId,
       cloudproviderData: [],

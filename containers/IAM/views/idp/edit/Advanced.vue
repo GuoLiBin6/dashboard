@@ -34,7 +34,7 @@
           <a-form-model-item class="mb-0" :label="$t('system.text_205', [$t('dictionary.project')])">
             <a-row :gutter="8">
               <a-col :span="10">
-                <a-form-model-item :wrapperCol="{ span: 24 }" :extra="$t('common_506', [templateLabel,$t('dictionary.user'),$t('dictionary.project')])" prop="default_project_id">
+                <a-form-model-item :extra="$t('common_506', [templateLabel,$t('dictionary.user'),$t('dictionary.project')])" prop="default_project_id">
                   <base-select
                     v-model:value="fd.default_project_id"
                     resource="projects"
@@ -48,7 +48,7 @@
               </a-col>
               <a-col :span="14" v-if="isCommon">
                 <template v-if="showProjectInput">
-                  <a-form-model-item :wrapperCol="{ span: 24 }">
+                  <a-form-model-item>
                     <div class="d-flex align-items-center">
                       <div class="flex-fill mr-1">
                         <a-input v-model:value="fd.project_attribute" :placeholder="$t('common_507', [templateLabel,$t('dictionary.project'),templateLabel.toLocaleLowerCase()])" />
@@ -73,7 +73,7 @@
           <a-form-model-item class="mb-0" :label="$t('system.text_205', [$t('dictionary.role')])">
             <a-row :gutter="8">
               <a-col :span="10">
-                <a-form-model-item :wrapperCol="{ span: 24 }" :extra="$t('common_508', [templateLabel,$t('dictionary.user'),$t('dictionary.role'),$t('dictionary.project')])" prop="default_role_id">
+                <a-form-model-item :extra="$t('common_508', [templateLabel,$t('dictionary.user'),$t('dictionary.role'),$t('dictionary.project')])" prop="default_role_id">
                   <base-select
                     v-model:value="fd.default_role_id"
                     resource="roles"
@@ -87,7 +87,7 @@
               </a-col>
               <a-col :span="14" v-if="isCommon">
                 <template v-if="showRoleInput">
-                  <a-form-model-item :wrapperCol="{ span: 24 }">
+                  <a-form-model-item>
                     <div class="d-flex align-items-center">
                       <div class="flex-fill mr-1">
                         <a-input v-model:value="fd.role_attribute" :placeholder="$t('common_509', [templateLabel,$t('dictionary.role'),templateLabel.toLocaleLowerCase()])" />

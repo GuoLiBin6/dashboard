@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.ansibletemplate')" :count="params.data.length" :action="params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model class="mt-3" ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model class="mt-3" ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('compute.text_90')" prop="server_id">
           <a-select v-model:value="form.server_id" mode="multiple" :loading="queryServerLoading" style="width: 100%" :placeholder="$t('compute.text_256')">
             <a-select-option :key="item.id" v-for="item in serverList" :value="item.id">{{item.name}}</a-select-option>
@@ -20,7 +20,6 @@
 </template>
 
 <script>
-import { CreateServerForm } from '@Compute/constants'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 
@@ -37,10 +36,6 @@ export default {
         server_id: [
           { required: true, message: this.$t('compute.text_256') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: { span: CreateServerForm.wrapperCol },
-        labelCol: { span: CreateServerForm.labelCol },
       },
       serverList: [],
       queryServerLoading: false,

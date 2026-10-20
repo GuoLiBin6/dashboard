@@ -112,14 +112,6 @@ export default {
         fieldOpts: {},
       },
       fieldMap,
-      formItemLayout: {
-        wrapperCol: {
-          span: 18,
-        },
-        labelCol: {
-          span: 6,
-        },
-      },
       backendgroup: {},
       backendList: [],
       backendColumns: [

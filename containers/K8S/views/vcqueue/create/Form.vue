@@ -1,6 +1,6 @@
 <template>
   <div class="w-75">
-    <a-form-model ref="formRef" :model="form.fd" :rules="rules" v-bind="formItemLayout">
+    <a-form-model ref="formRef" :model="form.fd" :rules="rules">
       <a-form-model-item v-if="!isUpdate" :label="$t('k8s.vc_queue_scenario')" :extra="queueScenarioExtra">
         <a-select v-model:value="queueScenario" @change="setQueueScenario">
           <a-select-option value="online">{{ $t('k8s.vc_queue_online') }}</a-select-option>
@@ -103,10 +103,6 @@ export default {
           capabilityCpu: '',
           capabilityMemory: '',
         },
-      },
-      formItemLayout: {
-        labelCol: { span: 4 },
-        wrapperCol: { span: 20 },
       },
       queueScenario: 'custom',
       rules: {

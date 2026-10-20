@@ -1,6 +1,6 @@
 <template>
   <div>
-    <a-form-model ref="formRef" :model="form.fd" :rules="formRules" v-bind="formLayout" :data-oc-label-min-text="$t('cloudenv.project_mapping_effective_scope')">
+    <a-form-model ref="formRef" :model="form.fd" :rules="formRules" :data-oc-label-min-text="$t('cloudenv.project_mapping_effective_scope')">
       <a-alert class="my-2" banner>
         <template #message>{{ $t('cloudenv.vmware.message') }}<help-link :href="vmDocLink">{{ $t('cloudenv.vmware.message.doc') }}</help-link></template>
       </a-alert>
@@ -34,10 +34,10 @@
       <a-form-model-item :label="keySecretField.label.s" prop="password">
         <a-input-password v-model:value="form.fd.password" :placeholder="keySecretField.placeholder.s" />
       </a-form-model-item>
-      <domain-project :form="form.fd" :form-layout="formLayout" :cloneData="cloneData" />
+      <domain-project :form="form.fd" :cloneData="cloneData" />
       <blocked-resources :form="form.fd" />
       <proxy-setting :form="form.fd" ref="proxySetting" :cloneData="cloneData" />
-      <auto-sync :form="form.fd" :form-layout="formLayout" />
+      <auto-sync :form="form.fd" />
       <share-mode :form="form.fd" :cloneData="cloneData" />
     </a-form-model>
   </div>

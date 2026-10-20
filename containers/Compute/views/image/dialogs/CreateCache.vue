@@ -5,7 +5,7 @@
       <a-form-model
         ref="formRef"
         :model="form">
-        <a-form-model-item :label="$t('compute.text_176')" v-bind="formItemLayout" prop="platform">
+        <a-form-model-item :label="$t('compute.text_176')" prop="platform">
           <a-select
             v-model:value="form.platform"
             @change="handlePlatformChange"
@@ -20,7 +20,7 @@
           </a-select>
         </a-form-model-item>
         <template v-if="params.title === 'onpremise'">
-          <a-form-model-item :label="$t('compute.text_111')" v-bind="formItemLayout" prop="host">
+          <a-form-model-item :label="$t('compute.text_111')" prop="host">
             <base-select
               :remote="true"
               class="w-100"
@@ -33,7 +33,7 @@
               :select-props="{ placeholder: $t('compute.text_314'), allowClear: true }" />
           </a-form-model-item>
         </template>
-        <a-form-model-item :label="$t('compute.text_653')" v-bind="formItemLayout" v-if="params.title !== 'onpremise'" prop="manager">
+        <a-form-model-item :label="$t('compute.text_653')" v-if="params.title !== 'onpremise'" prop="manager">
           <base-select
             :remote="true"
             class="w-100"
@@ -45,7 +45,7 @@
             @change="handleManagerChange"
             :select-props="{ placeholder: $t('compute.text_219') }" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_177')" v-bind="formItemLayout" v-if="params.title !== 'onpremise'" prop="region">
+        <a-form-model-item :label="$t('compute.text_177')" v-if="params.title !== 'onpremise'" prop="region">
           <base-select
             :remote="true"
             class="w-100"
@@ -100,14 +100,6 @@ export default {
         manager: undefined,
         region: undefined,
         host: undefined,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       platformOptions: [],
       regionParams: {

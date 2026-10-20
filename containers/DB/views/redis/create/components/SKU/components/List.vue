@@ -1,6 +1,6 @@
 <template>
   <div>
-    <a-form-item class="redis-sku-valid" :label="$t('compute.text_109')" v-bind="formItemLayout">
+    <a-form-item class="redis-sku-valid" :label="$t('compute.text_109')">
       <table-lite-grid
         ref="tableRef"
         row-id="id"
@@ -35,7 +35,6 @@ export default {
   name: 'SKUList',
   inject: {
     form: { default: null },
-    formItemLayout: { default: null },
     tailFormItemLayout: { default: null },
     getCreateFormDraftPreferred: { default: undefined },
   },

@@ -3,8 +3,7 @@
     ref="form"
     :model="form"
     :rules="rules"
-    :style="{ width: `${width}px` }"
-    v-bind="formLayout">
+    :style="{ width: `${width}px` }">
     <a-form-item v-if="inputType === 'input'" :label="label" name="input">
       <a-input class="w-100" v-model:value="form.input" :placeholder="placeholder" allow-clear />
     </a-form-item>
@@ -29,13 +28,6 @@ export default {
     width: {
       type: Number,
       default: 400,
-    },
-    formLayout: {
-      type: Object,
-      default: () => ({
-        wrapperCol: { span: 19 },
-        labelCol: { span: 5 },
-      }),
     },
     label: {
       type: String,

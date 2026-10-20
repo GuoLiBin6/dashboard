@@ -1,16 +1,16 @@
 <template>
   <div>
-    <a-form-item :label="$t('db.text_61')" v-bind="formItemLayout">
+    <a-form-item :label="$t('db.text_61')">
       <a-radio-group :disabled="!!disableds.engine" :value="fieldVal(engineDec)" @change="e => { fieldSet(engineDec, e.target.value); onEngineChange(e) }">
         <a-radio-button :key="item" :value="item" v-for="item in engines">{{item}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
-    <a-form-item :label="$t('db.text_236')" v-bind="formItemLayout">
+    <a-form-item :label="$t('db.text_236')">
       <a-radio-group :disabled="!!disableds.engine_version" :value="fieldVal(engineVersionDec)" @change="e => { fieldSet(engineVersionDec, e.target.value); onVersionChange(e) }">
         <a-radio-button :key="item" :value="item" v-for="item in engine_versions">{{item}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
-    <a-form-item :label="$t('db.text_119')" v-bind="formItemLayout">
+    <a-form-item :label="$t('db.text_119')">
       <a-radio-group :disabled="!!disableds.local_category" :value="fieldVal(localCategoryDec)" @change="e => { fieldSet(localCategoryDec, e.target.value); onCategoryChange(e) }">
         <a-radio-button :key="item" :value="item" v-for="item in local_categorys">{{ENGINE_ARCH[item] || item}}</a-radio-button>
       </a-radio-group>
@@ -18,19 +18,19 @@
         {{archPoints(form.fd.local_category)}}
       </div>
     </a-form-item>
-     <a-form-item :label="$t('db.text_271')" v-bind="formItemLayout">
+     <a-form-item :label="$t('db.text_271')">
       <a-radio-group :value="fieldVal(nodeTypeDec)" @change="e => { fieldSet(nodeTypeDec, e.target.value); onNodeTypeChange(e) }">
          <a-radio-button :key="item" :value="item" v-for="item in node_types">{{NODE_TYPE[item] || item}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
-     <a-form-item :label="$t('db.text_272')" v-bind="formItemLayout">
+     <a-form-item :label="$t('db.text_272')">
       <a-radio-group :value="fieldVal(performanceTypeDec)" @change="e => fieldSet(performanceTypeDec, e.target.value)">
         <template v-for="item in performance_types">
            <a-radio-button v-if="item" :key="item" :value="item">{{PERFORMANCE_TYPE[item] || item}}</a-radio-button>
         </template>
       </a-radio-group>
     </a-form-item>
-    <a-form-item :label="$t('db.text_132')" v-bind="formItemLayout" v-if="memorys && memorys.length > 0">
+    <a-form-item :label="$t('db.text_132')" v-if="memorys && memorys.length > 0">
       <a-radio-group :value="fieldVal(memorySizeDec)" @change="e => fieldSet(memorySizeDec, e.target.value)">
         <a-radio-button v-for="size in memorys" :key="size" :value="size" v-show="(size / 1024) < max || !showMore" :disabled="getIsMemoryDisabled(size)">{{sizestr(size, 'M', 1024)}}</a-radio-button>
         <a-radio-button v-if="showMore" @click="showMore = !showMore">...</a-radio-button>
@@ -84,18 +84,6 @@ export default {
       node_types: [],
       performance_types: [],
       memorys: [],
-      formItemLayout: {
-        wrapperCol: {
-          lg: { span: 18 },
-          xl: { span: 20 },
-          xxl: { span: 21 },
-        },
-        labelCol: {
-          lg: { span: 6 },
-          xl: { span: 4 },
-          xxl: { span: 3 },
-        },
-      },
       filterItems: {},
       showMore: false,
     }

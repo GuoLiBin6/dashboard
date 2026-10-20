@@ -8,8 +8,7 @@
         ref="formRef"
         class="mt-3"
         :model="form.fd"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('cloudenv.text_212')">
           <span slot="extra">
             <span>{{$t('cloudenv.text_213')}}</span>
@@ -54,14 +53,6 @@ export default {
         end_day: [
           { required: true, message: this.$t('common.tips.select', [this.$t('bill.text_41')]) },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

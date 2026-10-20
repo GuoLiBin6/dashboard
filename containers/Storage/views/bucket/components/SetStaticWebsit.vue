@@ -8,8 +8,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('storage.text_41')" prop="status">
           <a-switch
             v-model:checked="form.status"
@@ -58,10 +57,6 @@ export default {
         error_document: [
           { required: true, message: this.$t('storage.text_190'), trigger: 'blur' },
         ],
-      },
-      formItemLayout: {
-        labelCol: { span: 3 },
-        wrapperCol: { span: 21 },
       },
       currentItem: [],
       bucketColumns: [

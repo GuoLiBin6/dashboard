@@ -68,14 +68,6 @@ export default {
           networkList: [],
         },
       },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
-      },
       secgroupsInitLoaded: false,
       bindedSecgroups: [],
       bindedSecgroupsLoaded: false,

@@ -5,7 +5,7 @@
       <dialog-selected-tips :name="$t('dictionary.project')" :count="params.data.length" :action="$t('common_114')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 2)" />
       <a-form-model ref="formRef" :model="form" :rules="formRules">
-        <a-form-model-item :label="$t('system.text_48')" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('system.text_48')">
           <a-radio-group v-model:value="type" @change="handleTypeChange">
             <a-radio-button
               v-for="item of typeOptions"
@@ -15,7 +15,7 @@
             </a-radio-button>
           </a-radio-group>
         </a-form-model-item>
-        <a-form-model-item v-if="isAdminMode" :label="$t('dictionary.domain')" v-bind="formItemLayout" prop="domain">
+        <a-form-model-item v-if="isAdminMode" :label="$t('dictionary.domain')" prop="domain">
           <base-select
             v-model:value="form.domain"
             version="v1"
@@ -25,7 +25,7 @@
             :select-props="{ placeholder: $t('rules.project') }"
             @change="domainChange" />
         </a-form-model-item>
-        <a-form-model-item v-if="type === 'group'" :label="$t('dictionary.group')" v-bind="formItemLayout" key="group" prop="groups">
+        <a-form-model-item v-if="type === 'group'" :label="$t('dictionary.group')" key="group" prop="groups">
           <base-select
             v-model:value="form.groups"
             resource="groups"
@@ -46,7 +46,7 @@
             </template>
           </base-select>
         </a-form-model-item>
-        <a-form-model-item v-if="type === 'user'" :label="$t('dictionary.user')" v-bind="formItemLayout" key="user" prop="users">
+        <a-form-model-item v-if="type === 'user'" :label="$t('dictionary.user')" key="user" prop="users">
           <base-select
             v-model:value="form.users"
             resource="users"
@@ -68,7 +68,7 @@
             </template>
           </base-select>
         </a-form-model-item>
-        <a-form-model-item :label="$t('dictionary.role')" v-bind="formItemLayout" prop="roles">
+        <a-form-model-item :label="$t('dictionary.role')" prop="roles">
           <base-select
             v-model:value="form.roles"
             resource="roles"
@@ -89,7 +89,7 @@
             </template>
           </base-select>
         </a-form-model-item>
-        <a-form-model-item v-if="type === 'user' && isSelectedUserDisabled" :label="$t('iam.enabled_user')" v-bind="formItemLayout" :extra="$t('iam.some_user_can_enabled')" prop="enable_all_users">
+        <a-form-model-item v-if="type === 'user' && isSelectedUserDisabled" :label="$t('iam.enabled_user')" :extra="$t('iam.some_user_can_enabled')" prop="enable_all_users">
           <a-switch
             :checkedChildren="$t('common_292')"
             :unCheckedChildren="$t('common_293')"
@@ -132,14 +132,6 @@ export default {
             message: this.$t('rules.role'),
           },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       type: 'user',
       typeOptions: [

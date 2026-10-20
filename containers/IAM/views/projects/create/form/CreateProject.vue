@@ -1,5 +1,5 @@
 <template>
-  <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+  <a-form-model ref="formRef" :model="form" :rules="rules">
     <a-form-model-item :label="$t('system.text_101')" prop="name">
       <a-input :placeholder="$t('system.text_168')" v-model:value="form.name" />
     </a-form-model-item>
@@ -43,20 +43,6 @@ export default {
         domain_id: [
           { required: true, message: this.$t('rules.domain') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-          xxl: {
-            span: 22,
-          },
-        },
-        labelCol: {
-          span: 3,
-          xxl: {
-            span: 2,
-          },
-        },
       },
       domainParams: {
         scope: this.$store.getters.scope,

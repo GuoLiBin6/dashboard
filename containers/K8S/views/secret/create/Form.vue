@@ -1,6 +1,6 @@
 <template>
   <div class="w-75">
-    <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+    <a-form-model ref="formRef" :model="form" :rules="rules">
       <a-form-model-item :label="$t('k8s.text_34')">
         <a-radio-group v-model:value="form.type">
           <a-radio-button value="keypair">{{$t('k8s.text_332')}}</a-radio-button>
@@ -115,18 +115,6 @@ export default {
         email: [
           { validator: validateEmail, trigger: 'blur' },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 16 },
-          xl: { span: 18 },
-          xxl: { span: 20 },
-        },
-        labelCol: {
-          md: { span: 8 },
-          xl: { span: 6 },
-          xxl: { span: 4 },
-        },
       },
       namespaceObj: {},
     }

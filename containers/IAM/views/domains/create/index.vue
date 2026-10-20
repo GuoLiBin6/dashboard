@@ -2,7 +2,7 @@
   <div>
     <page-header :title="$t('system.text_167', [$t('dictionary.domain')])" />
     <page-body>
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('system.text_101')" prop="name">
           <a-input v-model:value="form.name" :placeholder="$t('system.text_168')" />
         </a-form-model-item>
@@ -41,20 +41,6 @@ export default {
             message: this.$t('system.text_170'),
           },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-          xxl: {
-            span: 22,
-          },
-        },
-        labelCol: {
-          span: 3,
-          xxl: {
-            span: 2,
-          },
-        },
       },
     }
   },

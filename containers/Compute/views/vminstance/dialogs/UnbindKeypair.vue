@@ -6,7 +6,7 @@
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_364')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-form-model ref="formRef" :model="form" hideRequiredMark>
-        <a-form-model-item :label="$t('compute.text_494')" v-bind="formItemLayout" :extra="$t('compute.text_1268')" prop="auto_start">
+        <a-form-model-item :label="$t('compute.text_494')" :extra="$t('compute.text_1268')" prop="auto_start">
           <a-switch v-model:checked="form.auto_start" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" :disabled="disableAutoStart" />
         </a-form-model-item>
       </a-form-model>
@@ -41,10 +41,6 @@ export default {
       disableAutoStart,
       form: {
         auto_start: autoStartInitialValue,
-      },
-      formItemLayout: {
-        wrapperCol: { span: 21 },
-        labelCol: { span: 3 },
       },
     }
   },

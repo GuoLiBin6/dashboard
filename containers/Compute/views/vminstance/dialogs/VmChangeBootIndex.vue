@@ -6,22 +6,20 @@
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <div class="d-flex">
         <div class="form-label mt-2">{{$t('compute.boot_index')}}:</div>
-        <draggable
-          style="flex: 1 1 auto"
-          handle=".drag-icon"
-          ghost-class="ghost"
-          :item-key="bootItemKey"
-          v-model="boots">
-          <template #item="slotProps">
-            <div class="checkbox-item d-flex">
-              <div class="d-flex" style="flex: 1 1 auto">
-                <div class="type-label">{{typesMap[slotProps?.element?.type]?.label}}</div>
-                <div class="type-name">{{slotProps?.element?.name}}</div>
-              </div>
-              <icon type="dragable" class="drag-icon" style="font-size:18px" @click="iconClick" />
+        <!-- 不用 vuedraggable：@vue/compat 下 #item 插槽偶发无参数导致整段不渲染；与 CustomList 一致改用 Sortable -->
+        <div ref="bootsSortableRoot" class="boots-sortable" style="flex: 1 1 auto">
+          <div
+            v-for="item in boots"
+            :key="bootItemKey(item)"
+            class="checkbox-item d-flex"
+            :data-boot-key="bootItemKey(item)">
+            <div class="d-flex" style="flex: 1 1 auto">
+              <div class="type-label">{{ typesMap[item.type] && typesMap[item.type].label }}</div>
+              <div class="type-name">{{ item.name }}</div>
             </div>
-          </template>
-        </draggable>
+            <icon type="dragable" class="drag-icon" style="font-size:18px" @click="iconClick" />
+          </div>
+        </div>
       </div>
     </template>
     <template #footer>
@@ -32,16 +30,13 @@
 </template>
 
 <script>
-import draggable from 'vuedraggable'
+import Sortable from 'sortablejs'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import { sizestr } from '@/utils/utils'
 
 export default {
   name: 'VmChangeBootIndexDialog',
-  components: {
-    draggable,
-  },
   mixins: [DialogMixin, WindowsMixin],
   data () {
     return {
@@ -63,6 +58,12 @@ export default {
   created () {
     this.initBoots()
   },
+  mounted () {
+    this.initBootsSortable()
+  },
+  beforeUnmount () {
+    this.destroyBootsSortable()
+  },
   methods: {
     bootItemKey (item) {
       if (!item) return ''
@@ -71,7 +72,7 @@ export default {
     initBoots () {
       const { disks_info = [], cdrom = [] } = this.params.data[0] || {}
       const ret = []
-      disks_info.map(item => {
+      ;(Array.isArray(disks_info) ? disks_info : []).forEach(item => {
         ret.push({
           type: item.disk_type,
           name: `${item.name} (${sizestr(item.size || 0, 'M', 1024)})`,
@@ -80,7 +81,7 @@ export default {
           index: item.index,
         })
       })
-      cdrom.map(item => {
+      ;(Array.isArray(cdrom) ? cdrom : []).forEach(item => {
         ret.push({
           type: 'cdrom',
           name: item.detail,
@@ -92,6 +93,38 @@ export default {
         return a.boot_index - b.boot_index
       })
       this.boots = ret
+    },
+    initBootsSortable () {
+      this.destroyBootsSortable()
+      this.$nextTick(() => {
+        const el = this.$refs.bootsSortableRoot
+        if (!el || !this.boots.length) return
+        this._bootsSortable = Sortable.create(el, {
+          handle: '.drag-icon',
+          draggable: '.checkbox-item',
+          animation: 150,
+          ghostClass: 'ghost',
+          onEnd: () => {
+            const root = this.$refs.bootsSortableRoot
+            if (!root) return
+            const orderKeys = [...root.children]
+              .filter(node => node.classList && node.classList.contains('checkbox-item'))
+              .map(node => node.getAttribute('data-boot-key'))
+              .filter(Boolean)
+            const byKey = {}
+            this.boots.forEach((item) => {
+              byKey[this.bootItemKey(item)] = item
+            })
+            this.boots = orderKeys.map(k => byKey[k]).filter(Boolean)
+          },
+        })
+      })
+    },
+    destroyBootsSortable () {
+      if (this._bootsSortable) {
+        this._bootsSortable.destroy()
+        this._bootsSortable = null
+      }
     },
     async handleConfirm () {
       this.loading = true

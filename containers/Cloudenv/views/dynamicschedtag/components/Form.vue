@@ -2,8 +2,7 @@
   <a-form-model
     ref="formRef"
     :model="form.fd"
-    :rules="rules"
-    v-bind="formItemLayout">
+    :rules="rules">
     <a-form-model-item :label="$t('cloudenv.text_95')" prop="name" v-if="!updateValue">
       <a-input v-model:value="form.fd.name" :placeholder="$t('validator.resourceName')" />
     </a-form-model-item>
@@ -17,7 +16,7 @@
         :params="schedtagParams"
         :select-props="{ placeholder: $t('cloudenv.text_378') }" />
     </a-form-model-item>
-    <condition-select @conditionValsChange="conditionValsChange" :formItemLayout="formItemLayout" />
+    <condition-select @conditionValsChange="conditionValsChange" />
   </a-form-model>
 </template>
 
@@ -78,14 +77,6 @@ export default {
         conditionVals: [
           { required: true, message: '请填入条件' },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.user')" :count="params.data.length" :action="params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item v-if="params.data.length<=1" :label="$t('scope.text_245')" prop="displayname">
           <a-input :placeholder="$t('system.displayname_tip')" v-model:value="form.displayname" />
         </a-form-model-item>
@@ -41,14 +41,6 @@ export default {
       },
       rules: {
         displayname: [{ required: false }],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
       },
       mfaExtra: '',
     }

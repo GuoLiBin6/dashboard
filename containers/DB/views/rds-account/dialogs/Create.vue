@@ -1,7 +1,7 @@
 <template>
     <base-dialog @cancel="cancelDialog" :width="900">
         <div slot="header">{{params.title}}</div>
-        <a-form-model ref="formRef" slot="body" :model="form.fd" :rules="rules" class="mt-3" v-bind="formItemLayout">
+        <a-form-model ref="formRef" slot="body" :model="form.fd" :rules="rules" class="mt-3">
             <a-form-model-item :label="$t('db.text_60')" prop="name">
               <a-input :placeholder="$t('validator.dbName')" v-model:value="form.fd.name" />
             </a-form-model-item>
@@ -28,7 +28,6 @@
 </template>
 
 <script>
-import { CreateServerForm } from '@Compute/constants'
 import { RDS_ACCOUNT_PRIVILEGES } from '@DB/constants'
 import ServerPassword, { PASSWORD_RULES } from '@Compute/sections/ServerPassword/model'
 import DialogMixin from '@/mixins/dialog'
@@ -55,10 +54,6 @@ export default {
           loginType: 'random',
           password: undefined,
         },
-      },
-      formItemLayout: {
-        wrapperCol: { span: CreateServerForm.wrapperCol },
-        labelCol: { span: CreateServerForm.labelCol },
       },
     }
   },

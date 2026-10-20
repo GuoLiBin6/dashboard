@@ -7,8 +7,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('compute.text_228')" prop="name">
           <a-input v-model:value="form.name" :placeholder="$t('compute.text_210')" />
         </a-form-model-item>
@@ -38,14 +37,6 @@ export default {
         name: [
           { required: true, message: this.$t('compute.text_333') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 22,
-        },
-        labelCol: {
-          span: 2,
-        },
       },
       templateOps: {
         1: this.$t('compute.text_1010'),

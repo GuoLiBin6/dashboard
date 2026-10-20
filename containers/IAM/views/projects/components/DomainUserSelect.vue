@@ -2,7 +2,7 @@
   <div class="cloudprovider-cloudregion-zone-select-wrapper">
     <a-row :gutter="8">
       <a-col :span="12" v-if="isAdminMode">
-        <a-form-model-item prop="domain" :wrapperCol="{ span: 24 }">
+        <a-form-model-item prop="domain">
           <a-select :label-in-value="isAdminMode" :filterOption="filterOption" v-model:value="form.domain" @change="domainChange" dropdownClassName="oc-select-dropdown" :placeholder="$t('rules.domain')" show-search :loading="domainLoading">
             <a-select-option v-for="item in domainOpts" :key="item.id">
               <span class="text-color-secondary option-prefix">{{$t('dictionary.domain')}}: </span>{{item.value}}
@@ -11,7 +11,7 @@
         </a-form-model-item>
       </a-col>
       <a-col :span="!isAdminMode?24:12">
-        <a-form-model-item prop="users" :wrapperCol="{ span: 24 }">
+        <a-form-model-item prop="users">
           <div>
             <a-select style="width:calc(100% - 22px)" mode="multiple" :filterOption="filterOption" :label-in-value="labelInValue" v-model:value="form.users" @change="usersChange" dropdownClassName="oc-select-dropdown" :placeholder="$t('rules.user')" show-search :loading="usersLoading">
               <a-select-option v-for="item in usersOpts" :value="item.id" :key="item.id">

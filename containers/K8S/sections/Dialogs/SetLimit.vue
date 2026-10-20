@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :name="$t('k8s.text_64')" :action="$t('k8s.text_68')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('k8s.text_69')" v-if="!params.hideReplicas" prop="replicas">
           <a-input v-model:value="form.replicas" :min="0" type="number" :placeholder="$t('k8s.text_70')" :addonAfter="$t('k8s.text_71')" @blur="change" />
         </a-form-model-item>
@@ -38,14 +38,6 @@ export default {
         ],
       },
       data: this.params.data[0],
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
-      },
       replicas: 3,
     }
   },

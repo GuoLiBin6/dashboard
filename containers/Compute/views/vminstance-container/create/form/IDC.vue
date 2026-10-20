@@ -5,7 +5,6 @@
       class="mt-3"
       :model="form.fd"
       :rules="rules"
-      v-bind="formItemLayout"
       @submit="submit"
       hideRequiredMark>
       <container-title :title="$t('compute.eci.container_group_config')" />
@@ -152,7 +151,6 @@
             :showNew="false"
             :cloud-env="type"
             :form="form"
-            :formItemLayout="formItemLayout"
             :form-draft-key="containerDraftFields.eip" />
           <a-form-model-item
             :validate-status="hostNameValidate.validateStatus"

@@ -179,14 +179,6 @@ export default {
               data: [row],
               list: this.list,
               width: 600,
-              formItemLayout: {
-                wrapperCol: {
-                  span: 19,
-                },
-                labelCol: {
-                  span: 5,
-                },
-              },
               callback: async (data) => {
                 const manager = new this.$Manager(`buckets/${this.resId}/makedir`, 'v2')
                 data.key = `${this.prefix}${data.key}/`

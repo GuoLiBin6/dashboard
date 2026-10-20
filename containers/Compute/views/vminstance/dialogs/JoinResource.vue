@@ -8,7 +8,7 @@
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_1215')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-form-model ref="formRef" :model="form">
-        <a-form-model-item v-bind="formItemLayout" prop="autoDestroy">
+        <a-form-model-item prop="autoDestroy">
           <a-checkbox v-model:checked="form.autoDestroy">{{$t('compute.text_1217')}}</a-checkbox>
         </a-form-model-item>
       </a-form-model>
@@ -32,9 +32,6 @@ export default {
       loading: false,
       form: {
         autoDestroy: true,
-      },
-      formItemLayout: {
-        wrapperCol: { span: 12 },
       },
     }
   },

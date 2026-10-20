@@ -1,6 +1,6 @@
 <template>
   <div>
-    <a-form-model-item :label="$t('dictionary.domain')" v-bind="formLayout" prop="domain" v-if="isAdminMode && l3PermissionEnable">
+    <a-form-model-item :label="$t('dictionary.domain')" prop="domain" v-if="isAdminMode && l3PermissionEnable">
       <base-select
         ref="domain"
         v-model:value="form.domain"
@@ -89,7 +89,7 @@ export default {
       default: () => ({}),
     },
     allowClear: Boolean,
-    formLayout: Object,
+
     provider: {
       type: String,
     },

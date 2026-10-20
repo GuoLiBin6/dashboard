@@ -5,7 +5,7 @@
       <dialog-selected-tips :count="params.data.length" :action="`${$t('common.text00078')}${$t('dictionary.domain')}`" :name="params.name || $t('common.text00006')" />
       <dialog-table :data="params.data" :columns="columns" :errors="errors" />
       <template v-if="domainLoaded">
-        <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model ref="formRef" :model="form" :rules="rules">
           <a-form-model-item :label="$t('dictionary.domain')" prop="project_domain" :extra="extra">
             <a-select v-model:value="form.project_domain" showSearch @search="getCanUseDomains" :filterOption="false">
               <template v-for="item of domains" :key="item.id">
@@ -49,14 +49,6 @@ export default {
         project_domain: [
           { required: true, message: this.$t('rules.domain'), trigger: 'change' },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
       domains: [],
       domainLoaded: false,

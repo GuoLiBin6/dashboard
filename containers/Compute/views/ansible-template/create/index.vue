@@ -1,7 +1,7 @@
 <template>
   <div>
     <page-header :title="id ? $t('compute.text_247') : $t('compute.text_248')" />
-    <a-form-model ref="formRef" class="mt-3" :model="form" :rules="rules" v-bind="formItemLayout">
+    <a-form-model ref="formRef" class="mt-3" :model="form" :rules="rules">
       <a-form-model-item :label="$t('compute.text_228')" prop="name">
         <a-input :disabled="!!id" v-model:value="form.name" :placeholder="$t('validator.serverName')" />
       </a-form-model-item>
@@ -29,7 +29,6 @@
   </div>
 </template>
 <script>
-import { CreateServerForm } from '@Compute/constants'
 import Upload from './components/Upload'
 export default {
   name: 'AnsibleTemplateCreate',
@@ -56,10 +55,6 @@ export default {
         line: true,
         mode: 'text/x-yaml',
         theme: 'material',
-      },
-      formItemLayout: {
-        wrapperCol: { span: CreateServerForm.wrapperCol },
-        labelCol: { span: CreateServerForm.labelCol },
       },
       modNames: ['yum', 'package', 'group', 'user', 'get_url', 'file', 'unarchive', 'template', 'service'],
       rules: {

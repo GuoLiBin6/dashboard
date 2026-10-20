@@ -6,16 +6,16 @@
         ref="formRef"
         :model="form"
         :rules="rules">
-        <a-form-model-item v-bind="formItemLayout" :label="$t('network.text_205', [$t('dictionary.domain')])" v-if="$store.getters.isAdminMode" prop="project_domain">
+        <a-form-model-item :label="$t('network.text_205', [$t('dictionary.domain')])" v-if="$store.getters.isAdminMode" prop="project_domain">
           <domain-select v-model:value="form.project_domain" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('network.text_21')" v-bind="formItemLayout" prop="name">
+        <a-form-model-item :label="$t('network.text_21')" prop="name">
           <a-input v-model:value="form.name" :placeholder="$t('validator.resourceName')"  />
         </a-form-model-item>
-        <a-form-model-item :label="$t('common.description')" v-bind="formItemLayout" prop="description">
+        <a-form-model-item :label="$t('common.description')" prop="description">
           <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.description" :placeholder="$t('common_367')" />
         </a-form-model-item>
-        <a-form-model-item label="VPC" v-bind="formItemLayout" :validateStatus="vpcValidateStatus" :help="vpcHelp" :required="true">
+        <a-form-model-item label="VPC" :validateStatus="vpcValidateStatus" :help="vpcHelp" :required="true">
           <a-row :gutter="8">
             <a-col :span="12">
               <a-form-model-item prop="area" class="mb-0">
@@ -44,7 +44,7 @@
             </a-col>
           </a-row>
         </a-form-model-item>
-        <a-form-model-item :label="$t('network.text_24')" v-bind="formItemLayout" prop="zone">
+        <a-form-model-item :label="$t('network.text_24')" prop="zone">
           <a-select
             show-search
             :filterOption="filterOption"
@@ -55,7 +55,7 @@
             </a-select-option>
           </a-select>
         </a-form-model-item>
-        <a-form-model-item :label="$t('network.text_195')" v-bind="formItemLayout" prop="bandwidth">
+        <a-form-model-item :label="$t('network.text_195')" prop="bandwidth">
           <a-select
             v-model:value="form.bandwidth"
             :placeholder="$t('network.text_697')">
@@ -64,7 +64,7 @@
             </a-select-option>
           </a-select>
         </a-form-model-item>
-        <a-form-model-item :label="$t('common.text00012')" class="mb-0" v-bind="formItemLayout" prop="__meta__">
+        <a-form-model-item :label="$t('common.text00012')" class="mb-0" prop="__meta__">
           <tag
             :value="form.__meta__"
             @change="v => form.__meta__ = v" />
@@ -147,14 +147,6 @@ export default {
         __meta__: [
           { validator: validateForm('tagName') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       areas: [],
       vpcs: [],

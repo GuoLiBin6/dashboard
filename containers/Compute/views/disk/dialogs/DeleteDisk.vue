@@ -67,14 +67,6 @@ export default {
           deleteSnapshot: false,
         },
       },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
-      },
       formItemLayoutWithoutLabel: {
         wrapperCol: {
           span: 21,

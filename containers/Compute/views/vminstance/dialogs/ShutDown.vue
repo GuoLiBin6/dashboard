@@ -13,7 +13,7 @@
       <a-form-model
         ref="formRef"
         :model="form">
-        <a-form-model-item :label="$t('compute.text_1041')" v-bind="formItemLayout" v-if="isOpenWorkflow" prop="reason">
+        <a-form-model-item :label="$t('compute.text_1041')" v-if="isOpenWorkflow" prop="reason">
           <a-input v-model:value="form.reason" :placeholder="$t('compute.text_1105')" />
         </a-form-model-item>
         <a-form-model-item class="mb-0" v-show="canStopPaying" prop="stopPaying">
@@ -23,7 +23,7 @@
           </a-checkbox>
           <help-tooltip name="shutdownStopCharging" />
         </a-form-model-item>
-        <a-form-model-item v-if="isSupportForce" :label="$t('compute.force_shutdown')" v-bind="formItemLayout" prop="is_force">
+        <a-form-model-item v-if="isSupportForce" :label="$t('compute.force_shutdown')" prop="is_force">
           <a-switch v-model:checked="form.is_force" :disabled="forceLocked" />
         </a-form-model-item>
       </a-form-model>
@@ -59,14 +59,6 @@ export default {
         is_force: formData.is_force || forceLocked || false,
       },
       type,
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
-      },
       dataList: [],
     }
   },

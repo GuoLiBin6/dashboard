@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.network')" :count="params.data.length" :action="params.title" />
       <dialog-table class="mb-2" :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form">
         <a-form-model-item :label="$t('common_498')" prop="is_auto_alloc">
           <a-switch v-model:checked="form.is_auto_alloc" />
           <template slot="extra">{{$t('common_500')}}</template>
@@ -30,14 +30,6 @@ export default {
       loading: false,
       form: {
         is_auto_alloc: this.params.data.length === 1 ? this.params.data[0].is_auto_alloc : this.params.data.every(item => item.is_auto_alloc),
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
       },
     }
   },

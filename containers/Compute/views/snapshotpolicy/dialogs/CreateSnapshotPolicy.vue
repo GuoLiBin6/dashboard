@@ -6,13 +6,12 @@
         <template #message>{{$t('compute.text_1087')}}<br />{{$t('compute.text_1088')}}<br />{{$t('compute.text_1089')}}</template>
       </a-alert>
       <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
-        <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])">
           <domain-project
             :form="form"
-            :form-layout="formItemLayout"
             isDefaultSelect />
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_428')" v-bind="formItemLayout" prop="generate_name">
+        <a-form-model-item :label="$t('compute.text_428')" prop="generate_name">
           <a-input
             v-model:value="form.generate_name"
             :placeholder="$t('compute.text_1090')"
@@ -21,16 +20,16 @@
             <div>{{$t('compute.text_1091')}}</div>
           </div>
         </a-form-model-item>
-        <a-form-model-item :label="$t('common.description')" v-bind="formItemLayout" prop="description">
+        <a-form-model-item :label="$t('common.description')" prop="description">
           <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.description" :placeholder="$t('common_367')" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('common.resource_type')" v-bind="formItemLayout" prop="type">
+        <a-form-model-item :label="$t('common.resource_type')" prop="type">
           <a-select v-model:value="form.type" :disabled="params.type === 'update'">
             <a-select-option value="server" v-if="types.includes('server')">{{$t('dictionary.server')}}</a-select-option>
             <a-select-option value="disk" v-if="types.includes('disk')">{{$t('dictionary.disk')}}</a-select-option>
           </a-select>
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_431')" v-bind="formItemLayout" prop="repeat_weekdays">
+        <a-form-model-item :label="$t('compute.text_431')" prop="repeat_weekdays">
           <a-checkbox-group class="snapshot-policy-weekdays" v-model:value="form.repeat_weekdays">
             <a-checkbox
               v-for="(week, idx) of weekOptions"
@@ -38,12 +37,12 @@
               :value="idx + 1">{{ week }}</a-checkbox>
             </a-checkbox-group>
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_432')" v-bind="formItemLayout" prop="time_points">
+        <a-form-model-item :label="$t('compute.text_432')" prop="time_points">
           <a-select v-model:value="form.time_points" mode="multiple">
             <a-select-option v-for="(time, idx) in timeOptions" :key="idx" :value="idx">{{time}}</a-select-option>
           </a-select>
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_433')" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.text_433')">
           <div>
             <div class="mb-2 d-flex align-items-center">
               <a-radio
@@ -170,14 +169,6 @@ export default {
       snapshotpolicies: [],
       weekOptions: [...weekOptions],
       timeOptions: [...timeOptions],
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
-      },
     }
   },
   computed: {

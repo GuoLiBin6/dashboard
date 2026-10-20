@@ -5,8 +5,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('cloudenv.text_95')" prop="generate_name">
           <a-input v-model:value="form.generate_name" :placeholder="$t('validator.resourceName')" @change="e => { formFi.name = e.target.value }" />
           <name-repeated
@@ -78,14 +77,6 @@ export default {
         { key: 'storages', label: this.$t('cloudenv.text_6') },
         { key: 'networks', label: this.$t('cloudenv.text_7') },
       ],
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
     }
   },
   methods: {

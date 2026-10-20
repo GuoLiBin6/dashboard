@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- 管理规则组名称 -->
-    <a-form-item :label="$t('network_waf_statement.label.managed_rule_group_name')" v-bind="formLayout">
+    <a-form-item :label="$t('network_waf_statement.label.managed_rule_group_name')">
       <a-input v-if="isEdit" :value="value" />
       <box-show v-else :value="value" />
     </a-form-item>
@@ -28,14 +28,6 @@ export default {
   },
   data () {
     return {
-      formLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
     }
   },
   computed: {

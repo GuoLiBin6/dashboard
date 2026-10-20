@@ -2,8 +2,7 @@
   <a-form-model
     ref="formRef"
     :model="form"
-    :rules="rules"
-    v-bind="formItemLayout">
+    :rules="rules">
     <a-form-model-item :label="$t('system.text_295')" prop="content">
       <template v-slot:extra>
         <div>{{$t('system.text_296')}}</div>
@@ -25,10 +24,6 @@ import * as R from 'ramda'
 export default {
   name: 'EmailConfig',
   props: {
-    formItemLayout: {
-      required: true,
-      type: Object,
-    },
     offsetWrapperCol: {
       required: true,
       type: Object,

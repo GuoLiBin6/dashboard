@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{ $t('common.create') }}</div>
     <div slot="body">
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout" hideRequiredMark>
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
         <a-form-model-item :label="$t('common.name')" prop="name">
           <a-input
             v-model:value="form.name"
@@ -66,14 +66,6 @@ export default {
         url: [
           { required: true, message: this.$t('common.tips.input', [this.$t('k8s.repo.url')]) },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

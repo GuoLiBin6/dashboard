@@ -5,8 +5,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('cloudenv.text_375')" :extra="nameExtra" prop="generate_name">
           <a-input v-model:value="form.generate_name" :placeholder="namePlaceholder" @change="e => { formFi.generate_name = e.target.value }" />
           <template v-slot:extra>
@@ -106,14 +105,6 @@ export default {
         email: [
           { validator: this.emailValidator },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       isCanSendNotify: false,
       isEnableMail: false,

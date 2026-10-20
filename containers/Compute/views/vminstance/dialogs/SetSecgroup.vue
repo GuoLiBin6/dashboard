@@ -6,7 +6,7 @@
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_1116')" />
       <dialog-table v-if="params.columns && params.columns.length > 0" :data="params.data" :columns="(params.columns || []).slice(0, 3)" />
       <loader loading v-if="!(bindedSecgroupsLoaded && secgroupsInitLoaded)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-show="bindedSecgroupsLoaded && secgroupsInitLoaded" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-show="bindedSecgroupsLoaded && secgroupsInitLoaded">
         <a-form-model-item v-if="params.type === 'vminstance'" :label="$t('compute.nic')" :extra="$t('compute.nic_empty_secgroups_tip')" prop="nic">
           <base-select
             class="w-100"
@@ -82,14 +82,6 @@ export default {
         secgroups: [
           { validator: validateSecgroups, trigger: 'change' },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       secgroupsInitLoaded: false,
       bindedSecgroups: [],

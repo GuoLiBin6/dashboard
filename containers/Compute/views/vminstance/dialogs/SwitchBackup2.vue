@@ -5,7 +5,7 @@
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.guest_switch_to_backup')" />
       <dialog-table :data="params.data" :columns="columns" />
       <a-form-model ref="formRef" :model="form" hideRequiredMark>
-        <a-form-model-item :label="$t('compute.text_494')" v-bind="formItemLayout" :extra="$t('compute.text_495')" prop="auto_start">
+        <a-form-model-item :label="$t('compute.text_494')" :extra="$t('compute.text_495')" prop="auto_start">
           <a-switch v-model:checked="form.auto_start" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
         </a-form-model-item>
       </a-form-model>
@@ -30,14 +30,6 @@ export default {
       loading: false,
       form: {
         auto_start: false,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

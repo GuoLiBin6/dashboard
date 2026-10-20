@@ -57,18 +57,6 @@ export default {
         },
       },
       keySecretFieldInit: keySecretFields[this.provider.toLowerCase()],
-      formLayout: {
-        wrapperCol: {
-          md: { span: 18 },
-          xl: { span: 19 },
-          xxl: { span: 21 },
-        },
-        labelCol: {
-          md: { span: 8 },
-          xl: { span: 5 },
-          xxl: { span: 3 },
-        },
-      },
       domainProjectShow: false,
       samlAuthChecked: false,
       fieldMap: {

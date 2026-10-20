@@ -1,6 +1,6 @@
 <template>
   <div>
-    <a-form-item :label="label || $t('network_waf_statement.label.match_field_values')" v-bind="formLayout">
+    <a-form-item :label="label || $t('network_waf_statement.label.match_field_values')">
       <template v-for="(matchFieldValue, index) in matchFieldValues" :key="index">
         <a-select v-if="addType === 'select' && isEdit" v-model:value="matchFieldValues[index]">
           <a-select-option v-for="item in options" :value="item.value" :key="item.value">
@@ -46,14 +46,6 @@ export default {
   data () {
     return {
       matchFieldValues: this.valueList || [''],
-      formLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
     }
   },
   computed: {

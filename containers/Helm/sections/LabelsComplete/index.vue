@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="d-flex" v-for="(item, i) in labelList" :key="item.key">
-      <a-form-model-item :wrapperCol="{ span: 24 }">
+      <a-form-model-item>
         <a-input-group compact>
           <div class="d-flex">
             <a-input class="oc-addonBefore ant-input-group-addon" style="width: 80px;" :defaultValue="keyLabel" readonly />
@@ -15,7 +15,7 @@
         </a-input-group>
       </a-form-model-item>
       <div class="mx-3 mt-1"> = </div>
-      <a-form-model-item :wrapperCol="{ span: 24 }">
+      <a-form-model-item>
         <a-input-group compact>
           <div class="d-flex">
             <a-input class="oc-addonBefore ant-input-group-addon" style="width: 80px;" :defaultValue="valueLabel" readonly />

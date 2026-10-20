@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :name="$t('helm.text_73')" :action="$t('helm.text_72')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('helm.text_74')" prop="revision">
           <base-select
             v-model:value="form.revision"
@@ -45,14 +45,6 @@ export default {
       },
       data: this.params.data[0],
       containerImages: [],
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
-      },
       releaseParams: {
         cluster: this.params.cluster,
         namespace: this.params.namespace,

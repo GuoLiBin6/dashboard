@@ -6,8 +6,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('system.text_102')" prop="value" :extra="firstData['dialogDesc'] || firstData['desc']">
           <component :is="element" v-bind="firstData.opt.props" v-model:value="form.value" class="w-100">
             <template v-if="element === 'a-select'">
@@ -53,14 +52,6 @@ export default {
             message: this.$t('system.text_192'),
           },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 22,
-        },
-        labelCol: {
-          span: 2,
-        },
       },
     }
   },

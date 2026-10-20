@@ -7,8 +7,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('network.text_360')" prop="acl_status">
           <a-switch v-model:checked="form.acl_status" />
         </a-form-model-item>
@@ -58,14 +57,6 @@ export default {
         { key: 'white', label: this.$t('network.text_364') },
         { key: 'black', label: this.$t('network.text_365') },
       ],
-      formItemLayout: {
-        wrapperCol: {
-          span: 17,
-        },
-        labelCol: {
-          span: 7,
-        },
-      },
       lbDetail: this.params.lbDetail,
     }
   },

@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.elasticcaches')" :count="params.data.length" :action="params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" class="mt-3" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules" class="mt-3">
         <a-form-model-item v-if="this.params.data[0].provider === 'Huawei'" :label="$t('db.text_291')" prop="old_password">
            <a-input-password v-model:value="form.old_password" />
         </a-form-model-item>
@@ -38,10 +38,6 @@ export default {
         old_password: undefined,
         loginType: 'random',
         password: undefined,
-      },
-      formItemLayout: {
-        wrapperCol: { span: 20 },
-        labelCol: { span: 4 },
       },
       loading: false,
     }

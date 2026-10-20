@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="this.params.title" :name="$t('storage.text_18')" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('storage.text_59')" prop="size_bytes">
           <a-input class="w-50" name="size_bytes" v-model:value="form.size_bytes" @blur="handelBlur">
             <a-select slot="addonAfter" style="width: 80px" v-model:value="form.size_bytes_unit">
@@ -31,7 +31,6 @@
 </template>
 
 <script>
-import { formItemLayout } from '@Storage/constants/index.js'
 import { sizestrC } from '@/utils/utils'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
@@ -47,7 +46,6 @@ export default {
     const { size_bytes_limit = 0, object_cnt_limit = 0 } = data.length === 1 ? data[0] : {}
     return {
       loading: false,
-      formItemLayout,
       form: {
         // eslint-disable-next-line camelcase
         size_bytes: Math.round(size_bytes_limit / (1024 * 1024 * 1024)),

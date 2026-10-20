@@ -9,8 +9,7 @@
       <dialog-table :data="params.data" :columns="columns" />
       <a-form-model
         ref="formRef"
-        :model="form"
-        v-bind="formItemLayout">
+        :model="form">
         <a-form-model-item :label="$t('compute.text_1233')">
           <a-switch v-model:checked="form.autoRenew" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
         </a-form-model-item>
@@ -35,14 +34,6 @@ export default {
       loading: false,
       form: {
         autoRenew: this.params.data[0].auto_renew,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

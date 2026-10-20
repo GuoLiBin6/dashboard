@@ -1,6 +1,6 @@
 <template>
   <div>
-    <a-form-item :label="label || $t('network_waf_statement.label.compute')" v-bind="formLayout">
+    <a-form-item :label="label || $t('network_waf_statement.label.compute')">
       <a-radio-group v-if="isEdit" :value="value" @change="handleChange">
         <a-radio-button v-for="item of negationOpts" :key="item.value" :value="item.value">{{item.label}}</a-radio-button>
       </a-radio-group>
@@ -28,14 +28,6 @@ export default {
   },
   data () {
     return {
-      formLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
     }
   },
   computed: {

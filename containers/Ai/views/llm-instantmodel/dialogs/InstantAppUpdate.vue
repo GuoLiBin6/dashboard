@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('aice.mounted_apps')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout" hideRequiredMark>
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
         <a-form-model-item :label="$t('aice.mounted_apps.mounts')" prop="mounts">
           <a-textarea v-model:value="form.mounts" :placeholder="mountsExample" :auto-size="{ minRows: 3, maxRows: 5 }" />
         </a-form-model-item>
@@ -48,14 +48,6 @@ export default {
         image_id: [
           { required: true, message: this.$t('common.tips.input', [this.$t('aice.template')]) },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

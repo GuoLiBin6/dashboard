@@ -8,8 +8,7 @@
         ref="configForm"
         class="mt-3"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('compute.text_386')" prop="ip_type">
           <div class="d-flex align-items-center">
             <a-radio-group v-model:value="form.ip_type">
@@ -65,14 +64,6 @@ export default {
         },
         ip6_addr: {
           require: true, validator: this.$validate('IPv6'),
-        },
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
         },
       },
       secgroupsInitLoaded: false,

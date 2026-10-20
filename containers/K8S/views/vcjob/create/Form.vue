@@ -12,7 +12,7 @@
       <a-tab-pane key="custom" :tab="$t('k8s.vc_scenario_custom')" />
     </a-tabs>
     <div class="vc-scenario-hint">{{ scenarioHint }}</div>
-    <a-form-model ref="formRef" :model="form.fd" :rules="rules" v-bind="formItemLayout">
+    <a-form-model ref="formRef" :model="form.fd" :rules="rules">
       <a-form-model-item :label="$t('k8s.text_41')" prop="name" :extra="$t('k8s.vc_job_name_hint')">
         <a-input v-model:value="form.fd.name" />
       </a-form-model-item>
@@ -139,10 +139,6 @@ export default {
           networkTopologyMode: 'hard',
           highestTierAllowed: 1,
         },
-      },
-      formItemLayout: {
-        labelCol: { span: 4 },
-        wrapperCol: { span: 20 },
       },
       nestedLayout: {
         labelCol: { span: 5 },

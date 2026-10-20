@@ -5,8 +5,7 @@
       ref="formRef"
       class="mt-3"
       :model="form"
-      :rules="rules"
-      v-bind="formItemLayout">
+      :rules="rules">
       <a-form-model-item
         :label="$t('k8s.text_19')"
         prop="cluster">
@@ -55,10 +54,6 @@ export default {
         yaml: [
           { required: true, message: this.$t('k8s.text_289') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: { span: 20 },
-        labelCol: { span: 3 },
       },
       clusterObj: {},
       cmOptions: {

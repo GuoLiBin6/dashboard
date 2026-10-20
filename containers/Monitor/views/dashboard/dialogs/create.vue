@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('monitor.dashboard.dialog.create')}}</div>
     <div slot="body">
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('IAM.text_1')" prop="scope">
           <scope-select :value="form.scope" @change="val => { form.scope = val }" />
         </a-form-model-item>
@@ -44,18 +44,6 @@ export default {
         name: [
           { required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` },
         ],
-      },
-      formLayout: {
-        wrapperCol: {
-          md: { span: 20 },
-          xl: { span: 19 },
-          xxl: { span: 21 },
-        },
-        labelCol: {
-          md: { span: 4 },
-          xl: { span: 5 },
-          xxl: { span: 3 },
-        },
       },
     }
   },

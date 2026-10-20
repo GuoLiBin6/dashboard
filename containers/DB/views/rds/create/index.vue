@@ -5,10 +5,9 @@
       ref="formRef"
       hideRequiredMark
       class="mt-3"
-      v-bind="formItemLayout"
       :model="form.fd"
       :rules="rules">
-      <a-form-model-item :label="$t('db.text_139', [$t('dictionary.project')])" v-bind="formItemLayout" prop="project">
+      <a-form-model-item :label="$t('db.text_139', [$t('dictionary.project')])" prop="project">
         <domain-project
           ref="domainProjectRef"
           :form="form.fd"
@@ -17,7 +16,7 @@
           @fetchDomainCallback="fetchDomainCallback"
           @fetchProjectCallback="fetchProjectCallback" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('db.text_60')" v-bind="formItemLayout" prop="generate_name">
+      <a-form-model-item :label="$t('db.text_60')" prop="generate_name">
         <a-input v-model:value="form.fd.generate_name" :placeholder="$t('validator.resourceCreateName')" />
         <template #extra>
           <name-repeated
@@ -26,13 +25,13 @@
             :default-text="$t('db.text_142')" />
         </template>
       </a-form-model-item>
-      <a-form-model-item :label="$t('common.description')" v-bind="formItemLayout" prop="description">
+      <a-form-model-item :label="$t('common.description')" prop="description">
         <a-textarea
           v-model:value="form.fd.description"
           :auto-size="{ minRows: 1, maxRows: 3 }"
           :placeholder="$t('common_367')" />
       </a-form-model-item>
-      <clearing-radios :model="form.fd" v-bind="formItemLayout" :auto_renew="false" />
+      <clearing-radios :model="form.fd" :auto_renew="false" />
       <a-form-model-item :label="$t('db.text_71')" v-if="form.fd.billing_type !== 'prepaid'">
         <duration
           :model="form.fd"
@@ -143,18 +142,6 @@ export default {
           { validator: validateForm('tagName') },
         ],
       },
-      formItemLayout: {
-        wrapperCol: {
-          lg: { span: 18 },
-          xl: { span: 20 },
-          xxl: { span: 21 },
-        },
-        labelCol: {
-          lg: { span: 6 },
-          xl: { span: 4 },
-          xxl: { span: 3 },
-        },
-      },
       tailFormItemLayout: {
         wrapperCol: {
           lg: { span: 18, offset: 6 },
@@ -207,7 +194,6 @@ export default {
   provide () {
     return {
       form: this.form,
-      formItemLayout: this.formItemLayout,
       scopeParams: this.scopeParams,
       tailFormItemLayout: this.tailFormItemLayout,
       validateCreateForm: () => this.validateCreateForm(),

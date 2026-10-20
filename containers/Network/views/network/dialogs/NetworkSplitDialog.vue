@@ -8,10 +8,10 @@
         ref="formRef"
         :model="form"
         :rules="rules">
-        <a-form-model-item :label="$t('network.text_633')" v-bind="formItemLayout" prop="name">
+        <a-form-model-item :label="$t('network.text_633')" prop="name">
           <a-input v-model:value="form.name" :placeholer="$t('network.text_634')" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('network.text_635')" v-bind="formItemLayout" prop="split_ip">
+        <a-form-model-item :label="$t('network.text_635')" prop="split_ip">
           <a-input v-model:value="form.split_ip" :placeholer="$t('network.text_636')" />
         </a-form-model-item>
       </a-form-model>
@@ -45,14 +45,6 @@ export default {
           { required: true, message: this.$t('network.text_638') },
           { validator: this.$validate('IPv4') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

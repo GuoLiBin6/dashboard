@@ -4,7 +4,7 @@
     <a-form-model ref="formRef" :model="formData" :rules="rules" @submit.prevent="handleSubmit">
       <template v-for="(questionGroup, idx) of questionGroupKeys" :key="questionGroup">
         <div>
-          <a-form-model-item :label="`${$t('common.text00113')}${idx + 1}`" v-bind="formItemLayout" :prop="`question${idx}`">
+          <a-form-model-item :label="`${$t('common.text00113')}${idx + 1}`" :prop="`question${idx}`">
             <a-select :placeholder="$t('common.text00114')" v-model:value="formData[`question${idx}`]" :disabled="isVerify">
               <a-select-option
                 v-for="question of questionOptions[questionGroup]"
@@ -12,7 +12,7 @@
                 :value="question.label">{{ question.label }}</a-select-option>
             </a-select>
           </a-form-model-item>
-          <a-form-model-item :label="$t('common.text00115')" v-bind="formItemLayout" :prop="`answer${idx}`">
+          <a-form-model-item :label="$t('common.text00115')" :prop="`answer${idx}`">
             <a-input :placeholder="$t('auth.question.answer.placeholder')" v-model:value="formData[`answer${idx}`]" />
           </a-form-model-item>
         </div>
@@ -68,18 +68,6 @@ export default {
       questionGroupKeys,
       formData,
       rules,
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 21 },
-          xl: { span: 21 },
-          xxl: { span: 21 },
-        },
-        labelCol: {
-          md: { span: 3 },
-          xl: { span: 3 },
-          xxl: { span: 3 },
-        },
-      },
     }
   },
   computed: {

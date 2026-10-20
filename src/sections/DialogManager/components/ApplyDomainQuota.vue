@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <template #header>{{ title }}</template>
     <template #body>
-      <a-form-model v-bind="formItemLayout">
+      <a-form-model>
         <a-form-model-item :label="$t('common.text00068')">
           <quota-set-to-workflow
             ref="quotaSetRef"
@@ -37,14 +37,6 @@ export default {
     return {
       title: `${this.$t('common.text00069')}${this.$t('dictionary.domain')}${this.$t('common.text00070')}`,
       loading: false,
-      formItemLayout: {
-        wrapperCol: {
-          span: 16,
-        },
-        labelCol: {
-          span: 8,
-        },
-      },
     }
   },
   computed: {

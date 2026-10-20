@@ -6,16 +6,16 @@
         <div style="margin-left: 68px">{{$t('cloudenv.text_226')}}</div>
       </template>
    </a-alert>
-    <a-form-model ref="formRef" class="mt-3" :model="form.fd" :rules="formRules" v-bind="formLayout">
+    <a-form-model ref="formRef" class="mt-3" :model="form.fd" :rules="formRules">
       <a-divider orientation="left">{{$t('cloudenv.text_227')}}</a-divider>
-      <a-form-model-item :label="$t('cloudenv.text_228')" v-bind="formLayout">
+      <a-form-model-item :label="$t('cloudenv.text_228')">
         <a-switch :checkedChildren="$t('cloudenv.text_84')" :unCheckedChildren="$t('cloudenv.text_85')" v-model:checked="configNetwork" />
       </a-form-model-item>
       <template v-if="configNetwork">
-        <a-form-model-item :label="$t('cloudenv.text_184')" v-bind="formLayout" prop="name">
+        <a-form-model-item :label="$t('cloudenv.text_184')" prop="name">
           <a-input v-model:value="form.fd.name" :placeholder="$t('validator.resourceName')" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('cloudenv.text_229')" class="mb-0" v-bind="formLayout">
+        <a-form-model-item :label="$t('cloudenv.text_229')" class="mb-0">
           <cloudregion-vpc-wire
             ref="cloudregionVpcWireRef"
             :model="form.fd"
@@ -24,7 +24,7 @@
             :wire-params="params.wire"
             :vpcMapper="vpcMapper" />
         </a-form-model-item>
-        <a-form-model-item v-bind="formLayout">
+        <a-form-model-item>
           <template #label>{{$t('cloudenv.text_181')}}<help-tooltip class="ml-1" name="networkIpSubnets" /></template>
           <ip-subnets ref="ipSubnetsRef" :model="form.fd" />
         </a-form-model-item>

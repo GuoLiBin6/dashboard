@@ -5,8 +5,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('network.text_211')" prop="network">
           <template v-if="hasNetwork">
             <div>
@@ -65,14 +64,6 @@ export default {
         network: undefined,
         notes: undefined,
         networkIps: {},
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
       },
     }
   },

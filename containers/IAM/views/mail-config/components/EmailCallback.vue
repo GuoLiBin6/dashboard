@@ -2,8 +2,7 @@
   <a-form-model
     ref="formRef"
     :model="form"
-    :rules="rules"
-    v-bind="formItemLayout">
+    :rules="rules">
     <a-alert type="warning" :message="$t('system.text_274')" class="mb-2" />
     <a-form-model-item :label="$t('system.text_275')" prop="address">
       <a-input v-model:value="form.address" />
@@ -18,10 +17,6 @@
 export default {
   name: 'EmailCallbackConfig',
   props: {
-    formItemLayout: {
-      required: true,
-      type: Object,
-    },
     offsetWrapperCol: {
       required: true,
       type: Object,

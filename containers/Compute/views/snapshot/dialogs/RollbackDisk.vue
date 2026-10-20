@@ -10,7 +10,7 @@
       <a-form-model
         ref="formRef"
         :model="form">
-        <a-form-model-item :label="$t('compute.text_494')" v-bind="formItemLayout" :extra="$t('compute.text_1068')" prop="autoStart">
+        <a-form-model-item :label="$t('compute.text_494')" :extra="$t('compute.text_1068')" prop="autoStart">
           <a-switch v-model:checked="form.autoStart" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" :disabled="disabled" />
         </a-form-model-item>
       </a-form-model>
@@ -37,14 +37,6 @@ export default {
         autoStart: true,
       },
       disabled: false,
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
-      },
     }
   },
   computed: {

@@ -3,7 +3,6 @@
     ref="areaSelects"
     :model="model"
     :form-draft-key="formDraftKey"
-    v-bind="formItemLayout"
     :names="names"
     :isRequired="isRequired"
     :defaultActiveFirstOption="defaultActiveFirstOption"
@@ -89,7 +88,7 @@ export default {
       }
     },
   },
-  inject: ['form', 'formItemLayout', 'scopeParams'],
+  inject: ['form', 'scopeParams'],
   watch: {
     billingType (type) {
       this.doFetchs(type)

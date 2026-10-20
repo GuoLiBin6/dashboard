@@ -2,7 +2,7 @@
   <base-dialog :width="900" @cancel="cancelDialog">
     <div slot="header">{{ params.type === 'edit' ? $t('table.action.modify') : $t('common.create') }}</div>
     <div slot="body">
-      <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 4 }" :wrapper-col="{ span: 18 }">
+      <a-form-model ref="form" :model="form" :rules="rules">
         <a-form-model-item :label="$t('common.name')" prop="name">
           <a-input v-model:value="form.name" :placeholder="$t('common.tips.input', [$t('common.name')])" :disabled="type === 'edit'" />
         </a-form-model-item>
@@ -76,14 +76,6 @@ export default {
         llm_type: [{ required: true, message: this.$t('common.tips.select', [this.$t('aice.llm_type')]) }],
         image_name: [{ required: true, message: this.$t('common.tips.input', [this.$t('aice.llm_image.name')]) }],
         image_label: [{ required: true, message: this.$t('common.tips.input', [this.$t('aice.llm_image.label')]) }],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 18,
-        },
-        labelCol: {
-          span: 5,
-        },
       },
     }
   },

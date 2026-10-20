@@ -15,8 +15,7 @@
           :eip-params="eipParams"
           :hypervisor="hypervisor"
           :cloud-env="params.data[0].cloud_env"
-          :model="form"
-          :formItemLayout="formItemLayout" />
+          :model="form" />
       </a-form-model>
     </div>
     <div slot="footer">
@@ -54,14 +53,6 @@ export default {
         bgp_type: '',
         bandwidth: 30,
         eip: undefined,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

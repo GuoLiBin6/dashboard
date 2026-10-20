@@ -5,12 +5,10 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item v-if="!isEdit" :label="$t('compute.text_297', [$t('dictionary.project')])" class="mb-0">
           <domain-project
             :form="form"
-            :form-layout="formItemLayout"
             @update:domain="handleDomainChange" />
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.text_228')" class="mb-0" prop="name">
@@ -138,14 +136,6 @@ export default {
       },
       allowedPrivateBrands: IPSET_PRIVATE_BRANDS,
       allowedPublicBrands: IPSET_PUBLIC_BRANDS,
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
       ipsetType,
       regionId: '',
       regionProvider: '',

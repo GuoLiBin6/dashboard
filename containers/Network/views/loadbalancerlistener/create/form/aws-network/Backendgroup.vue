@@ -1,5 +1,5 @@
 <template>
-  <a-form-model :model="form.fd" class="mt-3" v-bind="formItemLayout">
+  <a-form-model :model="form.fd" class="mt-3">
     <a-form-item :label="$t('network.text_139')">
       <base-select
         isDefaultSelect

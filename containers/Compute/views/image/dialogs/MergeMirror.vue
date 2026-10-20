@@ -7,8 +7,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('compute.text_228')" :extra="$t('compute.image.merge_mirror.extra')" prop="name">
           <a-input v-model:value="form.name" :placeholder="$t('compute.image.merge_mirror.placeholder')" />
         </a-form-model-item>
@@ -48,14 +47,6 @@ export default {
   data () {
     return {
       loading: false,
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
-      },
       form: {
         name: undefined,
       },

@@ -12,7 +12,7 @@
     <a-form-item v-if="fieldMap.cloud_env" :label="$t('dashboard.text_98')">
       <a-row :gutter="8">
         <a-col :span="12">
-          <a-form-item :wrapperCol="{ span: 24 }" class="mb-0">
+          <a-form-item class="mb-0">
             <a-select
               allowClear
               class="w-100"
@@ -26,7 +26,7 @@
           </a-form-item>
         </a-col>
         <a-col :span="12">
-          <a-form-item :wrapperCol="{ span: 24 }" class="mb-0">
+          <a-form-item class="mb-0">
             <a-select
               allowClear
               class="w-100"

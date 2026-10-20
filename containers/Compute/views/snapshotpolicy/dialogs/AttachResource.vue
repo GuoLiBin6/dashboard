@@ -7,7 +7,7 @@
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <loader loading v-if="!bindedDisksLoaded && !bindedServersLoaded" />
       <a-form-model ref="formRef" :model="form" hideRequiredMark v-else>
-        <a-form-model-item v-if="resourceType === 'disk'" :label="$t('compute.text_376')" v-bind="formItemLayout" prop="disks">
+        <a-form-model-item v-if="resourceType === 'disk'" :label="$t('compute.text_376')" prop="disks">
           <list-select
             v-if="bindedDisksLoaded"
             v-model:value="form.disks"
@@ -15,7 +15,7 @@
             :multiple="true"
             :formatter="v => v.name" />
         </a-form-model-item>
-        <a-form-model-item v-else :label="$t('dictionary.server')" v-bind="formItemLayout" prop="servers">
+        <a-form-model-item v-else :label="$t('dictionary.server')" prop="servers">
           <list-select
             v-if="bindedServersLoaded"
             v-model:value="form.servers"
@@ -55,14 +55,6 @@ export default {
       form: {
         disks: [],
         servers: [],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
       disksInitLoaded: false,
       bindedDisks: [],

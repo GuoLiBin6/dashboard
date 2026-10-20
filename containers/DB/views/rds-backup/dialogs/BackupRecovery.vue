@@ -4,7 +4,7 @@
     <div slot="body" class="mt-3">
       <dialog-selected-tips :name="$t('dictionary.dbinstancebackups')" :count="params.data.length" :action="params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('db.text_221')">
           <a-radio-group v-model:value="recoveryType">
             <a-tooltip>
@@ -65,10 +65,6 @@ export default {
         databases: undefined,
         name: undefined,
         dbinstance_id: undefined,
-      },
-      formItemLayout: {
-        wrapperCol: { span: 20 },
-        labelCol: { span: 4 },
       },
     }
   },

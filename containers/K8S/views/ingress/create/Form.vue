@@ -1,6 +1,6 @@
 <template>
   <div class="w-75">
-    <a-form-model ref="formRef" :model="form.fd" :rules="rules" v-bind="formItemLayout">
+    <a-form-model ref="formRef" :model="form.fd" :rules="rules">
       <a-form-model-item :label="$t('k8s.text_41')" prop="name">
         <a-input :placeholder="$t('k8s.text_60')" v-model:value="form.fd.name" />
       </a-form-model-item>
@@ -63,10 +63,6 @@ export default {
             cookieExpires: 1000,
           },
         },
-      },
-      formItemLayout: {
-        labelCol: { span: 4 },
-        wrapperCol: { span: 20 },
       },
       errPanes: [], // 表单校验错误的tabs
       containerPanes: [], // 子组件同步的tabs

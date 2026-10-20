@@ -3,7 +3,7 @@
     <div slot="header">{{params.title}}</div>
     <div slot="body">
       <div v-loading="loading" style="min-height:100px">
-        <a-form-item v-bind="formItemLayout" :label="key" v-for="(value, key) in infoJson" :key="key">
+        <a-form-item :label="key" v-for="(value, key) in infoJson" :key="key">
           {{value}}
           <copy
             class="ml-1"
@@ -30,14 +30,6 @@ export default {
     return {
       loading: false,
       infoJson: {},
-      formItemLayout: {
-        wrapperCol: {
-          span: 18,
-        },
-        labelCol: {
-          span: 3,
-        },
-      },
     }
   },
   created () {

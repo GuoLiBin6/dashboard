@@ -5,7 +5,6 @@
       <a-alert class="mb-2" :message="$t('iam.sms_mobile')" />
       <a-form-model
         ref="form"
-        v-bind="formItemLayout"
         :model="form"
         :rules="rules">
         <a-form-model-item :label="$t('iam.mobile')" prop="phone_number">
@@ -40,14 +39,6 @@ export default {
         phone_number: [
           { validator: this.$validate('mobile') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

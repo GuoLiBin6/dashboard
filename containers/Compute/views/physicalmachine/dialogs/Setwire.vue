@@ -8,7 +8,7 @@
         ref="formRef"
         :model="form"
         :rules="rules">
-        <a-form-model-item :label="$t('compute.text_844')" v-bind="formItemLayout" v-if="!selectWire" prop="wire">
+        <a-form-model-item :label="$t('compute.text_844')" v-if="!selectWire" prop="wire">
           <base-select
             :filterable="true"
             v-model:value="form.wire"
@@ -48,14 +48,6 @@ export default {
         wire: [
           { required: true },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       wireParams: {
         host_id: this.params.data[0].hostId,

@@ -6,7 +6,6 @@
         ref="formRef"
         :model="form"
         :rules="rules"
-        v-bind="formItemLayout"
         hideRequiredMark>
         <a-form-model-item :label="$t('common.attribution_scope')" prop="project_domain">
           <domain-select v-model:value="form.project_domain" />
@@ -22,7 +21,7 @@
         <a-form-model-item :label="$t('network.request.vpc')" required>
           <a-row :gutter="6">
             <a-col :span="12">
-              <a-form-model-item prop="request_cloudregion" :wrapperCol="{ span: 24 }" class="mb-0 mr-1">
+              <a-form-model-item prop="request_cloudregion" class="mb-0 mr-1">
                 <a-select
                   v-model:value="form.request_cloudregion"
                   @change="handleRequestRegionChange"
@@ -37,7 +36,7 @@
               </a-form-model-item>
             </a-col>
             <a-col :span="12">
-              <a-form-model-item prop="request_vpc" :wrapperCol="{ span: 24 }" class="mb-0 mr-1">
+              <a-form-model-item prop="request_vpc" class="mb-0 mr-1">
                 <a-select
                   v-model:value="form.request_vpc"
                   placeholder="VPC"
@@ -55,7 +54,7 @@
         <a-form-model-item :label="$t('network.receive.vpc')" required>
           <a-row :gutter="6">
             <a-col :span="12">
-              <a-form-model-item prop="receive_cloudregion" :wrapperCol="{ span: 24 }" class="mb-0 mr-1">
+              <a-form-model-item prop="receive_cloudregion" class="mb-0 mr-1">
                 <a-select
                   v-model:value="form.receive_cloudregion"
                   @change="handleReceiveRegionChange"
@@ -70,7 +69,7 @@
               </a-form-model-item>
             </a-col>
             <a-col :span="12">
-              <a-form-model-item prop="receive_vpc" :wrapperCol="{ span: 24 }" class="mb-0 mr-1">
+              <a-form-model-item prop="receive_vpc" class="mb-0 mr-1">
                 <a-select
                   v-model:value="form.receive_vpc"
                   placeholder="VPC"
@@ -147,14 +146,6 @@ export default {
         receive_vpc: [
           { required: true, message: this.$t('common_226') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

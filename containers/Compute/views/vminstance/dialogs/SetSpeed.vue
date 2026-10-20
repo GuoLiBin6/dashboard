@@ -12,7 +12,7 @@
             <div slot="title"><a-tag>{{ obj.disk_type === 'sys' ? $t('common_432') : $t('common_433') }}</a-tag> {{obj.name}}</div>
             <a-row>
               <a-col :span="12">
-                <a-form-model-item v-bind="formItemLayout" :extra="$t('compute.not_limited')" :prop="'disks.' + idx + '.iops'" :rules="iopsRules">
+                <a-form-model-item :extra="$t('compute.not_limited')" :prop="'disks.' + idx + '.iops'" :rules="iopsRules">
                   <span slot="label">
                     {{ $t('compute.iops') }}&nbsp;
                     <a-tooltip :title="$t('compute.text_1248_tip')">
@@ -25,7 +25,7 @@
                 </a-form-model-item>
               </a-col>
               <a-col :span="12">
-                <a-form-model-item v-bind="formItemLayout" :extra="$t('compute.not_limited')" :prop="'disks.' + idx + '.bps'" :rules="bpsRules">
+                <a-form-model-item :extra="$t('compute.not_limited')" :prop="'disks.' + idx + '.bps'" :rules="bpsRules">
                   <span slot="label">
                     {{ $t('compute.bps') }}&nbsp;
                     <a-tooltip :title="$t('compute.text_1248_1_tip')">
@@ -74,14 +74,6 @@ export default {
       bpsRules: [
         { required: true, message: this.$t('compute.text_1250_1') },
       ],
-      formItemLayout: {
-        wrapperCol: {
-          span: 12,
-        },
-        labelCol: {
-          span: 8,
-        },
-      },
     }
   },
   computed: {

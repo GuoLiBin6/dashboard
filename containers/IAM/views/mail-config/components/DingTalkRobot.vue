@@ -2,8 +2,7 @@
   <a-form-model
     ref="formRef"
     :model="form"
-    :rules="rules"
-    v-bind="formItemLayout">
+    :rules="rules">
     <a-form-model-item label="webhook" prop="webhook">
       <template v-slot:extra>
         <div>{{$t('system.text_265')}}</div>
@@ -26,10 +25,6 @@ export default {
     TestButton,
   },
   props: {
-    formItemLayout: {
-      required: true,
-      type: Object,
-    },
     offsetWrapperCol: {
       required: true,
       type: Object,

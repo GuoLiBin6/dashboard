@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="params.name" :count="params.data.length" :action="params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('db.text_54')" prop="duration">
           <a-radio-group v-model:value="form.duration">
               <a-radio-button
@@ -24,7 +24,6 @@
 </template>
 
 <script>
-import { CreateServerForm } from '@Compute/constants'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import { BUY_DURATIONS_OPTIONS } from '../constants/index.js'
@@ -43,10 +42,6 @@ export default {
         duration: [
           { required: true, message: this.$t('db.text_148') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: { span: CreateServerForm.wrapperCol },
-        labelCol: { span: CreateServerForm.labelCol },
       },
     }
   },

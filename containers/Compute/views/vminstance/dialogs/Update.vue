@@ -8,8 +8,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <template v-if="isKvm">
           <a-form-model-item :label="$t('compute.text_1155')" prop="bios">
             <a-radio-group v-model:value="form.bios">
@@ -86,14 +85,6 @@ export default {
         machine: [
           { required: true, message: this.$t('compute.prompt_machine') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

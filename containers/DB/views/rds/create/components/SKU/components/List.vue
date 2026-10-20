@@ -1,6 +1,6 @@
 <template>
   <div style="margin-bottom: 20px;" v-if="skuList">
-    <a-form-item :label="$t('compute.text_109')" v-bind="formItemLayout">
+    <a-form-item :label="$t('compute.text_109')">
       <table-lite-grid
         row-id="id"
         :radio-config="radioConfig"
@@ -38,7 +38,6 @@ export default {
   name: 'rdsSkuList',
   inject: {
     form: { default: null },
-    formItemLayout: { default: null },
     tailFormItemLayout: { default: null },
     scopeParams: { default: null },
     getCreateFormDraftPreferred: { default: undefined },

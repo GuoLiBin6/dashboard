@@ -1,8 +1,8 @@
 <template>
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{params.title}}</div>
-    <a-form-model slot="body" ref="formRef" :model="form" :rules="rules" class="mt-3" v-bind="formItemLayout">
-      <a-form-model-item v-bind="formItemLayout" :label="$t('network.text_205', [$t('dictionary.domain')])" v-if="$store.getters.isAdminMode" prop="project_domain">
+    <a-form-model slot="body" ref="formRef" :model="form" :rules="rules" class="mt-3">
+      <a-form-model-item :label="$t('network.text_205', [$t('dictionary.domain')])" v-if="$store.getters.isAdminMode" prop="project_domain">
         <domain-select v-model:value="form.project_domain" />
       </a-form-model-item>
       <a-form-model-item :label="$t('network.text_21')" prop="name">
@@ -17,7 +17,6 @@
 </template>
 
 <script>
-import { CreateServerForm } from '@Compute/constants'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import validateForm from '@/utils/validate'
@@ -42,10 +41,6 @@ export default {
           { required: true, message: this.$t('network.text_116') },
           { validator: validateForm('resourceName') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: { span: CreateServerForm.wrapperCol },
-        labelCol: { span: CreateServerForm.labelCol },
       },
     }
   },

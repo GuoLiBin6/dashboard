@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.server.quick.recovery')" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
         <!-- 自动启动 -->
         <a-form-model-item :label="$t('compute.text_494')" v-if="isSingle && firstData.status === 'ready'" :extra="$t('compute.text_1263')" prop="auto_start">
           <a-switch
@@ -62,14 +62,6 @@ export default {
         host: [
           { required: false, message: this.$t('compute.text_314'), trigger: 'change' },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

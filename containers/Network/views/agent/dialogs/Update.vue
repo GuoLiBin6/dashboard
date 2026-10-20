@@ -35,14 +35,6 @@ export default {
           { type: 'integer', min: 600, max: 3600, message: this.$t('network.text_77'), trigger: 'blur' },
         ],
       },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
-      },
     }
   },
   methods: {

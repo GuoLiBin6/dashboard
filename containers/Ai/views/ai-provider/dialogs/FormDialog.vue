@@ -2,7 +2,7 @@
   <base-dialog :width="720" @cancel="cancelDialog">
     <div slot="header">{{ params.type === 'edit' ? $t('table.action.modify') : $t('common.create') }}</div>
     <div slot="body">
-      <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 5 }" :wrapper-col="{ span: 17 }">
+      <a-form-model ref="form" :model="form" :rules="rules">
         <a-form-model-item v-if="params.type !== 'edit'" :label="$t('aice.aiproxy.provider_type')">
           <a-radio-group v-model:value="form.provider_type" :options="providerTypeOptions" />
         </a-form-model-item>

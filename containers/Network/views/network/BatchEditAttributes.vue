@@ -9,7 +9,7 @@
         <dialog-table :data="networks" :columns="renderColumns" />
       </a-card>
       <div class="form-wrapper">
-        <a-form-model ref="formRef" v-bind="formItemLayout" :model="form.fd" @submit.prevent="handleSubmit">
+        <a-form-model ref="formRef" :model="form.fd" @submit.prevent="handleSubmit">
           <a-form-model-item :label="$t('network.text_551')" :validate-status="ipSubnetsValidateStatus" :help="ipSubnetsHelp" required>
             <ip-subnets
               ref="ipSubnetsRef"
@@ -63,18 +63,6 @@ export default {
           netmask: {},
           gateway: {},
           vlan: {},
-        },
-      },
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 23 },
-          xl: { span: 23 },
-          xxl: { span: 23 },
-        },
-        labelCol: {
-          md: { span: 1 },
-          xl: { span: 1 },
-          xxl: { span: 1 },
         },
       },
     }

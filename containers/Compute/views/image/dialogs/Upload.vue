@@ -8,18 +8,17 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
-        <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-bind="formItemLayout">
+        :rules="rules">
+        <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])">
           <domain-project :form="form" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_667')" v-bind="formItemLayout" prop="uploadType">
+        <a-form-model-item :label="$t('compute.text_667')" prop="uploadType">
           <a-radio-group @change="handleUploadTypeChange" v-model:value="form.uploadType">
             <a-radio-button value="file">{{$t('compute.text_668')}}</a-radio-button>
             <a-radio-button value="url">{{$t('compute.text_669')}}</a-radio-button>
           </a-radio-group>
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_670')" v-bind="formItemLayout" v-if="byUpload" :help="uploadFileHelp">
+        <a-form-model-item :label="$t('compute.text_670')" v-if="byUpload" :help="uploadFileHelp">
           <a-upload
             @change="handleUploadChange"
             @reject="handleUploadReject"
@@ -33,13 +32,13 @@
             :percent="imageUploadPercent"
             status="active" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_672')" v-bind="formItemLayout" v-if="!byUpload" prop="copy_from">
+        <a-form-model-item :label="$t('compute.text_672')" v-if="!byUpload" prop="copy_from">
           <a-input :placeholder="$t('compute.text_673')" v-model:value="form.copy_from" @change="handleCopyFromChange" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_627')" v-bind="formItemLayout" prop="name">
+        <a-form-model-item :label="$t('compute.text_627')" prop="name">
           <a-input :placeholder="$t('compute.text_416')" v-model:value="form.name" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_267')" v-bind="formItemLayout" prop="os_type">
+        <a-form-model-item :label="$t('compute.text_267')" prop="os_type">
           <a-radio-group v-model:value="form.os_type">
             <a-radio-button value="Linux">
               Linux
@@ -117,14 +116,6 @@ export default {
           { required: true, message: this.$t('compute.text_673') },
           { validator: this.validateUrl },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       byUpload: true,
       fileList: [],

@@ -16,7 +16,6 @@
           :hypervisor="hypervisor"
           :cloud-env="params.data[0].cloud_env"
           :model="form"
-          :formItemLayout="formItemLayout"
           :show-new="eipBindNew" />
       </a-form-model>
     </div>
@@ -48,14 +47,6 @@ export default {
         bgp_type: '',
         bandwidth: 30,
         eip: undefined,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

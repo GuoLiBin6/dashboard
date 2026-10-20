@@ -8,10 +8,10 @@
         ref="form"
         :model="fd"
         :rules="rules">
-        <a-form-model-item v-if="step.currentStep === 0" prop="extrnal_project_name" :label="$t('cloudenv.text_95')" v-bind="formItemLayout">
+        <a-form-model-item v-if="step.currentStep === 0" prop="extrnal_project_name" :label="$t('cloudenv.text_95')">
           <a-input v-model:value="fd.extrnal_project_name" />
         </a-form-model-item>
-        <a-form-model-item v-if="step.currentStep === 0 && isAzure" prop="provider" :label="$t('dictionary.cloudprovider')" v-bind="formItemLayout">
+        <a-form-model-item v-if="step.currentStep === 0 && isAzure" prop="provider" :label="$t('dictionary.cloudprovider')">
           <base-select
             v-model="fd.provider"
             :params="cloudproviderParams"
@@ -19,7 +19,7 @@
             resource="cloudproviders" />
         </a-form-model-item>
         <template v-if="step.currentStep === 1">
-          <a-form-model-item :label="$t('cloudenv.text_360')" prop="type" v-bind="formItemLayout">
+          <a-form-model-item :label="$t('cloudenv.text_360')" prop="type">
             <a-radio-group v-model:value="fd.type">
               <template v-for="item of typeOptions" :key="item.key">
                 <a-radio-button :value="item.key">{{ item.label }}</a-radio-button>
@@ -27,7 +27,7 @@
             </a-radio-group>
           </a-form-model-item>
           <template v-if="fd.type === 'select'">
-            <a-form-model-item prop="project" :label="params.projectLabel || $t('res.project')" v-bind="formItemLayout">
+            <a-form-model-item prop="project" :label="params.projectLabel || $t('res.project')">
           <a-row :gutter="8">
             <a-col :span="12">
               <a-select v-model:value="domain" show-search @search="getConditionDomains" :filter-option="false" allow-clear dropdownClassName="oc-select-dropdown">
@@ -50,7 +50,7 @@
           </a-row>
         </a-form-model-item>
           </template>
-          <a-form-model-item v-if="fd.type === 'create'" prop="local_project_name" :label="$t('cloudenv.text_95')" v-bind="formItemLayout">
+          <a-form-model-item v-if="fd.type === 'create'" prop="local_project_name" :label="$t('cloudenv.text_95')">
             <a-input v-model:value="fd.local_project_name" />
           </a-form-model-item>
         </template>
@@ -101,14 +101,6 @@ export default {
         provider: [
           { required: true, message: this.$t('common_588') },
         ],
-      },
-      formItemLayout: this.params.formItemLayout || {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
       step: {
         steps: [

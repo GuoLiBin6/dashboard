@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_1162')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
         <a-form-model-item
           :label="$t('compute.text_1163')"
           :validate-status="hostValidateStatus"
@@ -58,14 +58,6 @@ export default {
         prefer_host_id: [
           { required: false, message: this.$t('compute.text_1165'), trigger: 'blur' },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 18,
-        },
-        labelCol: {
-          span: 6,
-        },
       },
     }
   },

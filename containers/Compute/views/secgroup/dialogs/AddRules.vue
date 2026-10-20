@@ -6,13 +6,13 @@
         ref="formRef"
         :model="form"
         :rules="rules">
-        <a-form-model-item :label="$t('compute.text_990')" v-bind="formItemLayout" prop="direction">
+        <a-form-model-item :label="$t('compute.text_990')" prop="direction">
           <a-radio-group v-model:value="form.direction" @change="directionChange">
             <a-radio value="in">{{$t('compute.text_993')}}</a-radio>
             <a-radio value="out">{{$t('compute.text_994')}}</a-radio>
           </a-radio-group>
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_175')" v-bind="formItemLayout" prop="type">
+        <a-form-model-item :label="$t('compute.text_175')" prop="type">
           <a-select
             v-model:value="form.type"
             :disabled="typeDisabled"
@@ -23,7 +23,7 @@
             </a-select-option>
           </a-select>
         </a-form-model-item>
-        <a-form-model-item v-bind="formItemLayout" prop="cidr">
+        <a-form-model-item prop="cidr">
           <span slot="label">
             {{decLabel}}&nbsp;
             <a-tooltip :title="$t('compute.secgroup.secrule.source.prompt')">
@@ -33,14 +33,14 @@
           <a-input :disabled="IPCheckboxDisabled" v-model:value="form.cidr" :placeholder="$t('compute.text_996')" />
           <a-checkbox class="right-checkbox" @change="cidrChange">{{$t('compute.text_997')}}</a-checkbox>
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_980')" v-bind="formItemLayout" prop="protocol">
+        <a-form-model-item :label="$t('compute.text_980')" prop="protocol">
           <a-select v-model:value="form.protocol" @change="protocolChange" :disabled="protocolDisabled">
             <a-select-option v-for="item in protocolOptions" :key="item.value" :value="item.value">
               {{item.label}}
             </a-select-option>
           </a-select>
         </a-form-model-item>
-        <a-form-model-item v-bind="formItemLayout" prop="ports">
+        <a-form-model-item prop="ports">
           <span slot="label">{{$t('compute.text_998')}}<a-tooltip :title="$t('compute.text_999')">
               <icon type="question-circle" />
             </a-tooltip>
@@ -48,14 +48,14 @@
           <a-input :disabled="portsDisabled" v-model:value="form.ports" :placeholder="$t('compute.text_350')" />
           <a-checkbox class="right-checkbox" @change="portsChange" :checked="portsChecked" :disabled="portsCheckboxDisabled">{{$t('compute.text_1000')}}</a-checkbox>
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_694')" v-bind="formItemLayout" prop="action">
+        <a-form-model-item :label="$t('compute.text_694')" prop="action">
           <a-select v-model:value="form.action">
             <a-select-option v-for="item in actionOptions" :key="item.value" :value="item.value">
               {{item.label}}
             </a-select-option>
           </a-select>
         </a-form-model-item>
-        <a-form-model-item v-bind="formItemLayout" prop="priority">
+        <a-form-model-item prop="priority">
           <span slot="label">{{$t('compute.text_1001')}}<a-tooltip :title="$t('compute.text_1002')">
               <icon type="question-circle" />
             </a-tooltip>
@@ -105,14 +105,6 @@ export default {
         action: [
           { required: true },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 8,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
       typeOptions: [
         { label: this.$t('compute.text_144'), value: 'custom', description: '' },

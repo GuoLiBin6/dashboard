@@ -1,5 +1,5 @@
 <template>
-  <a-form-item :label="$t('db.text_116')" v-bind="formItemLayout">
+  <a-form-item :label="$t('db.text_116')">
     <a-tooltip placement="top">
       <template #title>
           <span v-if="selectedSku">{{$t('db.text_117', [numberProps.min,numberProps.max])}}</span>
@@ -12,7 +12,7 @@
 <script>
 export default {
   name: 'DiskSizeInput',
-  inject: ['form', 'formItemLayout'],
+  inject: ['form'],
   props: {
     selectedSku: {
       type: Object,

@@ -5,7 +5,6 @@
       class="mt-3"
       :model="form.fd"
       :rules="rules"
-      v-bind="formItemLayout"
       @submit="submit"
       hideRequiredMark>
       <servertemplate v-if="isServertemplate" :form="form">

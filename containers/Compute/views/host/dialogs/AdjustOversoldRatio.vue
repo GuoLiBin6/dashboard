@@ -5,10 +5,10 @@
       <dialog-selected-tips :name="$t('dictionary.host')" :count="params.data.length" :action="$t('compute.text_513')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 2)" />
       <a-form-model ref="formRef" :model="form" :rules="rules">
-        <a-form-model-item :label="$t('compute.cpu_commit_bound')" v-bind="formItemLayout" prop="cpu_cmtbound">
+        <a-form-model-item :label="$t('compute.cpu_commit_bound')" prop="cpu_cmtbound">
           <a-input-number v-model:value="form.cpu_cmtbound" :min="0.1" :step="0.1" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.memory_commit_bound')" v-bind="formItemLayout" prop="mem_cmtbound">
+        <a-form-model-item :label="$t('compute.memory_commit_bound')" prop="mem_cmtbound">
           <template v-if="isOpenPage">
             <a-tooltip>
               <template #title>
@@ -20,7 +20,7 @@
           <a-input-number v-else v-model:value="form.mem_cmtbound" :min="0.1" :max="maxMemCmtBound" :step="0.1" />
           <div style="font-size:12px" class="add-desc">{{$t('compute.text_544')}}</div>
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.memory_reserve_gb')" v-bind="formItemLayout" prop="mem_reserved">
+        <a-form-model-item :label="$t('compute.memory_reserve_gb')" prop="mem_reserved">
           <template v-if="isOpenPage">
             <a-tooltip>
               <template #title>
@@ -66,14 +66,6 @@ export default {
         mem_reserved: [
           { required: true, message: this.$t('compute.memory_reserve_gb.placeholder') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 17,
-        },
-        labelCol: {
-          span: 7,
-        },
       },
     }
   },

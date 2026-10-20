@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.user')" :count="params.data.length" :action="params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('system.text_221')" prop="password">
           <a-input-password :placeholder="$t('system.text_239')" v-model:value="form.password" />
         </a-form-model-item>
@@ -35,14 +35,6 @@ export default {
         password: [
           { required: true, message: this.$t('system.text_486'), trigger: 'blur' },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

@@ -1,16 +1,16 @@
 <template>
   <div>
-    <a-form-item :label="$t('db.text_131')" v-bind="formItemLayout">
+    <a-form-item :label="$t('db.text_131')">
       <a-radio-group :value="fieldVal(vcpuDec)" @change="e => { fieldSet(vcpuDec, e.target.value); onCpuChange(e) }">
         <a-radio-button :key="cpu" :value="cpu" v-for="cpu in cpus">{{$t('db.text_125', [cpu])}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
-    <a-form-item :label="$t('db.text_132')" v-bind="formItemLayout">
+    <a-form-item :label="$t('db.text_132')">
       <a-radio-group :value="fieldVal(vmemDec)" @change="e => { fieldSet(vmemDec, e.target.value); onMemChange(e) }">
         <a-radio-button :key="size" :value="size" v-for="size in mems_mbs">{{sizestr(size, 'M', 1024)}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
-    <a-form-item :label="$t('db.text_133')" v-bind="formItemLayout" v-if="form.fd.provider !== 'Aws'">
+    <a-form-item :label="$t('db.text_133')" v-if="form.fd.provider !== 'Aws'">
       <slot name="zone" v-if="$slots.zone" />
       <a-radio-group v-else :value="fieldVal(zonesDec)" @change="e => { fieldSet(zonesDec, e.target.value); onZoneChange(e) }">
         <a-radio-button :key="id" :value="id" v-for="(zone, id) of zones">{{zone}}</a-radio-button>
@@ -29,7 +29,6 @@ export default {
   name: 'rdsSizeFilter',
   inject: {
     form: { default: null },
-    formItemLayout: { default: null },
     scopeParams: { default: null },
     getCreateFormDraftPreferred: { default: undefined },
   },

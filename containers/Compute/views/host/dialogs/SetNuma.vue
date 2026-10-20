@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.host')" :count="params.data.length" :action="$t('compute.set_numa')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 2)" />
-      <a-form-model :model="form" v-bind="formItemLayout">
+      <a-form-model :model="form">
         <a-form-model-item :label="$t('compute.sched_numa')" :extra="extraInfo">
           <a-switch v-model:checked="form.enable_numa_allocate" :checkedChildren="$t('table.title.on')" :unCheckedChildren="$t('table.title.off')" />
         </a-form-model-item>
@@ -29,14 +29,6 @@ export default {
       scope: this.$store.getters.scope,
       form: {
         enable_numa_allocate: this.params.data[0].enable_numa_allocate || false,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
       },
     }
   },

@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('compute.container', [])" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
         <a-form-model-item :label="$t('compute.repo.edit_mode')">
           <a-radio-group v-model:value="editMode">
             <a-radio-button value="custom">{{ $t('compute.repo.edit_mode.custom') }}</a-radio-button>
@@ -200,14 +200,6 @@ export default {
         theme: 'material',
       },
       capabilityOptions: CAPABILITY_OPTIONS,
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
-      },
     }
   },
   computed: {

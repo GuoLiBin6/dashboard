@@ -8,7 +8,6 @@
       :rules="rules">
       <a-form-model-item
         :label="$t('k8s.text_348')"
-        v-bind="formItemLayout"
         prop="storageType">
         <a-radio-group v-model:value="form.storageType">
           <a-radio-button value="cephCSI">
@@ -18,13 +17,11 @@
       </a-form-model-item>
       <a-form-model-item
         :label="$t('k8s.text_41')"
-        v-bind="formItemLayout"
         prop="name">
         <a-input v-model:value="form.name" :placeholder="$t('k8s.text_60')" />
       </a-form-model-item>
       <a-form-model-item
         :label="$t('k8s.text_19')"
-        v-bind="formItemLayout"
         prop="cluster">
         <cluster-select
           v-model="form.cluster"
@@ -34,11 +31,10 @@
       <a-form-model-item
         :label="$t('k8s.text_18')"
         class="mb-0"
-        required
-        v-bind="formItemLayout">
+        required>
         <a-row :gutter="8">
           <a-col :span="12">
-            <a-form-model-item prop="secretNamespace" :wrapperCol="{ span: 24 }">
+            <a-form-model-item prop="secretNamespace">
               <namespace-select
                 size="small"
                 v-model="form.secretNamespace"
@@ -47,7 +43,7 @@
             </a-form-model-item>
           </a-col>
           <a-col :span="12">
-            <a-form-model-item prop="secretName" :wrapperCol="{ span: 24 }">
+            <a-form-model-item prop="secretName">
               <base-select
                 resource="secrets"
                 v-model="form.secretName"
@@ -67,7 +63,6 @@
       </a-form-model-item>
       <a-form-model-item
         :label="$t('k8s.text_351')"
-        v-bind="formItemLayout"
         prop="clusterId">
         <a-select v-model:value="form.clusterId" :placeholder="$t('k8s.text_77')" @change="fetchPoolOpts">
           <a-select-option v-for="item in cephcsiOpts" :value="item.clusterId" :key="item.clusterId">{{item.clusterId}}</a-select-option>
@@ -75,7 +70,6 @@
       </a-form-model-item>
       <a-form-model-item
         label="Pool"
-        v-bind="formItemLayout"
         prop="pool">
         <a-select v-model:value="form.pool" :placeholder="$t('k8s.text_352')">
           <a-select-option v-for="item in poolOpts" :value="item" :key="item">{{item}}</a-select-option>
@@ -83,7 +77,6 @@
       </a-form-model-item>
       <a-form-model-item
         :label="$t('k8s.text_353')"
-        v-bind="formItemLayout"
         prop="csiFsType">
         <a-select v-model:value="form.csiFsType">
           <a-select-option value="ext4">ext4</a-select-option>
@@ -152,10 +145,6 @@ export default {
         pool: [
           { required: true, message: this.$t('k8s.text_357') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: { span: 20 },
-        labelCol: { span: 3 },
       },
       secretNamespace: '',
       cephcsiOpts: [],

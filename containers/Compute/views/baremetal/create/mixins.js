@@ -70,18 +70,6 @@ export default {
       _initFormDone: false,
       submiting: false,
       errors: {},
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 18 },
-          xl: { span: 20 },
-          xxl: { span: 22 },
-        },
-        labelCol: {
-          md: { span: 6 },
-          xl: { span: 4 },
-          xxl: { span: 2 },
-        },
-      },
       offsetFormItemLayout: {
         wrapperCol: {
           md: { span: 18, offset: 6 },

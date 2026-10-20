@@ -9,7 +9,7 @@
         ref="formRef"
         :model="form"
         :rules="rules">
-        <a-form-model-item :label="$t('compute.text_415')" v-bind="formItemLayout" prop="name">
+        <a-form-model-item :label="$t('compute.text_415')" prop="name">
           <a-input v-model:value="form.name" />
         </a-form-model-item>
       </a-form-model>
@@ -40,14 +40,6 @@ export default {
           { required: true, message: this.$t('compute.text_416') },
           { validator: this.$validate('snapshotName') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
       serversOpts: [],
     }

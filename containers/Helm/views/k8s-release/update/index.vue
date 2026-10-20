@@ -15,8 +15,7 @@
           <a-form-model
             ref="formRef"
             :model="form"
-            :rules="rules"
-            v-bind="formItemLayout">
+            :rules="rules">
             <a-form-model-item :label="$t('helm.text_16')" prop="release_name">
               <a-input v-model:value="form.release_name" :placeholder="$t('helm.text_28')" disabled />
             </a-form-model-item>
@@ -81,10 +80,6 @@ export default {
         metadata: {},
       },
       releaseDetail: {},
-      formItemLayout: {
-        labelCol: { span: 4 },
-        wrapperCol: { span: 20 },
-      },
       cmOptions: {
         tabSize: 2,
         styleActiveLine: true,

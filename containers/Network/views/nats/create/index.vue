@@ -5,21 +5,20 @@
       <a-form-model
         ref="formRef"
         class="mt-3"
-        v-bind="formItemLayout"
         :model="form.fd"
         :rules="rules"
         hideRequiredMark>
         <a-form-model-item :label="$t('network.text_205', [$t('dictionary.domain')])" v-if="$store.getters.isAdminMode" prop="project_domain">
           <domain-select v-model:value="form.fd.project_domain" @change="handleDomainChange" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('network.text_21')" v-bind="formItemLayout" prop="name">
+        <a-form-model-item :label="$t('network.text_21')" prop="name">
           <a-input v-model:value="form.fd.name" :placeholder="$t('network.text_44')" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('common.description')" v-bind="formItemLayout" prop="description">
+        <a-form-model-item :label="$t('common.description')" prop="description">
           <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.fd.description" :placeholder="$t('common_367')" />
         </a-form-model-item>
         <!-- 计费方式 -->
-        <clearing-radios :model="form.fd" v-bind="formItemLayout" :auto_renew="false" />
+        <clearing-radios :model="form.fd" :auto_renew="false" />
         <a-form-model-item :label="$t('network.expired_release')" v-if="form.fd.billing_type !== 'prepaid'">
           <duration
             :model="form.fd"
@@ -43,8 +42,6 @@
           class="mb-0"
           ref="areaSelects"
           :model="form.fd"
-          :wrapperCol="formItemLayout.wrapperCol"
-          :labelCol="formItemLayout.labelCol"
           :names="areaselectsName"
           :providerParams="providerParams"
           :cloudregionParams="regionParams"
@@ -66,8 +63,7 @@
             :isDefaultFetch="false"
             :vpcFormat="vpcFormat"
             :vpcParams="vpcParams"
-            :networkParams="netParams"
-            v-bind="formItemLayout" />
+            :networkParams="netParams" />
         </template>
         <template>
           <eip-config
@@ -81,10 +77,9 @@
             :isServertemplate="false"
             :cloud-env="cloudEnv"
             :form="form"
-            :hasPublicIp="false"
-            :formItemLayout="formItemLayout" />
+            :hasPublicIp="false" />
         </template>
-        <a-form-model-item :label="$t('common.text00012')" class="mb-0" v-bind="formItemLayout" prop="__meta__">
+        <a-form-model-item :label="$t('common.text00012')" class="mb-0" prop="__meta__">
           <tag
             :value="form.fd.__meta__" @change="v => { form.fd.__meta__ = v }" />
         </a-form-model-item>
@@ -136,18 +131,6 @@ export default {
         ],
       },
       selectedRegionItem: {},
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 17 },
-          xl: { span: 19 },
-          xxl: { span: 21 },
-        },
-        labelCol: {
-          md: { span: 7 },
-          xl: { span: 5 },
-          xxl: { span: 3 },
-        },
-      },
       tailFormItemLayout: {
         wrapperCol: {
           lg: { span: 18, offset: 6 },

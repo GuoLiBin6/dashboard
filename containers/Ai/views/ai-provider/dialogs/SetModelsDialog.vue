@@ -2,7 +2,7 @@
   <base-dialog :width="720" @cancel="cancelDialog">
     <div slot="header">{{ $t('aice.aiproxy.set_models') }}</div>
     <div slot="body">
-      <a-form-model :label-col="{ span: 5 }" :wrapper-col="{ span: 17 }">
+      <a-form-model>
         <a-form-model-item :label="$t('common.name')">
           <span>{{ provider.name }}</span>
         </a-form-model-item>

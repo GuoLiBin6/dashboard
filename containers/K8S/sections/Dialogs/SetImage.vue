@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :name="$t('k8s.text_64')" :action="$t('k8s.text_63')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model v-bind="formItemLayout" :model="form">
+      <a-form-model :model="form">
         <a-alert :message="$t('k8s.text_65')" banner v-if="!containerImages.length && !initContainerImages.length" />
         <a-form-model-item :label="$t('k8s.repo.image.source')">
           <a-radio-group v-model:value="form.source" @change="handleSourceChange">
@@ -94,14 +94,6 @@ export default {
       data: this.params.data[0],
       containerImages: [],
       initContainerImages: [],
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
-      },
     }
   },
   created () {

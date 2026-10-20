@@ -8,13 +8,13 @@
         :model="form.fd"
         :rules="rules"
         hideRequiredMark>
-        <a-form-model-item v-bind="formItemLayout" :label="$t('network.text_205', [$t('dictionary.domain')])" v-if="$store.getters.isAdminMode" prop="project_domain">
+        <a-form-model-item :label="$t('network.text_205', [$t('dictionary.domain')])" v-if="$store.getters.isAdminMode" prop="project_domain">
           <domain-select v-model:value="form.fd.project_domain" @change="handleDomainChange" />
         </a-form-model-item>
-        <a-form-model-item v-if="isPublic" :label="$t('regionMap.enable_world_map')" v-bind="formItemLayout" prop="enableWorldMap">
+        <a-form-model-item v-if="isPublic" :label="$t('regionMap.enable_world_map')" prop="enableWorldMap">
           <a-switch v-model:checked="form.fd.enableWorldMap" />
         </a-form-model-item>
-        <a-form-model-item v-if="isPublic && form.fd.enableWorldMap" :label="$t('compute.region_map')" v-bind="formItemLayout">
+        <a-form-model-item v-if="isPublic && form.fd.enableWorldMap" :label="$t('compute.region_map')">
           <region-map
             :region-filter-params="regionMapParams"
             filter-brand-resource="network_manage"
@@ -28,8 +28,6 @@
           ref="areaSelects"
           :key="`vpc-area-${cloudEnv}`"
           :model="form.fd"
-          :wrapperCol="formItemLayout.wrapperCol"
-          :labelCol="formItemLayout.labelCol"
           :names="areaselectsName"
           :cloudregionParams="regionParams"
           :providerParams="providerParams"
@@ -41,13 +39,13 @@
           v-model:region="regionList"
           filterBrandResource="network_manage"
           @change="handleRegionChange" />
-        <a-form-model-item :label="$t('network.text_21')" v-bind="formItemLayout" prop="name">
+        <a-form-model-item :label="$t('network.text_21')" prop="name">
           <a-input v-model:value="form.fd.name" :placeholder="$t('network.text_684')" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('common.description')" v-bind="formItemLayout" prop="description">
+        <a-form-model-item :label="$t('common.description')" prop="description">
           <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.fd.description" :placeholder="$t('common_367')" />
         </a-form-model-item>
-        <a-form-model-item v-if="isShowIp" :label="$t('network.vpc.cidr_block.ipv4.label')" v-bind="formItemLayout" :extra="$t('network.text_686')" prop="cidr_block">
+        <a-form-model-item v-if="isShowIp" :label="$t('network.vpc.cidr_block.ipv4.label')" :extra="$t('network.text_686')" prop="cidr_block">
           <a-input v-model:value="form.fd.cidr_block" :placeholder="$t('network.text_687')" v-if="cloudEnv !== 'onpremise'" />
           <a-select v-model:value="form.fd.cidr_block" allowClear v-else>
             <a-select-option value="192.168.0.0/16">192.168.0.0/16</a-select-option>
@@ -55,15 +53,15 @@
             <a-select-option value="10.0.0.0/8">10.0.0.0/8</a-select-option>
           </a-select>
         </a-form-model-item>
-        <a-form-model-item v-if="isShowIp" :label="$t('network.vpc.cidr_block.ipv6.label')" v-bind="formItemLayout" :extra="$t('network.text_686')" prop="cidr_block6">
+        <a-form-model-item v-if="isShowIp" :label="$t('network.vpc.cidr_block.ipv6.label')" :extra="$t('network.text_686')" prop="cidr_block6">
           <a-input v-model:value="form.fd.cidr_block6" :placeholder="$t('network.vpc.prefix6.prompt')" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('network.external_access_mode_label')" v-if="cloudEnv === 'public' || cloudEnv === 'onpremise'" v-bind="formItemLayout" prop="external_access_mode">
+        <a-form-model-item :label="$t('network.external_access_mode_label')" v-if="cloudEnv === 'public' || cloudEnv === 'onpremise'" prop="external_access_mode">
           <a-switch v-model:checked="form.fd.external_access_mode" :disabled="!isAws && cloudEnv !== 'onpremise'" />
           <template v-slot:extra>{{ $t('network.external_access_mode_extra') }}</template>
         </a-form-model-item>
         <template v-if="cloudEnv === 'public' || cloudEnv === 'private'">
-          <a-form-model-item :label="$t('compute.text_15')" required v-bind="formItemLayout" v-show="cloudEnv === 'public' || cloudEnv === 'private'" prop="cloudprovider">
+          <a-form-model-item :label="$t('compute.text_15')" required v-show="cloudEnv === 'public' || cloudEnv === 'private'" prop="cloudprovider">
             <base-select
               class="w-50"
               v-model:value="form.fd.cloudprovider"
@@ -77,7 +75,7 @@
               @change="handleProviderChange" />
           </a-form-model-item>
         </template>
-        <a-form-model-item v-if="isGoogle" :label="$t('network.text_242')" v-bind="formItemLayout" prop="globalvpc_id">
+        <a-form-model-item v-if="isGoogle" :label="$t('network.text_242')" prop="globalvpc_id">
           <base-select
               class="w-50"
               v-model:value="form.fd.globalvpc_id"
@@ -88,7 +86,7 @@
               :showSync="true"
               :select-props="{ placeholder: $t('compute.text_149') }" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('common.text00012')" class="mb-0" v-bind="formItemLayout" prop="__meta__">
+        <a-form-model-item :label="$t('common.text00012')" class="mb-0" prop="__meta__">
           <tag
             :value="form.fd.__meta__" @change="v => { form.fd.__meta__ = v }" />
         </a-form-model-item>
@@ -177,18 +175,6 @@ export default {
         __meta__: [
           { validator: validateForm('tagName') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 17 },
-          xl: { span: 19 },
-          xxl: { span: 21 },
-        },
-        labelCol: {
-          md: { span: 7 },
-          xl: { span: 5 },
-          xxl: { span: 3 },
-        },
       },
       project_domain: this.$store.getters.userInfo.projectDomainId,
       cloudproviderData: [],

@@ -5,7 +5,6 @@
       <a-form-model
         ref="formRef"
         class="mt-3"
-        v-bind="formItemLayout"
         :model="form.fd"
         :rules="rules"
         hideRequiredMark>
@@ -31,7 +30,7 @@
             :placeholder="$t('common_367')" />
         </a-form-model-item>
         <!-- 计费方式 -->
-        <clearing-radios :model="form.fd" v-bind="formItemLayout" :auto_renew="false" />
+        <clearing-radios :model="form.fd" :auto_renew="false" />
         <a-form-model-item :label="$t('db.text_71')" v-if="form.fd.billing_type !== 'prepaid'">
           <duration
             :model="form.fd"
@@ -129,18 +128,6 @@ export default {
   data () {
     return {
       loginTypes: ['random', 'password'],
-      formItemLayout: {
-        wrapperCol: {
-          lg: { span: 18 },
-          xl: { span: 20 },
-          xxl: { span: 21 },
-        },
-        labelCol: {
-          lg: { span: 6 },
-          xl: { span: 4 },
-          xxl: { span: 3 },
-        },
-      },
       tailFormItemLayout: {
         wrapperCol: {
           lg: { span: 18, offset: 6 },
@@ -208,7 +195,6 @@ export default {
     return {
       form: this.form,
       scopeParams: this.scopeParams,
-      formItemLayout: this.formItemLayout,
       tailFormItemLayout: this.tailFormItemLayout,
       redisItem: this.redisItem,
       validateCreateForm: () => this.validateCreateForm(),

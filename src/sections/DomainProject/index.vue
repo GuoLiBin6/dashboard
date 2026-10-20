@@ -9,7 +9,6 @@
           :is="itemTag"
           :class="{ 'mb-0': mb0 }"
           v-if="isAdminMode && l3PermissionEnable"
-          :wrapperCol="{ span: 24 }"
           :prop="domainProp">
           <base-select
             ref="domain"
@@ -40,7 +39,6 @@
         <component
           :is="itemTag"
           :class="{ 'mb-0': mb0 }"
-          :wrapperCol="{ span: 24 }"
           :prop="projectProp">
           <base-select
             ref="project"

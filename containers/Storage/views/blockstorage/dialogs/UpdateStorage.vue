@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="this.params.title" :name="$t('dictionary.blockstorage')" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form">
         <form-items :storage_type="storage_type" :edit="true" :editData="editData" :model="form" />
         <a-form-model-item :label="$t('storage.text_39')" prop="medium_type">
           <a-select v-model:value="form.medium_type" style="width: 200px">
@@ -21,7 +21,7 @@
 </template>
 
 <script>
-import { formItemLayout, MEDIUM_TYPES } from '@Storage/constants/index.js'
+import { MEDIUM_TYPES } from '@Storage/constants/index.js'
 import FormItems from '@Storage/views/blockstorage/components/FormItems'
 import { getCopyWithContentTableColumn } from '@/utils/common/tableColumn'
 import DialogMixin from '@/mixins/dialog'
@@ -37,7 +37,6 @@ export default {
     return {
       MEDIUM_TYPES,
       loading: false,
-      formItemLayout,
       form: {
         medium_type: this.params.data[0].medium_type,
       },

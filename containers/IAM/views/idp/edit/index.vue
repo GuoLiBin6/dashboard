@@ -8,7 +8,7 @@
       <template v-if="isUpdate">
         <idp-detail-table :data="[detailData]" />
       </template>
-      <a-form-model ref="formRef" :model="form.fd" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form.fd" :rules="rules">
         <template v-if="!isUpdate">
           <template v-if="isAdmin">
             <a-form-model-item :label="$t('common_548')">
@@ -139,20 +139,6 @@ export default {
           template: templateInitialValue,
           driver: driverInitialValue,
           disable_user_on_import: false,
-        },
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 18,
-          xxl: {
-            span: 20,
-          },
-        },
-        labelCol: {
-          span: 5,
-          xxl: {
-            span: 4,
-          },
         },
       },
       offsetWrapperCol: {

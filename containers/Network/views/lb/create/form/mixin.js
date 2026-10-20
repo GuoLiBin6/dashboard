@@ -71,14 +71,6 @@ export default {
           { required: true, message: this.$t('rules.domain'), trigger: 'change' },
         ],
       },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
     }
   },
   provide () {
@@ -203,7 +195,6 @@ export default {
         cloudregionParams: this.cloudregionParams,
         zoneParams: this.zoneParams,
         isRequired: true,
-        ...this.formItemLayout,
         event: {
           providerFetchSuccess: (list) => {
             return list

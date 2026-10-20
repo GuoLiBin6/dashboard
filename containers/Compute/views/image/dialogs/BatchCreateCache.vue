@@ -3,14 +3,14 @@
     <div slot="header">{{$t('compute.image_cache.perform_batch_precache')}}</div>
     <div slot="body">
       <a-form-model ref="formRef" :model="form" :rules="rules">
-        <a-form-model-item :label="$t('compute.text_111')" v-bind="formItemLayout" prop="hypervisor">
+        <a-form-model-item :label="$t('compute.text_111')" prop="hypervisor">
           <a-select v-model:value="form.hypervisor" @change="handleHypervisorChange" :placeholder="$t('compute.text_219')" :allow-clear="true">
             <a-select-option v-for="item in hostOptions" :key="item.key" :value="item.value">
               {{ item.value }}
             </a-select-option>
           </a-select>
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.host_tag')" class="mb-0" v-bind="formItemLayout" prop="host_tags">
+        <a-form-model-item :label="$t('compute.host_tag')" class="mb-0" prop="host_tags">
           <tag
             :value="form.host_tags"
             @change="v => form.host_tags = v"
@@ -18,14 +18,14 @@
             extra=""
             multiple />
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_99')" v-bind="formItemLayout" prop="storage">
+        <a-form-model-item :label="$t('compute.text_99')" prop="storage">
           <a-select v-model:value="form.storage" :placeholder="$t('compute.text_219')" :allow-clear="true">
             <a-select-option v-for="item in storageOptions" :key="item.key" :value="item.value">
               {{ item.value }}
             </a-select-option>
           </a-select>
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.storage_tag')" class="mb-0" v-bind="formItemLayout" prop="storage_tags">
+        <a-form-model-item :label="$t('compute.storage_tag')" class="mb-0" prop="storage_tags">
           <tag
             :value="form.storage_tags"
             @change="v => form.storage_tags = v"
@@ -71,14 +71,6 @@ export default {
         storage_tags: [
           { validator: validateForm('tagName') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       hypervisors: [],
       hypervisor: null,

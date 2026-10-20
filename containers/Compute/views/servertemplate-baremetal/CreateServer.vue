@@ -10,8 +10,7 @@
         ref="formRef"
         class="mt-3"
         :model="form.fd"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])" prop="project">
           <domain-project
             :form="form.fd"
@@ -99,20 +98,6 @@ export default {
   computed: {
     isOpenWorkflow () {
       return this.checkWorkflowEnabled(WORKFLOW_TYPES.APPLY_MACHINE)
-    },
-    formItemLayout () {
-      return {
-        wrapperCol: {
-          md: { span: 18 },
-          xl: { span: 21 },
-          xxl: { span: 22 },
-        },
-        labelCol: {
-          md: { span: 6 },
-          xl: { span: 3 },
-          xxl: { span: 2 },
-        },
-      }
     },
   },
   created () {

@@ -11,18 +11,6 @@ export default {
   },
   data () {
     return {
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 17 },
-          xl: { span: 19 },
-          xxl: { span: 21 },
-        },
-        labelCol: {
-          md: { span: 7 },
-          xl: { span: 5 },
-          xxl: { span: 3 },
-        },
-      },
       form: {
         fd: {
           name: '',

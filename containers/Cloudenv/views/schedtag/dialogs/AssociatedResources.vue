@@ -9,8 +9,7 @@
         ref="formRef"
         :model="form"
         hideRequiredMark
-        v-show="bindedResourcesLoaded && resourcesInitLoaded"
-        v-bind="formItemLayout">
+        v-show="bindedResourcesLoaded && resourcesInitLoaded">
         <a-form-model-item :label="$t('cloudenv.text_384')" prop="resource_type">
           <a-radio-group v-model:value="form.resource_type">
             <a-radio-button
@@ -66,14 +65,6 @@ export default {
       form: {
         resource_type: this.params.data[0].resource_type || '',
         resource: [],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

@@ -16,7 +16,7 @@
         <a-button key="submit" type="primary" :loading="mobileDialog.loading" @click="doVerifyMobile">{{$t('scope.text_14')}}</a-button>
         <a-button key="back" @click="() => mobileDialog.visible = false">{{$t('scope.text_152')}}</a-button>
       </template>
-      <a-form-model ref="mobileFormRef" :model="mobileForm" :rules="codeRules" v-bind="formItemLayout">
+      <a-form-model ref="mobileFormRef" :model="mobileForm" :rules="codeRules">
         <a-form-model-item :label="$t('scope.text_200')">
           {{ contact }}
         </a-form-model-item>
@@ -39,7 +39,7 @@
         <a-button key="submit" type="primary" :loading="emailDialog.loading" @click="doVerifyEmail">{{$t('scope.text_14')}}</a-button>
         <a-button key="back" @click="() => emailDialog.visible = false">{{$t('scope.text_152')}}</a-button>
       </template>
-      <a-form-model ref="emailFormRef" :model="emailForm" :rules="codeRules" v-bind="formItemLayout">
+      <a-form-model ref="emailFormRef" :model="emailForm" :rules="codeRules">
         <a-form-model-item :label="$t('scope.text_204')" :help="$t('scope.text_205')">
           {{ contact }}
         </a-form-model-item>
@@ -101,14 +101,6 @@ export default {
       emailDialog: {
         loading: false,
         visible: false,
-      },
-      formItemLayout: {
-        labelCol: {
-          sm: { span: 3 },
-        },
-        wrapperCol: {
-          sm: { span: 21 },
-        },
       },
       statusColor: {
         init: '#f5222d',

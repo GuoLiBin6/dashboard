@@ -14,8 +14,8 @@
         <dialog-table :data="params.data" :columns="params.columns.filter(item => ['name', 'os_dist', 'instance_type'].includes(item.field))" />
       </template>
       <!-- OsSelect end-state（:model + validate）；密码/agent/开机 在 form.fd -->
-      <div v-bind="formItemLayout">
-        <a-form-model-item v-show="!imgHidden" :label="$t('compute.text_267')" :labelCol="formItemLayout.labelCol" :wrapperCol="formItemLayout.wrapperCol">
+      <div>
+        <a-form-model-item v-show="!imgHidden" :label="$t('compute.text_267')">
           <template #help>
             <div class="help-color">{{$t('compute.text_302')}}</div>
           </template>
@@ -38,13 +38,12 @@
             :imageTypeMap="imageTypeMap"
             :edit="true" />
         </a-form-model-item>
-        <a-form-model-item v-show="imgHidden" :label="$t('compute.text_267')" :labelCol="formItemLayout.labelCol" :wrapperCol="formItemLayout.wrapperCol">
+        <a-form-model-item v-show="imgHidden" :label="$t('compute.text_267')">
           <div>{{ imgHidden.text }}</div>
         </a-form-model-item>
       </div>
       <a-form-model
         ref="formRef"
-        v-bind="formItemLayout"
         :model="form.fd"
         :rules="modelRules">
         <a-form-model-item :label="$t('compute.text_308')" v-if="!isZStack" class="mb-0">
@@ -114,14 +113,6 @@ export default {
         IMAGES_TYPE_MAP.host.key,
         IMAGES_TYPE_MAP.snapshot.key,
       ],
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
       detailData: {},
       firstLoad: true,
       cloudproviderParamsExtra: {

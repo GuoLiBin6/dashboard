@@ -7,7 +7,6 @@
         class="mt-3"
         :model="form"
         :rules="rules"
-        v-bind="formItemLayout"
         hideRequiredMark>
         <scope-radio
           :model="form"
@@ -35,7 +34,6 @@
       <component
         ref="typeRef"
         :is="form.type"
-        :form-item-layout="formItemLayout"
         :docUrl="DOCS_MAP.mailConfig(form.type)" />
     </page-body>
     <page-footer>
@@ -92,14 +90,6 @@ export default {
         project: undefined,
         name: undefined,
         type: '',
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

@@ -5,13 +5,13 @@
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_361')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
-        <a-form-model-item :label="$t('compute.text_1182')" v-bind="formItemLayout" prop="keypair">
+        <a-form-model-item :label="$t('compute.text_1182')" prop="keypair">
           <base-select
             v-model:value="form.keypair"
             resource="keypairs"
             :select-props="{ allowClear: true, placeholder: $t('compute.text_1183') }" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_494')" v-bind="formItemLayout" :extra="$t('compute.text_1184')" prop="auto_start">
+        <a-form-model-item :label="$t('compute.text_494')" :extra="$t('compute.text_1184')" prop="auto_start">
           <a-switch v-model:checked="form.auto_start" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" :disabled="isSomeRunning" />
         </a-form-model-item>
       </a-form-model>
@@ -42,10 +42,6 @@ export default {
         keypair: [
           { required: true, message: this.$t('compute.text_203'), trigger: 'blur' },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: { span: 21 },
-        labelCol: { span: 3 },
       },
     }
   },

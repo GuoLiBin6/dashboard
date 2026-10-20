@@ -5,7 +5,7 @@
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
       <a-spin :spinning="cpuCoresInfoLoading">
-        <a-form-model ref="formRef" :model="form" hideRequiredMark v-bind="formItemLayout">
+        <a-form-model ref="formRef" :model="form" hideRequiredMark>
           <a-form-model-item :label="$t('compute.bind_physical_cpu')" prop="bindCpuCores">
             <a-switch
               v-model:checked="form.bindCpuCores"
@@ -56,14 +56,6 @@ export default {
       form: {
         bindCpuCores: false,
         cpuCores: undefined,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

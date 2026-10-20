@@ -20,11 +20,6 @@ export const MEDIUM_TYPES = {
   hybrid: i18n.t('storage.text_8'),
 }
 
-export const formItemLayout = {
-  labelCol: { span: 5 },
-  wrapperCol: { span: 19 },
-}
-
 export const ACL_TYPE = {
   private: i18n.t('storage.text_9'),
   'public-read': i18n.t('storage.text_10'),

@@ -8,7 +8,6 @@
         ref="formRef"
         :model="form"
         :rules="rules"
-        v-bind="formItemLayout"
         hideRequiredMark>
         <a-form-model-item v-if="isServer" :label="$t('cloudenv.text_440')" prop="servers">
           <list-select
@@ -65,14 +64,6 @@ export default {
           { required: true, message: this.$t('cloudenv.text_451') },
           { validator: validateForm('tagName') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

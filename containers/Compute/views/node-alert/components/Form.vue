@@ -1,5 +1,5 @@
 <template>
-  <a-form-model ref="formRef" :model="form" :rules="rules" style="wdith: 400px;" v-bind="formItemLayout">
+  <a-form-model ref="formRef" :model="form" :rules="rules" style="wdith: 400px;">
     <a-form-model-item :label="$t('compute.text_732')" prop="metric">
       <a-select v-model:value="form.metric" :disabled="metricDisabled" @change="metricChange">
         <a-select-option v-for="item in metricOpts" :key="item.key" :value="item.key">
@@ -100,14 +100,6 @@ export default {
       },
       metric,
       recipientsLoaded: false,
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
-      },
       comparatorOpts: [
         { key: '>=', label: '>=' },
         { key: '<=', label: '<=' },

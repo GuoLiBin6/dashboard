@@ -7,8 +7,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('helm.text_16')" prop="name">
           <a-input v-model:value="form.name" :placeholder="$t('helm.text_28')" />
         </a-form-model-item>
@@ -75,14 +74,6 @@ export default {
         { key: 'internal', label: this.$t('helm.text_14') },
         { key: 'external', label: this.$t('helm.text_15') },
       ],
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
-      },
     }
   },
   methods: {

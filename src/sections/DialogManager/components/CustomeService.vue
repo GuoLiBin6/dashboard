@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{ title }}</div>
     <div slot="body">
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout" hideRequiredMark>
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
         <a-form-model-item
           :label="this.$t('common.text00080')"
           prop="comment">
@@ -38,14 +38,6 @@ export default {
       PRIORITY_OPTS,
       title: this.$t('common.text00081'),
       loading: false,
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
-      },
       form: {
         comment: '',
         priority: 'minor',

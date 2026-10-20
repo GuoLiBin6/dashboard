@@ -4,8 +4,8 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.physicalmachine')" :count="params.data.length" :action="$t('compute.text_299')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form :form="form.fc" v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])" class="mb-0" v-bind="formItemLayout">
+      <a-form :form="form.fc">
+        <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])" class="mb-0">
           <domain-project :fc="form.fc" :decorators="{ project: decorators.project, domain: decorators.domain }" />
         </a-form-item>
         <a-form-item :label="$t('compute.instance_name')">
@@ -64,14 +64,6 @@ export default {
             ],
           },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

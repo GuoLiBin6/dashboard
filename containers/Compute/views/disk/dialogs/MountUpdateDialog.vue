@@ -8,7 +8,7 @@
         ref="formRef"
         :model="form"
         :rules="rules">
-        <a-form-model-item :label="$t('dictionary.server')" v-bind="formItemLayout" prop="server">
+        <a-form-model-item :label="$t('dictionary.server')" prop="server">
           <base-select
             class="w-100"
             remote
@@ -46,14 +46,6 @@ export default {
         server: [
           { required: true, message: this.$t('compute.text_425') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

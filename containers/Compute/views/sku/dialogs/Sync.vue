@@ -6,7 +6,6 @@
       <a-form-model
         class="mt-3"
         ref="formRef"
-        v-bind="formItemLayout"
         :model="form"
         :rules="rules">
         <a-form-model-item :label="$t('compute.text_176')" prop="provider">
@@ -46,10 +45,6 @@ export default {
         provider: [
           { required: true, message: this.$t('compute.text_215') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: { span: 21 },
-        labelCol: { span: 3 },
       },
       providerList,
     }

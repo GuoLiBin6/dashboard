@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('network.text_20')" :count="params.data.length" :action="$t('network.associated_cluster')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('network.associated_cluster')" prop="enable_associated">
           <a-switch
             v-model:checked="form.enable_associated"
@@ -52,14 +52,6 @@ export default {
         cluster_id: [
           { required: true, message: this.$t('network.text_79') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
       },
     }
   },

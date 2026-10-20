@@ -3,7 +3,6 @@
     ref="formRef"
     :model="form"
     :rules="rules"
-    v-bind="formItemLayout"
     hideRequiredMark>
     <a-form-model-item label="Access Key ID" prop="access_key_id">
       <template v-slot:extra>
@@ -99,10 +98,6 @@ import { showDocsLink } from '@/constants/docs'
 export default {
   name: 'smsaliyun',
   props: {
-    formItemLayout: {
-      required: true,
-      type: Object,
-    },
     offsetWrapperCol: {
       required: true,
       type: Object,

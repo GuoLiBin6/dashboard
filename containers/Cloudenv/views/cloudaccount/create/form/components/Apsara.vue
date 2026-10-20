@@ -1,6 +1,6 @@
 <template>
   <div>
-    <a-form-model ref="formRef" :model="form.fd" :rules="formRules" v-if="fieldMap" v-bind="formLayout" :data-oc-label-min-text="$t('cloudenv.project_mapping_effective_scope')">
+    <a-form-model ref="formRef" :model="form.fd" :rules="formRules" v-if="fieldMap" :data-oc-label-min-text="$t('cloudenv.project_mapping_effective_scope')">
       <a-form-model-item :label="$t('cloudenv.text_95')">
         <a-input v-model:value="form.fd.name" :placeholder="$t('cloudenv.text_190')" />
       </a-form-model-item>
@@ -27,7 +27,7 @@
           <help-link :href="`https://help.aliyun.com/apsara/enterprise/v_3_12_0_20200630/apsara_stack_platform/enterprise-developer-guide/obtain-the-endpoint-of-api-operations.html`">{{$t('cloudenv.text_575')}}</help-link>
         </div>
       </a-form-model-item>
-      <domain-project :form="form.fd" :form-layout="formLayout" :cloneData="cloneData" />
+      <domain-project :form="form.fd" :cloneData="cloneData" />
       <blocked-resources :form="form.fd" :cloneData="cloneData"  />
       <proxy-setting :form="form.fd" ref="proxySetting" :cloneData="cloneData" />
       <auto-sync :form="form.fd" />

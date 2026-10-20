@@ -5,7 +5,7 @@
       <dialog-selected-tips :name="$route.path.includes('app-package') ? $t('dictionary.app_package') : $t('dictionary.image')" :count="params.data.length" :action="$t('dashboard.text_105')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-spin :spinning="loading">
-        <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model ref="formRef" :model="form" :rules="rules">
           <a-form-model-item :label="$t('compute.text_640')" prop="format">
             <a-radio-group v-model:value="form.format">
               <a-radio
@@ -57,14 +57,6 @@ export default {
       },
       rules: {
         format: [{ required: true, message: this.$t('compute.text_148', [this.$t('compute.text_640')]) }],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

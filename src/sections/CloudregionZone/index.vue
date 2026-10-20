@@ -2,12 +2,12 @@
   <div class="cloudregion-zone-select-wrapper">
     <a-row :gutter="8">
       <a-col :span="12">
-        <a-form-item :wrapperCol="{ span: 24 }">
+        <a-form-item>
           <cloudregion :value="cloudregionValue" @change="handleChange" :options="regionOpts" :disabledRegion="disabledRegion" />
         </a-form-item>
       </a-col>
       <a-col :span="12">
-        <a-form-item :wrapperCol="{ span: 24 }">
+        <a-form-item>
           <zone :value="zoneValue" @change="handleZoneChange" :options="zoneOpts" />
         </a-form-item>
       </a-col>

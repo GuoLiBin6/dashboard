@@ -6,7 +6,7 @@
       <dialog-selected-tips :name="$t('dictionary.server_container')" :count="params.data.length" :action="$t('compute.text_1116')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <loader loading v-if="!(bindedSecgroupsLoaded && secgroupsInitLoaded)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-show="bindedSecgroupsLoaded && secgroupsInitLoaded" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-show="bindedSecgroupsLoaded && secgroupsInitLoaded">
         <a-form-model-item :label="$t('compute.text_105')" v-if="bindedSecgroupsLoaded" prop="secgroups">
           <div slot="extra">{{$t('compute.text_1242', [max])}}
             <dialog-trigger :vm="params.vm" :extParams="{ tenant, domain }" :name="$t('compute.text_189')" value="CreateSecgroupDialog" resource="secgroups" @success="successCallback" />
@@ -67,14 +67,6 @@ export default {
         secgroups: [
           { validator: validateSecgroups, trigger: 'change' },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       secgroupsInitLoaded: false,
       bindedSecgroups: [],

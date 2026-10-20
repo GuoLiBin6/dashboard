@@ -54,19 +54,6 @@ import BottomBar from '../components/BottomBar'
 import CustomData from '../components/CustomData'
 import BastionHost from '../components/BastionHost'
 
-const CreateServerForm = {
-  wrapperCol: {
-    md: { span: 18 },
-    xl: { span: 20 },
-    xxl: { span: 22 },
-  },
-  labelCol: {
-    md: { span: 6 },
-    xl: { span: 4 },
-    xxl: { span: 2 },
-  },
-}
-
 export default {
   name: 'IDCCreate',
   components: {
@@ -128,10 +115,6 @@ export default {
       initSkuData: {},
       submiting: false,
       errors: {},
-      formItemLayout: {
-        wrapperCol: CreateServerForm.wrapperCol,
-        labelCol: CreateServerForm.labelCol,
-      },
       form: (() => {
         // createForm / fc shim 已移除：form 仅 { fd, fi }；onValuesChange → 各页 watch form.fd
         const fd = {

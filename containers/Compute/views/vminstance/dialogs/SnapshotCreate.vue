@@ -9,7 +9,7 @@
       <dialog-table
         :data="params.data"
         :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('compute.text_1071')" v-if="isKvm || isEsxi" prop="snapshotType">
           <a-radio-group
             v-model:value="form.snapshotType"
@@ -109,10 +109,6 @@ export default {
           { required: true, message: this.$t('compute.text_1256') },
           { validator: this.$validate('resourceName') },
         ],
-      },
-      formItemLayout: {
-        labelCol: { span: 4 },
-        wrapperCol: { span: 20 },
       },
       selectDisk: {},
       disabledSubmit: false,

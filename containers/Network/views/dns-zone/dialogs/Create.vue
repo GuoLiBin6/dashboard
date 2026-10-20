@@ -6,8 +6,7 @@
         class="mt-3"
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('network.text_205', [$t('dictionary.domain')])" v-if="$store.getters.isAdminMode" prop="project_domain">
           <domain-select v-model:value="form.project_domain" @change="handleDomainChange" />
         </a-form-model-item>
@@ -67,14 +66,6 @@ export default {
         zoneType: [
           { required: true, message: this.$t('network.text_717') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

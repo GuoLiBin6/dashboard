@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="d-flex align-items-center labels-row" v-for="(item) in labelList" :key="item.key">
-      <a-form-item v-if="showProtocol && resolvedFields.protocol" :wrapperCol="{ span: 24 }" class="labels-protocol mb-0">
+      <a-form-item v-if="showProtocol && resolvedFields.protocol" class="labels-protocol mb-0">
         <a-select
           :value="fieldVal(fieldName(item.key, 'protocol'))"
           @change="v => fieldSet(fieldName(item.key, 'protocol'), v)"
@@ -12,7 +12,7 @@
           </a-select-option>
         </a-select>
       </a-form-item>
-      <a-form-item :wrapperCol="{ span: 24 }">
+      <a-form-item>
         <a-input-group compact v-if="keyBaseSelectProps">
           <div class="d-flex">
             <a-input class="oc-addonBefore ant-input-group-addon" style="width: 80px;" :defaultValue="keyLabel" readonly />
@@ -22,7 +22,7 @@
         <a-input v-else :addonBefore="keyLabel" :value="fieldVal(fieldName(item.key, 'key'))" @change="e => fieldSet(fieldName(item.key, 'key'), e.target.value)" :placeholder="keyPlaceholder" :disabled="isLocked(item)" />
       </a-form-item>
       <div class="mx-3"> = </div>
-      <a-form-item :wrapperCol="{ span: 24 }">
+      <a-form-item>
         <a-tooltip v-if="valueTooltip" :title="valueTooltip" placement="top">
           <a-input :addonBefore="valueLabel" :value="fieldVal(fieldName(item.key, 'value'))" @change="e => fieldSet(fieldName(item.key, 'value'), e.target.value)" :placeholder="valuePlaceholder" :disabled="isLocked(item)" />
         </a-tooltip>

@@ -8,8 +8,7 @@
         ref="form"
         class="mt-3"
         :model="fd"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('cloudenv.resource_map_type')" :extra="resourceMapExtra" prop="resource_map_type">
           <a-checkbox-group v-model:value="fd.resource_map_type" :options="resourceMapTypeOpts" @change="resourceMapTypeChange" />
         </a-form-model-item>
@@ -122,14 +121,6 @@ export default {
         project_id: [
           { required: true, message: this.$t('rules.project') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 18,
-        },
-        labelCol: {
-          span: 6,
-        },
       },
     }
   },

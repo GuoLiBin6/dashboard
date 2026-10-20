@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('cloudenv.text_12')" class="mt-3" :count="params.data.length" :action="$t('cloudenv.text_432')" />
       <dialog-table v-if="columns && columns.length" :data="params.data" :columns="columns" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout" hideRequiredMark>
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
         <a-form-model-item :label="$t('cloudenv.text_95')" prop="name">
           <a-input :placeholder="$t('cloudenv.text_190')" v-model:value="form.name" />
           <template v-slot:extra>
@@ -66,18 +66,6 @@ export default {
         getStatusTableColumn({ statusModule: 'cloudaccount', minWidth: 90 }),
         getEnabledTableColumn({ minWidth: 90 }),
       ],
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 18 },
-          xl: { span: 20 },
-          xxl: { span: 21 },
-        },
-        labelCol: {
-          md: { span: 6 },
-          xl: { span: 4 },
-          xxl: { span: 3 },
-        },
-      },
     }
   },
   methods: {

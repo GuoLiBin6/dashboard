@@ -9,7 +9,7 @@
           v-for="(item, i) in ipList"
           :key="item.key"
           :label="i === 0 ? $t('network.text_213') : ''"
-          v-bind="i === 0 ? formItemLayout : formItemLayoutWithOutLabel"
+          v-bind="i === 0 ? undefined : formItemLayoutWithOutLabel"
           :prop="'ipData.' + item.key"
           :rules="ipRules">
           <a-input
@@ -30,7 +30,7 @@
             <a-button type="link" @click="addIP">{{$t('network.text_640')}}</a-button>
           </div>
         </a-form-model-item>
-        <a-form-model-item :label="$t('network.text_641')" v-bind="formItemLayout" prop="notes">
+        <a-form-model-item :label="$t('network.text_641')" prop="notes">
           <a-textarea v-model:value="form.notes" :placeholder="$t('network.text_643')" :rows="2" />
         </a-form-model-item>
       </a-form-model>
@@ -68,14 +68,6 @@ export default {
           { required: true, message: this.$t('network.text_643') },
           { max: 200, message: this.$t('network.text_642') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
       },
       formItemLayoutWithOutLabel: {
         wrapperCol: {

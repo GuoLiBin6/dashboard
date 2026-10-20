@@ -7,8 +7,7 @@
       <a-form-model
         v-if="isOneCloud"
         ref="redirectFormRef"
-        :model="redirectForm"
-        v-bind="formItemLayout">
+        :model="redirectForm">
         <redirect-form-items
           :form="redirectForm"
           modelMode
@@ -19,8 +18,7 @@
         v-if="!isRedirect"
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('network.text_139')" prop="backend_group">
           <base-select
             v-model:value="form.backend_group"
@@ -79,14 +77,6 @@ export default {
         backend_group: [
           { required: true, message: this.$t('network.text_394') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 18,
-        },
-        labelCol: {
-          span: 6,
-        },
       },
     }
   },

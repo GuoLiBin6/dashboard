@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="$t('compute.text_390')" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
         <a-form-model-item :label="$t('compute.text_106')" class="mb-0" prop="network">
           <a-form-model-item :help="help" prop="network">
             <base-select
@@ -173,14 +173,6 @@ export default {
             validator: validateIpv6,
           },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
       ipv4ConfigShow: !!initIpv4Value,
       ipv6ConfigShow: hasIpv6,

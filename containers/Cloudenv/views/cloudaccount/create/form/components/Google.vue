@@ -1,13 +1,13 @@
 <template>
   <div>
-    <a-form-model ref="formRef" :model="form.fd" :rules="formRules" v-bind="formLayout" :data-oc-label-min-text="$t('cloudenv.project_mapping_effective_scope')">
+    <a-form-model ref="formRef" :model="form.fd" :rules="formRules" :data-oc-label-min-text="$t('cloudenv.project_mapping_effective_scope')">
       <a-form-model-item :label="$t('cloudenv.text_95')">
         <a-input v-model:value="form.fd.name" :placeholder="$t('cloudenv.text_190')" />
       </a-form-model-item>
       <a-form-model-item :label="$t('common.description')">
         <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.fd.description" :placeholder="$t('common_367')" />
       </a-form-model-item>
-      <domain-project :form="form.fd" :form-layout="formLayout" :cloneData="cloneData" />
+      <domain-project :form="form.fd" :cloneData="cloneData" />
       <blocked-resources :form="form.fd" :cloneData="cloneData"  />
       <upload-json-file :form="form.fd">
         <a-form-model-item label="project_id" prop="gcp_project_id">
@@ -26,7 +26,7 @@
         </a-form-model-item>
       </upload-json-file>
       <proxy-setting :form="form.fd" ref="proxySetting" :cloneData="cloneData" />
-      <auto-sync :form="form.fd" :form-layout="formLayout" :cloneData="cloneData" />
+      <auto-sync :form="form.fd" :cloneData="cloneData" />
       <read-only :cloneData="cloneData" />
       <share-mode :form="form.fd" :cloneData="cloneData" />
     </a-form-model>

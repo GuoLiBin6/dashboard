@@ -1,5 +1,5 @@
 <template>
-  <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+  <a-form-model ref="formRef" :model="form" :rules="rules">
     <a-form-model-item :label="$t('scope.text_200')">
       {{ imobile }}
     </a-form-model-item>
@@ -15,7 +15,7 @@
 <script>
 export default {
   name: 'mobile',
-  inject: ['userId', 'manager', 'imobile', 'formItemLayout'],
+  inject: ['userId', 'manager', 'imobile'],
   data () {
     return {
       processId: '',

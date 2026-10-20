@@ -2,12 +2,11 @@
   <div>
     <a-card class="mb-2 card" v-for="(item, i) in serverConfigList" :key="item.key">
       <a-button v-if="i !== 0" @click="decrease(item.key, i)" type="link" size="small" class="error-color position-absolute" style="right: 10px; top: 10px;">{{ $t('common.delete') }}</a-button>
-      <slot name="hypervisor" :formItemLayout="formItemLayout" :i="item.key" />
-      <a-form-item :label="$t('k8s.text_121')" v-bind="formItemLayout" required>
+      <slot name="hypervisor" :i="item.key" />
+      <a-form-item :label="$t('k8s.text_121')" required>
         <a-row :gutter="8">
           <a-col :span="24">
             <a-form-item
-              :wrapperCol="{ span: 24 }"
               style="min-width: 200px;"
               class="w-100 mb-0 mr-1">
               <base-select
@@ -26,7 +25,7 @@
             </a-form-item>
           </a-col>
           <a-col :span="10" v-if="item.ipShow">
-            <a-form-item class="mb-0 mr-2" :wrapperCol="{ span: 24 }">
+            <a-form-item class="mb-0 mr-2">
               <a-input
                 :placeholder="$t('k8s.text_123')"
                 @change="e => ipChange(e, i)"
@@ -49,7 +48,7 @@
           :hypervisor="hypervisor"
           :sku-params="skuParam(i)" />
         </a-form-item>
-      <a-form-item :label="$t('compute.text_267')" v-bind="formItemLayout" class="mb-0" v-if="useImage">
+      <a-form-item :label="$t('compute.text_267')" class="mb-0" v-if="useImage">
         <os-select
           :type="osSelectType"
           :uefi="uefi"
@@ -63,7 +62,7 @@
           :imageParams="getImageParams()"
           :cacheImageParams="getCacheImageParams()" />
       </a-form-item>
-      <a-form-item :label="$t('k8s.text_120')" v-bind="formItemLayout" class="mb-0">
+      <a-form-item :label="$t('k8s.text_120')" class="mb-0">
         <system-disk
           :ref="`systemDisk_${item.key}`"
           :field="item.key"
@@ -77,7 +76,7 @@
           :domain="userInfo.projectDomainId" />
       </a-form-item>
 
-      <a-form-item :label="$t('dictionary.role')" v-bind="formItemLayout">
+      <a-form-item :label="$t('dictionary.role')">
         <a-radio-group
           :value="fieldVal(serverConfigField.role(item.key))"
           @change="e => fieldSet(serverConfigField.role(item.key), e.target.value)">
@@ -87,7 +86,7 @@
         </a-radio-group>
       </a-form-item>
 
-      <a-form-item v-show="!item.ipShow" :label="$t('k8s.text_125')" v-bind="formItemLayout" :extra="$t('k8s.text_126')">
+      <a-form-item v-show="!item.ipShow" :label="$t('k8s.text_125')" :extra="$t('k8s.text_126')">
         <a-input-number :value="fieldVal(serverConfigField.num(item.key))" @change="v => fieldSet(serverConfigField.num(item.key), v)" :min="1" :max="item.ipShow ? 1 : 10"  :parser="v => parser(v, '', '1')" />
       </a-form-item>
     </a-card>
@@ -163,10 +162,6 @@ export default {
       serverConfigField,
       imageMock: { min_disk: 40960 }, // 通过mock image数据设置最小磁盘大小
       selectedImage: {},
-      formItemLayout: {
-        wrapperCol: { span: 20 },
-        labelCol: { span: 3 },
-      },
       serverConfigList: [],
       limit: 10,
       roleList,

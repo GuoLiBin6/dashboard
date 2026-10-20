@@ -51,12 +51,6 @@ export default {
     },
   },
   computed: {
-    formItemLayout () {
-      return {
-        labelCol: this.labelCol,
-        wrapperCol: this.wrapperCol,
-      }
-    },
     modelBillingType: {
       get () {
         return this.model?.billing_type ?? this.billing_type

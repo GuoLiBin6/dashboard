@@ -68,14 +68,6 @@ export default {
           showStatus: true,
         },
       },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
-      },
       showSingleForm: false,
     }
   },

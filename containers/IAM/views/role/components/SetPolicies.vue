@@ -2,8 +2,7 @@
   <a-form-model
     ref="formRef"
     :model="form"
-    :rules="rules"
-    v-bind="formItemLayout">
+    :rules="rules">
     <a-form-model-item :label="$t('dictionary.policy')" prop="policies">
       <list-select
         v-model:value="form.policies"
@@ -101,14 +100,6 @@ export default {
             },
           },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

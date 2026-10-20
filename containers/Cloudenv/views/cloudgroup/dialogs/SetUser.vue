@@ -7,8 +7,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('cloudenv.coludgroup_text001')" prop="clouduser_ids">
           <list-select
             v-model:value="form.clouduser_ids"
@@ -78,14 +77,6 @@ export default {
             showOverflow: 'title',
           },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

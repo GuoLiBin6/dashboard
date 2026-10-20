@@ -6,8 +6,7 @@
         ref="formRef"
         :model="form.fd"
         :rules="rules"
-        hideRequiredMark
-        v-bind="formItemLayout">
+        hideRequiredMark>
         <a-form-model-item :label="$t('common.name')" prop="name">
           <a-input v-model:value="form.fd.name" :placeholder="$t('validator.resourceName')" />
           <template v-slot:extra>
@@ -637,18 +636,6 @@ export default {
         llm_sku_id: [
           { required: true, message: this.$t('common.tips.select', [this.$t('aice.llm_sku')]) },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 17 },
-          xl: { span: 18 },
-          xxl: { span: 20 },
-        },
-        labelCol: {
-          md: { span: 7 },
-          xl: { span: 6 },
-          xxl: { span: 4 },
-        },
       },
       openclawChannelCredentialMode: {},
       openclawChannelCredentialId: {},

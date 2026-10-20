@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{action}}</div>
     <div slot="body">
-      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
         <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])">
           <domain-project :form="form" />
         </a-form-model-item>
@@ -76,14 +76,6 @@ export default {
         package_name: [
           { required: true, message: this.$t('common.tips.input', [this.$t('compute.unpack_name')]) },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
       },
       storageParams: {},
     }

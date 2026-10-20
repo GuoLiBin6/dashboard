@@ -2,7 +2,7 @@
   <a-spin :spinning="loading">
     <page-header :title="$t('network.update_cluster')" />
     <page-body>
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('network.text_21')" prop="name">
           <a-input :disabled="!!lbAgentId" v-model:value="form.name" :placeholder="$t('network.text_44')" />
         </a-form-model-item>
@@ -77,18 +77,6 @@ export default {
         __meta__: [
           { validator: validateForm('tagName') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 14 },
-          xl: { span: 16 },
-          xxl: { span: 20 },
-        },
-        labelCol: {
-          md: { span: 10 },
-          xl: { span: 8 },
-          xxl: { span: 4 },
-        },
       },
     }
   },

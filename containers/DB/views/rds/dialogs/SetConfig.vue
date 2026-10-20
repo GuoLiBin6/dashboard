@@ -35,10 +35,6 @@ export default {
   data () {
     return {
       loading: false,
-      formItemLayout: {
-        wrapperCol: { span: 18 },
-        labelCol: { span: 6 },
-      },
       rdsZone: {},
       form: {
         fd: {
@@ -75,7 +71,6 @@ export default {
   provide () {
     return {
       form: this.form,
-      formItemLayout: this.formItemLayout,
       scopeParams: this.scopeParams,
     }
   },

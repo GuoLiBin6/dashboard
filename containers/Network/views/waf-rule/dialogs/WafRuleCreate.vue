@@ -2,7 +2,7 @@
   <base-dialog :width="1000" @cancel="cancelDialog">
     <template #header>{{params.title || $t('compute.perform_create')}}</template>
     <template #body>
-      <a-form-model :model="form" :rules="rules" ref="form" :label-col="{ span: 4 }" :wrapper-col="{ span: 20 }">
+      <a-form-model :model="form" :rules="rules" ref="form">
         <a-form-model-item :label="$t('network.waf.rule_type')" prop="rule_type" :extra="$t(`network.waf.rule_type.${form.rule_type}.extra`)">
           <a-select v-model:value="form.rule_type" :placeholder="$t('network.waf.rule_type')">
             <a-select-option v-for="item in ruleTypes" :key="item" :value="item">

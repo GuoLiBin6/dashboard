@@ -6,10 +6,10 @@
         ref="formRef"
         :model="form"
         :rules="rules">
-        <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])">
           <domain-project :form="form" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_1016')" v-bind="formItemLayout" prop="template">
+        <a-form-model-item :label="$t('compute.text_1016')" prop="template">
           <a-select
             v-model:value="form.template"
             @change="handleSelectChange">
@@ -18,13 +18,13 @@
             </a-select-option>
           </a-select>
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_228')" v-bind="formItemLayout" prop="name">
+        <a-form-model-item :label="$t('compute.text_228')" prop="name">
           <a-input v-model:value="form.name" :placeholder="$t('compute.text_210')" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('common.description')" v-bind="formItemLayout" prop="description">
+        <a-form-model-item :label="$t('common.description')" prop="description">
           <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.description" :placeholder="$t('common_367')" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_1154')" class="mb-0" v-bind="formItemLayout" prop="tag">
+        <a-form-model-item :label="$t('compute.text_1154')" class="mb-0" prop="tag">
           <tag
             :value="form.tag"
             @change="v => form.tag = v"
@@ -94,14 +94,6 @@ export default {
           { required: false, message: this.$t('cloudenv.text_451') },
           { validator: validateForm('tagName') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       templateOps: {
         1: this.$t('compute.text_1010'),

@@ -1,5 +1,5 @@
 <template>
-  <a-form-model ref="formRef" v-bind="formItemLayout" :model="form.fd" :rules="rules">
+  <a-form-model ref="formRef" :model="form.fd" :rules="rules">
     <scope-radio :model="form.fd" @change="scopeChange" :form="form" :disabled="disabled" :label="label" />
     <a-form-model-item :label="$t('common.name')" prop="name">
       <a-input v-model:value="form.fd.name" @update:value="v => syncFd('name', v)" :placeholder="$t('common.placeholder')" :disabled="disabled" />
@@ -144,17 +144,6 @@ export default {
     }
   },
   props: {
-    formItemLayout: {
-      type: Object,
-      default: () => ({
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
-      }),
-    },
     alertData: {},
     timeRangeParams: {
       type: Object,

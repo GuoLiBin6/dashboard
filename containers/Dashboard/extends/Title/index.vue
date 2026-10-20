@@ -14,7 +14,7 @@
       </div>
     </div>
     <base-drawer v-model:visible="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit" @cancel="handleCancel">
-      <a-form-model ref="formRef" :model="fd" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="fd" :rules="rules">
         <a-form-model-item :label="$t('dashboard.text_6')" prop="name">
           <a-input v-model:value="fd.name" />
         </a-form-model-item>
@@ -73,14 +73,6 @@ export default {
         name: [
           { required: true, message: this.$t('dashboard.text_8') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 18,
-        },
-        labelCol: {
-          span: 6,
-        },
       },
       colorList: [
         ...colorList,

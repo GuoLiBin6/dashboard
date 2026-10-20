@@ -24,7 +24,7 @@
       </div>
     </div>
     <base-drawer class="drawer-wrapper" @update:visible="updateVisible" :visible="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit" @cancel="cancel">
-      <a-form-model ref="formRef" hideRequiredMark :model="form.fd" :rules="drawerRules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" hideRequiredMark :model="form.fd" :rules="drawerRules">
         <slot />
         <a-form-model-item :label="$t('dashboard.text_6')" prop="name">
           <a-input v-model:value="form.fd.name" @change="onNameInput" />

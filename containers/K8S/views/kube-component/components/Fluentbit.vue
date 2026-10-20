@@ -1,5 +1,5 @@
 <template>
-  <a-form-model :model="formData" size="small" ref="formRef" class="w-75" :rules="rules" v-bind="formItemLayout">
+  <a-form-model :model="formData" size="small" ref="formRef" class="w-75" :rules="rules">
     <a-form-model-item :label="$t('k8s.text_250')">
       <a-switch v-model:checked="formData.es.enabled" />
     </a-form-model-item>
@@ -106,18 +106,6 @@ export default {
         ],
       },
       formData,
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 14 },
-          xl: { span: 16 },
-          xxl: { span: 18 },
-        },
-        labelCol: {
-          md: { span: 10 },
-          xl: { span: 8 },
-          xxl: { span: 6 },
-        },
-      },
       offsetFormItemLayout: {
         wrapperCol: {
           md: { span: 14, offset: 10 },

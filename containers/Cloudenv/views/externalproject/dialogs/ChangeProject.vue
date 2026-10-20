@@ -8,7 +8,7 @@
         ref="form"
         :model="fd"
         :rules="rules">
-        <a-form-model-item prop="project" :label="params.projectLabel || $t('res.project')" v-bind="formItemLayout">
+        <a-form-model-item prop="project" :label="params.projectLabel || $t('res.project')">
           <a-row :gutter="8">
             <a-col :span="12">
               <a-select v-model:value="domain" show-search @search="getConditionDomains" :filter-option="false" allow-clear dropdownClassName="oc-select-dropdown">
@@ -62,14 +62,6 @@ export default {
         project: [
           { required: true, message: this.$t('rules.project') },
         ],
-      },
-      formItemLayout: this.params.formItemLayout || {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

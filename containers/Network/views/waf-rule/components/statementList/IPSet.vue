@@ -37,14 +37,6 @@ export default {
   },
   data () {
     return {
-      formLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
       match_field_values: [],
     }
   },

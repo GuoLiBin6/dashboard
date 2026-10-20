@@ -5,9 +5,8 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formLayout">
-        <a-form-model-item :label="$t('cloudenv.text_410', [$t('dictionary.domain')])" prop="project_domain" v-bind="formLayout">
+        :rules="rules">
+        <a-form-model-item :label="$t('cloudenv.text_410', [$t('dictionary.domain')])" prop="project_domain">
           <domain-select v-if="isAdminMode && l3PermissionEnable" v-model:value="form.project_domain" :params="domainParams" />
           <template v-else> {{userInfo.domain.name}} </template>
         </a-form-model-item>
@@ -68,14 +67,6 @@ export default {
         project_domain: [
           { required: true, message: this.$t('cloudenv.text_284', [this.$t('dictionary.domain')]) },
         ],
-      },
-      formLayout: {
-        wrapperCol: {
-          span: 18,
-        },
-        labelCol: {
-          span: 6,
-        },
       },
       domainParams: {
         limit: 20,

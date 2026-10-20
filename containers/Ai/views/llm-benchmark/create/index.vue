@@ -6,8 +6,6 @@
         ref="form"
         :model="form"
         :rules="rules"
-        :label-col="{ span: 4 }"
-        :wrapper-col="{ span: 16 }"
         class="mt-4">
         <a-form-model-item :label="$t('common.name')" prop="name">
           <a-input v-model="form.name" :placeholder="$t('validator.resourceName')" />

@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.gpu')" :count="params.data.length" :action="title" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('compute.text_170')" />
         <a-form-model-item label="CPU" prop="cpu">
           <a-input-number v-model:value="form.cpu" :min="1" :step="1" :precision="0" /> {{$t('compute.text_167')}}
@@ -57,10 +57,6 @@ export default {
         cpu: [{ required: true, message: ' ', trigger: 'change' }],
         memory: [{ required: true, message: ' ', trigger: 'change' }],
         disk: [{ required: true, message: ' ', trigger: 'change' }],
-      },
-      formItemLayout: {
-        wrapperCol: { span: 20 },
-        labelCol: { span: 4 },
       },
       columns: [
         getNameDescriptionTableColumn({

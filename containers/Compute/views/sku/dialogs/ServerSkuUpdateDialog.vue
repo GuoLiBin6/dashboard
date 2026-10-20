@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.sku')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form-model :model="form" hideRequiredMark v-bind="formItemLayout">
+      <a-form-model :model="form" hideRequiredMark>
         <a-form-model-item :label="$t('compute.sku.postpaid_status')">
           <a-radio-group v-model:value="form.postpaid">
             <a-radio :value="available">{{ $t('status.sku.available') }}</a-radio>
@@ -42,14 +42,6 @@ export default {
       form: {
         postpaid: 'available',
         prepaid: 'available',
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

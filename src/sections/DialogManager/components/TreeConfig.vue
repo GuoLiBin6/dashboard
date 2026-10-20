@@ -4,7 +4,7 @@
     <template #body>
     <div style="height:400px;overflow-y:auto">
       <template v-if="!transferLoading">
-          <a-form v-bind="formItemLayout">
+          <a-form>
             <template v-for="(item,index) in keysList" :key="index">
               <a-form-item :label="`${$t('common_743')}${index+1}`">
               <div class="d-flex">
@@ -57,14 +57,6 @@ export default {
       transferLoading: false,
       resourceDataList: [],
       keysList: [],
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
-      },
       disabledList: [],
     }
   },

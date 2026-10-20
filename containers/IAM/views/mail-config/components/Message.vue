@@ -2,8 +2,7 @@
   <a-form-model
     ref="formRef"
     :model="form"
-    :rules="rules"
-    v-bind="formItemLayout">
+    :rules="rules">
     <a-alert type="warning" :message="$t('system.text_285')" class="mb-2" />
     <a-form-model-item label="Access Key ID" prop="access_key_id">
       <template v-slot:extra>
@@ -41,10 +40,6 @@ export default {
     TestButton,
   },
   props: {
-    formItemLayout: {
-      required: true,
-      type: Object,
-    },
     offsetWrapperCol: {
       required: true,
       type: Object,

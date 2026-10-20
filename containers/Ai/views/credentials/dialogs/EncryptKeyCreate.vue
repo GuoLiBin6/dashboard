@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{this.params.title}}</div>
     <div slot="body" v-loading="loading">
-     <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+     <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('scope.encrypt_key.title.name')" prop="name">
           <a-input :placeholder="$t('scope.encrypt_key.title.name')" v-model:value="form.name" />
         </a-form-model-item>
@@ -39,14 +39,6 @@ export default {
         name: [
           { required: true, message: this.$t('scope.encrypt_key.require_name.prompt') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
       },
     }
   },

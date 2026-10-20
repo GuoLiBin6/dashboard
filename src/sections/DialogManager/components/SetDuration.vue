@@ -13,8 +13,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('common.text00061')">
           <a-switch v-model:checked="form.durationEnable" :checkedChildren="$t('common.text00062')" :unCheckedChildren="$t('common.text00063')" />
         </a-form-model-item>
@@ -80,14 +79,6 @@ export default {
       },
       currentDuration: '',
       expireDate,
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
       open: false,
     }
   },

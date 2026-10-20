@@ -5,7 +5,7 @@
       <a-alert class="mb-2" type="warning" v-if="params.tip">
         <template #message>{{params.tip}}</template>
       </a-alert>
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('common_136')" prop="password_old">
           <a-input-password v-model:value="form.password_old" :placeholder="$t('common_137')" />
         </a-form-model-item>
@@ -96,14 +96,6 @@ export default {
         passcode: [
           { required: true, message: this.$t('common_147') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 18,
-        },
-        labelCol: {
-          span: 6,
-        },
       },
     }
   },

@@ -4,15 +4,12 @@
     :is="type"
     :type="type"
     v-model:visible="visible"
-    :formItemLayout="formItemLayout"
     :options="options"
     @update="update"
     :params="params"
     :edit="edit">
     <a-form-model-item
-      :label="$t('dashboard.text_24')"
-      :label-col="formItemLayout.labelCol"
-      :wrapper-col="formItemLayout.wrapperCol">
+      :label="$t('dashboard.text_24')">
       <a-radio-group v-model:value="type">
         <a-radio-button v-for="item in typeOpts" :key="item.key" :value="item.key">{{ item.label }}</a-radio-button>
       </a-radio-group>
@@ -52,14 +49,6 @@ export default {
       type: (this.params && this.params.type) || 'server',
       typeOpts: typeOps,
       visible: false,
-      formItemLayout: {
-        wrapperCol: {
-          span: 18,
-        },
-        labelCol: {
-          span: 6,
-        },
-      },
     }
   },
   watch: {

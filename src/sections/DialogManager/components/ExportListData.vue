@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <template #header>{{ params.title }}</template>
     <template #body>
-      <a-form hideRequiredMark v-bind="formItemLayout">
+      <a-form hideRequiredMark>
         <a-form-item :label="$t('common.text00097')" class="mb-0">
           <a-radio-group :value="currentExportType" @update:value="onExportTypeChange">
             <a-radio-button
@@ -163,14 +163,6 @@ export default {
       indeterminate: selectedExportKeys.length !== allExportKeys.length,
       checkAll: selectedExportKeys.length && selectedExportKeys.length === allExportKeys.length,
       selectedExportKeys: selectedExportKeys,
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
     }
   },
   computed: {

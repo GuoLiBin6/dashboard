@@ -7,7 +7,6 @@
         class="mt-3"
         :model="form"
         :rules="rules"
-        v-bind="formItemLayout"
         hideRequiredMark>
         <a-form-model-item :label="$t('network.text_205', [$t('dictionary.project')])" v-if="isAdminMode" prop="project">
           <domain-project
@@ -18,7 +17,7 @@
         <a-form-model-item v-if="cloudEnv === 'public'" :label="$t('dictionary.cloudaccount')" class="mb-0">
           <a-row :gutter="8" class="w-100">
             <a-col :span="12">
-              <a-form-model-item :wrapperCol="{ span: 24 }" prop="brand">
+              <a-form-model-item prop="brand">
                 <a-select
                   v-model:value="form.brand"
                   :allowClear="allowClear"
@@ -32,7 +31,7 @@
               </a-form-model-item>
             </a-col>
             <a-col :span="12">
-              <a-form-model-item :wrapperCol="{ span: 24 }" prop="account">
+              <a-form-model-item prop="account">
                 <base-select
                   v-model="form.account"
                   :remote="true"
@@ -131,14 +130,6 @@ export default {
         description: '',
         vpc_ids: undefined,
         __meta__: {},
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
       brandOpts: [],
       domainId: '',

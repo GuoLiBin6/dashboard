@@ -27,14 +27,6 @@ export default {
               columns: this.columns,
               onManager: this.onManager,
               projectLabel: this.$t('cloudenv.text_294', [this.$t('dictionary.project')]),
-              formItemLayout: {
-                wrapperCol: {
-                  span: 19,
-                },
-                labelCol: {
-                  span: 5,
-                },
-              },
             })
           } else {
             this.createDialog('ChangeOwenrDialog', {
@@ -45,14 +37,6 @@ export default {
               action: 'change-project',
               projectLabel: this.$t('cloudenv.text_294', [this.$t('dictionary.project')]),
               alertMessage: this.$t('cloudenv.text_336', [this.$t('dictionary.project'), this.$t('dictionary.domain'), this.$t('dictionary.domain')]),
-              formItemLayout: {
-                wrapperCol: {
-                  span: 19,
-                },
-                labelCol: {
-                  span: 5,
-                },
-              },
               resource: 'cloudproviders',
             })
           }

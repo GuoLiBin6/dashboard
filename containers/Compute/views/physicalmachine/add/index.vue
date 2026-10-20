@@ -3,7 +3,7 @@
     <page-header :title="$t('compute.text_804')" />
     <page-body>
       <a-alert class="mb-3" :message="$t('compute.physicalmachine_add')" />
-      <a-form-model ref="formRef" :model="form.fd" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form.fd" :rules="rules">
         <a-form-model-item :label="$t('compute.text_805')" :extra="desc" prop="type">
           <a-radio-group v-model:value="form.fd.type" @change="handleTypeChange">
             <template v-for="(item, key) of types" :key="key">
@@ -73,18 +73,6 @@ export default {
       ipmi_username_required: false,
       ipmi_password_required: false,
       net_required: false,
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 16 },
-          xl: { span: 18 },
-          xxl: { span: 20 },
-        },
-        labelCol: {
-          md: { span: 8 },
-          xl: { span: 6 },
-          xxl: { span: 4 },
-        },
-      },
       offsetWrapperCol: {
         md: { span: 16, offset: 8 },
         xl: { span: 18, offset: 6 },

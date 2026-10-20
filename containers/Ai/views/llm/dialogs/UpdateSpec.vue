@@ -2,7 +2,7 @@
   <base-dialog :width="900" @cancel="cancelDialog">
     <div slot="header">{{ $t('aice.llm_spec_update') }}</div>
     <div slot="body">
-      <a-form-model :model="form.fd" hideRequiredMark v-bind="formItemLayout">
+      <a-form-model :model="form.fd" hideRequiredMark>
         <template v-if="isOpenclaw">
           <a-form-model-item :label="$t('aice.openclaw.manual_config')">
             <a-switch v-model:checked="form.fd.openclaw_manual_config" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
@@ -419,14 +419,6 @@ export default {
         fd: {
           openclaw_channels: (row?.llm_spec?.openclaw?.channels || []).map(item => item.name),
           openclaw_manual_config: !!(row?.llm_spec?.openclaw?.manual_config),
-        },
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
         },
       },
       OPENCLAW_PROVIDER_SECTIONS,

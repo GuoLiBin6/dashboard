@@ -1,5 +1,5 @@
 <template>
-  <a-form-model ref="formRef" :model="form.fd" v-bind="formLayout">
+  <a-form-model ref="formRef" :model="form.fd">
     <prepare-nets :prepareNetData="prepareNetData" type="host" />
     <prepare-nets-form :form="form" :prepareNetData="prepareNetData" type="host" />
   </a-form-model>

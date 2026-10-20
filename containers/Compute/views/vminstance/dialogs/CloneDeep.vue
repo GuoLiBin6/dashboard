@@ -10,7 +10,7 @@
       <dialog-table
         :data="params.data"
         :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout" v-if="!isBatch">
+      <a-form-model ref="formRef" :model="form" :rules="rules" v-if="!isBatch">
         <a-form-model-item :label="$t('compute.text_1202')" prop="cloneType">
           <a-radio-group
             v-model:value="form.cloneType">
@@ -85,10 +85,6 @@ export default {
         snapshot: [
           { required: true, message: this.$t('compute.text_1207'), trigger: 'change' },
         ],
-      },
-      formItemLayout: {
-        labelCol: { span: 5 },
-        wrapperCol: { span: 19 },
       },
       snapshotParams: {
         scope: this.$store.getters.scope,

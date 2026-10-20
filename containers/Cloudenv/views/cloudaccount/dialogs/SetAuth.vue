@@ -7,8 +7,7 @@
       <a-form-model
         ref="form"
         :model="fd"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('cloudenv.ssh_authentication')" prop="saml_auth">
           <a-radio-group v-model:value="fd.saml_auth">
             <a-radio :value="true">{{$t('cloudenv.turn_on')}}</a-radio>
@@ -36,14 +35,6 @@ export default {
       loading: false,
       fd: {
         saml_auth: this.params.data[0].saml_auth || false,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.group')" :count="params.data.length" :action="params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('dictionary.user')" prop="users">
           <a-select
             :filterOption="filterOption"
@@ -45,14 +45,6 @@ export default {
         users: [
           { required: true, message: this.$t('system.text_499') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 22,
-        },
-        labelCol: {
-          span: 2,
-        },
       },
     }
   },

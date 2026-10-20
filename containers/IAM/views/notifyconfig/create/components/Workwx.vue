@@ -3,7 +3,6 @@
     ref="formRef"
     :model="form"
     :rules="rules"
-    v-bind="formItemLayout"
     hideRequiredMark>
     <a-form-model-item :label="$t('system.wecom.corp_id')" prop="corp_id">
       <template v-slot:extra>
@@ -36,10 +35,6 @@ import { DOCS_MAP } from '@/constants/docs'
 export default {
   name: 'EnterpriseWeChat',
   props: {
-    formItemLayout: {
-      required: true,
-      type: Object,
-    },
     offsetWrapperCol: {
       required: true,
       type: Object,

@@ -2,7 +2,7 @@
   <div class="disk-wrapper">
     <div class="disk-wrapper__top">
       <div class="disk-wrapper__selects">
-        <a-form-item :wrapperCol="{ span: 24 }" :validate-status="storageStatusMap.type" class="mb-0 disk-wrapper__type">
+        <a-form-item :validate-status="storageStatusMap.type" class="mb-0 disk-wrapper__type">
           <a-tag class="disk-type-tag" v-if="diskTypeLabel && !disabled">{{ diskTypeLabel }}</a-tag>
           <a-select
             v-else
@@ -13,7 +13,7 @@
             @change="onTypeChange"
             :disabled="disabled || imageType === 'snapshot'" />
         </a-form-item>
-        <a-form-item v-show="!hideSize" class="mb-0 disk-wrapper__size" :wrapperCol="{ span: 24 }">
+        <a-form-item v-show="!hideSize" class="mb-0 disk-wrapper__size">
           <!-- antdv4 Tooltip 需挂在原生节点上，自定义组件/ disabled 控件否则无 hover -->
           <a-tooltip :title="tooltip" placement="top">
             <span class="disk-wrapper__size-tip">
@@ -142,7 +142,7 @@
           v-if="showSnapshot && !showMountpoint && has('snapshot') && !disabled && imageType !== 'backup' && imageType !== 'snapshot'"
           class="disk-wrapper__field">
           <div class="disk-wrapper__field-label">{{ $t('compute.text_133') }}</div>
-          <a-form-item class="mb-0" :wrapperCol="{ span: 24 }">
+          <a-form-item class="mb-0">
             <base-select
               :value="diskFieldVal(diskFieldMap.snapshot)"
               @change="v => diskFieldSet(diskFieldMap.snapshot, v)"
@@ -189,7 +189,7 @@
           v-if="showPreallocation && isVMware && imageType !== 'backup' && imageType !== 'snapshot'"
           class="disk-wrapper__field">
           <div class="disk-wrapper__field-label">{{ $t('compute.assign_preallocation') }}</div>
-          <a-form-item class="mb-0" :wrapperCol="{ span: 24 }">
+          <a-form-item class="mb-0">
             <base-select
               :value="diskFieldVal(diskFieldMap.preallocation)"
               @change="v => diskFieldSet(diskFieldMap.preallocation, v)"
@@ -201,7 +201,7 @@
           v-if="showIops && has('iops') && !disabled && isIopsShow"
           class="disk-wrapper__field">
           <div class="disk-wrapper__field-label">{{ $t('compute.set_iops') }}</div>
-          <a-form-item class="mb-0" :wrapperCol="{ span: 24 }">
+          <a-form-item class="mb-0">
             <a-tooltip :title="iopsTooltip" placement="top">
               <a-input-number
                 :value="diskFieldVal(diskFieldMap.iops)"
@@ -217,7 +217,7 @@
           v-if="showThroughput && has('throughput') && !disabled && isThroughputShow"
           class="disk-wrapper__field">
           <div class="disk-wrapper__field-label">{{ $t('compute.set_throughput') }}</div>
-          <a-form-item class="mb-0" :wrapperCol="{ span: 24 }">
+          <a-form-item class="mb-0">
             <a-tooltip :title="throughputTooltip" placement="top">
               <a-input-number
                 :value="diskFieldVal(diskFieldMap.throughput)"

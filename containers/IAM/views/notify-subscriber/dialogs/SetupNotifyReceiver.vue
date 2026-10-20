@@ -7,7 +7,6 @@
         class="mt-3"
         :model="form"
         :rules="formRules"
-        v-bind="formItemLayout"
         hideRequiredMark>
         <scope-radio
           :disabled="isUpdate"
@@ -45,7 +44,7 @@
         <a-form-model-item v-if="curType === 'role'" :label="$t('system.notify.subscriber.type.role')">
           <a-row type="flex">
             <a-col :flex="2" class="mr-2">
-              <a-form-model-item prop="role_scope" :wrapper-col="{ span: 24 }" class="mb-0">
+              <a-form-model-item prop="role_scope" class="mb-0">
                 <base-select
                   v-model:value="form.role_scope"
                   :options="roleScopeOptions"
@@ -53,7 +52,7 @@
               </a-form-model-item>
             </a-col>
             <a-col :flex="3">
-              <a-form-model-item prop="role" :wrapper-col="{ span: 24 }" class="mb-0">
+              <a-form-model-item prop="role" class="mb-0">
                 <base-select
                   v-model:value="form.role"
                   :filterable="true"
@@ -166,14 +165,6 @@ export default {
         project: [
           { required: !this.params.data, message: `${this.$t('common.select')}` },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
       },
       groupKeyOpts: [
         { id: 5, name: this.$t('iam.silent.minute', [5]) },

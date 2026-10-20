@@ -2,8 +2,7 @@
   <a-form-model
     ref="formRef"
     :model="form"
-    :rules="rules"
-    v-bind="formItemLayout">
+    :rules="rules">
     <contact-tips
       :before="$t('system.feishu.before')"
       :after="$t('system.feishu.after')"
@@ -39,10 +38,6 @@ export default {
     TestButton,
   },
   props: {
-    formItemLayout: {
-      required: true,
-      type: Object,
-    },
     offsetWrapperCol: {
       required: true,
       type: Object,

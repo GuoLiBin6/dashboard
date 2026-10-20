@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('system.text_130', [$t('dictionary.group')])}}</div>
     <div slot="body">
-      <a-form-model ref="formRef" :model="form" :rules="formRules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="formRules">
         <a-form-model-item :label="$t('system.text_101')" prop="name">
           <a-input v-model:value="form.name" />
         </a-form-model-item>
@@ -52,14 +52,6 @@ export default {
             whitespace: true,
           },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

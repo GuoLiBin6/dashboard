@@ -6,8 +6,7 @@
       <dialog-table class="mb-2" :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-form-model
         ref="formRef"
-        :model="form"
-        v-bind="formItemLayout">
+        :model="form">
         <a-form-model-item :label="$t('dictionary.cloudgroup')" :extra="$t('cloudenv.clouduser_text2')" prop="cloudgroup_ids">
           <list-select
             v-model:value="form.cloudgroup_ids"
@@ -44,14 +43,6 @@ export default {
       loading: false,
       form: {
         cloudgroup_ids: this.params.data[0].cloudgroups && this.params.data[0].cloudgroups.map(item => item.id),
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
       },
       cloudgroupListSelectProps: {
         list: this.$list.createList(this, {

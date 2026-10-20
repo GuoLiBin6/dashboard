@@ -5,8 +5,7 @@
       <a-form-model
         v-if="isOneCloud && !isCloudflare"
         ref="redirectFormRef"
-        :model="redirectForm"
-        v-bind="formItemLayout">
+        :model="redirectForm">
         <redirect-form-items
           :form="redirectForm"
           modelMode
@@ -15,7 +14,6 @@
       </a-form-model>
       <a-form-model
         ref="formRef"
-        v-bind="formItemLayout"
         :model="form"
         :rules="rules">
         <a-form-model-item :label="$t('network.text_21')" prop="name">
@@ -215,14 +213,6 @@ export default {
           backend_group: '',
         },
       ],
-      formItemLayout: {
-        wrapperCol: {
-          span: 18,
-        },
-        labelCol: {
-          span: 6,
-        },
-      },
       formItemLayout2: {
         wrapperCol: {
           span: 24,

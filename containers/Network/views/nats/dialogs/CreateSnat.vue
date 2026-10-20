@@ -3,7 +3,6 @@
     <div slot="header">{{params.title}}</div>
     <div slot="body">
       <a-form-model
-        v-bind="formItemLayout"
         ref="formRef"
         :model="form"
         :rules="rules">
@@ -75,14 +74,6 @@ export default {
         eip: [
           { required: true, message: this.$t('network.text_541') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
       },
       tailFormItemLayout: {
         wrapperCol: {

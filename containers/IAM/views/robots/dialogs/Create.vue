@@ -6,7 +6,6 @@
         ref="formRef"
         :model="form"
         :rules="rules"
-        v-bind="formItemLayout"
         hideRequiredMark>
         <a-form-model-item v-show="!isEdit" :label="$t('compute.text_297', [$t('dictionary.project')])">
           <domain-project
@@ -118,14 +117,6 @@ export default {
         body: [
           { validator: this.checkBody },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

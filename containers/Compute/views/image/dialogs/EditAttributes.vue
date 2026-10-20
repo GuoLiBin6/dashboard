@@ -2,8 +2,8 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('compute.text_247')}}</div>
     <div slot="body">
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
-        <a-form-model-item :label="$t('compute.text_228')" v-bind="formItemLayout" prop="name">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
+        <a-form-model-item :label="$t('compute.text_228')" prop="name">
           <a-input v-model:value="form.name" :placeholder="$t('compute.text_627')" />
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.text_1365')">
@@ -12,14 +12,14 @@
             @change="osArchChangeHandle"
             :form="form" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_267')" v-bind="formItemLayout" v-if="!$route.path.includes('app-package')" prop="osType">
+        <a-form-model-item :label="$t('compute.text_267')" v-if="!$route.path.includes('app-package')" prop="osType">
           <a-radio-group @change="osTypeChangeHandle" v-model:value="form.osType">
             <a-radio-button value="Linux">Linux</a-radio-button>
             <a-radio-button value="Windows">Windows</a-radio-button>
             <a-radio-button value="Other">{{$t('compute.text_151')}}</a-radio-button>
           </a-radio-group>
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_657')" v-bind="formItemLayout" v-if="!$route.path.includes('app-package')" prop="osDistribution">
+        <a-form-model-item :label="$t('compute.text_657')" v-if="!$route.path.includes('app-package')" prop="osDistribution">
           <a-select
             :placeholder="$t('compute.text_658')"
             v-model:value="form.osDistribution"
@@ -37,7 +37,6 @@
         <a-form-model-item
           :label="$t('compute.text_633')"
           :extra="$t('compute.image.min_disk.extra')"
-          v-bind="formItemLayout"
           v-if="!isHostImage"
           prop="minDisk">
           <div class="d-flex align-items-center">
@@ -50,7 +49,7 @@
             <span class="ml-2">GB</span>
           </div>
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_634')" v-bind="formItemLayout" prop="diskDriver">
+        <a-form-model-item :label="$t('compute.text_634')" prop="diskDriver">
           <a-radio-group v-model:value="form.diskDriver">
             <a-radio-button
               v-for="(item, index) in diskDriverOptions"
@@ -58,7 +57,7 @@
               :key="index">{{item.text}}</a-radio-button>
           </a-radio-group>
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_635')" v-bind="formItemLayout" prop="netDriver">
+        <a-form-model-item :label="$t('compute.text_635')" prop="netDriver">
           <a-radio-group v-model:value="form.netDriver">
             <a-radio-button
               v-for="(item, index) in netDriverOptions"
@@ -83,7 +82,7 @@
               :key="index">{{item.text}}</a-radio-button>
           </a-radio-group>
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.machine')" v-bind="formItemLayout" prop="machine_type">
+        <a-form-model-item :label="$t('compute.machine')" prop="machine_type">
           <a-radio-group v-model:value="form.machine_type">
             <a-radio-button
               v-for="(item, index) in machineTypeOptions"
@@ -91,7 +90,7 @@
               :key="index">{{item.text}}</a-radio-button>
           </a-radio-group>
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.usb_kbd')" v-bind="formItemLayout" prop="disable_usb_kbd">
+        <a-form-model-item :label="$t('compute.usb_kbd')" prop="disable_usb_kbd">
           <a-switch v-model:checked="form.disable_usb_kbd" />
         </a-form-model-item>
       </a-form-model>
@@ -156,14 +155,6 @@ export default {
           { validator: this.$validate('imageName') },
           { validator: this.checkTemplateName },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 17,
-        },
-        labelCol: {
-          span: 7,
-        },
       },
       osDistributionOptions: {
         Windows: [

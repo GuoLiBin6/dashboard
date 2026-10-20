@@ -12,7 +12,6 @@
             </template>
             <component
               :is="item.key"
-              :form-item-layout="formItemLayout"
               :offset-wrapper-col="offsetWrapperCol"
               v-model:loading="item.loading" />
           </a-collapse-panel>
@@ -66,20 +65,6 @@ export default {
         { label: this.$t('system.text_305'), key: 'message', loading: false },
         { label: this.$t('system.text_306'), key: 'sms', loading: false },
       ],
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-          xxl: {
-            span: 22,
-          },
-        },
-        labelCol: {
-          span: 4,
-          xxl: {
-            span: 2,
-          },
-        },
-      },
       offsetWrapperCol: {
         span: 20,
         offset: 4,

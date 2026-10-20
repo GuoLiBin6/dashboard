@@ -4,7 +4,6 @@
       <a-col :span="showIpConfig ? 8 : 12">
         <component
           :is="itemTag"
-          :wrapperCol="{ span: 24 }"
           class="mb-0 mr-1"
           :prop="vpcField">
           <base-select
@@ -27,7 +26,6 @@
       <a-col :span="showIpConfig ? 8 : 12">
         <component
           :is="itemTag"
-          :wrapperCol="{ span: 24 }"
           class="mb-0 mr-1"
           :prop="networkField">
           <base-select
@@ -52,7 +50,7 @@
         <a-button v-if="!ipShow" type="link" class="mr-1 mt-1" @click="triggerShowIp">{{$t('compute.text_198')}}</a-button>
         <a-row v-else>
           <a-col :span="21">
-            <component :is="itemTag" class="mb-0" :wrapperCol="{ span: 24 }" :prop="ipAddrField">
+            <component :is="itemTag" class="mb-0" :prop="ipAddrField">
               <a-input
                 :placeholder="$t('compute.text_197')"
                 :value="fieldVal(resolvedFields.ip_addr)"

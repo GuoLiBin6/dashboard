@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="$t('compute.text_950')" :name="$t('compute.text_91')" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form v-bind="formItemLayout">
+      <a-form>
         <a-form-item :label="$t('compute.text_951')">
           <a-radio-group v-model:value="isDelete">
             <a-radio :value="true">{{$t('compute.text_952')}}</a-radio>
@@ -31,10 +31,6 @@ export default {
     return {
       loading: false,
       isDelete: true,
-      formItemLayout: {
-        labelCol: { span: 3 },
-        wrapperCol: { span: 20 },
-      },
     }
   },
   computed: {

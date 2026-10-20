@@ -6,7 +6,7 @@
       <dialog-table :data="params.data" :columns="params.columns" />
     </div>
     <div slot="footer">
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('common.name')" prop="name">
           <a-input v-model:value="form.name" :placeholder="$t('monitor.text_7')" />
         </a-form-model-item>
@@ -34,10 +34,6 @@ export default {
         name: [
           { required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: { span: 20 },
-        labelCol: { span: 3 },
       },
     }
   },

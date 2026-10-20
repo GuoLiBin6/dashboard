@@ -7,7 +7,7 @@
         <div v-if="!localNics || localNics.length === 0">{{ $t('help.ipSupplementTip') }}</div>
       </template>
     </a-alert>
-    <a-form-item :label="nicLabel(nic)" v-for="(nic, i) in localNics" :key="i" v-bind="formLayout">
+    <a-form-item :label="nicLabel(nic)" v-for="(nic, i) in localNics" :key="i">
       <div class="d-flex">
       <base-select
         class="w-100 mr-2"
@@ -63,13 +63,6 @@ export default {
     width: {
       type: Number,
       default: 820,
-    },
-    formLayout: {
-      type: Object,
-      default: () => ({
-        wrapperCol: { span: 20 },
-        labelCol: { span: 4 },
-      }),
     },
     label: {
       type: String,

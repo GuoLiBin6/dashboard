@@ -10,8 +10,7 @@
       <a-form-model
         ref="formRef"
         :model="form.fd"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <!-- 多机：操作类型 -->
         <a-form-model-item v-if="isGroupAction" :label="$t('compute.isolated_device.operation_type')">
           <a-radio-group v-model:value="groupOperation">
@@ -221,14 +220,6 @@ export default {
           memory_request: undefined,
           number: 1,
           autoStart: false,
-        },
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
         },
       },
       gpuOpt: [],

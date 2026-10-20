@@ -9,7 +9,7 @@
       </a-alert>
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_276')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item v-if="isSingle" :label="$t('common_312')" prop="username">
           <a-input v-model:value="form.username" />
         </a-form-model-item>
@@ -84,14 +84,6 @@ export default {
       },
       rules: {
         password: PASSWORD_RULES,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       qgaDoc: DOCS_MAP.qga(),
       checkQgaOK: true,

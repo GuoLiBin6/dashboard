@@ -1,5 +1,5 @@
 <template>
-  <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 5 }" :wrapper-col="{ span: 17 }">
+  <a-form-model ref="form" :model="form" :rules="rules">
     <a-form-model-item label="repo_id">
       <a-input :value="repoId" disabled />
     </a-form-model-item>

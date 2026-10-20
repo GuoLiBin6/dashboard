@@ -4,7 +4,6 @@
     <div slot="body">
       <a-form-model
         ref="formRef"
-        v-bind="formItemLayout"
         :model="form"
         :rules="rules">
         <a-form-model-item v-if="isCloudflare" :label="$t('common.name')" prop="name">
@@ -88,14 +87,6 @@ export default {
         port: 1,
         weight: 1,
         ssl: false,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       firstLbBackendVpc: undefined,
     }

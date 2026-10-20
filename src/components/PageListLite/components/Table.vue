@@ -481,19 +481,20 @@ export default {
       }
 
       cols.forEach(item => {
-        if (
+        // 锁定列（勾选/操作/首列）始终展示，但仍需恢复本地记录的列宽
+        const isLockedVisible =
           item.type === 'checkbox' ||
           item.type === 'radio' ||
           item.field === '_action' ||
           item.field === '_action_placeholder' ||
           (primaryField && item.field === primaryField)
-        ) {
-          item.visible = true
-          return
-        }
         if (item.field && storageConfig[item.field] && storageConfig[item.field].width) {
           item.minWidth = storageConfig[item.field].width
           item.width = storageConfig[item.field].width
+        }
+        if (isLockedVisible) {
+          item.visible = true
+          return
         }
         item.visible = !hiddenColumns.includes(item.field)
       })

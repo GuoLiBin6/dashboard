@@ -3,7 +3,7 @@
     <div slot="header">{{$t('k8s.text_366')}}</div>
     <div slot="body">
       <a-form-model ref="formRef" class="mt-3" :model="form" :rules="rules">
-        <a-form-model-item :label="$t('k8s.text_28')" class="mb-0" v-bind="formItemLayout" prop="cluster_id">
+        <a-form-model-item :label="$t('k8s.text_28')" class="mb-0" prop="cluster_id">
           <base-select
             v-model:value="form.cluster_id"
             resource="kubeclusters"
@@ -38,10 +38,6 @@ export default {
         cluster_id: [
           { required: true, message: this.$t('k8s.text_30'), trigger: 'blur' },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: { span: 20 },
-        labelCol: { span: 3 },
       },
       clusterParams: {
         federated_keyword: this.params.resource,

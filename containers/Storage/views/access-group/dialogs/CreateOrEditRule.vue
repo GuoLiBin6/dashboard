@@ -3,7 +3,6 @@
     <div slot="header">{{params.title}}</div>
     <div slot="body">
       <a-form-model
-        v-bind="formItemLayout"
         ref="formRef"
         :model="form"
         :rules="rules">
@@ -80,14 +79,6 @@ export default {
         user_access_type: [
           { required: true },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 14,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       IPCheckboxDisabled: selectItem.cidr === '0.0.0.0/0',
       isIPChecked: selectItem.cidr === '0.0.0.0/0',

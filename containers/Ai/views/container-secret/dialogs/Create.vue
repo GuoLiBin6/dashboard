@@ -2,7 +2,7 @@
   <base-dialog :width="700" @cancel="cancelDialog">
     <div slot="header">{{ $t('common.create') }} - {{ $t('aice.container_secret') }}</div>
     <div slot="body">
-      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
         <a-form-model-item :label="$t('common.name')" prop="name">
           <a-input
             v-model:value="form.name"
@@ -67,10 +67,6 @@ export default {
       items: [
         { id: uuid(), key: '', value: '' },
       ],
-      formItemLayout: {
-        wrapperCol: { span: 20 },
-        labelCol: { span: 4 },
-      },
     }
   },
   methods: {

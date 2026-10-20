@@ -9,7 +9,7 @@
       </a-alert>
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_247')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" hideRequiredMark v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" hideRequiredMark>
         <a-form-model-item :label="$t('compute.num_queues')" prop="num_queues">
           <a-tooltip placement="top" :title="$t('compute.num_queues')">
             <a-input-number
@@ -56,14 +56,6 @@ export default {
         { key: 'vmxnet3', label: 'vmxnet3' },
         { key: 'rtl8139', label: 'rtl8139' },
       ],
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
-      },
     }
   },
   computed: {

@@ -7,8 +7,7 @@
       <a-form-model
         ref="form"
         :model="fd"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('cloudenv.text_282')" prop="share_mode" :extra="extra">
           <a-radio-group v-model:value="fd.share_mode">
             <template v-for="item of shareModeOptions" :key="item.key">
@@ -122,14 +121,6 @@ export default {
         { key: 'provider_domain', label: this.$t('cloudenv.text_286') },
         { key: 'system', label: this.$t('cloudenv.text_287') },
       ],
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
       isBatch,
       providerDomainLoaded: false,
       providerDomains: [],

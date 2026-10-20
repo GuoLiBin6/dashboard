@@ -7,8 +7,7 @@
       <a-form-model
         ref="form"
         :model="fd"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('common_101')" prop="type">
           <a-radio-group v-model:value="fd.type" @change="handleTypeChange">
             <template v-for="item of typeOptions" :key="item.key">
@@ -153,14 +152,6 @@ export default {
         shared_projects: [
           { required: true, message: this.$t('rules.project') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       domainLoaded: false,
       domains: [],

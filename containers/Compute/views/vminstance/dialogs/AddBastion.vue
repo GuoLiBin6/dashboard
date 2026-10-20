@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.add_to_bastion')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form.fd" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form.fd" :rules="rules">
         <bastion-host :form="form" :model="form.fd" inDialog />
       </a-form-model>
     </div>
@@ -37,14 +37,6 @@ export default {
       loading: false,
       form: {
         fd,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 18,
-        },
-        labelCol: {
-          span: 6,
-        },
       },
       rules: {
         bastion_host_id: [

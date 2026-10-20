@@ -11,7 +11,7 @@
         :policyReactInSchedtag="false" />
       <template v-if="showDeviceConfig">
         <template v-if="item.deviceShow">
-          <a-form-item class="mb-0 ml-1"  :wrapperCol="{ span: 24 }">
+          <a-form-item class="mb-0 ml-1">
             <oc-select
               :value="fieldVal(networkFieldMap.devices(item.key))"
               @change="v => fieldSet(networkFieldMap.devices(item.key), v)"

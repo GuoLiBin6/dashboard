@@ -5,8 +5,7 @@
       <a-form-model
         :model="form"
         :rules="rules"
-        ref="form"
-        v-bind="formItemLayout">
+        ref="form">
         <a-form-model-item :label="$t('network.cdn.ssl_setting')" prop="ssl_setting" :extra="$t(`network.cdn.ssl_setting.${form.ssl_setting}.extra`)">
           <a-select v-model:value="form.ssl_setting">
             <a-select-option v-for="item in SSL_SETTINGS" :key="item.key" :value="item.key">
@@ -61,14 +60,6 @@ export default {
       SSL_SETTINGS,
       BROWSER_CACHE_TTL,
       CACHE_LEVELS,
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
       form: {
         ssl_setting: data.ssl_setting,
         https_enabled: data.https?.enabled,

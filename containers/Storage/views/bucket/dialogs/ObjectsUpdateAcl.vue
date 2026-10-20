@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="this.params.title" :name="params.name || $t('dictionary.bucket')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form">
         <a-spin :spinning="getAclsLoading">
           <a-form-model-item :label="$t('storage.text_93')" prop="acl">
             <a-radio-group v-model:value="form.acl">
@@ -27,7 +27,6 @@
 </template>
 
 <script>
-import { formItemLayout } from '@Storage/constants/index.js'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 
@@ -38,7 +37,6 @@ export default {
     return {
       loading: false,
       getAclsLoading: false,
-      formItemLayout,
       fileList: [],
       acls: [],
       form: {

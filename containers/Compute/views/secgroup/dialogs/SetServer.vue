@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.secgroup')" :count="params.data.length" :action="params.title" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout" hideRequiredMark>
+      <a-form-model ref="formRef" :model="form" hideRequiredMark>
         <a-form-model-item
           :label="params.resourceName"
           prop="servers">
@@ -49,14 +49,6 @@ export default {
       scope: this.$store.getters.scope,
       form: {
         servers: undefined,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       bindServers: [],
       bindServersLoaded: false,

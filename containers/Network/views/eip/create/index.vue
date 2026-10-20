@@ -7,24 +7,23 @@
         :model="form.fd"
         :rules="rules"
         hideRequiredMark>
-        <a-form-model-item :label="$t('network.text_205', [$t('dictionary.project')])" v-bind="formItemLayout" prop="project">
+        <a-form-model-item :label="$t('network.text_205', [$t('dictionary.project')])" prop="project">
           <domain-project
             :form="form.fd"
-            :form-layout="formItemLayout"
             @update:domain="domainChange"
             @fetchDomainCallback="fetchDomainCallback"
             @fetchProjectCallback="fetchProjectCallback" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('network.text_21')" v-bind="formItemLayout" prop="name">
+        <a-form-model-item :label="$t('network.text_21')" prop="name">
           <a-input v-model:value="form.fd.name" :placeholder="$t('network.text_44')" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('common.description')" v-bind="formItemLayout" prop="description">
+        <a-form-model-item :label="$t('common.description')" prop="description">
           <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.fd.description" :placeholder="$t('common_367')" />
         </a-form-model-item>
-        <a-form-model-item v-if="isPublic" :label="$t('regionMap.enable_world_map')" v-bind="formItemLayout" prop="enableWorldMap">
+        <a-form-model-item v-if="isPublic" :label="$t('regionMap.enable_world_map')" prop="enableWorldMap">
           <a-switch v-model:checked="form.fd.enableWorldMap" />
         </a-form-model-item>
-        <a-form-model-item v-if="isPublic && form.fd.enableWorldMap" :label="$t('compute.region_map')" v-bind="formItemLayout">
+        <a-form-model-item v-if="isPublic && form.fd.enableWorldMap" :label="$t('compute.region_map')">
           <region-map
             :region-filter-params="regionMapParams"
             filter-brand-resource="network_manage"
@@ -38,8 +37,6 @@
           ref="areaSelects"
           :key="`eip-area-${cloudEnv}`"
           :model="form.fd"
-          :wrapperCol="formItemLayout.wrapperCol"
-          :labelCol="formItemLayout.labelCol"
           :names="areaselectsName"
           :cloudregionParams="regionParams"
           :providerParams="cloudProviderParams"
@@ -52,7 +49,7 @@
           filterBrandResource="network_manage"
           @change="cloudregionChange"
           @fetchsDone="onAreaSelectsFetchsDone" />
-        <a-form-model-item :label="$t('network.text_743')" v-bind="formItemLayout" v-if="showBgpTypes" prop="bgp_type">
+        <a-form-model-item :label="$t('network.text_743')" v-if="showBgpTypes" prop="bgp_type">
           <a-select v-model:value="form.fd.bgp_type" @change="v => handleBgpTypeChange(v)">
             <a-select-option v-for="item in bgpTypeOptions" :value="item" :key="item">{{ item === '' ? $t('network.text_749') : BGP_TYPES_MAP[item] ? BGP_TYPES_MAP[item].label : item }}</a-select-option>
           </a-select>
@@ -61,8 +58,6 @@
           <ip-subnet
             :label="$t('network.text_211')"
             :isRequired="true"
-            :labelCol="formItemLayout.labelCol"
-            :wrapperCol="formItemLayout.wrapperCol"
             :model="form.fd"
             :vpcParams="vpcParams"
             :networkParams="networkParams"
@@ -72,14 +67,14 @@
             :helplink="{ipSubnetHelp: $t('network.eip.tip'), ipSubnetHref: '/network/create'}" />
         </template>
         <template v-if="cloudEnv !== 'private' || isHCSO || isHCS">
-          <a-form-model-item :label="$t('network.text_192')" v-bind="formItemLayout" prop="charge_type">
+          <a-form-model-item :label="$t('network.text_192')" prop="charge_type">
             <a-radio-group v-model:value="form.fd.charge_type" @change="e => chargeTypeChange(e)">
               <a-radio-button v-for="item in chargeTypeOptions" :value="item.value" :key="item.value">
                 {{item.label}}
               </a-radio-button>
             </a-radio-group>
           </a-form-model-item>
-          <a-form-model-item :label="$t('network.text_484')" v-bind="formItemLayout" prop="bandwidth">
+          <a-form-model-item :label="$t('network.text_484')" prop="bandwidth">
             <div class="d-flex align-items-center">
               <a-tooltip placement="top" :title="$t('network.eip.text_725', [maxBandwidth])">
                 <a-input-number
@@ -96,7 +91,7 @@
             </div>
           </a-form-model-item>
         </template>
-        <a-form-model-item :label="$t('compute.text_15')" v-bind="formItemLayout" v-if="showCloudprovider" key="manager" prop="manager">
+        <a-form-model-item :label="$t('compute.text_15')" v-if="showCloudprovider" key="manager" prop="manager">
           <base-select
             :remote="true"
             v-model:value="form.fd.manager"
@@ -110,7 +105,7 @@
             :select-props="{ placeholder: $t('compute.text_1387') }"
             style="width: 320px" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('common.text00012')" class="mb-0" v-bind="formItemLayout" prop="__meta__">
+        <a-form-model-item :label="$t('common.text00012')" class="mb-0" prop="__meta__">
           <tag
             :key="`eip-tag-${cloudEnv}`"
             :value="form.fd.__meta__"
@@ -225,18 +220,6 @@ export default {
         project: [
           { validator: isRequired(), message: this.$t('dictionary.project'), trigger: 'change' },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 17 },
-          xl: { span: 19 },
-          xxl: { span: 21 },
-        },
-        labelCol: {
-          md: { span: 7 },
-          xl: { span: 5 },
-          xxl: { span: 3 },
-        },
       },
       manager: '',
       cloudAccountId: '',

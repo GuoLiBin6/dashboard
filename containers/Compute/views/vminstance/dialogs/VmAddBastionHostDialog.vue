@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{ $t('compute.bastionHost.add_bastion_host') }}</div>
     <div slot="body">
-      <a-form-model ref="formRef" :model="form.fd" :rules="rules" hideRequiredMark v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form.fd" :rules="rules" hideRequiredMark>
         <bastion-host
           :form="form"
           :model="form.fd"
@@ -42,14 +42,6 @@ export default {
       loading: false,
       form: {
         fd,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       rules: {
         bastion_host_id: [

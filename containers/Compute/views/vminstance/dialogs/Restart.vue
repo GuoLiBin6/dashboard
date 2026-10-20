@@ -11,10 +11,10 @@
       <dialog-selected-tips :name="params.name || $t('dictionary.server')" :count="dataList.length" :action="action" />
       <table-lite-grid class="mb-2" :data="dataList" :columns="columns" />
       <a-form-model ref="formRef" :model="form" hideRequiredMark>
-        <a-form-model-item :label="$t('compute.text_1041')" v-bind="formItemLayout" v-if="isOpenWorkflow" prop="reason">
+        <a-form-model-item :label="$t('compute.text_1041')" v-if="isOpenWorkflow" prop="reason">
           <a-input v-model:value="form.reason" :placeholder="$t('compute.text_1105')" />
         </a-form-model-item>
-        <a-form-model-item v-if="isSupportForce" :label="$t('compute.text_1235')" v-bind="formItemLayout" prop="autoStart">
+        <a-form-model-item v-if="isSupportForce" :label="$t('compute.text_1235')" prop="autoStart">
           <a-switch v-model:checked="form.autoStart" />
         </a-form-model-item>
       </a-form-model>
@@ -47,14 +47,6 @@ export default {
       form: {
         reason: formData.reason || '',
         autoStart: formData.is_force || false,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
       dataList: [],
     }

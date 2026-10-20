@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('compute.disk.change_driver')}}</div>
     <div slot="body">
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout" hideRequiredMark>
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
         <dialog-table :data="dataList" :columns="columns" />
         <a-form-model-item label="SSD" :extra="$t('compute.disk.ssd_extra')" prop="is_ssd">
           <a-switch v-model:checked="form.is_ssd" />
@@ -67,14 +67,6 @@ export default {
         ],
       },
       dataList: [],
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
-      },
       cacheModesOpts: [
         { label: 'none', value: 'none' },
         { label: 'writethrough', value: 'writethrough' },

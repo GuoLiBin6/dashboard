@@ -3,7 +3,7 @@
     <div slot="header">{{ $t('compute.repo.image.save_image') }}</div>
     <div slot="body">
       <dialog-selected-tips :name="$t('compute.container', [])" :count="params.data.length" :action="$t('compute.repo.image.save_image')" />
-      <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 5 }" :wrapper-col="{ span: 17 }">
+      <a-form-model ref="form" :model="form" :rules="rules">
         <a-form-model-item :label="$t('dictionary.container_registry')" prop="registry_id">
           <a-select
             v-model="form.registry_id"

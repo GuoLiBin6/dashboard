@@ -9,8 +9,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('network.text_156')" v-if="enableType('A/AAAA', 'CNAME', 'SRV')" :extra="$t('network.text_157')" prop="name">
           <a-input v-model:value="form.name" :placeholder="$t('network.text_158')" />
         </a-form-model-item>
@@ -166,14 +165,6 @@ export default {
         priority: [
           { required: true, message: this.$t('network.text_117') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       recordOptions: [
         { value: 'A', label: 'A' },

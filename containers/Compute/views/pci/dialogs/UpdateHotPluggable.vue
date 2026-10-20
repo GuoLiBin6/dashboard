@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{ $t('common.edit') }}</div>
     <div slot="body">
-      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form">
         <a-form-model-item :label="$t('compute.pci.hot_pluggable')" :extra="$t('compute.pci.hot_pluggable.tips')" prop="hot_pluggable">
           <a-switch v-model:checked="form.hot_pluggable" :checked-children="$t('table.title.on')" :un-checked-children="$t('table.title.off')" />
         </a-form-model-item>
@@ -27,10 +27,6 @@ export default {
       loading: false,
       form: {
         hot_pluggable: this.params.data[0].hot_pluggable,
-      },
-      formItemLayout: {
-        wrapperCol: { span: 20 },
-        labelCol: { span: 4 },
       },
     }
   },

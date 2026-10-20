@@ -25,14 +25,6 @@ export default {
   data () {
     return {
       loading: false,
-      formItemLayout: {
-        wrapperCol: {
-          span: 18,
-        },
-        labelCol: {
-          span: 3,
-        },
-      },
       content: this.params.data[0].content,
     }
   },

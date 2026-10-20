@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.server_container')" :count="params.data.length" :action="$t('compute.text_359')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form.fd" :rules="rules" hideRequiredMark v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form.fd" :rules="rules" hideRequiredMark>
         <a-form-model-item :label="$t('compute.text_228')" prop="name">
           <a-input v-model:value="form.fd.name" @change="e => { form.fi.generate_name = e.target.value }" />
           <template #extra>
@@ -22,8 +22,8 @@
         </a-form-model-item>
       </a-form-model>
       <!-- OsSelect end-state（:model + validate），公有云克隆时单独挂载 -->
-      <div v-if="isPublic" v-bind="formItemLayout">
-        <a-form-model-item :label="$t('compute.text_267')" :labelCol="formItemLayout.labelCol" :wrapperCol="formItemLayout.wrapperCol">
+      <div v-if="isPublic">
+        <a-form-model-item :label="$t('compute.text_267')">
           <os-select
             ref="osSelectRef"
             :type="type"
@@ -93,14 +93,6 @@ export default {
         __count__: [
           { required: true, message: this.$t('compute.text_1195') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       servers: [],
       createParams: {},

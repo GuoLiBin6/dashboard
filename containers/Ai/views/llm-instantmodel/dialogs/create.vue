@@ -2,7 +2,7 @@
   <base-dialog :width="900" @cancel="cancelDialog">
     <div slot="header">{{ $t('common.create') }}</div>
     <div slot="body">
-      <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 4 }" :wrapper-col="{ span: 18 }">
+      <a-form-model ref="form" :model="form" :rules="rules">
         <a-form-model-item :label="$t('common.name')" prop="name">
           <a-input v-model:value="form.name" :placeholder="$t('common.tips.input', [$t('common.name')])" />
         </a-form-model-item>

@@ -6,7 +6,7 @@
       <dialog-selected-tips :count="params.data.length" :action="this.params.title" :name="this.params.name" :unit="params.unit" />
       <dialog-table v-if="params.columns && params.columns.length" :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-form-model ref="formRef" :model="form" hideRequiredMark>
-        <a-form-model-item v-if="showDeleteEip" :label="$t('compute.text_1265')" v-bind="formItemLayout" :extra="$t('compute.text_1266')" prop="auto_delete">
+        <a-form-model-item v-if="showDeleteEip" :label="$t('compute.text_1265')" :extra="$t('compute.text_1266')" prop="auto_delete">
           <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-model:checked="form.auto_delete" />
         </a-form-model-item>
       </a-form-model>
@@ -31,14 +31,6 @@ export default {
       loading: false,
       form: {
         auto_delete: false,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

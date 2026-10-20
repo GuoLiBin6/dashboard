@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{this.params.title}}</div>
     <div slot="body" v-loading="loading">
-     <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+     <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('common_633')" prop="redirect_uri">
           <a-input :placeholder="$t('common_634')" v-model:value="form.redirect_uri" />
         </a-form-model-item>
@@ -32,14 +32,6 @@ export default {
           { required: true, message: this.$t('common_634') },
           { validator: this.$validate('url') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
       },
     }
   },

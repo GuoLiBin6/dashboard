@@ -1,7 +1,7 @@
 <template>
   <div>
     <a-alert v-if="isOpenstack" class="my-2" :message="$t('cloudenv.text_252')" banner />
-    <a-form-model ref="formRef" :model="form.fd" :rules="formRules" v-bind="formLayout" :data-oc-label-min-text="$t('cloudenv.project_mapping_effective_scope')">
+    <a-form-model ref="formRef" :model="form.fd" :rules="formRules" :data-oc-label-min-text="$t('cloudenv.project_mapping_effective_scope')">
       <a-form-model-item :label="$t('cloudenv.text_95')">
         <a-input v-model:value="form.fd.name" :placeholder="$t('cloudenv.text_190')" />
       </a-form-model-item>
@@ -36,10 +36,10 @@
       <a-form-model-item label="Domain Name"  v-if="isOpenstack">
         <a-input v-model:value="form.fd.domain_name" />
       </a-form-model-item>
-      <domain-project :form="form.fd" :form-layout="formLayout" :cloneData="cloneData" />
+      <domain-project :form="form.fd" :cloneData="cloneData" />
       <blocked-resources :form="form.fd" :cloneData="cloneData"  />
       <proxy-setting :form="form.fd" ref="proxySetting" :cloneData="cloneData" />
-      <auto-sync :form="form.fd" :form-layout="formLayout" :cloneData="cloneData" />
+      <auto-sync :form="form.fd" :cloneData="cloneData" />
       <read-only :cloneData="cloneData" />
       <share-mode :form="form.fd" :cloneData="cloneData" />
     </a-form-model>

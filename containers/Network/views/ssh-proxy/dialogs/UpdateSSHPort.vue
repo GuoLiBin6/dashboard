@@ -5,7 +5,7 @@
       <dialog-selected-tips :name="$t('network.ssh-proxy.endpoints')" :count="params.data.length" :action="$t('network.text_349')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 4)" />
       <a-form-model ref="formRef" :model="form" :rules="rules">
-        <a-form-model-item :label="$t('network.ssh-proxy.port')" v-bind="formItemLayout" prop="port">
+        <a-form-model-item :label="$t('network.ssh-proxy.port')" prop="port">
           <a-input-number v-model:value="form.port" />
         </a-form-model-item>
       </a-form-model>
@@ -45,14 +45,6 @@ export default {
           { required: true, message: this.$t('network.text_176') },
           { type: 'number', min: 1, max: 65535, message: this.$t('network.text_347') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

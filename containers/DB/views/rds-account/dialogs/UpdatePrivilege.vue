@@ -4,7 +4,7 @@
     <div slot="body" class="mt-3">
       <dialog-selected-tips :name="$t('dictionary.dbinstanceaccounts')" :action="params.title" :count="params.data.length" />
       <dialog-table :columns="params.columns.slice(0, 3)" :data="params.data" />
-      <a-form-model ref="formRef" :model="form.fd" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form.fd" :rules="rules">
         <a-form-model-item :label="$t('db.text_344')" prop="host">
           <template #extra>
             <div>
@@ -28,7 +28,6 @@
 </template>
 
 <script>
-import { CreateServerForm } from '@Compute/constants'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import AccountPrivileges from '../components/AccountPrivileges'
@@ -52,10 +51,6 @@ export default {
         host: [
           { required: true, message: this.$t('db.text_347') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: { span: CreateServerForm.wrapperCol },
-        labelCol: { span: CreateServerForm.labelCol },
       },
     }
   },

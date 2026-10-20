@@ -1,5 +1,5 @@
 <template>
-  <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+  <a-form-model ref="formRef" :model="form" :rules="rules">
     <a-form-model-item :label="$t('scope.text_204')" :help="$t('scope.text_205')">
       {{ email }}
     </a-form-model-item>
@@ -17,7 +17,7 @@ import * as R from 'ramda'
 
 export default {
   name: 'email',
-  inject: ['userId', 'manager', 'dialogData', 'formItemLayout'],
+  inject: ['userId', 'manager', 'dialogData'],
   data () {
     return {
       codeButtonText: this.$t('scope.text_206'),

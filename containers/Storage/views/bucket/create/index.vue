@@ -6,7 +6,6 @@
         ref="formRef"
         :model="form"
         :rules="rules"
-        v-bind="formItemLayout"
         hideRequiredMark>
         <a-form-model-item :label="$t('storage.text_55', [$t('dictionary.project')])" prop="project">
           <domain-project
@@ -18,8 +17,6 @@
           class="mb-0"
           ref="areaSelects"
           :model="form"
-          :wrapperCol="formItemLayout.wrapperCol"
-          :labelCol="formItemLayout.labelCol"
           :names="areaselectsName"
           :cloudregionParams="cloudregionParams"
           :isRequired="true"
@@ -64,7 +61,6 @@
 <script>
 import * as R from 'ramda'
 import { mapGetters } from 'vuex'
-import { formItemLayout } from '@Storage/constants/index.js'
 import Tag from '@/sections/Tag'
 import AreaSelects from '@/sections/AreaSelects/model'
 import { isRequired } from '@/utils/validate'
@@ -103,7 +99,6 @@ export default {
         cloudprovider: undefined,
         tag: {},
       },
-      formItemLayout,
       project_domain: '',
       cloudregion: {},
     }

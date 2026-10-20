@@ -1,5 +1,5 @@
 <template>
-  <a-form-item :wrapperCol="{ span: 24 }" style="flex: 1;" class="mb-0 mr-1 network-item">
+  <a-form-item style="flex: 1;" class="mb-0 mr-1 network-item">
     <base-select
       class="w-100"
       :value="storageFieldVal"

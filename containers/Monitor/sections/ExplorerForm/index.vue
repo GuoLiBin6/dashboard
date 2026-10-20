@@ -7,7 +7,6 @@
         :enable-chart-types="enableChartTypes"
         :defaultPanelShow="item.show"
         :showDelete="formList.length > 1"
-        :formItemLayout="formItemLayout"
         :timeRangeParams="timeRangeParams"
         :extraParams="extraParams"
         @nameChange="val => nameChange(val, i)"
@@ -63,14 +62,6 @@ export default {
   data () {
     return {
       formList: [{ key: uuid(), show: true }],
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
     }
   },
   computed: {

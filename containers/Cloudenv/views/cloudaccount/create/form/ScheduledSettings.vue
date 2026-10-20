@@ -1,7 +1,7 @@
 <template>
   <div>
     <page-body>
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formLayout" hideRequiredMark>
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
         <a-form-model-item :label="$t('cloudenv.text_95')" prop="name">
           <a-input :placeholder="$t('cloudenv.text_190')" v-model:value="form.name" />
         </a-form-model-item>
@@ -39,18 +39,6 @@ export default {
         name: [
           { required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` },
         ],
-      },
-      formLayout: {
-        wrapperCol: {
-          md: { span: 18 },
-          xl: { span: 19 },
-          xxl: { span: 21 },
-        },
-        labelCol: {
-          md: { span: 8 },
-          xl: { span: 5 },
-          xxl: { span: 3 },
-        },
       },
     }
   },

@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="$t('monitor.convert_to_ticket')" :name="$t('monitor.text_17')" />
       <dialog-table v-if="params.columns && params.columns.length" :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="form" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="form" :model="form" :rules="rules">
         <a-form-model-item :label="$t('monitor.alert_ticket_type')">
           <a-radio-group v-model:value="form.ticket_type">
             <template v-if="params.enabledKeys.includes('alert-event')">
@@ -42,14 +42,6 @@ export default {
   data () {
     return {
       loading: false,
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
       form: {
         ticket_type: this.params.activeKeys[0],
       },

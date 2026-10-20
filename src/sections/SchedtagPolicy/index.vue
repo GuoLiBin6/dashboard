@@ -1,7 +1,6 @@
 <template>
   <div class="d-flex">
     <a-form-item
-      :wrapperCol="{ span: 24 }"
       class="mb-0 mr-1 w-50">
       <template v-if="showDocsLink()" #extra>{{ $t('common.schedtag.extra') }}，<help-link  :href="docUrl">{{ $t('common.view.doc') }}</help-link></template>
       <base-select
@@ -14,7 +13,7 @@
         @change="schedtagChange"
         :select-props="{ allowClear: true, placeholder: $t('common_255') }" />
     </a-form-item>
-    <a-form-item class="mb-0 w-50" :wrapperCol="{ span: 24 }">
+    <a-form-item class="mb-0 w-50">
       <base-select
         class="w-100"
         :value="fieldVal(fieldMap.policy)"

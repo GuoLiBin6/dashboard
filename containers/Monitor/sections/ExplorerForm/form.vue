@@ -6,7 +6,6 @@
     </div>
     <div v-show="panelShow">
       <a-form-model
-        v-bind="formItemLayout"
         :model="form.fd">
         <a-form-model-item :label="$t('monitor.monitor_metric')" class="mb-0">
           <metric
@@ -36,8 +35,7 @@
       <a-form-model
         ref="shellFormRef"
         :model="form.fd"
-        :rules="shellRules"
-        v-bind="formItemLayout">
+        :rules="shellRules">
         <a-form-model-item :label="$t('monitor.monitor_group')" prop="group_by">
           <base-select
             :value="form.fd.group_by"
@@ -116,17 +114,6 @@ export default {
     enableChartTypes: {
       type: Boolean,
       default: false,
-    },
-    formItemLayout: {
-      type: Object,
-      default: () => ({
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
-      }),
     },
     showDelete: {
       type: Boolean,

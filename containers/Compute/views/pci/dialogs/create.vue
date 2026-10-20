@@ -5,8 +5,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('compute.pci.dev_type')" prop="dev_type">
           <a-input v-model:value="form.dev_type" :placeholder="$t('compute.pci.dev_type.placeholder')" />
         </a-form-model-item>
@@ -100,14 +99,6 @@ export default {
           { required: true, message: this.$t('compute.pci.device_id.placeholder') },
           { validator: this.validateDeviceId(), trigger: 'blur' },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       hostParams: {
         details: false,

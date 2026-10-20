@@ -7,7 +7,7 @@
       </a-alert>
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_1117')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('compute.text_1230')" prop="buyDuration">
           <a-radio-group v-model:value="form.buyDuration">
             <a-radio-button
@@ -48,14 +48,6 @@ export default {
       },
       options: {
         buyDurations,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

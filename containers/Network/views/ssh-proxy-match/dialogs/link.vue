@@ -5,14 +5,11 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <area-selects
           class="mb-0"
           ref="areaSelects"
           :model="form"
-          :wrapperCol="formItemLayout.wrapperCol"
-          :labelCol="formItemLayout.labelCol"
           :names="['provider', 'cloudregion']"
           :cloudregionParams="regionParams"
           :providerParams="providerParams"
@@ -115,14 +112,6 @@ export default {
       name: '',
       regionId: '',
       vpcId: '',
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
     }
   },
   computed: {

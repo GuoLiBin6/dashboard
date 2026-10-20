@@ -3,11 +3,10 @@
     <a-form-model
       ref="formRef"
       class="mt-3"
-      v-bind="formItemLayout"
       :model="form.fd"
       :rules="rules"
       hideRequiredMark>
-      <a-form-model-item :label="$t('storage.text_55', [$t('dictionary.project')])" prop="project" v-bind="formItemLayout">
+      <a-form-model-item :label="$t('storage.text_55', [$t('dictionary.project')])" prop="project">
         <domain-project :form="form.fd" @update:domain="handleDomainChange" />
       </a-form-model-item>
       <a-form-model-item :label="$t('storage.text_40')" prop="name">
@@ -20,7 +19,7 @@
         <a-textarea v-model:value="form.fd.description" :auto-size="{ minRows: 1, maxRows: 3 }" :placeholder="$t('common_367')" />
       </a-form-model-item>
       <!-- 计费方式 -->
-      <clearing-radios :model="form.fd" v-bind="formItemLayout" :auto_renew="false" />
+      <clearing-radios :model="form.fd" :auto_renew="false" />
       <a-form-model-item :label="$t('network.expired_release')" v-if="form.fd.billing_type !== 'prepaid'">
         <duration
           :model="form.fd"
@@ -45,8 +44,6 @@
         v-if="showAreaSelect"
         ref="areaSelects"
         :model="form.fd"
-        :wrapperCol="formItemLayout.wrapperCol"
-        :labelCol="formItemLayout.labelCol"
         :names="areaselectsName"
         :providerParams="providerParams"
         :cloudregionParams="regionParams"
@@ -59,7 +56,7 @@
       <file-system-sku
         @update:options="skuChanged"
         ref="REF_SKU" />
-      <a-form-model-item :label="$t('storage.capacity')" v-bind="formItemLayout" v-if="isShowCapacity" prop="capacity">
+      <a-form-model-item :label="$t('storage.capacity')" v-if="isShowCapacity" prop="capacity">
         <a-col :span="12">
           <a-tooltip>
             <template #title v-if="capacityTooltip">
@@ -75,7 +72,7 @@
         show-icon
         :message="$t('regionMap.select_sku_first_tip')"
         class="mb-2" />
-      <a-form-model-item :label="$t('compute.text_15')" prop="cloudprovider" required v-bind="formItemLayout">
+      <a-form-model-item :label="$t('compute.text_15')" prop="cloudprovider" required>
         <base-select
           class="w-50"
           v-model:value="form.fd.cloudprovider"
@@ -95,7 +92,6 @@
         :vpcFormat="vpcFormat"
         :vpcParams="vpcParams"
         :networkParams="netParams"
-        v-bind="formItemLayout"
         class="mb-0" />
       <a-form-model-item :label="$t('compute.text_1154')" class="mb-0" prop="tag">
         <tag
@@ -377,7 +373,6 @@ export default {
     return {
       form: this.form,
       scopeParams: this.scopeParams,
-      formItemLayout: this.formItemLayout,
       tailFormItemLayout: this.tailFormItemLayout,
       validateCreateForm: () => this.validateCreateForm(),
     }

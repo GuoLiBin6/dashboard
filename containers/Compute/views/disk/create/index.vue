@@ -7,23 +7,23 @@
       :model="form.fd"
       :rules="rules"
       hideRequiredMark>
-      <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-bind="formItemLayout" prop="project">
+      <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])" prop="project">
         <domain-project
           ref="domainProjectRef"
           :form="form.fd"
           @fetchDomainCallback="fetchDomainCallback"
           @fetchProjectCallback="fetchProjectCallback" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('compute.text_228')" v-bind="formItemLayout" prop="name">
+      <a-form-model-item :label="$t('compute.text_228')" prop="name">
         <a-input v-model:value="form.fd.name" :placeholder="$t('validator.resourceCreateName')" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('common.description')" v-bind="formItemLayout" prop="description">
+      <a-form-model-item :label="$t('common.description')" prop="description">
         <a-textarea v-model:value="form.fd.description" :auto-size="{ minRows: 1, maxRows: 3 }" :placeholder="$t('common_367')" />
       </a-form-model-item>
-      <a-form-model-item v-if="isPublic" :label="$t('regionMap.enable_world_map')" v-bind="formItemLayout" prop="enableWorldMap">
+      <a-form-model-item v-if="isPublic" :label="$t('regionMap.enable_world_map')" prop="enableWorldMap">
         <a-switch v-model:checked="form.fd.enableWorldMap" />
       </a-form-model-item>
-      <a-form-model-item v-if="isPublic && form.fd.enableWorldMap" :label="$t('compute.region_map')" v-bind="formItemLayout">
+      <a-form-model-item v-if="isPublic && form.fd.enableWorldMap" :label="$t('compute.region_map')">
         <region-map
           :region-filter-params="regionMapParams"
           filter-brand-resource="compute_engine"
@@ -36,8 +36,6 @@
         class="mb-0"
         ref="areaSelects"
         :model="form.fd"
-        :wrapperCol="formItemLayout.wrapperCol"
-        :labelCol="formItemLayout.labelCol"
         :names="areaselectsName"
         :cloudregionParams="param.region"
         :zoneParams="param.zone"
@@ -56,7 +54,6 @@
         v-if="showHypervisorRadio"
         :label="$t('compute.text_176')"
         :extra="$t('compute.hypervisor_extra')"
-        v-bind="formItemLayout"
         prop="hypervisor">
         <hypervisor-radio
           ref="hypervisorRadioRef"
@@ -68,7 +65,7 @@
           :form-draft-key="diskDraftFields.hypervisor"
           @change="changeHandle" />
       </a-form-model-item>
-      <a-form-model-item v-if="showCloudprovider" :label="$t('compute.text_15')" v-bind="formItemLayout" prop="manager_id">
+      <a-form-model-item v-if="showCloudprovider" :label="$t('compute.text_15')" prop="manager_id">
         <base-select
           class="w-50"
           v-model:value="form.fd.manager_id"
@@ -80,7 +77,7 @@
           v-model:resList="cloudproviderData"
           @update:item="cloudproviderSelected" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('compute.text_100')" v-bind="formItemLayout" prop="backend" required>
+      <a-form-model-item :label="$t('compute.text_100')" prop="backend" required>
         <a-row>
           <a-col :span="6" class="mr-2">
             <a-select v-model:value="form.fd.backend" @change="v => __newStorageChange(v)">
@@ -141,10 +138,10 @@
           </a-col>
         </a-row>
       </a-form-model-item>
-      <a-form-model-item v-if="enableEncryption && !isPublic" v-bind="formItemLayout" :label="$t('compute.disk.encryption')" :extra="$t('compute.disk.encryption.extra')">
+      <a-form-model-item v-if="enableEncryption && !isPublic" :label="$t('compute.disk.encryption')" :extra="$t('compute.disk.encryption.extra')">
         <encrypt-keys ref="encryptKeysRef" :model="form.fd" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('compute.text_1154')" class="mb-0" v-bind="formItemLayout" prop="__meta__">
+      <a-form-model-item :label="$t('compute.text_1154')" class="mb-0" prop="__meta__">
         <tag
           :key="`disk-tag-${cloudEnv}`"
           v-model:value="form.fd.__meta__"
@@ -276,18 +273,6 @@ export default {
         hypervisor: [
           { required: true, message: i18n.t('compute.text_215') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 18 },
-          xl: { span: 20 },
-          xxl: { span: 22 },
-        },
-        labelCol: {
-          md: { span: 6 },
-          xl: { span: 4 },
-          xxl: { span: 2 },
-        },
       },
       storageOpts: [],
       storageItem: {},

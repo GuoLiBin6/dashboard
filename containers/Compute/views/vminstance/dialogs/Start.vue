@@ -7,10 +7,10 @@
       <a-form-model
         ref="formRef"
         :model="form">
-        <a-form-model-item :label="$t('compute.text_1041')" v-bind="formItemLayout" v-if="isOpenWorkflow" prop="reason">
+        <a-form-model-item :label="$t('compute.text_1041')" v-if="isOpenWorkflow" prop="reason">
           <a-input v-model:value="form.reason" :placeholder="$t('compute.text_1105')" />
         </a-form-model-item>
-        <a-form-model-item v-if="showQemuVersion" :label="$t('compute.qemu_version')" v-bind="formItemLayout" prop="qemu_version">
+        <a-form-model-item v-if="showQemuVersion" :label="$t('compute.qemu_version')" prop="qemu_version">
           <a-select
             v-model:value="form.qemu_version"
             style="width: 200px"
@@ -58,14 +58,6 @@ export default {
         qemu_version: (formData.qemu_version && formData.qemu_version !== 'default')
           ? formData.qemu_version
           : 'default',
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
       dataList: [],
     }

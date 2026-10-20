@@ -4,7 +4,6 @@
     <div slot="body">
       <a-form-model
         ref="formRef"
-        v-bind="formItemLayout"
         :model="form">
         <a-form-model-item :label="$t('compute.text_1051')" :extra="$t('compute.text_1055')" prop="cpu_core_count">
           <a-input-number :min="1" v-model:value="form.cpu_core_count" /> {{$t('compute.text_167')}}
@@ -42,14 +41,6 @@ export default {
         memory_size_mb: 16,
         sys_disk_max_size_gb: 2048,
         description: undefined,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 18,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

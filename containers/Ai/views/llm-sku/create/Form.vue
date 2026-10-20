@@ -1,7 +1,7 @@
 <template>
   <div class="llm-sku-create-form">
     <!-- end-state: a-form-model + form.fd only -->
-    <a-form-model ref="formRef" :model="form.fd" :rules="formRules" v-bind="formItemLayout">
+    <a-form-model ref="formRef" :model="form.fd" :rules="formRules">
       <a-form-model-item :label="$t('aice.project')">
         <domain-project
           v-if="!isEditMode"
@@ -996,10 +996,6 @@ export default {
           fs_user: (hpKey, cKey) => ({ name: `host_path_fs_user_${hpKey}__${cKey}`, initialValue: getHostPathContainerRow(hpKey, cKey)?.fs_user }),
           fs_group: (hpKey, cKey) => ({ name: `host_path_fs_group_${hpKey}__${cKey}`, initialValue: getHostPathContainerRow(hpKey, cKey)?.fs_group }),
         },
-      },
-      formItemLayout: {
-        wrapperCol: { span: 20 },
-        labelCol: { span: 4 },
       },
       envVars,
       projectName: (project_domain != null && tenant != null) ? `${project_domain}/${tenant}` : '',

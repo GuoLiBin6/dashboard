@@ -1,7 +1,7 @@
 <template>
   <div>
     <a-alert :showIcon="false" :message="$t('cloudenv.text_194')" banner />
-    <a-form-model ref="formRef" class="pt-3" :model="form.fd" :rules="billRules" v-bind="formLayout">
+    <a-form-model ref="formRef" class="pt-3" :model="form.fd" :rules="billRules">
       <a-divider orientation="left">{{$t('cloudenv.text_199')}}</a-divider>
       <a-form-model-item :label="$t('cloudenv.text_200')">
         <a-radio-group v-model:value="billingType">
@@ -86,18 +86,6 @@ export default {
         '1 months': this.$t('cloudenv.text_215'),
         '3 months': this.$t('cloudenv.text_216'),
         '6 months': this.$t('cloudenv.text_217'),
-      },
-      formLayout: {
-        wrapperCol: {
-          md: { span: 18 },
-          xl: { span: 20 },
-          xxl: { span: 22 },
-        },
-        labelCol: {
-          md: { span: 6 },
-          xl: { span: 3 },
-          xxl: { span: 2 },
-        },
       },
       offsetFormLayout: {
         wrapperCol: {

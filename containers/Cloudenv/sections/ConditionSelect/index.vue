@@ -1,5 +1,5 @@
 <template>
-  <a-form-item :required="isRequired" class="no-line-height" :label="$t('cloudenv.text_22')" v-bind="formItemLayout">
+  <a-form-item :required="isRequired" class="no-line-height" :label="$t('cloudenv.text_22')">
     <a-input-group compact>
       <a-select :value="conditionKey" @change="onConditionKeyChange">
         <a-select-option value="projects">{{ $t('dictionary.project') }}</a-select-option>
@@ -27,10 +27,6 @@ const CONDITION_VALS_FIELD = 'conditionVals'
 export default {
   name: 'ConditionSelect',
   props: {
-    formItemLayout: {
-      type: Object,
-      required: true,
-    },
     required: {
       type: Boolean,
       default: true,

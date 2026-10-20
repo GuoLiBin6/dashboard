@@ -2,7 +2,7 @@
   <div class="os-image-select-wrapper">
     <a-row :gutter="8">
       <a-col :span="8" v-if="showCloudaccount">
-        <a-form-model-item :wrapperCol="{ span: 24 }" class="mb-0" :prop="fieldProp('prefer_manager')">
+        <a-form-model-item class="mb-0" :prop="fieldProp('prefer_manager')">
           <base-select
             :value="fieldVal(imageOsFieldMap.prefer_manager)"
             resource="cloudproviders"
@@ -14,7 +14,7 @@
         </a-form-model-item>
       </a-col>
       <a-col :span="showCloudaccount ? 5 : 6">
-        <a-form-model-item :wrapperCol="{ span: 24 }" class="mb-0" :prop="fieldProp('os')">
+        <a-form-model-item class="mb-0" :prop="fieldProp('os')">
           <a-select
             :value="fieldVal(imageOsFieldMap.os)"
             :loading="loading"
@@ -30,7 +30,7 @@
         </a-form-model-item>
       </a-col>
       <a-col :span="showCloudaccount ? 11 : 18">
-        <a-form-model-item :wrapperCol="{ span: 24 }" class="mb-0" :prop="fieldProp('image')">
+        <a-form-model-item class="mb-0" :prop="fieldProp('image')">
           <image-select-template
             :value="fieldVal(imageOsFieldMap.image)"
             :imageOpts="imageOptions"

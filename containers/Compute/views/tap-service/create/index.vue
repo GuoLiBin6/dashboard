@@ -6,8 +6,7 @@
         ref="formRef"
         :model="form"
         :rules="rules"
-        class="mt-3"
-        v-bind="formItemLayout">
+        class="mt-3">
         <a-form-model-item :label="$t('compute.text_228')" prop="name">
           <a-input v-model:value="form.name" :placeholder="$t('validator.serverCreateName')" />
         </a-form-model-item>
@@ -70,18 +69,6 @@ export default {
         mac_addr: undefined,
       },
       currentHost: {},
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 16 },
-          xl: { span: 18 },
-          xxl: { span: 20 },
-        },
-        labelCol: {
-          md: { span: 8 },
-          xl: { span: 6 },
-          xxl: { span: 4 },
-        },
-      },
     }
   },
   computed: {

@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <template #header>{{this.params.title}}</template>
     <template #body>
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('storage.text_55', [$t('dictionary.domain')])" prop="project_domain">
           <domain-select v-if="isAdminMode && l3PermissionEnable" v-model:value="form.project_domain" />
           <template v-else> {{userInfo.domain.name}} </template>
@@ -134,14 +134,6 @@ export default {
         object_bucket_url_ext: [
           { required: false, message: this.$t('storage.object_bucket_url_ext.validate.prompt'), trigger: 'blur' },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

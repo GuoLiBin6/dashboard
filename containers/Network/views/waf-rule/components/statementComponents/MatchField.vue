@@ -1,6 +1,6 @@
 <template>
   <div>
-    <a-form-item :label="$t('network_waf_statement.label.match_field')" v-bind="formLayout">
+    <a-form-item :label="$t('network_waf_statement.label.match_field')">
       <a-select v-if="isEdit" :value="value" @change="handleChange">
         <a-select-option v-for="item in matchFieldOptions" :value="item.value" :key="item.value">
           {{item.label}}
@@ -28,14 +28,6 @@ export default {
   },
   data () {
     return {
-      formLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
     }
   },
   computed: {

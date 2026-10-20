@@ -6,8 +6,7 @@
       <dialog-table class="mb-2" :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-form-model
         ref="formRef"
-        :model="form"
-        v-bind="formItemLayout">
+        :model="form">
         <a-form-model-item :label="$t('dictionary.policy')" prop="cloudpolicy_ids">
           <list-select
             v-model:value="form.cloudpolicy_ids"
@@ -71,14 +70,6 @@ export default {
             showOverflow: 'title',
           },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

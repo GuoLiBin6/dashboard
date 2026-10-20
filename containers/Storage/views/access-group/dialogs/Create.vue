@@ -5,14 +5,11 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <area-selects
           class="mb-0"
           ref="areaSelects"
           :model="form"
-          :wrapperCol="formItemLayout.wrapperCol"
-          :labelCol="formItemLayout.labelCol"
           :names="['provider', 'cloudregion']"
           :cloudregionParams="cloudRegionParams"
           :isRequired="true"
@@ -71,14 +68,6 @@ export default {
         cloudprovider: [
           { required: true, message: this.$t('common.tips.input', [this.$t('storage.text_40')]) },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       cloudRegionParams: {
         scope: this.$store.getters.scope,

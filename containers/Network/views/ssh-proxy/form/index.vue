@@ -4,7 +4,7 @@
     <page-body>
       <steps class="my-3" v-model="step" />
       <div class="step1" v-show="isSetpOne">
-        <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+        <a-form-model ref="formRef" :model="form" :rules="rules">
           <a-form-model-item :label="$t('dictionary.domain')" key="domain" v-show="showDomainSelect">
             <base-select
               v-model="filters.project_domain"
@@ -32,8 +32,6 @@
             :model="form"
             @change="handleAreaChange"
             :allowClear="false"
-            :wrapperCol="formItemLayout.wrapperCol"
-            :labelCol="formItemLayout.labelCol"
             :names="areaselectsName"
             :cloudregionParams="renderOrders.region.params"
             :providerParams="renderOrders.brand.params"
@@ -227,14 +225,6 @@ export default {
         vpc: { order: 4, next: 'network', params: {} },
         network: { order: 5, next: 'server', params: {}, optional: true },
         server: { order: 6, params: {} },
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 22,
-        },
-        labelCol: {
-          span: 2,
-        },
       },
     }
   },

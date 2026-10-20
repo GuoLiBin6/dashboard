@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="this.params.title" :name="$t('dictionary.blockstorage')" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
          <a-form-model-item :label="$t('storage.text_60')" v-if="params.data[0].brand.toLowerCase() !== 'zstack'" prop="commit_bound">
           <a-input-number :step="0.1" v-model:value="form.commit_bound" :min="0" />
         </a-form-model-item>
@@ -18,7 +18,7 @@
 </template>
 
 <script>
-import { formItemLayout, MEDIUM_TYPES } from '@Storage/constants/index.js'
+import { MEDIUM_TYPES } from '@Storage/constants/index.js'
 import { getCopyWithContentTableColumn } from '@/utils/common/tableColumn'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
@@ -31,7 +31,6 @@ export default {
     return {
       MEDIUM_TYPES,
       loading: false,
-      formItemLayout,
       form: {
         commit_bound: this.params.data[0].commit_bound || 1,
       },

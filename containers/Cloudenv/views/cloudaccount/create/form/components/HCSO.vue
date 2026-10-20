@@ -1,6 +1,6 @@
 <template>
   <div>
-    <a-form-model ref="formRef" :model="form.fd" :rules="formRules" v-if="fieldMap" v-bind="formLayout" :data-oc-label-min-text="$t('cloudenv.project_mapping_effective_scope')">
+    <a-form-model ref="formRef" :model="form.fd" :rules="formRules" v-if="fieldMap" :data-oc-label-min-text="$t('cloudenv.project_mapping_effective_scope')">
       <a-form-model-item :label="$t('cloudenv.text_95')">
         <a-input v-model:value="form.fd.name" :placeholder="$t('cloudenv.text_190')" />
       </a-form-model-item>
@@ -74,7 +74,7 @@
           {{$t('cloudenv.cloudaccount.hcso.default_subnet_dns.tips')}}
         </div>
       </a-form-model-item>
-      <domain-project :form="form.fd" :form-layout="formLayout" :cloneData="cloneData" />
+      <domain-project :form="form.fd" :cloneData="cloneData" />
       <blocked-resources :form="form.fd" :cloneData="cloneData"  />
       <proxy-setting :form="form.fd" ref="proxySetting" :cloneData="cloneData" />
       <auto-sync :form="form.fd" :cloneData="cloneData" />

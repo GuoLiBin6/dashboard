@@ -17,6 +17,8 @@ import {
 } from '@/utils/common/tableColumn'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
+// 须用 legacyH：Vue3 原生 h 的 { props } 不会落到组件 props，弹窗 body 会空白
+import legacyH from '@/utils/legacyCreateElement'
 
 export const DetectSshTable = {
   name: 'DetectSshTable',
@@ -47,12 +49,12 @@ export const DetectSshTable = {
     },
   },
   mixins: [DialogMixin, WindowsMixin],
-  render (h, context) {
+  render () {
     const vxeGridEvents = {}
     if (this.showRadioSelect) {
       vxeGridEvents['radio-change'] = ({ row }) => { this.$emit('radio-change', row) }
     }
-    return h('dialog-table', {
+    return legacyH('dialog-table', {
       props: {
         data: this.rows,
         columns: this.columns,

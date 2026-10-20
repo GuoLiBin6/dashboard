@@ -6,28 +6,28 @@
         ref="formRef"
         :model="form"
         :rules="rules">
-        <a-form-model-item :label="$t('storage.text_194')" v-bind="formItemLayout" prop="allowed_origins">
+        <a-form-model-item :label="$t('storage.text_194')" prop="allowed_origins">
           <a-textarea
             v-model:value="form.allowed_origins"
             :placeholder="$t('storage.text_195')"
             :auto-size="{ minRows: 5, maxRows: 8 }" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('storage.text_196')" v-bind="formItemLayout" prop="allowed_methods">
+        <a-form-model-item :label="$t('storage.text_196')" prop="allowed_methods">
           <a-checkbox-group
             v-model:value="form.allowed_methods"
             :options="methodsOptions" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('storage.text_197')" v-bind="formItemLayout" prop="allowed_headers">
+        <a-form-model-item :label="$t('storage.text_197')" prop="allowed_headers">
           <a-textarea
             v-model:value="form.allowed_headers"
             :auto-size="{ minRows: 5, maxRows: 8 }" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('storage.text_198')" v-bind="formItemLayout" prop="expose_headers">
+        <a-form-model-item :label="$t('storage.text_198')" prop="expose_headers">
           <a-textarea
             v-model:value="form.expose_headers"
             :auto-size="{ minRows: 5, maxRows: 8 }" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('storage.text_199')" v-bind="formItemLayout" prop="max_age_seconds">
+        <a-form-model-item :label="$t('storage.text_199')" prop="max_age_seconds">
           <a-input-number v-model:value="form.max_age_seconds" :min="0" />
         </a-form-model-item>
       </a-form-model>
@@ -73,14 +73,6 @@ export default {
         max_age_seconds: [
           { required: true, message: this.$t('storage.text_204') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       methodsOptions: [
         { label: 'PUT', value: 'PUT' },

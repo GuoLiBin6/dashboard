@@ -7,7 +7,7 @@
       </a-alert>
       <dialog-selected-tips :name="params.name" :count="params.data.length" :action="title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form">
         <a-form-model-item :label="$t('db.text_54')">
           <a-radio-group v-model:value="form.duration">
               <a-radio-button
@@ -60,10 +60,6 @@ export default {
       title: this.$t('common.renew'),
       form: {
         duration: initialDuration,
-      },
-      formItemLayout: {
-        wrapperCol: { span: 20 },
-        labelCol: { span: 3 },
       },
     }
   },

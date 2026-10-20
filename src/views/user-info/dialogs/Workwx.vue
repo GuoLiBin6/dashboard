@@ -1,5 +1,5 @@
 <template>
-  <a-form-model v-bind="formItemLayout">
+  <a-form-model>
     <a-form-model-item :label="$t('scope.text_200')">
       {{ imobile }}
     </a-form-model-item>
@@ -9,7 +9,7 @@
 <script>
 export default {
   name: 'workwx',
-  inject: ['userId', 'manager', 'imobile', 'formItemLayout'],
+  inject: ['userId', 'manager', 'imobile'],
   methods: {
     async submit () {
       await this.manager.performAction({

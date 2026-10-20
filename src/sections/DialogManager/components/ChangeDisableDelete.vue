@@ -7,8 +7,7 @@
       <a-form-model
         ref="formRef"
         class="mt-3"
-        :model="form"
-        v-bind="formItemLayout">
+        :model="form">
         <a-form-model-item :label="$t('common.text00076')">
           <a-radio-group v-model:value="form.disable_delete">
             <a-radio :value="true">{{$t('status.enabled.true')}}</a-radio>
@@ -45,10 +44,6 @@ export default {
       loading: false,
       form: {
         disable_delete: !isAllNotDisable,
-      },
-      formItemLayout: {
-        wrapperCol: { span: 20 },
-        labelCol: { span: 4 },
       },
     }
   },

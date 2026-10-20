@@ -8,7 +8,7 @@
         ref="formRef"
         :model="form"
         :rules="rules">
-        <a-form-model-item :label="$t('network.text_195')" v-bind="formItemLayout" prop="bandwidth">
+        <a-form-model-item :label="$t('network.text_195')" prop="bandwidth">
           <a-select
               v-model:value="form.bandwidth"
               :placeholder="$t('network.text_697')">
@@ -17,7 +17,7 @@
             </a-select-option>
           </a-select>
         </a-form-model-item>
-        <a-form-model-item label="MTU" v-bind="formItemLayout" prop="mtu">
+        <a-form-model-item label="MTU" prop="mtu">
           <a-input-number :min="68" :max="9216" :step="50" v-model:value="form.mtu" />
           <div class="add-desc">{{$t('network.text_700')}}</div>
         </a-form-model-item>
@@ -48,14 +48,6 @@ export default {
         bandwidth: [
           { required: true, message: this.$t('network.text_699') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
       bandwidthOptions: BAND_WIDTH_OPTION,
     }

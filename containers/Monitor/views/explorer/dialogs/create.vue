@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('common.save')}}</div>
     <div slot="body">
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('compute.text_228')" prop="name">
           <a-input v-model:value="form.name" :placeholder="$t('common.placeholder')"  @change="handleNameChange" />
         </a-form-model-item>
@@ -50,18 +50,6 @@ export default {
         name: [
           { required: true, message: `${this.$t('common.placeholder')}${this.$t('common.name')}` },
         ],
-      },
-      formLayout: {
-        wrapperCol: {
-          md: { span: 20 },
-          xl: { span: 19 },
-          xxl: { span: 21 },
-        },
-        labelCol: {
-          md: { span: 4 },
-          xl: { span: 5 },
-          xxl: { span: 3 },
-        },
       },
     }
   },

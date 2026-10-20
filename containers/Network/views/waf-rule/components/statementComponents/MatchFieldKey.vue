@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- 匹配字段 -->
-    <a-form-item :label="matchFieldKeyLabel || $t('network_waf_statement.label.match_field_key')" v-bind="formLayout">
+    <a-form-item :label="matchFieldKeyLabel || $t('network_waf_statement.label.match_field_key')">
       <a-input v-if="isEdit" :value="value" />
       <box-show v-else :value="value" />
     </a-form-item>
@@ -25,14 +25,6 @@ export default {
   },
   data () {
     return {
-      formLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
       matchFieldList: [
         { label: this.$t('network_waf_statement.match_field_key.Header'), value: 'Header' },
         { label: this.$t('network_waf_statement.match_field_key.PostArgs'), value: 'PostArgs' },

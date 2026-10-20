@@ -6,8 +6,7 @@
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-form-model
         ref="formRef"
-        :model="form"
-        v-bind="formItemLayout">
+        :model="form">
         <a-form-model-item :label="$t('cloudenv.text_364')" prop="enabled">
           <a-switch :checkedChildren="$t('cloudenv.text_84')" :unCheckedChildren="$t('cloudenv.text_85')" v-model:checked="form.enabled" />
           <div slot="extra">{{$t('cloudenv.text_365')}}</div>
@@ -35,14 +34,6 @@ export default {
       loading: false,
       form: {
         enabled: data.enabled,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

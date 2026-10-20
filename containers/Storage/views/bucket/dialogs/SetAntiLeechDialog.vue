@@ -5,7 +5,6 @@
       <dialog-selected-tips :name="params.name" :count="params.data.length" :action="$t('storage.text_205')" />
       <dialog-table class="mb-2" :data="params.data" :columns="[params.columns[0], params.columns[7], params.columns[9]]" />
       <a-form-model
-        v-bind="formItemLayout"
         ref="formRef"
         :model="form"
         :rules="rules">
@@ -71,14 +70,6 @@ export default {
         domain_list: [
           { required: isDomainListRequired, message: this.$t('storage.bucket.referer.domain_list.tooltip') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

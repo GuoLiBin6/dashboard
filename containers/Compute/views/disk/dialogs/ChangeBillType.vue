@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('compute.text_100')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form-model v-bind="formItemLayout">
+      <a-form-model>
         <a-form-model-item :label="$t('compute.billing_type')">
           <a-radio-group v-model:value="billingType">
             <a-radio-button value="prepaid">{{ $t('compute.sku.prepaid_status') }}</a-radio-button>
@@ -31,14 +31,6 @@ export default {
     return {
       loading: false,
       action: this.$t('compute.change_billing_type'),
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
-      },
       billingType: this.params.data[0].billing_type,
     }
   },

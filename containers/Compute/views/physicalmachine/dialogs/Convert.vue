@@ -8,24 +8,24 @@
         ref="formRef"
         :model="form.fd"
         :rules="rules">
-        <a-form-model-item :label="$t('compute.text_829')" v-bind="formItemLayout" prop="name">
+        <a-form-model-item :label="$t('compute.text_829')" prop="name">
           <a-input v-model:value="form.fd.name" :placeholder="$t('compute.text_830')" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_831')" v-bind="formItemLayout" prop="host_type">
+        <a-form-model-item :label="$t('compute.text_831')" prop="host_type">
           <a-select v-model:value="form.fd.host_type" :placeholder="$t('compute.text_831')">
             <a-select-option v-for="item in hostTypeOptions" :key="item.value" :value="item.value">
               {{item.text}}
             </a-select-option>
           </a-select>
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_832')" v-bind="formItemLayout" prop="raid">
+        <a-form-model-item :label="$t('compute.text_832')" prop="raid">
           <a-select v-model:value="form.fd.raid" :placeholder="$t('compute.text_832')" @change="raidChange">
             <a-select-option v-for="item in raidOptions" :key="item.value" :value="item.value">
               {{item.text}}
             </a-select-option>
           </a-select>
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_96')" v-bind="formItemLayout" v-if="isShowImages" prop="image">
+        <a-form-model-item :label="$t('compute.text_96')" v-if="isShowImages" prop="image">
          <base-select
             :filterable="true"
             v-model:value="form.fd.image"
@@ -38,7 +38,7 @@
             @update:item="imagechange"
             :select-props="{ placeholder: $t('compute.text_833') }" />
         </a-form-model-item>
-        <a-form-model-item v-bind="formItemLayout" :label="$t('compute.text_834')" v-if="isShowImages">
+        <a-form-model-item :label="$t('compute.text_834')" v-if="isShowImages">
           <div class="d-flex flex-wrap">
             <template v-for="(item, idx) of diskOptionsDate" :key="idx">
               <div class="disk-option-item">
@@ -78,7 +78,7 @@
         <a-form-model-item :wrapper-col="{ span: 18, offset: 4 }" v-if="isShowNetwork">
           <a-checkbox v-model:checked="isBonding">{{$t('compute.text_310')}}</a-checkbox>
         </a-form-model-item>
-        <a-form-model-item v-if="isShowNetwork" :label="$t('compute.text_104')" v-bind="formItemLayout" class="mb-0">
+        <a-form-model-item v-if="isShowNetwork" :label="$t('compute.text_104')" class="mb-0">
           <server-network
             ref="networkRef"
             :model="form.fd"
@@ -141,14 +141,6 @@ export default {
         host_type: [
           { required: true },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
       hostTypeOptions: [
         { text: this.$t('compute.text_836'), value: 'hypervisor' },

@@ -8,7 +8,6 @@
         <a-tag class="network-nic-tag">{{ isBonding ? 'bond' : $t('compute.text_193')}}{{i + count}}</a-tag>
         <a-form-item
           v-show="showVpc"
-          :wrapperCol="{ span: 24 }"
           class="mb-0 network-vpc-item">
           <oc-select
             v-if="i === 0"
@@ -27,7 +26,6 @@
           <a-tag v-else class="network-vpc-tag">{{ getVpcTag(networkList[0].vpc) }}</a-tag>
         </a-form-item>
         <a-form-item
-          :wrapperCol="{ span: 24 }"
           :style="isDialog ? { flex: 1 } : ''"
           class="mb-0 network-item">
           <base-select
@@ -150,7 +148,7 @@
         <div v-if="hasExpandedBasicFields(item)" class="network-advanced-panel__fields">
           <div v-if="canShowIpConfig(item) && item.ipShow" class="network-advanced-panel__field">
             <div class="network-advanced-panel__field-label">IP</div>
-            <a-form-item class="mb-0" :wrapperCol="{ span: 24 }">
+            <a-form-item class="mb-0">
               <ip-select
                 :value="fieldVal(networkFieldMap.ips(item.key, item.network))"
                 :network="item.network"
@@ -159,7 +157,7 @@
           </div>
           <div v-if="showMacConfig && item.macShow" class="network-advanced-panel__field">
             <div class="network-advanced-panel__field-label">{{ $t('compute.text_385') }}</div>
-            <a-form-item class="mb-0" :wrapperCol="{ span: 24 }">
+            <a-form-item class="mb-0">
               <a-input
                 class="network-advanced-panel__control"
                 :placeholder="$t('compute.text_806')"
@@ -169,7 +167,7 @@
           </div>
           <div v-if="showDeviceConfig && item.deviceShow" class="network-advanced-panel__field">
             <div class="network-advanced-panel__field-label">{{ $t('compute.text_113') }}</div>
-            <a-form-item class="mb-0" :wrapperCol="{ span: 24 }">
+            <a-form-item class="mb-0">
               <oc-select
                 class="network-advanced-panel__control"
                 :value="fieldVal(networkFieldMap.devices(item.key))"
@@ -180,7 +178,7 @@
           </div>
           <div v-if="showSecgroupConfig && item.secgroupShow" class="network-advanced-panel__field network-advanced-panel__field--wide">
             <div class="network-advanced-panel__field-label">{{ $t('compute.text_105') }}</div>
-            <a-form-item class="mb-0" :wrapperCol="{ span: 24 }">
+            <a-form-item class="mb-0">
               <base-select
                 :value="fieldVal(networkFieldMap.secgroups(item.key))"
                 @change="v => fieldSet(networkFieldMap.secgroups(item.key), v)"
@@ -191,10 +189,10 @@
           </div>
           <div v-if="canShowIpv6Address(item) && item.ipv6Show" class="network-advanced-panel__field network-advanced-panel__field--ipv6">
             <div class="network-advanced-panel__field-label">{{ $t('compute.ipv6_config') }}</div>
-            <a-form-item class="mb-0 network-ipv6-address-item" :wrapperCol="{ span: 24 }">
+            <a-form-item class="mb-0 network-ipv6-address-item">
               <div class="network-ipv6-address">
                 <span class="network-ipv6-prefix">{{ getIpv6Prefix(item.network?.guest_ip6_start) }}</span>
-                <a-form-item class="mb-0 network-ipv6-input-item" :wrapperCol="{ span: 24 }">
+                <a-form-item class="mb-0 network-ipv6-input-item">
                   <a-input
                     class="network-advanced-panel__control"
                     :placeholder="$t('compute.complete_ipv6_address')"

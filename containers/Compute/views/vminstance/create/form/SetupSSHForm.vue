@@ -1,5 +1,5 @@
 <template>
-  <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+  <a-form-model ref="formRef" :model="form" :rules="rules">
     <a-form-model-item :label="$t('network.ssh-proxy.port')" prop="port">
       <a-input-number v-model:value="form.port" />
     </a-form-model-item>
@@ -65,14 +65,6 @@ export default {
         line: true,
         readOnly: true,
         theme: 'material',
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       form: {
         port: 22,

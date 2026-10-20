@@ -9,7 +9,7 @@
         class="mt-3"
         :model="form"
         :rules="rules">
-        <a-form-model-item :label="$t('compute.sub_ip')" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.sub_ip')">
           <a-form-model-item v-for="(item, index) in form.subips" :key="index" :prop="`subips.${index}.ip`" class="mb-1">
             <a-row :gutter="8">
               <a-col v-if="item.from !== 'old'" :span="20" class="d-flex align-items-center">
@@ -59,14 +59,6 @@ export default {
     return {
       loading: false,
       scope: this.$store.getters.scope,
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
       form: {
         subips,
       },

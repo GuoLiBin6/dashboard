@@ -6,22 +6,22 @@
         ref="formRef"
         :model="form"
         :rules="rules">
-        <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])">
           <domain-project :form="form" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_228')" v-bind="formItemLayout" prop="name">
+        <a-form-model-item :label="$t('compute.text_228')" prop="name">
           <a-input v-model:value="form.name" :placeholder="$t('validator.resourceName')" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('common.description')" v-bind="formItemLayout" prop="description">
+        <a-form-model-item :label="$t('common.description')" prop="description">
           <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.description" :placeholder="$t('common_367')" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_694')" v-bind="formItemLayout" :extra="forceDispersionExtra" prop="force_dispersion">
+        <a-form-model-item :label="$t('compute.text_694')" :extra="forceDispersionExtra" prop="force_dispersion">
           <a-radio-group v-model:value="form.force_dispersion">
             <a-radio-button :value="true">{{$t('compute.text_695')}}</a-radio-button>
             <a-radio-button :value="false">{{$t('compute.text_696')}}</a-radio-button>
           </a-radio-group>
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_697')" v-bind="formItemLayout" :extra="$t('compute.text_710')" prop="granularity">
+        <a-form-model-item :label="$t('compute.text_697')" :extra="$t('compute.text_710')" prop="granularity">
           <a-input-number :min="1" :max="10" :parser="Math.round" v-model:value="form.granularity" />
         </a-form-model-item>
       </a-form-model>
@@ -73,14 +73,6 @@ export default {
           { required: true, message: this.$t('compute.text_711') },
           { type: 'number', min: 1, max: 10, message: this.$t('compute.text_712') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

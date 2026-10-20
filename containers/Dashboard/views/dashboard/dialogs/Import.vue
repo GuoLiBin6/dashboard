@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{this.params.title}}</div>
     <div slot="body">
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item prop="file">
           <a-upload-dragger
             name="file"
@@ -48,11 +48,6 @@ export default {
         ],
       },
       fileList: [],
-      formItemLayout: {
-        wrapperCol: {
-          span: 24,
-        },
-      },
     }
   },
   computed: {

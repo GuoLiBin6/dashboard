@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <template #header>{{ title }}</template>
     <template #body>
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item
           :label="$t('common.description')"
           prop="desc">
@@ -32,14 +32,6 @@ export default {
     return {
       title: type === 'modifyWorkflow' ? this.$t('common.modify_workflow') + `(${this.$t('common.text00073')}${this.$t('dictionary.project')})` : `${this.$t('common.text00073')}${this.$t('dictionary.project')}`,
       loading: false,
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
-      },
       form: {
         desc: formData.description || '',
       },

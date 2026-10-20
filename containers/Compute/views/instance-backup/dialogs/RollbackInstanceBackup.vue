@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('compute.instance_backup')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form-model ref="formRef" :model="form" hideRequiredMark v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" hideRequiredMark>
         <a-form-model-item :label="$t('compute.rollback_type')" prop="type">
           <a-radio-group v-model:value="form.type">
             <a-radio-button value="new">
@@ -40,14 +40,6 @@ export default {
       form: {
         type: 'new',
         name: undefined,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 18,
-        },
-        labelCol: {
-          span: 6,
-        },
       },
     }
   },

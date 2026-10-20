@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{ $t('user.create_samluser') }}</div>
     <div slot="body">
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('cloudenv.clouduser_list_t4')">
           <span>{{ params.user.name }}</span>
         </a-form-model-item>
@@ -31,7 +31,7 @@
               </a-select>
             </a-col>
             <a-col :span="12">
-              <a-form-model-item prop="cloudaccount_id" :wrapper-col="{ span: 24 }" class="mb-0">
+              <a-form-model-item prop="cloudaccount_id" class="mb-0">
                 <base-select
                   v-model:value="form.cloudaccount_id"
                   resource="cloudaccounts"
@@ -175,14 +175,6 @@ export default {
             },
           },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
       },
     }
   },

@@ -7,7 +7,7 @@
         ref="formRef"
         :model="form"
         :rules="rules">
-        <a-form-model-item :label="$t('compute.text_295')" v-bind="formItemLayout" prop="option">
+        <a-form-model-item :label="$t('compute.text_295')" prop="option">
           <a-row :gutter="8">
             <a-col :span="22">
               <a-cascader :options="disksOptions" v-model:value="form.option" :placeholder="$t('compute.text_219')" @change="cascaderChange" />
@@ -51,14 +51,6 @@ export default {
         count: [
           { required: true, message: this.$t('compute.text_324') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 8,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       driverLimiations: {
         Linux: [

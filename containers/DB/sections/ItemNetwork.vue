@@ -6,8 +6,7 @@
     :isDefaultFetch="false"
     :vpcFormat="vpcFormat"
     :vpcParams="getVpcParams"
-    :networkParams="getNetworkParams"
-    v-bind="formItemLayout">
+    :networkParams="getNetworkParams">
     <template v-slot:helplink>
       {{$t('compute.text_196')}}<help-link href="/network">{{$t('compute.perform_create')}}</help-link>
     </template>
@@ -22,7 +21,7 @@ export default {
   components: {
     NetworkSelects,
   },
-  inject: ['form', 'formItemLayout', 'scopeParams'],
+  inject: ['form', 'scopeParams'],
   props: {
     /** a-form-model：通常为 form.fd，转给 NetworkSelects（必传） */
     model: {

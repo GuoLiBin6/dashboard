@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{formType === 'update' ? $t('table.action.modify') : $t('network.health_check.create')}}</div>
     <div slot="body">
-      <a-form-model :model="form" :rules="rules" ref="form" :label-col="{ span: 4 }" :wrapper-col="{ span: 20 }">
+      <a-form-model :model="form" :rules="rules" ref="form">
         <a-form-item :label="$t('dictionary.cloudprovider')" class="mb-0" required>
           <div class="d-flex">
             <a-form-model-item style="width: 30%" prop="provider">

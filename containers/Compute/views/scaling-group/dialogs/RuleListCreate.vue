@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('compute.perform_create')}}</div>
     <div slot="body">
-       <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+       <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('compute.text_228')" prop="name">
           <a-input :placeholder="$t('validator.serverCreateName')" v-model:value="form.name" />
         </a-form-model-item>
@@ -194,10 +194,6 @@ export default {
         'alarm.cycle': [
           { required: true, message: this.$t('compute.text_946') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: { span: 15 },
-        labelCol: { span: 9 },
       },
     }
   },

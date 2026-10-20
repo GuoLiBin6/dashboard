@@ -3,7 +3,6 @@
     ref="formRef"
     :model="form"
     :rules="rules"
-    v-bind="formItemLayout"
     hideRequiredMark>
     <a-form-model-item :label="$t('system.text_269')" prop="hostname">
       <a-input v-model:value="form.hostname" />
@@ -41,10 +40,6 @@ export default {
     TestButton,
   },
   props: {
-    formItemLayout: {
-      required: true,
-      type: Object,
-    },
     offsetWrapperCol: {
       required: true,
       type: Object,

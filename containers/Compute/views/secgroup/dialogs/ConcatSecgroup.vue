@@ -7,8 +7,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('compute.text_1014')" prop="name">
           <a-select v-model:value="form.name" mode="multiple">
             <a-select-option v-for="item in secgroupOps" :key="item.id" :value="item.id">
@@ -42,14 +41,6 @@ export default {
         name: [
           { required: true, message: this.$t('compute.text_1015') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 16,
-        },
-        labelCol: {
-          span: 8,
-        },
       },
       secgroupOps: [],
     }

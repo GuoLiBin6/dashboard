@@ -10,7 +10,7 @@
       <a-form-model
         ref="formRef"
         :model="form">
-        <a-form-model-item :label="$t('compute.text_1233')" v-bind="formItemLayout" prop="autoRenew">
+        <a-form-model-item :label="$t('compute.text_1233')" prop="autoRenew">
           <a-switch v-model:checked="form.autoRenew" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
         </a-form-model-item>
       </a-form-model>
@@ -36,14 +36,6 @@ export default {
       loading: false,
       form: {
         autoRenew,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

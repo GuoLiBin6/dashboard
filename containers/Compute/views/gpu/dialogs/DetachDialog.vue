@@ -7,13 +7,13 @@
       <a-form-model
         ref="formRef"
         :model="form">
-        <a-form-model-item :label="$t('compute.force_detach')" v-if="isGuestHasUnknown || isGuestHasReady" v-bind="formItemLayout" prop="is_force">
+        <a-form-model-item :label="$t('compute.force_detach')" v-if="isGuestHasUnknown || isGuestHasReady" prop="is_force">
           <a-tooltip v-if="isGuestHasUnknown" :title="$t('compute.force_detach_tooltip')">
             <a-switch v-model:checked="form.is_force" :checkedChildren="$t('compute.text_115')" disabled :unCheckedChildren="$t('compute.text_116')" />
           </a-tooltip>
           <a-switch v-else v-model:checked="form.is_force" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" @change="onForceChange" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_494')" v-if="isShowAutoStart" v-bind="formItemLayout" :extra="$t('compute.text_495')" prop="autoStart">
+        <a-form-model-item :label="$t('compute.text_494')" v-if="isShowAutoStart" :extra="$t('compute.text_495')" prop="autoStart">
           <a-switch v-model:checked="form.autoStart" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" :disabled="isForceChecked" />
         </a-form-model-item>
       </a-form-model>
@@ -40,14 +40,6 @@ export default {
       form: {
         autoStart: true,
         is_force: this.params.data.some(o => o.guest_status === 'unknown'),
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

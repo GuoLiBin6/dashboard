@@ -10,7 +10,7 @@
       </a-alert>
       <dialog-selected-tips :name="$t('dictionary.instancegroup')" :count="params.data.length" :action="$t('compute.text_483', [this.$t('dictionary.server')])" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-item :label="$t('dictionary.server')" v-bind="formItemLayout">
+      <a-form-item :label="$t('dictionary.server')">
         <base-select
           v-if="bindedServersLoaded"
           v-show="serversInitLoaded"
@@ -59,14 +59,6 @@ export default {
       bindedServers: [],
       // 默认选择
       defaultSelected: [],
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
     }
   },
   computed: {

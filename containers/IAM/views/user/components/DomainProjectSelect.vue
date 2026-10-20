@@ -2,7 +2,7 @@
   <div class="cloudprovider-cloudregion-zone-select-wrapper">
     <a-row :gutter="8">
       <a-col :span="12" v-if="isAdminMode">
-        <a-form-model-item prop="domain" :wrapperCol="{ span: 24 }">
+        <a-form-model-item prop="domain">
           <base-select
             v-model="form.domain"
             resource="domains"
@@ -19,7 +19,7 @@
         </a-form-model-item>
       </a-col>
       <a-col :span="isAdminMode?12:24">
-        <a-form-model-item prop="projects" :wrapperCol="{ span: 24 }">
+        <a-form-model-item prop="projects">
           <base-select
             v-model="form.projects"
             resource="projects"

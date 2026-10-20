@@ -18,7 +18,7 @@
         <a-input-group compact>
           <a-row class="w-100">
             <a-col :span="4">
-              <component :is="itemTag" class="mb-0" prop="redirect_scheme" :wrapperCol="{ span: 24 }">
+              <component :is="itemTag" class="mb-0" prop="redirect_scheme">
                 <a-select class="w-100" v-model:value="fd.redirect_scheme">
                   <a-select-option value="http">HTTP</a-select-option>
                   <a-select-option value="https">HTTPS</a-select-option>
@@ -26,12 +26,12 @@
               </component>
             </a-col>
             <a-col :span="10">
-              <component :is="itemTag" class="mb-0" prop="redirect_host" :wrapperCol="{ span: 24 }">
+              <component :is="itemTag" class="mb-0" prop="redirect_host">
                 <a-input v-model:value="fd.redirect_host" :placeholder="$t('network.text_371')" />
               </component>
             </a-col>
             <a-col :span="10">
-              <component :is="itemTag" class="mb-0" prop="redirect_path" :rules="pathRules" :wrapperCol="{ span: 24 }">
+              <component :is="itemTag" class="mb-0" prop="redirect_path" :rules="pathRules">
                 <a-input v-model:value="fd.redirect_path" :placeholder="$t('network.text_372')" />
               </component>
             </a-col>

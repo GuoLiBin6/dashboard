@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="d-flex" v-for="(item) in rows" :key="item._id">
-      <a-form-model-item :wrapperCol="{ span: 24 }">
+      <a-form-model-item>
         <a-input-group compact v-if="keyBaseSelectProps">
           <div class="d-flex">
             <a-input class="oc-addonBefore ant-input-group-addon" style="width: 80px;" :defaultValue="keyLabel" readonly />
@@ -11,7 +11,7 @@
         <a-input v-else :addonBefore="keyLabel" v-model:value="item.key" :placeholder="keyPlaceholder" @change="emitChange" />
       </a-form-model-item>
       <div class="mx-3"> = </div>
-      <a-form-model-item :wrapperCol="{ span: 24 }">
+      <a-form-model-item>
         <a-input :addonBefore="valueLabel" v-model:value="item.value" :placeholder="valuePlaceholder" @change="emitChange" />
       </a-form-model-item>
       <a-button v-if="firstCanDelete || rows.length > 1" type="danger" shape="circle" icon="delete" @click="del(item)" class="mt-1 ml-3" />

@@ -5,8 +5,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('cloudenv.text_95')" prop="name">
           <a-input v-model:value="form.name" :placeholder="$t('cloudenv.text_190')" />
         </a-form-model-item>
@@ -58,14 +57,6 @@ export default {
         location: [
           { required: true, message: this.$t('cloudenv.text_482') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

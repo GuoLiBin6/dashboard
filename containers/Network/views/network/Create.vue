@@ -2,29 +2,27 @@
   <div>
     <page-header :title="$t('network.text_570')" :tabs="cloudEnvOptions" v-model:currentTab="cloudEnv" />
     <page-body>
-      <a-form-model ref="formRef" class="mt-3" :model="form.fd" :rules="rules" @submit.prevent="handleSubmit" v-bind="formItemLayout" hideRequiredMark>
-        <a-form-model-item :label="$t('network.text_205', [$t('dictionary.project')])" class="mt-3" v-bind="formItemLayout" prop="project">
+      <a-form-model ref="formRef" class="mt-3" :model="form.fd" :rules="rules" @submit.prevent="handleSubmit" hideRequiredMark>
+        <a-form-model-item :label="$t('network.text_205', [$t('dictionary.project')])" class="mt-3" prop="project">
           <domain-project :form="form.fd" @update:domain="handleDomainChange" />
         </a-form-model-item>
         <area-selects
           class="mb-0"
           ref="areaSelects"
           :model="form.fd"
-          :wrapperCol="formItemLayout.wrapperCol"
-          :labelCol="formItemLayout.labelCol"
           :names="areaselectsName"
           :providerParams="providerParams"
           :cloudregionParams="cloudregionParams"
           :isRequired="true"
           filterBrandResource="network_manage"
           @change="handleRegionChange" />
-        <a-form-model-item :label="$t('network.text_21')" v-bind="formItemLayout" prop="name">
+        <a-form-model-item :label="$t('network.text_21')" prop="name">
           <a-input v-model:value="form.fd.name" :placeholder="$t('validator.resourceName')" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('common.description')" v-bind="formItemLayout" prop="description">
+        <a-form-model-item :label="$t('common.description')" prop="description">
           <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.fd.description" :placeholder="$t('common_367')" />
         </a-form-model-item>
-        <a-form-model-item label="VPC" v-bind="formItemLayout" prop="vpc">
+        <a-form-model-item label="VPC" prop="vpc">
           <base-select
             v-model:value="form.fd.vpc"
             resource="vpcs"
@@ -36,7 +34,7 @@
             :labelFormat="vpcLabelFormat"
             :select-props="{ placeholder: $t('common_226') }" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('network.text_571')" v-bind="formItemLayout" v-if="show || isShowWire" prop="wire">
+        <a-form-model-item :label="$t('network.text_571')" v-if="show || isShowWire" prop="wire">
           <base-select
             resource="wires"
             v-model:value="form.fd.wire"
@@ -46,12 +44,12 @@
             :labelFormat="wireLabelFormat"
             :params="wireParams" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('network.text_24')" :extra="$t('network.text_573')" v-bind="formItemLayout" v-if="!show && !isShowWire" prop="zone">
+        <a-form-model-item :label="$t('network.text_24')" :extra="$t('network.text_573')" v-if="!show && !isShowWire" prop="zone">
           <a-select v-model:value="form.fd.zone" :placeholder="$t('network.text_287')" :filterOption="filterOption" show-search>
             <a-select-option v-for="item in zoneList" :key="item.id" :value="item.id">{{item.name}}</a-select-option>
           </a-select>
         </a-form-model-item>
-        <a-form-model-item :label="$t('network.text_574')" v-bind="formItemLayout" v-if="show" prop="server_type">
+        <a-form-model-item :label="$t('network.text_574')" v-if="show" prop="server_type">
           <a-radio-group v-model:value="form.fd.server_type">
             <a-radio-button
               v-for="item of serverTypeOpts"
@@ -61,7 +59,7 @@
           </a-radio-group>
         </a-form-model-item>
         <!-- 网段 -->
-        <a-form-model-item :label="$t('network.text_575')" v-bind="formItemLayout" required v-if="show">
+        <a-form-model-item :label="$t('network.text_575')" required v-if="show">
           <template #extra>
             <div>{{$t('network.text_576')}}</div>
             <div>{{$t('network.text_577')}}</div>
@@ -70,7 +68,7 @@
           <div v-if="ipSubnetsHelp" class="error-tips">{{ ipSubnetsHelp }}</div>
         </a-form-model-item>
         <!-- 输入 网段 -->
-        <a-form-model-item :label="$t('network.text_575')" :extra="$t('network.prefix_in_cidr_range.prompt', [curVpcCidrText])" v-bind="formItemLayout" v-if="!show && !isGroupGuestIpPrefix">
+        <a-form-model-item :label="$t('network.text_575')" :extra="$t('network.prefix_in_cidr_range.prompt', [curVpcCidrText])" v-if="!show && !isGroupGuestIpPrefix">
           <div class="guest-ip-prefix-list">
             <div class="guest-ip-prefix-row">
               <a-form-item class="mb-0" v-if="curVpc && curVpc.cidr_block">
@@ -83,7 +81,7 @@
           </div>
           <div v-if="guestIpPrefixHelp" class="error-tips">{{ guestIpPrefixHelp }}</div>
         </a-form-model-item>
-        <a-form-model-item :label="$t('network.text_575')" v-bind="formItemLayout" :validate-status="guestIpPrefixValidateStatus" :help="guestIpPrefixHelp" required v-if="isGroupGuestIpPrefix">
+        <a-form-model-item :label="$t('network.text_575')" :validate-status="guestIpPrefixValidateStatus" :help="guestIpPrefixHelp" required v-if="isGroupGuestIpPrefix">
           <template #extra>
             <div>{{$t('network.prefix_in_cidr_range.prompt', [curVpcCidrText])}}</div>
             <div>{{$t('network.text_580')}}</div>
@@ -122,11 +120,11 @@
         </a-form-model-item>
         <a-collapse :bordered="false" v-if="isShowAdvanceOptions">
           <a-collapse-panel :header="$t('network.text_94')" key="1" forceRender>
-            <a-form-model-item :label="$t('network.text_743')" v-bind="formItemLayout" v-if="hasBgpType" prop="bgp_type">
+            <a-form-model-item :label="$t('network.text_743')" v-if="hasBgpType" prop="bgp_type">
               <a-input v-model:value="form.fd.bgp_type" />
               <template #extra>{{$t('network.text_744')}}</template>
             </a-form-model-item>
-            <a-form-model-item v-bind="formItemLayout" prop="alloc_policy">
+            <a-form-model-item prop="alloc_policy">
               <template #label>{{$t('network.text_583')}}</template>
               <a-radio-group v-model:value="form.fd.alloc_policy">
                 <a-radio-button
@@ -136,10 +134,10 @@
               </a-radio-group>
               <template #extra v-if="form.fd.alloc_policy === 'none'">{{$t('network.text_584')}}</template>
             </a-form-model-item>
-            <a-form-model-item :label="$t('network.dns_server')" v-bind="formItemLayout" prop="guest_dns">
+            <a-form-model-item :label="$t('network.dns_server')" prop="guest_dns">
               <a-input :placeholder="$t('validator.IPs')" v-model:value="form.fd.guest_dns" />
             </a-form-model-item>
-            <a-form-model-item v-bind="formItemLayout" prop="guest_domain">
+            <a-form-model-item prop="guest_domain">
               <template #label>{{$t('network.text_586')}}</template>
               <template #extra>
                 <div>{{$t('network.text_587')}}</div>
@@ -149,7 +147,7 @@
               </template>
               <a-input :placeholder="$t('validator.domain')" v-model:value="form.fd.guest_domain" />
             </a-form-model-item>
-            <a-form-model-item :label="$t('network.ntp_server')" v-bind="formItemLayout" prop="guest_ntp">
+            <a-form-model-item :label="$t('network.ntp_server')" prop="guest_ntp">
               <a-input :placeholder="$t('validator.IPs_or_domains')" v-model:value="form.fd.guest_ntp" />
             </a-form-model-item>
             <a-form-model-item label="dhcp_relay" v-if="show" prop="guest_dhcp">
@@ -320,18 +318,6 @@ export default {
       guestIpPrefixValidateStatus: '',
       ipSubnetsHelp: '',
       guestIpPrefixHelp: '',
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 18 },
-          xl: { span: 20 },
-          xxl: { span: 22 },
-        },
-        labelCol: {
-          md: { span: 6 },
-          xl: { span: 4 },
-          xxl: { span: 2 },
-        },
-      },
       fieldMap: {
         domain: {
           name: 'domain',

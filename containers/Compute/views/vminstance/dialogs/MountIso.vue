@@ -5,10 +5,10 @@
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_366')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
-        <a-form-model-item v-if="hasMounted" :label="$t('compute.iso.mounted')" v-bind="formItemLayout">
+        <a-form-model-item v-if="hasMounted" :label="$t('compute.iso.mounted')">
           <span>{{ mountedIsoName }}</span>
         </a-form-model-item>
-        <a-form-model-item :label="imageLabel" v-bind="formItemLayout" prop="image_id">
+        <a-form-model-item :label="imageLabel" prop="image_id">
           <base-select
             class="w-100"
             remote
@@ -61,14 +61,6 @@ export default {
         image_id: hasMounted
           ? []
           : [{ required: true, message: this.$t('compute.text_1219') }],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

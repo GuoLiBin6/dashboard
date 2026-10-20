@@ -2,7 +2,7 @@
   <a-form-item :labelCol="labelCol" :wrapperCol="wrapperCol" :label="label" :required="isRequired">
     <a-row :gutter="8">
       <a-col v-for="name in names" :key="name" :span="colSpan">
-        <a-form-item :wrapperCol="{ span: 24 }" class="mb-0">
+        <a-form-item class="mb-0">
           <a-select
             v-if="name === 'provider'"
             :value="areaSelectValue(name)"
@@ -232,12 +232,6 @@ export default {
   computed: {
     ...mapGetters(['capability']),
 
-    formItemLayout () {
-      return {
-        labelCol: this.labelCol,
-        wrapperCol: this.wrapperCol,
-      }
-    },
     colSpan () {
       return 24 / this.names.length
     },

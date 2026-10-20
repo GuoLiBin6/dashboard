@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.lb_backend')" :count="params.data.length" :action="$t('network.text_349')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('network.text_165')" prop="port">
           <a-input-number :min="1" :max="65535" v-model:value="form.port" />
         </a-form-model-item>
@@ -38,14 +38,6 @@ export default {
           { type: 'integer', required: true, message: this.$t('network.text_350'), trigger: 'blur' },
           { type: 'integer', min: 1, max: 65535, message: this.$t('network.text_351'), trigger: 'blur' },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

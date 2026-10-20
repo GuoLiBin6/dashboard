@@ -6,7 +6,6 @@
         ref="formRef"
         :model="form.fd"
         :rules="rules"
-        v-bind="formItemLayout"
         hideRequiredMark>
         <a-form-model-item :label="$t('cloudenv.text_410', [$t('dictionary.project')])" class="mt-3" prop="project">
           <domain-project :form="form.fd" />
@@ -125,18 +124,6 @@ export default {
           timer: {
             execTime: this.$moment().add(1, 'h'),
           },
-        },
-      },
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 18 },
-          xl: { span: 20 },
-          xxl: { span: 22 },
-        },
-        labelCol: {
-          md: { span: 6 },
-          xl: { span: 4 },
-          xxl: { span: 2 },
         },
       },
     }

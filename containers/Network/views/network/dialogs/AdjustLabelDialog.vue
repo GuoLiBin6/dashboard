@@ -7,7 +7,7 @@
       <a-form-model
         ref="formRef"
         :model="form">
-        <a-form-model-item :label="$t('network.text_630')" v-bind="formItemLayout" prop="schedTags">
+        <a-form-model-item :label="$t('network.text_630')" prop="schedTags">
           <a-select v-model:value="form.schedTags" :placeholder="$t('network.text_631')" mode="multiple">
             <a-select-option v-for="item in schedTags" :key="item.id" :value="item.id">
               {{item.name}}
@@ -37,14 +37,6 @@ export default {
       scope: this.$store.getters.scope,
       form: {
         schedTags: [],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       schedTags: [],
       useSchedTags: [],

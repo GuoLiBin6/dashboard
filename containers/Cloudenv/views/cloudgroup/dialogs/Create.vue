@@ -5,8 +5,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <template v-if="showDomainSelect">
           <a-form-model-item :label="`${$t('network.text_205', [$t('dictionary.domain')])}`" prop="project_domain">
             <base-select
@@ -130,14 +129,6 @@ export default {
             showOverflow: 'title',
           },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

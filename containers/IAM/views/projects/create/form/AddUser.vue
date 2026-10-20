@@ -1,5 +1,5 @@
 <template>
-  <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+  <a-form-model ref="formRef" :model="form" :rules="rules">
     <a-form-model-item :label="$t('dictionary.user')">
       <domain-user-select
           :labelInValue="false"
@@ -56,20 +56,6 @@ export default {
         domain: [
           { required: true, message: this.$t('rules.domain') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-          xxl: {
-            span: 22,
-          },
-        },
-        labelCol: {
-          span: 3,
-          xxl: {
-            span: 2,
-          },
-        },
       },
     }
   },

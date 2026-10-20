@@ -9,10 +9,10 @@
         ref="formRef"
         :model="form"
         :rules="rules">
-        <a-form-model-item :label="$t('network.text_43')" v-bind="formItemLayout" prop="proj">
+        <a-form-model-item :label="$t('network.text_43')" prop="proj">
           <a-input v-model:value="form.proj" disabled :placeholder="$t('network.text_44')" />
         </a-form-model-item>
-        <a-form-model-item v-bind="formItemLayout" prop="user">
+        <a-form-model-item prop="user">
           <template slot="label">
             <span>{{$t('network.text_45')}}<a-tooltip placement="topLeft">
                 <template slot="title">
@@ -34,11 +34,11 @@
             :select-props="{ placeholder: $t('network.text_47') }"
             style="width: 320px" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('network.text_48')" v-bind="formItemLayout" prop="pass">
+        <a-form-model-item :label="$t('network.text_48')" prop="pass">
           <a-input v-model:value="form.pass" type="password" :placeholder="$t('network.text_49')" />
         </a-form-model-item>
         <a-divider orientation="left">{{$t('network.text_50')}}</a-divider>
-        <a-form-model-item v-bind="formItemLayout" prop="hostName">
+        <a-form-model-item prop="hostName">
           <template slot="label">
             <span>{{$t('network.text_51')}}<a-tooltip placement="topLeft" :overlayStyle="{'max-width': '400px'}">
                  <div slot="title" style="width: 400px">{{$t('network.text_52')}}<br />{{$t('network.text_53')}}<br />{{$t('network.text_54')}}<br />{{$t('network.text_55')}}<div class="pl-2">{{$t('network.text_56')}}</div>
@@ -82,7 +82,7 @@
               style="width: 320px" />
           </a-form-model-item>
         </a-form-model-item>
-        <a-form-model-item :label="$t('network.text_63')" v-bind="formItemLayout" prop="repo_base_url">
+        <a-form-model-item :label="$t('network.text_63')" prop="repo_base_url">
           <a-input v-model:value="form.repo_base_url" :placeholder="$t('network.text_64')" />
         </a-form-model-item>
         <a-form-model-item v-bind="tailFormItemLayout" prop="repo_sslverify">
@@ -168,14 +168,6 @@ export default {
           { required: true, message: this.$t('network.text_64') },
           { validator: this.$validate('url') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 18,
-        },
-        labelCol: {
-          span: 6,
-        },
       },
       tailFormItemLayout: {
         wrapperCol: {

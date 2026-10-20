@@ -5,8 +5,7 @@
       <a-form-model
         :model="form"
         :rules="rules"
-        ref="form"
-        v-bind="formItemLayout">
+        ref="form">
         <a-form-model-item :label="$t('network.cdn.clear_method')" prop="clear_method" :extra="$t(`network.cdn.clear_method.${form.clear_method}.extra`)">
           <a-select v-model:value="form.clear_method" @change="handleClearMethodChange">
             <a-select-option v-for="item in clearMethodOptions" :key="item.key" :value="item.key">
@@ -57,14 +56,6 @@ export default {
   data () {
     return {
       loading: false,
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      },
       collapseActive: false,
       form: {
         clear_method: 'all',

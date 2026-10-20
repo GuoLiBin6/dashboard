@@ -7,7 +7,7 @@
       <a-form-model
         ref="formRef"
         :model="form">
-        <a-form-model-item :label="$t('compute.text_176')" v-bind="formItemLayout" prop="platform">
+        <a-form-model-item :label="$t('compute.text_176')" prop="platform">
           <a-radio-group v-model:value="form.platform">
             <a-radio-button v-for="obj in cloudEnvOpts" :value="obj.key" :key="obj.key" v-show="obj.key">
               {{ obj.label }}
@@ -40,14 +40,6 @@ export default {
       cloudEnvOptions: getCloudEnvOptions('compute_engine_brands'),
       form: {
         platform: 'idc',
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

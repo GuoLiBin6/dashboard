@@ -6,14 +6,11 @@
         ref="formRef"
         class="mt-3"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <area-selects
           class="mb-0"
           ref="areaSelects"
           :model="form"
-          :wrapperCol="formItemLayout.wrapperCol"
-          :labelCol="formItemLayout.labelCol"
           :names="areaselectsName"
           :cloudregionParams="cloudregionParams"
           :isRequired="true"
@@ -65,18 +62,6 @@ export default {
       },
       areaselectsName: ['cloudregion'],
       regionId: '',
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 18 },
-          xl: { span: 20 },
-          xxl: { span: 22 },
-        },
-        labelCol: {
-          md: { span: 6 },
-          xl: { span: 4 },
-          xxl: { span: 2 },
-        },
-      },
     }
   },
   computed: {

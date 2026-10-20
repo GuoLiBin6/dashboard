@@ -5,7 +5,7 @@
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_1209')" />
       <dialog-table :data="params.data" :columns="columns" />
       <a-form-model ref="formRef" :model="form" hideRequiredMark>
-        <a-form-model-item :label="$t('compute.text_1210')" v-bind="formItemLayout" :extra="$t('compute.text_1211')" prop="purge">
+        <a-form-model-item :label="$t('compute.text_1210')" :extra="$t('compute.text_1211')" prop="purge">
           <a-switch v-model:checked="form.purge" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" :disabled="disableAutoPurge" />
         </a-form-model-item>
       </a-form-model>
@@ -30,14 +30,6 @@ export default {
       loading: false,
       form: {
         purge: false,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

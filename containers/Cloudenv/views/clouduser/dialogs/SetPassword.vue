@@ -7,8 +7,7 @@
       <a-form-model
         ref="form"
         :model="fd"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('cloudenv.clouduser_list_t2')" prop="password">
           <a-input-password v-model:value="fd.password" :placeholder="$t('validator.password')" />
         </a-form-model-item>
@@ -53,14 +52,6 @@ export default {
             },
           },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

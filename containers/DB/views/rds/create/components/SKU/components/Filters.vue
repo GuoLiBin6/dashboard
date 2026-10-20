@@ -1,21 +1,21 @@
 <template>
   <div v-if="dbInstance">
-     <a-form-item :label="$t('db.text_57')" v-bind="formItemLayout">
+     <a-form-item :label="$t('db.text_57')">
       <a-radio-group :value="fieldVal(engineDec)" :disabled="!!disableds.engine" @change="e => { fieldSet(engineDec, e.target.value); onEngineChange(e) }">
         <a-radio-button :key="engine" :value="engine" v-for="(value, engine) of engines">{{engine}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
-    <a-form-item :label="$t('db.text_63')" v-bind="formItemLayout">
+    <a-form-item :label="$t('db.text_63')">
       <a-radio-group :value="fieldVal(engineVersionDec)" :disabled="!!disableds.engine_version" @change="e => { fieldSet(engineVersionDec, e.target.value); onVersionChange(e) }">
         <a-radio-button :key="key" :value="key" v-for="key in engine_versions"> {{versionCn(key)}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
-    <a-form-item :label="$t('db.text_119')" v-bind="formItemLayout">
+    <a-form-item :label="$t('db.text_119')">
       <a-radio-group :value="fieldVal(categoryDec)" @change="e => { fieldSet(categoryDec, e.target.value); onCategoryChange(e) }" :disabled="!!disableds.category">
         <a-radio-button :key="key" :value="key" v-for="key in categorys">{{formatCategoryLabel(key)}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
-    <a-form-item :label="$t('db.text_120')" v-bind="formItemLayout">
+    <a-form-item :label="$t('db.text_120')">
       <a-radio-group :value="fieldVal(storageTypeDec)" @change="e => { fieldSet(storageTypeDec, e.target.value); onStorageChange(e) }" :disabled="!!disableds.storage_type">
         <a-radio-button :key="item" :value="item" v-for="item of storage_types">{{formatStorageLabel(item)}}</a-radio-button>
       </a-radio-group>
@@ -40,7 +40,6 @@ export default {
   name: 'rdsSkuFilter',
   inject: {
     form: { default: null },
-    formItemLayout: { default: null },
     disableds: { default: null },
     scopeParams: { default: null },
     getCreateFormDraftPreferred: { default: undefined },

@@ -1,6 +1,6 @@
 <template>
   <div>
-    <a-form-item class="nas-sku-valid" :label="$t('compute.text_109')" v-bind="formItemLayout">
+    <a-form-item class="nas-sku-valid" :label="$t('compute.text_109')">
       <table-lite-grid
         ref="tableRef"
         row-id="id"
@@ -32,7 +32,7 @@ import { PROVIDER_MAP } from '@/constants'
 import { hasMeterService } from '@/utils/auth'
 export default {
   name: 'SKUList',
-  inject: ['form', 'formItemLayout', 'tailFormItemLayout'],
+  inject: ['form', 'tailFormItemLayout'],
   components: {
     PageListEmpty,
   },

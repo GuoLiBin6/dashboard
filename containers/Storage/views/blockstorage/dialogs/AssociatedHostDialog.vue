@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.blockstorage')" :count="params.data.length" :action="this.params.title" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('storage.text_50')" prop="host">
           <a-select :loading="hostsLoading" allowClear showSearch :filterOption="filterOption" mode="multiple" v-model:value="form.host" :placeholder="$t('storage.text_51')">
             <a-select-option v-for="item in hosts" :key="item.id" :value="item.id">{{item.name}}</a-select-option>
@@ -45,10 +45,6 @@ export default {
         dir: [
           { required: true, message: this.$t('storage.text_53') },
         ],
-      },
-      formItemLayout: {
-        labelCol: { span: 4 },
-        wrapperCol: { span: 20 },
       },
     }
   },

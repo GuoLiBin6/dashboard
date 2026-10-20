@@ -5,8 +5,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('compute.text_727')" prop="name">
           <a-input v-model:value="form.name" :placeholder="$t('compute.text_728')" />
         </a-form-model-item>
@@ -88,14 +87,6 @@ export default {
         scheme: [
           { required: true },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 19,
-        },
-        labelCol: {
-          span: 5,
-        },
       },
       extra: this.$t('compute.keypair_create_method'),
     }

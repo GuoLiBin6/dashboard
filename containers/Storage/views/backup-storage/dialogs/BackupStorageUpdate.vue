@@ -4,7 +4,7 @@
     <template #body>
       <dialog-selected-tips :name="$t('compute.backup_storage')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('storage.text_38')">
           {{ this.getStorageType }}
         </a-form-model-item>
@@ -108,14 +108,6 @@ export default {
         object_bucket_url_ext: [
           { required: false, message: this.$t('storage.object_bucket_url_ext.validate.prompt'), trigger: 'blur' },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

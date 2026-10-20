@@ -6,11 +6,11 @@
       <dialog-selected-tips :count="params.data.length" :name="$t('dictionary.disk')" :action="$t('compute.disk_perform_setup_snapshot_policy')" />
       <dialog-table v-if="params.columns && params.columns.length" :data="params.data" :columns="[...params.columns.slice(0, 3), { field: 'guest_snapshotpolicy_count', title: $t('compute.guest_snapshotpolicy_count'), formatter: ({ row }) => { return row.guest_snapshotpolicy_count || 0 } }]" />
       <a-form-model ref="formRef" :model="form" :rules="rules">
-        <a-form-model-item :label="$t('compute.text_427')" v-bind="formItemLayout" prop="isOpen">
+        <a-form-model-item :label="$t('compute.text_427')" prop="isOpen">
           <a-switch v-model:checked="form.isOpen" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" @change="onOpenChange" />
         </a-form-model-item>
         <template v-if="form.isOpen">
-          <a-form-model-item :label="$t('compute.text_428')" v-bind="formItemLayout" prop="snapshotpolicy">
+          <a-form-model-item :label="$t('compute.text_428')" prop="snapshotpolicy">
             <a-row :gutter="8">
               <a-col :span="12">
                 <a-select v-model:value="form.snapshotpolicy" :filterOption="filterOption" showSearch @change="assembly">
@@ -25,17 +25,17 @@
               </a-col>
             </a-row>
           </a-form-model-item>
-          <a-form-model-item :label="$t('compute.text_431')" v-bind="formItemLayout">
+          <a-form-model-item :label="$t('compute.text_431')">
             <span class="ant-form-text">
               {{ weekTips }}
             </span>
           </a-form-model-item>
-          <a-form-model-item :label="$t('compute.text_432')" v-bind="formItemLayout">
+          <a-form-model-item :label="$t('compute.text_432')">
             <span class="ant-form-text">
               {{ timeTips }}
             </span>
           </a-form-model-item>
-          <a-form-model-item :label="$t('compute.text_433')" v-bind="formItemLayout">
+          <a-form-model-item :label="$t('compute.text_433')">
             <span class="ant-form-text">
               {{ dayTips }}
             </span>
@@ -72,14 +72,6 @@ export default {
         snapshotpolicy: [
           { required: true },
         ],
-      },
-      formItemLayout: {
-        labelCol: {
-          sm: { span: 3 },
-        },
-        wrapperCol: {
-          sm: { span: 21 },
-        },
       },
       snapshotpolicyOptions: [],
       attchedPolices: hasPolicy ? this.params.data[0].snapshotpolicies : [],

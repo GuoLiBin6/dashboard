@@ -6,8 +6,7 @@
       <dialog-table class="mb-2" :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-form-model
         ref="formRef"
-        :model="form"
-        v-bind="formItemLayout">
+        :model="form">
         <common-form-items :form="form" />
       </a-form-model>
     </div>
@@ -27,7 +26,6 @@ import * as R from 'ramda'
 import TestButton from '@/sections/TestButton'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
-import { formItemLayout } from '../constants'
 import CommonFormItems from '../components/CommonFormItems'
 
 export default {
@@ -36,7 +34,6 @@ export default {
   mixins: [DialogMixin, WindowsMixin],
   data () {
     return {
-      formItemLayout,
       loading: false,
       form: {
         https_proxy: '',

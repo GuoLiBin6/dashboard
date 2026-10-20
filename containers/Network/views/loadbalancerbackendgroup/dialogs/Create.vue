@@ -5,10 +5,10 @@
       <a-form-model
         :model="form"
         ref="form">
-        <a-form-model-item :label="$t('network.text_21')" prop="name" :rules="rules.name" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('network.text_21')" prop="name" :rules="rules.name">
           <a-input v-model:value="form.name" :placeholder="$t('validator.resourceName')" />
         </a-form-model-item>
-        <a-form-model-item v-if="form.backends.length" class="mb-0" :label="$t('network.text_140')" prop="backends" :rules="rules.backends" v-bind="formItemLayout">
+        <a-form-model-item v-if="form.backends.length" class="mb-0" :label="$t('network.text_140')" prop="backends" :rules="rules.backends">
           <div v-for="(backend, idx) in form.backends" :key="idx" class="d-flex">
             <a-form-model-item style="flex: 0 0 30%" :prop="`backends[${idx}].name`" :rules="rules.lname">
               <a-input v-model:value="backend.name" :placeholder="$t('common.name')" />
@@ -28,10 +28,10 @@
           </div>
         </a-form-model-item>
         <a-button type="link" @click="addRule">{{ $t('network.add_backend_server') }}</a-button>
-        <a-form-model-item class="mt-2" v-if="isCloudflare" :label="$t('network.enable_health_check')" prop="enable_health_check" v-bind="formItemLayout">
+        <a-form-model-item class="mt-2" v-if="isCloudflare" :label="$t('network.enable_health_check')" prop="enable_health_check">
           <a-switch v-model:checked="form.enable_health_check" />
         </a-form-model-item>
-        <a-form-model-item v-if="form.enable_health_check" :label="$t('network.health_check')" prop="health_check" :rules="rules.health_check" v-bind="formItemLayout">
+        <a-form-model-item v-if="form.enable_health_check" :label="$t('network.health_check')" prop="health_check" :rules="rules.health_check">
           <base-select v-model:value="form.health_check" resource="loadbalancer_health_checks" isDefaultSelect :params="healthCheckParams" />
         </a-form-model-item>
       </a-form-model>
@@ -100,14 +100,6 @@ export default {
         health_check: [
           { required: true, message: this.$t('network.health_check') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

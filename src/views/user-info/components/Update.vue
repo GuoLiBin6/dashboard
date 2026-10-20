@@ -1,5 +1,5 @@
 <template>
-  <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+  <a-form-model ref="formRef" :model="form" :rules="rules">
     <a-form-model-item :label="$t('scope.text_244')">
       {{ userInfo.name }}
     </a-form-model-item>
@@ -51,14 +51,6 @@ export default {
           { required: true, message: this.$t('scope.text_228') },
           { validator: this.$validate('email') },
         ],
-      },
-      formItemLayout: {
-        labelCol: {
-          sm: { span: 5 },
-        },
-        wrapperCol: {
-          sm: { span: 19 },
-        },
       },
     }
   },

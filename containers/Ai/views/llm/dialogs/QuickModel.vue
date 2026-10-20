@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="instanceLabel" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('aice.model')" prop="model">
           <base-select v-model:value="form.model" :options="modelOptions" :select-props="{ placeholder: $t('common.tips.select', [$t('aice.model')]) }" />
         </a-form-model-item>
@@ -41,14 +41,6 @@ export default {
         model: [
           { required: true, message: this.$t('common.tips.select', [this.$t('aice.model')]) },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       modelOptions: [],
     }

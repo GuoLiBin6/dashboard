@@ -2,8 +2,7 @@
   <a-form-model
     ref="formRef"
     :model="form"
-    :rules="rules"
-    v-bind="formItemLayout">
+    :rules="rules">
     <a-form-model-item :label="$t('system.text_101')" prop="name">
       <a-input v-model:value="form.name" />
     </a-form-model-item>
@@ -54,14 +53,6 @@ export default {
             message: this.$t('rules.domain'),
           },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },

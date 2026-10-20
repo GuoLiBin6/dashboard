@@ -35,7 +35,7 @@
       </div>
     </div>
     <base-drawer v-model:visible="visible" :title="$t('dashboard.text_5')" @ok="handleSubmit">
-      <a-form-model ref="formRef" hideRequiredMark :model="fd" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" hideRequiredMark :model="fd" :rules="rules">
         <a-form-model-item :label="$t('dashboard.text_6')" prop="name">
           <a-input v-model:value="fd.name" />
         </a-form-model-item>
@@ -190,14 +190,6 @@ export default {
         { label: this.$t('timeselect.days', [14]), key: 14 * 24 * 60 * 60 },
         { label: this.$t('timeselect.months', [1]), key: 30 * 24 * 60 * 60 },
       ],
-      formItemLayout: {
-        wrapperCol: {
-          span: 18,
-        },
-        labelCol: {
-          span: 6,
-        },
-      },
       metricDoc: getMetricDocs(this.$store.getters.scope),
     }
   },

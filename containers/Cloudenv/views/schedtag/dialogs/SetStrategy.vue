@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.schedtag')" :count="params.data.length" :action="$t('cloudenv.text_422')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form">
         <a-form-model-item required :label="$t('cloudenv.text_413')" prop="default_strategy">
           <strategy-radio v-model:value="form.default_strategy" />
         </a-form-model-item>
@@ -33,14 +33,6 @@ export default {
       loading: false,
       form: {
         default_strategy: this.params.data[0].default_strategy || '',
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

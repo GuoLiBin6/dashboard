@@ -1,5 +1,5 @@
 <template>
-  <a-form-model ref="form" :model="form" :rules="rules" :label-col="{ span: 5 }" :wrapper-col="{ span: 17 }">
+  <a-form-model ref="form" :model="form" :rules="rules">
     <a-form-model-item>
       <span slot="label">{{ $t('aice.llm_image.community_registry') }}</span>
       <a-input :value="fullName" disabled />

@@ -6,7 +6,7 @@
       <dialog-selected-tips :name="params.name" :count="params.data.length" :action="$t('compute.text_1116')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <loader loading v-if="!(bindedSecgroupsLoaded && secgroupsInitLoaded)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-show="bindedSecgroupsLoaded && secgroupsInitLoaded" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-show="bindedSecgroupsLoaded && secgroupsInitLoaded">
         <a-form-model-item :label="$t('compute.text_105')" prop="secgroups" v-if="bindedSecgroupsLoaded">
           <template #extra>
             {{$t('compute.text_1242', [bindMaxNum])}}<!-- <help-link :href="href">{{$t('compute.text_189')}}</help-link> -->
@@ -76,14 +76,6 @@ export default {
         secgroups: [
           { validator: validateSecgroups, trigger: 'change' },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       secgroupsInitLoaded: false,
       bindedSecgroups: [],

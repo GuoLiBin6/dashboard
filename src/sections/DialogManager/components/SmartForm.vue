@@ -91,16 +91,6 @@ export default {
     }
     const RenderForm = () => {
       const fieldKeys = Object.keys(fieldMap)
-      const defaultFormItemLayout = {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
-      }
-      const { formItemLayout } = this.params
-      const { wrapperCol, labelCol } = formItemLayout || defaultFormItemLayout
       if (!fieldKeys.length) return null
       const items = fieldKeys.map(k => formItem(k, fieldMap[k]))
       const form = h('a-form-model', {
@@ -109,8 +99,6 @@ export default {
         props: {
           model: this.formModel,
           rules: this.rules,
-          wrapperCol,
-          labelCol,
         },
       }, items)
       return h('div', { slot: 'body' }, [form])

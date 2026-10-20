@@ -54,9 +54,7 @@
             <a-form-model
               ref="importFormRef"
               :model="importForm"
-              :rules="importRules"
-              :label-col="{ span: 6 }"
-              :wrapper-col="{ span: 18 }">
+              :rules="importRules">
               <a-form-model-item :label="$t('aice.devices')" prop="devices">
                 <llm-gpu-devices-editor
                   v-model="importForm.devices"

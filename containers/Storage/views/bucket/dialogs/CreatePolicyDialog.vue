@@ -5,8 +5,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item :label="$t('storage.text_239')" prop="Effect">
           <a-radio-group v-model:value="form.Effect">
             <a-radio-button value="Allow">{{$t('storage.text_217')}}</a-radio-button>
@@ -98,14 +97,6 @@ export default {
         ResourcePath: [
           { required: true, message: this.$t('storage.text_256') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       principalParams: {
         scope: this.$store.getters.scope,

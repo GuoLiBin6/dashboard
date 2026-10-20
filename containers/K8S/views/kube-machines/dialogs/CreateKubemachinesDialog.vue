@@ -13,8 +13,7 @@
       <a-form-model
         ref="formRef"
         class="mt-3"
-        :model="form.fd"
-        v-bind="formItemLayout">
+        :model="form.fd">
         <a-form-model-item :label="$t('k8s.text_152')">
           <server-config
             ref="serverConfigRef"
@@ -26,7 +25,7 @@
             :platform="platform"
             @vmAdd="vmAdd">
             <template v-slot:hypervisor="slotProps">
-              <a-form-model-item :label="$t('k8s.platform')" v-if="hypervisorsC.length" v-bind="slotProps.formItemLayout">
+              <a-form-model-item :label="$t('k8s.platform')" v-if="hypervisorsC.length">
                 <a-radio-group
                   :value="(form.fd.hypervisors && form.fd.hypervisors[slotProps.i]) || hypervisor"
                   @change="e => onHypervisorChange(slotProps.i, e.target.value)">
@@ -77,10 +76,6 @@ export default {
         fd: {
           hypervisor,
         },
-      },
-      formItemLayout: {
-        wrapperCol: { span: 20 },
-        labelCol: { span: 3 },
       },
       param: {
         zone: {

@@ -15,8 +15,7 @@
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-form-model
         ref="formRef"
-        :model="form"
-        v-bind="formItemLayout">
+        :model="form">
         <a-form-model-item :label="$t('gpu.device_type')" prop="type">
           <a-radio-group v-model:value="form.type">
             <a-radio-button v-for="item in gpuTypeList" :key="item.value" :value="item.value">{{ item.label }}</a-radio-button>
@@ -48,14 +47,6 @@ export default {
       loading: false,
       form: {
         type: initialType,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

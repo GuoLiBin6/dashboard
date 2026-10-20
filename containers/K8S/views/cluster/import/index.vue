@@ -5,8 +5,7 @@
       ref="formRef"
       class="mt-3"
       :model="form"
-      :rules="rules"
-      v-bind="formItemLayout">
+      :rules="rules">
       <a-form-model-item
         :label="$t('k8s.text_412')"
         prop="project_domain_id">
@@ -90,18 +89,6 @@ export default {
           { required: true, message: this.$t('k8s.text_183') },
           { validator },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 16 },
-          xl: { span: 18 },
-          xxl: { span: 20 },
-        },
-        labelCol: {
-          md: { span: 8 },
-          xl: { span: 6 },
-          xxl: { span: 4 },
-        },
       },
       offsetWrapperCol: {
         md: { span: 16, offset: 8 },

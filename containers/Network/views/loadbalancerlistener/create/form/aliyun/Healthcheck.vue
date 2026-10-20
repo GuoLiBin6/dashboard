@@ -1,5 +1,5 @@
 <template>
-  <a-form-model :model="form.fd" class="mt-3" v-bind="formItemLayout">
+  <a-form-model :model="form.fd" class="mt-3">
     <a-divider orientation="left">{{$t('network.text_397')}}</a-divider>
     <a-form-item :label="$t('network.text_398')">
       <a-tooltip :title="$t('network.text_399')" placement="top">

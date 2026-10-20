@@ -8,7 +8,7 @@
         ref="form"
         :model="fd"
         :rules="rules">
-        <a-form-model-item prop="priority" :label="$t('cloudenv.priority')" v-bind="formItemLayout" :extra="$t('cloudenv.priority_extra')">
+        <a-form-model-item prop="priority" :label="$t('cloudenv.priority')" :extra="$t('cloudenv.priority_extra')">
           <a-input-number v-model:value="fd.priority" :min="0" :precision="0" />
         </a-form-model-item>
       </a-form-model>
@@ -38,14 +38,6 @@ export default {
         priority: [
           { required: true, message: this.$t('common.tips.input', [this.$t('cloudenv.priority')]) },
         ],
-      },
-      formItemLayout: this.params.formItemLayout || {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
     }
   },

@@ -3,7 +3,6 @@
     <a-form-model
       ref="formRef"
       class="mt-3"
-      v-bind="formItemLayout"
       :model="form.fd"
       :rules="rules"
       hideRequiredMark>
@@ -23,8 +22,6 @@
         class="mb-0"
         ref="areaSelects"
         :model="form.fd"
-        :wrapperCol="formItemLayout.wrapperCol"
-        :labelCol="formItemLayout.labelCol"
         :names="areaselectsName"
         :cloudregionParams="param.region"
         :zoneParams="param.zone"
@@ -32,7 +29,7 @@
         :isRequired="true"
         filterBrandResource="compute_engine"
         @change="handleRegionChange" />
-      <a-form-model-item :label="$t('compute.text_15')" prop="cloudprovider" required v-bind="formItemLayout">
+      <a-form-model-item :label="$t('compute.text_15')" prop="cloudprovider" required>
         <base-select
           class="w-50"
           v-model:value="form.fd.cloudprovider"
@@ -59,7 +56,6 @@
 </template>
 
 <script>
-import { formItemLayout } from '@Storage/constants'
 import DomainProject from '@/sections/DomainProject/model'
 import AreaSelects from '@/sections/AreaSelects/model'
 import Tag from '@/sections/Tag'
@@ -78,7 +74,6 @@ export default {
   mixins: [fsCreateMixin],
   data () {
     return {
-      formItemLayout,
       areaselectsName: ['cloudregion', 'zone'],
       regionList: [],
       zoneList: [],

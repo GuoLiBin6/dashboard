@@ -69,14 +69,6 @@ export default {
       dialogData: this.params.data,
       imobile: this.imobile,
       manager: new this.$Manager('receivers', 'v1'),
-      formItemLayout: {
-        labelCol: {
-          sm: { span: 3 },
-        },
-        wrapperCol: {
-          sm: { span: 21 },
-        },
-      },
     }
   },
   methods: {

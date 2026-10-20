@@ -3,7 +3,7 @@
     <a-form-item :label="$t('dashboard.text_98')">
       <a-row :gutter="8">
         <a-col :span="12">
-          <a-form-item :wrapperCol="{ span: 24 }" class="mb-0">
+          <a-form-item class="mb-0">
             <a-select
               allowClear
               class="w-100"
@@ -17,7 +17,7 @@
           </a-form-item>
         </a-col>
         <a-col :span="12">
-          <a-form-item :wrapperCol="{ span: 24 }" class="mb-0">
+          <a-form-item class="mb-0">
             <a-select
               allowClear
               class="w-100"
@@ -38,7 +38,7 @@
         <a-radio-button value="account">{{$t('dashboard.text_102')}}</a-radio-button>
         <a-radio-button v-if="showTag" value="schedtag">{{ $t('dictionary.schedtag') }}</a-radio-button>
       </a-radio-group>
-      <a-form-item :wrapperCol="{ span: 24 }" class="mb-0 mt-2" v-if="regionAccountType === 'region'">
+      <a-form-item class="mb-0 mt-2" v-if="regionAccountType === 'region'">
         <a-select
           allowClear
           class="w-100"
@@ -51,7 +51,7 @@
           <a-select-option v-for="item of regions" :value="item.key" :key="item.key">{{ item.label }}</a-select-option>
         </a-select>
       </a-form-item>
-      <a-form-item :wrapperCol="{ span: 24 }" class="mb-0 mt-2" v-if="regionAccountType === 'account'">
+      <a-form-item class="mb-0 mt-2" v-if="regionAccountType === 'account'">
         <a-select
           allowClear
           class="w-100"
@@ -64,7 +64,7 @@
           <a-select-option v-for="item of accounts" :value="item.key" :key="item.key">{{ item.label }}</a-select-option>
         </a-select>
       </a-form-item>
-      <a-form-item :wrapperCol="{ span: 24 }" class="mb-0 mt-2" v-if="showTag && regionAccountType === 'schedtag'">
+      <a-form-item class="mb-0 mt-2" v-if="showTag && regionAccountType === 'schedtag'">
         <a-select
           allowClear
           class="w-100"
@@ -82,7 +82,7 @@
       <pairs-tag :value="fieldValue('tags') || []" @input="onTagsChange" />
     </a-form-item>
     <a-form-item :label="$t('dashboard.text_96')" class="mb-0" v-if="hasField('all_usage_key')">
-      <a-form-item :wrapperCol="{ span: 24 }">
+      <a-form-item>
         <usage-select
           class="w-100"
           :value="fieldValue('all_usage_key')"
@@ -98,7 +98,7 @@
       </a-form-item>
     </a-form-item>
     <a-form-item :label="usageLabel || $t('dashboard.text_97')" class="mb-0" v-if="hasField('usage_key')">
-      <a-form-item :wrapperCol="{ span: 24 }">
+      <a-form-item>
         <usage-select
           class="w-100"
           :value="fieldValue('usage_key')"
@@ -114,12 +114,12 @@
       </a-form-item>
     </a-form-item>
     <a-form-item :label="$t('dashboard.usage_metric_name')" class="mb-0" v-if="hasField('usage_label')">
-      <a-form-item :wrapperCol="{ span: 24 }">
+      <a-form-item>
         <a-input class="w-100" :value="fieldValue('usage_label')" @change="e => onInputChange('usage_label', e.target.value)" />
       </a-form-item>
     </a-form-item>
     <a-form-item :label="$t('dashboard.remaining_usage_metric_name')" class="mb-0" v-if="hasField('un_usage_label')">
-      <a-form-item :wrapperCol="{ span: 24 }">
+      <a-form-item>
         <a-input class="w-100" :value="fieldValue('un_usage_label')" @change="e => onInputChange('un_usage_label', e.target.value)" />
       </a-form-item>
     </a-form-item>

@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_1185')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules" hideRequiredMark>
         <a-form-model-item :label="$t('compute.bandwidth.symmetric.title')" prop="symmetricBandwidth">
           <a-checkbox v-model:checked="symmetricBandwidth" />
         </a-form-model-item>
@@ -60,14 +60,6 @@ export default {
         bandwidth: [
           { required: true, message: this.$t('compute.text_1188') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
       bandwidthMax: 100000,
       symmetricBandwidth: !this.params.data[0].tx_bw_limit || !this.params.data[0].rx_bw_limit,

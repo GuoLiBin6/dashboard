@@ -3,7 +3,6 @@
     ref="formRef"
     :model="form.fd"
     :rules="rules"
-    v-bind="formItemLayout"
     hideRequiredMark>
     <a-form-model-item :label="$t('notify.configs.sms_driver')" prop="sms_driver">
       <a-radio-group v-model:value="form.fd.sms_driver">
@@ -18,8 +17,7 @@
     <component
       ref="typeRef"
       :is="form.fd.sms_driver"
-      :doc-url="docUrl"
-      :form-item-layout="formItemLayout" />
+      :doc-url="docUrl" />
   </a-form-model>
 </template>
 
@@ -34,10 +32,6 @@ export default {
     smshuawei,
   },
   props: {
-    formItemLayout: {
-      required: true,
-      type: Object,
-    },
     offsetWrapperCol: {
       required: true,
       type: Object,

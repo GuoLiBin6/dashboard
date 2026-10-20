@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :count="params.data.length" :action="$t('system.text_142')" :name="$t('system.text_317')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 5)" />
-      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form">
         <a-form-model-item prop="enabled_contact_types">
           <span slot="label">
             {{ $t('common_599') }}
@@ -47,14 +47,6 @@ export default {
       contactArrOpts: [],
       form: {
         enabled_contact_types: ['webconsole'],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 18,
-        },
-        labelCol: {
-          span: 6,
-        },
       },
     }
   },

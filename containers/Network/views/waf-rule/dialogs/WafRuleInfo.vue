@@ -3,7 +3,6 @@
     <template #header>{{title}}</template>
     <template #body>
       <a-form-model
-        v-bind="formLayout"
         ref="ruleInfoForm"
         :model="ruleInfoForm"
         :rules="rules"
@@ -30,7 +29,7 @@
         <!-- 条件 -->
         <template v-if="ruleInfoForm.statements.length">
           <a-form-model-item v-for="(statement,index) in ruleInfoForm.statements" :key="index"
-            v-bind="index === 0 ? formLayout : formLayoutWithOutLabel"
+            v-bind="index === 0 ? undefined : formLayoutWithOutLabel"
             :label="index === 0 ? $t('network.waf.rule_condition') : ''">
             <div class="d-flex align-items-center">
               <waf-rule-statement :data="statement" :type="statement.type" :wafBrand="ruleInfoData.brand" :isEdit="params.isEdit" />
@@ -96,14 +95,6 @@ export default {
         priority: { required: true, validator: this.$validate('nonNegativeInt') },
         statement_conditon: { message: this.$t('network.waf.rule_match_validator') },
         action: { required: true, message: this.$t('network.waf.rule_action_validator') },
-      },
-      formLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       formLayoutWithOutLabel: {
         wrapperCol: {

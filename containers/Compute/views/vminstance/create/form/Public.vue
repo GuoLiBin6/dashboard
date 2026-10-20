@@ -5,7 +5,6 @@
       class="mt-3"
       :model="form.fd"
       :rules="rules"
-      v-bind="formItemLayout"
       @submit="submit"
       hideRequiredMark>
       <servertemplate v-if="isServertemplate" :form="form">
@@ -86,8 +85,6 @@
         class="mb-0"
         v-if="showAreaSelect"
         :model="form.fd"
-        :wrapperCol="formItemLayout.wrapperCol"
-        :labelCol="formItemLayout.labelCol"
         ref="areaSelectRef"
         :providerParams="providerParams"
         :cloudregionParams="areaCloudregionParams"
@@ -225,8 +222,7 @@
           :isServertemplate="isServertemplate"
           :cloud-env="type"
           :form="form"
-          :hasPublicIp="hypervisor === 'qcloud' || hypervisor === 'aliyun'"
-          :formItemLayout="formItemLayout" :form-draft-key="vmDraftFields.eip" />
+          :hasPublicIp="hypervisor === 'qcloud' || hypervisor === 'aliyun'" :form-draft-key="vmDraftFields.eip" />
         <a-form-model-item v-if="!isServertemplate">
           <template #label>
             {{ $t('common_388') }}&nbsp;

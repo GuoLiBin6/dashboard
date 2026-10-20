@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="params.name ? params.name : $t('dictionary.elasticcaches')" :count="params.data.length" :action="$t('db.text_201')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" :rules="rules" class="mt-3" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules" class="mt-3">
         <a-form-model-item :label="$t('db.text_285')">
           {{ params.data[0].name }}
         </a-form-model-item>
@@ -37,10 +37,6 @@ export default {
       form: {
         loginType: 'random',
         password: undefined,
-      },
-      formItemLayout: {
-        wrapperCol: { span: 19 },
-        labelCol: { span: 5 },
       },
     }
   },

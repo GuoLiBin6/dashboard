@@ -4,17 +4,16 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.network')" :count="params.data.length" :action="$t('network.set_static_routes')" />
       <dialog-table :data="params.data" :columns="columns" />
-      <a-form-model ref="formRef" :model="form" class="mt-3" v-bind="formItemLayout" hideRequiredMark>
+      <a-form-model ref="formRef" :model="form" class="mt-3" hideRequiredMark>
         <a-form-model-item
           v-for="(row, index) in form.rows"
           :key="row.key"
-          v-bind="index === 0 ? formItemLayout : formItemLayoutWithOutLabel"
+          v-bind="index === 0 ? undefined : formItemLayoutWithOutLabel"
           :label="index === 0 ? $t('network.static_routes') : ''"
           :required="false">
           <a-row :gutter="6">
             <a-col :span="11">
               <a-form-model-item
-                :wrapperCol="{ span: 24 }"
                 class="mb-0 mr-1"
                 :prop="`rows.${index}.net`"
                 :rules="netRules(row.key)">
@@ -23,7 +22,6 @@
             </a-col>
             <a-col :span="11">
               <a-form-model-item
-                :wrapperCol="{ span: 24 }"
                 class="mb-0 mr-1"
                 :prop="`rows.${index}.gw`"
                 :rules="rules.gw">
@@ -36,7 +34,7 @@
           </a-row>
         </a-form-model-item>
         <a-form-model-item
-          v-bind="form.rows.length ? formItemLayoutWithOutLabel : formItemLayout"
+          v-bind="form.rows.length ? formItemLayoutWithOutLabel : undefined"
           :label="form.rows.length ? '' : $t('network.static_routes')">
           <a-button type="link" class="px-0" @click="add">
             <a-icon type="plus-circle" theme="filled" class="mr-2" style="font-size: 16px" />
@@ -108,18 +106,6 @@ export default {
           { required: true, message: this.$t('network.static_routes.gw_placeholder') },
           { validator: this.$validate('IPv4') },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 16 },
-          xl: { span: 18 },
-          xxl: { span: 20 },
-        },
-        labelCol: {
-          md: { span: 8 },
-          xl: { span: 6 },
-          xxl: { span: 4 },
-        },
       },
       formItemLayoutWithOutLabel: {
         wrapperCol: {

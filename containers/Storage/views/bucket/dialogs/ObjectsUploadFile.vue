@@ -2,7 +2,7 @@
   <base-dialog @cancel="handleCancel" :modalProps="{footer: null}">
     <div slot="header">{{this.params.title}}</div>
     <div slot="body">
-      <a-form-model ref="formRef" :model="form" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('storage.text_117')">
           {{uploadTo}}
         </a-form-model-item>
@@ -32,7 +32,6 @@
 </template>
 
 <script>
-import { formItemLayout } from '@Storage/constants/index.js'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 
@@ -42,7 +41,6 @@ export default {
   data () {
     return {
       loading: false,
-      formItemLayout,
       statusNums: undefined,
       modalProps: {
         footer: null,

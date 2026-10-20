@@ -10,8 +10,7 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules"
-        v-bind="formItemLayout">
+        :rules="rules">
         <a-form-model-item
           :label="$t('compute.text_380')"
           prop="storage_type">
@@ -54,14 +53,6 @@ export default {
         storage_type: [
           { required: true, message: this.$t('compute.text_1022', [this.$t('compute.text_380')]), trigger: 'change' },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
       },
       capabilityData: {},
     }

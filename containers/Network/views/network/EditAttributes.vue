@@ -2,7 +2,7 @@
   <div>
     <page-header :title="$t('network.text_606')" style="margin-bottom: 7px;" />
     <page-body>
-      <a-form-model ref="formRef" class="mt-3" :model="formModel" :rules="rules" v-bind="formItemLayout">
+      <a-form-model ref="formRef" class="mt-3" :model="formModel" :rules="rules">
         <a-divider orientation="left">{{$t('network.text_397')}}</a-divider>
         <a-form-model-item :label="$t('network.text_21')" prop="name">
           <a-input v-model:value="formModel.name" :placeholder="$t('validator.resourceName')" />
@@ -130,18 +130,6 @@ export default {
         guest_domain: '',
         guest_ntp: '',
         guest_dhcp: '',
-      },
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 18 },
-          xl: { span: 20 },
-          xxl: { span: 22 },
-        },
-        labelCol: {
-          md: { span: 6 },
-          xl: { span: 4 },
-          xxl: { span: 2 },
-        },
       },
       rules: {
         name: [

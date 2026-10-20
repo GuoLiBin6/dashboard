@@ -2,8 +2,7 @@
   <a-form-model
     ref="formRef"
     :model="form"
-    :rules="rules"
-    v-bind="formItemLayout">
+    :rules="rules">
     <contact-tips
       :before="$t('system.workwx.before')"
       :after="$t('system.workwx.after')"
@@ -46,10 +45,6 @@ export default {
     TestButton,
   },
   props: {
-    formItemLayout: {
-      required: true,
-      type: Object,
-    },
     offsetWrapperCol: {
       required: true,
       type: Object,

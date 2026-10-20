@@ -5,9 +5,7 @@
   <a-form-model
     ref="formRef"
     :model="deployForm"
-    :rules="deployRules"
-    :label-col="{ span: 6 }"
-    :wrapper-col="{ span: 18 }">
+    :rules="deployRules">
     <a-form-model-item :label="$t('common.name')" prop="name">
       <a-input
         v-model:value="deployForm.name"

@@ -27,8 +27,7 @@
         hideRequiredMark>
         <a-form-model-item
           :label="$t('k8s.text_412')"
-          prop="project_domain_id"
-          v-bind="formItemLayout">
+          prop="project_domain_id">
           <base-select
             v-if="$store.getters.isAdminMode"
             v-model:value="form.fd.project_domain_id"
@@ -42,8 +41,7 @@
         </a-form-model-item>
         <a-form-model-item
           :label="$t('k8s.platform')"
-          prop="provider"
-          v-bind="formItemLayout">
+          prop="provider">
           <a-radio-group
             v-model:value="form.fd.provider"
             v-if="providers.length"
@@ -54,7 +52,7 @@
           </a-radio-group>
           <div v-else>{{ $t('common_467') }}</div>
         </a-form-model-item>
-        <a-form-model-item :label="$t('k8s.region')" class="mb-0" v-bind="formItemLayout" v-if="provider.brand">
+        <a-form-model-item :label="$t('k8s.region')" class="mb-0" v-if="provider.brand">
           <cloudregion-vpc
             ref="cloudregionVpcRef"
             :model="form.fd"
@@ -65,11 +63,10 @@
         </a-form-model-item>
         <a-form-model-item
           :label="$t('k8s.text_41')"
-          prop="name"
-          v-bind="formItemLayout">
+          prop="name">
           <a-input v-model:value="form.fd.name" :placeholder="$t('validator.serverName')" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('k8s.text_152')" v-if="cloudregionId" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('k8s.text_152')" v-if="cloudregionId">
           <server-config
             ref="serverConfigRef"
             :form="form"
@@ -79,21 +76,20 @@
             :platform="platform"
             :networkParams="params.network" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('k8s.text_153')" prop="version" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('k8s.text_153')" prop="version">
           <base-select
             v-model:value="form.fd.version"
             :options="k8sVersionOps"
             :filterable="true"
             :select-props="{ placeholder: $t('k8s.text_154') }" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('k8s.text_158')" v-bind="formItemLayout">
+        <a-form-model-item :label="$t('k8s.text_158')">
           <a-switch :checkedChildren="$t('k8s.text_156')" :unCheckedChildren="$t('k8s.text_157')" v-model:checked="isConfigImage" @change="isConfigImageChange" />
         </a-form-model-item>
         <a-form-model-item
           v-if="isConfigImage"
           :label="$t('k8s.text_52')"
           prop="image_repository_url"
-          v-bind="formItemLayout"
           :extra="$t('k8s.text_159')">
           <a-input v-model:value="form.fd.image_repository_url" :placeholder="$t('k8s.text_160')" />
         </a-form-model-item>
@@ -152,18 +148,6 @@ export default {
         },
       },
       isConfigImage: false,
-      formItemLayout: {
-        wrapperCol: {
-          md: { span: 18 },
-          xl: { span: 20 },
-          xxl: { span: 22 },
-        },
-        labelCol: {
-          md: { span: 6 },
-          xl: { span: 4 },
-          xxl: { span: 2 },
-        },
-      },
       params: {
         vpcParams: {
           usable: true,

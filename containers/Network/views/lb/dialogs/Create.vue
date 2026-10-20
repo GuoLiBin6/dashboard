@@ -6,10 +6,10 @@
         ref="formRef"
         :model="form"
         :rules="rules">
-        <a-form-model-item :label="$t('network.text_291')" v-bind="formItemLayout" v-if="params.type === 'create'" prop="name">
+        <a-form-model-item :label="$t('network.text_291')" v-if="params.type === 'create'" prop="name">
           <a-input v-model:value="form.name" :placeholder="$t('network.text_44')" />
         </a-form-model-item>
-        <a-form-model-item v-bind="formItemLayout" prop="acl_entries">
+        <a-form-model-item prop="acl_entries">
           <span slot="label">{{$t('network.text_292')}}<a-tooltip>
               <div slot="title">{{$t('network.text_293')}}<br />{{$t('network.text_294')}}<br />{{$t('network.text_295')}}<br />{{$t('network.text_296')}}<br />{{$t('network.text_297')}}</div>
               <icon type="info-circle" />
@@ -101,14 +101,6 @@ export default {
           { required: true, message: this.$t('network.text_302') },
           { validator: ipsValidate },
         ],
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
       aclEntries: [],
     }

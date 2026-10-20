@@ -1,5 +1,5 @@
 <template>
-  <a-form-model ref="formRef" v-bind="formItemLayout" :model="form.fd" :rules="rules">
+  <a-form-model ref="formRef" :model="form.fd" :rules="rules">
     <container-title :title="$t('monitor.commonalert.base_info')" />
     <scope-radio :model="form.fd" @change="scopeChange" :form="form" :disabled="disabled" :label="label" />
     <a-form-model-item :label="$t('common.name')" prop="name">
@@ -193,17 +193,6 @@ export default {
   },
   mixins: [workflowMixin],
   props: {
-    formItemLayout: {
-      type: Object,
-      default: () => ({
-        wrapperCol: {
-          span: 21,
-        },
-        labelCol: {
-          span: 3,
-        },
-      }),
-    },
     alertData: {},
     timeRangeParams: {
       type: Object,

@@ -1,7 +1,7 @@
 <template>
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('db.text_282')}}</div>
-    <a-form-model ref="formRef" slot="body" :model="form" :rules="rules" class="mt-3" v-bind="formItemLayout">
+    <a-form-model ref="formRef" slot="body" :model="form" :rules="rules" class="mt-3">
       <a-form-model-item :label="$t('db.text_283')" prop="name">
         <a-input :placeholder="$t('validator.dbName')" v-model:value="form.name" />
       </a-form-model-item>
@@ -45,10 +45,6 @@ export default {
         account_privilege: 'read',
         loginType: 'random',
         password: undefined,
-      },
-      formItemLayout: {
-        wrapperCol: { span: 19 },
-        labelCol: { span: 5 },
       },
     }
   },

@@ -1,7 +1,6 @@
 <template>
   <div class="d-flex">
     <a-form-item
-      :wrapperCol="{ span: 24 }"
       class="mb-0 mr-1">
       <base-select
         :options="filetypeOpts"
@@ -9,7 +8,7 @@
         @change="onFiletypeChange"
         :select-props="{ allowClear: true, placeholder: $t('common_149') }" />
     </a-form-item>
-    <a-form-item class="mb-0" v-if="filetypeVal !== 'swap'" :wrapperCol="{ span: 24 }">
+    <a-form-item class="mb-0" v-if="filetypeVal !== 'swap'">
       <a-input
         :value="mountPathVal"
         @update:value="onMountPathChange"

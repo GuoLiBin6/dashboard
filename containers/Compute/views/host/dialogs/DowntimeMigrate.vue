@@ -4,7 +4,7 @@
     <div slot="body">
       <dialog-selected-tips :name="$t('dictionary.host')" :count="params.data.length" :action="$t('compute.text_547')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
-      <a-form-model ref="formRef" :model="form" v-bind="formItemLayout">
+      <a-form-model ref="formRef" :model="form">
         <a-form-model-item :label="$t('compute.text_548')" prop="enable" :extra="$t('compute.text_549')">
           <a-switch v-model:checked="form.enable" :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" />
         </a-form-model-item>
@@ -30,14 +30,6 @@ export default {
       scope: this.$store.getters.scope,
       form: {
         enable: this.params.data[0].auto_migrate_on_host_down,
-      },
-      formItemLayout: {
-        wrapperCol: {
-          span: 20,
-        },
-        labelCol: {
-          span: 4,
-        },
       },
     }
   },
