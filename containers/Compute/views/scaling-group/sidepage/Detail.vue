@@ -99,7 +99,7 @@ export default {
               field: 'shrink_principle',
               title: this.$t('compute.text_960'),
               formatter: ({ row }) => {
-                return this.$t('flexGrouPprinciple')[row.shrink_principle]
+                return this.$tm('flexGrouPprinciple')[row.shrink_principle]
               },
             },
             getCopyWithContentTableColumn({
@@ -148,14 +148,14 @@ export default {
               field: 'health_check_mode',
               title: this.$t('compute.text_903'),
               formatter: ({ row }) => {
-                return this.$t('flexGroupHealthCheckMode')[row.health_check_mode]
+                return this.$tm('flexGroupHealthCheckMode')[row.health_check_mode]
               },
             },
             {
               field: 'health_check_cycle',
               title: this.$t('compute.text_904'),
               formatter: ({ row }) => {
-                return this.$t('flexGroupCycles')[row.health_check_cycle]
+                return this.$tm('flexGroupCycles')[row.health_check_cycle]
               },
             },
             {

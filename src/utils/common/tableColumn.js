@@ -1994,23 +1994,27 @@ const getDefaultBillingTableColumn = ({
         if (billingType === 'postpaid' && row.release_at) {
           const time = vm.$moment(row.release_at).format()
           const isHiddenSetButton = R.is(Function, hiddenSetBtn) ? hiddenSetBtn() : hiddenSetBtn
-
-          let tipText = i18n.t('common_301', [time])
           const canCancelExpire = hasPermission({ key: 'server_perform_cancel_expire' }) && !isHiddenSetButton && showSetButton
-          if (canCancelExpire) {
-            tipText += ` ${i18n.t('common_453')}`
-          }
 
-          const help = h(
-            'span',
-            {
-              class: 'ml-1',
-              style: { cursor: canCancelExpire ? 'pointer' : 'help' },
-              attrs: { title: tipText },
-              on: canCancelExpire ? { click: openVmSetDurationDialog } : undefined,
+          // antdv4：必须用 a-tooltip；含「去设置」时加 oc-tooltip-interactive 才能点进 tip
+          const tipTitle = canCancelExpire
+            ? h('span', {}, [
+              i18n.t('common_301', [time]),
+              h('span', {
+                class: 'link-color',
+                style: { cursor: 'pointer', marginLeft: '4px' },
+                on: { click: openVmSetDurationDialog },
+              }, i18n.t('common_453')),
+            ])
+            : i18n.t('common_301', [time])
+
+          const help = h('a-tooltip', {
+            class: 'ml-1',
+            props: {
+              title: tipTitle,
+              overlayClassName: canCancelExpire ? 'oc-tooltip-interactive' : undefined,
             },
-            [h('icon', { props: { type: 'help' } })],
-          )
+          }, [h('icon', { props: { type: 'help' } })])
 
           const dateArr = vm.$moment(row.release_at).fromNow().split(' ')
           const date = dateArr.join(' ')
@@ -2022,10 +2026,9 @@ const getDefaultBillingTableColumn = ({
               'div',
               {
                 class: 'text-truncate',
-                attrs: { title: text },
                 style: { color: textColor },
               },
-              [text, ' ', help],
+              [h('span', { attrs: { title: text } }, text), ' ', help],
             ),
           )
         } else if (billingType === 'prepaid' && row.expired_at) {
@@ -2035,15 +2038,10 @@ const getDefaultBillingTableColumn = ({
             ? i18n.t('common_301', [time]) + i18n.t('common_451')
             : i18n.t('common_301', [time]) + i18n.t('common_452')
 
-          const help = h(
-            'span',
-            {
-              class: 'ml-1',
-              style: { cursor: 'help' },
-              attrs: { title: tooltipText },
-            },
-            [h('icon', { props: { type: 'help' } })],
-          )
+          const help = h('a-tooltip', {
+            class: 'ml-1',
+            props: { title: tooltipText },
+          }, [h('icon', { props: { type: 'help' } })])
 
           const dateArr = vm.$moment(row.expired_at).fromNow().split(' ')
           const date = dateArr.join(' ')
@@ -2055,10 +2053,9 @@ const getDefaultBillingTableColumn = ({
               'div',
               {
                 class: 'text-truncate',
-                attrs: { title: text },
                 style: { color: textColor },
               },
-              [text, ' ', help],
+              [h('span', { attrs: { title: text } }, text), ' ', help],
             ),
           )
         }
@@ -2326,13 +2323,13 @@ export const getCycleTimerColumn = ({ timeFormat = 'YYYY-MM-DD HH:mm:ss', hidden
         const minute = row.cycle_timer.minute
         const timer = i18n.t('cloudenv.text_465', [`${hour > 9 ? hour : `0${hour}`}:${minute > 9 ? minute : `0${minute}`}`])
         if (row.scheduled_type === 'cycle') {
-          const cycleType = i18n.t('cloudenvScheduledtaskGroupCycleType')[row.cycle_timer.cycle_type]
+          const cycleType = i18n.tm('cloudenvScheduledtaskGroupCycleType')[row.cycle_timer.cycle_type]
           const startEndTime = i18n.t('cloudenv.text_466', [moment(row.cycle_timer.start_time).format(timeFormat), moment(row.cycle_timer.end_time).format(timeFormat)])
           if (row.cycle_timer.cycle_type === 'day') {
             return `${cycleType} ${timer} ${startEndTime}`
           } else if (row.cycle_timer.cycle_type === 'week') {
             const weekDays = row.cycle_timer.week_days.map((v) => {
-              return i18n.t('flexGroupSubCycleTypeWeek')[v]
+              return i18n.tm('flexGroupSubCycleTypeWeek')[v]
             })
             return `${cycleType} 【${weekDays.join('|')}】 ${timer} ${startEndTime}`
           } if (row.cycle_timer.cycle_type === 'month') {

@@ -4,7 +4,6 @@
     <template #body>
       <a-alert class="mb-2" type="warning">
         <template #message>
-          <!-- {{$t('common.text00059')}} <br /> -->
           {{tip}}
         </template>
       </a-alert>
@@ -15,30 +14,40 @@
         :model="form"
         :rules="rules">
         <a-form-model-item :label="$t('common.text00061')">
-          <a-switch v-model:checked="form.durationEnable" :checkedChildren="$t('common.text00062')" :unCheckedChildren="$t('common.text00063')" />
+          <a-switch
+            v-model:checked="form.durationEnable"
+            :checkedChildren="$t('common.text00062')"
+            :unCheckedChildren="$t('common.text00063')" />
         </a-form-model-item>
         <a-form-model-item
           v-if="form.durationEnable"
           :label="$t('common.text00064')"
           prop="durationDate"
           :help="help">
-          <div class="d-flex">
-            <div @click="openDatePicker">
-              <a-date-picker
-                v-model:value="form.durationDate"
-                :disabledDate="disabledDate"
-                :disabledTime="disabledDateTime"
-                :open="open"
-                @change="dateChangeHandle"
-                format="YYYY-MM-DD HH:mm"
-                :showTime="{ format: 'HH:mm' }"
-                @ok="closeDatePicker">
-                <template #renderExtraFooter>
-                  {{$t('common.text00065')}}<a-tag color="blue" style="border-radius: 10px;" :class="{ active: currentDuration === v.value }" v-for="v in durationArrs" :key="v.value" @click="chooseDurationHandle(v)">{{v.text}}</a-tag>
-                  <!-- <p class="ant-calendar-ok-btn" style="position: absolute; right: 13px; top: 83px; padding: 0 8px; z-index: 999;" @click="closeDatePicker">{{$t('common.ok')}}</p> -->
-                </template>
-              </a-date-picker>
-            </div>
+          <!-- 自研 OcDateTimePicker combined：单输入 + 面板内快捷时长，对齐旧交互 -->
+          <div class="d-flex" @click="openDatePicker">
+            <oc-date-time-picker
+              v-model:value="form.durationDate"
+              v-model:open="open"
+              layout="combined"
+              class="duration-datetime"
+              :allow-clear="false"
+              format="YYYY-MM-DD HH:mm"
+              :disabled-date="disabledDate"
+              :disabled-time="disabledDateTime"
+              @change="dateChangeHandle"
+              @ok="closeDatePicker">
+              <template #renderExtraFooter>
+                <span class="duration-footer-label">{{$t('common.text00065')}}</span>
+                <a-tag
+                  v-for="v in durationArrs"
+                  :key="v.value"
+                  color="blue"
+                  class="duration-tag"
+                  :class="{ active: currentDuration === v.value }"
+                  @click.stop="chooseDurationHandle(v)">{{v.text}}</a-tag>
+              </template>
+            </oc-date-time-picker>
           </div>
         </a-form-model-item>
       </a-form-model>
@@ -52,19 +61,20 @@
 
 <script>
 import * as R from 'ramda'
-import moment from 'moment'
+import dayjs from 'dayjs'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 
 export default {
   name: 'SetDurationDialog',
+  compatConfig: { MODE: 3 },
   mixins: [DialogMixin, WindowsMixin],
   data () {
     const expiredAtSort = R.sortWith([
       R.descend(R.prop('release_at')),
     ])
     const datas = expiredAtSort(this.params.data)
-    const expireDate = datas[0].release_at ? moment(datas[0].release_at) : moment().add(1, 'h')
+    const expireDate = datas[0].release_at ? dayjs(datas[0].release_at) : dayjs().add(1, 'h')
     return {
       loading: false,
       action: this.$t('common.text00061'),
@@ -90,9 +100,10 @@ export default {
       return this.$t('common.text00067')
     },
     durationArrs () {
-      return Object.keys(this.$t('durations')).map(k => ({
+      const map = this.$tm('durations') || {}
+      return Object.keys(map).map(k => ({
         value: k,
-        text: this.$t('durations')[k],
+        text: map[k],
       }))
     },
     name () {
@@ -100,7 +111,7 @@ export default {
     },
   },
   watch: {
-    'form.durationEnable' (val) {
+    'form.durationEnable' () {
       this.open = false
     },
   },
@@ -111,7 +122,8 @@ export default {
   },
   methods: {
     async doUpdateSubmit (data) {
-      const time = this.$moment.utc(data.durationDate).format()
+      const raw = data.durationDate
+      const time = this.$moment.utc(dayjs.isDayjs(raw) ? raw.toDate() : raw).format()
       const params = {
         release_at: time,
       }
@@ -161,49 +173,34 @@ export default {
       return result
     },
     disabledDate (current) {
-      // can not select days before today
-      return current && current < moment(this.expireDate)
+      if (!current) return false
+      return current.isBefore(this.expireDate, 'day')
     },
     disabledDateTime (current) {
-      let currentHour = moment(this.expireDate).hour()
-      if (moment().date() !== current.date() || moment(this.expireDate).date() !== current.date()) {
-        currentHour = 0
-      }
+      if (!current || !current.isSame(this.expireDate, 'day')) return {}
+      const h = this.expireDate.hour()
+      const m = this.expireDate.minute()
       return {
-        disabledHours: () => this.range(0, currentHour),
-        // disabledMinutes: () => this.range(0, 60),
-        // disabledSeconds: () => this.range(0, 60),
+        disabledHours: () => this.range(0, h),
+        disabledMinutes: (selectedHour) => (selectedHour === h ? this.range(0, m) : []),
       }
     },
     chooseDurationHandle (v) {
       this.currentDuration = v.value
-      const durationDate = R.clone(this.expireDate)
-      switch (v.value) {
-        case '1h':
-          durationDate.add(1, 'h')
-          break
-        case '2h':
-          durationDate.add(2, 'h')
-          break
-        case '3h':
-          durationDate.add(3, 'h')
-          break
-        case '6h':
-          durationDate.add(6, 'h')
-          break
-        case '1d':
-          durationDate.add(1, 'd')
-          break
-        case '2d':
-          durationDate.add(2, 'd')
-          break
-        case '1w':
-          durationDate.add(1, 'w')
-          break
+      const addMap = {
+        '1h': [1, 'h'],
+        '2h': [2, 'h'],
+        '3h': [3, 'h'],
+        '6h': [6, 'h'],
+        '1d': [1, 'd'],
+        '2d': [2, 'd'],
+        '1w': [1, 'w'],
       }
-      this.form.durationDate = durationDate
+      const pair = addMap[v.value]
+      if (!pair) return
+      this.form.durationDate = this.expireDate.add(pair[0], pair[1])
     },
-    dateChangeHandle (v) {
+    dateChangeHandle () {
       this.currentDuration = ''
     },
     openDatePicker () {
@@ -217,8 +214,19 @@ export default {
 </script>
 
 <style lang="less" scoped>
-.ant-tag-blue {
+.duration-datetime {
+  max-width: 360px;
+}
+.duration-footer-label {
+  margin-right: 4px;
+  white-space: nowrap;
+}
+.duration-tag {
+  border-radius: 10px;
+  cursor: pointer;
   background: none;
+  margin: 2px 4px 2px 0;
+  white-space: nowrap;
   &.active {
     background: #e6f7ff;
   }

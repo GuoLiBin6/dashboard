@@ -51,9 +51,9 @@ export default {
           trigger_type: {
             label: this.$t('compute.text_913'),
             dropdown: true,
-            items: Object.keys(this.$t('flexGrouTriggerType')).map(k => {
+            items: Object.keys(this.$tm('flexGrouTriggerType')).map(k => {
               return {
-                label: this.$t('flexGrouTriggerType')[k],
+                label: this.$tm('flexGrouTriggerType')[k],
                 key: k,
               }
             }),
@@ -77,7 +77,7 @@ export default {
           title: this.$t('compute.text_913'),
           width: 120,
           formatter: ({ cellValue }) => {
-            return this.$t('flexGrouTriggerType')[cellValue]
+            return this.$tm('flexGrouTriggerType')[cellValue]
           },
         },
         {
@@ -93,7 +93,7 @@ export default {
           title: this.$t('compute.text_929'),
           width: 100,
           formatter: ({ row }) => {
-            const acn = this.$t('flexGroupRuleAction')[row.action]
+            const acn = this.$tm('flexGroupRuleAction')[row.action]
             return this.$t('compute.text_961', [acn, row.number])
           },
         },
@@ -267,7 +267,7 @@ export default {
         }
         const unit = indicator === 'cpu' ? '%' : 'b/s'
         const cumulateTxt = this.$t('compute.text_968', [cumulate])
-        return `${this.$t('flexGroupIndicator')[indicator]} ${wrapperType[operator]} ${value} ${unit}，${cumulateTxt}`
+        return `${this.$tm('flexGroupIndicator')[indicator]} ${wrapperType[operator]} ${value} ${unit}，${cumulateTxt}`
       }
       // 定时策略
       if (type === 'timing' && row.timer) {
@@ -281,12 +281,12 @@ export default {
         const now = this.$moment()
         const utcOffset = now.utcOffset() * -1
         const trueHour = now.set({ hour }).subtract(utcOffset, 'minutes').hour()
-        const typeTxt = this.$t('flexGroupCycleType')[timer.cycle_type]
+        const typeTxt = this.$tm('flexGroupCycleType')[timer.cycle_type]
         let itemsTxt = ''
         // 周
         if (timer.cycle_type === 'week' && timer.week_days.length > 0) {
           itemsTxt = '【' + timer.week_days.map(v => {
-            return this.$t('flexGroupSubCycleTypeWeek')[v]
+            return this.$tm('flexGroupSubCycleTypeWeek')[v]
           }).join('|') + '】'
         }
         // 月

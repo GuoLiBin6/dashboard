@@ -1027,6 +1027,16 @@ input[type=number] {
   max-width: 500px;
   // 名称仅展示，不拦截鼠标，避免挡住相邻可点击元素
   pointer-events: none;
+  // 含可点击内容的 tip（如到期释放「去设置」）
+  &.oc-tooltip-interactive {
+    pointer-events: auto;
+  }
+}
+
+/* Status copy：hover 整格（vxe 单元格）即可显示，不只 hover 文案 */
+.vxe-body--column:hover .status-wrapper .status-copy-host,
+.vxe-cell:hover .status-wrapper .status-copy-host {
+  display: inline-flex !important;
 }
 
 .ant-tooltip-inner {

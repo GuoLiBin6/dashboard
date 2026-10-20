@@ -18,7 +18,7 @@
       :data="detailData"
       :getParams="getParams"
       :on-manager="onManager"
-      :columns="columns"
+      :columns="tabColumns"
       taskResource="compute-tasks"
       @side-page-trigger-handle="sidePageTriggerHandle"
       @init-side-page-tab="initSidePageTab"
@@ -88,6 +88,14 @@ export default {
         }
       }
       return null
+    },
+    // 预留 IP / MAC / IP 列表自带列；勿把 IP 子网 columns 透传下去盖掉
+    tabColumns () {
+      const tab = this.params.windowData.currentTab
+      if (['reserved-ip-list', 'network-ip-macs', 'i-p-list'].includes(tab)) {
+        return undefined
+      }
+      return this.columns
     },
     listId () {
       switch (this.params.windowData.currentTab) {

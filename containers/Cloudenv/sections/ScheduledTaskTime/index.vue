@@ -32,25 +32,22 @@
     <!-- 单次策略 -->
     <template v-if="cycleTimer.cycle_type === 'one'">
       <a-form-model-item :label="$t('cloudenv.text_437')">
-        <a-date-picker
+        <oc-date-time-picker
           v-model:value="timer.execTime"
-          :showTime="{
-            format: 'HH:mm',
-          }"
-          :disabledDate="disabledDate"
-          :disabledTime="disabledDateTime"
-          format="YYYY-MM-DD HH:mm" />
+          format="YYYY-MM-DD HH:mm"
+          :disabled-date="disabledDate"
+          :disabled-time="disabledDateTime" />
       </a-form-model-item>
     </template>
     <!-- 非单次策略 -->
     <template v-if="cycleTimer.cycle_type !== 'one'">
       <a-form-model-item :label="$t('cloudenv.text_437')" v-if="cycleTimer.cycle_type !== 'cycle'">
-        <a-time-picker v-model:value="hourMinute" format="HH:mm" />
+        <oc-time-picker v-model:value="hourMinute" format="HH:mm" />
       </a-form-model-item>
       <a-form-model-item :label="$t('cloudenv.text_438')" :help="$t('cloudenv.range_picker_help')">
-        <a-range-picker
+        <oc-range-picker
           v-model:value="startEndTime"
-          :disabledDate="disabledDate"
+          :disabled-date="disabledDate"
           format="YYYY-MM-DD" />
       </a-form-model-item>
     </template>

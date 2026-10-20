@@ -905,26 +905,35 @@ export default {
     background-color 0.15s cubic-bezier(0.2, 0, 0, 1),
     color 0.15s cubic-bezier(0.2, 0, 0, 1);
 
-  // 点击后浏览器/组件 focus 描边会多出一个框
+  // 点击后 antd focus-visible 会画出主色描边
   &:focus,
   &:focus-visible,
   &:focus-within {
-    outline: none;
-    box-shadow: none;
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
   }
 
   :deep(.trigger),
+  :deep(.trigger:focus),
+  :deep(.trigger:focus-visible),
   :deep(a),
   :deep(button),
   :deep(span),
   :deep([tabindex]),
+  :deep([tabindex]:focus),
+  :deep([tabindex]:focus-visible),
   :deep(.ant-tooltip-open),
   :deep(.ant-popover-open),
   :deep(.ant-dropdown-open),
+  :deep(.ant-dropdown-trigger),
+  :deep(.ant-dropdown-trigger:focus),
+  :deep(.ant-dropdown-trigger:focus-visible),
   :deep(.ant-tooltip),
   :deep(.anticon),
   :deep(svg) {
     outline: none !important;
+    outline-offset: 0 !important;
     box-shadow: none !important;
   }
 

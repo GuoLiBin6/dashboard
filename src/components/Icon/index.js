@@ -118,7 +118,9 @@ const Iconfont = {
     })
 
     // 外层统一用 svg 包裹：sprite 时通过 fill/currentColor 生效；多色图标不写 fill，保留原色
-    return h('svg', {
+    // 注意：走 innerHTML 时第三参必须是 null/undefined，不能传 []，否则 Vue3 会清空 innerHTML
+    const useChild = content && content.type === 'use' ? [content] : null
+    const svgProps = {
       ...restAttrs,
       ...listenerProps,
       class: mergedClass,
@@ -127,7 +129,8 @@ const Iconfont = {
       height,
       ...(content && content.__ocViewBox ? { viewBox: content.__ocViewBox } : null),
       ...(content && typeof content.__ocInnerHtml === 'string' ? { innerHTML: content.__ocInnerHtml } : null),
-    }, (content && content.type === 'use') ? [content] : [])
+    }
+    return h('svg', svgProps, useChild)
   },
 }
 

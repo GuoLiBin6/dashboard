@@ -849,7 +849,7 @@ export class GenCreateData {
           }
         }
         const target = this.fi.networkList.filter(item => item.key === key)
-        if (this.fd.networkIpsAddress6) {
+        if (this.fd.networkIpsAddress6 && this.fd.networkIpsAddress6[key]) {
           const ipv6Last = this.fd.networkIpsAddress6[key]
           const ipv6First = getIpv6Start(target[0]?.network?.guest_ip6_start)
           obj.address6 = ipv6First + ipv6Last
@@ -1166,7 +1166,10 @@ export class GenCreateData {
     const { networks, extraNetworks } = this.genNetworks()
     const data = {
       auto_start: create_server_auto_start,
-      generate_name: this.fd.name && this.fd.name.trim(),
+      // 主机模板页隐藏 name，名称在 servertemplate_name；普通创建用 name
+      generate_name: (this.fd.name && this.fd.name.trim()) ||
+        (this.fd.servertemplate_name && this.fd.servertemplate_name.trim()) ||
+        '',
       description: this.fd.description,
       hypervisor: this.getHypervisor(),
       __count__: this.fd.count,

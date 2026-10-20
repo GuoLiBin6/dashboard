@@ -248,7 +248,8 @@ export const getNetworkTypeTableColumn = () => {
     field: 'network_type',
     title: i18n.t('common.network.type'),
     formatter: ({ row }) => {
-      return i18n.t('networkServerType')[row.network_type] || '-'
+      const key = row.network_type != null ? `networkServerType.${row.network_type}` : ''
+      return (key && i18n.te(key)) ? i18n.t(key) : '-'
     },
   }
 }

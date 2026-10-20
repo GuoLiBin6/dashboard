@@ -111,3 +111,20 @@ div.ant-form-item-explain {
     }
   }
 }
+
+/* 多行空 label：不渲染/隐藏 label 列，按 --oc-form-label-width 缩进对齐 */
+.ant-form.ant-form-horizontal .ant-form-item.oc-form-item-follow-label > .ant-form-item-row > .ant-form-item-label,
+.oc-layout-form .ant-form-item.oc-form-item-follow-label > .ant-form-item-row > .ant-form-item-label {
+  display: none !important;
+  width: 0 !important;
+  max-width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+.ant-form.ant-form-horizontal .ant-form-item.oc-form-item-follow-label > .ant-form-item-row > .ant-form-item-control,
+.oc-layout-form .ant-form-item.oc-form-item-follow-label > .ant-form-item-row > .ant-form-item-control {
+  margin-inline-start: var(--oc-form-label-width, 0px) !important;
+  max-width: none !important;
+  flex: 1 1 auto !important;
+}

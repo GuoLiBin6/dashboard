@@ -1,13 +1,13 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{action}}</div>
-    <div slot="body">
+    <template #header>{{action}}</template>
+    <template #body>
       <detect-ssh-table :params="params" @radio-change="handleRadioChange" :remote="true" />
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="cancelDialog" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

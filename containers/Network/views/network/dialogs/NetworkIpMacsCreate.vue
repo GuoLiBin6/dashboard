@@ -1,45 +1,52 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{ title }}</div>
-    <div slot="body">
+    <template #header>{{ title }}</template>
+    <template #body>
       <dialog-selected-tips :name="$t('dictionary.network')" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
+      <!-- ocLayoutForm 下勿再绑 offset；空 label 行会自动占同一 label 宽 -->
       <a-form-model ref="formRef" :model="form" class="mt-3" hideRequiredMark>
         <a-form-model-item
           v-for="(row, index) in form.rows"
           :key="row.key"
-          v-bind="index === 0 ? undefined : formItemLayoutWithOutLabel"
-          :label="index === 0 ? $t('network.mac_ip.mapping_table') : ''"
-          :required="false">
-          <a-row :gutter="6">
+          :colon="false"
+          :label="index === 0 ? `${$t('network.mac_ip.mapping_table')}：` : undefined"
+          :class="{ 'oc-form-item-follow-label': index !== 0 }">
+          <a-row :gutter="8" type="flex" align="middle">
             <a-col :span="11">
               <a-form-model-item
-                class="mb-0 mr-1"
-                :prop="`rows.${index}.ip`"
-                :rules="rules.ip">
+                class="mb-0"
+                :prop="['rows', index, 'ip']"
+                :rules="rules.ip"
+                :validate-first="true">
                 <a-input v-model:value="row.ip" :placeholder="$t('network.text_217')" />
               </a-form-model-item>
             </a-col>
             <a-col :span="11">
               <a-form-model-item
-                class="mb-0 mr-1"
-                :prop="`rows.${index}.mac`"
-                :rules="rules.mac">
+                class="mb-0"
+                :prop="['rows', index, 'mac']"
+                :rules="rules.mac"
+                :validate-first="true">
                 <a-input v-model:value="row.mac" :placeholder="$t('common.tips.input', [$t('network.text_228')])" />
               </a-form-model-item>
             </a-col>
-            <a-col :span="2" v-show="!isEdit">
-              <a-button v-if="index === 0" type="primary" shape="circle" icon="plus" size="small" @click="add" />
-              <a-button v-else shape="circle" icon="minus" size="small" @click="remove(row.key)" />
+            <a-col :span="2" v-show="!isEdit" class="text-right">
+              <a-button v-if="index === 0" type="primary" shape="circle" size="small" @click="add">
+                <template #icon><icon type="plus" /></template>
+              </a-button>
+              <a-button v-else shape="circle" size="small" @click="remove(row.key)">
+                <template #icon><icon type="minus" /></template>
+              </a-button>
             </a-col>
           </a-row>
         </a-form-model-item>
       </a-form-model>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 
@@ -94,7 +101,7 @@ export default {
           title: 'VPC',
         },
         {
-          field: 'ip',
+          field: 'guest_ip_start',
           title: this.$t('network.text_213'),
           width: 180,
           slots: {
@@ -107,7 +114,7 @@ export default {
           },
         },
         {
-          field: 'ip',
+          field: 'guest_ip6_start',
           title: this.$t('network.ipv6.address'),
           width: 180,
           slots: {
@@ -123,13 +130,6 @@ export default {
           },
         },
       ],
-      formItemLayoutWithOutLabel: {
-        wrapperCol: {
-          md: { span: 16, offset: 8 },
-          xl: { span: 18, offset: 6 },
-          xxl: { span: 20, offset: 4 },
-        },
-      },
     }
   },
   computed: {
@@ -199,7 +199,3 @@ export default {
   },
 }
 </script>
-
-<style>
-
-</style>

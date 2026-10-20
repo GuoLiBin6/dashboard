@@ -5,8 +5,9 @@
       <a-form-model
         ref="formRef"
         :model="form"
-        :rules="rules">
-        <a-form-model-item :label="$t('network.text_211')" prop="network">
+        :rules="rules"
+        class="reserved-ip-create-form">
+        <a-form-model-item :label="$t('network.text_211')" prop="network" :validate-first="true">
           <template v-if="hasNetwork">
             <div>
               <span>{{ networkDesc }}</span>
@@ -24,16 +25,17 @@
               :select-props="{ placeholder: $t('network.text_212') }" />
           </template>
         </a-form-model-item>
-        <a-form-model-item :label="$t('network.text_213')" required>
+        <a-form-model-item :label="$t('network.text_213')" required :colon="true">
+          <!-- 校验在 IpAddress 内层 prop=['networkIps', key]；外层勿挂 prop，避免空值必填误报 -->
           <ip-address
             :model="form"
             :checkIp="checkIp" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('network.text_641')" prop="notes">
+        <a-form-model-item :label="$t('network.text_641')" prop="notes" :validate-first="true">
           <a-textarea
             v-model:value="form.notes"
             :placeholder="$t('network.text_643')"
-            :autosize="{ minRows: 2, maxRows: 6 }" />
+            :auto-size="{ minRows: 2, maxRows: 6 }" />
         </a-form-model-item>
       </a-form-model>
     </template>
@@ -155,3 +157,9 @@ export default {
   },
 }
 </script>
+
+<style lang="less" scoped>
+.reserved-ip-create-form {
+  max-width: 640px;
+}
+</style>

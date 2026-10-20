@@ -8,7 +8,7 @@
         :model="form.fd"
         :rules="formRules"
         hideRequiredMark>
-        <a-form-model-item class="mb-0" :label="$t('compute.text_297', [$t('dictionary.project')])" prop="project">
+        <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])" prop="project">
           <domain-project :form="form.fd" :labelInValue="false" @update:project="projectChange" />
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.text_228')" prop="generate_name">
@@ -61,7 +61,7 @@
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.text_898')" prop="shrink_principle">
           <a-select v-model:value="form.fd.shrink_principle">
-            <a-select-option v-for="(v, k) in $t('flexGrouPprinciple')" :key="k" :value="k">{{v}}</a-select-option>
+            <a-select-option v-for="(v, k) in $tm('flexGrouPprinciple')" :key="k" :value="k">{{v}}</a-select-option>
           </a-select>
         </a-form-model-item>
         <a-form-model-item required :label="$t('compute.text_899')">
@@ -78,14 +78,14 @@
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.text_903')" prop="health_check_mode">
           <a-select v-model:value="form.fd.health_check_mode">
-            <template v-for="(v, k) in $t('flexGroupHealthCheckMode')" :key="k">
+            <template v-for="(v, k) in $tm('flexGroupHealthCheckMode')" :key="k">
               <a-select-option v-if="k !== 'loadbalancer' || (isLoadbalancer && k === 'loadbalancer')" :value="k">{{v}}</a-select-option>
             </template>
           </a-select>
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.text_904')" prop="health_check_cycle">
           <a-select v-model:value="form.fd.health_check_cycle">
-            <a-select-option v-for="(v, k) in $t('flexGroupCycles')" :key="k" :value="parseInt(k)">{{v}}</a-select-option>
+            <a-select-option v-for="(v, k) in $tm('flexGroupCycles')" :key="k" :value="parseInt(k)">{{v}}</a-select-option>
           </a-select>
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.text_905')" prop="health_check_gov">

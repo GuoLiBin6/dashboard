@@ -35,13 +35,14 @@
           @snapshotChange="val => snapshotChange(item, val, i)"
           @diskTypeChange="val => diskTypeChange(item, val, i)"
           @storageHostChange="(val) => $emit('storageHostChange', val)">
-          <a-button
-            v-if="!getDisabled(item, 'minus') && (dataDisks.length > 1 ? (i !== 0) : true) && isAddDiskShow"
-            slot="aside"
-            shape="circle"
-            icon="minus"
-            size="small"
-            @click="decrease(item.key)" />
+          <template #aside>
+            <a-button
+              v-if="!getDisabled(item, 'minus') && (dataDisks.length > 1 ? (i !== 0) : true) && isAddDiskShow"
+              shape="circle"
+              icon="minus"
+              size="small"
+              @click="decrease(item.key)" />
+          </template>
         </disk>
       </div>
       <div class="d-flex align-items-center" v-if="diskRemain > 0 && !disabled && isAddDiskShow && imageType !== 'backup' && imageType !== 'snapshot'">

@@ -3,8 +3,9 @@
     <div class="d-flex align-items-start mb-2" v-for="(item, i) in networkList" :key="item.key">
       <a-form-model-item
         class="w-100 mb-0 mr-2"
-        :prop="`networkIps.${item.key}`"
-        :rules="ipRules(item.key)">
+        :prop="['networkIps', item.key]"
+        :rules="ipRules(item.key)"
+        :validate-first="true">
         <a-input
           :placeholder="$t('network.text_217')"
           v-model:value="networkIps[item.key]"

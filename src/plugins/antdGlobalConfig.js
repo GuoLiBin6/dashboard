@@ -1,8 +1,9 @@
 // 全局配置 ant-design-vue
 import { h, defineComponent, mergeProps, shallowRef, watch, triggerRef } from 'vue'
-import { Spin, Form, Button, Input, InputNumber, Alert, Radio, Select } from 'ant-design-vue'
+import { Spin, Form, Button, Input, InputNumber, Alert, Radio, Select, Switch } from 'ant-design-vue'
 import InfoCircleFilled from '@ant-design/icons-vue/es/icons/InfoCircleFilled'
 import Icon from '@/components/Icon'
+import i18n from '@/locales'
 
 /** 未显式传 labelAlign 时默认左对齐 */
 function setFormLabelAlignLeft (comp) {
@@ -210,8 +211,70 @@ div.ant-form-item-explain {
 }
 ensureFormExtraFontStyle()
 
-/** a-form-model-item 旧写法用 prop，antdv4 Form.Item 已改为 name 并会 warning。
- * 显式声明 prop/name，映射后只把 name 传给 Form.Item，避免 prop 落入 attrs 触发弃用 warning/异常。
+/**
+ * antdv4 getNamePath 不会拆分 'a.b.c'（整段当一个 key）。
+ * Vue2 FormModel 的 prop="networkIps.xxx" / "rows.0.ip" 需转成 ['networkIps','xxx'] 才能读到 model。
+ */
+function toFormNamePath (name) {
+  if (name === undefined || name === null || name === '') return name
+  if (Array.isArray(name)) return name
+  if (typeof name === 'string' && name.includes('.')) {
+    return name.split('.').map((seg) => (/^\d+$/.test(seg) ? Number(seg) : seg))
+  }
+  return name
+}
+
+/** 从 VNode 树取纯文本（用于判断 label 是否有实质文案） */
+function collectVNodeText (nodes) {
+  if (nodes == null) return ''
+  const list = Array.isArray(nodes) ? nodes : [nodes]
+  let out = ''
+  for (const n of list) {
+    if (n == null || typeof n === 'boolean') continue
+    if (typeof n === 'string' || typeof n === 'number') {
+      out += String(n)
+      continue
+    }
+    if (typeof n.children === 'string' || typeof n.children === 'number') {
+      out += String(n.children)
+    } else if (n.children) {
+      out += collectVNodeText(n.children)
+    }
+  }
+  return out
+}
+
+function isBlankFormLabelText (text) {
+  return !String(text || '').replace(/\u00a0/g, ' ').trim()
+}
+
+/** 解析 label 纯文本（prop 或 slot） */
+function resolveFormLabelText (labelAttr, labelSlot) {
+  if (labelAttr != null && !isBlankFormLabelText(labelAttr)) {
+    return String(labelAttr)
+  }
+  if (typeof labelSlot === 'function') {
+    return collectVNodeText(labelSlot())
+  }
+  return labelAttr != null ? String(labelAttr) : ''
+}
+
+function hasMeaningfulFormLabel (labelAttr, labelSlot) {
+  if (labelAttr != null && !isBlankFormLabelText(labelAttr)) return true
+  if (typeof labelSlot !== 'function') return false
+  return !isBlankFormLabelText(collectVNodeText(labelSlot()))
+}
+
+function labelTextEndsWithColon (text) {
+  return /[:：]\s*$/.test(String(text || '').replace(/\u00a0/g, ' ').trimEnd())
+}
+
+/**
+ * a-form-model-item 旧写法用 prop，antdv4 Form.Item 已改为 name。
+ *
+ * 空 label（多行占位）：antdv4 空槽 [] 仍为真，会画出「* :」；且 isRequired 忽略 required=false。
+ * 正确做法：去掉空 label（根本不渲染 label 列），用 oc-form-item-follow-label 按
+ * --oc-form-label-width 缩进对齐。
  */
 function createFormModelItem (RawFormItem) {
   return defineComponent({
@@ -220,11 +283,42 @@ function createFormModelItem (RawFormItem) {
     props: {
       prop: { type: [String, Number, Array], default: undefined },
       name: { type: [String, Number, Array], default: undefined },
+      required: { type: Boolean, default: undefined },
+      colon: { type: Boolean, default: undefined },
     },
     setup (props, { attrs, slots }) {
       return () => {
-        const name = props.name !== undefined && props.name !== null ? props.name : props.prop
-        return h(RawFormItem, mergeProps(attrs, name !== undefined && name !== null ? { name } : {}), slots)
+        const raw = props.name !== undefined && props.name !== null ? props.name : props.prop
+        const name = toFormNamePath(raw)
+        const pass = {}
+        const nextSlots = { ...slots }
+        const labelText = resolveFormLabelText(attrs.label, slots.label)
+        const meaningful = hasMeaningfulFormLabel(attrs.label, slots.label)
+        const mergedAttrs = { ...attrs }
+        const blankLabelIntent = !meaningful && (
+          typeof slots.label === 'function' ||
+          (attrs.label != null && isBlankFormLabelText(attrs.label))
+        )
+
+        if (name !== undefined && name !== null) pass.name = name
+        if (props.required !== undefined) pass.required = props.required
+
+        if (props.colon !== undefined) {
+          pass.colon = props.colon
+        } else if (!meaningful || labelTextEndsWithColon(labelText)) {
+          pass.colon = false
+        }
+
+        if (blankLabelIntent) {
+          // 不渲染空 label，避免「* :」；缩进对齐见 .oc-form-item-follow-label
+          delete nextSlots.label
+          delete mergedAttrs.label
+          pass.label = undefined
+          pass.class = ['oc-form-item-follow-label', mergedAttrs.class, attrs.class]
+          delete mergedAttrs.class
+        }
+
+        return h(RawFormItem, mergeProps(mergedAttrs, pass), nextSlots)
       }
     },
   })
@@ -586,43 +680,142 @@ function createLegacyInputNumber (RawInputNumber) {
   })
 }
 
+/**
+ * 未显式传 checkedChildren / unCheckedChildren 时默认「开/关」，
+ * 避免迁移后大量 a-switch 变成纯色块无文案。业务侧可按语境覆盖。
+ */
+function createLegacySwitch (RawSwitch) {
+  return defineComponent({
+    name: 'ASwitch',
+    inheritAttrs: false,
+    props: {
+      checked: { type: [Boolean, Number, String], default: undefined },
+      checkedChildren: { default: undefined },
+      unCheckedChildren: { default: undefined },
+    },
+    emits: ['change', 'update:checked', 'click'],
+    setup (props, { attrs, slots, emit }) {
+      return () => {
+        const {
+          onChange,
+          onClick,
+          'onUpdate:checked': onUpdateChecked,
+          checkedChildren: attrCheckedChildren,
+          unCheckedChildren: attrUnCheckedChildren,
+          'checked-children': kebabChecked,
+          'un-checked-children': kebabUnChecked,
+          ...restAttrs
+        } = attrs
+        // 有插槽时不强制默认文案，避免盖住自定义内容
+        const checkedChildren = props.checkedChildren ?? attrCheckedChildren ?? kebabChecked ??
+          (slots.checkedChildren ? undefined : i18n.t('common.text00062'))
+        const unCheckedChildren = props.unCheckedChildren ?? attrUnCheckedChildren ?? kebabUnChecked ??
+          (slots.unCheckedChildren ? undefined : i18n.t('common.text00063'))
+        const pass = {
+          checked: props.checked,
+          onChange: (...args) => {
+            emit('change', ...args)
+            if (typeof onChange === 'function') onChange(...args)
+          },
+          'onUpdate:checked': (v) => {
+            emit('update:checked', v)
+            if (typeof onUpdateChecked === 'function') onUpdateChecked(v)
+          },
+          onClick: (...args) => {
+            emit('click', ...args)
+            if (typeof onClick === 'function') onClick(...args)
+          },
+        }
+        if (checkedChildren !== undefined) pass.checkedChildren = checkedChildren
+        if (unCheckedChildren !== undefined) pass.unCheckedChildren = unCheckedChildren
+        return h(RawSwitch, mergeProps(restAttrs, pass), slots)
+      }
+    },
+  })
+}
+
+/** 多行空 label：无 label 列 + 按统一 label 宽缩进（从根上消灭「* :」） */
+function ensureBlankFormLabelStyle () {
+  if (typeof document === 'undefined') return
+  const id = 'oc-form-blank-label'
+  let el = document.getElementById(id)
+  if (!el) {
+    el = document.createElement('style')
+    el.id = id
+  }
+  document.head.appendChild(el)
+  el.textContent = `
+.ant-form.ant-form-horizontal .ant-form-item.oc-form-item-follow-label > .ant-form-item-row > .ant-form-item-label,
+.oc-layout-form .ant-form-item.oc-form-item-follow-label > .ant-form-item-row > .ant-form-item-label {
+  display: none !important;
+  width: 0 !important;
+  max-width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+.ant-form.ant-form-horizontal .ant-form-item.oc-form-item-follow-label > .ant-form-item-row > .ant-form-item-control,
+.oc-layout-form .ant-form-item.oc-form-item-follow-label > .ant-form-item-row > .ant-form-item-control {
+  margin-inline-start: var(--oc-form-label-width, 0px) !important;
+  max-width: none !important;
+  flex: 1 1 auto !important;
+}
+`
+}
+ensureBlankFormLabelStyle()
+
+let _antdCompatApp = null
+
+function registerAntdCompat (app) {
+  if (!app) return
+  // 全局设置 loading icon（使用项目 Icon + spin，保证 a-spin 也会转圈）
+  Spin.setDefaultIndicator({
+    indicator: () =>
+      h(Icon, {
+        type: 'loading',
+        spin: true,
+        style: 'font-size: 24px',
+      }),
+  })
+
+  // a-form / AForm：默认 labelAlign=left
+  setFormLabelAlignLeft(Form)
+  setFormLabelAlignLeft(app.component('AForm'))
+
+  // 兼容旧写法 a-form-model / a-form-model-item（antdv4 已移除 FormModel）
+  if (!app.component('AFormModel')) {
+    app.component('AFormModel', Form)
+  }
+  // 始终覆盖：prop → name；空 label 不展示 * / ：
+  const FormItemCompat = createFormModelItem(Form.Item)
+  app.component('AFormItem', FormItemCompat)
+  app.component('AFormModelItem', FormItemCompat)
+  setFormLabelAlignLeft(app.component('AFormModel'))
+
+  // 始终包装原始 ant Button，避免 HMR / 重复 install 套娃
+  app.component('AButton', createLegacyButton(Button))
+  ensureAlertInfoThemeStyle()
+  ensurePrimaryButtonThemeStyle()
+  ensureFormExtraFontStyle()
+  ensureBlankFormLabelStyle()
+  app.component('AAlert', createThemedAlert(Alert))
+  app.component('AInput', createLegacyInput(Input))
+  app.component('AInputNumber', createLegacyInputNumber(InputNumber))
+  app.component('ARadioGroup', createLegacyRadioGroup(Radio.Group))
+  app.component('ASelect', createLegacySelect(Select))
+  app.component('ASwitch', createLegacySwitch(Switch))
+}
+
 export default {
   autoRegister: false,
   install (app) {
-    // 全局设置 loading icon（使用项目 Icon + spin，保证 a-spin 也会转圈）
-    Spin.setDefaultIndicator({
-      indicator: () =>
-        h(Icon, {
-          type: 'loading',
-          spin: true,
-          style: 'font-size: 24px',
-        }),
-    })
-
-    // a-form / AForm：默认 labelAlign=left
-    setFormLabelAlignLeft(Form)
-    setFormLabelAlignLeft(app.component('AForm'))
-
-    // 兼容旧写法 a-form-model / a-form-model-item（antdv4 已移除 FormModel）
-    if (!app.component('AFormModel')) {
-      app.component('AFormModel', Form)
-    }
-    // 始终覆盖：prop → name，避免 Form.Item 弃用警告
-    app.component('AFormModelItem', createFormModelItem(Form.Item))
-    setFormLabelAlignLeft(app.component('AFormModel'))
-
-    // 始终包装原始 ant Button，避免 HMR / 重复 install 套娃
-    app.component('AButton', createLegacyButton(Button))
-    // a-alert info 图标 / primary·link·default 按钮跟随主题色
-    ensureAlertInfoThemeStyle()
-    ensurePrimaryButtonThemeStyle()
-    ensureFormExtraFontStyle()
-    app.component('AAlert', createThemedAlert(Alert))
-    // Input / InputNumber / Radio.Group：修 antdv4 受控怪癖（a-form-model / v-model），非 createForm
-    app.component('AInput', createLegacyInput(Input))
-    app.component('AInputNumber', createLegacyInputNumber(InputNumber))
-    app.component('ARadioGroup', createLegacyRadioGroup(Radio.Group))
-    // Select：空值 → undefined，恢复 placeholder（antdv4 仅 undefined 展示）
-    app.component('ASelect', createLegacySelect(Select))
+    _antdCompatApp = app
+    registerAntdCompat(app)
   },
+}
+
+if (import.meta.hot) {
+  import.meta.hot.accept(() => {
+    if (_antdCompatApp) registerAntdCompat(_antdCompatApp)
+  })
 }

@@ -64,7 +64,9 @@ export default {
                 title: i18n.t('network.text_249'),
                 width: '25%',
                 formatter: ({ cellValue }) => {
-                  return this.$t('networkServerType')[cellValue] || i18n.t('network.text_507')
+                  // vue-i18n v9+：$t(objKey) 不再返回对象，需按叶子 key 取文案
+                  const key = cellValue != null ? `networkServerType.${cellValue}` : ''
+                  return (key && this.$te(key)) ? this.$t(key) : i18n.t('network.text_507')
                 },
               },
               {

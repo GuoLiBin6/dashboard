@@ -17,6 +17,8 @@ import SingleActionsMixin from '../mixins/singleActions'
 export default {
   name: 'ReservedIPList',
   mixins: [WindowsMixin, ListMixin, ColumnsMixin, SingleActionsMixin],
+  // 侧栏曾把 IP 子网 :columns 透传到 page-list，盖掉预留 IP 自有列
+  inheritAttrs: false,
   props: {
     id: String,
     getParams: {

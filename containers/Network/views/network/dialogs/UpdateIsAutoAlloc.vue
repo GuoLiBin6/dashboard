@@ -1,20 +1,23 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{params.title}}</div>
-    <div slot="body">
+    <template #header>{{params.title}}</template>
+    <template #body>
       <dialog-selected-tips :name="$t('dictionary.network')" :count="params.data.length" :action="params.title" />
       <dialog-table class="mb-2" :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-form-model ref="formRef" :model="form">
         <a-form-model-item :label="$t('common_498')" prop="is_auto_alloc">
-          <a-switch v-model:checked="form.is_auto_alloc" />
-          <template slot="extra">{{$t('common_500')}}</template>
+          <a-switch
+            v-model:checked="form.is_auto_alloc"
+            :checkedChildren="$t('common.text00062')"
+            :unCheckedChildren="$t('common.text00063')" />
+          <template #extra>{{$t('common_500')}}</template>
         </a-form-model-item>
       </a-form-model>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

@@ -1,34 +1,26 @@
-import { getStatusTableColumn, getTimeTableColumn } from '@/utils/common/tableColumn'
+import {
+  getStatusTableColumn,
+  getTimeTableColumn,
+  getCopyWithContentTableColumn,
+} from '@/utils/common/tableColumn'
 import i18n from '@/locales'
 
 export default {
   created () {
     this.columns = [
-      {
-        field: 'addr',
+      getCopyWithContentTableColumn({
+        field: 'ip_addr',
         title: i18n.t('network.text_213'),
-        slots: {
-          default: ({ row }, h) => {
-            let text = '-'
-            if (row.ip_addr) {
-              text = row.ip_addr
-            }
-            if (row.ip6_addr) {
-              text = row.ip6_addr
-            }
-            return [
-              h('list-body-cell-wrap', {
-                props: {
-                  row: { text },
-                  field: 'text',
-                  copy: true,
-                },
-              }),
-            ]
-          },
-        },
-      },
+        // ipv4 / ipv6 任一有值即可；走 tableColumn 内部归一化 h，避免 props 嵌套丢参
+        message: row => row.ip6_addr || row.ip_addr || '-',
+      }),
       getStatusTableColumn({ statusModule: 'reservedip' }),
+      getCopyWithContentTableColumn({
+        field: 'network',
+        title: i18n.t('network.text_565'),
+        // 侧栏已限定子网时隐藏
+        hidden: () => !!(this.data && this.data.id),
+      }),
       {
         field: 'notes',
         title: i18n.t('network.text_668'),
@@ -36,17 +28,16 @@ export default {
         slots: {
           default: ({ row }, h) => {
             return [
+              // Vue3：扁平传参，勿再包 props: { ... }
               h('list-body-cell-wrap', {
-                props: {
-                  formRules: [
-                    { required: true, message: i18n.t('network.text_671') },
-                  ],
-                  row,
-                  edit: true,
-                  copy: true,
-                  onManager: this.onManager,
-                  field: 'notes',
-                },
+                formRules: [
+                  { required: true, message: i18n.t('network.text_671') },
+                ],
+                row,
+                edit: true,
+                copy: true,
+                onManager: this.onManager,
+                field: 'notes',
               }),
             ]
           },

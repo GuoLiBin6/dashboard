@@ -270,15 +270,17 @@ export default {
       this.guestIpPrefixHelp = ''
     },
     async handleSubmit () {
-      const ListPath = this.$router.resolve(this.$route.path)
       try {
         await this.$refs.formRef.validate()
         this.submiting = true
         const data = this.genData(this.form)
         const manager = new Manager('secgroups')
         await manager.create({ data })
-        this.$router.push({ path: ListPath.resolved.matched[0].path })
+        // vue-router 4：resolve 无 .resolved，按路径去掉 /create 回到列表
+        const listPath = (this.$route.path || '').replace(/\/create\/?$/, '') || '/secgroup'
+        this.$router.push({ path: listPath })
       } catch (error) {
+        if (error?.errorFields || error?.outOfDate) return
         throw error
       } finally {
         this.submiting = false

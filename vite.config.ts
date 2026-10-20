@@ -71,6 +71,7 @@ export default defineConfig(({ mode }) => {
   const antdTimeUnitColumnPatch = resolve('./src/patches/antd-TimeUnitColumn.js')
   const antdTimeBodyPatch = resolve('./src/patches/antd-TimeBody.js')
   const antdPickerButtonPatch = resolve('./src/patches/antd-PickerButton.js')
+  const antdPickerPatch = resolve('./src/patches/antd-Picker.js')
   const antdGetRangesPatch = resolve('./src/patches/antd-getRanges.js')
   const antdPickerHeaderPatch = resolve('./src/patches/antd-PickerHeader.js')
   const antdDateHeaderPatch = resolve('./src/patches/antd-DateHeader.js')
@@ -274,8 +275,8 @@ export default function useMergeProps (props) {
           if (next !== code) return { code: next, map: null }
         }
 
-        // 4) TimePicker：列点击立即写入（无需再点确定）
-        if (cleanId.includes('/ant-design-vue/es/vc-picker/Picker.js') && !code.includes("picker.value === 'time' && type === 'mouse'")) {
+        // 4) TimePicker / DatePicker+showTime：点选立即写入（无需再点确定）
+        if (cleanId.includes('/ant-design-vue/es/vc-picker/Picker.js') && !code.includes('/* patch-picker-mouse-write */')) {
           const next = code.replace(
             /const onContextSelect = \(date, type\) => \{\s*if \(type === 'submit' \|\| type !== 'key' && !needConfirmButton\.value\) \{\s*\/\/ triggerChange will also update selected values\s*triggerChange\(date\);\s*triggerOpen\(false\);\s*\}\s*\};/,
             `const onContextSelect = (date, type) => {
@@ -283,8 +284,8 @@ export default function useMergeProps (props) {
           // triggerChange will also update selected values
           triggerChange(date);
           triggerOpen(false);
-        } else if (picker.value === 'time' && type === 'mouse') {
-          // compat：时间列点选后立即写入，无需再点确定
+        } else if (type === 'mouse' && (picker.value === 'time' || props.showTime)) {
+          // /* patch-picker-mouse-write */ TimePicker 与 DatePicker+showTime：点选立即写入
           triggerChange(date);
         }
       };`,
@@ -561,6 +562,8 @@ export default function useMergeProps (props) {
       'ant-design-vue/es/vc-picker/panels/TimePanel/TimeBody.js': antdTimeBodyPatch,
       'ant-design-vue/es/vc-picker/utils/getRanges': antdGetRangesPatch,
       'ant-design-vue/es/vc-picker/utils/getRanges.js': antdGetRangesPatch,
+      'ant-design-vue/es/vc-picker/Picker': antdPickerPatch,
+      'ant-design-vue/es/vc-picker/Picker.js': antdPickerPatch,
       'ant-design-vue/es/date-picker/PickerButton': antdPickerButtonPatch,
       'ant-design-vue/es/date-picker/PickerButton.js': antdPickerButtonPatch,
       // vxe-table v4 + xe-utils v3 不再需要对 xe-utils/methods/xe-utils 做映射

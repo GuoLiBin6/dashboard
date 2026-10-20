@@ -5,26 +5,20 @@
       <a-alert v-if="diffHours < 1" class="mb-2" :message="$t('common_587')" type="error" show-icon />
       <a-form-model hideRequiredMark ref="ruleForm" :model="formData" :rules="rules" v-bind="layout" style="min-width: 300px;">
         <a-form-model-item :label="$t('common.text00119')" prop="startValue">
-          <a-date-picker
+          <oc-date-time-picker
             v-model:value="formData.startValue"
             :disabled-date="disabledStartDate"
             :disabled-time="disabledDateTime"
-            :show-time="{ defaultValue: $moment('00:00:00', 'HH:mm:ss') }"
             format="YYYY-MM-DD HH:mm"
-            :open="startOpen"
-            :placeholder="$t('common.text00119')"
-            @openChange="handleStartOpenChange" />
+            :date-placeholder="$t('common.text00119')" />
         </a-form-model-item>
         <a-form-model-item :label="$t('common.text00120')" prop="endValue">
-          <a-date-picker
+          <oc-date-time-picker
             v-model:value="formData.endValue"
             :disabled-date="disabledEndDate"
             :disabled-time="disabledDateTime"
-            :show-time="{ defaultValue: $moment('00:00:00', 'HH:mm:ss') }"
             format="YYYY-MM-DD HH:mm"
-            :placeholder="$t('common.text00120')"
-            :open="endOpen"
-            @openChange="handleEndOpenChange" />
+            :date-placeholder="$t('common.text00120')" />
         </a-form-model-item>
       </a-form-model>
     </template>

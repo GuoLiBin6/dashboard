@@ -1,52 +1,58 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{ $t('network.set_static_routes') }}</div>
-    <div slot="body">
+    <template #header>{{ $t('network.set_static_routes') }}</template>
+    <template #body>
       <dialog-selected-tips :name="$t('dictionary.network')" :count="params.data.length" :action="$t('network.set_static_routes')" />
       <dialog-table :data="params.data" :columns="columns" />
+      <!-- ocLayoutForm 下勿再绑 offset；空 label 行会自动占同一 label 宽 -->
       <a-form-model ref="formRef" :model="form" class="mt-3" hideRequiredMark>
         <a-form-model-item
           v-for="(row, index) in form.rows"
           :key="row.key"
-          v-bind="index === 0 ? undefined : formItemLayoutWithOutLabel"
-          :label="index === 0 ? $t('network.static_routes') : ''"
-          :required="false">
-          <a-row :gutter="6">
+          :colon="false"
+          :label="index === 0 ? `${$t('network.static_routes')}：` : undefined"
+          :class="{ 'oc-form-item-follow-label': index !== 0 }">
+          <a-row :gutter="8" type="flex" align="middle">
             <a-col :span="11">
               <a-form-model-item
-                class="mb-0 mr-1"
-                :prop="`rows.${index}.net`"
-                :rules="netRules(row.key)">
+                class="mb-0"
+                :prop="['rows', index, 'net']"
+                :rules="netRules(row.key)"
+                :validate-first="true">
                 <a-input v-model:value="row.net" :placeholder="$t('network.static_routes.net_placeholder')" />
               </a-form-model-item>
             </a-col>
             <a-col :span="11">
               <a-form-model-item
-                class="mb-0 mr-1"
-                :prop="`rows.${index}.gw`"
-                :rules="rules.gw">
+                class="mb-0"
+                :prop="['rows', index, 'gw']"
+                :rules="rules.gw"
+                :validate-first="true">
                 <a-input v-model:value="row.gw" :placeholder="$t('network.static_routes.gw_placeholder')" />
               </a-form-model-item>
             </a-col>
-            <a-col :span="2">
-              <a-button shape="circle" icon="minus" size="small" @click="remove(row.key)" />
+            <a-col :span="2" class="text-right">
+              <a-button shape="circle" size="small" @click="remove(row.key)">
+                <template #icon><icon type="minus" /></template>
+              </a-button>
             </a-col>
           </a-row>
         </a-form-model-item>
         <a-form-model-item
-          v-bind="form.rows.length ? formItemLayoutWithOutLabel : undefined"
-          :label="form.rows.length ? '' : $t('network.static_routes')">
+          :colon="false"
+          :label="!form.rows.length ? `${$t('network.static_routes')}：` : undefined"
+          :class="{ 'oc-form-item-follow-label': !!form.rows.length }">
           <a-button type="link" class="px-0" @click="add">
-            <a-icon type="plus-circle" theme="filled" class="mr-2" style="font-size: 16px" />
+            <icon type="plus-circle" theme="filled" class="mr-2" style="font-size: 16px" />
             {{ $t('network.static_routes.add') }}
           </a-button>
         </a-form-model-item>
       </a-form-model>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 
@@ -106,13 +112,6 @@ export default {
           { required: true, message: this.$t('network.static_routes.gw_placeholder') },
           { validator: this.$validate('IPv4') },
         ],
-      },
-      formItemLayoutWithOutLabel: {
-        wrapperCol: {
-          md: { span: 16, offset: 8 },
-          xl: { span: 18, offset: 6 },
-          xxl: { span: 20, offset: 4 },
-        },
       },
     }
   },

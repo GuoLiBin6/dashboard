@@ -15,6 +15,7 @@ import { PROVIDER_MAP } from '@/constants'
 export default {
   name: 'NetworkIpMacs',
   mixins: [WindowsMixin, ListMixin],
+  inheritAttrs: false,
   props: {
     data: {
       type: Object,

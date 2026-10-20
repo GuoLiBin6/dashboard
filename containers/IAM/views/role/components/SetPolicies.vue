@@ -34,19 +34,17 @@
             :select-props="{ mode: 'default' }" />
         </a-form-model-item>
         <a-form-model-item :label="$t('iam.role_policy_valid_time_range')">
-          <a-date-picker
+          <oc-date-time-picker
             v-model:value="form.valid_since"
             :disabled-date="dateDisabledStart"
             format="YYYY-MM-DD HH:mm"
-            value-format="YYYY-MM-DD HH:mm:ss"
-            :show-time="{ format: 'HH:mm' }" />
+            value-format="YYYY-MM-DD HH:mm:ss" />
           <span class="ml-2 mr-2">~</span>
-          <a-date-picker
+          <oc-date-time-picker
             v-model:value="form.valid_until"
             :disabled-date="dateDisabledEnd"
             format="YYYY-MM-DD HH:mm"
-            value-format="YYYY-MM-DD HH:mm:ss"
-            :show-time="{ format: 'HH:mm' }" />
+            value-format="YYYY-MM-DD HH:mm:ss" />
         </a-form-model-item>
       </a-collapse-panel>
     </a-collapse>

@@ -8,7 +8,7 @@
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.text_913')" prop="trigger_type">
           <a-radio-group v-model:value="form.trigger_type">
-            <a-radio-button v-for="(v, k) in $t('flexGrouTriggerType')" :key="k" :value="k">{{v}}</a-radio-button>
+            <a-radio-button v-for="(v, k) in $tm('flexGrouTriggerType')" :key="k" :value="k">{{v}}</a-radio-button>
           </a-radio-group>
         </a-form-model-item>
         <!-- 告警策略 -->
@@ -16,7 +16,7 @@
           <a-form-model-item :label="$t('compute.text_914')" prop="alarm.indicator">
             <a-input-group compact>
               <a-select style="width: 50%" v-model:value="form.alarm.indicator">
-                <a-select-option  v-for="(v, k) in $t('flexGroupIndicator')" :key="k" :value="k">{{v}}</a-select-option>
+                <a-select-option  v-for="(v, k) in $tm('flexGroupIndicator')" :key="k" :value="k">{{v}}</a-select-option>
               </a-select>
               <a-select style="width: 25%" v-model:value="form.alarm.operator">
                 <a-select-option value="lt">{{$t('compute.text_915')}}</a-select-option>
@@ -30,41 +30,38 @@
           </a-form-model-item>
           <a-form-model-item :label="$t('compute.text_917')" prop="alarm.cycle">
             <a-select style="width: 50%" v-model:value="form.alarm.cycle">
-              <a-select-option  v-for="(v, k) in $t('flexGroupCycles')" :key="k" :value="parseInt(k)">{{v}}</a-select-option>
+              <a-select-option  v-for="(v, k) in $tm('flexGroupCycles')" :key="k" :value="parseInt(k)">{{v}}</a-select-option>
             </a-select>
           </a-form-model-item>
           <a-form-model-item :label="$t('compute.text_918')" prop="alarm.cumulate">
             <a-tooltip placement="top" :title="$t('compute.text_919')">
               <a-input-number  v-model:value="form.alarm.cumulate" :min="1" :max="1000" />
             </a-tooltip>
-            <div slot="extra">
+            <template #extra>
               {{ $t('compute.text_920', [form.alarm.cumulate || 3, form.alarm.cumulate || 3]) }}
-            </div>
+            </template>
           </a-form-model-item>
         </template>
         <!-- 定时策略 -->
         <template v-if="form.trigger_type === 'timing'">
           <a-form-model-item :label="$t('compute.text_923')" prop="timer.execTime">
-            <a-date-picker
-              :showTime="{
-                format: 'HH:mm',
-              }"
-              :disabledDate="disabledDate"
-              :disabledTime="disabledDateTime"
+            <oc-date-time-picker
               v-model:value="form.timer.execTime"
-              format="YYYY-MM-DD HH:mm" />
+              format="YYYY-MM-DD HH:mm"
+              :disabled-date="disabledDate"
+              :disabled-time="disabledDateTime" />
           </a-form-model-item>
         </template>
         <!-- 周期策略 -->
         <template v-if="form.trigger_type === 'cycle'">
           <a-form-model-item :label="$t('compute.text_924')" prop="cycleTimer.cycle_type">
             <a-select v-model:value="form.cycleTimer.cycle_type">
-              <a-select-option v-for="(v, k) in $t('flexGroupCycleType')" :key="k" :value="k">{{v}}</a-select-option>
+              <a-select-option v-for="(v, k) in $tm('flexGroupCycleType')" :key="k" :value="k">{{v}}</a-select-option>
             </a-select>
           </a-form-model-item>
           <a-form-model-item :label="$t('compute.text_925')" v-if="form.cycleTimer.cycle_type === 'week'" prop="cycleTimer.week_days">
             <a-select v-model:value="form.cycleTimer.week_days" mode="multiple">
-              <a-select-option v-for="(v, k) in $t('flexGroupSubCycleTypeWeek')" :key="k" :value="parseInt(k)">{{v}}</a-select-option>
+              <a-select-option v-for="(v, k) in $tm('flexGroupSubCycleTypeWeek')" :key="k" :value="parseInt(k)">{{v}}</a-select-option>
             </a-select>
           </a-form-model-item>
           <a-form-model-item :label="$t('compute.text_926')" v-if="form.cycleTimer.cycle_type === 'month'" prop="cycleTimer.month_days">
@@ -73,19 +70,19 @@
             </a-select>
           </a-form-model-item>
           <a-form-model-item :label="$t('compute.text_923')" prop="hourMinute">
-            <a-time-picker v-model:value="form.hourMinute" format="HH:mm" />
+            <oc-time-picker v-model:value="form.hourMinute" format="HH:mm" />
           </a-form-model-item>
           <a-form-model-item :label="$t('compute.text_928')" prop="startEndTime">
-            <a-range-picker
+            <oc-range-picker
               v-model:value="form.startEndTime"
-              :disabledDate="disabledDate"
+              :disabled-date="disabledDate"
               format="YYYY-MM-DD" />
           </a-form-model-item>
         </template>
         <a-form-model-item :label="$t('compute.text_929')" prop="action">
           <a-input-group compact>
             <a-select style="width: 50%" v-model:value="form.action">
-              <a-select-option v-for="(v, k) in $t('flexGroupRuleAction')" :key="k" :value="k">{{v}}</a-select-option>
+              <a-select-option v-for="(v, k) in $tm('flexGroupRuleAction')" :key="k" :value="k">{{v}}</a-select-option>
             </a-select>
             <a-tooltip>
               <span slot="title">

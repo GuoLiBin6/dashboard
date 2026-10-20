@@ -1,12 +1,13 @@
 <template>
   <div>
-    <a-popover trigger="click" v-model:open="visible" @openChange="handleVisibleChange" :getPopupContainer="triggerNode => triggerNode.parentNode">
-      <div class="trigger d-flex align-items-center justify-content-center">
+    <a-popover trigger="click" v-model:open="visible" @openChange="handleVisibleChange">
+      <div
+        class="trigger d-flex align-items-center justify-content-center"
+        :title="notifyMenuTitleUsedText ? undefined : $t('navbar.button.system_messages')"
+        @mousedown.prevent>
         <span v-if="notifyMenuTitleUsedText">{{$t('navbar.button.system_messages')}}</span>
-        <a-tooltip :title="$t('navbar.button.system_messages')" placement="bottom" v-else>
-          <!-- 使用自定义 Icon 替代已移除的 a-icon mail -->
-          <icon type="navbar-notify" style="font-size: 20px;" />
-        </a-tooltip>
+        <!-- 使用自定义 Icon 替代已移除的 a-icon mail -->
+        <icon v-else type="navbar-notify" style="font-size: 20px;" />
       </div>
       <template v-slot:content>
         <div class="notify-wrap">
@@ -95,12 +96,14 @@ export default {
       if (val) {
         this.fetchNotify()
       }
-      // 去掉 Popover/Tooltip 触发后残留的 focus 描边
-      this.$nextTick(() => {
+      // Popover 打开后会再次聚焦触发器，延迟 blur 清掉 antd focus-visible 蓝框
+      const blurActive = () => {
         if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
           document.activeElement.blur()
         }
-      })
+      }
+      this.$nextTick(blurActive)
+      setTimeout(blurActive, 50)
     },
     toMore () {
       this.$router.push('/notification')
@@ -117,13 +120,25 @@ export default {
   cursor: pointer;
   text-decoration: none;
   color: inherit;
-  outline: none;
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
   -webkit-tap-highlight-color: transparent;
 
   &:focus,
   &:focus-visible,
-  &:focus-within {
+  &:focus-within,
+  &:active {
     outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
+  }
+
+  :deep(*),
+  :deep(*:focus),
+  :deep(*:focus-visible) {
+    outline: none !important;
+    outline-offset: 0 !important;
     box-shadow: none !important;
   }
 

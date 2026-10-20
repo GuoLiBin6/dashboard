@@ -137,17 +137,20 @@ export default {
             style: 'background:rgb(241, 229, 172);padding:2px 5px;font-size:12px;',
           }, this.$t('compute.health_status.initializing'))
 
+          // 状态文案可 truncate；强制关机/紧急模式等后缀不放进 truncate，避免视觉上有位置却裁切不见
           return [
-            this.$createElement('div', { class: 'd-flex align-items-center text-truncate' }, [
-              this.$createElement('status', {
-                props: {
-                  status: row.status,
-                  statusModule: 'server',
-                  process: row.progress,
-                  showStatusProgress: true,
-                },
-              }, [
-                (row.status === 'running' || row.status === 'starting') && row.health_status === 'initializing' ? health : null,
+            this.$createElement('div', { class: 'd-flex align-items-center', style: { minWidth: 0, width: '100%' } }, [
+              this.$createElement('div', { class: 'text-truncate', style: { minWidth: 0, flex: '1 1 auto' } }, [
+                this.$createElement('status', {
+                  props: {
+                    status: row.status,
+                    statusModule: 'server',
+                    process: row.progress,
+                    showStatusProgress: true,
+                  },
+                }, [
+                  (row.status === 'running' || row.status === 'starting') && row.health_status === 'initializing' ? health : null,
+                ]),
               ]),
               row.metadata && getToolTip(row),
               row.status?.includes('fail') ? log : null,

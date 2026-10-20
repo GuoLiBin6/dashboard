@@ -198,21 +198,17 @@ export default {
   .status-text-flex {
     min-width: 0;
   }
+  /* 未 hover 不占位；展示时参与 flex 把位置让出来（不叠在文字上） */
   .status-copy-host {
+    display: none;
     margin-left: 4px;
     cursor: pointer;
-    display: inline-flex;
     align-items: center;
     line-height: 1;
-    transition: opacity 0.12s ease;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
+    flex-shrink: 0;
   }
   .status-wrapper:hover .status-copy-host {
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
+    display: inline-flex;
   }
   .status-copy-host :deep(svg),
   .status-copy-host :deep(.copy-trigger) {

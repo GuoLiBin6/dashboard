@@ -34,10 +34,7 @@
         <template v-if="has('throughput') && disabled && isThroughputShow && defaultThroughput && imageType !== 'backup' && imageType !== 'snapshot'">
           <span class="disk-wrapper__meta">{{ $t('compute.throughput') }}: {{ defaultThroughput }}</span>
         </template>
-        <a-tooltip v-if="storageStatusMap.tooltip">
-          <template slot="title">
-            <div slot="help">{{ storageStatusMap.tooltip }}</div>
-          </template>
+        <a-tooltip v-if="storageStatusMap.tooltip" :title="storageStatusMap.tooltip">
           <icon type="exclamation-circle" class="storage-icon" :class="storageClass" />
         </a-tooltip>
       </div>

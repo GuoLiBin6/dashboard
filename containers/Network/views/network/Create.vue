@@ -111,7 +111,10 @@
           </div>
         </a-form-model-item>
         <a-form-model-item :label="$t('common_498')" v-if="isShowIsAutoAlloc" prop="is_auto_alloc">
-          <a-switch v-model:checked="form.fd.is_auto_alloc" />
+          <a-switch
+            v-model:checked="form.fd.is_auto_alloc"
+            :checkedChildren="$t('common.text00062')"
+            :unCheckedChildren="$t('common.text00063')" />
           <template #extra>{{$t('common_500')}}</template>
         </a-form-model-item>
         <a-form-model-item :label="$t('common.text00012')" class="mb-0" prop="__meta__">
@@ -1012,21 +1015,22 @@ export default {
           }, values.guest_ip_prefix)
         } else if (this.show) {
           R.forEachObjIndexed((value, key) => {
+            const vlanVal = values.vlan?.[key]
             const obj = {
               bgp_type: values.bgp_type,
               alloc_policy: values.alloc_policy,
               guest_dns: values.guest_dns,
               guest_domain: values.guest_domain,
               guest_ntp: values.guest_ntp,
-              guest_ip_start: values.startip[key],
-              guest_ip_end: values.endip[key],
-              guest_ip_mask: values.netmask[key],
-              guest_gateway: values.gateway[key],
-              guest_ip6_start: values.startip6 && values.startip6[key],
-              guest_ip6_end: values.endip6 && values.endip6[key],
-              guest_ip6_mask: values.netmask6 && values.netmask6[key],
-              guest_gateway6: values.gateway6 && values.gateway6[key],
-              vlan_id: values.vlan[key] === '' ? '1' : values.vlan[key],
+              guest_ip_start: values.startip?.[key],
+              guest_ip_end: values.endip?.[key],
+              guest_ip_mask: values.netmask?.[key],
+              guest_gateway: values.gateway?.[key],
+              guest_ip6_start: values.startip6?.[key],
+              guest_ip6_end: values.endip6?.[key],
+              guest_ip6_mask: values.netmask6?.[key],
+              guest_gateway6: values.gateway6?.[key],
+              vlan_id: (vlanVal === '' || vlanVal == null) ? '1' : vlanVal,
               name: values.name,
               description: values.description,
               project_id: values.project?.key,
@@ -1037,7 +1041,7 @@ export default {
               __meta__: values.__meta__,
             }
             data.push(obj)
-          }, values.startip)
+          }, values.startip || {})
         } else {
           var ipPrefix = null
           var ip6Prefix = null
@@ -1122,10 +1126,22 @@ export default {
       this.guestIpPrefixValidateStatus = ''
       this.guestIpPrefixHelp = ''
     },
-    async handleSubmit () {
-      const ListPath = this.$router.resolve(this.$route.path)
+    async validateFormRef () {
       try {
         await this.$refs.formRef.validate()
+      } catch (error) {
+        // antdv4：校验过程中 model 变更会抛 outOfDate 且无字段错误，忽略后重试一次
+        if (error?.outOfDate && !(error.errorFields && error.errorFields.length)) {
+          await this.$nextTick()
+          await this.$refs.formRef.validate()
+          return
+        }
+        throw error
+      }
+    },
+    async handleSubmit () {
+      try {
+        await this.validateFormRef()
         if (typeof this.$refs.areaSelects?.validate === 'function') {
           await this.$refs.areaSelects.validate()
         }
@@ -1187,8 +1203,12 @@ export default {
         } else {
           await manager.create({ data })
         }
-        this.$router.push({ path: ListPath.resolved.matched[0].path })
+        // vue-router 4：resolve 无 .resolved，按路径去掉 /create 回到列表
+        const listPath = (this.$route.path || '').replace(/\/create\/?$/, '') || '/network'
+        this.$router.push({ path: listPath })
       } catch (error) {
+        // 表单校验失败（含 outOfDate）不向上抛，避免 vue errorHandler 噪音；字段错误由表单自身展示
+        if (error?.errorFields || error?.outOfDate) return
         throw error
       } finally {
         this.submiting = false

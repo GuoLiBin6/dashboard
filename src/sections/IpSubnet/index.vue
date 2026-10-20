@@ -1,33 +1,33 @@
 <template>
   <div class="ip-subnet">
     <div v-if="resolvedFields.name" class="ip-subnet__row ip-subnet__row--name">
-      <a-form-item class="mb-0">
+      <a-form-item class="mb-0" :validate-status="fieldErrors.name ? 'error' : ''" :help="fieldErrors.name || ''">
         <a-input
           :addon-before="$t('network.text_21')"
           :value="fieldVal(resolvedFields.name)"
-          @update:value="v => fieldSet(resolvedFields.name, v)"
+          @update:value="v => fieldSet(resolvedFields.name, v, 'name')"
           :placeholder="$t('network.text_21')" />
       </a-form-item>
     </div>
     <div class="ip-subnet__row ip-subnet__row--v4">
-      <a-form-item class="mb-0">
+      <a-form-item class="mb-0" :validate-status="fieldErrors.startip ? 'error' : ''" :help="fieldErrors.startip || ''">
         <a-input
           :addon-before="$t('network.text_607')"
           :value="fieldVal(resolvedFields.startip)"
-          @update:value="v => fieldSet(resolvedFields.startip, v)"
+          @update:value="v => fieldSet(resolvedFields.startip, v, 'startip')"
           :placeholder="$t('common_161')" />
       </a-form-item>
-      <a-form-item class="mb-0">
+      <a-form-item class="mb-0" :validate-status="fieldErrors.endip ? 'error' : ''" :help="fieldErrors.endip || ''">
         <a-input
           :addon-before="$t('network.text_608')"
           :value="fieldVal(resolvedFields.endip)"
-          @update:value="v => fieldSet(resolvedFields.endip, v)"
+          @update:value="v => fieldSet(resolvedFields.endip, v, 'endip')"
           :placeholder="$t('common_162')" />
       </a-form-item>
-      <a-form-item class="mb-0 ip-subnet__mask">
+      <a-form-item class="mb-0 ip-subnet__mask" :validate-status="fieldErrors.netmask ? 'error' : ''" :help="fieldErrors.netmask || ''">
         <a-select
           :value="fieldVal(resolvedFields.netmask)"
-          @change="v => fieldSet(resolvedFields.netmask, v)"
+          @change="v => fieldSet(resolvedFields.netmask, v, 'netmask')"
           :placeholder="$t('network.text_595')"
           dropdownClassName="oc-select-dropdown">
           <a-select-option
@@ -38,41 +38,41 @@
           </a-select-option>
         </a-select>
       </a-form-item>
-      <a-form-item class="mb-0">
+      <a-form-item class="mb-0" :validate-status="fieldErrors.gateway ? 'error' : ''" :help="fieldErrors.gateway || ''">
         <a-input
           :addon-before="$t('network.text_610')"
           :value="fieldVal(resolvedFields.gateway)"
-          @update:value="v => fieldSet(resolvedFields.gateway, v)"
+          @update:value="v => fieldSet(resolvedFields.gateway, v, 'gateway')"
           :placeholder="$t('common_163')" />
       </a-form-item>
-      <a-form-item class="mb-0 ip-subnet__vlan">
+      <a-form-item class="mb-0 ip-subnet__vlan" :validate-status="fieldErrors.vlan ? 'error' : ''" :help="fieldErrors.vlan || ''">
         <a-input
           addon-before="VLAN ID"
           :value="fieldVal(resolvedFields.vlan)"
-          @update:value="v => fieldSet(resolvedFields.vlan, v)"
+          @update:value="v => fieldSet(resolvedFields.vlan, v, 'vlan')"
           placeholder="VLAN ID" />
       </a-form-item>
     </div>
     <div class="ip-subnet__row ip-subnet__row--v6" v-if="showV6 || !isButtonHide">
       <template v-if="showV6">
-        <a-form-item class="mb-0">
+        <a-form-item class="mb-0" :validate-status="fieldErrors.startip6 ? 'error' : ''" :help="fieldErrors.startip6 || ''">
           <a-input
             :addon-before="$t('network.ipv6.ip_start.label')"
             :value="fieldVal(resolvedFields.startip6)"
-            @update:value="v => fieldSet(resolvedFields.startip6, v)"
+            @update:value="v => fieldSet(resolvedFields.startip6, v, 'startip6')"
             :placeholder="$t('network.ipv6.ip_start.label')" />
         </a-form-item>
-        <a-form-item class="mb-0">
+        <a-form-item class="mb-0" :validate-status="fieldErrors.endip6 ? 'error' : ''" :help="fieldErrors.endip6 || ''">
           <a-input
             :addon-before="$t('network.ipv6.ip_end.label')"
             :value="fieldVal(resolvedFields.endip6)"
-            @update:value="v => fieldSet(resolvedFields.endip6, v)"
+            @update:value="v => fieldSet(resolvedFields.endip6, v, 'endip6')"
             :placeholder="$t('network.ipv6.ip_end.label')" />
         </a-form-item>
-        <a-form-item class="mb-0 ip-subnet__mask">
+        <a-form-item class="mb-0 ip-subnet__mask" :validate-status="fieldErrors.netmask6 ? 'error' : ''" :help="fieldErrors.netmask6 || ''">
           <a-select
             :value="fieldVal(resolvedFields.netmask6)"
-            @change="v => fieldSet(resolvedFields.netmask6, v)"
+            @change="v => fieldSet(resolvedFields.netmask6, v, 'netmask6')"
             :placeholder="$t('network.ipv6.ip_mask.label')"
             dropdownClassName="oc-select-dropdown">
             <a-select-option
@@ -83,11 +83,11 @@
             </a-select-option>
           </a-select>
         </a-form-item>
-        <a-form-item class="mb-0">
+        <a-form-item class="mb-0" :validate-status="fieldErrors.gateway6 ? 'error' : ''" :help="fieldErrors.gateway6 || ''">
           <a-input
             :addon-before="$t('network.ipv6.gateway.label')"
             :value="fieldVal(resolvedFields.gateway6)"
-            @update:value="v => fieldSet(resolvedFields.gateway6, v)"
+            @update:value="v => fieldSet(resolvedFields.gateway6, v, 'gateway6')"
             :placeholder="$t('network.ipv6.gateway.label')" />
         </a-form-item>
         <div class="ip-subnet__vlan ip-subnet__spacer" />
@@ -137,6 +137,7 @@ export default {
   },
   data () {
     return {
+      fieldErrors: {},
       netMaskOptions: [
         { label: '16', key: '16' },
         { label: '17', key: '17' },
@@ -174,13 +175,13 @@ export default {
     },
   },
   created () {
+    // 兼容 decorator 二元组与 object meta：把 initialValue 写入 model，避免提交时 vlan/netmask 等根对象缺失
     Object.keys(this.resolvedFields).forEach(key => {
-      const fieldDef = this.resolvedFields[key]
-      if (Array.isArray(fieldDef)) {
-        const { name, ...opts } = resolveFieldMeta(fieldDef) || {}
-        if (name && this.modelGet(name) === undefined && opts.initialValue !== undefined) {
-          this.modelSet(name, opts.initialValue)
-        }
+      const meta = resolveFieldMeta(this.resolvedFields[key], key)
+      if (!meta) return
+      const { name, ...opts } = meta
+      if (name && this.modelGet(name) === undefined && opts.initialValue !== undefined) {
+        this.modelSet(name, opts.initialValue)
       }
     })
   },
@@ -222,11 +223,18 @@ export default {
       if (v !== undefined) return v
       return opts.initialValue
     },
-    fieldSet (fieldTuple, value) {
+    fieldSet (fieldTuple, value, errorKey) {
       const meta = resolveFieldMeta(fieldTuple)
       if (!meta) return
       const { name } = meta
       if (name) this.modelSet(name, value)
+      if (errorKey) this.clearFieldError(errorKey)
+    },
+    clearFieldError (key) {
+      if (!this.fieldErrors[key]) return
+      const next = { ...this.fieldErrors }
+      delete next[key]
+      this.fieldErrors = next
     },
     runFieldRule (rule, value) {
       return new Promise((resolve, reject) => {
@@ -262,13 +270,28 @@ export default {
       })
     },
     async validate () {
+      const errorFields = []
+      this.fieldErrors = {}
       for (const key of Object.keys(this.resolvedFields)) {
         const fieldDef = this.resolvedFields[key]
         if (!resolveFieldMeta(fieldDef)) continue
         const rules = resolveFieldMeta(fieldDef)?.rules || []
         for (const rule of rules) {
-          await this.runFieldRule(rule, this.fieldVal(fieldDef))
+          try {
+            await this.runFieldRule(rule, this.fieldVal(fieldDef))
+          } catch (err) {
+            const message = err?.message || String(err)
+            this.fieldErrors = { ...this.fieldErrors, [key]: message }
+            const meta = resolveFieldMeta(fieldDef) || {}
+            errorFields.push({ name: meta.name || key, errors: [message] })
+            break
+          }
         }
+      }
+      if (errorFields.length) {
+        const err = new Error('validate failed')
+        err.errorFields = errorFields
+        return Promise.reject(err)
       }
       return true
     },

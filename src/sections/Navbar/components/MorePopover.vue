@@ -1,10 +1,14 @@
 <template>
   <div>
-    <a-dropdown :trigger="['click']" :getPopupContainer="triggerNode => triggerNode.parentNode">
-      <div class="trigger d-flex align-items-center justify-content-center">
-        <a-tooltip :title="$t('common.more')" placement="bottom">
-          <icon type="navbar-more" style="font-size: 20px;" />
-        </a-tooltip>
+    <a-dropdown
+      :trigger="['click']"
+      v-model:open="visible"
+      @openChange="handleOpenChange">
+      <div
+        class="trigger d-flex align-items-center justify-content-center"
+        :title="$t('common.more')"
+        @mousedown.prevent>
+        <icon type="navbar-more" style="font-size: 20px;" />
       </div>
       <template #overlay>
         <a-menu @click="handleDropdownClick">
@@ -37,6 +41,7 @@ export default {
   },
   data () {
     return {
+      visible: false,
       updateAvailable: false,
       isCE,
       isOEM: setting.brand?.en !== setting.defaultBrand.en,
@@ -72,6 +77,16 @@ export default {
         }
       })
     },
+    handleOpenChange () {
+      // Dropdown 打开后会再次聚焦触发器，延迟 blur 清掉 antd focus-visible 蓝框
+      const blurActive = () => {
+        if (typeof document !== 'undefined' && document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur()
+        }
+      }
+      this.$nextTick(blurActive)
+      setTimeout(blurActive, 50)
+    },
     handleDropdownClick (item) {
       if (item.key === 'setting') return
       const newWindow = item.key.startsWith('http')
@@ -94,6 +109,27 @@ export default {
   cursor: pointer;
   text-decoration: none;
   color: inherit;
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+  -webkit-tap-highlight-color: transparent;
+
+  &:focus,
+  &:focus-visible,
+  &:focus-within,
+  &:active {
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
+  }
+
+  :deep(*),
+  :deep(*:focus),
+  :deep(*:focus-visible) {
+    outline: none !important;
+    outline-offset: 0 !important;
+    box-shadow: none !important;
+  }
 
   :deep(.oc-icon) {
     color: inherit;
@@ -108,11 +144,25 @@ export default {
 </style>
 
 <style lang="less">
-/* 下拉挂在 navbar-item-icon 内，需压过其 :hover color:inherit !important */
+/* 下拉菜单内升级图标保持绿色；压过 navbar hover 的 color:inherit */
 .navbar-item-icon .about-upgrade-icon.oc-icon,
 .navbar-item-icon:hover .about-upgrade-icon.oc-icon,
 .ant-dropdown-menu .about-upgrade-icon.oc-icon {
   color: #52c41a !important;
   fill: #52c41a !important;
+}
+
+/* 盖过 antd cssinjs 的 :focus-visible 主色描边（specificity 较高） */
+.navbar-item-icon.ant-dropdown-trigger:focus,
+.navbar-item-icon.ant-dropdown-trigger:focus-visible,
+.navbar-item-icon .ant-dropdown-trigger:focus,
+.navbar-item-icon .ant-dropdown-trigger:focus-visible,
+.navbar-item-icon .ant-popover-open:focus,
+.navbar-item-icon .ant-popover-open:focus-visible,
+.navbar-item-icon .trigger:focus,
+.navbar-item-icon .trigger:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
 }
 </style>

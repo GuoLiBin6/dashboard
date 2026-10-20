@@ -115,8 +115,8 @@ export default {
       is_auto_alloc: {
         label: this.$t('common_498'),
         dropdown: true,
-        items: Object.keys(this.$t('status.networIsAutoAlloc')).map(k => {
-          return { label: this.$t('status.networIsAutoAlloc')[k], key: k }
+        items: Object.keys(this.$tm('status.networIsAutoAlloc') || {}).map(k => {
+          return { label: this.$tm('status.networIsAutoAlloc')[k], key: k }
         }),
       },
       server_type: {

@@ -26,44 +26,44 @@
           </a-radio-group>
         </a-form-model-item>
         <a-form-model-item :label="$t('network.text_607')" prop="guest_ip_start">
-          <a-input v-model:value="formModel.guest_ip_start" :disabled="!isClassicNetwork" @blur="normalizeIpField('guest_ip_start')" />
+          <a-input v-model:value="formModel.guest_ip_start" :placeholder="$t('common_161')" :disabled="!isClassicNetwork" @blur="normalizeIpField('guest_ip_start')" />
         </a-form-model-item>
         <a-form-model-item :label="$t('network.text_608')" prop="guest_ip_end">
-          <a-input v-model:value="formModel.guest_ip_end" :disabled="!isClassicNetwork" @blur="normalizeIpField('guest_ip_end')" />
+          <a-input v-model:value="formModel.guest_ip_end" :placeholder="$t('common_162')" :disabled="!isClassicNetwork" @blur="normalizeIpField('guest_ip_end')" />
         </a-form-model-item>
         <a-form-model-item :label="$t('network.text_609')" prop="guest_ip_mask">
-          <a-select v-model:value="formModel.guest_ip_mask" :disabled="!isClassicNetwork">
+          <a-select v-model:value="formModel.guest_ip_mask" :placeholder="$t('network.text_595')" :disabled="!isClassicNetwork">
             <a-select-option v-for="item in netMaskOptions" :key="item.value" :value="item.value">
               {{item.label}}
             </a-select-option>
           </a-select>
         </a-form-model-item>
         <a-form-model-item :label="$t('network.text_610')" prop="guest_gateway">
-          <a-input v-model:value="formModel.guest_gateway" :disabled="!isClassicNetwork" @blur="normalizeIpField('guest_gateway')" />
+          <a-input v-model:value="formModel.guest_gateway" :placeholder="$t('common_163')" :disabled="!isClassicNetwork" @blur="normalizeIpField('guest_gateway')" />
         </a-form-model-item>
         <a-form-model-item :label="$t('network.ipv6.ip_start.label')" prop="guest_ip6_start">
-          <a-input v-model:value="formModel.guest_ip6_start" :disabled="!isClassicNetwork" @blur="normalizeIpField('guest_ip6_start')" />
+          <a-input v-model:value="formModel.guest_ip6_start" :placeholder="$t('network.ipv6.ip_start.label')" :disabled="!isClassicNetwork" @blur="normalizeIpField('guest_ip6_start')" />
         </a-form-model-item>
         <a-form-model-item :label="$t('network.ipv6.ip_end.label')" prop="guest_ip6_end">
-          <a-input v-model:value="formModel.guest_ip6_end" :disabled="!isClassicNetwork" @blur="normalizeIpField('guest_ip6_end')" />
+          <a-input v-model:value="formModel.guest_ip6_end" :placeholder="$t('network.ipv6.ip_end.label')" :disabled="!isClassicNetwork" @blur="normalizeIpField('guest_ip6_end')" />
         </a-form-model-item>
         <a-form-model-item :label="$t('network.ipv6.ip_mask.label')" prop="guest_ip6_mask">
-          <a-select v-model:value="formModel.guest_ip6_mask" :disabled="!isClassicNetwork">
+          <a-select v-model:value="formModel.guest_ip6_mask" :placeholder="$t('network.ipv6.ip_mask.label')" :disabled="!isClassicNetwork">
             <a-select-option v-for="item in net6MaskOptions" :key="item.value" :value="item.value">
               {{item.label}}
             </a-select-option>
           </a-select>
         </a-form-model-item>
         <a-form-model-item :label="$t('network.ipv6.gateway.label')" prop="guest_gateway6">
-          <a-input v-model:value="formModel.guest_gateway6" :disabled="!isClassicNetwork" @blur="normalizeIpField('guest_gateway6')" />
+          <a-input v-model:value="formModel.guest_gateway6" :placeholder="$t('network.ipv6.gateway.label')" :disabled="!isClassicNetwork" @blur="normalizeIpField('guest_gateway6')" />
         </a-form-model-item>
         <a-form-model-item label="VLAN ID" prop="vlan_id">
-          <a-input v-model:value="formModel.vlan_id" :disabled="!isClassicNetwork" />
+          <a-input v-model:value="formModel.vlan_id" placeholder="VLAN ID" :disabled="!isClassicNetwork" />
         </a-form-model-item>
-        <a-collapse :bordered="false" :active-key="getDefaultActiveKey">
+        <a-collapse v-model:activeKey="activeKey" :bordered="false">
           <a-collapse-panel :header="$t('network.text_94')" key="1" forceRender>
             <a-form-model-item :label="$t('network.text_743')" prop="bgp_type" v-if="hasBgpType">
-              <a-input v-model:value="formModel.bgp_type" />
+              <a-input v-model:value="formModel.bgp_type" :placeholder="$t('network.text_743')" />
               <template #extra>{{$t('network.text_744')}}</template>
             </a-form-model-item>
             <a-form-model-item prop="alloc_policy">
@@ -228,18 +228,13 @@ export default {
       cloudEnv: '',
       vpcId: '',
       server_type: 'guest',
+      // antdv4：需 v-model:activeKey 才能展开/收起；经典网络默认收起高级配置
+      activeKey: ['1'],
     }
   },
   computed: {
     isClassicNetwork () {
       return this.vpcId === 'default'
-    },
-    getDefaultActiveKey () {
-      if (this.vpcId === 'default') {
-        return '0'
-      } else {
-        return '1'
-      }
     },
     hasBgpType () {
       return this.server_type === 'eip' || this.server_type === 'guest' || this.server_type === 'baremetal' || this.server_type === 'hostlocal'
@@ -283,6 +278,7 @@ export default {
       this.cloudEnv = data.cloud_env
       this.vpcId = data.vpc_id
       this.server_type = data.server_type
+      this.activeKey = data.vpc_id === 'default' ? [] : ['1']
     },
     validateGateway (rule, value, callback) {
       value = stripIpWhitespace(value)
@@ -337,9 +333,11 @@ export default {
         }
         await this.doUpdate(values)
         this.$store.commit('keepAlive/ADD_DELAY_EVENT', { name: 'ResourceListSingleRefresh', params: [this.$route.query.network_id] })
-        const networkPath = this.$router.resolve(this.$route.path)
-        this.$router.push({ path: networkPath.resolved.matched[0].path })
+        // vue-router 4：resolve 无 .resolved，按路径去掉 /edit 回到列表
+        const listPath = (this.$route.path || '').replace(/\/edit\/?$/, '') || '/network'
+        this.$router.push({ path: listPath })
       } catch (err) {
+        if (err?.errorFields || err?.outOfDate) return
         throw err
       } finally {
         this.submiting = false

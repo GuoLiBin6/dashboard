@@ -4,29 +4,38 @@
     <template #body>
       <dialog-selected-tips :name="$t('dictionary.network')" :count="params.data.length" :action="params.title" />
       <dialog-table class="mb-2" :data="params.data" :columns="params.columns.slice(0, 3)" />
+      <!-- ocLayoutForm 下勿再绑 offset，否则后续行会双重缩进 -->
       <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item
           v-for="(item, i) in ipList"
           :key="item.key"
-          :label="i === 0 ? $t('network.text_213') : ''"
-          v-bind="i === 0 ? undefined : formItemLayoutWithOutLabel"
-          :prop="'ipData.' + item.key"
-          :rules="ipRules">
-          <a-input
-            v-model:value="form.ipData[item.key]"
-            :placeholder="$t('network.text_217')"
-            style="width: 60%; margin-right: 8px" />
-          <a-button
-            shape="circle"
-            icon="minus"
-            size="small"
-            v-if="ipList.length > 1"
-            @click="decrease(i)"
-            class="mt-2 ml-2" />
-        </a-form-model-item>
-        <a-form-model-item v-bind="formItemLayoutWithOutLabel" style="position:relative; top: -14px">
+          :colon="false"
+          :prop="['ipData', item.key]"
+          :rules="ipRules"
+          :validate-first="true"
+          :label="i === 0 ? `${$t('network.text_213')}：` : undefined"
+          :class="{ 'oc-form-item-follow-label': i !== 0 }">
           <div class="d-flex align-items-center">
-            <a-button type="primary" shape="circle" icon="plus" size="small" @click="addIP" />
+            <a-input
+              v-model:value="form.ipData[item.key]"
+              :placeholder="$t('network.text_217')"
+              class="flex-fill"
+              style="max-width: 60%" />
+            <a-button
+              v-if="ipList.length > 1"
+              shape="circle"
+              size="small"
+              class="ml-2 flex-shrink-0"
+              @click="decrease(i)">
+              <template #icon><icon type="minus" /></template>
+            </a-button>
+          </div>
+        </a-form-model-item>
+        <a-form-model-item class="oc-form-item-follow-label">
+          <div class="d-flex align-items-center">
+            <a-button type="primary" shape="circle" size="small" @click="addIP">
+              <template #icon><icon type="plus" /></template>
+            </a-button>
             <a-button type="link" @click="addIP">{{$t('network.text_640')}}</a-button>
           </div>
         </a-form-model-item>
@@ -69,11 +78,6 @@ export default {
           { max: 200, message: this.$t('network.text_642') },
         ],
       },
-      formItemLayoutWithOutLabel: {
-        wrapperCol: {
-          span: 19, offset: 5,
-        },
-      },
     }
   },
   computed: {
@@ -89,6 +93,7 @@ export default {
   },
   methods: {
     async ipBlur (rule, value, _callback) {
+      if (!value) return _callback()
       const ips = Object.values(this.form.ipData || {})
       if (ips.filter(ip => ip === value).length >= 2) {
         return _callback(this.$t('network.text_644'))
@@ -101,7 +106,9 @@ export default {
             network: this.params.data[0].id,
           },
         })
-        if (data && data.length > 0) return _callback(this.$t('network.text_645'))
+        const list = data?.data || data || []
+        if (Array.isArray(list) && list.length > 0) return _callback(this.$t('network.text_645'))
+        _callback()
       } catch {
         _callback()
       }
@@ -147,15 +154,13 @@ export default {
           nextIp = this.getNextIp(lastFieldValue)
         }
       }
-      this.ipList.push({
-        key,
-      })
-      this.$set(this.form.ipData, key, nextIp || undefined)
+      this.ipList.push({ key })
+      this.form.ipData[key] = nextIp || undefined
     },
     decrease (index) {
       const removed = this.ipList.splice(index, 1)
       if (removed[0]) {
-        this.$delete(this.form.ipData, removed[0].key)
+        delete this.form.ipData[removed[0].key]
       }
     },
     async handleConfirm () {
@@ -167,7 +172,7 @@ export default {
           managerArgs: {
             action: 'reserve-ip',
             data: {
-              ips: Object.values(this.form.ipData),
+              ips: Object.values(this.form.ipData).filter(v => !!v),
               notes: this.form.notes,
             },
           },

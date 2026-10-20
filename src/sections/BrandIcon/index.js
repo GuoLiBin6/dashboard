@@ -68,6 +68,9 @@ export default {
       fontSize = '28px'
     }
     const cloudPodsIcon = this.cloudPodsIcon
+    // OneCloud 等为单色 SVG（无自带 fill），preserveColor + fill:none 会透明；多色品牌才保留原色
+    const monoBrandIcons = new Set(['onecloud', 'cloudpods'])
+    const preserveColor = !monoBrandIcons.has(name)
 
     const content = cloudPodsIcon
       ? h('img', {
@@ -79,8 +82,7 @@ export default {
       })
       : h(Icon, {
         type: name,
-        // 平台品牌图标需保留 SVG 原色，不能走 currentColor 单色化
-        preserveColor: true,
+        preserveColor,
         style: {
           fontSize,
           ...this.customStyle,
