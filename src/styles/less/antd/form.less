@@ -106,6 +106,27 @@ div.ant-form-item-explain {
       max-width: none !important;
     }
   }
+  // 独立 oc-layout-form 子区域（如机器配置卡片）：用该区域自己的 --oc-form-label-width
+  .oc-layout-form {
+    .ant-form-item > .ant-form-item-row > .ant-form-item-label {
+      flex: 0 0 var(--oc-form-label-width, max-content) !important;
+      width: var(--oc-form-label-width, max-content) !important;
+      max-width: var(--oc-form-label-width, max-content) !important;
+    }
+    .ant-form-item > .ant-form-item-row > .ant-form-item-control {
+      flex: 1 1 auto !important;
+      min-width: 0;
+      width: auto !important;
+      max-width: none !important;
+    }
+    .ant-form-item .ant-form-item {
+      .ant-form-item-label {
+        flex: none !important;
+        width: auto !important;
+        max-width: none !important;
+      }
+    }
+  }
 }
 
 /* 多行空 label：不渲染/隐藏 label 列，按 --oc-form-label-width 缩进对齐 */

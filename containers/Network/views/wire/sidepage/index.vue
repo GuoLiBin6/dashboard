@@ -75,12 +75,12 @@ export default {
     getParams () {
       if (this.params.windowData.currentTab === 'vminstance-list') {
         return {
-          wire_id: this.data.id,
+          wire_id: this.detailData.id,
         }
       }
       if (this.params.windowData.currentTab === 'network-list') {
         return {
-          width_meta: true,
+          with_meta: true,
           wire: this.detailData.id,
           details: true,
         }

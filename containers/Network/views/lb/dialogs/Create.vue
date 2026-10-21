@@ -1,7 +1,7 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{params.title}}</div>
-    <div slot="body">
+    <template #header>{{params.title}}</template>
+    <template #body>
       <a-form-model
         ref="formRef"
         :model="form"
@@ -10,22 +10,26 @@
           <a-input v-model:value="form.name" :placeholder="$t('network.text_44')" />
         </a-form-model-item>
         <a-form-model-item prop="acl_entries">
-          <span slot="label">{{$t('network.text_292')}}<a-tooltip>
-              <div slot="title">{{$t('network.text_293')}}<br />{{$t('network.text_294')}}<br />{{$t('network.text_295')}}<br />{{$t('network.text_296')}}<br />{{$t('network.text_297')}}</div>
-              <icon type="info-circle" />
+          <template #label>
+            {{$t('network.text_292')}}
+            <a-tooltip placement="top">
+              <template #title>
+                <div>{{$t('network.text_293')}}<br />{{$t('network.text_294')}}<br />{{$t('network.text_295')}}<br />{{$t('network.text_296')}}<br />{{$t('network.text_297')}}</div>
+              </template>
+              <icon type="info-circle" class="ml-1" />
             </a-tooltip>
-          </span>
+          </template>
           <a-textarea v-model:value="form.acl_entries"
             :placeholder="$t('network.text_298')"
             rows="8"
             @change="onAclEntriesChange" />
         </a-form-model-item>
       </a-form-model>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

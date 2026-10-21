@@ -23,5 +23,5 @@ export default {
 </script>
 
 <style lang="scss">
-// @import "@Network/sections/Topology/index.scss";
+@import "@Network/sections/Topology/index.scss";
 </style>

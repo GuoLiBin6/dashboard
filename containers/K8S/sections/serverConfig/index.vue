@@ -1,43 +1,37 @@
 <template>
   <div>
-    <a-card class="mb-2 card" v-for="(item, i) in serverConfigList" :key="item.key">
+    <a-card class="mb-2 card oc-layout-form" v-for="(item, i) in serverConfigList" :key="item.key">
       <a-button v-if="i !== 0" @click="decrease(item.key, i)" type="link" size="small" class="error-color position-absolute" style="right: 10px; top: 10px;">{{ $t('common.delete') }}</a-button>
       <slot name="hypervisor" :i="item.key" />
       <a-form-item :label="$t('k8s.text_121')" required>
-        <a-row :gutter="8">
-          <a-col :span="24">
-            <a-form-item
-              style="min-width: 200px;"
-              class="w-100 mb-0 mr-1">
-              <base-select
-                class="w-100"
-                :value="fieldVal(serverConfigField.network(item.key))"
-                @change="v => { fieldSet(serverConfigField.network(item.key), v); handleNetworkChange(i, v) }"
-                resource="networks"
-                remote
-                is-default-select
-                v-model:item="item.network"
-                :need-params="true"
-                :params="getNetworkParams(item.key)"
-                :mapper="networkResourceMapper"
-                :labelFormat="networkLabelFormat"
-                :select-props="{ allowClear: true, placeholder: $t('k8s.text_122') }" />
-            </a-form-item>
-          </a-col>
-          <a-col :span="10" v-if="item.ipShow">
-            <a-form-item class="mb-0 mr-2">
-              <a-input
-                :placeholder="$t('k8s.text_123')"
-                @change="e => ipChange(e, i)"
-                :value="fieldVal(serverConfigField.ip(item.key))"
-                @update:value="v => fieldSet(serverConfigField.ip(item.key), v)" />
-            </a-form-item>
-          </a-col>
-          <a-col :span="2">
-            <a-button v-if="item.ipShow" type="link" class="mr-1 mt-1" @click="hideIp(item)">{{$t('k8s.text_410')}}</a-button>
-            <a-button v-else type="link" class="mr-1 mt-1" @click="showIp(item)">{{$t('k8s.text_124')}}</a-button>
-          </a-col>
-        </a-row>
+        <a-form-item
+          style="min-width: 200px;"
+          class="w-100 mb-0">
+          <base-select
+            class="w-100"
+            :value="fieldVal(serverConfigField.network(item.key))"
+            @change="v => { fieldSet(serverConfigField.network(item.key), v); handleNetworkChange(i, v) }"
+            resource="networks"
+            remote
+            is-default-select
+            v-model:item="item.network"
+            :need-params="true"
+            :params="getNetworkParams(item.key)"
+            :mapper="networkResourceMapper"
+            :labelFormat="networkLabelFormat"
+            :select-props="{ allowClear: true, placeholder: $t('k8s.text_122') }" />
+        </a-form-item>
+        <div class="d-flex align-items-center mt-3">
+          <a-form-item v-if="item.ipShow" class="mb-0 mr-2" style="width: 280px;">
+            <a-input
+              :placeholder="$t('k8s.text_123')"
+              @change="e => ipChange(e, i)"
+              :value="fieldVal(serverConfigField.ip(item.key))"
+              @update:value="v => fieldSet(serverConfigField.ip(item.key), v)" />
+          </a-form-item>
+          <a-button v-if="item.ipShow" type="link" class="px-0" @click="hideIp(item)">{{$t('k8s.text_410')}}</a-button>
+          <a-button v-else type="link" class="px-0" @click="showIp(item)">{{$t('k8s.text_124')}}</a-button>
+        </div>
       </a-form-item>
       <a-form-item>
         <sku

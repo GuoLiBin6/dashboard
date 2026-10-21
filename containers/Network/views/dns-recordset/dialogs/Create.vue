@@ -1,7 +1,7 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{params.title}}</div>
-    <div slot="body">
+    <template #header>{{params.title}}</template>
+    <template #body>
       <template v-if="params.type !== 'create'">
         <dialog-selected-tips :name="$t('common_663')" :count="params.data.length" :action="params.type === 'update' ? $t('common_694') : $t('common_666')" />
         <dialog-table :data="params.data" :columns="params.columns.slice(0, 4)" />
@@ -25,52 +25,44 @@
           </a-select>
         </a-form-model-item>
         <a-form-model-item prop="dns_value">
-          <span slot="label">
+          <template #label>
             {{ $t('network.text_152') }}
-            <a-tooltip class="item" effect="dark" placement="top" v-if="isSRV">
-              <a-icon type="info-circle" />
-              <div slot="title">{{$t('network.text_751')}}</div>
+            <a-tooltip v-if="isSRV" placement="top" :title="$t('network.text_751')">
+              <icon type="info-circle" class="ml-1" />
             </a-tooltip>
-          </span>
+          </template>
           <a-input v-model:value="form.dns_value" :placeholder="$t('network.text_175')" />
         </a-form-model-item>
         <a-form-model-item v-if="showProxied" :label="$t('network.proxy_status')" prop="proxied">
           <a-switch v-model:checked="form.proxied" :checkedChildren="$t('network.proxy_exist')" :unCheckedChildren="$t('network.just_dns')" />
         </a-form-model-item>
         <a-form-model-item prop="ttl">
-          <span slot="label">
+          <template #label>
             {{ $t('common_665') }}
-            <a-tooltip class="item" effect="dark" placement="top">
-              <a-icon type="info-circle" />
-              <div slot="title">{{$t('network.text_171', [300])}}</div>
+            <a-tooltip placement="top" :title="$t('network.text_171', [300])">
+              <icon type="info-circle" class="ml-1" />
             </a-tooltip>
-          </span>
-          <a-row>
-            <a-col :span="2">
-              <a-input-number v-model:value="form.ttl" :min="ttlRange.min" :max="ttlRange.max" />
-            </a-col>
-            <a-col :span="22">
-              <ul class="oc-ttl d-flex">
-                <li
-                  class="oc-ttl-item ml-1"
-                  @click="ttlClickHandle(v)"
-                  v-for="v in options.ttls"
-                  :value="v.value"
-                  :key="v.value">
-                  <a-tag color="blue">{{ v.label }}</a-tag>
-                </li>
-              </ul>
-            </a-col>
-          </a-row>
+          </template>
+          <div class="d-flex align-items-center flex-wrap">
+            <a-input-number v-model:value="form.ttl" :min="ttlRange.min" :max="ttlRange.max" />
+            <ul class="oc-ttl d-flex mb-0 ml-2 pl-0">
+              <li
+                class="oc-ttl-item ml-1"
+                @click="ttlClickHandle(v)"
+                v-for="v in options.ttls"
+                :key="v.value">
+                <a-tag color="blue">{{ v.label }}</a-tag>
+              </li>
+            </ul>
+          </div>
         </a-form-model-item>
         <a-form-model-item v-if="isMX" prop="mx_priority">
-          <span slot="label">
+          <template #label>
             {{ $t('network.text_731') }}
-            <a-tooltip class="item" effect="dark" placement="top">
-              <a-icon type="info-circle" />
-              <div slot="title">{{$t('network.text_732')}}</div>
+            <a-tooltip placement="top" :title="$t('network.text_732')">
+              <icon type="info-circle" class="ml-1" />
             </a-tooltip>
-          </span>
+          </template>
           <a-input-number v-model:value="form.mx_priority" :min="1" :max="50" />
         </a-form-model-item>
         <a-form-model-item v-if="isPublic && !isCloudflare" :label="$t('common_696')" class="mb-0">
@@ -120,11 +112,11 @@
           <tag :value="form.tag" @change="v => form.tag = v" :allowNoValue="false" />
         </a-form-model-item>
       </a-form-model>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading.submit">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 

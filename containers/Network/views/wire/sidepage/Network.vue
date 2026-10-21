@@ -10,10 +10,12 @@
 import NetworkList from '@Network/views/network/components/List'
 
 export default {
-  name: 'NetworkListForVpcSidepage',
+  name: 'NetworkListForWireSidepage',
   components: {
     NetworkList,
   },
+  // SidePage 透传 wire columns 时勿覆盖 IP 子网列表自身列
+  inheritAttrs: false,
   props: {
     id: String,
     getParams: [Function, Object],

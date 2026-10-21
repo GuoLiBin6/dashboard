@@ -2,13 +2,15 @@
   <div class="wire vpc d-flex">
     <div class="text-center">
       <a-tooltip placement="left" :get-popup-container="getPopupContainer">
-        <template slot="title">
+        <template #title>
           <p class="title">VPC</p>
           <p>{{ $t('common.name') }}：{{ dataSource.name }}</p>
           <p>{{ $t('common.status') }}：{{ $t('status.vpc.' + dataSource.status) }}</p>
         </template>
-        <icon type="res-vpc" />
-        <span class="name text-truncate">{{ dataSource.name }}</span>
+        <div>
+          <icon type="res-vpc" />
+          <span class="name text-truncate">{{ dataSource.name }}</span>
+        </div>
       </a-tooltip>
     </div>
     <span class="line" />

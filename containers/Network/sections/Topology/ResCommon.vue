@@ -37,8 +37,8 @@
         </template>
         <div class="d-flex">
           <icon v-if="!showSchedTag && !showStorage" :type="iconType" />
-          <div v-else class="res-box;">
-            <icon :type="iconType" class="mt-2 mb-1" style="border:none;font-size:40px;" />
+          <div v-else class="res-box">
+            <icon :type="iconType" class="res-box-icon mt-2 mb-1" />
             <div class="tag-list tag-list-limit d-flex align-items-center flex-wrap justify-content-center">
               <template v-if="showStorageTag">
                 <div v-for="(item,index) in resStorages" class="tag storage-tag" :key="index" :style="{background: item.background}">{{item.name}}</div>

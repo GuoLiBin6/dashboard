@@ -14,6 +14,8 @@ export default {
   components: {
     VminstanceList,
   },
+  // SidePage 透传 wire columns 时勿覆盖虚机列表自身列
+  inheritAttrs: false,
   props: {
     id: String,
     getParams: [Function, Object],

@@ -15,6 +15,8 @@ export default {
   components: {
     NetworkList,
   },
+  // SidePage 透传 vpc columns 时勿覆盖 IP 子网列表自身列
+  inheritAttrs: false,
   props: {
     id: String,
     getParams: [Function, Object],

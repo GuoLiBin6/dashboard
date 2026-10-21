@@ -59,8 +59,19 @@ function gapOf (root) {
   return Number.isFinite(n) ? n : DEFAULT_GAP
 }
 
-function isNestedFormItem (item) {
-  return !!(item.parentElement && item.parentElement.closest('.ant-form-item'))
+/** 相对 root：item 与 root 之间是否还有其它 form-item（真嵌套） */
+function isNestedFormItem (item, root) {
+  if (!item || !item.parentElement) return false
+  let parent = item.parentElement
+  while (parent && parent !== root) {
+    if (parent.classList && parent.classList.contains('ant-form-item')) return true
+    parent = parent.parentElement
+  }
+  // 无 root 时保持旧语义：祖先中任意 form-item 即视为嵌套
+  if (!root) {
+    return !!(item.parentElement && item.parentElement.closest('.ant-form-item'))
+  }
+  return false
 }
 
 function collectLabels (root) {
@@ -71,20 +82,19 @@ function collectLabels (root) {
   for (let i = 0; i < nodes.length; i++) {
     const label = nodes[i]
     const item = label.closest('.ant-form-item')
-    if (!item || isNestedFormItem(item)) continue
+    if (!item || !root.contains(item) || isNestedFormItem(item, root)) continue
     if (!(label.textContent || '').trim()) continue
     const ownerForm = item.closest('.ant-form')
     if (rootIsForm) {
       if (ownerForm !== root) continue
-    } else if (ownerForm && ownerForm !== root) {
-      continue
     }
+    // 非 form 的 oc-layout-form 子区域：量本区域内 label（可位于外层 form 内）
     labels.push(label)
   }
   return labels
 }
 
-function collectLabelsFromNode (node) {
+function collectLabelsFromNode (node, root) {
   if (!isElem(node)) return []
   const labels = []
   if (node.matches && node.matches('.ant-form-item-label > label')) {
@@ -98,7 +108,7 @@ function collectLabelsFromNode (node) {
   }
   return labels.filter((label) => {
     const item = label.closest('.ant-form-item')
-    if (!item || isNestedFormItem(item)) return false
+    if (!item || isNestedFormItem(item, root)) return false
     return !!(label.textContent || '').trim()
   })
 }
@@ -273,7 +283,7 @@ function rememberRemovedLabels (mutations) {
     for (let j = 0; j < m.removedNodes.length; j++) {
       const node = m.removedNodes[j]
       if (!hasItemLabel(node)) continue
-      const found = collectLabelsFromNode(node)
+      const found = collectLabelsFromNode(node, root)
       for (let k = 0; k < found.length; k++) labels.push(found[k])
     }
     if (!labels.length) continue
