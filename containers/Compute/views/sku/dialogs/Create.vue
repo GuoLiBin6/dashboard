@@ -6,13 +6,22 @@
         ref="formRef"
         :model="form">
         <a-form-model-item :label="$t('compute.text_1051')" :extra="$t('compute.text_1055')" prop="cpu_core_count">
-          <a-input-number :min="1" v-model:value="form.cpu_core_count" /> {{$t('compute.text_167')}}
+          <div class="d-inline-flex align-items-center">
+            <a-input-number :min="1" v-model:value="form.cpu_core_count" />
+            <span class="ml-1">{{$t('compute.text_167')}}</span>
+          </div>
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.text_1052')" :extra="$t('compute.text_1056')" prop="memory_size_mb">
-          <a-input-number :min="0.5" v-model:value="form.memory_size_mb" /> GB
+          <div class="d-inline-flex align-items-center">
+            <a-input-number :min="0.5" v-model:value="form.memory_size_mb" />
+            <span class="ml-1">GB</span>
+          </div>
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.system_disk_max')" prop="sys_disk_max_size_gb">
-          <a-input-number :min="0" v-model:value="form.sys_disk_max_size_gb" /> GB
+          <div class="d-inline-flex align-items-center">
+            <a-input-number :min="0" v-model:value="form.sys_disk_max_size_gb" />
+            <span class="ml-1">GB</span>
+          </div>
         </a-form-model-item>
         <a-form-model-item :label="$t('common.description')" prop="description">
           <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-model:value="form.description" :placeholder="$t('common_367')" />

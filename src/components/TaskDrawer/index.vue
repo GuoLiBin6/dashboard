@@ -20,7 +20,14 @@ export default {
     TaskPage,
   },
   mixins: [WindowsMixin],
+  // SidePage 动态组件常透传 resource=images/guests，若继承到 TaskPage 会盖掉 taskResource
+  inheritAttrs: false,
   props: {
+    // 吞掉 SidePage 的 resource，避免 fallthrough 覆盖 :resource="taskResource"
+    resource: {
+      type: [String, Function],
+      default: undefined,
+    },
     taskResource: {
       type: String,
       default: 'compute-tasks',

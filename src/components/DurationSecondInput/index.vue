@@ -23,9 +23,9 @@ export default {
     },
     durationOptions: {
       type: Array,
-      default: () => Object.keys(i18n.t('subDurations')).map(k => (
+      default: () => Object.keys(i18n.tm('subDurations') || {}).map(k => (
         {
-          label: i18n.t('subDurations')[k],
+          label: (i18n.tm('subDurations') || {})[k],
           key: k,
         }
       )),

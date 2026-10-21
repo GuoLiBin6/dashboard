@@ -17,6 +17,8 @@ export default {
     VminstanceList,
     VmContainerInstanceList,
   },
+  // SidePage 透传 host columns 时勿覆盖虚机列表自身列
+  inheritAttrs: false,
   props: {
     id: String,
     data: Object,

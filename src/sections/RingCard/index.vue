@@ -63,7 +63,7 @@ export default {
               position: 'center',
               formatter: '8',
               textStyle: {
-                fontSize: 22,
+                fontSize: 16,
                 color: '#333',
               },
             },

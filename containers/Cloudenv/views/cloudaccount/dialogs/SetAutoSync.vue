@@ -10,12 +10,13 @@
         <a-form-model-item :label="$t('cloudenv.text_83')" prop="enable_auto_sync">
           <a-switch :checkedChildren="$t('cloudenv.text_84')" :unCheckedChildren="$t('cloudenv.text_85')" v-model:checked="form.enable_auto_sync" @change="enableChange" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('cloudenv.text_86')" prop="sync_interval_seconds" v-if="showTime">
-          <a-input-number
-            v-model:value="form.sync_interval_seconds"
-            :min="30" />
-          <span class="ml-1">{{$t('cloudenv.text_87')}}</span>
-          <div slot="extra">{{$t('cloudenv.text_280')}}</div>
+        <a-form-model-item :label="$t('cloudenv.text_86')" prop="sync_interval_seconds" v-if="showTime" :extra="$t('cloudenv.text_280')">
+          <div class="d-inline-flex align-items-center">
+            <a-input-number
+              v-model:value="form.sync_interval_seconds"
+              :min="30" />
+            <span class="ml-1">{{$t('cloudenv.text_87')}}</span>
+          </div>
         </a-form-model-item>
       </a-form-model>
     </div>

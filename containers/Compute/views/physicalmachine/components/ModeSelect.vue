@@ -21,7 +21,7 @@ export default {
   },
   data () {
     return {
-      modes: this.$t('physicalmachineAddModes'),
+      modes: this.$tm('physicalmachineAddModes') || {},
     }
   },
   computed: {

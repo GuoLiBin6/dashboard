@@ -47,7 +47,7 @@ export default {
           }
           return {
             validate: isIdle,
-            tooltip: !isIdle && i18n.t('cloudenv.text_368', [this.$t('status.cloudaccountSyncStatus')[obj.sync_status]]),
+            tooltip: !isIdle && i18n.t('cloudenv.text_368', [(this.$tm('status.cloudaccountSyncStatus') || {})[obj.sync_status]]),
           }
         },
       },

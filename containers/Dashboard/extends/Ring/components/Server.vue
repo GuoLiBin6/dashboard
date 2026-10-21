@@ -18,41 +18,43 @@
         </div>
       </div>
       <div class="dashboard-card-body align-items-center">
-        <a-progress v-if="isRing" type="circle" :percent="percent" :strokeWidth="12" :status="status" :strokeColor="percentColor">
-          <template v-slot:format><span class="percent-tips" :style="{ color: '#000' }">{{ percentTips }}</span></template>
-        </a-progress>
-        <liquid-fill v-else :value="decimalPercent" />
-        <div class="flex-fill ml-4">
+        <div class="ring-chart">
+          <a-progress v-if="isRing" type="circle" :percent="percent" :strokeWidth="12" :status="status" :strokeColor="percentColor">
+            <template v-slot:format><span class="percent-tips" :style="{ color: '#000' }">{{ percentTips }}</span></template>
+          </a-progress>
+          <liquid-fill v-else :value="decimalPercent" />
+        </div>
+        <div class="flex-fill ml-4 ring-side">
           <div class="d-flex bottomborder-box align-items-end" :style="itemStyle">
-            <div :class="`label-unit ${jumpParams.usedPath ? 'label-jump' : ''}`" @click="goJump('used')">{{ useLabel }}</div>
+            <div :class="`label-unit label-text ${jumpParams.usedPath ? 'label-jump' : ''}`" :title="useLabel" @click="goJump('used')">{{ useLabel }}</div>
             <div class="flex-number mr-1 ml-1 text-right">{{isResDeny ? '-' : usage.usage}}</div>
-            <div class="label-unit">{{usage.unit}}</div>
+            <div class="label-unit label-unit-suffix">{{usage.unit}}</div>
           </div>
 
           <div class="d-flex bottomborder-box align-items-end" :style="itemStyle">
-            <div :class="`label-unit ${jumpParams.reservedPath ? 'label-jump' : ''}`" @click="goJump('reserved')">{{ unUseLabel }}<a-tooltip v-if="showTips" class="ml-1" :title="$t('dashboard.un_usage_tips')"><span class="dashboard-card-help"><icon type="help" /></span></a-tooltip></div>
+            <div :class="`label-unit label-text ${jumpParams.reservedPath ? 'label-jump' : ''}`" :title="unUseLabel" @click="goJump('reserved')">{{ unUseLabel }}<a-tooltip v-if="showTips" class="ml-1" :title="$t('dashboard.un_usage_tips')"><span class="dashboard-card-help"><icon type="help" /></span></a-tooltip></div>
             <div class="flex-number mr-1 ml-1 text-right">{{isResDeny ? '-' : displayUnUsage.usage}}</div>
-            <div class="label-unit">{{displayUnUsage.unit}}</div>
+            <div class="label-unit label-unit-suffix">{{displayUnUsage.unit}}</div>
           </div>
 
           <div class="d-flex bottomborder-box align-items-end" :style="itemStyle" v-if="showReserved">
-            <div :class="`flex-shrink-0 flex-grow-0 label-unit ${jumpParams.reservedPath ? 'label-jump' : ''}`" @click="goJump('reserved')">{{$t('dashboard.text_182')}}</div>
+            <div :class="`label-unit label-text ${jumpParams.reservedPath ? 'label-jump' : ''}`" :title="$t('dashboard.text_182')" @click="goJump('reserved')">{{$t('dashboard.text_182')}}</div>
             <div class="flex-number mr-1 ml-1 text-right">{{isResDeny ? '-' : reserved.usage}}</div>
-            <div class="label-unit">{{reserved.unit}}</div>
+            <div class="label-unit label-unit-suffix">{{reserved.unit}}</div>
           </div>
 
           <div class="d-flex bottomborder-box align-items-end" :style="itemStyle" v-if="showGpuReserved">
-            <div :class="`flex-shrink-0 flex-grow-0 label-unit ${jumpParams.reservedPath ? 'label-jump' : ''}`" @click="goJump('reserved')">
+            <div :class="`label-unit label-text ${jumpParams.reservedPath ? 'label-jump' : ''}`" :title="$t('dashboard.text_183')" @click="goJump('reserved')">
               {{$t('dashboard.text_183')}}<a-tooltip v-if="showTips" class="ml-1" :title="$t('dashboard.gpu_reserved_tips')"><span class="dashboard-card-help"><icon type="help" /></span></a-tooltip>
             </div>
             <div class="flex-number mr-1 ml-1 text-right">{{isResDeny ? '-' : gpuReserved.usage}}</div>
-            <div  class="label-unit">{{gpuReserved.unit}}</div>
+            <div class="label-unit label-unit-suffix">{{gpuReserved.unit}}</div>
           </div>
 
           <div class="d-flex bottomborder-box align-items-end" :style="itemStyle">
-            <div :class="`label-unit ${jumpParams.allPath ? 'label-jump' : ''}`" @click="goJump('all')">{{ $t('dashboard.text_181') }}<a-tooltip v-if="showTips" class="ml-1" :title="$t('dashboard.all_usage_tips')"><span class="dashboard-card-help"><icon type="help" /></span></a-tooltip></div>
+            <div :class="`label-unit label-text ${jumpParams.allPath ? 'label-jump' : ''}`" :title="$t('dashboard.text_181')" @click="goJump('all')">{{ $t('dashboard.text_181') }}<a-tooltip v-if="showTips" class="ml-1" :title="$t('dashboard.all_usage_tips')"><span class="dashboard-card-help"><icon type="help" /></span></a-tooltip></div>
             <div class="flex-number mr-1 ml-1 text-right">{{isResDeny ? '-' : allUsage.usage}}</div>
-            <div class="label-unit">{{allUsage.unit}}</div>
+            <div class="label-unit label-unit-suffix">{{allUsage.unit}}</div>
           </div>
         </div>
       </div>
@@ -692,15 +694,48 @@ export default {
 </script>
 
 <style lang="less" scoped>
+.dashboard-card-body {
+  min-width: 0;
+  container-type: inline-size;
+}
+
+.ring-chart {
+  flex: 0 0 120px;
+  width: 120px;
+  height: 120px;
+  overflow: hidden;
+
+  > * {
+    transform-origin: top left;
+  }
+}
+
+.ring-side {
+  min-width: 0;
+  overflow: hidden;
+}
+
 .flex-number{
   font-size: 15px;
   line-height: 21px;
   flex: 1 1 auto;
   color: #000;
   font-weight: 600;
+  white-space: nowrap;
 }
 .label-unit{
   color: #666666;
+}
+.label-text {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.label-unit-suffix {
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 .label-jump{
   color: var(--antd-wave-shadow-color);
@@ -719,5 +754,19 @@ export default {
   border-bottom: 1px solid #F2F2F2;
   margin: 10px 0;
   padding: 5px 0;
+  min-width: 0;
+}
+
+// 磁贴较窄时：水球/环形图缩为 80%，右侧 label 可省略
+@container (max-width: 360px) {
+  .ring-chart {
+    flex-basis: 96px;
+    width: 96px;
+    height: 96px;
+
+    > * {
+      transform: scale(0.8);
+    }
+  }
 }
 </style>

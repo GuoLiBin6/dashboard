@@ -94,7 +94,7 @@ export default {
               title: this.$t('network.text_369'),
               formatter: ({ row }) => {
                 if (row.redirect !== 'raw') return '-'
-                return this.$t('redirect_code')[row.redirect_code] ? this.$t('redirect_code')[row.redirect_code].name : '-'
+                return (this.$tm('redirect_code') || {})[row.redirect_code] ? (this.$tm('redirect_code') || {})[row.redirect_code].name : '-'
               },
             },
             {

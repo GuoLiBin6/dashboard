@@ -5,7 +5,10 @@
         <a-input :placeholder="$t('k8s.text_60')" v-model:value="form.name" />
       </a-form-model-item>
       <a-form-model-item :label="$t('k8s.text_305')" prop="size">
-        <a-input-number v-model:value="form.size" :min="1" :max="500" /> G
+        <div class="d-inline-flex align-items-center">
+          <a-input-number v-model:value="form.size" :min="1" :max="500" />
+          <span class="ml-1">G</span>
+        </div>
       </a-form-model-item>
       <a-form-model-item :label="$t('k8s.text_19')" prop="cluster">
         <cluster-select v-model:value="form.cluster" @input="onClusterChange" />

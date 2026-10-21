@@ -7,13 +7,22 @@
       <a-form-model ref="formRef" :model="form" :rules="rules">
         <a-form-model-item :label="$t('compute.text_170')" />
         <a-form-model-item label="CPU" prop="cpu">
-          <a-input-number v-model:value="form.cpu" :min="1" :step="1" :precision="0" /> {{$t('compute.text_167')}}
+          <div class="d-inline-flex align-items-center">
+            <a-input-number v-model:value="form.cpu" :min="1" :step="1" :precision="0" />
+            <span class="ml-1">{{$t('compute.text_167')}}</span>
+          </div>
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.text_168')" prop="memory">
-          <a-input-number v-model:value="form.memory" :min="1" :step="1" :precision="0" /> G
+          <div class="d-inline-flex align-items-center">
+            <a-input-number v-model:value="form.memory" :min="1" :step="1" :precision="0" />
+            <span class="ml-1">G</span>
+          </div>
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.text_169')" prop="disk">
-          <a-input-number v-model:value="form.disk" :min="1" :step="1" :precision="0" /> G
+          <div class="d-inline-flex align-items-center">
+            <a-input-number v-model:value="form.disk" :min="1" :step="1" :precision="0" />
+            <span class="ml-1">G</span>
+          </div>
         </a-form-model-item>
       </a-form-model>
     </div>

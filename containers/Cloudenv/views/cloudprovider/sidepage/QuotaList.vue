@@ -15,6 +15,8 @@ import {
 export default {
   name: 'CloudaccountQuotaList',
   mixins: [WindowsMixin, ListMixin],
+  // SidePage 透传 columns/resource 时勿覆盖本地 page-list 绑定
+  inheritAttrs: false,
   props: {
     getParams: {
       type: [Function, Object],
@@ -62,7 +64,7 @@ export default {
           slots: {
             default: ({ row }, h) => {
               const { name } = row
-              const text = this.$t('cloudproviderquotaNames')[name] || name
+              const text = (this.$tm('cloudproviderquotaNames') || {})[name] || name
               return [
                 h('list-body-cell-wrap', {
                   props: {

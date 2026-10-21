@@ -5,11 +5,11 @@
       <span class="top-text">Top5</span>
     </div>
     <div class="progress-item" v-for="(item, i) in topList" :key="i">
-      <div class="item d-flex justify-content-between position-relative">
+      <div class="item d-flex justify-content-between align-items-center">
         <span class="label" :title="item.name">{{ item.name }}</span>
-        <span>{{ item.value }}</span>
+        <span class="value">{{ item.value }}</span>
       </div>
-      <a-progress :format="v => ''" :percent="item.percent" status="normal" size="small" />
+      <a-progress :show-info="false" :percent="item.percent" status="normal" size="small" :stroke-width="4" />
     </div>
   </div>
 </template>
@@ -76,18 +76,23 @@ export default {
     }
   }
   .progress-item {
+    margin-bottom: 8px;
     .item {
       font-size: 12px;
-      bottom: -10px;
+      line-height: 18px;
+      margin-bottom: 2px;
     }
     .label {
-      width: 60%;
+      flex: 1;
+      min-width: 0;
       color: #666;
-      /*自动隐藏文字*/
+      overflow: hidden;
       text-overflow: ellipsis;
-      /*文字隐藏后添加省略号*/
       white-space: nowrap;
-      /*强制不换行*/
+    }
+    .value {
+      flex-shrink: 0;
+      margin-left: 8px;
     }
   }
 }

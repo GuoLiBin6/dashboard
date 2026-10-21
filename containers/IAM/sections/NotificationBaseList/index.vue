@@ -59,7 +59,7 @@ export default {
             label: this.$t('system.text_315'),
             dropdown: true,
             filter: true,
-            items: Object.keys(this.$t('notificationPriority')).map(key => {
+            items: Object.keys(this.$tm('notificationPriority') || {}).map(key => {
               return {
                 label: this.$t(`notificationPriority.${key}`),
                 key,

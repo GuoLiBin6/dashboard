@@ -24,14 +24,16 @@
           </a-select>
         </a-form-model-item>
         <a-form-model-item prop="cidr">
-          <span slot="label">
+          <template #label>
             {{decLabel}}&nbsp;
             <a-tooltip :title="$t('compute.secgroup.secrule.source.prompt')">
               <icon type="question-circle" />
             </a-tooltip>
-          </span>
-          <a-input :disabled="IPCheckboxDisabled" v-model:value="form.cidr" :placeholder="$t('compute.text_996')" />
-          <a-checkbox class="right-checkbox" @change="cidrChange">{{$t('compute.text_997')}}</a-checkbox>
+          </template>
+          <div class="input-with-checkbox">
+            <a-input :disabled="IPCheckboxDisabled" v-model:value="form.cidr" :placeholder="$t('compute.text_996')" />
+            <a-checkbox class="right-checkbox" @change="cidrChange">{{$t('compute.text_997')}}</a-checkbox>
+          </div>
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.text_980')" prop="protocol">
           <a-select v-model:value="form.protocol" @change="protocolChange" :disabled="protocolDisabled">
@@ -41,12 +43,16 @@
           </a-select>
         </a-form-model-item>
         <a-form-model-item prop="ports">
-          <span slot="label">{{$t('compute.text_998')}}<a-tooltip :title="$t('compute.text_999')">
+          <template #label>
+            {{$t('compute.text_998')}}
+            <a-tooltip :title="$t('compute.text_999')">
               <icon type="question-circle" />
             </a-tooltip>
-          </span>
-          <a-input :disabled="portsDisabled" v-model:value="form.ports" :placeholder="$t('compute.text_350')" />
-          <a-checkbox class="right-checkbox" @change="portsChange" :checked="portsChecked" :disabled="portsCheckboxDisabled">{{$t('compute.text_1000')}}</a-checkbox>
+          </template>
+          <div class="input-with-checkbox">
+            <a-input :disabled="portsDisabled" v-model:value="form.ports" :placeholder="$t('compute.text_350')" />
+            <a-checkbox class="right-checkbox" @change="portsChange" :checked="portsChecked" :disabled="portsCheckboxDisabled">{{$t('compute.text_1000')}}</a-checkbox>
+          </div>
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.text_694')" prop="action">
           <a-select v-model:value="form.action">
@@ -56,10 +62,12 @@
           </a-select>
         </a-form-model-item>
         <a-form-model-item prop="priority">
-          <span slot="label">{{$t('compute.text_1001')}}<a-tooltip :title="$t('compute.text_1002')">
+          <template #label>
+            {{$t('compute.text_1001')}}
+            <a-tooltip :title="$t('compute.text_1002')">
               <icon type="question-circle" />
             </a-tooltip>
-          </span>
+          </template>
           <a-input-number :min="1" :max="100" v-model:value="form.priority" />
         </a-form-model-item>
       </a-form-model>
@@ -99,7 +107,6 @@ export default {
           { validator: this.$validate(['cidr', 'IPv4', 'cidr6', 'IPv6'], true, 'some') },
         ],
         ports: [
-          { required: true, message: this.$t('compute.text_347') },
           { validator: this.validatePorts },
         ],
         action: [
@@ -135,6 +142,14 @@ export default {
   },
   methods: {
     validatePorts (rule, value, callback) {
+      if (this.portsChecked || value === 'ALL') {
+        callback()
+        return
+      }
+      if (!value) {
+        callback(new Error(this.$t('compute.text_347')))
+        return
+      }
       const ports = value.indexOf(',') !== -1 ? value.split(',') : value.split('-')
       if (ports.length > 1) {
         const pass = ports.every(function (item, index) {
@@ -143,20 +158,16 @@ export default {
         if (!pass) {
           if (validate(value, 'ports') === false || validate(value, 'ports').result === false) {
             callback(new Error(validate(value, 'ports').msg))
+            return
           }
-          callback()
-        } else {
-          callback()
         }
+        callback()
       } else {
-        if (value === 'ALL') {
-          callback()
-        } else {
-          if (validate(value, 'ports') === false || validate(value, 'ports').result === false) {
-            callback(new Error(validate(value, 'ports').msg))
-          }
-          callback()
+        if (validate(value, 'ports') === false || validate(value, 'ports').result === false) {
+          callback(new Error(validate(value, 'ports').msg))
+          return
         }
+        callback()
       }
     },
     typeChange (e) {
@@ -245,10 +256,13 @@ export default {
       }
     },
     portsChange (e) {
-      this.portsChecked = !this.portsChecked
-      this.portsDisabled = !this.portsDisabled
+      this.portsChecked = e.target.checked
+      this.portsDisabled = e.target.checked
       if (e.target.checked) {
         this.form.ports = 'ALL'
+        this.$nextTick(() => {
+          this.$refs.formRef && this.$refs.formRef.clearValidate('ports')
+        })
       } else {
         this.form.ports = undefined
       }
@@ -288,12 +302,20 @@ export default {
 </script>
 
 <style lang="less" scoped>
+.input-with-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  > :first-child {
+    flex: 1;
+    min-width: 0;
+  }
+}
 .right-checkbox {
-  width: 100px;
-  height: 40px;
-  left: 270px;
-  font-size: 12px!important;
-  color: #ccc;
-  position: absolute;
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 12px !important;
+  color: #999;
 }
 </style>

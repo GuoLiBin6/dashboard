@@ -122,6 +122,13 @@ export default {
       bottom: 8px;
       left: 24px;
       right: 24px;
+      /* block 按钮需占满，避免外层 inline-flex 把宽度收成内容宽 */
+      :deep(.page-list-actions) {
+        width: 100%;
+      }
+      :deep(.ant-btn) {
+        width: 100%;
+      }
     }
   }
   .card-title {

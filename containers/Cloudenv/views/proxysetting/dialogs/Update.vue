@@ -71,12 +71,12 @@ export default {
           const { ok, reason } = data[k]
           if (ok) {
             this.$notification.success({
-              message: this.$t('cloudenv.text_407', [this.$t('proxysettings')[k]]),
+              message: this.$t('cloudenv.text_407', [(this.$tm('proxysettings') || {})[k]]),
               description: this.$t('cloudenv.text_408'),
             })
           } else {
             this.$notification.error({
-              message: this.$t('cloudenv.text_409', this.$t('proxysettings')[k]),
+              message: this.$t('cloudenv.text_409', (this.$tm('proxysettings') || {})[k]),
               description: reason,
             })
           }

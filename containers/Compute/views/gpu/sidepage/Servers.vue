@@ -33,6 +33,8 @@ const commonUnabled = (value, statusArr = ['sched_fail', 'net_fail', 'disk_fail'
 export default {
   name: 'ServersListForGpuSidePage',
   mixins: [WindowsMixin, ListMixin],
+  // SidePage 透传 columns/resource 时勿覆盖本地 page-list 绑定
+  inheritAttrs: false,
   props: {
     data: {
       type: Object,

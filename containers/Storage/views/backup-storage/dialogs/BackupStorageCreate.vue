@@ -45,7 +45,10 @@
           </a-radio-group>
         </a-form-model-item>
         <a-form-model-item :label="$t('storage.capacity')" v-show="false" prop="capacity_mb">
-          <a-input-number :min="0" v-model:value="form.capacity_mb" /> GB
+          <div class="d-inline-flex align-items-center">
+            <a-input-number :min="0" v-model:value="form.capacity_mb" />
+            <span class="ml-1">GB</span>
+          </div>
         </a-form-model-item>
         <a-form-model-item label="Public Bucket URL" v-if="isObjectStorage" prop="object_bucket_url_ext">
           <a-input :placeholder="$t('storage.url.input.place_holder')" v-model:value="form.object_bucket_url_ext" />

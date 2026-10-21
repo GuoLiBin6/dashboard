@@ -62,7 +62,10 @@
             <template #title v-if="capacityTooltip">
               {{ capacityTooltip }}
             </template>
-            <a-input-number v-model:value="capacity" v-bind="skuOptions" /> GB
+            <div class="d-inline-flex align-items-center">
+              <a-input-number v-model:value="capacity" v-bind="skuOptions" />
+              <span class="ml-1">GB</span>
+            </div>
           </a-tooltip>
         </a-col>
       </a-form-model-item>

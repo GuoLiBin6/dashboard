@@ -84,9 +84,9 @@ export default {
           billing_type: {
             label: this.$t('table.title.bill_type'),
             dropdown: true,
-            items: Object.keys(this.$t('billingType')).map((k) => {
+            items: Object.keys(this.$tm('billingType') || {}).map((k) => {
               return {
-                label: this.$t('billingType')[k],
+                label: (this.$tm('billingType') || {})[k],
                 key: k,
               }
             }),

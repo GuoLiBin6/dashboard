@@ -49,7 +49,8 @@ export default {
           actions: obj => {
             return [
               ...getEnabledSwitchActions(this, obj, ['skus_update', 'skus_update'], {
-                metas: [
+                // 用 extraMetas 保留默认「启用/禁用互斥」，仅叠加私有云限制
+                extraMetas: [
                   () => {
                     let tooltip = ''
                     let validate = true

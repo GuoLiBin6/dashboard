@@ -11,7 +11,7 @@
       <a-form-model-item :label="$t('common.description')" prop="description">
         <a-textarea v-model:value="fd.description" :auto-size="{ minRows: 1, maxRows: 3 }" :placeholder="$t('common_367')" />
       </a-form-model-item>
-      <a-form-model-item :wrapper-col="offsetWrapperCol" prop="no_bmc">
+      <a-form-model-item class="oc-form-item-follow-label" prop="no_bmc">
         <a-checkbox v-model:checked="fd.no_bmc">{{$t('compute.no_bmc')}}</a-checkbox>
       </a-form-model-item>
       <template v-if="!noBMC">
@@ -38,7 +38,7 @@
       </a-form-model-item>
     </template>
     <template v-if="isBatch">
-      <a-form-model-item :wrapper-col="offsetWrapperCol">
+      <a-form-model-item class="oc-form-item-follow-label">
         <a-alert type="warning">
           <template v-slot:message>
             <div>{{$t('compute.text_786')}}</div>
@@ -53,7 +53,7 @@
           </template>
         </a-alert>
       </a-form-model-item>
-      <a-form-model-item :wrapper-col="offsetWrapperCol" prop="content">
+      <a-form-model-item class="oc-form-item-follow-label" prop="content">
         <a-textarea v-model:value="fd.content" :placeholder="$t('compute.text_797')" :autosize="{ minRows: 5, maxRows: 10 }" />
         <div class="text-right">
           <span class="text-color-help">{{$t('compute.text_798', [ total ])}}</span> | <a-button class="pl-0 pr-0" type="link" @click="handleClearContent">{{$t('compute.text_799')}}</a-button>
@@ -62,7 +62,6 @@
     </template>
     <template v-if="isFile">
       <file-select
-        :offset-wrapper-col="offsetWrapperCol"
         download-url="/v1/downloads/BatchHostRegister" />
     </template>
   </div>
@@ -82,10 +81,6 @@ export default {
     Tag,
   },
   props: {
-    offsetWrapperCol: {
-      type: Object,
-      required: true,
-    },
     fd: {
       type: Object,
       required: true,

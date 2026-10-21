@@ -32,9 +32,9 @@ export default {
     },
     typeOpts: {
       type: Array,
-      default: () => Object.keys(i18n.t('chargeTypes')).map(key => ({
+      default: () => Object.keys(i18n.tm('chargeTypes') || {}).map(key => ({
         key,
-        label: i18n.t('chargeTypes')[key],
+        label: (i18n.tm('chargeTypes') || {})[key],
       })),
     },
   },

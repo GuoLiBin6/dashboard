@@ -1,5 +1,5 @@
 <template>
-  <div class="oc-date-range" @click="handleClick">
+  <div ref="trigger" class="oc-date-range" @click="handleClick">
     <a-range-picker
       class="oc-date-range__input"
       :value="dayjsValue"
@@ -8,79 +8,83 @@
       :open="false"
       :inputReadOnly="true"
       @openChange="showPanel" />
-    <div
-      v-if="visible"
-      ref="panel"
-      class="oc-date-range__dropdown"
-      @click.stop>
-      <div class="oc-date-range__inputs">
-        <input :value="textLeft" type="text" readonly class="oc-date-range__text" />
-        <span class="oc-date-range__sep">~</span>
-        <input :value="textRight" type="text" readonly class="oc-date-range__text" />
-      </div>
-      <div class="oc-date-range__panels">
-        <div class="oc-date-range__part">
-          <div class="oc-date-range__header">
-            <a class="oc-date-range__nav oc-date-range__nav--super-prev" title="<<" @click="shiftMonth(-12)" />
-            <a class="oc-date-range__nav oc-date-range__nav--prev" title="<" @click="shiftMonth(-1)" />
-            <span class="oc-date-range__title">{{ leftTitle }}</span>
-            <a
-              v-if="monthDiff > 1"
-              class="oc-date-range__nav oc-date-range__nav--next"
-              title=">"
-              @click="shiftLeftMonth(1)" />
-          </div>
-          <div class="oc-date-range__weekdays">
-            <span v-for="w in weekdays" :key="`l-${w}`">{{ w }}</span>
-          </div>
-          <div class="oc-date-range__body">
-            <div
-              v-for="(cell, idx) in leftCells"
-              :key="`l-${idx}`"
-              class="oc-date-range__cell"
-              :class="cellClass(cell)">
+    <!-- 挂到 body，避免被 dialog overflow 裁切 -->
+    <teleport to="body">
+      <div
+        v-if="visible"
+        ref="panel"
+        class="oc-date-range__dropdown"
+        :style="dropdownStyle"
+        @click.stop>
+        <div class="oc-date-range__inputs">
+          <input :value="textLeft" type="text" readonly class="oc-date-range__text" />
+          <span class="oc-date-range__sep">~</span>
+          <input :value="textRight" type="text" readonly class="oc-date-range__text" />
+        </div>
+        <div class="oc-date-range__panels">
+          <div class="oc-date-range__part">
+            <div class="oc-date-range__header">
+              <a class="oc-date-range__nav oc-date-range__nav--super-prev" title="<<" @click="shiftMonth(-12)" />
+              <a class="oc-date-range__nav oc-date-range__nav--prev" title="<" @click="shiftMonth(-1)" />
+              <span class="oc-date-range__title">{{ leftTitle }}</span>
               <a
-                v-if="cell"
-                class="oc-date-range__day"
-                @click="(e) => handleDayClick(e, cell)"
-                @mouseover="handleDayOver(cell)">
-                {{ cell.date() }}
-              </a>
+                v-if="monthDiff > 1"
+                class="oc-date-range__nav oc-date-range__nav--next"
+                title=">"
+                @click="shiftLeftMonth(1)" />
+            </div>
+            <div class="oc-date-range__weekdays">
+              <span v-for="w in weekdays" :key="`l-${w}`">{{ w }}</span>
+            </div>
+            <div class="oc-date-range__body">
+              <div
+                v-for="(cell, idx) in leftCells"
+                :key="`l-${idx}`"
+                class="oc-date-range__cell"
+                :class="cellClass(cell)">
+                <a
+                  v-if="cell"
+                  class="oc-date-range__day"
+                  @click="(e) => handleDayClick(e, cell)"
+                  @mouseover="handleDayOver(cell)">
+                  {{ cell.date() }}
+                </a>
+              </div>
+            </div>
+          </div>
+          <div class="oc-date-range__part">
+            <div class="oc-date-range__header">
+              <a
+                v-if="monthDiff > 1"
+                class="oc-date-range__nav oc-date-range__nav--prev"
+                title="<"
+                @click="shiftRightMonth(-1)" />
+              <span class="oc-date-range__title">{{ rightTitle }}</span>
+              <a class="oc-date-range__nav oc-date-range__nav--next" title=">" @click="shiftMonth(1)" />
+              <a class="oc-date-range__nav oc-date-range__nav--super-next" title=">>" @click="shiftMonth(12)" />
+            </div>
+            <div class="oc-date-range__weekdays">
+              <span v-for="w in weekdays" :key="`r-${w}`">{{ w }}</span>
+            </div>
+            <div class="oc-date-range__body">
+              <div
+                v-for="(cell, idx) in rightCells"
+                :key="`r-${idx}`"
+                class="oc-date-range__cell"
+                :class="cellClass(cell)">
+                <a
+                  v-if="cell"
+                  class="oc-date-range__day"
+                  @click="(e) => handleDayClick(e, cell)"
+                  @mouseover="handleDayOver(cell)">
+                  {{ cell.date() }}
+                </a>
+              </div>
             </div>
           </div>
         </div>
-        <div class="oc-date-range__part">
-          <div class="oc-date-range__header">
-            <a
-              v-if="monthDiff > 1"
-              class="oc-date-range__nav oc-date-range__nav--prev"
-              title="<"
-              @click="shiftRightMonth(-1)" />
-            <span class="oc-date-range__title">{{ rightTitle }}</span>
-            <a class="oc-date-range__nav oc-date-range__nav--next" title=">" @click="shiftMonth(1)" />
-            <a class="oc-date-range__nav oc-date-range__nav--super-next" title=">>" @click="shiftMonth(12)" />
-          </div>
-          <div class="oc-date-range__weekdays">
-            <span v-for="w in weekdays" :key="`r-${w}`">{{ w }}</span>
-          </div>
-          <div class="oc-date-range__body">
-            <div
-              v-for="(cell, idx) in rightCells"
-              :key="`r-${idx}`"
-              class="oc-date-range__cell"
-              :class="cellClass(cell)">
-              <a
-                v-if="cell"
-                class="oc-date-range__day"
-                @click="(e) => handleDayClick(e, cell)"
-                @mouseover="handleDayOver(cell)">
-                {{ cell.date() }}
-              </a>
-            </div>
-          </div>
-        </div>
       </div>
-    </div>
+    </teleport>
   </div>
 </template>
 
@@ -141,6 +145,7 @@ export default {
       selected: [toDayjs(this.value && this.value[0]), toDayjs(this.value && this.value[1])],
       changeIndex: 0,
       hoverValue: null,
+      dropdownStyle: {},
     }
   },
   computed: {
@@ -193,6 +198,7 @@ export default {
     visible (val) {
       this.$emit('openChange', val)
       if (!val) {
+        this.unbindPositionListeners()
         this.hoverValue = null
         this.changeIndex = 0
         this.selected = [toDayjs(this.value && this.value[0]), toDayjs(this.value && this.value[1])]
@@ -209,11 +215,21 @@ export default {
   created () {
     if (this.$bus) {
       this.$bus.$on('app-action', (e) => {
-        if (this.visible && this.$refs.panel && e && e.target && !this.$refs.panel.contains(e.target)) {
-          this.visible = false
-        }
+        if (!this.visible || !e || !e.target) return
+        const panel = this.$refs.panel
+        const trigger = this.$refs.trigger
+        if (panel && panel.contains(e.target)) return
+        if (trigger && trigger.contains(e.target)) return
+        this.visible = false
       })
     }
+  },
+  beforeUnmount () {
+    this.unbindPositionListeners()
+  },
+  // Vue2 compat
+  beforeDestroy () {
+    this.unbindPositionListeners()
   },
   methods: {
     formatPanelTitle (month) {
@@ -224,11 +240,64 @@ export default {
       }
       return month.format('MMM YYYY')
     },
+    bindPositionListeners () {
+      this._onReposition = () => this.updateDropdownPosition()
+      window.addEventListener('resize', this._onReposition)
+      window.addEventListener('scroll', this._onReposition, true)
+    },
+    unbindPositionListeners () {
+      if (!this._onReposition) return
+      window.removeEventListener('resize', this._onReposition)
+      window.removeEventListener('scroll', this._onReposition, true)
+      this._onReposition = null
+    },
+    updateDropdownPosition () {
+      const el = this.$refs.trigger
+      if (!el) return
+      const rect = el.getBoundingClientRect()
+      const panelW = 560
+      const gap = 4
+      let left = rect.left
+      let top = rect.bottom + gap
+      // 右侧超出视口时左移
+      if (left + panelW > window.innerWidth - 8) {
+        left = Math.max(8, window.innerWidth - panelW - 8)
+      }
+      // 下方空间不足时翻到上方（先按估计高度；下一帧再按真实高度微调）
+      const estH = 360
+      if (top + estH > window.innerHeight - 8 && rect.top > estH) {
+        top = rect.top - estH - gap
+      }
+      this.dropdownStyle = {
+        position: 'fixed',
+        left: `${Math.max(8, left)}px`,
+        top: `${Math.max(8, top)}px`,
+        zIndex: 1100,
+      }
+      this.$nextTick(() => {
+        const panel = this.$refs.panel
+        if (!panel) return
+        const h = panel.offsetHeight
+        let nextTop = rect.bottom + gap
+        if (nextTop + h > window.innerHeight - 8 && rect.top > h + gap) {
+          nextTop = rect.top - h - gap
+        }
+        this.dropdownStyle = {
+          ...this.dropdownStyle,
+          top: `${Math.max(8, nextTop)}px`,
+        }
+      })
+    },
     showPanel () {
       this.visible = true
+      this.$nextTick(() => {
+        this.updateDropdownPosition()
+        this.bindPositionListeners()
+      })
     },
     hiddenPanel () {
       this.visible = false
+      this.unbindPositionListeners()
     },
     handleClick (e) {
       this.showPanel()
@@ -322,6 +391,7 @@ export default {
       this.$emit('calendarChange', [a, b])
       this.$nextTick(() => {
         this.$emit('change', [a, b])
+        this.$emit('update:value', [a, b])
         // 保持面板打开，由外层「确定」关闭；与费用筛选交互一致可直接关掉
         this.visible = false
       })
@@ -333,19 +403,16 @@ export default {
 <style lang="less" scoped>
 .oc-date-range {
   position: relative;
-  width: 100%;
+  display: inline-block;
+  max-width: 100%;
 }
 
 .oc-date-range__input {
-  width: 100%;
-  min-width: 240px;
+  width: 280px;
+  max-width: 100%;
 }
 
 .oc-date-range__dropdown {
-  position: absolute;
-  left: 0;
-  top: calc(100% + 4px);
-  z-index: 1050;
   width: 560px;
   background: #fff;
   border-radius: 4px;

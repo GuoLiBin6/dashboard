@@ -10,10 +10,14 @@
         :model="form"
         :rules="rules">
         <a-form-model-item prop="advance_days" class="mb-3">
-          <div class="d-flex align-items-cneter" v-for="(item,index) in form.advance_days" :key="index">
+          <div class="d-flex align-items-center" v-for="(item,index) in form.advance_days" :key="index">
             <span class="mr-5">{{$t('iam.notify_time') + (index + 1)}}:</span>
-            <span>{{$t('iam.before_expiration')}}<a-input-number v-model:value="form.advance_days[index]" class="ml-2 mr-2" :min="1" :step="1" :precision="0" @change="validateForm" />{{$t('iam.day')}}</span>
-            <a-button v-if="form.advance_days.length > 1" style="margin-left:10px;transform:translateY(8px)" shape="circle" icon="minus" size="small" @click="deleteDay(index)" />
+            <span class="d-inline-flex align-items-center">
+              {{$t('iam.before_expiration')}}
+              <a-input-number v-model:value="form.advance_days[index]" class="ml-2 mr-2" :min="1" :step="1" :precision="0" @change="validateForm" />
+              {{$t('iam.day')}}
+            </span>
+            <a-button v-if="form.advance_days.length > 1" class="ml-2" shape="circle" icon="minus" size="small" @click="deleteDay(index)" />
           </div>
         </a-form-model-item>
         <a-button type="link" @click="addDay"><icon type="icon_add" style="padding: 0" /> {{$t('iam.add_notify_time')}}</a-button>

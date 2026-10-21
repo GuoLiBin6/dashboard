@@ -7,6 +7,7 @@
         <a-form-model-item :label="$t('common.text00119')" prop="startValue">
           <oc-date-time-picker
             v-model:value="formData.startValue"
+            layout="combined"
             :disabled-date="disabledStartDate"
             :disabled-time="disabledDateTime"
             format="YYYY-MM-DD HH:mm"
@@ -15,6 +16,7 @@
         <a-form-model-item :label="$t('common.text00120')" prop="endValue">
           <oc-date-time-picker
             v-model:value="formData.endValue"
+            layout="combined"
             :disabled-date="disabledEndDate"
             :disabled-time="disabledDateTime"
             format="YYYY-MM-DD HH:mm"

@@ -6,7 +6,7 @@
     <template v-if="redirectChecked">
       <component :is="itemTag" :label="$t('network.text_369')" prop="redirect_code">
         <a-radio-group v-model:value="fd.redirect_code">
-          <a-radio-button v-for="(item, k) in $t('redirect_code')" :value="parseInt(k)" :key="k">
+          <a-radio-button v-for="(item, k) in $tm('redirect_code') || {}" :value="parseInt(k)" :key="k">
             {{item.name}}
             <a-tooltip placement="right" :title="item.description">
               <icon type="question" />

@@ -21,6 +21,8 @@ import ListMixin from '@/mixins/list'
 export default {
   name: 'ScalingGroupRuleListSidePage',
   mixins: [WindowsMixin, ListMixin, GlobalSearchMixin],
+  // SidePage 透传 columns/resource 时勿覆盖本地 page-list 绑定
+  inheritAttrs: false,
   props: {
     id: String,
     getParams: {

@@ -1,12 +1,17 @@
 <template>
-  <div v-if="beforeShowMenuLoaded" class="d-flex flex-wrap page-list-actions">
+  <div
+    v-if="beforeShowMenuLoaded"
+    class="d-flex flex-wrap page-list-actions"
+    :class="{ 'w-100': buttonBlock }">
     <template v-for="(item,index) of options" :key="item.label">
       <!-- 一组操作，下拉形式展示 -->
       <template v-if="item.actions">
         <span
           v-if="!getDeepHidden(item)"
-          class="d-inline-flex"
-          :class="{ 'ml-2': group && index > 0 }">
+          :class="[
+            buttonBlock ? 'd-block w-100' : 'd-inline-flex',
+            { 'ml-2': group && index > 0 && !buttonBlock },
+          ]">
           <dropmenus
             :group="group"
             :item="item"
@@ -22,8 +27,10 @@
       <template v-else>
         <span
           v-if="!getHidden(item)"
-          class="d-inline-flex"
-          :class="{ 'ml-2': group && index > 0 }">
+          :class="[
+            buttonBlock ? 'd-block w-100' : 'd-inline-flex',
+            { 'ml-2': group && index > 0 && !buttonBlock },
+          ]">
           <action-button
             :item="item"
             :row="row"

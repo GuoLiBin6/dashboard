@@ -14,19 +14,23 @@
         <!-- 告警策略 -->
         <template v-if="form.trigger_type === 'alarm' || !form.trigger_type">
           <a-form-model-item :label="$t('compute.text_914')" prop="alarm.indicator">
-            <a-input-group compact>
-              <a-select style="width: 50%" v-model:value="form.alarm.indicator">
-                <a-select-option  v-for="(v, k) in $tm('flexGroupIndicator')" :key="k" :value="k">{{v}}</a-select-option>
+            <div class="rule-inline-row">
+              <a-select class="rule-inline-select" v-model:value="form.alarm.indicator">
+                <a-select-option v-for="(v, k) in $tm('flexGroupIndicator')" :key="k" :value="k">{{v}}</a-select-option>
               </a-select>
-              <a-select style="width: 25%" v-model:value="form.alarm.operator">
+              <a-select class="rule-inline-select rule-inline-select--sm" v-model:value="form.alarm.operator">
                 <a-select-option value="lt">{{$t('compute.text_915')}}</a-select-option>
                 <a-select-option value="gt">{{$t('compute.text_916')}}</a-select-option>
               </a-select>
-              <a-input-number v-model:value="form.alarm.value" :min="0" :max="form.alarm.indicator && form.alarm.indicator !== 'cpu' ? 999999999 : 100" />
-              <span style="margin:5px 0 0 5px">
+              <a-input-number
+                class="rule-inline-number"
+                v-model:value="form.alarm.value"
+                :min="0"
+                :max="form.alarm.indicator && form.alarm.indicator !== 'cpu' ? 999999999 : 100" />
+              <span class="rule-inline-unit">
                 {{ form.alarm.indicator && form.alarm.indicator !== 'cpu' ? 'b/s' : '%' }}
               </span>
-            </a-input-group>
+            </div>
           </a-form-model-item>
           <a-form-model-item :label="$t('compute.text_917')" prop="alarm.cycle">
             <a-select style="width: 50%" v-model:value="form.alarm.cycle">
@@ -47,6 +51,7 @@
           <a-form-model-item :label="$t('compute.text_923')" prop="timer.execTime">
             <oc-date-time-picker
               v-model:value="form.timer.execTime"
+              layout="combined"
               format="YYYY-MM-DD HH:mm"
               :disabled-date="disabledDate"
               :disabled-time="disabledDateTime" />
@@ -73,34 +78,39 @@
             <oc-time-picker v-model:value="form.hourMinute" format="HH:mm" />
           </a-form-model-item>
           <a-form-model-item :label="$t('compute.text_928')" prop="startEndTime">
-            <oc-range-picker
+            <date-range-picker
               v-model:value="form.startEndTime"
-              :disabled-date="disabledDate"
-              format="YYYY-MM-DD" />
+              :disabled-date="disabledDate" />
           </a-form-model-item>
         </template>
         <a-form-model-item :label="$t('compute.text_929')" prop="action">
-          <a-input-group compact>
-            <a-select style="width: 50%" v-model:value="form.action">
+          <div class="rule-inline-row">
+            <a-select class="rule-inline-select" v-model:value="form.action">
               <a-select-option v-for="(v, k) in $tm('flexGroupRuleAction')" :key="k" :value="k">{{v}}</a-select-option>
             </a-select>
-            <a-tooltip>
-              <span slot="title">
-                {{actionConfig(form.action).tooltip}}
-              </span>
-              <a-input-number v-bind="actionConfig(form.action).number" v-model:value="form.number" />
+            <a-tooltip :title="actionConfig(form.action).tooltip">
+              <a-input-number
+                class="rule-inline-number"
+                v-bind="actionConfig(form.action).number"
+                v-model:value="form.number" />
             </a-tooltip>
-            <span style="margin:5px 0 0 5px">{{$t('compute.text_930')}}</span>
-          </a-input-group>
+            <span class="rule-inline-unit">{{ $t('compute.text_930') }}</span>
+          </div>
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.text_931')" prop="cooling_time">
-          <a-tooltip placement="top" :title="$t('compute.text_932')">
-            <a-input-number v-model:value="form.cooling_time" :min="0" :max="1000" />
-          </a-tooltip>
-          <span style="margin:5px 0 0 5px">{{$t('compute.text_767')}}</span>
-          <div slot="extra">
-            {{$t('compute.text_933', [form.cooling_time || 180])}}
+          <div class="rule-inline-row">
+            <a-tooltip placement="top" :title="$t('compute.text_932')">
+              <a-input-number
+                class="rule-inline-number"
+                v-model:value="form.cooling_time"
+                :min="0"
+                :max="1000" />
+            </a-tooltip>
+            <span class="rule-inline-unit">{{ $t('compute.text_767') }}</span>
           </div>
+          <template #extra>
+            {{ $t('compute.text_933', [form.cooling_time || 180]) }}
+          </template>
         </a-form-model-item>
       </a-form-model>
     </div>
@@ -115,9 +125,11 @@
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import validateForm from '@/utils/validate'
+import DateRangePicker from '@/components/DateRangePicker'
 
 export default {
   name: 'FiexRuleListCreateDialog',
+  components: { DateRangePicker },
   mixins: [DialogMixin, WindowsMixin],
   data () {
     return {
@@ -220,7 +232,9 @@ export default {
       }
     },
     disabledDate (current) {
-      return current && current < this.$moment().subtract(1, 'd').endOf('day')
+      if (!current) return false
+      const d = current && typeof current.toDate === 'function' ? current.toDate() : current
+      return this.$moment(d).isBefore(this.$moment().startOf('day'))
     },
     range (start, end) {
       const result = []
@@ -229,48 +243,47 @@ export default {
       }
       return result
     },
-    disabledDateTime (_ = this.$moment(), type) {
-      let disabledHours = []
-      let disabledMinutes = []
-      let disabledSeconds = []
-      const dayDiff = _.diff(this.$moment(), 'days', true)
-      const hourDiff = _.diff(this.$moment(), 'hours', true)
-      const minutesDiff = _.diff(this.$moment(), 'minutes', true)
-      // 当天
-      if (dayDiff > -1 && dayDiff < 0) {
-        disabledHours = this.range(0, this.$moment().hour())
-        if (hourDiff > -1 && hourDiff < 0) {
-          disabledMinutes = this.range(0, this.$moment().minute())
-          if (minutesDiff > -1 && minutesDiff < 0) {
-            disabledSeconds = this.range(0, this.$moment().second())
-          }
+    disabledDateTime (current) {
+      const now = this.$moment()
+      const raw = current && typeof current.toDate === 'function' ? current.toDate() : current
+      const selected = raw ? this.$moment(raw) : now
+      // 非当天不禁时分
+      if (!selected.isSame(now, 'day')) {
+        return {
+          disabledHours: () => [],
+          disabledMinutes: () => [],
+          disabledSeconds: () => [],
         }
       }
+      const nh = now.hour()
+      const nm = now.minute()
+      const ns = now.second()
       return {
-        disabledHours: () => disabledHours,
-        disabledMinutes: () => disabledMinutes,
-        disabledSeconds: () => disabledSeconds,
+        disabledHours: () => this.range(0, nh),
+        disabledMinutes: (selectedHour) => (selectedHour === nh ? this.range(0, nm) : []),
+        disabledSeconds: (selectedHour, selectedMinute) => (
+          selectedHour === nh && selectedMinute === nm ? this.range(0, ns) : []
+        ),
       }
     },
     formatValues (values) {
       if (values.hourMinute) {
-        // 转换为utc hour
-        const time = this.$moment(values.hourMinute)
-        values.cycleTimer.hour = time.subtract(time.utcOffset(), 'minutes').hour()
-        values.cycleTimer.minute = values.hourMinute.minutes()
+        // OcTimePicker 可能回传 dayjs，统一转 moment 再算 UTC hour
+        const raw = values.hourMinute
+        const time = this.$moment(raw && typeof raw.toDate === 'function' ? raw.toDate() : raw)
+        values.cycleTimer.hour = time.clone().subtract(time.utcOffset(), 'minutes').hour()
+        values.cycleTimer.minute = time.minute()
         delete values.hourMinute
       }
       if (values.startEndTime && values.startEndTime.length > 0) {
-        values.cycleTimer.startTime = values.startEndTime[0].set({
-          hour: 0,
-          minute: 0,
-          second: 0,
-        })
-        values.cycleTimer.endTime = values.startEndTime[1].set({
-          hour: 23,
-          minute: 59,
-          second: 59,
-        })
+        const start = this.$moment(values.startEndTime[0] && typeof values.startEndTime[0].toDate === 'function'
+          ? values.startEndTime[0].toDate()
+          : values.startEndTime[0])
+        const end = this.$moment(values.startEndTime[1] && typeof values.startEndTime[1].toDate === 'function'
+          ? values.startEndTime[1].toDate()
+          : values.startEndTime[1])
+        values.cycleTimer.startTime = start.set({ hour: 0, minute: 0, second: 0 })
+        values.cycleTimer.endTime = end.set({ hour: 23, minute: 59, second: 59 })
         delete values.startEndTime
       }
       if (values.alarm) {
@@ -313,3 +326,26 @@ export default {
   },
 }
 </script>
+
+<style lang="less" scoped>
+.rule-inline-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.rule-inline-select {
+  width: 140px;
+  flex-shrink: 0;
+}
+.rule-inline-select--sm {
+  width: 96px;
+}
+.rule-inline-number {
+  width: 110px;
+}
+.rule-inline-unit {
+  white-space: nowrap;
+  line-height: 32px;
+}
+</style>

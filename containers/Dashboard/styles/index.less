@@ -60,6 +60,10 @@
   height: 100%;
   left: 0;
   right: 0;
-  overflow: auto;
+  // 只允许纵向滚动，避免进度条/flex 轻微超宽露出横向滚动条
+  overflow-x: hidden;
+  overflow-y: auto;
   position: absolute;
+  min-width: 0;
+  max-width: 100%;
 }

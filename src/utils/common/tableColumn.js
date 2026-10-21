@@ -754,15 +754,17 @@ export const getNameDescriptionTableColumn = ({
               label,
             },
             scopedSlots: {
-              default: () => {
-                if (!slotCallback) return text
-                try {
-                  const n = slotCallback.length >= 2 ? slotCallback(row, h) : slotCallback(row)
-                  return (n === undefined || n === null || n === false) ? text : n
-                } catch (e) {
-                  return text
-                }
-              },
+              // 无 slotCallback 时不塞 default，否则会与 !hideField 的字段文本叠成「名称×2」
+              ...(slotCallback ? {
+                default: () => {
+                  try {
+                    const n = slotCallback.length >= 2 ? slotCallback(row, h) : slotCallback(row)
+                    return (n === undefined || n === null || n === false) ? text : n
+                  } catch (e) {
+                    return text
+                  }
+                },
+              } : {}),
               ...(cellWrapSlots && R.is(Function, cellWrapSlots) ? cellWrapSlots(row) : {}),
             },
           }),

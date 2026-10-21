@@ -275,6 +275,8 @@ function labelTextEndsWithColon (text) {
  * 空 label（多行占位）：antdv4 空槽 [] 仍为真，会画出「* :」；且 isRequired 忽略 required=false。
  * 正确做法：去掉空 label（根本不渲染 label 列），用 oc-form-item-follow-label 按
  * --oc-form-label-width 缩进对齐。
+ *
+ * 默认 validateFirst：antdv4 默认跑完全部 rules 会叠多条红字，对齐 FormModel「一次一条」。
  */
 function createFormModelItem (RawFormItem) {
   return defineComponent({
@@ -285,6 +287,7 @@ function createFormModelItem (RawFormItem) {
       name: { type: [String, Number, Array], default: undefined },
       required: { type: Boolean, default: undefined },
       colon: { type: Boolean, default: undefined },
+      validateFirst: { type: Boolean, default: undefined },
     },
     setup (props, { attrs, slots }) {
       return () => {
@@ -302,6 +305,11 @@ function createFormModelItem (RawFormItem) {
 
         if (name !== undefined && name !== null) pass.name = name
         if (props.required !== undefined) pass.required = props.required
+
+        // 默认真；可显式 :validate-first="false" 关闭
+        pass.validateFirst = props.validateFirst !== undefined ? props.validateFirst : true
+        delete mergedAttrs.validateFirst
+        delete mergedAttrs['validate-first']
 
         if (props.colon !== undefined) {
           pass.colon = props.colon

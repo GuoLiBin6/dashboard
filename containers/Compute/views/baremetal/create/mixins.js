@@ -70,13 +70,6 @@ export default {
       _initFormDone: false,
       submiting: false,
       errors: {},
-      offsetFormItemLayout: {
-        wrapperCol: {
-          md: { span: 18, offset: 6 },
-          xl: { span: 20, offset: 4 },
-          xxl: { span: 22, offset: 2 },
-        },
-      },
       form: {
         fi: {
           capability: {},
@@ -190,6 +183,10 @@ export default {
         name: [
           { required: true, message: i18n.t('compute.text_210') },
           { validator: this.$validate('resourceCreateName') },
+        ],
+        // 与 baremetalCreateFormDefaults fieldMap 对齐；缺了会在提交时读 selectedSpecItem.mem 直接抛错
+        specifications: [
+          { required: true, message: i18n.t('compute.text_313') },
         ],
         __meta__: [
           { validator: validateForm('tagName') },
@@ -1242,7 +1239,9 @@ export default {
       const extraData = {
         formType: this.cloudEnv,
         __resource_type__: 'baremetal',
-        domain_id: values.domain?.key || this.$store.getters.userInfo.projectDomainId,
+        domain_id: (values.domain && (values.domain.key || values.domain.id)) ||
+          (this.domainId && (this.domainId.key || this.domainId.id || this.domainId)) ||
+          this.$store.getters.userInfo.projectDomainId,
         specifications: values.specifications,
         extraNets: [],
         isBonding: this.isBonding,
@@ -1378,11 +1377,26 @@ export default {
           }
         }
       }
+      // 规格未解析时勿继续（正常应被 specifications 校验拦住）
+      const specMem = this.selectedSpecItem?.mem
+      if (!specMem || this.selectedSpecItem?.cpu == null) {
+        this.$message.error(i18n.t('compute.text_313'))
+        throw new Error(i18n.t('compute.text_313'))
+      }
+      // project：优先 fd / v-model 对象，兼容纯 id；对齐虚机创建的 userInfo 兜底
+      const projectVal = values.project || this.projectId
+      const projectId = (projectVal && typeof projectVal === 'object')
+        ? (projectVal.key || projectVal.id)
+        : projectVal
+      const domainVal = values.domain || this.domainId
+      const domainId = (domainVal && typeof domainVal === 'object')
+        ? (domainVal.key || domainVal.id)
+        : domainVal
       // 判断是否是安装操作系统
       const params = {
-        project_id: this.projectId?.key,
+        project_id: projectId || this.$store.getters.userInfo.projectId,
         count: values.count,
-        vmem_size: Number(this.selectedSpecItem.mem.substr(0, this.selectedSpecItem.mem.length - 1)),
+        vmem_size: Number(String(specMem).substr(0, String(specMem).length - 1)),
         vcpu_count: Number(this.selectedSpecItem.cpu),
         generate_name: values.name,
         hypervisor: 'baremetal',
@@ -1395,6 +1409,7 @@ export default {
         prefer_zone: values.zone ? values.zone.key : this.$route.query.zone_id,
         __meta__: values.__meta__,
       }
+      const submitDomainId = domainId || this.$store.getters.userInfo.projectDomainId
       if (fromBmImport) {
         params.fake_create_from_bm_import = true
       } else {
@@ -1456,8 +1471,8 @@ export default {
           process_definition_key: WORKFLOW_TYPES.APPLY_MACHINE,
           initiator: this.$store.getters.userInfo.id,
           'server-create-paramter': JSON.stringify(workflowParams),
-          project: this.projectId?.key,
-          project_domain: this.domainId?.key || this.$store.getters.userInfo.projectDomainId,
+          project: params.project_id,
+          project_domain: submitDomainId,
         }
         await this.doCreateWorkflow(variables, workflowParams)
       } else if (this.isOpenOrderSetWorkflow) {
@@ -1472,6 +1487,10 @@ export default {
     },
     buildShopCartParameter (workflowParams) {
       const { count, ...parameter } = workflowParams
+      const domainVal = this.domainId
+      const domainId = (domainVal && typeof domainVal === 'object')
+        ? (domainVal.key || domainVal.id)
+        : domainVal
       const shopCart = {
         action: 'create',
         auto_execute: true,
@@ -1479,8 +1498,8 @@ export default {
         resource: 'servers',
         user_id: this.$store.getters.userInfo.id,
         parameter,
-        project: this.projectId?.key || this.$store.getters.userInfo.projectId,
-        project_domain: this.domainId?.label || this.domainId?.key || this.$store.getters.userInfo.projectDomain,
+        project: parameter.project_id || this.$store.getters.userInfo.projectId,
+        project_domain: domainId || this.$store.getters.userInfo.projectDomainId || this.$store.getters.userInfo.projectDomain,
       }
       return shopCart
     },

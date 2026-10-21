@@ -23,11 +23,15 @@
         ref="formRef"
         :model="form"
         :rules="rules">
-        <a-form-model-item class="d-flex" prop="size">
-          <template #label>
-            <span style="width: 100px;">{{$t('compute.text_397')}}</span>
-          </template>
-          <a-input-number class="ml-2" :min="(params.data[0].disk_size / 1024) || 1" :max="100000" step="10" v-model:value="form.size" /> GB
+        <a-form-model-item :label="$t('compute.text_397')" prop="size">
+          <div class="d-inline-flex align-items-center">
+            <a-input-number
+              :min="(params.data[0].disk_size / 1024) || 1"
+              :max="100000"
+              step="10"
+              v-model:value="form.size" />
+            <span class="ml-1">GB</span>
+          </div>
         </a-form-model-item>
       </a-form-model>
     </div>

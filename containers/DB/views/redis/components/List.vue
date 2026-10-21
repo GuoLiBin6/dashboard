@@ -400,11 +400,11 @@ export default {
     getSeachStatus () {
       const selectedStatus = ['running', 'unknown', 'sync_failed']
       const status = []
-      for (const key in this.$t('status.redis')) {
+      for (const key in this.$tm('status.redis') || {}) {
         if (selectedStatus.indexOf(key) > -1) {
           status.push({
             key,
-            label: this.$t('status.redis')[key],
+            label: (this.$tm('status.redis') || {})[key],
           })
         }
       }

@@ -88,6 +88,17 @@
         color: #1f1f1f;
       }
 
+      // 可点击链接/编辑入口用主题色（宿主机 #VM、超售比编辑、透传跳转等 plain <a>）
+      > a,
+      a {
+        color: var(--ant-color-primary, var(--antd-wave-shadow-color, #1890ff));
+
+        &:hover {
+          color: var(--ant-color-primary, var(--antd-wave-shadow-color, #1890ff));
+          opacity: 0.85;
+        }
+      }
+
       // 显式保留主题色链接（region/zone/项目等 side-page-trigger）
       .side-page-trigger-link,
       a.side-page-trigger-link {

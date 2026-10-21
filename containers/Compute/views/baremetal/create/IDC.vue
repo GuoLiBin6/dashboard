@@ -103,7 +103,7 @@
             </template>
           </div>
         </a-form-model-item>
-        <a-form-model-item v-bind="offsetFormItemLayout">
+        <a-form-model-item class="oc-form-item-follow-label">
           <a-button type="primary" @click="addDisk" :disabled="specOptions.length === 0">{{$t('compute.text_307')}}</a-button>
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.text_308')" v-if="!isCheckedIso">
@@ -133,7 +133,7 @@
             :ignore-auto-network-type="isFormBackfill"
             :form-draft-key="baremetalDraftFields.serverNetwork" />
         </a-form-model-item>
-        <a-form-model-item v-bind="offsetFormItemLayout">
+        <a-form-model-item class="oc-form-item-follow-label">
           <a-checkbox v-model:checked="isBonding">{{$t('compute.text_310')}}</a-checkbox>
         </a-form-model-item>
       </template>

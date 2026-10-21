@@ -72,7 +72,7 @@
             </a-tooltip>
             <a-radio-button v-else :value="true">{{$t('compute.text_902')}}</a-radio-button>
           </a-radio-group>
-          <div v-if="isLoadbalancer" style="max-width: 920px">
+          <div v-if="isLoadbalancer" class="bind-lb-wrap">
             <bind-lb :model="form.fd" ref="BIND_LB" />
           </div>
         </a-form-model-item>
@@ -89,7 +89,10 @@
           </a-select>
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.text_905')" prop="health_check_gov">
-          <a-input-number :min="1" v-model:value="form.fd.health_check_gov" />{{$t('compute.text_767')}}
+          <div class="d-inline-flex align-items-center">
+            <a-input-number :min="1" v-model:value="form.fd.health_check_gov" />
+            <span class="ml-1">{{ $t('compute.text_767') }}</span>
+          </div>
           <template #extra>{{$t('compute.text_906')}}</template>
         </a-form-model-item>
       </a-form-model>
@@ -363,6 +366,10 @@ export default {
         this.serverTemplateListLoading = false
         const list = this.serverTemplateList
         this.form.fd.guest_template_id = (list && list.length > 0) ? list[0].id : undefined
+        // 已写入 vpc/network id，必须再拉列表，否则禁用态 Select 只有 value(id) 没有 option 名称
+        if (list && list.length > 0) {
+          this.$nextTick(() => this.templateChange())
+        }
       }
     },
     formatValues (values) {
@@ -401,5 +408,9 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
+.bind-lb-wrap {
+  max-width: 960px;
+  margin-top: 12px;
+}
 </style>

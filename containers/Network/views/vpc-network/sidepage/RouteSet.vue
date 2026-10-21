@@ -24,6 +24,8 @@ import { getEnabledSwitchActions } from '@/utils/common/tableActions'
 export default {
   name: 'routeListForVpcNetworkSidePage',
   mixins: [WindowsMixin, ListMixin],
+  // SidePage 透传 columns/resource 时勿覆盖本地 page-list 绑定
+  inheritAttrs: false,
   props: {
     resId: String,
     data: {

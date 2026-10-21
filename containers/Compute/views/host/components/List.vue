@@ -71,8 +71,8 @@ export default {
       host_status: {
         label: this.$t('compute.text_502'),
         dropdown: true,
-        items: Object.keys(this.$t('status.host_status')).map(key => {
-          return { label: this.$t('status.host_status')[key], key }
+        items: Object.keys(this.$tm('status.host_status') || {}).map(key => {
+          return { label: (this.$tm('status.host_status') || {})[key], key }
         }),
       },
       sn: {

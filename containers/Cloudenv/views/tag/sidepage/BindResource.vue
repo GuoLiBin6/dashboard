@@ -23,6 +23,8 @@ import ListMixin from '@/mixins/list'
 export default {
   name: 'BindResource',
   mixins: [WindowsMixin, ListMixin],
+  // SidePage 透传 columns/resource 时勿覆盖本地 page-list 绑定
+  inheritAttrs: false,
   props: {
     resId: {
       type: String,
@@ -164,7 +166,7 @@ export default {
   },
   methods: {
     getTab (item) {
-      const resourceName = this.resources[item.resource] || this.$t('dictionary')[item.resource] || item.resource
+      const resourceName = this.resources[item.resource] || (this.$tm('dictionary') || {})[item.resource] || item.resource
       return `${resourceName}(${item.count})`
     },
   },

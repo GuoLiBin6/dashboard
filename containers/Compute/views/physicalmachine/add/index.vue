@@ -16,8 +16,7 @@
         </a-form-model-item>
         <component
           :is="form.fd.type"
-          :fd="form.fd"
-          :offset-wrapper-col="offsetWrapperCol" />
+          :fd="form.fd" />
       </a-form-model>
     </page-body>
     <page-footer>
@@ -65,7 +64,7 @@ export default {
         },
         fi: {},
       },
-      types: this.$t('physicalmachineAddTypes'),
+      types: this.$tm('physicalmachineAddTypes') || {},
       typeInitialValue,
       modeInitialValue,
       projectDomainInitialValue,
@@ -73,11 +72,6 @@ export default {
       ipmi_username_required: false,
       ipmi_password_required: false,
       net_required: false,
-      offsetWrapperCol: {
-        md: { span: 16, offset: 8 },
-        xl: { span: 18, offset: 6 },
-        xxl: { span: 20, offset: 4 },
-      },
     }
   },
   computed: {
@@ -132,7 +126,7 @@ export default {
       }
     },
     desc () {
-      return this.types[this.form.fd.type].desc
+      return (this.types && this.types[this.form.fd.type] && this.types[this.form.fd.type].desc) || ''
     },
     isScriptAdd () {
       return this.form.fd.type === 'scriptAdd'

@@ -14,6 +14,7 @@ export default {
   components: {
     DiskSnapshotList,
   },
+  inheritAttrs: false,
   props: {
     id: String,
     getParams: [Function, Object],

@@ -328,7 +328,7 @@ export default {
                 }
 
                 if (obj.status !== 'active') {
-                  ret.tooltip = this.$t('cloudenv.text_368', [this.$t('status.image')[obj.status]])
+                  ret.tooltip = this.$t('cloudenv.text_368', [(this.$tm('status.image') || {})[obj.status]])
                   return ret
                 }
                 if (obj.is_standard === true || obj.is_standard === 'true') {

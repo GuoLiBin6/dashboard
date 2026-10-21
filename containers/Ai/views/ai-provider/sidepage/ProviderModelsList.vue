@@ -28,6 +28,8 @@ import SingleActionsMixin from '../../ai-model/mixins/singleActions'
 export default {
   name: 'AiProviderModelsList',
   mixins: [WindowsMixin, ListMixin, AiproxyLlmLinkListMixin, SingleActionsMixin],
+  // SidePage 透传 columns/resource 时勿覆盖本地 page-list 绑定
+  inheritAttrs: false,
   props: {
     data: { type: Object, required: true },
     id: String,

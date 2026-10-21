@@ -174,7 +174,7 @@ export default {
                       {
                         title: this.$t('common_550'),
                         field: 'template',
-                        formatter: ({ row }) => this.$t('idpTmplTitles')[row.template] ? this.$t(`idpTmplTitles.${row.template}`) : row.template || '-',
+                        formatter: ({ row }) => (this.$tm('idpTmplTitles') || {})[row.template] ? this.$t(`idpTmplTitles.${row.template}`) : row.template || '-',
                       },
                       { title: this.$t('common_705'), field: 'idp_entity_id' },
                     ],

@@ -49,7 +49,7 @@ export default {
     },
     config () {
       const { action, resource } = this.params
-      const message = this.$t('enabledSwitchMessage')[`${resource}.${action}`]
+      const message = (this.$tm('enabledSwitchMessage') || {})[`${resource}.${action}`]
       const opthions = {
         enable: {
           action: this.$t('status.enabled.enable'),

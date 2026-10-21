@@ -49,7 +49,7 @@
         </a-date-picker>
       </a-col>
       <a-col :span="timeSpan">
-        <a-time-picker
+        <oc-time-picker
           v-model:value="timePart"
           class="w-100"
           :format="timeFormat"
@@ -75,18 +75,20 @@ import { h, resolveComponent } from 'vue'
 import dayjs from 'dayjs'
 import customParseFormat from 'dayjs/plugin/customParseFormat'
 import { toDayjs, toTimeDayjs, mergeDateTime, formatOut } from '@/components/OcPicker/utils'
+import OcTimePicker from '@/components/OcTimePicker/index.vue'
 import OcInlineTimePanel from './InlineTimePanel.vue'
 
 dayjs.extend(customParseFormat)
 
 /**
  * 日期+时间：
- * - split：拆成两个面板（默认）
+ * - split：日期 + OcTimePicker（默认）
  * - combined：单输入；面板内左侧日期、右侧自研时间列；选日期不关层
  */
 export default {
   name: 'OcDateTimePicker',
   compatConfig: { MODE: 3 },
+  components: { OcTimePicker },
   props: {
     value: { type: [Object, String, Number, Date], default: null },
     format: { type: String, default: 'YYYY-MM-DD HH:mm' },
@@ -154,8 +156,10 @@ export default {
     },
     wrappedDisabledTime () {
       if (!this.disabledTime) return undefined
+      // 时间列只有时分，必须拼上 datePart，否则会按「今天」误禁未来日期的小时
       return (current) => {
-        const base = current || this.datePart || toDayjs(this.value, this.parseFormat) || dayjs()
+        const date = this.datePart || toDayjs(this.value, this.parseFormat) || dayjs()
+        const base = mergeDateTime(date, current || this.timePart, this.timeFormat) || date
         return this.disabledTime(base) || {}
       }
     },

@@ -98,11 +98,15 @@
                 <div slot="title">{{$t('network.text_171')}}</div>
               </a-tooltip>
           </span>
-          <a-input-number
-            v-model:value="form.ttl"
-            :placeholder="$t('network.text_172')"
-            :min="0"
-            :max="86400" />{{$t('network.text_76')}}</a-form-model-item>
+          <div class="d-inline-flex align-items-center">
+            <a-input-number
+              v-model:value="form.ttl"
+              :placeholder="$t('network.text_172')"
+              :min="0"
+              :max="86400" />
+            <span class="ml-1">{{$t('network.text_76')}}</span>
+          </div>
+        </a-form-model-item>
       </a-form-model>
     </div>
     <div slot="footer">

@@ -5,7 +5,10 @@
           <span v-if="selectedSku">{{$t('db.text_117', [numberProps.min,numberProps.max])}}</span>
           <span v-else>{{$t('db.text_118')}}</span>
         </template>
-      <a-input-number v-bind="numberProps" :value="diskSizeGb" @change="onDiskSizeChange" @blur="handleBlurDiskSize" /> GB
+      <div class="d-inline-flex align-items-center">
+        <a-input-number v-bind="numberProps" :value="diskSizeGb" @change="onDiskSizeChange" @blur="handleBlurDiskSize" />
+        <span class="ml-1">GB</span>
+      </div>
     </a-tooltip>
   </a-form-item>
 </template>

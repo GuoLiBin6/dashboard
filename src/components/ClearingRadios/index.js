@@ -103,8 +103,8 @@ export default {
 
     let durationNode = null
     if (isPrepaid) {
-      const durationOptions = Object.keys(this.$t('buyDurations')).map(k => {
-        return h('a-radio-button', { key: k, props: { value: k } }, [this.$t('buyDurations')[k]])
+      const durationOptions = Object.keys(this.$tm('buyDurations') || {}).map(k => {
+        return h('a-radio-button', { key: k, props: { value: k } }, [(this.$tm('buyDurations') || {})[k]])
       })
       const durationGroup = h('a-radio-group', {
         props: { value: this.modelDuration },

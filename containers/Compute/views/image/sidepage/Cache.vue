@@ -21,6 +21,8 @@ import ListMixin from '@/mixins/list'
 export default {
   name: 'systemImageCacheList',
   mixins: [WindowsMixin, ListMixin],
+  // SidePage 动态组件会透传 columns/resource（镜像列表的），不能落到 page-list 上覆盖缓存列
+  inheritAttrs: false,
   props: {
     resId: String,
     data: {

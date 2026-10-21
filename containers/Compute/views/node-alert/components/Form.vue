@@ -8,7 +8,10 @@
       </a-select>
     </a-form-model-item>
     <a-form-model-item :label="$t('compute.text_733')" prop="window">
-      <a-input-number v-model:value="form.window" :min="windowMin" />{{$t('compute.text_734')}}
+      <div class="d-inline-flex align-items-center">
+        <a-input-number v-model:value="form.window" :min="windowMin" />
+        <span class="ml-1">{{$t('compute.text_734')}}</span>
+      </div>
     </a-form-model-item>
     <a-form-model-item :label="$t('compute.text_735')" prop="comparator">
       <a-select v-model:value="form.comparator">

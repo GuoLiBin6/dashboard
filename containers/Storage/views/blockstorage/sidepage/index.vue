@@ -17,19 +17,9 @@
         button-size="small" />
     </template>
     <component
-      v-bind="hostListActions"
       :is="params.windowData.currentTab"
-      :data="detailData"
-      :resource="resource"
-      :on-manager="onManager"
-      :refresh="refresh"
-      @refresh="refresh"
-      :list="params.list"
-      :getParams="getParams"
-      :getColumns="getColumns"
-      :columns="columns"
-      :res-id="getParams.storage"
-      :id="listId" />
+      v-bind="currentTabProps"
+      @refresh="refresh" />
   </base-side-page>
 </template>
 
@@ -182,9 +172,63 @@ export default {
           return 'DiskListForBlockStorageSidePage'
         case 'disk-recovery-list':
           return 'DiskRecoveryListForBlockStorageSidePage'
+        case 'snapshot-list':
+          return 'SnapshotListForBlockStorageSidePage'
         default:
           return ''
       }
+    },
+    // Vue3：勿把主列表 list/columns/resource 广播到子 tab，否则会覆盖子列表自身绑定导致空白
+    currentTabProps () {
+      const tab = this.params.windowData.currentTab
+      const common = {
+        data: this.detailData,
+        onManager: this.onManager,
+        refresh: this.refresh,
+        getParams: this.getParams,
+        id: this.listId,
+        resId: this.getParams.storage,
+      }
+      if (tab === 'detail') {
+        return {
+          data: this.detailData,
+          onManager: this.onManager,
+          refresh: this.refresh,
+          columns: this.columns,
+        }
+      }
+      if (tab === 'host-list') {
+        return {
+          ...common,
+          ...this.hostListActions,
+        }
+      }
+      if (tab === 'disk-recovery-list') {
+        return {
+          ...common,
+          getColumns: this.getColumns,
+        }
+      }
+      if (tab === 'cached-images') {
+        return {
+          data: this.detailData,
+          getParams: { details: true },
+        }
+      }
+      if (tab === 'monitor') {
+        return {
+          data: this.detailData,
+        }
+      }
+      if (tab === 'event-drawer') {
+        return {
+          resId: this.data.id,
+          id: this.listId,
+          getParams: this.getParams,
+        }
+      }
+      // disk-list / snapshot-list
+      return common
     },
   },
   created () {

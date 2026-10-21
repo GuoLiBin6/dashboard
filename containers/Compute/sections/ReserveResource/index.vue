@@ -2,13 +2,22 @@
   <div>
     <a-form-item :label="label" />
     <a-form-item label="CPU">
-      <a-input-number :value="boundFd[cpuField]" :min="1" :step="1" :precision="0" @change="v => $set(boundFd, cpuField, v)" /> {{$t('compute.text_167')}}
+      <div class="d-inline-flex align-items-center">
+        <a-input-number :value="boundFd[cpuField]" :min="1" :step="1" :precision="0" @change="v => $set(boundFd, cpuField, v)" />
+        <span class="ml-1">{{$t('compute.text_167')}}</span>
+      </div>
     </a-form-item>
     <a-form-item :label="$t('compute.text_168')">
-      <a-input-number :value="boundFd[memoryField]" :min="1" :step="1" :precision="0" @change="v => $set(boundFd, memoryField, v)" /> G
+      <div class="d-inline-flex align-items-center">
+        <a-input-number :value="boundFd[memoryField]" :min="1" :step="1" :precision="0" @change="v => $set(boundFd, memoryField, v)" />
+        <span class="ml-1">G</span>
+      </div>
     </a-form-item>
     <a-form-item :label="$t('compute.text_169')">
-      <a-input-number :value="boundFd[diskField]" :min="1" :step="1" :precision="0" @change="v => $set(boundFd, diskField, v)" /> G
+      <div class="d-inline-flex align-items-center">
+        <a-input-number :value="boundFd[diskField]" :min="1" :step="1" :precision="0" @change="v => $set(boundFd, diskField, v)" />
+        <span class="ml-1">G</span>
+      </div>
     </a-form-item>
   </div>
 </template>

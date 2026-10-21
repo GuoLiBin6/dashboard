@@ -361,9 +361,9 @@ export default {
       const h = this.$createElement
       const per = (vm.percent || 0) / 100
       const oversell = per > 100 ? h('a-tag', { props: { color: 'red' } }, this.$t('common_714')) : null
-      return h('div', [
+      return h('div', { class: 'progress-card-center' }, [
         oversell,
-        h('div', { class: 'mt-2 text-color' }, numerify(per * 100, vm.numerifyFloat) + vm.unit),
+        h('div', { class: 'text-color' }, numerify(per * 100, vm.numerifyFloat) + vm.unit),
       ])
     },
     genGaugeQueryData (val) {

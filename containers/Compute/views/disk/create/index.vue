@@ -78,7 +78,7 @@
           @update:item="cloudproviderSelected" />
       </a-form-model-item>
       <a-form-model-item :label="$t('compute.text_100')" prop="backend" required>
-        <a-row>
+        <a-row type="flex" align="middle">
           <a-col :span="6" class="mr-2">
             <a-select v-model:value="form.fd.backend" @change="v => __newStorageChange(v)">
               <a-select-option v-for="item in storageOpts" :key="item.value" :value="item.value">
@@ -91,12 +91,15 @@
           <a-col :span="3">
             <a-form-model-item prop="size" class="mb-0">
               <a-tooltip :title="tooltip" placement="top">
-                <a-input-number :min="minDiskData" :max="maxDiskData" :step="step" v-model:value="form.fd.size" /> GB
+                <div class="d-inline-flex align-items-center">
+                  <a-input-number :min="minDiskData" :max="maxDiskData" :step="step" v-model:value="form.fd.size" />
+                  <span class="ml-1">GB</span>
+                </div>
               </a-tooltip>
             </a-form-model-item>
           </a-col>
           <a-col v-if="isShowStorageSelect" :span="5">
-            <div class="d-flex">
+            <div class="d-flex align-items-center">
               <disk-storage-select
                 v-if="showStorage"
                 ref="diskStorageSelect"
@@ -105,11 +108,11 @@
                 :model="form.fd"
                 :storageParams="storageParams"
                 @optionsReady="onDiskStorageOptionsReady" />
-              <a-button class="mt-1" type="link" @click="toggleDiskShowStorage">{{ showStorage ? $t('compute.text_135') : $t('compute.text_1350') }}</a-button>
+              <a-button type="link" @click="toggleDiskShowStorage">{{ showStorage ? $t('compute.text_135') : $t('compute.text_1350') }}</a-button>
             </div>
           </a-col>
           <a-col v-if="isShowIops" :span="5">
-            <div class="d-flex">
+            <div class="d-flex align-items-center">
               <a-tooltip :title="iopsTooltip" placement="top">
                 <a-input-number
                   v-if="showIops"
@@ -119,11 +122,11 @@
                   :max="iopsLimit.max"
                   :precision="0" />
               </a-tooltip>
-              <a-button class="mt-1" type="link" @click="() => toggleDiskShowIops(!showIops)">{{ showIops ? $t('compute.text_135') : $t('compute.set_iops') }}</a-button>
+              <a-button type="link" @click="() => toggleDiskShowIops(!showIops)">{{ showIops ? $t('compute.text_135') : $t('compute.set_iops') }}</a-button>
             </div>
           </a-col>
           <a-col v-if="isShowThroughput" :span="5">
-            <div class="d-flex">
+            <div class="d-flex align-items-center">
               <a-tooltip :title="throughputTooltip" placement="top">
                 <a-input-number
                   v-if="showThroughput"
@@ -133,7 +136,7 @@
                   :max="throughputLimit.max"
                   :precision="0" />
               </a-tooltip>
-              <a-button class="mt-1" type="link" @click="() => toggleDiskShowThroughput(!showThroughput)">{{ showThroughput ? $t('compute.text_135') : $t('compute.set_throughput') }}</a-button>
+              <a-button type="link" @click="() => toggleDiskShowThroughput(!showThroughput)">{{ showThroughput ? $t('compute.text_135') : $t('compute.set_throughput') }}</a-button>
             </div>
           </a-col>
         </a-row>

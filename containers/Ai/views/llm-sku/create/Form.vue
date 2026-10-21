@@ -136,19 +136,25 @@
         <template v-slot:extra>{{ $t('aice.enable_cgroup_extra') }}</template>
       </a-form-model-item>
       <a-form-model-item :label="$t('aice.disk')">
-        <a-input-number
-          v-model:value="form.fd.volume_size"
-          :min="10"
-          :step="32"
-          :precision="0" /> GB
+        <div class="d-inline-flex align-items-center">
+          <a-input-number
+            v-model:value="form.fd.volume_size"
+            :min="10"
+            :step="32"
+            :precision="0" />
+          <span class="ml-1">GB</span>
+        </div>
       </a-form-model-item>
       <a-form-model-item :label="$t('aice.bandwidth')">
-        <a-input-number
-          v-model:value="form.fd.bandwidth"
-          :min="1"
-          :max="10000"
-          :step="1"
-          :precision="0" /> MB
+        <div class="d-inline-flex align-items-center">
+          <a-input-number
+            v-model:value="form.fd.bandwidth"
+            :min="1"
+            :max="10000"
+            :step="1"
+            :precision="0" />
+          <span class="ml-1">MB</span>
+        </div>
       </a-form-model-item>
       <template v-for="field in currentTypeFields">
         <a-form-model-item

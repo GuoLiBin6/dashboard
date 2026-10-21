@@ -1,5 +1,6 @@
 import * as R from 'ramda'
 import i18n from '@/locales'
+import legacyH from '@/utils/legacyCreateElement'
 
 export default {
   name: 'NetworkSelects',
@@ -170,11 +171,19 @@ export default {
       return true
     },
     async fetchs (callback) {
+      // 内部不再把 callback 传给子请求，避免 vpc/network 各触发一次且 payload 不完整
       if (this.types.indexOf('vpc') > -1) {
-        await this.fetchVpc(callback)
+        await this.fetchVpc()
       }
       if (this.types.indexOf('network') > -1) {
-        await this.fetchNetwork(callback)
+        await this.fetchNetwork()
+      }
+      if (callback && R.type(callback) === 'Function') {
+        // eslint-disable-next-line standard/no-callback-literal
+        callback({
+          vpcList: this.vpcList || [],
+          networkList: this.networkList || [],
+        })
       }
     },
     getSelectedValue (key, id) {
@@ -246,10 +255,12 @@ export default {
           this.fetchNetwork()
         })
       }
-      const h = this.$createElement
+      // 须用 legacyH：把 Vue2 的 props/on 归一化，否则 optionLabelProp/label 传不进 antdv4
+      const h = legacyH
       const options = this.vpcList.map((item) => {
         const { id, name } = item
-        return h('a-select-option', { key: id, props: { value: id } }, this.vpcFormat ? this.vpcFormat(item) : name)
+        const label = this.vpcFormat ? (typeof this.vpcFormat(item) === 'string' ? this.vpcFormat(item) : name) : name
+        return h('a-select-option', { key: id, props: { value: id, label } }, this.vpcFormat ? this.vpcFormat(item) : name)
       })
       const renderStatusDesc = () => {
         return h('a-select-option', { key: '-1', props: { value: '-1', disabled: true } }, [
@@ -263,6 +274,8 @@ export default {
           placeholder: i18n.t('common_226'),
           loading: vpcLoading,
           filterOption,
+          optionLabelProp: 'label',
+          optionFilterProp: 'label',
           value: this.model.vpc,
         },
         on: { change: _handleChange },
@@ -293,6 +306,10 @@ export default {
       const PARAMS = await this.getNetworkParams()
       if (this.types.indexOf('vpc') > -1 && !PARAMS.vpc) {
         this.networkList = []
+        if (callback && R.type(callback) === 'Function') {
+          // eslint-disable-next-line standard/no-callback-literal
+          callback({ networkList: [] })
+        }
         return false
       }
       const MANAGER = new this.$Manager('networks', 'v2')
@@ -340,7 +357,7 @@ export default {
         const data = this.getSelectedValue('network', networkId)
         this.$emit('networkChange', data)
       }
-      const h = this.$createElement
+      const h = legacyH
       const options = this.networkList.map((item) => {
         const { id, name } = item
         const text = `${name} (${item.guest_ip_start} - ${item.guest_ip_end}）`
@@ -350,30 +367,46 @@ export default {
             h('span', { class: 'text-truncate flex-fill mr-2', attrs: { title: text } }, text),
             h('span', { style: { color: '#8492a6', fontSize: '13px' } }, this.$t('common.available_1var', [item.ports - item.ports_used])),
           ])
-        return h('a-select-option', { key: id, props: { value: id } }, content)
+        // antdv4：下拉可复杂节点，选中态用 label（名称），避免回退显示 id
+        return h('a-select-option', { key: id, props: { value: id, label: name } }, content)
       })
-      return h('a-select', {
-        style: { width: 'calc(100% - 22px)' },
+      const select = h('a-select', {
+        style: { flex: '1 1 auto', minWidth: 0, width: 'auto' },
         props: {
           disabled,
           showSearch: true,
           placeholder: i18n.t('common_227'),
           loading: networkLoading,
           filterOption,
+          optionLabelProp: 'label',
+          optionFilterProp: 'label',
           value: this.model.network,
         },
         on: { change: _handleChange },
       }, options)
+      // 刷新图标与 Select 同行垂直居中（勿再单独占 a-col，会顶对齐偏上）
+      return h('div', {
+        class: 'd-flex align-items-center',
+        style: { width: '100%' },
+      }, [
+        select,
+        h('icon', {
+          props: { type: 'sync', spin: this.networkLoading },
+          class: 'ml-2 primary-color flex-shrink-0',
+          style: { cursor: 'pointer', lineHeight: 1 },
+          on: { click: this.fetchNetwork },
+        }),
+      ])
     },
   },
   render () {
-    const h = this.$createElement
+    const h = legacyH
     const RenderCols = this.types.map(name => {
       const sn = this.firstName(name)
       if (this[`Render${sn}`]) {
         const Render = this[`Render${sn}`]()
-        return h('a-col', { props: { span: name === 'network' ? this.colSpan - 1 : this.colSpan } }, [
-          h('a-form-model-item', { props: { wrapperCol: { span: 24 }, prop: name } }, [
+        return h('a-col', { props: { span: this.colSpan } }, [
+          h('a-form-model-item', { props: { wrapperCol: { span: 24 }, prop: name }, class: 'mb-0' }, [
             Render,
             h('div', { slot: 'extra', key: name }, name === 'network' ? this.$slots.helplink : null),
           ]),
@@ -384,12 +417,7 @@ export default {
     return h('a-form-model-item', {
       props: { required: this.isRequired, labelCol: this.labelCol, wrapperCol: this.wrapperCol, label: this.label },
     }, [
-      h('a-row', { props: { gutter: 8 } }, [
-        ...RenderCols,
-        h('a-col', { props: { span: 1 } }, [
-          h('icon', { props: { type: 'sync', spin: this.networkLoading }, class: 'ml-2 primary-color', on: { click: this.fetchNetwork } }),
-        ]),
-      ]),
+      h('a-row', { props: { gutter: 8 }, class: 'align-items-center' }, RenderCols),
     ])
   },
 }

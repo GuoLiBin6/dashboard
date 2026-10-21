@@ -38,10 +38,16 @@
       <a-input-number v-model:value="deployForm.cpu" :min="1" :max="128" />
     </a-form-model-item>
     <a-form-model-item :label="$t('compute.text_300')">
-      <a-input-number v-model:value="deployForm.memory" :min="512" :step="512" /> MB
+      <div class="d-inline-flex align-items-center">
+        <a-input-number v-model:value="deployForm.memory" :min="512" :step="512" />
+        <span class="ml-1">MB</span>
+      </div>
     </a-form-model-item>
     <a-form-model-item :label="$t('aice.llm_deployment.create.disk_size')">
-      <a-input-number v-model:value="deployForm.disk_size" :min="1024" :step="1024" /> MB
+      <div class="d-inline-flex align-items-center">
+        <a-input-number v-model:value="deployForm.disk_size" :min="1024" :step="1024" />
+        <span class="ml-1">MB</span>
+      </div>
     </a-form-model-item>
   </a-form-model>
 </template>

@@ -1,5 +1,5 @@
 <template>
-  <a-form-model-item :wrapper-col="offsetWrapperCol">
+  <a-form-model-item class="oc-form-item-follow-label">
     <div class="script-add-wrap">
       <template v-if="loading"><loader loading /></template>
       <template v-else>
@@ -22,12 +22,6 @@ import 'codemirror/mode/shell/shell'
 
 export default {
   name: 'PhysicalmachineScriptAdd',
-  props: {
-    offsetWrapperCol: {
-      type: Object,
-      required: true,
-    },
-  },
   data () {
     return {
       loading: false,

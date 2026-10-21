@@ -1,5 +1,5 @@
 <template>
-  <a-form-model-item :wrapper-col="offsetWrapperCol" prop="file">
+  <a-form-model-item class="oc-form-item-follow-label" prop="file">
     <a-alert type="warning" class="mb-2">
       <template v-slot:message>
         <div>{{$t('compute.text_814')}}</div>
@@ -26,10 +26,6 @@ import { download } from '@/utils/utils'
 export default {
   name: 'FileSelect',
   props: {
-    offsetWrapperCol: {
-      type: Object,
-      required: true,
-    },
     downloadUrl: {
       type: String,
       required: true,

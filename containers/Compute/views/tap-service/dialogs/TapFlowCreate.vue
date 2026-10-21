@@ -192,7 +192,7 @@ export default {
     },
   },
   created () {
-    this.$m = new this.$Manager('tap_flows', 'v1')
+    this.manager = new this.$Manager('tap_flows', 'v1')
   },
   methods: {
     hostChange (data) {
@@ -210,7 +210,7 @@ export default {
       }
     },
     doCreate (data) {
-      return this.$m.create({
+      return this.manager.create({
         data,
       })
     },

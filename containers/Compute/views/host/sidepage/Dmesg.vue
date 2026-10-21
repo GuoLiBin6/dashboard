@@ -2,31 +2,35 @@
   <div class="dmesg-container">
     <div class="dmesg-filter">
       <div class="d-flex align-items-center flex-wrap">
-        <fixed-label-filter :label="$t('compute.ops_time')" class="mr-2 mb-2">
-          <div class="d-flex align-items-center">
-            <a-date-picker
+        <div class="d-flex align-items-center mr-2 mb-2">
+          <fixed-label-filter :label="$t('compute.ops_time')">
+            <oc-date-time-picker
               v-model:value="filterForm.startValue"
-              :disabled-date="disabledStartDate"
-              show-time
+              v-model:open="startOpen"
+              layout="combined"
               format="YYYY-MM-DD HH:mm:ss"
-              :placeholder="$t('compute.text_230')"
-              :open="startOpen"
+              :allow-clear="true"
+              :disabled-date="disabledStartDate"
+              :date-placeholder="$t('compute.text_230')"
+              style="width: 210px;"
               @openChange="handleStartOpenChange"
               @change="handleTimeChange"
-              style="width: 200px; margin-right: 5px;" />
-            ~
-            <a-date-picker
-              v-model:value="filterForm.endValue"
-              :disabled-date="disabledEndDate"
-              show-time
-              format="YYYY-MM-DD HH:mm:ss"
-              :placeholder="$t('compute.text_231')"
-              :open="endOpen"
-              @openChange="handleEndOpenChange"
-              @change="handleTimeChange"
-              style="width: 200px;margin-left: 5px;" />
-          </div>
-        </fixed-label-filter>
+              @ok="handleStartOpenChange(false)" />
+          </fixed-label-filter>
+          <span class="mx-1">~</span>
+          <oc-date-time-picker
+            v-model:value="filterForm.endValue"
+            v-model:open="endOpen"
+            layout="combined"
+            format="YYYY-MM-DD HH:mm:ss"
+            :allow-clear="true"
+            :disabled-date="disabledEndDate"
+            :date-placeholder="$t('compute.text_231')"
+            style="width: 210px;"
+            @openChange="handleEndOpenChange"
+            @change="handleTimeChange"
+            @ok="handleEndOpenChange(false)" />
+        </div>
         <fixed-label-filter :label="$t('compute.log_level')" class="mr-2 mb-2">
           <a-select
             v-model:value="filterForm.logLevels"
@@ -84,9 +88,11 @@
 
 <script>
 import WindowsMixin from '@/mixins/windows'
+import OcDateTimePicker from '@/components/OcDateTimePicker'
 
 export default {
   name: 'Dmesg',
+  components: { OcDateTimePicker },
   mixins: [WindowsMixin],
   props: {
     resId: {

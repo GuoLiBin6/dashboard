@@ -6,19 +6,19 @@
         ref="formRef"
         :model="form"
         :rules="rules">
-        <a-form-model-item v-if="!isEdit" :label="$t('compute.text_297', [$t('dictionary.project')])" class="mb-0">
+        <a-form-model-item v-if="!isEdit" :label="$t('compute.text_297', [$t('dictionary.project')])">
           <domain-project
             :form="form"
             @update:domain="handleDomainChange" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('compute.text_228')" class="mb-0" prop="name">
+        <a-form-model-item :label="$t('compute.text_228')" prop="name">
           <a-input :placeholder="$t('validator.resourceName')" v-model:value="form.name" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('common.description')" class="mb-0" prop="description">
+        <a-form-model-item :label="$t('common.description')" prop="description">
           <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" :placeholder="$t('common_367')" v-model:value="form.description" />
         </a-form-model-item>
         <template v-if="isManaged">
-          <a-form-model-item v-if="showProvider" :label="$t('compute.text_176')" class="mb-0" prop="provider">
+          <a-form-model-item v-if="showProvider" :label="$t('compute.text_176')" prop="provider">
             <base-select
               v-model:value="form.provider"
               resource="cloudregions"
@@ -33,7 +33,7 @@
               @change="onProviderChange"
               @update:item="onProviderItem" />
           </a-form-model-item>
-          <a-form-model-item :label="$t('compute.text_177')" class="mb-0" prop="cloudregion">
+          <a-form-model-item :label="$t('compute.text_177')" prop="cloudregion">
             <base-select
               v-model:value="form.cloudregion"
               resource="cloudregions"
@@ -46,7 +46,7 @@
               @change="onCloudregionChange"
               @update:item="onCloudregionItem" />
           </a-form-model-item>
-          <a-form-model-item :label="$t('compute.text_15')" class="mb-0" prop="manager_id">
+          <a-form-model-item :label="$t('compute.text_15')" prop="manager_id">
             <base-select
               resource="cloudproviders"
               v-model:value="form.manager_id"
@@ -57,13 +57,13 @@
               :select-props="{ placeholder: $t('compute.text_149') }" />
           </a-form-model-item>
         </template>
-        <a-form-model-item :label="$t('compute.text_175')" class="mb-0" prop="ip_set_type">
+        <a-form-model-item :label="$t('compute.text_175')" prop="ip_set_type">
           <a-radio-group v-model:value="form.ip_set_type" @change="ipsetTypeChange" :disabled="isEdit">
             <a-radio value="ipv4_cidr_list">IPv4</a-radio>
             <a-radio value="ipv6_cidr_list">IPv6</a-radio>
           </a-radio-group>
         </a-form-model-item>
-        <a-form-model-item :label="decLabel" :extra="$t('compute.secgroup.secrule.source.prompt')" class="mb-0" prop="data">
+        <a-form-model-item :label="decLabel" :extra="$t('compute.secgroup.secrule.source.prompt')" prop="data">
           <a-textarea
             :auto-size="{ minRows: 3, maxRows: 10 }"
             v-model:value="form.data"

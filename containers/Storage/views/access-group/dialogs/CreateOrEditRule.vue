@@ -7,14 +7,16 @@
         :model="form"
         :rules="rules">
         <a-form-model-item prop="source">
-          <span slot="label">
+          <template #label>
             {{$t('storage.access.group.rule.source')}}&nbsp;
             <a-tooltip :title="$t('storage.access.group.rule.source.tooltip')">
               <icon type="question-circle" />
             </a-tooltip>
-          </span>
-          <a-input :disabled="IPCheckboxDisabled" v-model:value="form.source" />
-          <a-checkbox class="right-checkbox" @change="sourceChanged" :checked="isIPChecked">{{$t('compute.text_997')}}</a-checkbox>
+          </template>
+          <div class="input-with-checkbox">
+            <a-input :disabled="IPCheckboxDisabled" v-model:value="form.source" />
+            <a-checkbox class="right-checkbox" @change="sourceChanged" :checked="isIPChecked">{{$t('compute.text_997')}}</a-checkbox>
+          </div>
         </a-form-model-item>
         <a-form-model-item :label="$t('storage.access.group.rule.rw.access_type')" prop="rw_access_type">
           <a-radio-group v-model:value="form.rw_access_type">
@@ -30,10 +32,12 @@
           </a-radio-group>
         </a-form-model-item>
         <a-form-model-item prop="priority">
-          <span slot="label">{{$t('compute.text_1001')}}<a-tooltip :title="$t('compute.text_1002')">
+          <template #label>
+            {{$t('compute.text_1001')}}
+            <a-tooltip :title="$t('compute.text_1002')">
               <icon type="question-circle" />
             </a-tooltip>
-          </span>
+          </template>
           <a-input-number :min="1" :max="100" v-model:value="form.priority" />
         </a-form-model-item>
       </a-form-model>
@@ -132,12 +136,20 @@ export default {
 </script>
 
 <style lang="less" scoped>
+.input-with-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  > :first-child {
+    flex: 1;
+    min-width: 0;
+  }
+}
 .right-checkbox {
-  width: 100px;
-  height: 40px;
-  left: 470px;
-  font-size: 12px!important;
-  color: #ccc;
-  position: absolute;
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 12px !important;
+  color: #999;
 }
 </style>

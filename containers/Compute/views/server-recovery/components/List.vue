@@ -24,6 +24,8 @@ import ColumnsMixin from '../mixins/columns'
 export default {
   name: 'ServerRecoveryList',
   mixins: [WindowsMixin, ListMixin, GlobalSearchMixin, ColumnsMixin, SingleActionsMixin, ResTemplateListMixin],
+  // SidePage 透传父级 columns/list 时勿覆盖本地 page-list 绑定
+  inheritAttrs: false,
   props: {
     id: String,
     getParams: {

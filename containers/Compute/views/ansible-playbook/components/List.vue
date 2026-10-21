@@ -40,7 +40,7 @@ export default {
             multiple: true,
             items: (function (t) {
               const _items = []
-              const statusItems = t.$t('status.ansiblePlaybook')
+              const statusItems = t.$tm('status.ansiblePlaybook') || {}
               for (const key in statusItems) {
                 _items.push({
                   key,

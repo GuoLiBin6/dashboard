@@ -32,10 +32,9 @@
     </template>
     <template v-if="isFile">
       <file-select
-        :offset-wrapper-col="offsetWrapperCol"
         download-url="/v1/downloads/BatchHostPXERegister" />
     </template>
-    <a-form-model-item :wrapper-col="offsetWrapperCol" prop="no_prepare">
+    <a-form-model-item class="oc-form-item-follow-label" prop="no_prepare">
       <a-checkbox v-model:checked="fd.no_prepare">{{$t('compute.text_780')}}</a-checkbox>
     </a-form-model-item>
   </div>
@@ -55,10 +54,6 @@ export default {
     Tag,
   },
   props: {
-    offsetWrapperCol: {
-      type: Object,
-      required: true,
-    },
     fd: {
       type: Object,
       required: true,

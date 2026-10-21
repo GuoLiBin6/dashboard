@@ -100,7 +100,7 @@ export default {
               field: 'sticky_session',
               title: this.$t('network.text_423'),
               formatter: ({ row }) => {
-                return this.isRedirect ? '-' : this.$t('schedulerTypeOpts')[row.scheduler]
+                return this.isRedirect ? '-' : (this.$tm('schedulerTypeOpts') || {})[row.scheduler]
               },
             },
             {
@@ -173,7 +173,7 @@ export default {
               title: this.$t('network.text_369'),
               formatter: ({ row }) => {
                 if (row.redirect !== 'raw') return '-'
-                return this.$t('redirect_code')[row.redirect_code] ? this.$t('redirect_code')[row.redirect_code].name : '-'
+                return (this.$tm('redirect_code') || {})[row.redirect_code] ? (this.$tm('redirect_code') || {})[row.redirect_code].name : '-'
               },
             },
             {
@@ -276,7 +276,7 @@ export default {
               title: this.$t('network.text_442'),
               formatter: ({ row }) => {
                 if (this.isRedirect) return '-'
-                return this.$t('listenerProxyOpts')[row.send_proxy]
+                return (this.$tm('listenerProxyOpts') || {})[row.send_proxy]
               },
             },
             {

@@ -8,11 +8,11 @@
         <a-spin :spinning="getAclsLoading">
           <a-form-model-item :label="$t('storage.text_93')" prop="acl">
             <a-radio-group v-model:value="form.acl">
-              <a-radio-button v-for="k in acls" :key="k" :value="k">{{$t('storageAclTypes')[k]}}</a-radio-button>
+              <a-radio-button v-for="k in acls" :key="k" :value="k">{{($tm('storageAclTypes') || {})[k]}}</a-radio-button>
             </a-radio-group>
             <div slot="extra">
               <div v-for="k in acls" :key="k">
-                {{$t('storageAclExtras')[k]}}<br />
+                {{($tm('storageAclExtras') || {})[k]}}<br />
               </div>
           </div>
           </a-form-model-item>

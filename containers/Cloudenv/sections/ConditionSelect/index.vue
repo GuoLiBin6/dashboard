@@ -1,23 +1,24 @@
 <template>
-  <a-form-item :required="isRequired" class="no-line-height" :label="$t('cloudenv.text_22')">
-    <a-input-group compact>
-      <a-select :value="conditionKey" @change="onConditionKeyChange">
+  <a-form-model-item :required="isRequired" :label="$t('cloudenv.text_22')" prop="conditionVals">
+    <div class="condition-select-row">
+      <a-select
+        class="condition-select-key"
+        :value="conditionKey"
+        @change="onConditionKeyChange">
         <a-select-option value="projects">{{ $t('dictionary.project') }}</a-select-option>
       </a-select>
-      <a-form-item class="mb-0 custom-form-item">
-        <base-select
-          style="width: 300px;"
-          :value="conditionVals"
-          resource="projects"
-          version="v1"
-          @change="conditionValsChange"
-          :params="projectParams"
-          remote
-          :remote-fn="q => ({ filter: `name.contains(${q})` })"
-          :select-props="{ placeholder: $t('rules.project'), mode: 'multiple' }" />
-      </a-form-item>
-    </a-input-group>
-  </a-form-item>
+      <base-select
+        class="condition-select-vals"
+        :value="conditionVals"
+        resource="projects"
+        version="v1"
+        @change="conditionValsChange"
+        :params="projectParams"
+        remote
+        :remote-fn="q => ({ filter: `name.contains(${q})` })"
+        :select-props="{ placeholder: $t('rules.project'), mode: 'multiple' }" />
+    </div>
+  </a-form-model-item>
 </template>
 
 <script>
@@ -65,7 +66,7 @@ export default {
     },
     setField (name, val) {
       if (this.form?.fd) {
-        this.$set(this.form.fd, name, val)
+        this.form.fd[name] = val
       }
     },
     onConditionKeyChange (val) {
@@ -81,3 +82,20 @@ export default {
   },
 }
 </script>
+
+<style lang="less" scoped>
+.condition-select-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 8px;
+}
+.condition-select-key {
+  width: 120px;
+  flex-shrink: 0;
+}
+.condition-select-vals {
+  flex: 1;
+  min-width: 0;
+}
+</style>

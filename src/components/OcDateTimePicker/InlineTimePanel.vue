@@ -1,12 +1,9 @@
 <script>
-import { defineComponent, h, computed, ref } from 'vue'
+import { defineComponent, h, computed } from 'vue'
 import dayjs from 'dayjs'
-import TimePanel from 'ant-design-vue/es/vc-picker/panels/TimePanel'
-import { useProvidePanel } from 'ant-design-vue/es/vc-picker/PanelContext'
-import dayjsGenerateConfig from 'ant-design-vue/es/vc-picker/generate/dayjs'
 
 /**
- * 内联时间列（小时/分钟），供 OcDateTimePicker combined 面板右侧使用。
+ * 自研时间列（时/分[/秒]）：点选即 onChange，不依赖 vc-picker TimeBody 补丁。
  */
 export default defineComponent({
   name: 'OcInlineTimePanel',
@@ -21,48 +18,94 @@ export default defineComponent({
   },
   emits: ['change'],
   setup (props, { emit }) {
-    const operationRef = ref({})
-    useProvidePanel({
-      hideHeader: computed(() => true),
-      open: computed(() => true),
-      operationRef,
-    })
-
     const showSecond = computed(() => /ss/.test(props.format || ''))
     const panelValue = computed(() => {
       if (props.value && dayjs.isDayjs(props.value) && props.value.isValid()) return props.value
       const d = dayjs(props.value)
-      return d.isValid() ? d : dayjs()
+      return d.isValid() ? d : dayjs().hour(0).minute(0).second(0)
     })
-    const disabledUnits = computed(() => {
+    const disabled = computed(() => {
       if (!props.disabledTime) return {}
       return props.disabledTime(panelValue.value) || {}
     })
 
+    function units (start, end, step, disabledList) {
+      const list = []
+      const blocked = typeof disabledList === 'function' ? disabledList() : (disabledList || [])
+      for (let i = start; i <= end; i += step) {
+        list.push({ value: i, label: String(i).padStart(2, '0'), disabled: blocked.includes(i) })
+      }
+      return list
+    }
+
+    function emitAt (hVal, mVal, sVal) {
+      const next = panelValue.value
+        .hour(Math.max(0, hVal))
+        .minute(Math.max(0, mVal))
+        .second(showSecond.value ? Math.max(0, sVal) : 0)
+      emit('change', next)
+    }
+
+    function renderColumn (key, selected, list, onPick) {
+      return h('ul', {
+        key,
+        class: 'oc-inline-time-panel__column ant-picker-time-panel-column',
+        ref: (el) => {
+          if (!el || selected < 0 || el.__ocScrolled === selected) return
+          const li = el.querySelector(`[data-val="${selected}"]`)
+          if (!li) return
+          el.__ocScrolled = selected
+          el.scrollTop = Math.max(0, li.offsetTop - el.clientHeight / 2 + li.clientHeight / 2)
+        },
+      }, list.map((u) => h('li', {
+        key: u.value,
+        'data-val': u.value,
+        class: [
+          'ant-picker-time-panel-cell',
+          u.disabled && 'ant-picker-time-panel-cell-disabled',
+          selected === u.value && 'ant-picker-time-panel-cell-selected',
+        ],
+        onClick: (e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          if (u.disabled) return
+          onPick(u.value)
+        },
+      }, [
+        h('div', { class: 'ant-picker-time-panel-cell-inner' }, u.label),
+      ])))
+    }
+
     return () => {
-      const disabled = disabledUnits.value
+      const cur = panelValue.value
+      const hVal = cur.hour()
+      const mVal = cur.minute()
+      const sVal = cur.second()
+      const d = disabled.value
+      const hourList = units(0, 23, props.hourStep || 1, d.disabledHours)
+      const minuteList = units(
+        0, 59, props.minuteStep || 1,
+        typeof d.disabledMinutes === 'function' ? () => d.disabledMinutes(hVal) : d.disabledMinutes,
+      )
+      const secondList = showSecond.value
+        ? units(
+          0, 59, props.secondStep || 1,
+          typeof d.disabledSeconds === 'function' ? () => d.disabledSeconds(hVal, mVal) : d.disabledSeconds,
+        )
+        : []
+
+      const cols = [
+        renderColumn('hour', hVal, hourList, (n) => emitAt(n, mVal, sVal)),
+        renderColumn('minute', mVal, minuteList, (n) => emitAt(hVal, n, sVal)),
+      ]
+      if (showSecond.value) {
+        cols.push(renderColumn('second', sVal, secondList, (n) => emitAt(hVal, mVal, n)))
+      }
+
       return h('div', { class: 'oc-inline-time-panel ant-picker-panel' }, [
-        h(TimePanel, {
-          prefixCls: 'ant-picker',
-          generateConfig: dayjsGenerateConfig,
-          format: props.format,
-          value: panelValue.value,
-          showHour: true,
-          showMinute: true,
-          showSecond: showSecond.value,
-          use12Hours: false,
-          hourStep: props.hourStep,
-          minuteStep: props.minuteStep,
-          secondStep: props.secondStep,
-          operationRef,
-          disabledHours: disabled.disabledHours,
-          disabledMinutes: disabled.disabledMinutes,
-          disabledSeconds: disabled.disabledSeconds,
-          disabledTime: null,
-          onSelect: (date) => {
-            emit('change', date)
-          },
-        }),
+        h('div', { class: 'ant-picker-time-panel' }, [
+          h('div', { class: 'ant-picker-content' }, cols),
+        ]),
       ])
     }
   },
@@ -128,6 +171,15 @@ export default defineComponent({
       line-height: @oc-time-cell-h;
       border-radius: 4px;
       cursor: pointer;
+    }
+
+    .ant-picker-time-panel-cell-selected .ant-picker-time-panel-cell-inner {
+      background: var(--ant-color-primary-bg, #e6f4ff);
+    }
+
+    .ant-picker-time-panel-cell-disabled {
+      pointer-events: none;
+      opacity: 0.35;
     }
   }
 }

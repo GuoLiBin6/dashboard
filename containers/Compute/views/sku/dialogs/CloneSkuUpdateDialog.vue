@@ -6,10 +6,16 @@
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-form-model ref="formRef" :model="form">
         <a-form-model-item :label="$t('compute.text_1051')" prop="cpu_core_count">
-          <a-input-number :min="1" v-model:value="form.cpu_core_count" />{{$t('compute.text_167')}}
+          <div class="d-inline-flex align-items-center">
+            <a-input-number :min="1" v-model:value="form.cpu_core_count" />
+            <span class="ml-1">{{$t('compute.text_167')}}</span>
+          </div>
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.text_1052')" prop="memory_size_mb">
-          <a-input-number :min="1" v-model:value="form.memory_size_mb" /> GB
+          <div class="d-inline-flex align-items-center">
+            <a-input-number :min="1" v-model:value="form.memory_size_mb" />
+            <span class="ml-1">GB</span>
+          </div>
         </a-form-model-item>
       </a-form-model>
     </div>

@@ -4,7 +4,7 @@ import i18n from '@/locales'
 // 不从 hypervisor 取 typeClouds：存在 auth ↔ hypervisor 循环依赖，模块顶层访问会 TDZ
 const hypervisorMap = Object.assign({}, HYPERVISORS_MAP, EXTRA_HYPERVISORS)
 
-const serverStatus = i18n.t('status.server')
+const serverStatus = i18n.tm('status.server') || {}
 
 const _toArr = value => {
   if (!Array.isArray(value)) {

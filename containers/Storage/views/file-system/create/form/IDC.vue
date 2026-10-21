@@ -41,7 +41,10 @@
           :select-props="{ placeholder: $t('common.tips.select', [$t('compute.text_653')]) }" />
       </a-form-model-item>
       <a-form-model-item :label="$t('storage.capacity')" prop="capacity_gb">
-        <a-input-number v-model:value="form.fd.capacity_gb" :min="1" :step="1" :precision="0" /> GB
+        <div class="d-inline-flex align-items-center">
+          <a-input-number v-model:value="form.fd.capacity_gb" :min="1" :step="1" :precision="0" />
+          <span class="ml-1">GB</span>
+        </div>
       </a-form-model-item>
       <a-form-model-item :label="$t('compute.text_1154')" class="mb-0" prop="tag">
         <tag

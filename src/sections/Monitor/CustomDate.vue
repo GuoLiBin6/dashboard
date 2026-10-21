@@ -10,61 +10,33 @@
         <a-alert v-if="diffHours < 1" class="mb-2" :message="$t('common_587')" type="error" show-icon />
         <div class="monitor-custom-date__row">
           <div class="monitor-custom-date__label">{{ $t('common.text00119') }}</div>
-          <a-row :gutter="8">
-            <a-col :span="14">
-              <a-date-picker
-                v-model:value="fd.startDate"
-                class="w-100"
-                format="YYYY-MM-DD"
-                :allowClear="false"
-                :placeholder="$t('common.text00119')"
-                :getPopupContainer="getPopupContainer"
-                :popupStyle="popupStyle"
-                @change="syncStart"
-                @openChange="onPickerOpenChange" />
-            </a-col>
-            <a-col :span="10">
-              <a-time-picker
-                v-model:value="fd.startTime"
-                class="w-100"
-                format="HH:mm"
-                :allowClear="false"
-                :getPopupContainer="getPopupContainer"
-                :popupStyle="popupStyle"
-                @change="syncStart"
-                @ok="syncStart"
-                @openChange="onPickerOpenChange" />
-            </a-col>
-          </a-row>
+          <oc-date-time-picker
+            v-model:value="startValue"
+            layout="combined"
+            class="w-100"
+            format="YYYY-MM-DD HH:mm"
+            :allow-clear="false"
+            :disabled-date="disabledStartDate"
+            :disabled-time="disabledDateTime"
+            :date-placeholder="$t('common.text00119')"
+            :get-popup-container="getPopupContainer"
+            :popup-style="popupStyle"
+            @openChange="onPickerOpenChange" />
         </div>
         <div class="monitor-custom-date__row">
           <div class="monitor-custom-date__label">{{ $t('common.text00120') }}</div>
-          <a-row :gutter="8">
-            <a-col :span="14">
-              <a-date-picker
-                v-model:value="fd.endDate"
-                class="w-100"
-                format="YYYY-MM-DD"
-                :allowClear="false"
-                :placeholder="$t('common.text00120')"
-                :getPopupContainer="getPopupContainer"
-                :popupStyle="popupStyle"
-                @change="syncEnd"
-                @openChange="onPickerOpenChange" />
-            </a-col>
-            <a-col :span="10">
-              <a-time-picker
-                v-model:value="fd.endTime"
-                class="w-100"
-                format="HH:mm"
-                :allowClear="false"
-                :getPopupContainer="getPopupContainer"
-                :popupStyle="popupStyle"
-                @change="syncEnd"
-                @ok="syncEnd"
-                @openChange="onPickerOpenChange" />
-            </a-col>
-          </a-row>
+          <oc-date-time-picker
+            v-model:value="endValue"
+            layout="combined"
+            class="w-100"
+            format="YYYY-MM-DD HH:mm"
+            :allow-clear="false"
+            :disabled-date="disabledEndDate"
+            :disabled-time="disabledDateTime"
+            :date-placeholder="$t('common.text00120')"
+            :get-popup-container="getPopupContainer"
+            :popup-style="popupStyle"
+            @openChange="onPickerOpenChange" />
         </div>
         <div class="monitor-custom-date__footer">
           <a-button size="small" @click="cancel">{{ $t('dialog.cancel') }}</a-button>
@@ -79,10 +51,8 @@
 <script>
 import * as R from 'ramda'
 import dayjs from 'dayjs'
-import customParseFormat from 'dayjs/plugin/customParseFormat'
 import moment from 'moment'
-
-dayjs.extend(customParseFormat)
+import OcDateTimePicker from '@/components/OcDateTimePicker'
 
 function toDayjs (val) {
   if (val == null || val === '') return null
@@ -92,23 +62,10 @@ function toDayjs (val) {
   return d.isValid() ? d : null
 }
 
-function toTime (val) {
-  const d = toDayjs(val)
-  if (!d) return dayjs('00:00', 'HH:mm')
-  return dayjs(d.format('HH:mm'), 'HH:mm')
-}
-
-function mergeDateTime (dateVal, timeVal) {
-  const date = toDayjs(dateVal)
-  const time = toTime(timeVal)
-  if (!date) return null
-  return dayjs(`${date.format('YYYY-MM-DD')} ${time.format('HH:mm')}`, 'YYYY-MM-DD HH:mm')
-}
-
 export default {
   name: 'MonitorCustomDate',
-  // 与 DateSelect 一致：子树按 Vue3 行为，避免 compat 弄丢面板选择
   compatConfig: { MODE: 3 },
+  components: { OcDateTimePicker },
   props: {
     startTime: {
       type: Object,
@@ -140,13 +97,6 @@ export default {
     const start = toDayjs(this.startTime)
     const end = toDayjs(this.endTime) || dayjs()
     return {
-      fd: {
-        startDate: start,
-        startTime: toTime(start),
-        endDate: end,
-        endTime: toTime(end),
-      },
-      // 合并后的完整时间，供文案/提交使用
       startValue: start,
       endValue: end,
       visible: false,
@@ -158,7 +108,11 @@ export default {
   computed: {
     customTimeText () {
       if (this.startValue && this.endValue && this.showCustomTimeText) {
-        return ` (${this.startValue.format('YYYY-MM-DD HH:mm')} ~ ${this.endValue.format('YYYY-MM-DD HH:mm')})`
+        const start = toDayjs(this.startValue)
+        const end = toDayjs(this.endValue)
+        if (start && end) {
+          return ` (${start.format('YYYY-MM-DD HH:mm')} ~ ${end.format('YYYY-MM-DD HH:mm')})`
+        }
       }
       return ''
     },
@@ -175,7 +129,7 @@ export default {
             const hours = +val.from.replace(/^now-(\w+)h$/, '$1').replace('now', 0)
             if (R.is(Number, hours) && !Number.isNaN(hours)) start = dayjs().subtract(hours, 'hour')
           }
-          if (start) this.applyStart(start)
+          if (start) this.startValue = start
         }
         if (val.to) {
           let end
@@ -185,7 +139,7 @@ export default {
             const hours = +val.to.replace(/^now-(\w+)h$/, '$1').replace('now', 0)
             if (R.is(Number, hours) && !Number.isNaN(hours)) end = dayjs().subtract(hours, 'hour')
           }
-          if (end) this.applyEnd(end)
+          if (end) this.endValue = end
         }
       },
       immediate: true,
@@ -200,26 +154,6 @@ export default {
     }
   },
   methods: {
-    applyStart (val) {
-      const d = toDayjs(val)
-      if (!d) return
-      this.fd.startDate = d
-      this.fd.startTime = toTime(d)
-      this.startValue = d
-    },
-    applyEnd (val) {
-      const d = toDayjs(val)
-      if (!d) return
-      this.fd.endDate = d
-      this.fd.endTime = toTime(d)
-      this.endValue = d
-    },
-    syncStart () {
-      this.startValue = mergeDateTime(this.fd.startDate, this.fd.startTime)
-    },
-    syncEnd () {
-      this.endValue = mergeDateTime(this.fd.endDate, this.fd.endTime)
-    },
     isPickerDropdownOpen () {
       return !!document.querySelector('.ant-picker-dropdown:not(.ant-picker-dropdown-hidden)')
     },
@@ -239,9 +173,42 @@ export default {
       this.visible = false
       this.pickerOpen = false
     },
+    disableFutureDate (v) {
+      if (this.allowFutureTime) return false
+      const d = toDayjs(v)
+      return d && d.isAfter(dayjs().endOf('day'))
+    },
+    disabledStartDate (startValue) {
+      const start = toDayjs(startValue)
+      const end = toDayjs(this.endValue)
+      if (!start) return false
+      if (this.disableFutureDate(start)) return true
+      if (end && start.valueOf() > end.valueOf()) return true
+      return false
+    },
+    disabledEndDate (endValue) {
+      const end = toDayjs(endValue)
+      const start = toDayjs(this.startValue)
+      if (!end) return false
+      if (this.disableFutureDate(end)) return true
+      if (start && start.valueOf() >= end.valueOf()) return true
+      return false
+    },
+    _range (start, end) {
+      const result = []
+      for (let i = start; i < end; i++) result.push(i)
+      return result
+    },
+    disabledDateTime () {
+      if (this.allowFutureTime) return {}
+      const currentHour = dayjs().hour()
+      return {
+        disabledHours: () => this._range(currentHour + 1, 24),
+      }
+    },
     getCustomTime () {
-      const start = this.startValue
-      const end = this.endValue
+      const start = toDayjs(this.startValue)
+      const end = toDayjs(this.endValue)
       if (this.customTimeUseTimeStamp) {
         return {
           from: start.valueOf(),
@@ -256,10 +223,8 @@ export default {
       }
     },
     submit () {
-      this.syncStart()
-      this.syncEnd()
-      const start = this.startValue
-      const end = this.endValue
+      const start = toDayjs(this.startValue)
+      const end = toDayjs(this.endValue)
       if (!start || !end) {
         this.visible = true
         return
@@ -281,7 +246,7 @@ export default {
 
 <style lang="less" scoped>
 .monitor-custom-date {
-  width: 360px;
+  width: 320px;
 }
 .monitor-custom-date__row + .monitor-custom-date__row {
   margin-top: 12px;

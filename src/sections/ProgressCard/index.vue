@@ -84,11 +84,24 @@ export default {
       const h = this.$createElement
       const per = this.percent || 0
       const oversell = per > 100 ? h('a-tag', { props: { color: 'red' } }, this.$t('common_714')) : null
-      return h('div', [
+      return h('div', { class: 'progress-card-center' }, [
         oversell,
-        h('div', { class: 'mt-2 text-color' }, [numerify(per, this.numerifyFloat), this.unit]),
+        h('div', { class: 'text-color' }, [numerify(per, this.numerifyFloat), this.unit]),
       ])
     },
   },
 }
 </script>
+
+<style lang="less" scoped>
+/* antdv4 circle 中心字号按环宽计算偏大，固定回较小字号 */
+:deep(.ant-progress-circle .ant-progress-text),
+:deep(.ant-progress-dashboard .ant-progress-text) {
+  font-size: 16px !important;
+  line-height: 1.2 !important;
+}
+.progress-card-center {
+  font-size: 16px;
+  line-height: 1.2;
+}
+</style>

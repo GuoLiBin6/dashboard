@@ -33,18 +33,12 @@
             :params="ipsetParams"
             :isDefaultSelect="true"
             :select-props="{ placeholder: $t('compute.secgroup.source.ip_set.placeholder') }" />
-          <a-select v-else-if="targetType === 'cidr'"
-            mode="combobox"
-            option-filter-prop="children"
+          <a-auto-complete
+            v-else-if="targetType === 'cidr'"
+            v-model:value="form.source"
+            :options="cidrAutoCompleteOptions"
             :placeholder="$t('compute.secgroup.source.placeholder')"
-            v-model:value="form.source">
-            <a-select-opt-group>
-              <span slot="label">CIDR</span>
-              <a-select-option v-for="item in cidrOptions" :key="item.value" :value="item.value">
-              {{item.label}}
-              </a-select-option>
-            </a-select-opt-group>
-          </a-select>
+            :filter-option="filterCidrOption" />
           <span v-else>ALL</span>
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.text_980')" prop="protocol">
@@ -55,8 +49,10 @@
           </a-select>
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.text_998')" :extra="portExtra" prop="ports">
-          <a-input :disabled="portsDisabled || cidrDisabled" v-model:value="form.ports" :placeholder="$t('compute.text_350')" />
-          <a-checkbox class="right-checkbox" @change="portsChange" :checked="portsChecked" :disabled="portsCheckboxDisabled || cidrDisabled">{{$t('compute.text_1000')}}</a-checkbox>
+          <div class="input-with-checkbox">
+            <a-input :disabled="portsDisabled || cidrDisabled" v-model:value="form.ports" :placeholder="$t('compute.text_350')" />
+            <a-checkbox class="right-checkbox" @change="portsChange" :checked="portsChecked" :disabled="portsCheckboxDisabled || cidrDisabled">{{$t('compute.text_1000')}}</a-checkbox>
+          </div>
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.text_694')" prop="action">
           <a-select v-model:value="form.action" :disabled="!isPrioritySupport || cidrDisabled">
@@ -68,8 +64,7 @@
         <a-form-model-item v-if="isPrioritySupport" :label="$t('compute.text_1001')" :extra="priorityExtra" prop="priority">
           <a-input-number :min="priorityMin" :max="priorityMax" :disabled="priorityDisabled || cidrDisabled" v-model:value="form.priority" />
         </a-form-model-item>
-        <a-form-model-item :extra="isAws ? $t('compute.use_en_comment') : ''" prop="description">
-          <span slot="label">{{$t('compute.text_312')}}</span>
+        <a-form-model-item :label="$t('compute.text_312')" :extra="isAws ? $t('compute.use_en_comment') : ''" prop="description">
           <a-input v-model:value="form.description" :placeholder="$t('common_367')" />
         </a-form-model-item>
       </a-form-model>
@@ -129,7 +124,6 @@ export default {
           { required: true },
         ],
         ports: [
-          { required: true, message: this.$t('compute.text_347') },
           { validator: this.validatePorts },
         ],
         action: [
@@ -189,6 +183,13 @@ export default {
   },
   computed: {
     ...mapGetters(['scope']),
+    // antdv4：分组下拉用 { label, options: [] }
+    cidrAutoCompleteOptions () {
+      return [{
+        label: 'CIDR',
+        options: this.cidrOptions,
+      }]
+    },
     priorityExtra () {
       if (this.priorityItem.priorityNoSupport) {
         return ''
@@ -293,12 +294,13 @@ export default {
   methods: {
     validatePorts (rule, value, callback) {
       const portReg = /^\d+$/
-      if (value === 'ALL') {
+      // 勾选任意端口时已禁用并固定为 ALL，跳过校验
+      if (this.portsChecked || value === 'ALL') {
         callback()
         return
       }
       if (!value) {
-        callback(new Error(this.$t('validator.ports')))
+        callback(new Error(this.$t('compute.text_347')))
         return
       }
       if (!this.priorityItem.portSupportComma && value.indexOf(',') !== -1) {
@@ -426,17 +428,22 @@ export default {
     targetTypeChange (e) {
       this.targetType = e
     },
+    filterCidrOption (input, option) {
+      const keyword = (input || '').toLowerCase()
+      const value = (option.value || '').toLowerCase()
+      const label = (option.label || '').toLowerCase()
+      return value.includes(keyword) || label.includes(keyword)
+    },
     portsChange (e) {
-      this.portsChecked = !this.portsChecked
-      this.portsDisabled = !this.portsDisabled
+      this.portsChecked = e.target.checked
+      this.portsDisabled = e.target.checked
       if (e.target.checked) {
+        this.form.ports = 'ALL'
         this.$nextTick(() => {
-          this.form.ports = 'ALL'
+          this.$refs.formRef && this.$refs.formRef.clearValidate('ports')
         })
       } else {
-        this.$nextTick(() => {
-          this.form.ports = ''
-        })
+        this.form.ports = ''
       }
     },
     cidrChange (e) {
@@ -530,12 +537,20 @@ export default {
 </script>
 
 <style lang="less" scoped>
+.input-with-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  > :first-child {
+    flex: 1;
+    min-width: 0;
+  }
+}
 .right-checkbox {
-  width: 100px;
-  height: 40px;
-  left: 500px;
-  font-size: 12px!important;
-  color: #ccc;
-  position: absolute;
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-size: 12px !important;
+  color: #999;
 }
 </style>
