@@ -100,7 +100,7 @@
           <a @click.prevent>{{ region }}</a>
         </list-body-cell-wrap>
         <list-body-cell-wrap v-if="zone && !hiddenZone" hide-field copy field="zone" :row="{ zone }">
-          <a class="link-color-light" @click.prevent>{{ zone }}</a>
+          <a @click.prevent>{{ zone }}</a>
         </list-body-cell-wrap>
       </span>
     </a-popover>

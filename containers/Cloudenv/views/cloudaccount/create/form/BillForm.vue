@@ -1,7 +1,7 @@
 <template>
   <div>
     <a-alert :showIcon="false" :message="$t('cloudenv.text_194')" banner />
-    <a-form-model ref="formRef" class="pt-3" :model="form.fd" :rules="billRules">
+    <a-form-model ref="formRef" class="pt-3" :model="form.fd" :rules="billRules" :max-label="$t('cloudenv.billing_scope')">
       <a-form-model-item v-if="isAzure" :label="$t('cloudenv.text_360')">
         <a-radio-group v-model:value="billType">
           <a-radio-button

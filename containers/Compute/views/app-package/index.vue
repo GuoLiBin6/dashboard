@@ -5,6 +5,7 @@
       isShowResStatusTab
       :status-opts="statusOpts"
       :status-click-handle="statusClickHandle"
+      :filter-params="filterParams"
       :tabs="cloudEnvOptions"
       v-model:currentTab="cloudEnv" />
     <page-body>

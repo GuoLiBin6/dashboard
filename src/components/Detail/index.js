@@ -610,7 +610,7 @@ export default {
       }
       children.push(h('div', { class: classNames('detail-item-value', { 'ml-0': !renderTitle || !item.title }) }, [val]))
       return h('div', {
-        class: 'detail-item mt-2',
+        class: 'detail-item',
       }, children)
     },
     renderItems (h, items, type) {
@@ -693,12 +693,12 @@ export default {
               field: 'description',
               ...this.descProps,
             },
-            style: { color: 'var(--oc-color-text-secondary)' },
+            style: { color: '#1f1f1f' },
           }),
         ]),
       ]
       return h('div', {
-        class: 'detail-item mt-2',
+        class: 'detail-item',
       }, children)
     },
     renderName (h) {
@@ -719,7 +719,7 @@ export default {
         ]),
       ]
       return h('div', {
-        class: 'detail-item mt-2',
+        class: 'detail-item',
       }, children)
     },
   },

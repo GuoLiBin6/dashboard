@@ -3,7 +3,8 @@
     <page-header :title="$t('dictionary.cdn_domain')"
      isShowResStatusTab
      :status-opts="statusOpts"
-     :status-click-handle="statusClickHandle" />
+     :status-click-handle="statusClickHandle"
+      :filter-params="filterParams" />
     <page-body>
       <domain-list
         :id="listId"

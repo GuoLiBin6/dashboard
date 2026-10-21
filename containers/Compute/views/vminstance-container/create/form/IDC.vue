@@ -5,6 +5,7 @@
       class="mt-3"
       :model="form.fd"
       :rules="rules"
+      :max-label="$t('compute.pci.dev_type_sharing_mode')"
       @submit="submit"
       hideRequiredMark>
       <container-title :title="$t('compute.eci.container_group_config')" />

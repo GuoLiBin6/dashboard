@@ -56,11 +56,7 @@ div.ant-form-item-explain {
 
 // 横向表单按内容统一 label 宽：max(label) + --oc-form-label-gap（默认 50px）
 // 见 plugins/ocLayoutForm.js；opt-out：class="oc-layout-form-off" 或 layout=inline/vertical
-// 未测量前隐藏，避免先按 max-content 再撑开的可见跳动
-.oc-layout-form:not(.oc-layout-form-ready),
-.ant-form.ant-form-horizontal:not(.oc-layout-form-off):not(.oc-layout-form-ready) {
-  opacity: 0;
-}
+// 可用 max-label 指定最长 label，跳过 DOM 扫描
 .oc-layout-form,
 .ant-form.ant-form-horizontal:not(.oc-layout-form-off) {
   --oc-form-label-gap: 50px;

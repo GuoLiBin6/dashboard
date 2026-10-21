@@ -5,18 +5,23 @@
       flex-direction: column;
     }
   }
+
   &-all {
     min-height: 100%;
   }
+
   &-left {
     float: left;
     width: 360px;
     min-height: 100%;
-    border-right: 1px solid #dae0e6;
+    border-right: 1px solid var(--oc-color-border-secondary, #e4e7ed);
+    box-sizing: border-box;
   }
+
   &-right {
     margin-left: 430px;
   }
+
   &-full {
     width: 100%;
     float: none;
@@ -24,35 +29,75 @@
     border-right: none;
     min-height: auto;
   }
+
   &-content {
-    padding: 30px 15px 30px 0;
+    padding: 24px 16px 24px 0;
   }
+
   &-title {
-    border-bottom: 1px solid #5e6978;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
     padding-bottom: 8px;
-    color: var(--oc-color-text-heading, #303133);
+    margin-bottom: 14px;
+    color: #1f1f1f;
     font-size: 16px;
     font-weight: var(--oc-font-weight-strong, 600);
-    // margin-right: 60px;
-    margin-bottom: 16px;
+    -webkit-font-smoothing: antialiased;
   }
+
   &-item {
-    min-height: 21px;
+    position: relative;
+    min-height: 22px;
+    margin-top: 10px;
     font-weight: var(--oc-font-weight-base, 400);
+    -webkit-font-smoothing: antialiased;
+
+    &:first-child {
+      margin-top: 0;
+    }
+
     &-title {
       width: 140px;
-      color: var(--oc-color-text-secondary, rgba(0, 0, 0, 0.55));
-      font-weight: var(--oc-font-weight-base, 400);
       position: absolute;
+      left: 0;
+      top: 0;
+      color: #303133 !important;
+      font-size: 14px;
+      line-height: 22px;
+      font-weight: var(--oc-font-weight-base, 400);
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
     }
+
     &-value {
-      color: var(--oc-color-text, rgba(0, 0, 0, 0.75));
-      font-weight: var(--oc-font-weight-base, 400);
       margin-left: 140px;
+      color: #1f1f1f;
+      font-size: 14px;
+      line-height: 22px;
+      font-weight: var(--oc-font-weight-base, 400);
       word-break: break-all;
+
+      &.ml-0 {
+        margin-left: 0;
+      }
+
+      // 仅加深「纯文本」单元格，不碰 slot 内可点击/主题色内容
+      > .list-body-cell-wrap > span.text-truncate {
+        color: #1f1f1f;
+      }
+
+      // 显式保留主题色链接（region/zone/项目等 side-page-trigger）
+      .side-page-trigger-link,
+      a.side-page-trigger-link {
+        color: var(--ant-color-primary, var(--antd-wave-shadow-color, #1890ff)) !important;
+
+        &:hover {
+          color: var(--ant-color-primary, var(--antd-wave-shadow-color, #1890ff)) !important;
+          opacity: 0.85;
+        }
+      }
     }
   }
 }
@@ -64,6 +109,7 @@
       width: auto;
       border-right: 0;
     }
+
     &-right {
       margin-left: 0;
     }
@@ -75,6 +121,7 @@
     &-left {
       width: 560px;
     }
+
     &-right {
       margin-left: 630px;
     }

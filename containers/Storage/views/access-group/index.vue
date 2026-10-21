@@ -4,7 +4,8 @@
       :title="$t('dictionary.access_group')"
       isShowResStatusTab
       :status-opts="statusOpts"
-      :status-click-handle="statusClickHandle" />
+      :status-click-handle="statusClickHandle"
+      :filter-params="filterParams" />
     <page-body>
       <access-group-list
         :id="listId"

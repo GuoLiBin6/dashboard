@@ -5,6 +5,7 @@
       class="mt-3"
       :model="form.fd"
       :rules="modelRules"
+      :max-label="$t('compute.server_package.fake_create_from_bm_import')"
       @submit="handleConfirm">
       <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])">
         <domain-project

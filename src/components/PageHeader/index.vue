@@ -11,6 +11,7 @@
           :activeKey="currentTab"
           class="page-header-tabs"
           :animated="false"
+          :tab-bar-gutter="16"
           :tab-bar-style="{ padding: '0 30px', marginBottom: 0, width: '100%' }"
           size="large"
           @change="handleTabChange">
@@ -50,6 +51,10 @@ export default {
     },
     statusOpts: Array,
     statusClickHandle: Function,
+    filterParams: {
+      type: Object,
+      default: null,
+    },
   },
   computed: {
     // 避免仅依赖 v-if="title"：空串、仅空白、或 flex 叠盖导致「看不见标题」

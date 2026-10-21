@@ -5,6 +5,7 @@
       class="mt-3"
       :model="form.fd"
       :rules="rules"
+      :max-label="$t('compute.bastionHost.account')"
       @submit="submit"
       hideRequiredMark>
       <servertemplate v-if="isServertemplate" :form="form">

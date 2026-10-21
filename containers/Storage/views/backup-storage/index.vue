@@ -4,7 +4,8 @@
       :title="$t('compute.backup_storage')"
       isShowResStatusTab
       :status-opts="statusOpts"
-      :status-click-handle="statusClickHandle" />
+      :status-click-handle="statusClickHandle"
+      :filter-params="filterParams" />
     <page-body>
       <backup-storage-list
         :id="listId"

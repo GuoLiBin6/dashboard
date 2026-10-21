@@ -1,7 +1,7 @@
 <template>
   <div class="llm-sku-create-form">
     <!-- end-state: a-form-model + form.fd only -->
-    <a-form-model ref="formRef" :model="form.fd" :rules="formRules">
+    <a-form-model ref="formRef" :model="form.fd" :rules="formRules" :max-label="$t('aice.host_paths.propagation')">
       <a-form-model-item :label="$t('aice.project')">
         <domain-project
           v-if="!isEditMode"

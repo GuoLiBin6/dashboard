@@ -3,7 +3,8 @@
     <page-header :title="$t('dictionary.elasticcache')"
      isShowResStatusTab
      :status-opts="statusOpts"
-     :status-click-handle="statusClickHandle" />
+     :status-click-handle="statusClickHandle"
+      :filter-params="filterParams" />
     <page-body>
       <redis-list
         :id="listId"

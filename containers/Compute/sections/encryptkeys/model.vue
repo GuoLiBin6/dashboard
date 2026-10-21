@@ -7,13 +7,13 @@
         <a-radio-button value="existing">{{ $t('compute.prompt.encrypt.existing') }}</a-radio-button>
       </a-radio-group>
     </a-form-model-item>
-    <a-form-model-item v-if="showAlgs" :prop="algProp">
+    <a-form-model-item v-if="showAlgs" class="mt-2 mb-0" :prop="algProp">
       <a-radio-group v-model:value="form[algProp]">
         <a-radio-button value="">{{ $t('compute.text_1') }}</a-radio-button>
         <a-radio-button value="aes-256">AES256</a-radio-button>
       </a-radio-group>
     </a-form-model-item>
-    <a-form-model-item v-if="showKeys" :prop="idProp">
+    <a-form-model-item v-if="showKeys" class="mt-2 mb-0" :prop="idProp">
       <a-select v-model:value="form[idProp]" :placeholder="$t('compute.prompt.encrypt_key')">
         <a-select-option v-for="item in encryptKeyOptions" :key="item.value" :value="item.value">
           {{item.text}}

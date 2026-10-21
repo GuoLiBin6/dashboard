@@ -4,7 +4,8 @@
       :title="$t('aice.app_llm')"
       isShowResStatusTab
       :status-opts="statusOpts"
-      :status-click-handle="statusClickHandle" />
+      :status-click-handle="statusClickHandle"
+      :filter-params="filterParams" />
     <page-body>
       <list
         :id="listId"

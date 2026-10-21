@@ -644,7 +644,6 @@ export default {
         }
         if (type === 'zone' && zone) {
           ret.push(this.$createElement('a', {
-            class: 'link-color-light',
             on: { click: e => e.preventDefault() },
           }, zone))
         }

@@ -1187,7 +1187,7 @@ export default {
 .data-disk {
   .count-tips {
     .remain-num {
-      color: @primary-color;
+      color: var(--ant-color-primary, @primary-color);
     }
   }
 }

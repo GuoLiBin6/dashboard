@@ -395,14 +395,3 @@ export default {
   },
 }
 </script>
-
-<style lang="less" scoped>
-:deep(.detail-item) {
-  .detail-item-title {
-    width: 200px !important;
-  }
-  .detail-item-value {
-    margin-left: 200px;
-  }
-}
-</style>
