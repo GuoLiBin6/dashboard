@@ -9,17 +9,22 @@
       v-bind="{...filterOptions}"
       @change="selectChange">
       <a-select-option v-for="(item,index) of options" :key="index" :value="item.id">
-        {{item.name}}<span v-if="item.dropdownShowText" class="text-color-secondary oc-selected-display-none">{{ item.dropdownShowText }}</span>
+        <div class="d-flex justify-content-between align-items-center">
+          <span>{{item.name}}<span v-if="item.dropdownShowText" class="oc-dropdown-display-none">&nbsp;&nbsp;{{ item.dropdownShowText }}</span></span>
+          <span v-if="item.dropdownShowText" class="text-color-secondary oc-selected-display-none ml-3">{{ item.dropdownShowText }}</span>
+        </div>
       </a-select-option>
     </a-select>
     <a-input-number :disabled="disabled" class="w-100" v-else-if="inputType === 'number'" :value="valueType === 'Object' ? value.name : valueText" :placeholder="getUsePlaceholder('input')" @change="inputNumberChange" />
     <a-input v-else :disabled="disabled" :value="valueType === 'Object' ? value.name : valueText" :placeholder="getUsePlaceholder('input')" @change="inputChange" />
-    <a-button type="link" @click="handleSwitch" style="padding-right:0" :disabled="disabled">
-      <template v-if="showSwitchText">
-        {{type === 'select' ? $t('common.switch_to_input') : $t('common.switch_to_select') }}
-      </template>
-      <icon v-else type="input-switch" size="24" />
-    </a-button>
+    <a-tooltip :title="type === 'select' ? $t('common.switch_to_input') : $t('common.switch_to_select')">
+      <a-button type="link" @click="handleSwitch" style="padding-right:0" :disabled="disabled">
+        <template v-if="showSwitchText">
+          {{type === 'select' ? $t('common.switch_to_input') : $t('common.switch_to_select') }}
+        </template>
+        <icon v-else type="select-switch" size="24" />
+      </a-button>
+    </a-tooltip>
   </div>
 </template>
 
@@ -126,31 +131,29 @@ export default {
       const target = this.options.filter(item => item.id === val)
       if (target[0]) {
         if (this.valueType === 'Object') {
-          this.value.id = target[0].id
-          this.value.name = target[0].name
+          // 不要原地改 props.value（string 时无效；object 同引用时 Form 可能不触发更新）
+          this.$emit('change', { id: target[0].id, name: target[0].name })
         } else {
           this.valueText = target[0].id
+          this.emitChange()
         }
-        this.emitChange()
       }
     },
     inputChange (e) {
       if (this.valueType === 'Object') {
-        this.value.id = ''
-        this.value.name = e.target.value
+        this.$emit('change', { id: '', name: e.target.value })
       } else {
         this.valueText = e.target.value
+        this.emitChange()
       }
-      this.emitChange()
     },
     inputNumberChange (val) {
       if (this.valueType === 'Object') {
-        this.value.id = ''
-        this.value.name = val
+        this.$emit('change', { id: '', name: val })
       } else {
         this.valueText = val
+        this.emitChange()
       }
-      this.emitChange()
     },
     async emitChange () {
       await this.$nextTick()
@@ -158,19 +161,19 @@ export default {
     },
     handleSwitch () {
       if (this.type === 'select') {
-        if (this.valueType === 'Object') {
-          this.value.id = ''
-        }
         this.type = 'input'
+        if (this.valueType === 'Object') {
+          this.$emit('change', { id: '', name: (this.value && this.value.name) || '' })
+        } else {
+          this.emitChange()
+        }
       } else {
         if (this.valueType === 'Object') {
-          const target = this.options.filter(item => item.name === this.value.name)
+          const target = this.options.filter(item => item.name === (this.value && this.value.name))
           if (target[0]) {
-            this.value.id = target[0].id
-            this.value.name = target[0].name
+            this.$emit('change', { id: target[0].id, name: target[0].name })
           } else {
-            this.value.id = ''
-            this.value.name = ''
+            this.$emit('change', { id: '', name: '' })
           }
         } else {
           const target = this.options.filter(item => item.id === this.value)
@@ -179,10 +182,10 @@ export default {
           } else {
             this.valueText = ''
           }
+          this.emitChange()
         }
         this.type = 'select'
       }
-      this.emitChange()
     },
   },
 }

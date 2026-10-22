@@ -33,14 +33,14 @@
 import SidePageMixin from '@/mixins/sidePage'
 import WindowsMixin from '@/mixins/windows'
 import Actions from '@/components/PageList/Actions'
-import SingleActionsMixin from '../mixins/singleActions'
-import ColumnsMixin from '../mixins/columns'
 import BaremetalDetail from './Detail'
 import NetworkListForBaremetalSidepage from './Network'
 import DiskListForBaremetalSidepage from './Disk'
 import BaremetalMonitorSidepage from './Monitor'
+import GpuList from './Gpu'
+import SingleActionsMixin from '../mixins/singleActions'
+import ColumnsMixin from '../mixins/columns'
 // import BaremetalAlertSidepage from './Alert'
-
 export default {
   name: 'BaremetalSidePage',
   components: {
@@ -50,6 +50,7 @@ export default {
     DiskListForBaremetalSidepage,
     // BaremetalAlertSidepage,
     BaremetalMonitorSidepage,
+    GpuList,
   },
   mixins: [SidePageMixin, WindowsMixin, ColumnsMixin, SingleActionsMixin],
   data () {
@@ -58,6 +59,7 @@ export default {
         { label: this.$t('compute.text_238'), key: 'baremetal-detail' },
         { label: this.$t('compute.text_104'), key: 'network-list-for-baremetal-sidepage' },
         { label: this.$t('compute.text_376'), key: 'disk-list-for-baremetal-sidepage' },
+        { label: this.$t('compute.text_607'), key: 'gpu-list' },
         { label: this.$t('compute.text_608'), key: 'baremetal-monitor-sidepage' },
         { label: this.$t('table.title.task'), key: 'task-drawer' },
         // { label: '报警', key: 'baremetal-alert-sidepage' },
@@ -66,6 +68,7 @@ export default {
       agent_status: '',
       agent_fail_reason: '',
       agent_fail_code: '',
+      agent_record_id: '',
       isPageDestroyed: false,
     }
   },
@@ -83,18 +86,26 @@ export default {
           with_meta: true,
         }
       }
+      if (this.params.windowData.currentTab === 'gpu-list') {
+        return {
+          guest_id: this.data.id,
+          show_baremetal_isolated_devices: true,
+        }
+      }
       return null
     },
     listId () {
       switch (this.params.windowData.currentTab) {
         case 'event-drawer':
           return 'EventListForBaremetalSidepage'
+        case 'gpu-list':
+          return 'GpuListForBaremetalSidepage'
         default:
           return ''
       }
     },
     componentData () {
-      return Object.assign({}, this.detailData, { agent_status: this.agent_status, agent_fail_reason: this.agent_fail_reason, agent_fail_code: this.agent_fail_code })
+      return Object.assign({}, this.detailData, { agent_status: this.agent_status, agent_fail_reason: this.agent_fail_reason, agent_fail_code: this.agent_fail_code, agent_record_id: this.agent_record_id })
     },
   },
   created () {
@@ -117,6 +128,7 @@ export default {
         const { data: { data = [] } } = await new this.$Manager('scriptapplyrecords').list({ params: { server_id: this.data.data.id, details: false, limit: 1 } })
         if (data[0]) {
           this.agent_status = data[0].status
+          this.agent_record_id = data[0].id || ''
           if (data[0].status === 'applying') {
             this.handleInstallTask({
               server_id: this.componentData.id,
@@ -139,6 +151,7 @@ export default {
           }
           const { data: { data = [] } } = await new this.$Manager('scriptapplyrecords').list({ params })
           if (data[0]) {
+            this.agent_record_id = data[0].id || ''
             if (data[0].status === 'succeed' || data[0].status === 'failed') {
               this.agent_status = data[0].status
               this.agent_fail_reason = data[0].reason

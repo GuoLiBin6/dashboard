@@ -1,17 +1,17 @@
 <template>
   <div>
     <a-form-item :label="$t('db.text_61')" v-bind="formItemLayout">
-      <a-radio-group :disabled="!!disableds.engine" v-decorator="decorators.engine || ['engine', { initialValue: 'redis' }]" @change="getVersion">
+      <a-radio-group :disabled="!!disableds.engine" v-decorator="decorators.engine || ['engine', { initialValue: 'redis' }]" @change="onEngineChange">
         <a-radio-button :key="item" :value="item" v-for="item in engines">{{item}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
     <a-form-item :label="$t('db.text_236')" v-bind="formItemLayout">
-      <a-radio-group :disabled="!!disableds.engine_version" v-decorator="decorators.engine_version || ['engine_version']" @change="getArcha">
+      <a-radio-group :disabled="!!disableds.engine_version" v-decorator="decorators.engine_version || ['engine_version']" @change="onVersionChange">
         <a-radio-button :key="item" :value="item" v-for="item in engine_versions">{{item}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
     <a-form-item :label="$t('db.text_119')" v-bind="formItemLayout">
-      <a-radio-group :disabled="!!disableds.local_category" v-decorator="decorators.local_category || ['local_category']" @change="getNodeTypes">
+      <a-radio-group :disabled="!!disableds.local_category" v-decorator="decorators.local_category || ['local_category']" @change="onCategoryChange">
         <a-radio-button :key="item" :value="item" v-for="item in local_categorys">{{ENGINE_ARCH[item] || item}}</a-radio-button>
       </a-radio-group>
       <div style="color:#888;font-size:12px;line-height:30px">
@@ -19,7 +19,7 @@
       </div>
     </a-form-item>
      <a-form-item :label="$t('db.text_271')" v-bind="formItemLayout">
-      <a-radio-group v-decorator="decorators.nodeType || ['node_type']" @change="getPerformanceTypes">
+      <a-radio-group v-decorator="decorators.nodeType || ['node_type']" @change="onNodeTypeChange">
          <a-radio-button :key="item" :value="item" v-for="item in node_types">{{NODE_TYPE[item] || item}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
@@ -44,7 +44,11 @@ import { ENGINE_ARCH, NODE_TYPE, PERFORMANCE_TYPE } from '@DB/views/redis/consta
 import { sizestr } from '@/utils/utils'
 export default {
   name: 'SkuFilters',
-  inject: ['form', 'redisItem'],
+  inject: {
+    form: { default: null },
+    redisItem: { default: null },
+    getCreateFormDraftPreferred: { default: undefined },
+  },
   props: {
     decorators: {
       type: Object,
@@ -126,27 +130,60 @@ export default {
       }
       return false
     },
+    readDraft (formField) {
+      const preferred = typeof this.getCreateFormDraftPreferred === 'function'
+        ? this.getCreateFormDraftPreferred()
+        : null
+      if (!preferred || preferred[formField] == null || preferred[formField] === '') return null
+      return preferred[formField]
+    },
+    /** options 变化后：草稿命中则回填，否则第一项 */
+    pickFromOptions (list, draftVal) {
+      if (!Array.isArray(list) || !list.length) return undefined
+      if (draftVal != null && draftVal !== '') {
+        const hit = list.find(item => item === draftVal || String(item) === String(draftVal))
+        if (hit != null) return hit
+      }
+      return list[0]
+    },
+    onEngineChange (e) {
+      this.getVersion(e)
+    },
+    onVersionChange (e) {
+      this.getArcha(e)
+    },
+    onCategoryChange (e) {
+      this.getNodeTypes(e)
+    },
+    onNodeTypeChange (e) {
+      this.getPerformanceTypes(e)
+    },
     setInitValue (key, callback = () => {}) {
-      const value = this.form.getFieldValue(key)
+      const draft = this.readDraft(key)
+      const value = draft != null ? draft : this.form.getFieldValue(key)
       const data = this[`${key}s`]
       let isNull = true
       let newVal = ''
+      let hit = value
       if (R.type(data) === 'Object') {
         newVal = Object.keys(data)[0]
-        isNull = !data[value]
+        isNull = value == null || value === '' || !data[value]
       }
       if (R.type(data) === 'Array') {
         newVal = data[0]
-        isNull = data.indexOf(value) === -1
+        hit = data.find(item => item === value || String(item) === String(value))
+        isNull = value == null || value === '' || hit == null
       }
       if (!value || isNull) {
         this.form.setFieldsValue({
           [key]: newVal,
         }, callback)
       } else {
-        this.$nextTick(() => {
-          callback && callback()
-        })
+        // options 就绪后写一次，保证 radio 回显（含数字/字符串兼容）
+        const finalVal = (hit != null && R.type(data) === 'Array') ? hit : value
+        this.form.setFieldsValue({
+          [key]: finalVal,
+        }, callback)
       }
     },
     getEngines () {
@@ -203,23 +240,28 @@ export default {
       }
       return points[type] || type
     },
+    /** specs 拉取完成 → 内存 options 变化 → 按草稿回填 */
+    applyMemoryFromOptions () {
+      if (!this.memorys || !this.memorys.length) return
+      let next
+      if (this.redisItem && this.redisItem.capacity_mb) {
+        const redisMb = this.redisItem.capacity_mb
+        const index = this.memorys.findIndex((m) => m > redisMb)
+        next = index > -1 ? this.memorys[index] : this.memorys[this.memorys.length - 1]
+      } else {
+        next = this.pickFromOptions(this.memorys, this.readDraft('memory_size_mb'))
+      }
+      if (next == null) return
+      this.FC.setFieldsValue({ memory_size_mb: next })
+      if (this.form.fd) this.$set(this.form.fd, 'memory_size_mb', next)
+    },
     async fetchSpecs (params) {
       const instanceSpecsManager = new this.$Manager('elasticcacheskus/instance-specs')
       try {
         const { data } = await instanceSpecsManager.batchGet({ params })
-        this.memorys = data.mems_mb
+        this.memorys = data.mems_mb || []
         this.$nextTick(() => {
-          if (this.memorys && this.redisItem && this.redisItem.capacity_mb) {
-            const redisMb = this.redisItem.capacity_mb
-            const index = this.memorys.findIndex((m) => { return m > redisMb })
-            this.FC.setFieldsValue({
-              memory_size_mb: this.memorys[index],
-            })
-          } else if (this.memorys && this.memorys.length > 0 && this.memorys.indexOf(this.getFieldValue('memory_size_mb')) === -1) {
-            this.FC.setFieldsValue({
-              memory_size_mb: this.memorys[0],
-            })
-          }
+          this.applyMemoryFromOptions()
         })
       } catch (err) {
         throw err
@@ -230,6 +272,17 @@ export default {
       params.engine = 'redis'
       try {
         const { data: { redis } } = await capabilityManager.batchGet({ params })
+        // 内存等 specs options 就绪后再回填；此处只预置级联字段偏好
+        const preferred = typeof this.getCreateFormDraftPreferred === 'function'
+          ? this.getCreateFormDraftPreferred()
+          : null
+        if (preferred) {
+          const vals = {}
+          ;['engine', 'engine_version', 'local_category', 'node_type', 'performance_type'].forEach(k => {
+            if (preferred[k] != null && preferred[k] !== '') vals[k] = preferred[k]
+          })
+          if (Object.keys(vals).length) this.form.setFieldsValue(vals)
+        }
         this.filterItems = { redis }
       } catch (err) {
         throw err

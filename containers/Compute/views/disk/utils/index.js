@@ -261,6 +261,9 @@ export const diskResizeConfig = {
       tooltip: '',
     }
   },
+  rockbase (obj) {
+    return diskResizeConfig.ucloud(obj)
+  },
   google (obj) {
     const { validate, tooltip } = diskResizeConfig.base(obj)
     if (!validate) {
@@ -353,6 +356,30 @@ export const diskResizeConfig = {
     } else { // 系统盘
       const validate = obj.guest_status === 'ready' // 关机可以扩容
       const tooltip = validate ? '' : i18n.t('compute.uis.sys_disk_resize_tip', [_tran(['ready'], serverStatus, 'server')])
+      return {
+        validate,
+        tooltip,
+      }
+    }
+  },
+  cas (obj) {
+    const { validate, tooltip } = diskResizeConfig.base(obj)
+    if (!validate) {
+      return {
+        validate: false,
+        tooltip,
+      }
+    }
+    if (obj.disk_type === 'data') { // 数据盘
+      const validate = obj.guest_status === 'ready' || obj.guest_status === 'running' // 开关机可以扩容
+      const tooltip = validate ? '' : i18n.t('compute.cas.data_disk_resize_tip', [_tran(['ready', 'running'], serverStatus, 'server')])
+      return {
+        validate,
+        tooltip,
+      }
+    } else { // 系统盘
+      const validate = obj.guest_status === 'ready' // 关机可以扩容
+      const tooltip = validate ? '' : i18n.t('compute.cas.sys_disk_resize_tip', [_tran(['ready'], serverStatus, 'server')])
       return {
         validate,
         tooltip,
@@ -532,6 +559,9 @@ export const diskCreateSnapshotConfig = {
       validate: true,
       tooltip: '',
     }
+  },
+  rockbase (obj) {
+    return diskCreateSnapshotConfig.ucloud(obj)
   },
   google (obj) {
     const provider = obj.provider

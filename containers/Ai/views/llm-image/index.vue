@@ -1,6 +1,6 @@
 <template>
   <div>
-    <page-header :title="$t('aice.llm_image')" />
+    <page-header :title="$t('aice.inference_llm_image')" />
     <page-body>
       <list :id="listId" />
     </page-body>

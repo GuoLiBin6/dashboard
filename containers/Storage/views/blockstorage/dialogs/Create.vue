@@ -3,7 +3,8 @@
     <div slot="header">{{this.params.title}}</div>
     <div slot="body">
       <a-alert type="warning" class="mb-4">
-        <div slot="message">{{ $t('storage.local_storage.help_alert_message') }}<help-link :href="localStorageUrl">{{ $t('storage.local_storage.help_link') }}</help-link></div>
+        <div slot="message" v-if="showDocsLink()">{{ $t('storage.local_storage.help_alert_message') }}<help-link :href="localStorageUrl">{{ $t('storage.local_storage.help_link') }}</help-link></div>
+        <div slot="message" v-else>{{ $t('storage.local_storage.help_alert_message_1') }}</div>
       </a-alert>
       <a-form :form="form.fc" v-bind="formItemLayout">
         <a-form-item :label="$t('storage.text_55', [$t('dictionary.domain')])">
@@ -58,7 +59,7 @@ import CloudregionZone from '@/sections/CloudregionZone'
 import DomainSelect from '@/sections/DomainSelect'
 import Tag from '@/sections/Tag'
 import validateForm from '@/utils/validate'
-import { genDocsUrl } from '@/utils/utils'
+import { DOCS_MAP, showDocsLink } from '@/constants/docs'
 
 export default {
   name: 'BlockStorageCreateDialog',
@@ -76,6 +77,7 @@ export default {
   },
   data () {
     return {
+      showDocsLink,
       MEDIUM_TYPES,
       STORAGE_TYPES,
       loading: false,
@@ -167,12 +169,7 @@ export default {
       return this.form.fd.storage_type === 'local'
     },
     localStorageUrl () {
-      return genDocsUrl({
-        scope: this.$store.getters.scope,
-        isSysCE: this.$store.getters.isSysCE,
-        cePath: 'guides/onpremise/storage/blockstorage/add-storage',
-        eePath: 'web_ui/storage/blockstorage/add-storage/',
-      })
+      return DOCS_MAP.blockStorage()
     },
   },
   methods: {

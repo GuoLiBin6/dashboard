@@ -19,11 +19,12 @@
       <a-form-item :label="$t('cloudaccount.create_form.saml_user_label')">
         <a-switch :checkedChildren="$t('cloudenv.text_84')" :unCheckedChildren="$t('cloudenv.text_85')" v-decorator="decorators.saml_auth" />
         <div slot="extra">
-          <i18n path="cloudaccount.create_form.saml_user_extra">
+          <i18n path="cloudaccount.create_form.saml_user_extra" v-if="showDocsLink()">
             <template #link>
               <help-link :href="smaluserDoc">{{$t('cloudaccount.create_form.saml_user_link')}}</help-link>
             </template>
           </i18n>
+          <i18n v-else path="cloudaccount.create_form.saml_user_extra_1" />
         </div>
       </a-form-item>
       <auto-sync :fc="form.fc" :form-layout="formLayout" :cloneData="cloneData" />
@@ -38,8 +39,9 @@ import AutoSync from '@Cloudenv/views/cloudaccount/components/AutoSync'
 import ProxySetting from '@Cloudenv/views/cloudaccount/components/ProxySetting'
 import ShareMode from '@Cloudenv/views/cloudaccount/components/ShareMode'
 import ReadOnly from '@Cloudenv/views/cloudaccount/components/ReadOnly'
-import { getCloudaccountDocs, keySecretFields, getSamlUserDocs } from '@Cloudenv/views/cloudaccount/constants'
+import { keySecretFields } from '@Cloudenv/views/cloudaccount/constants'
 import { isRequired } from '@/utils/validate'
+import { DOCS_MAP, showDocsLink } from '@/constants/docs'
 import createMixin from './createMixin'
 import DomainProject from '../../../components/DomainProject'
 
@@ -72,8 +74,9 @@ export default {
       }
     }
     return {
-      docs: getCloudaccountDocs(this.$store.getters.scope),
-      smaluserDoc: getSamlUserDocs(this.$store.getters.scope),
+      docs: DOCS_MAP.cloudaccount(),
+      showDocsLink,
+      smaluserDoc: DOCS_MAP.samlUser(),
       decorators: {
         name: [
           'name',

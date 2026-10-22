@@ -1,7 +1,7 @@
 <template>
   <base-side-page
     @cancel="cancelSidePage"
-    :title="$t('aice.llm_sku')"
+    :title="sidePageTitle"
     icon="res-sku"
     :res-name="detailData.name"
     :current-tab="params.windowData.currentTab"
@@ -27,12 +27,13 @@
 </template>
 
 <script>
+import { parseLlmRoute } from '@Ai/utils/llmRouteContext'
 import SidePageMixin from '@/mixins/sidePage'
 import WindowsMixin from '@/mixins/windows'
 import Actions from '@/components/PageList/Actions'
+import Detail from './Detail'
 import SingleActionsMixin from '../mixins/singleActions'
 import ColumnsMixin from '../mixins/columns'
-import Detail from './Detail'
 
 export default {
   name: 'LlmSkuSidePage',
@@ -50,6 +51,20 @@ export default {
     }
   },
   computed: {
+    llmRouteCtx () {
+      return parseLlmRoute(this.$route.path)
+    },
+    isApplyType () {
+      return this.llmRouteCtx.isApplyType
+    },
+    isDesktopType () {
+      return this.llmRouteCtx.isDesktopType
+    },
+    sidePageTitle () {
+      if (this.isDesktopType) return this.$t('aice.desktop_llm_sku')
+      if (this.isApplyType) return this.$t('aice.app_llm_sku')
+      return this.$t('aice.llm_sku')
+    },
     getParams () {
       return null
     },

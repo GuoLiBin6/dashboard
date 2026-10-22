@@ -4,7 +4,7 @@
     show-tag-columns2
     show-tag-filter
     :list="list"
-    :columns="templateListColumns || columns"
+    :columns="templateListColumns || filteredColumns || columns"
     :group-actions="groupActions"
     :single-actions="singleActions"
     :export-data-options="exportDataOptions"
@@ -50,6 +50,7 @@ export default {
     diskFormats: {
       type: Array,
     },
+    imageType: String,
   },
   data () {
     return {
@@ -109,7 +110,7 @@ export default {
           // eslint-disable-next-line vue/no-side-effects-in-computed-properties
           this.$router.push({ name: 'ImageImport' })
         },
-        hidden: () => this.$isScopedPolicyMenuHidden('image_hidden_menus.image_store'),
+        hidden: () => this.$isScopedPolicyMenuHidden('image_hidden_menus.image_store') || this.imageType === 'appPackage',
       }
 
       const ImageImportCe = {
@@ -119,7 +120,7 @@ export default {
           // eslint-disable-next-line vue/no-side-effects-in-computed-properties
           this.$router.push({ name: 'ImageImportCe' })
         },
-        hidden: () => this.$isScopedPolicyMenuHidden('image_hidden_menus.image_store'),
+        hidden: () => this.$isScopedPolicyMenuHidden('image_hidden_menus.image_store') || this.imageType === 'appPackage',
       }
       const ImageUpload = {
         label: this.$t('compute.text_643'),
@@ -129,6 +130,7 @@ export default {
             title: this.$t('compute.text_643'),
             onManager: this.onManager,
             refresh: this.refresh,
+            imageType: this.imageType,
           })
         },
         meta: () => ({
@@ -142,7 +144,7 @@ export default {
           actions: obj => {
             return [
               getSetPublicAction(this, {
-                name: this.$t('dictionary.image'),
+                name: this.$route.path.includes('app-package') ? this.$t('dictionary.app_package') : this.$t('dictionary.image'),
                 scope: 'project',
                 resource: 'images',
                 apiVersion: 'v1',
@@ -194,7 +196,7 @@ export default {
                     data: this.list.selectedItems,
                     columns: this.columns,
                     onManager: this.onManager,
-                    name: this.$t('dictionary.image'),
+                    name: this.$route.path.includes('app-package') ? this.$t('dictionary.app_package') : this.$t('dictionary.image'),
                     resource: 'images',
                     apiVersion: 'v1',
                   })
@@ -230,7 +232,7 @@ export default {
                     params: {
                       resources: 'image',
                     },
-                    tipName: this.$t('compute.text_97'),
+                    tipName: this.$route.path.includes('app-package') ? this.$t('dictionary.app_package') : this.$t('compute.text_97'),
                   })
                 },
               },
@@ -265,7 +267,7 @@ export default {
                 permission: 'images_update',
                 action: (row) => {
                   this.createDialog('ChangeDisableDelete', {
-                    name: this.$t('compute.text_97'),
+                    name: this.$route.path.includes('app-package') ? this.$t('dictionary.app_package') : this.$t('compute.text_97'),
                     columns: this.columns,
                     onManager: this.onManager,
                     data: this.list.selectedItems,
@@ -329,7 +331,7 @@ export default {
                     alert: this.$t('compute.text_1393'),
                     columns: this.columns,
                     title: this.$t('compute.text_617'),
-                    name: this.$t('dictionary.image'),
+                    name: this.$route.path.includes('app-package') ? this.$t('dictionary.app_package') : this.$t('dictionary.image'),
                     onManager: this.onManager,
                   })
                 },
@@ -413,6 +415,14 @@ export default {
         ],
       }
     },
+    filteredColumns () {
+      return this.columns.filter(column => {
+        if (this.imageType === 'appPackage') {
+          return column.field !== 'os_type'
+        }
+        return true
+      })
+    },
   },
   created () {
     this.initSidePageTab('system-image-detail')
@@ -437,6 +447,12 @@ export default {
       if (ret.project_id) {
         ret.project_ids = [ret.project_id]
         delete ret.project_id
+      }
+      ret.filter = R.is(Array, ret.filter) ? ret.filter : (R.is(String, ret.filter) ? [ret.filter] : [])
+      if (this.imageType === 'appPackage') {
+        ret.filter.push('disk_format.in(tgz)')
+      } else {
+        ret.filter.push('disk_format.notin(tgz)')
       }
       return ret
     },

@@ -2,9 +2,10 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{action}}</div>
     <div slot="body">
-      <a-alert class="mb-2" type="warning">
+      <a-alert v-if="isSupportForce" class="mb-2" type="warning">
         <template v-slot:message>
           <div>{{$t('compute.text_1234')}}</div>
+          <div v-if="hasKvm">{{$t('compute.text_1234_2')}}</div>
         </template>
       </a-alert>
       <dialog-selected-tips :name="params.name || $t('dictionary.server')" :count="dataList.length" :action="action" />
@@ -13,7 +14,7 @@
         <a-form-item :label="$t('compute.text_1041')" v-bind="formItemLayout" v-if="isOpenWorkflow">
           <a-input v-decorator="decorators.reason" :placeholder="$t('compute.text_1105')" />
         </a-form-item>
-        <a-form-item :label="$t('compute.text_1235')" v-bind="formItemLayout">
+        <a-form-item v-if="isSupportForce" :label="$t('compute.text_1235')" v-bind="formItemLayout">
           <a-switch v-decorator="decorators.autoStart" />
         </a-form-item>
       </a-form>
@@ -32,6 +33,7 @@ import WindowsMixin from '@/mixins/windows'
 import WorkflowMixin from '@/mixins/workflow'
 import { BATCH_OPERATE_SERVERS_MAX } from '@/constants/workflow'
 import { getNameDescriptionTableColumn, getStatusTableColumn } from '@/utils/common/tableColumn'
+import { HYPERVISORS_MAP } from '@/constants'
 
 export default {
   name: 'VmRestartDialog',
@@ -82,6 +84,34 @@ export default {
     },
     isOpenWorkflow () {
       return this.checkWorkflowEnabled(this.WORKFLOW_TYPES.APPLY_SERVER_RESTART)
+    },
+    hasKvm () {
+      return this.dataList.length && this.dataList.some(item => {
+        return [HYPERVISORS_MAP.kvm.hypervisor].includes(item.hypervisor)
+      })
+    },
+    isSupportForce () {
+      return this.dataList.length && this.dataList.every(item => {
+        return [
+          HYPERVISORS_MAP.kvm.hypervisor,
+          HYPERVISORS_MAP.baremetal.hypervisor,
+          HYPERVISORS_MAP.pod.hypervisor,
+          HYPERVISORS_MAP.esxi.hypervisor,
+          HYPERVISORS_MAP.huawei.hypervisor,
+          HYPERVISORS_MAP.aliyun.hypervisor,
+          HYPERVISORS_MAP.nutanix.hypervisor,
+          HYPERVISORS_MAP.volcengine.hypervisor,
+          HYPERVISORS_MAP.ctyun.hypervisor,
+          HYPERVISORS_MAP.hcso.hypervisor,
+          HYPERVISORS_MAP.aws.hypervisor,
+          HYPERVISORS_MAP.zstack.hypervisor,
+          HYPERVISORS_MAP.qcloud.hypervisor,
+          HYPERVISORS_MAP.sangfor?.hypervisor,
+          HYPERVISORS_MAP.uis?.hypervisor,
+          HYPERVISORS_MAP.cas?.hypervisor,
+          HYPERVISORS_MAP.ksyun?.hypervisor,
+        ].includes(item.hypervisor)
+      })
     },
   },
   created () {

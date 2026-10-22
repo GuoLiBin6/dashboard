@@ -20,6 +20,7 @@ import store from '@/store'
 import i18n from '@/locales'
 import { removeHttp } from '@/utils/url'
 import { diskSupportTypeMedium, getOriginDiskKey } from '@/utils/common/hypervisor'
+import { validateHostPortRange } from '@Compute/utils/createServer'
 
 export function getIpv6Start (ipv6) {
   try {
@@ -73,8 +74,9 @@ export function checkIpInSegment (i, networkData) {
 }
 
 export function diskValidator (rule, value, callback) {
+  // 空值由 required 规则提示「请填写挂载点」，此处只校验路径格式
   if (R.isNil(value) || R.isEmpty(value)) {
-    return callback(new Error(i18n.t('compute.text_206')))
+    return callback()
   }
   if (!value.startsWith('/')) {
     return callback(new Error(i18n.t('compute.text_207')))
@@ -104,13 +106,36 @@ const validateMountNames = (rule, value, callback) => {
   callback()
 }
 
-export const createVmDecorators = () => {
+export const createVmDecorators = (initData = {}) => {
   const imageTypeInitValue = IMAGES_TYPE_MAP.standard.key
+  const initPreferZone = (Array.isArray(initData.prefer_zones) && initData.prefer_zones[0]) ||
+    initData.prefer_zone ||
+    initData.prefer_zone_id ||
+    ''
+  let initNetworkType = NETWORK_OPTIONS_MAP.default.key
+  if (initData.nets?.[0]) {
+    if (initData.nets[0].schedtags) {
+      initNetworkType = NETWORK_OPTIONS_MAP.schedtag.key
+    } else if (initData.nets[0].hasOwnProperty('network') || initData.extraData?.nets?.[0]?.network || initData.extraData?.nets?.[0]?.network_id) {
+      // 指定 IP 子网：top-level nets 或 extraData.nets 有 network 即可（草稿可能缺其一）
+      initNetworkType = NETWORK_OPTIONS_MAP.manual.key
+    } else if (initData.nets[0].hasOwnProperty('exit') && !initData.nets[0].exit) {
+      initNetworkType = NETWORK_OPTIONS_MAP.default.key
+    }
+  }
+  let initSchedPolicyType = 'default'
+  if (initData.prefer_host) {
+    initSchedPolicyType = 'host'
+  }
+  if (initData.schedtags && initData.schedtags.length) {
+    initSchedPolicyType = 'schedtag'
+  }
 
   return {
     domain: [
       'domain',
       {
+        initialValue: initData.extraData?.domain_id,
         rules: [
           { validator: isRequired(), message: i18n.t('rules.domain'), trigger: 'change' },
         ],
@@ -119,6 +144,7 @@ export const createVmDecorators = () => {
     project: [
       'project',
       {
+        initialValue: initData.project_id,
         rules: [
           { validator: isRequired(), message: i18n.t('rules.project'), trigger: 'change' },
         ],
@@ -127,7 +153,7 @@ export const createVmDecorators = () => {
     name: [
       'name',
       {
-        initialValue: '',
+        initialValue: initData.generate_name || '',
         validateTrigger: 'blur',
         validateFirst: true,
         rules: [
@@ -138,13 +164,19 @@ export const createVmDecorators = () => {
     description: [
       'description',
       {
-        initialValue: '',
+        initialValue: initData.description || '',
+      },
+    ],
+    reason: [
+      'reason',
+      {
+        initialValue: initData.extraData?.reason || '',
       },
     ],
     count: [
       'count',
       {
-        initialValue: 1,
+        initialValue: initData.__count__ || initData.count || 1,
         rules: [
           { required: true, message: i18n.t('compute.text_211') },
         ],
@@ -154,7 +186,7 @@ export const createVmDecorators = () => {
       cloudregion: [
         'cloudregion',
         {
-          initialValue: { key: '', label: '' },
+          initialValue: { key: initData.prefer_region || '', label: '' },
           rules: [
             { validator: isRequired(), message: i18n.t('compute.text_212') },
           ],
@@ -163,7 +195,7 @@ export const createVmDecorators = () => {
       zone: [
         'zone',
         {
-          initialValue: { key: '', label: '' },
+          initialValue: { key: initPreferZone, label: '' },
           rules: [
             { validator: isRequired(), message: i18n.t('compute.text_213') },
           ],
@@ -223,6 +255,12 @@ export const createVmDecorators = () => {
       pciDevType: i => [
         `pciDevType[${i}]`,
       ],
+      pciGpuType: i => [
+        `pciGpuType[${i}]`,
+        {
+          initialValue: 'HPC',
+        },
+      ],
       pciModel: i => [
         `pciModel[${i}]`,
         {
@@ -237,22 +275,44 @@ export const createVmDecorators = () => {
           initialValue: 1,
         },
       ],
+      memoryRequest: i => [
+        `memory_request[${i}]`,
+        {
+          rules: [
+            { required: true, message: i18n.t('compute.pci.memory_request.required') },
+            {
+              validator: (rule, value, callback) => {
+                if (value === undefined || value === null || value === '') {
+                  callback()
+                  return
+                }
+                if (!Number.isInteger(Number(value)) || Number(value) <= 0) {
+                  callback(new Error(i18n.t('compute.pci.memory_request.invalid')))
+                  return
+                }
+                callback()
+              },
+            },
+          ],
+        },
+      ],
     },
     vcpu: [
       'vcpu',
       {
-        initialValue: 2,
+        initialValue: Number(initData.vcpu_count) || 2,
       },
     ],
     vmem: [
       'vmem',
       {
-        initialValue: 2048,
+        initialValue: Number(initData.vmem_size) || 2048,
       },
     ],
     sku: [
       'sku',
       {
+        initialValue: initData.sku || undefined,
         rules: [
           { validator: isRequired(true, 'id'), message: i18n.t('compute.text_216') },
         ],
@@ -319,6 +379,7 @@ export const createVmDecorators = () => {
       mountPath: i => [
         `dataDiskMountPaths[${i}]`,
         {
+          validateFirst: true,
           validateTrigger: ['blur', 'change'],
           rules: [{
             required: true,
@@ -363,7 +424,7 @@ export const createVmDecorators = () => {
       networkType: [
         'networkType',
         {
-          initialValue: NETWORK_OPTIONS_MAP.default.key,
+          initialValue: initNetworkType,
         },
       ],
       networkConfig: {
@@ -461,6 +522,35 @@ export const createVmDecorators = () => {
             }],
           },
         ],
+        // 端口映射：挂在每张网卡下 networkContainerPorts[netKey][rowKey]
+        portMapping: {
+          key: (netKey, i) => [
+            `networkContainerPorts[${netKey}][${i}]`,
+            {
+              rules: [
+                { required: true, message: i18n.t('common.tips.input', [i18n.t('compute.repo.container_port')]) },
+              ],
+            },
+          ],
+          value: (netKey, i) => [
+            `networkHostPorts[${netKey}][${i}]`,
+            {
+              validateTrigger: ['change', 'blur'],
+              rules: [
+                { validator: validateHostPortRange(20000, 25000) },
+              ],
+            },
+          ],
+          protocol: (netKey, i) => [
+            `networkPortProtocols[${netKey}][${i}]`,
+            {
+              initialValue: 'tcp',
+              rules: [
+                { required: true, message: i18n.t('common.tips.select', [i18n.t('compute.port_mappings.protocol')]) },
+              ],
+            },
+          ],
+        },
       },
       networkSchedtag: {
         schedtags: i => [
@@ -499,12 +589,13 @@ export const createVmDecorators = () => {
       schedPolicyType: [
         'schedPolicyType',
         {
-          initialValue: 'default',
+          initialValue: initSchedPolicyType,
         },
       ],
       schedPolicyHost: [
         'schedPolicyHost',
         {
+          initialValue: initData.prefer_host || undefined,
           rules: [
             { required: true, message: i18n.t('compute.text_219') },
           ],
@@ -537,13 +628,13 @@ export const createVmDecorators = () => {
       durationStandard: [
         'durationStandard',
         {
-          initialValue: 'none',
+          initialValue: initData.duration ? 'custom' : 'none',
         },
       ],
       duration: [
         'duration',
         {
-          initialValue: '1h',
+          initialValue: initData.duration === '1w' ? '7d' : (initData.duration || '1h'),
         },
       ],
     },
@@ -552,11 +643,14 @@ export const createVmDecorators = () => {
         'groupsEnable',
         {
           valuePropName: 'checked',
-          initialValue: false,
+          initialValue: !!(initData.groups && initData.groups.length),
         },
       ],
       groups: [
         'groups',
+        {
+          initialValue: initData.groups || [],
+        },
       ],
     },
     bill: {
@@ -621,12 +715,13 @@ export const createVmDecorators = () => {
       type: [
         'secgroup_type',
         {
-          initialValue: 'default',
+          initialValue: (initData.secgroups && initData.secgroups.length) ? 'bind' : 'default',
         },
       ],
       secgroup: [
         'secgroup',
         {
+          initialValue: initData.secgroups || [],
           validateFirst: true,
           rules: [
             { required: true, message: i18n.t('compute.text_190') },
@@ -637,6 +732,7 @@ export const createVmDecorators = () => {
     tag: [
       'tag',
       {
+        initialValue: initData.__meta__ || {},
         rules: [
           { validator: validateForm('tagName') },
         ],
@@ -645,6 +741,7 @@ export const createVmDecorators = () => {
     os_arch: [
       'os_arch',
       {
+        initialValue: initData.os_arch || undefined,
         rules: [
           { required: true, message: i18n.t('compute.text_1363') },
         ],
@@ -652,20 +749,10 @@ export const createVmDecorators = () => {
     ],
     hostName: [
       'hostName',
+      {
+        initialValue: initData.hostname || '',
+      },
     ],
-    portMapping: {
-      key: i => [
-        `containerPorts[${i}]`,
-        {
-          rules: [
-            { required: true, message: i18n.t('common.tips.input', [i18n.t('compute.repo.container_port')]) },
-          ],
-        },
-      ],
-      value: i => [
-        `hostPorts[${i}]`,
-      ],
-    },
     containers: {
       name: i => [
         `containerNames[${i}]`,
@@ -687,6 +774,17 @@ export const createVmDecorators = () => {
         {
           rules: [
             { required: true, message: i18n.t('common.tips.select', [i18n.t('compute.eci.repo.image.registry')]) },
+          ],
+        },
+      ],
+      imageCredentialId: i => [
+        `imageCredentialIds[${i}]`,
+      ],
+      containerImageId: i => [
+        `containerImageIds[${i}]`,
+        {
+          rules: [
+            { required: true, message: i18n.t('common.tips.select', [i18n.t('compute.repo.image.container_image')]) },
           ],
         },
       ],
@@ -754,6 +852,105 @@ export const createVmDecorators = () => {
           initialValue: false,
         },
       ],
+      capAdd: i => [
+        `containerCapAdd[${i}]`,
+        {
+          initialValue: [],
+        },
+      ],
+      capDrop: i => [
+        `containerCapDrop[${i}]`,
+        {
+          initialValue: [],
+        },
+      ],
+      enableLxcfs: i => [
+        `containerEnableLxcfs[${i}]`,
+        {
+          valuePropName: 'checked',
+          initialValue: true,
+        },
+      ],
+      enableSysDiskOverlay: i => [
+        `containerEnableSysDiskOverlay[${i}]`,
+        {
+          valuePropName: 'checked',
+          initialValue: false,
+        },
+      ],
+      rootfsPersistent: i => [
+        `containerRootfsPersistent[${i}]`,
+        {
+          valuePropName: 'checked',
+          initialValue: false,
+        },
+      ],
+      overlayDisk: i => ({
+        type: j => [
+          `overlayDiskTypes[${i}][${j}]`,
+          {
+            rules: [
+              { validator: isRequired(), message: i18n.t('compute.text_121') },
+            ],
+          },
+        ],
+        size: j => [
+          `overlayDiskSizes[${i}][${j}]`,
+          {
+            rules: [
+              { required: true, message: i18n.t('compute.text_122') },
+            ],
+          },
+        ],
+        schedtag: j => [
+          `overlayDiskSchedtags[${i}][${j}]`,
+          {
+            validateTrigger: ['change', 'blur'],
+            rules: [{
+              required: true,
+              message: i18n.t('compute.text_123'),
+            }],
+          },
+        ],
+        policy: j => [
+          `overlayDiskPolicys[${i}][${j}]`,
+          {
+            initialValue: '',
+            validateTrigger: ['blur', 'change'],
+            rules: [{
+              required: true,
+              message: i18n.t('compute.text_123'),
+            }],
+          },
+        ],
+        snapshot: j => [
+          `overlayDiskSnapshots[${i}][${j}]`,
+        ],
+        filetype: j => [
+          `overlayDiskFiletypes[${i}][${j}]`,
+        ],
+        mountPath: j => [
+          `overlayDiskMountPaths[${i}][${j}]`,
+        ],
+        storage: j => [
+          `overlayDiskStorages[${i}][${j}]`,
+          {
+            rules: [{
+              required: true,
+              message: i18n.t('compute.text_1351'),
+            }],
+          },
+        ],
+        iops: j => [
+          `overlayDiskIops[${i}][${j}]`,
+        ],
+        throughput: j => [
+          `overlayDiskThroughputs[${i}][${j}]`,
+        ],
+        preallocation: j => [
+          `overlayDiskPreallocation[${i}][${j}]`,
+        ],
+      }),
     },
   }
 }
@@ -765,8 +962,8 @@ export class Decorator {
     this.type = type
   }
 
-  createDecorators () {
-    return createVmDecorators(this.type)
+  createDecorators (initData) {
+    return createVmDecorators(initData)
   }
 }
 
@@ -925,11 +1122,54 @@ export class GenCreateData {
   }
 
   /**
-   * 组装所有网络数据
-   *
-   * @returns { Array }
-   * @memberof GenCreateData
+   * 组装指定网卡的端口映射
    */
+  getPortMappingsByNetworkKey (netKey) {
+    const port_mappings = []
+    const ports = this.fd.networkContainerPorts && this.fd.networkContainerPorts[netKey]
+    if (!ports) return port_mappings
+    const hostPorts = (this.fd.networkHostPorts && this.fd.networkHostPorts[netKey]) || {}
+    const protocols = (this.fd.networkPortProtocols && this.fd.networkPortProtocols[netKey]) || {}
+    for (const k in ports) {
+      const port = ports[k]
+      if (port == null || port === '') continue
+      const pm = {
+        port,
+        protocol: (protocols[k] || 'tcp').toLowerCase(),
+      }
+      if (hostPorts[k] != null && hostPorts[k] !== '') {
+        pm.host_port = hostPorts[k]
+      }
+      port_mappings.push(pm)
+    }
+    return port_mappings
+  }
+
+  /** 汇总所有网卡端口映射（兼容旧草稿 containerPorts / hostPorts） */
+  getPortMappings () {
+    const port_mappings = []
+    const portsByNet = this.fd.networkContainerPorts || {}
+    Object.keys(portsByNet).forEach((netKey) => {
+      port_mappings.push(...this.getPortMappingsByNetworkKey(netKey))
+    })
+    // 兼容旧表单：高级配置全局 Labels
+    if (!port_mappings.length && this.fd.containerPorts) {
+      for (const k in this.fd.containerPorts) {
+        const port = this.fd.containerPorts[k]
+        if (port == null || port === '') continue
+        const pm = {
+          port,
+          protocol: ((this.fd.portProtocols && this.fd.portProtocols[k]) || 'tcp').toLowerCase(),
+        }
+        if (this.fd.hostPorts && this.fd.hostPorts[k] != null && this.fd.hostPorts[k] !== '') {
+          pm.host_port = this.fd.hostPorts[k]
+        }
+        port_mappings.push(pm)
+      }
+    }
+    return port_mappings
+  }
+
   genNetworks () {
     let ret = [{ exit: false }]
     // 指定 IP 子网
@@ -983,11 +1223,14 @@ export class GenCreateData {
             obj.sriov_device = { model: device }
           }
         }
+        const portMappings = this.getPortMappingsByNetworkKey(key)
+        if (portMappings.length > 0) {
+          obj.port_mappings = portMappings
+        }
         ret.push(obj)
       }, this.fd.networks)
-    }
-    // 指定 调度标签
-    if (this.fd.networkType === NETWORK_OPTIONS_MAP.schedtag.key) {
+    } else if (this.fd.networkType === NETWORK_OPTIONS_MAP.schedtag.key) {
+      // 指定 调度标签
       ret = []
       R.forEachObjIndexed((value, key) => {
         const obj = {
@@ -1019,18 +1262,36 @@ export class GenCreateData {
    */
   genPciDevices () {
     const ret = []
-    const { pciCount, pciModel } = this.fd
+    const { pciCount, pciModel, memory_request, pciDevType, pciGpuType } = this.fd
     const pciKeys = Object.keys(this.fd.pciCount)
     pciKeys.forEach(key => {
+      const pciKey = pciDevType?.[key] || this.fd[`pciDevType[${key}]`] || ''
+      const idx = pciKey.indexOf('/')
+      const devType = idx === -1 ? pciKey : pciKey.slice(0, idx)
+      const sharingMode = idx === -1 ? '' : pciKey.slice(idx + 1)
+      const gpuType = pciGpuType?.[key] || this.fd[`pciGpuType[${key}]`]
       for (let i = 0, len = pciCount[key]; i < len; i++) {
         const regexp = /vendor=(.+):(.+)/
         const matched = pciModel[key].match(regexp)
         const model = matched[2]
         const vendor = matched[1]
-        ret.push({
+        const device = {
           model,
           vendor,
-        })
+        }
+        if (devType) {
+          device.dev_type = devType
+        }
+        if (sharingMode) {
+          device.sharing_mode = sharingMode
+        }
+        if (devType === 'GPU' && gpuType) {
+          device.gpu_type = gpuType
+        }
+        if (memory_request?.[key]) {
+          device.memory_request = memory_request[key]
+        }
+        ret.push(device)
       }
     })
     return ret
@@ -1169,7 +1430,7 @@ export class GenCreateData {
     return prefer_manager_id
   }
 
-  generatePod () {
+  generatePod (data) {
     const tabKeys = this.fi.containerPanes.map(v => v.key)
     const getEnvs = (names, values) => {
       const envs = []
@@ -1198,13 +1459,20 @@ export class GenCreateData {
     const containers = tabKeys.map(k => {
       const pciDevices = (this.fd.pciEnable && this.genPciDevices()) || []
       const image = this.fd.registryImages?.[k] || ''
+      const credentialId = this.fd.imageCredentialIds?.[k] || ''
+      const containerImageId = this.fd.containerImageIds?.[k] || ''
 
-      return {
+      const spec = {
         name: this.fd.containerNames?.[k],
         image: removeHttp(image) || this.fd.containerimages?.[k],
         command: this.fd.containerCommands?.[k]?.split(' '),
         args: this.fd.containerArgs?.[k]?.split(' '),
         privileged: this.fd.containerPrivilegeds?.[k],
+        capabilities: (this.fd.containerCapAdd?.[k]?.length || this.fd.containerCapDrop?.[k]?.length) ? {
+          add: this.fd.containerCapAdd?.[k] || [],
+          drop: this.fd.containerCapDrop?.[k] || [],
+        } : undefined,
+        enable_lxcfs: this.fd.containerEnableLxcfs?.[k] || false,
         devices: pciDevices.map((item, idx) => {
           return {
             type: 'isolated_device',
@@ -1216,23 +1484,61 @@ export class GenCreateData {
         envs: getEnvs(this.fd.containerEnvNames?.[k], this.fd.containerEnvValues?.[k]),
         volume_mounts: getVolumeMounts(this.fd.containerVolumeMountNames?.[k], this.fd.containerVolumeMountPaths?.[k]),
       }
-    })
-    const getPortMappings = () => {
-      const port_mappings = []
-      if (this.fd.containerPorts) {
-        for (const k in this.fd.containerPorts) {
-          port_mappings.push({
-            container_port: this.fd.containerPorts[k],
-            host_port: this.fd.hostPorts[k],
-          })
+      if (containerImageId) {
+        // region resolves image + credential from container_image_id
+        spec.container_image_id = containerImageId
+        delete spec.image
+        delete spec.image_credential_id
+      } else if (image && credentialId) {
+        spec.image_credential_id = credentialId
+        delete spec.container_image_id
+      } else {
+        delete spec.container_image_id
+      }
+      if (this.fd.containerEnableSysDiskOverlay?.[k]) {
+        const overlayDiskSizes = this.fd.overlayDiskSizes?.[k]
+        const overlayDiskTypes = this.fd.overlayDiskTypes?.[k]
+        if (overlayDiskSizes) {
+          const firstKey = Object.keys(overlayDiskSizes)[0]
+          if (firstKey) {
+            const size = overlayDiskSizes[firstKey]
+            const diskTypeObj = overlayDiskTypes?.[firstKey]
+            let backend = diskTypeObj?.key || ''
+            let medium = ''
+            if (diskSupportTypeMedium(this.fd.hypervisor)) {
+              medium = getOriginDiskKey(backend, true)
+              backend = getOriginDiskKey(backend)
+            }
+            const rootfsIndex = data.disks.length
+            const overlayDisk = {
+              disk_type: 'data',
+              index: rootfsIndex + 1,
+              backend,
+              size: size * 1024,
+              format: 'raw',
+              fs: 'ext4',
+            }
+            if (medium) {
+              overlayDisk.medium = medium
+            }
+            data.disks.push(overlayDisk)
+            spec.rootfs = {
+              type: 'disk',
+              disk: {
+                index: rootfsIndex,
+                sub_directory: 'rootfs',
+              },
+              persistent: this.fd.containerRootfsPersistent?.[k] || false,
+            }
+          }
         }
       }
-      return port_mappings
-    }
+      return spec
+    })
 
     return {
       containers,
-      port_mappings: getPortMappings(),
+      // port_mappings: getPortMappings(),
     }
   }
 
@@ -1249,6 +1555,7 @@ export class GenCreateData {
       generate_name: this.fd.name && this.fd.name.trim(),
       description: this.fd.description,
       hypervisor: this.getHypervisor(),
+      provider: this.createType === SERVER_TYPE.private ? 'Cloudpods' : 'OneCloud',
       __count__: this.fd.count,
       disks: this.genDisks(),
       nets: this.genNetworks(),
@@ -1359,6 +1666,37 @@ export class GenCreateData {
     }
     // 容器
     data.pod = this.generatePod(data)
+    data.extraData = {
+      domain_id: this.fd.domain?.key || store.getters.userInfo.projectDomainId,
+      nets: [],
+    }
+    const portMappings = this.getPortMappings()
+    if (portMappings.length) {
+      data.extraData.port_mappings = portMappings
+    }
+    // 指定 IP 子网时保留 UI 网络信息便于工单/草稿反填（需带 vpc，否则 NetworkConfig 无法拉子网）
+    if (this.fd.networkType === NETWORK_OPTIONS_MAP.manual.key && this.fd.networks) {
+      R.forEachObjIndexed((value, key) => {
+        const item = {
+          network: value,
+          network_id: value,
+        }
+        if (this.fd.vpcs && this.fd.vpcs[key]) {
+          item.vpc = this.fd.vpcs[key]
+        }
+        if (this.fd.networkIps && this.fd.networkIps[key]) {
+          item.address = this.fd.networkIps[key]
+        }
+        if (this.fd.networkMacs && this.fd.networkMacs[key]) {
+          item.mac = this.fd.networkMacs[key]
+        }
+        const portMappings = this.getPortMappingsByNetworkKey(key)
+        if (portMappings.length) {
+          item.port_mappings = portMappings
+        }
+        data.extraData.nets.push(item)
+      }, this.fd.networks)
+    }
     return data
   }
 

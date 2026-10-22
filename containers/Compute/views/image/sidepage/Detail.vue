@@ -21,6 +21,7 @@ import {
   getPublicScopeTableColumn,
   getTagTableColumn,
   getOsArch,
+  getOsDist,
 } from '@/utils/common/tableColumn'
 import WindowsMixin from '@/mixins/windows'
 
@@ -82,6 +83,11 @@ export default {
         {
           title: this.$t('compute.text_629'),
           items: [
+            getOsDist({
+              title: this.$t('compute.text_267'),
+              show_label: true,
+              hidden: () => this.$isScopedPolicyMenuHidden('image_hidden_columns.os_type'),
+            }),
             getOsArch({ field: 'properties.os_arch' }),
             {
               field: 'disk_format',
@@ -146,6 +152,34 @@ export default {
             {
               field: 'hypervisor',
               title: this.$t('compute.text_636'),
+            },
+            {
+              field: 'partition_type',
+              title: this.$t('compute.partition_type'),
+              formatter: ({ cellValue, row }) => {
+                return (row.properties && row.properties.partition_type && row.properties.partition_type.toUpperCase()) || '-'
+              },
+            },
+            {
+              field: 'is_lvm_partition',
+              title: this.$t('compute.is_lvm_partition'),
+              formatter: ({ cellValue, row }) => {
+                return (row.properties && row.properties.is_lvm_partition) || '-'
+              },
+            },
+            {
+              field: 'machine_type',
+              title: this.$t('compute.machine'),
+              formatter: ({ cellValue, row }) => {
+                return (row.properties && row.properties.machine_type && row.properties.machine_type.toUpperCase()) || '-'
+              },
+            },
+            {
+              field: 'disable_usb_kbd',
+              title: this.$t('compute.usb_kbd'),
+              formatter: ({ cellValue, row }) => {
+                return (row.properties && row.properties.disable_usb_kbd) || '-'
+              },
             },
           ],
         },

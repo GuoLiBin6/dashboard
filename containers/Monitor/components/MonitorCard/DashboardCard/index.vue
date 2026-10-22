@@ -56,6 +56,8 @@
       :showTableLegend="showLegend"
       :monitorLineCardStyle="{border:'none'}"
       :otherCursorMovePoint="otherCursorMovePoint"
+      :chartTypes="chartTypes"
+      :enableHeatmap="!useLocalPanels"
       @pageChange="pageChange"
       @chartInstance="setChartInstance"
       @exportTable="exportTable"
@@ -67,17 +69,17 @@
 <script>
 import _ from 'lodash'
 import * as R from 'ramda'
-import WindowsMixin from '@/mixins/windows'
-import DialogMixin from '@/mixins/dialog'
 import { metric_zh, tableColumnMaps } from '@Monitor/constants'
-import { getSignature } from '@/utils/crypto'
-import { getRequestT, transformUnit } from '@/utils/utils'
-import { getNameDescriptionTableColumn } from '@/utils/common/tableColumn'
-// import { currencyUnitMap } from '@/constants/currency'
 import MonitorLine from '@Monitor/sections/MonitorLine'
 import { addMissingSeries } from '@Monitor/utils'
+import { CHART_TYPE_LINE, isPercentUnit, parseChartTypesFromPanel } from '@Monitor/utils/chartTypes'
+import WindowsMixin from '@/mixins/windows'
+import DialogMixin from '@/mixins/dialog'
+import { getSignature } from '@/utils/crypto'
+import { getRequestT, transformUnit, escapeHTML } from '@/utils/utils'
+import { getNameDescriptionTableColumn } from '@/utils/common/tableColumn'
 import OverviewCardLayout from '../layout'
-
+// import { currencyUnitMap } from '@/constants/currency'
 export default {
   name: 'DashboardCard',
   components: {
@@ -196,6 +198,12 @@ export default {
       }
       const { common_alert_metric_details = [] } = this.panel
       return common_alert_metric_details.length ? common_alert_metric_details[0].field_description || {} : {}
+    },
+    chartTypes () {
+      // 资源详情本地监控面板不启用热力图
+      if (this.useLocalPanels) return [CHART_TYPE_LINE]
+      const unit = _.get(this.description, 'unit') || _.get(this.description, 'description.unit')
+      return parseChartTypesFromPanel(this.panel, { isPercent: isPercentUnit(unit) })
     },
     metric () {
       const detail = _.get(this.panel, 'common_alert_metric_details[0]')
@@ -399,10 +407,10 @@ export default {
                 } catch (err) { }
               }
             }
-            return `<div class="d-flex align-items-center"><span>${line.marker}</span> <span class="text-truncate" style="max-width: 500px;">${name || ' '}</span>:&nbsp;<span>${value}</span></div>`
+            return `<div class="d-flex align-items-center"><span>${line.marker}</span> <span class="text-truncate" style="max-width: 500px;">${escapeHTML(name || ' ')}</span>:&nbsp;<span>${escapeHTML(value)}</span></div>`
           }).join('')
           const wrapper = `<div>
-                        <div>${params[0].name}</div>
+                        <div>${escapeHTML(params[0].name)}</div>
                         <div class="lines-wrapper">${series}</div>
                       </div>`
           dom.style.border = 'none'

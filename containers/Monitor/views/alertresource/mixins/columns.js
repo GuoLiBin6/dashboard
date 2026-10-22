@@ -1,8 +1,7 @@
 import _ from 'lodash'
-import { getNameDescriptionTableColumn, getTimeTableColumn } from '@/utils/common/tableColumn'
 import { strategyColumn, levelColumn } from '@Monitor/views/commonalert/utils'
+import { getNameDescriptionTableColumn, getTimeTableColumn } from '@/utils/common/tableColumn'
 import i18n from '@/locales'
-
 export default {
   data () {
     return {
@@ -52,7 +51,7 @@ export default {
               }),
               getTimeTableColumn({ field: 'trigger_time', title: this.$t('monitor.text_14') }),
               strategyColumn(),
-              levelColumn,
+              levelColumn(),
               {
                 field: 'value_str',
                 title: this.$t('monitor.text_105'),

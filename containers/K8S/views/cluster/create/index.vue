@@ -11,7 +11,7 @@
       </template>
     </a-alert>
     <a-alert :showIcon="true" type="error" v-if="!preCheckResp.pass">
-      <template slot="message">
+      <template slot="message" v-if="showDocsLink()">
         <div>
           {{$t('k8s.provider_image_not_prepared')}}
           <help-link :href="docs[provider.hypervisor]">{{$t('k8s.ref_prepare_doc')}}</help-link>
@@ -106,15 +106,15 @@
 <script>
 /* import * as R from 'ramda' */
 import { mapGetters } from 'vuex'
+import ServerConfig from '@K8S/sections/serverConfig'
 import { HYPERVISORS_MAP } from '@/constants'
 import { IMAGES_TYPE_MAP } from '@/constants/compute'
-import { KUBE_PROVIDER, K8S_HYPERVISORS_MAP, getClusterDocs } from '../constants'
-import ServerConfig from '@K8S/sections/serverConfig'
+import { DOCS_MAP, showDocsLink } from '@/constants/docs'
 import CloudregionVpc from '@/sections/CloudregionVpc'
 import { isWithinRange, isRequired } from '@/utils/validate'
 import { findPlatform } from '@/utils/common/hypervisor'
 import i18n from '@/locales'
-
+import { KUBE_PROVIDER, K8S_HYPERVISORS_MAP } from '../constants'
 function checkIpInSegment (i, networkData) {
   return (rule, value, _callback) => {
     const isIn = isWithinRange(value, networkData.guest_ip_start, networkData.guest_ip_end)
@@ -134,6 +134,7 @@ export default {
   },
   data () {
     return {
+      showDocsLink,
       loading: false,
       providers: [],
       provider: {},
@@ -142,7 +143,7 @@ export default {
       preCheckResp: {
         pass: true,
       },
-      docs: getClusterDocs(this.$store.getters.scope),
+      docs: DOCS_MAP.cluster(),
       form: {
         fc: this.$form.createForm(this, {
           onValuesChange: (props, values) => {

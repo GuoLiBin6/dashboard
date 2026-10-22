@@ -3,7 +3,7 @@
     <a-form-item
       :wrapperCol="{ span: 24 }"
       class="mb-0 mr-1 w-50">
-      <div slot="extra">{{ $t('common.schedtag.extra') }}，<help-link  :href="docUrl">{{ $t('common.view.doc') }}</help-link></div>
+      <div slot="extra" v-if="showDocsLink()">{{ $t('common.schedtag.extra') }}，<help-link  :href="docUrl">{{ $t('common.view.doc') }}</help-link></div>
       <base-select
         class="w-100"
         v-decorator="decorators.schedtag"
@@ -19,13 +19,14 @@
         class="w-100"
         v-decorator="decorators.policy"
         :options="policyOpts"
+        @change="policyChange"
         :select-props="{ allowClear: true, placeholder: $t('common_256') }" />
     </a-form-item>
   </div>
 </template>
 
 <script>
-import { genDocsUrl } from '@/utils/utils'
+import { DOCS_MAP, showDocsLink } from '@/constants/docs'
 import { SCHEDTAG_POLICY_OPTIONS } from '@/constants'
 
 export default {
@@ -51,18 +52,15 @@ export default {
   },
   data () {
     return {
+      showDocsLink,
       policyOpts: SCHEDTAG_POLICY_OPTIONS,
       schedtagItem: {},
-      docUrl: genDocsUrl({
-        scope: this.$store.getters.scope,
-        isSysCE: this.$store.getters.isSysCE,
-        cePath: 'guides/onpremise/scheduler/schedtags',
-        eePath: 'web_ui/computing/schedule/schedtag',
-      }),
+      docUrl: DOCS_MAP.schedtag(),
     }
   },
   methods: {
     schedtagChange (val) {
+      this.$emit('change', val)
       this.$nextTick(() => {
         if (this.form && this.form.fc) {
           let defaultStrategy = this.schedtagItem.default_strategy || 'require'
@@ -79,6 +77,9 @@ export default {
           }
         }
       })
+    },
+    policyChange (val) {
+      this.$emit('change', val)
     },
   },
 }

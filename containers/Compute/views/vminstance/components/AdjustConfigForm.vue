@@ -1,11 +1,6 @@
 <template>
   <div>
     <page-header :title="title" style="margin-bottom: 7px;" />
-    <a-alert class="mb-2" type="warning" v-if="tips">
-      <div slot="message">
-        {{ tips }}
-      </div>
-    </a-alert>
     <a-card :bordered="false" size="small">
       <template #title>
         <dialog-selected-tips :name="$t('dictionary.server')" :count="dataList.length" :action="$t('compute.text_1100')" />
@@ -21,9 +16,7 @@
             <cpu-radio
               :decorator="decorators.vcpu"
               :options="form.fi.cpuMem.cpus || []"
-              :disable-options="disableCpus"
-              :disabled="runningArm || runningOther"
-              :extra="cpuExtra"
+              :disable-options="[]"
               :max="form.fd.vcpu < 32 ? 32 : 128"
               :form="form"
               :hypervisor="hypervisor"
@@ -33,7 +26,7 @@
               @change="cpuChange" />
           </a-form-item>
           <a-form-item :label="$t('compute.text_369')" class="mb-0">
-            <mem-radio :decorator="decorators.vmem" :options="form.fi.cpuMem.mems_mb || []" :disable-options="disableMems" :disabled="runningArm || runningOther" :extra="cpuExtra" />
+            <mem-radio :decorator="decorators.vmem" :options="form.fi.cpuMem.mems_mb || []" :disable-options="[]" />
           </a-form-item>
           <a-form-item :label="$t('compute.text_109')">
             <sku
@@ -48,9 +41,10 @@
               :hypervisor="hypervisor"
               :canSkuShow="diskLoaded"
               :hasMeterService="hasMeterService"
-              :skuDisabled="runningOther"
               :dataSku="dataSku"
               :dataList="dataList"
+              :supportSkuTypes="supportSkuTypes"
+              :disableSkuType="disableSkuTypeValue"
               isAdjustConfig />
           </a-form-item>
           <a-form-item :label="$t('compute.text_49')" v-show="selectedItems.length === 1 && form.fd.defaultType">
@@ -66,6 +60,7 @@
               :defaultIops="sysdisk.iops"
               :defaultThroughput="sysdisk.throughput"
               :capability-data="form.fi.capability"
+              allow-capability-types-without-sku
               :disabled="true"
               :ignoreStorageStatus="true"
               is-iops-show
@@ -82,13 +77,14 @@
               :capability-data="form.fi.capability"
               :defaultType="form.fd.systemDiskType"
               :sku="form.fd.sku"
+              allow-capability-types-without-sku
               :image="form.fi.imageMsg"
               :domain="domain"
               :storageParams="dataDiskStorageParams"
               is-iops-show
               is-throughput-show />
           </a-form-item>
-          <a-form-item :label="$t('compute.text_1041')" v-if="isOpenWorkflow">
+          <a-form-item :label="$t('compute.text_1041')" v-if="isOpenWorkflow || isOpenOrderSetWorkflow">
             <a-input v-decorator="decorators.reason" :placeholder="$t('compute.text_1105')" />
           </a-form-item>
           <a-form-item :label="$t('compute.text_494')" :extra="$t('compute.text_1106')">
@@ -99,7 +95,7 @@
     </page-body>
     <page-footer>
       <div slot="right">
-        <div class="d-flex align-items-center">
+        <div ref="adjustFooterActions" class="d-flex align-items-center flex-wrap justify-content-end">
           <div v-if="hasMeterService" class="mr-4 d-flex align-items-center">
             <div class="text-truncate">{{$t('compute.text_286')}}</div>
             <div class="ml-2 prices">
@@ -115,7 +111,61 @@
               </div>
             </div>
           </div>
-          <a-button class="mr-3" type="primary" @click="handleConfirm" :loading="loading">{{confirmText}}</a-button>
+          <a-popconfirm
+            v-if="needForceStopConfirm"
+            placement="topRight"
+            overlay-class-name="running-adjust-popconfirm-overlay"
+            :visible="runningAdjustPopVisible"
+            :get-popup-container="getRunningAdjustPopContainer"
+            :ok-text="$t('compute.adjust_config_running_confirm_submit')"
+            :cancel-text="$t('dialog.cancel')"
+            @confirm="onRunningAdjustPopConfirm"
+            @cancel="onRunningAdjustPopCancel"
+            @visibleChange="onRunningAdjustPopVisibleChange">
+            <template slot="title">
+              <div>{{ $t('compute.adjust_config_running_confirm_title') }}</div>
+              <div class="running-adjust-popconfirm-desc">{{ runningAdjustConfirmContent }}</div>
+            </template>
+            <span class="adjust-config-popconfirm-trigger d-inline-block" @click.stop="handleRunningAdjustTriggerClick">
+              <a-dropdown-button
+                v-if="showCartDropdown"
+                type="primary"
+                class="mr-3"
+                :loading="loading"
+                placement="topLeft"
+                @click="(e) => e && e.preventDefault && e.preventDefault()">
+                {{ confirmText }}
+                <a-menu slot="overlay" @click="handleMenuClick">
+                  <a-menu-item key="add">
+                    {{ $t('scope.shopcart.add') }}
+                  </a-menu-item>
+                </a-menu>
+                <a-icon slot="icon" type="down" />
+              </a-dropdown-button>
+              <a-button v-else type="primary" class="mr-3" :loading="loading">{{ confirmText }}</a-button>
+            </span>
+          </a-popconfirm>
+          <a-dropdown-button
+            v-else-if="showCartDropdown"
+            type="primary"
+            class="mr-3"
+            :loading="loading"
+            placement="topLeft"
+            @click="handleConfirmClick">
+            {{ confirmText }}
+            <a-menu slot="overlay" @click="handleMenuClick">
+              <a-menu-item key="add">
+                {{ $t('scope.shopcart.add') }}
+              </a-menu-item>
+            </a-menu>
+            <a-icon slot="icon" type="down" />
+          </a-dropdown-button>
+          <a-button
+            v-else
+            type="primary"
+            class="mr-3"
+            :loading="loading"
+            @click="handleConfirmClick">{{ confirmText }}</a-button>
           <a-button @click="cancel">{{$t('compute.text_908')}}</a-button>
         </div>
       </div>
@@ -148,9 +198,27 @@ import {
 } from '@/utils/common/tableColumn'
 import { findPlatform, diskSupportTypeMedium, getOriginDiskKey } from '@/utils/common/hypervisor'
 import { isRequired } from '@/utils/validate'
-import { sizestr } from '@/utils/utils'
+import { hasPermission, hasServices } from '@/utils/auth'
+import { sizestr, uuid } from '@/utils/utils'
 import { STORAGE_TYPES, HOST_CPU_ARCHS } from '@/constants/compute'
 import DiscountPrice from '@/sections/DiscountPrice'
+
+// 支持开机直接调整配置的平台（降配时仍需先关机）
+const RUNNING_ADJUST_HYPERVISORS = [
+  HYPERVISORS_MAP.esxi.hypervisor,
+  HYPERVISORS_MAP.cloudpods.hypervisor,
+  HYPERVISORS_MAP.openstack.hypervisor,
+  HYPERVISORS_MAP.proxmox.hypervisor,
+  HYPERVISORS_MAP.ksyun.hypervisor,
+  HYPERVISORS_MAP.incloudsphere.hypervisor,
+  HYPERVISORS_MAP.azure.hypervisor,
+]
+
+// 支持开机调整配置，但需开启热扩容（hotplug_cpu_mem=enable）
+const HOTPLUG_RUNNING_ADJUST_HYPERVISORS = [
+  HYPERVISORS_MAP.kvm.hypervisor,
+  HYPERVISORS_MAP.zstack.hypervisor,
+]
 
 export default {
   name: 'VMInstanceAdjustConfig',
@@ -168,10 +236,17 @@ export default {
       type: Object,
     },
   },
+  provide () {
+    // SystemDisk 等子组件 createFormFieldDraftMixin inject form；无 provide 时会盖住 prop
+    return {
+      form: this.form,
+    }
+  },
   data () {
     function diskValidator (rule, value, callback) {
+      // 空值由 required 规则提示「请填写挂载点」，此处只校验路径格式
       if (R.isNil(value) || R.isEmpty(value)) {
-        return callback(new Error(this.$t('compute.text_206')))
+        return callback()
       }
       if (!value.startsWith('/')) {
         return callback(new Error(this.$t('compute.text_207')))
@@ -187,6 +262,8 @@ export default {
     const autoStart = dataList.some(val => val.status === 'running')
     return {
       loading: false,
+      runningAdjustPopVisible: false,
+      pendingAdjustValues: null,
       action: this.$t('compute.text_1100'),
       dataList,
       form: {
@@ -207,6 +284,7 @@ export default {
           imageMsg: {}, // 当前选中的 image
           showCpuSockets: false,
           cpuSockets: 1,
+          modificationTypes: [], // 多选实例时，各主机 modification_types.name 的交集
         },
       },
       beforeDataDisks: [],
@@ -347,6 +425,7 @@ export default {
           mountPath: i => [
             `dataDiskMountPaths[${i}]`,
             {
+              validateFirst: true,
               validateTrigger: ['blur', 'change'],
               rules: [{
                 required: true,
@@ -427,12 +506,17 @@ export default {
       discount: 0,
       dataDiskType: '',
       dataDiskInterval: null,
+      supportSkuTypes: [],
+      disableSkuTypeValue: false,
     }
   },
   computed: {
     ...mapGetters(['isAdminMode', 'scope', 'userInfo']),
     title () {
-      return this.isOpenWorkflow ? `${this.$t('compute.text_1100')} ${this.$route.query.workflow ? `(${this.$t('common.modify_workflow')})` : ''}` : this.$t('compute.text_1100')
+      if (this.isOpenWorkflow) {
+        return `${this.$t('compute.text_1100')} ${this.$route.query.workflow ? `(${this.$t('common.modify_workflow')})` : ''}`
+      }
+      return this.$t('compute.text_1100')
     },
     scopeParams () {
       if (this.$store.getters.isAdminMode) {
@@ -461,51 +545,29 @@ export default {
     isSomeRunning () {
       return this.dataList.some(val => val.status === 'running')
     },
-    isSomeArm () {
-      return this.selectedItem.os_arch === 'arm'
-    },
-    runningArm () {
-      return this.isSomeArm && this.isSomeRunning
-    },
-    runningOther () {
-      return this.dataList.some(val => {
-        if (val.status === 'running' && [HYPERVISORS_MAP.aliyun.hypervisor, HYPERVISORS_MAP.aws.hypervisor, HYPERVISORS_MAP.google.hypervisor, HYPERVISORS_MAP.huawei.hypervisor, HYPERVISORS_MAP.ctyun.hypervisor, HYPERVISORS_MAP.volcengine.hypervisor, HYPERVISORS_MAP.ksyun.hypervisor].includes(val.hypervisor)) {
-          return true
-        }
-        return false
+    needForceStopServers () {
+      const vcpu = this.form.fd.vcpu
+      const vmem = this.form.fd.vmem
+      return this.dataList.filter(item => {
+        if (item.status !== 'running') return false
+        return !this.canHotAdjust(item) || this.isDowngradeFor(item, vcpu, vmem)
       })
     },
-    hotplug () { // 做热扩容校验，true 表示置灰 CPU 和 内存，不支持热扩容
-      if (this.dataList.every(val => val.status === 'ready')) {
-        return false
-      } else {
-        if (this.dataList.every(val => {
-          if ([HYPERVISORS_MAP.kvm.hypervisor, HYPERVISORS_MAP.zstack.hypervisor].includes(val.hypervisor)) {
-            if (val.status === 'ready') {
-              return true
-            } else {
-              return val.metadata && val.metadata.hotplug_cpu_mem === 'enable'
-            }
-          }
-          return true
-        })) {
-          return false
-        } else {
-          return true
-        }
+    needForceStopConfirm () {
+      return this.needForceStopServers.length > 0
+    },
+    runningAdjustConfirmContent () {
+      if (this.dataList.length === 1) {
+        return this.$t('compute.adjust_config_running_confirm_content')
       }
+      const names = this.needForceStopServers.map(item => item.name).join('、')
+      return this.$t('compute.adjust_config_running_confirm_content_servers', [names])
+    },
+    disableSkuType () {
+      return [HYPERVISORS_MAP.aliyun.hypervisor, HYPERVISORS_MAP.huawei.hypervisor, HYPERVISORS_MAP.qcloud.hypervisor].includes(this.dataList[0].hypervisor)
     },
     hypervisor () {
       return this.selectedItem.hypervisor
-    },
-    tips () {
-      if (this.hotplug) {
-        return this.$t('compute.text_1107')
-      }
-      if ([HYPERVISORS_MAP.kvm.hypervisor, HYPERVISORS_MAP.azure.hypervisor].includes(this.hypervisor)) {
-        return this.$t('compute.text_1108')
-      }
-      return ''
     },
     type () {
       const brand = this.selectedItem.brand
@@ -529,7 +591,7 @@ export default {
       }
       if (this.type === SERVER_TYPE.private) {
         // nutanix vmware incloudshpere proxmox sangfor
-        if (this.selectedItem && (this.selectedItem.provider === HYPERVISORS_MAP.nutanix.provider || this.selectedItem.provider === HYPERVISORS_MAP.incloudsphere.provider || this.selectedItem.provider === HYPERVISORS_MAP.proxmox.provider || this.selectedItem.provider === HYPERVISORS_MAP.sangfor.provider || this.selectedItem.provider === HYPERVISORS_MAP.uis.provider)) {
+        if (this.selectedItem && (this.selectedItem.provider === HYPERVISORS_MAP.nutanix.provider || this.selectedItem.provider === HYPERVISORS_MAP.incloudsphere.provider || this.selectedItem.provider === HYPERVISORS_MAP.proxmox.provider || this.selectedItem.provider === HYPERVISORS_MAP.sangfor.provider || this.selectedItem.provider === HYPERVISORS_MAP.uis.provider || this.selectedItem.provider === HYPERVISORS_MAP.cas.provider)) {
           params['provider.0'] = HYPERVISORS_MAP.kvm.provider
         } else if (this.selectedItem.provider === HYPERVISORS_MAP.cnware.provider) {
           params.usable = false
@@ -555,31 +617,23 @@ export default {
           params.cpu_arch = HOST_CPU_ARCHS.x86.key
         } else if (this.selectedItem.os_arch.includes('arm') || this.selectedItem.os_arch.includes('aarch64')) {
           params.cpu_arch = HOST_CPU_ARCHS.arm.key
+        } else if (this.selectedItem.os_arch.includes('riscv')) {
+          params.cpu_arch = 'riscv'
         }
       }
       return params
     },
-    disableCpus () {
-      const runningList = this.dataList.filter(item => item.status === 'running')
-      const cpu = runningList.length ? runningList[0].vcpu_count : this.selectedItem.vcpu_count
-      const cpus = this.form.fi.cpuMem.cpus || []
-      if (this.isSomeRunning && cpus.length > 0) {
-        return cpus.filter((item) => { return item < cpu })
-      }
-      return []
-    },
-    disableMems () {
-      const runningList = this.dataList.filter(item => item.status === 'running')
-      runningList.sort((a, b) => b.vmem_size - a.vmem_size)
-      const vmem = runningList.length ? runningList[0].vmem_size : this.selectedItem.vmem_size
-      const mems = this.form.fi.cpuMem.mems_mb || []
-      if (this.isSomeRunning && mems.length > 0) {
-        return mems.filter((item) => { return item < vmem })
-      }
-      return []
-    },
     isOpenWorkflow () {
       return this.checkWorkflowEnabled(this.WORKFLOW_TYPES.APPLY_SERVER_CHANGECONFIG)
+    },
+    isOpenOrderSetWorkflow () {
+      return this.checkWorkflowEnabled(this.WORKFLOW_TYPES.EXECUTE_RESOURCE_ORDER_SET)
+    },
+    hasCartPermission () {
+      return hasServices('billing') && hasPermission({ key: 'resource_order_sets_create' })
+    },
+    showCartDropdown () {
+      return this.$appConfig.isPrivate && !this.$store.getters.isSysCE && this.hasCartPermission && !this.$route.query.workflow
     },
     columns () {
       return [
@@ -672,19 +726,11 @@ export default {
       return diskValueArr.reduce((prevDisk, diskValue) => prevDisk + diskValue, 0)
     },
     confirmText () {
-      return this.isOpenWorkflow ? (this.$route.query.workflow ? this.$t('common.modify_workflow') : this.$t('compute.text_288')) : this.$t('compute.text_907')
-    },
-    cpuExtra () {
-      if (this.runningArm) {
-        return this.$t('compute.text_1366')
+      if (this.isOpenWorkflow) {
+        return this.$route.query.workflow ? this.$t('common.modify_workflow') : this.$t('compute.text_288')
       }
-      return null
-    },
-    memExtra () {
-      if (this.runningArm) {
-        return this.$t('compute.text_1367')
-      }
-      return null
+      if (this.isOpenOrderSetWorkflow) return this.$t('compute.text_288')
+      return this.$t('compute.text_907')
     },
     isPublic () {
       return this.dataList[0].cloud_env === SERVER_TYPE.public
@@ -782,6 +828,7 @@ export default {
     this.serverskusM = new Manager('serverskus')
     this.loadData(this.dataList)
     this.fetchInstanceSpecs()
+    this.fetchModificationTypes()
     this.getPriceList = _.debounce(this._getPriceList2, 500)
     this.baywatch([
       'form.fd.sku.id',
@@ -796,6 +843,41 @@ export default {
     clearInterval(this.dataDiskInterval)
   },
   methods: {
+    // 是否支持开机直接调整（ARM 架构开机全平台不支持热调，需先关机）
+    canHotAdjust (item) {
+      if (this.isArmOrRiscv64Arch(item)) return false
+      if (HOTPLUG_RUNNING_ADJUST_HYPERVISORS.includes(item.hypervisor)) {
+        return item.metadata && item.metadata.hotplug_cpu_mem === 'enable'
+      }
+      return RUNNING_ADJUST_HYPERVISORS.includes(item.hypervisor)
+    },
+    isArmOrRiscv64Arch (item) {
+      const arch = (item.os_arch || '').toLowerCase()
+      return arch === HOST_CPU_ARCHS.arm.key ||
+        arch.includes('arm') ||
+        arch.includes('aarch64') ||
+        arch === HOST_CPU_ARCHS.riscv64.key ||
+        arch.includes('riscv')
+    },
+    isDowngradeFor (item, vcpu, vmem) {
+      return vcpu < item.vcpu_count || vmem < item.vmem_size
+    },
+    fetchModificationTypes () {
+      if (this.disableSkuType) {
+        Promise.all(this.dataList.map(item => this.serversManager.getSpecific({ id: item.id, spec: 'modification-types' }))).then((data) => {
+          const list = data.map((res) => {
+            return (res.data.modification_types || []).map((mt) => mt.name)
+          })
+          this.supportSkuTypes = (list.length
+            ? list.reduce((acc, names) => acc.filter((n) => names.includes(n)), [...list[0]])
+            : [])
+        }).catch(() => {
+          this.supportSkuTypes = []
+        }).finally(() => {
+          this.disableSkuTypeValue = true
+        })
+      }
+    },
     skuFilter (items) {
       if (!items) return []
       return items
@@ -885,6 +967,9 @@ export default {
       if (this.selectedItem.instance_type !== values.sku.name) {
         params.sku = values.sku.name
       }
+      if (values.force_stop) {
+        params.force_stop = true
+      }
       const ids = this.dataList.map(item => item.id)
       if (ids.length === 1) {
         params.disks = this.genDiskData(values)
@@ -959,18 +1044,8 @@ export default {
       this.$router.push('/workflow')
     },
     async doChangeSettingsSubmit (values) {
-      const params = {
-        sku: values.sku.name,
-        auto_start: values.autoStart,
-      }
-      const { showCpuSockets, cpuSockets } = this.form.fi
+      const params = this.buildChangeConfigParams(values)
       const ids = this.dataList.map(item => item.id)
-      if (ids.length === 1 && this.selectedItem.provider !== HYPERVISORS_MAP.cnware.provider) {
-        params.disks = this.genDiskData(values)
-      }
-      if (showCpuSockets) {
-        params.cpu_sockets = cpuSockets
-      }
       return this.serversManager.batchPerformAction({
         ids,
         steadyStatus: ['running', 'ready'],
@@ -978,33 +1053,261 @@ export default {
         data: params,
       })
     },
-    async handleConfirm () {
+    buildChangeConfigParams (values) {
+      const params = {
+        sku: values.sku.name,
+        auto_start: values.autoStart,
+      }
+      if (values.force_stop) {
+        params.force_stop = true
+      }
+      const { showCpuSockets, cpuSockets } = this.form.fi
+      if (this.dataList.length === 1 && this.selectedItem.provider !== HYPERVISORS_MAP.cnware.provider) {
+        params.disks = this.genDiskData(values)
+      }
+      if (showCpuSockets) {
+        params.cpu_sockets = cpuSockets
+      }
+      return params
+    },
+    formatFlavorConfig (vcpu, vmemMb, diskMb) {
+      if (!vcpu && !vmemMb) return '-'
+      return `${vcpu}C${(vmemMb / 1024)}G${diskMb ? sizestr(diskMb, 'M', 1024) : ''}`
+    },
+    getChangeConfigAfterDisk (values, server) {
+      if (this.dataList.length !== 1) return server.disk
+      const datadisks = this.form.fc.getFieldValue('dataDiskSizes')
+      let diskSize = 0
+      if (datadisks) {
+        R.forEachObjIndexed((value) => { diskSize += value }, datadisks)
+      }
+      const beforeDataDisks = (this.beforeDataDisks || []).map(item => item.value)
+      let beforeDiskSize = 0
+      if (beforeDataDisks.length > 0) {
+        beforeDiskSize = beforeDataDisks.reduce((sum, size) => sum + size, 0)
+      }
+      return +server.disk + (+diskSize - beforeDiskSize) * 1024
+    },
+    /** 与调整配置工单 serverConf 结构一致，供购物车查看详情复用 ServerConfig */
+    buildServerConfItem (values, server) {
+      const changeParams = this.buildChangeConfigParams(values)
+      const beforeSysDisks = (server.disks_info || []).filter(item => item.disk_type === 'sys').map(item => ({
+        medium_type: item.medium_type,
+        size: item.size,
+        type: item.storage_type,
+      }))
+      const beforeDataDisks = (server.disks_info || []).filter(item => item.disk_type === 'data').map(item => ({
+        medium_type: item.medium_type,
+        size: item.size,
+        type: item.storage_type,
+      }))
+      const datadisks = this.form.fc.getFieldValue('dataDiskSizes')
+      let diskSize = 0
+      if (datadisks) {
+        R.forEachObjIndexed((value) => { diskSize += value }, datadisks)
+      }
+      const beforeDataDiskSizes = (this.beforeDataDisks || []).map(item => item.value)
+      let beforeDiskSize = 0
+      if (beforeDataDiskSizes.length > 0) {
+        beforeDiskSize = beforeDataDiskSizes.reduce((sum, size) => sum + size, 0)
+      }
+      const isSingle = this.dataList.length === 1
+      const afterDataDisks = (changeParams.disks && changeParams.disks.length) ? changeParams.disks : beforeDataDisks
+      return {
+        name: server.name,
+        project: server.tenant,
+        hypervisor: this.selectedItem.hypervisor,
+        before: {
+          cpu: server.vcpu_count,
+          memory: server.vmem_size,
+          disk: server.disk,
+          dataDisks: beforeDataDisks,
+          sysDisks: beforeSysDisks,
+          sku: server.instance_type,
+        },
+        after: {
+          cpu: this.form.fd.vcpu,
+          memory: this.form.fd.vmem,
+          disk: isSingle ? (+server.disk + (+diskSize - beforeDiskSize) * 1024) : null,
+          // 未调整磁盘时沿用原数据盘 / 系统盘，保证查看详情能展示
+          dataDisks: isSingle ? afterDataDisks : null,
+          sysDisks: isSingle ? beforeSysDisks : null,
+          sku: values.sku.name,
+        },
+      }
+    },
+    buildShopCartParameter (values, server) {
+      const changeParams = this.buildChangeConfigParams(values)
+      const afterDisk = this.getChangeConfigAfterDisk(values, server)
+      const serverConf = this.buildServerConfItem(values, server)
+      return {
+        action: 'perform',
+        perform_action_name: 'change-config',
+        resource: 'servers',
+        resource_id: server.id,
+        auto_execute: true,
+        count: 1,
+        user_id: this.userInfo.id,
+        project: server.tenant || server.tenant_id,
+        project_domain: server.project_domain || server.domain_id,
+        parameter: {
+          ...changeParams,
+          generate_name: server.name,
+          vcpu_count: this.form.fd.vcpu,
+          vmem_size: this.form.fd.vmem,
+          hypervisor: server.hypervisor,
+          provider: server.provider,
+          config_before: this.formatFlavorConfig(server.vcpu_count, server.vmem_size, server.disk),
+          config_after: this.formatFlavorConfig(this.form.fd.vcpu, this.form.fd.vmem, afterDisk),
+          // orderset 会裁掉顶层自定义字段，展示数据放 extraData 内
+          extraData: {
+            reason: values.reason,
+            __resource_type__: 'server',
+            change_type: 'change-config',
+            project: server.tenant || server.tenant_id,
+            serverConf,
+          },
+        },
+        resourceData: {
+          id: server.id,
+          name: server.name,
+        },
+      }
+    },
+    async doCreateOrderSetWorkflow (values) {
+      const { displayname, name } = this.userInfo
+      const shopCarts = this.dataList.map(server => this.buildShopCartParameter(values, server))
+      const orderSetRes = await new this.$Manager('resource_order_sets').create({
+        data: {
+          auto_execute: false,
+          name: this.$t('common.shopcart_workflow_name', [displayname || name, this.$moment().format('YYYY-MM-DD'), uuid()]),
+          parameters: shopCarts,
+        },
+      })
+      const variables = {
+        process_definition_key: this.WORKFLOW_TYPES.EXECUTE_RESOURCE_ORDER_SET,
+        initiator: this.userInfo.id,
+        ids: orderSetRes.data.id,
+        parameter: '{}',
+        project: shopCarts[0].project,
+        project_domain: shopCarts[0].project_domain,
+      }
+      await new this.$Manager('process-instances', 'v1').create({ data: { variables } })
+      this.$message.success(this.$t('compute.text_1109'))
+      this.$router.push('/workflow')
+    },
+    async addShopCart () {
       this.loading = true
       try {
         if (!this.form.fd.sku?.name) {
-          // 修复套餐为空时，sku值为空对象导致非空校验失效问题
           this.form.fc.setFieldsValue({ sku: null })
         }
         const values = await this.form.fc.validateFields()
-        if (this.isOpenWorkflow) {
-          const projects = new Set(this.dataList.map(item => item.tenant_id))
-          if (projects.size > 1) {
-            this.$message.error(this.$t('compute.text_1348'))
-            this.loading = false
-            return
-          }
-          await this.doChangeSettingsByWorkflowSubmit(values)
-        } else {
-          const res = await this.doChangeSettingsSubmit(values)
-          const isOk = res.data.data.every(item => item.status === 200)
-          if (isOk) {
-            this.$message.success(this.$t('compute.text_423'))
-            this.$store.commit('keepAlive/ADD_DELAY_EVENT', { name: 'ResourceListSingleRefresh', params: this.data.map(item => item.id) })
-            this.cancel()
-          }
+        const cartValues = this.needForceStopConfirm ? { ...values, force_stop: true } : values
+        const shopCarts = this.$store.state.shopcart?.shopCarts || []
+        const duplicates = this.dataList.filter(server => shopCarts.some(item => {
+          return item.user_id === this.userInfo.id &&
+            item.action === 'perform' &&
+            item.perform_action_name === 'change-config' &&
+            item.resource_id === server.id
+        }))
+        if (duplicates.length) {
+          this.$message.warning(this.$t('scope.shopcart.change_config_exists', [duplicates.map(s => s.name).join(', ')]))
+          return
         }
+        this.dataList.forEach(server => {
+          this.$store.commit('shopcart/ADD_SHOP_CART', this.buildShopCartParameter(cartValues, server))
+        })
+        this.$message.success(this.$t('common.success'))
       } catch (error) {
-        throw error
+        // 表单校验失败等场景无需额外提示
+      } finally {
+        this.loading = false
+      }
+    },
+    handleMenuClick (e) {
+      if (e.key === 'add') {
+        this.addShopCart()
+      }
+    },
+    async performAdjustSubmit (values) {
+      if (this.isOpenWorkflow) {
+        const projects = new Set(this.dataList.map(item => item.tenant_id))
+        if (projects.size > 1) {
+          this.$message.error(this.$t('compute.text_1348'))
+          return
+        }
+        await this.doChangeSettingsByWorkflowSubmit(values)
+      } else if (this.isOpenOrderSetWorkflow) {
+        const projects = new Set(this.dataList.map(item => item.tenant_id))
+        if (projects.size > 1) {
+          this.$message.error(this.$t('compute.text_1348'))
+          return
+        }
+        await this.doCreateOrderSetWorkflow(values)
+      } else {
+        const res = await this.doChangeSettingsSubmit(values)
+        const isOk = res.data.data.every(item => item.status === 200)
+        if (isOk) {
+          this.$message.success(this.$t('compute.text_423'))
+          this.$store.commit('keepAlive/ADD_DELAY_EVENT', { name: 'ResourceListSingleRefresh', params: this.data.map(item => item.id) })
+          this.cancel()
+        }
+      }
+    },
+    getRunningAdjustPopContainer (trigger) {
+      return this.$refs.adjustFooterActions || (trigger && trigger.parentElement) || document.body
+    },
+    handleRunningAdjustTriggerClick () {
+      this.openRunningAdjustPopconfirmAfterValidate().catch(() => {})
+    },
+    async openRunningAdjustPopconfirmAfterValidate () {
+      if (this.runningAdjustPopVisible) return
+      try {
+        if (!this.form.fd.sku?.name) {
+          this.form.fc.setFieldsValue({ sku: null })
+        }
+        const values = await this.form.fc.validateFields()
+        this.pendingAdjustValues = values
+        await this.$nextTick()
+        setTimeout(() => {
+          this.runningAdjustPopVisible = true
+        }, 10)
+      } catch (error) {
+        // 表单校验失败
+      }
+    },
+    onRunningAdjustPopVisibleChange (visible) {
+      this.runningAdjustPopVisible = visible
+    },
+    onRunningAdjustPopCancel () {
+      this.runningAdjustPopVisible = false
+      this.pendingAdjustValues = null
+    },
+    async onRunningAdjustPopConfirm () {
+      const snapshot = this.pendingAdjustValues
+      this.pendingAdjustValues = null
+      this.runningAdjustPopVisible = false
+      if (!snapshot) return
+      this.loading = true
+      try {
+        await this.performAdjustSubmit({ ...snapshot, force_stop: true })
+      } catch (error) {
+        // 与 handleConfirmClick 一致
+      } finally {
+        this.loading = false
+      }
+    },
+    async handleConfirmClick () {
+      this.loading = true
+      try {
+        if (!this.form.fd.sku?.name) {
+          this.form.fc.setFieldsValue({ sku: null })
+        }
+        const values = await this.form.fc.validateFields()
+        await this.performAdjustSubmit(values)
+      } catch (error) {
+        // 避免点击事件触发的 async 函数产生 Uncaught(in promise)；表单校验失败等场景无需额外提示
       } finally {
         this.loading = false
       }
@@ -1014,8 +1317,10 @@ export default {
         if (R.is(Object, this.form.fi.cpuMem)) {
           const memOpts = _.get(this.form.fi, `cpuMem.cpu_mems_mb[${cpu}]`) || []
           this.form.fi.cpuMem.mems_mb = memOpts
+          const curVmem = this.form.fd.vmem
+          const vmem = memOpts.includes(curVmem) ? curVmem : memOpts[0]
           this.form.fc.setFieldsValue({
-            vmem: Math.max(this.selectedItem.vmem_size, memOpts[0]),
+            vmem,
             vcpu: cpu,
           })
         }
@@ -1057,6 +1362,7 @@ export default {
           const vcpuInit = vcpuDecorator[1].initialValue
           this.cpuChange(vcpuInit)
         })
+        .catch(() => {})
     },
     onValuesChange (props, values) {
       Object.keys(values).forEach((key) => {
@@ -1160,6 +1466,8 @@ export default {
       return dataDisk
     },
     cancel () {
+      this.runningAdjustPopVisible = false
+      this.pendingAdjustValues = null
       this.$router.push({ name: 'VMInstanceIndex' })
     },
     baywatch (props, watcher) {
@@ -1169,68 +1477,70 @@ export default {
       props.forEach(iterator, this)
     },
     async _getPriceList2 () {
-      const f = this.form.fd
-      if (!this.hasMeterService) return // 如果没有 meter 服务则取消调用
-      if (R.isEmpty(f.sku) || R.isNil(f.sku)) return
-      const isPublic = this.dataList[0].cloud_env === SERVER_TYPE.public
-      if (isPublic && (R.isNil(f.sku.region_ext_id) || R.isEmpty(f.sku.region_ext_id))) return
-      if (R.isNil(f.systemDiskSize)) return
+      try {
+        const f = this.form.fd
+        if (!this.hasMeterService) return // 如果没有 meter 服务则取消调用
+        if (R.isEmpty(f.sku) || R.isNil(f.sku)) return
+        const isPublic = this.dataList[0].cloud_env === SERVER_TYPE.public
+        if (isPublic && (R.isNil(f.sku.region_ext_id) || R.isEmpty(f.sku.region_ext_id))) return
+        if (R.isNil(f.systemDiskSize)) return
 
-      const pf = new PriceFetcher()
-      pf.initialForm(this.$store.getters.scope, f.sku, f.duration || '1M', this.selectedItem?.billing_type, this.isPublic, this.cloudaccountId)
-      // add price items
-      if (!isPublic) {
-        // server instance
-        pf.addCpu(f.vcpu)
-        pf.addMem(f.vmem / 1024)
+        const pf = new PriceFetcher()
+        pf.initialForm(this.$store.getters.scope, f.sku, f.duration || '1M', this.selectedItem?.billing_type, this.isPublic, this.cloudaccountId)
+        // add price items
+        if (!isPublic) {
+          // server instance
+          pf.addCpu(f.vcpu)
+          pf.addMem(f.vmem / 1024)
 
-        // gpu
-        if (f.gpuEnable && f.gpu && f.gpu.indexOf('=') >= 0) {
-          const tmps = f.gpu.split('=')[1].split(':')
-          if (tmps.length >= 2) {
-            pf.addGpu(`${tmps[0]}.${tmps[1]}`, f.gpuCount || 0)
+          // gpu
+          if (f.gpuEnable && f.gpu && f.gpu.indexOf('=') >= 0) {
+            const tmps = f.gpu.split('=')[1].split(':')
+            if (tmps.length >= 2) {
+              pf.addGpu(`${tmps[0]}.${tmps[1]}`, f.gpuCount || 0)
+            }
           }
+        } else {
+          // server instance
+          pf.addServer(f.sku.name, 1)
+          // others
         }
-      } else {
-        // server instance
-        pf.addServer(f.sku.name, 1)
-        // others
-      }
 
-      // disks
-      const { systemDiskSize, systemDiskType } = f
-      const { systemDiskMedium, dataDiskMedium } = this.form.fi
-      let systemDisk = systemDiskType.key
-      // 磁盘区分介质
-      if (diskSupportTypeMedium(this.selectedItem.hypervisor)) {
-        systemDisk = getOriginDiskKey(systemDisk)
-      }
-      if (!isPublic) systemDisk = `${systemDiskMedium}::${systemDisk}`
-      pf.addDisk(systemDisk, systemDiskSize)
-      if (this.dataDiskType) {
-        const datadisks = Object.values(this.form.fd.dataDiskSizes || {})
-        let dataDisk = this.dataDiskType
+        // disks
+        const { systemDiskSize, systemDiskType } = f
+        const { systemDiskMedium, dataDiskMedium } = this.form.fi
+        let systemDisk = systemDiskType.key
         // 磁盘区分介质
         if (diskSupportTypeMedium(this.selectedItem.hypervisor)) {
-          dataDisk = getOriginDiskKey(dataDisk)
+          systemDisk = getOriginDiskKey(systemDisk)
         }
-        if (!isPublic) dataDisk = `${dataDiskMedium}::${dataDisk}`
-        pf.addDisks(dataDisk, datadisks)
-      }
+        if (!isPublic) systemDisk = `${systemDiskMedium}::${systemDisk}`
+        pf.addDisk(systemDisk, systemDiskSize)
+        if (this.dataDiskType) {
+          const datadisks = Object.values(this.form.fd.dataDiskSizes || {})
+          let dataDisk = this.dataDiskType
+          // 磁盘区分介质
+          if (diskSupportTypeMedium(this.selectedItem.hypervisor)) {
+            dataDisk = getOriginDiskKey(dataDisk)
+          }
+          if (!isPublic) dataDisk = `${dataDiskMedium}::${dataDisk}`
+          pf.addDisks(dataDisk, datadisks)
+        }
 
-      // eip
-      if (f.eip_bw && f.eip_type === EIP_TYPES_MAP.new.key) {
-        pf.addEipBandwidth(f.eip_bgp_type || '', f.eip_bw)
-      }
+        // eip
+        if (f.eip_bw && f.eip_type === EIP_TYPES_MAP.new.key) {
+          pf.addEipBandwidth(f.eip_bgp_type || '', f.eip_bw)
+        }
 
-      const price = await pf.getPriceObj()
-      price.setOptions({ count: this.count || 0 })
-      this.currency = price.currency
-      this.price = price.price
-      this.priceFormat = price.priceFormat
-      this.origin_price = price.originPrice
-      this.priceTips = price.priceTips
-      this.discount = price.discount
+        const price = await pf.getPriceObj()
+        price.setOptions({ count: this.count || 0 })
+        this.currency = price.currency
+        this.price = price.price
+        this.priceFormat = price.priceFormat
+        this.origin_price = price.originPrice
+        this.priceTips = price.priceTips
+        this.discount = price.discount
+      } catch (e) {}
     },
     isSomeLocal () {
       const { capability = {} } = this.form.fi
@@ -1247,6 +1557,13 @@ export default {
 .form-wrapper {
   padding-left: 22px;
 }
+.running-adjust-popconfirm-desc {
+  margin-top: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(0, 0, 0, 0.65);
+  max-width: 360px;
+}
 .prices {
   .hour {
     font-size: 24px;
@@ -1255,5 +1572,11 @@ export default {
     color: #999;
     font-size: 12px;
   }
+}
+</style>
+
+<style lang="less">
+.running-adjust-popconfirm-overlay .ant-popover-inner-content {
+  max-width: 400px;
 }
 </style>

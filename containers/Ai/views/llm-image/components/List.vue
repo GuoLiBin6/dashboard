@@ -8,6 +8,7 @@
 </template>
 
 <script>
+import { getLlmImageTypeFilter } from '@Ai/utils/llmRouteContext'
 import WindowsMixin from '@/mixins/windows'
 import ListMixin from '@/mixins/list'
 import SingleActionsMixin from '../mixins/singleActions'
@@ -94,6 +95,21 @@ export default {
         ...this.getParams,
         details: true,
       }
+      const imageFilter = getLlmImageTypeFilter(this.$route.path)
+      let filters = ret.filter
+      if (filters == null && ret.filters != null) {
+        filters = ret.filters
+      }
+      if (typeof filters === 'string') {
+        filters = [filters]
+      }
+      if (!Array.isArray(filters)) {
+        filters = []
+      }
+      if (!filters.includes(imageFilter)) {
+        filters.push(imageFilter)
+      }
+      ret.filter = filters
       return ret
     },
     handleOpenSidepage (row) {

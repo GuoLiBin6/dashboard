@@ -99,6 +99,20 @@ export default {
       },
       getStatusTableColumn({ field: 'host_status', statusModule: 'host_status', title: this.$t('compute.text_502') }),
       {
+        field: 'alert_data',
+        title: (h) => [
+          <span style="margin-right:5px">{this.$t('compute.alert_status')}</span>,
+          <help-tooltip name="alertDataTimeRange" />,
+        ],
+        slots: {
+          default: () => {
+            const state = this.alertData?.alert_state || 'init'
+            return [<status status={state} statusModule="monitorresources" />]
+          },
+        },
+        hidden: () => this.$isScopedPolicyMenuHidden('host_hidden_columns.alert_data'),
+      },
+      {
         field: 'nonsystem_guests',
         title: '#VM',
         width: 60,
@@ -256,10 +270,19 @@ export default {
         field: 'enable_numa_allocate',
         title: this.$t('compute.host.host_enable_numa_allocate.title'),
         formatter: ({ cellData, row }) => {
+          if (row.host_type === 'kvm' || row.host_type === 'hypervisor') {
+            let hugepageOption = ''
+            if (row && row.metadata && row.metadata.hugepages_option) {
+              hugepageOption = row.metadata.hugepages_option
+            }
+            if (hugepageOption !== 'native') {
+              return this.$t('table.title.off') + '(' + this.$t('compute.numa_allocate.off.hugepage_disable') + ')'
+            }
+          }
           if (row.enable_numa_allocate) {
-            return this.$t('compute.sched_numa')
+            return this.$t('compute.numa_allocate.on.core')
           } else if (row.sys_info?.host_agent_cpu_numa_allocate) {
-            return this.$t('compute.host_agent_numa')
+            return this.$t('compute.numa_allocate.on.node')
           }
           return this.$t('table.title.off')
         },
@@ -286,6 +309,7 @@ export default {
       },
     ]
     return {
+      alertData: null,
       // itemData: {
       //   status: 'ready',
       //   host_status: 'ready',
@@ -637,10 +661,49 @@ export default {
       ],
     }
   },
+  computed: {
+    effectiveConfig () {
+      const raw = this.effectiveConfigRaw
+      if (!raw || typeof raw !== 'object') return {}
+      if (raw.data != null && typeof raw.data === 'object' && !Array.isArray(raw.data)) {
+        return raw.data
+      }
+      if (Array.isArray(raw)) return {}
+      return raw
+    },
+  },
+  watch: {
+    'data.id': {
+      handler () {
+        this.fetchAlertData()
+      },
+      immediate: true,
+    },
+  },
   // created () {
   //   this.updateDetailData()
   // },
   methods: {
+    async fetchAlertData () {
+      this.alertData = null
+      const id = this.data?.id
+      if (!id) return
+      if (this.$isScopedPolicyMenuHidden('host_hidden_columns.alert_data')) return
+      try {
+        const monitorManager = new this.$Manager('unifiedmonitors', 'v1')
+        const res = await monitorManager.get({
+          id: 'resource-metrics',
+          params: {
+            res_ids: [id],
+            res_type: 'host',
+          },
+        })
+        const metrics = res.data?.resource_metrics?.[id]
+        this.alertData = metrics || null
+      } catch (e) {
+        this.alertData = null
+      }
+    },
     // updateDetailData () {
     //   const hostManager = new this.$Manager('hosts')
     //   hostManager.get({ id: this.data.id })

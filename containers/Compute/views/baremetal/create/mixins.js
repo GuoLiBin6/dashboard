@@ -6,17 +6,26 @@ import OsSelect from '@Compute/sections/OsSelect'
 import ServerPassword from '@Compute/sections/ServerPassword'
 import ServerNetwork from '@Compute/sections/ServerNetwork'
 import SchedPolicy from '@Compute/sections/SchedPolicy'
+import { checkIpV6, getIpv6Start } from '@Compute/utils/createServer'
+import {
+  resolveDraftLoginType,
+} from '@Compute/utils/baremetalCreateDraft'
+import {
+  BAREMETAL_CREATE_FORM_DRAFT_FIELD,
+  BAREMETAL_CREATE_FORM_DRAFT_FIELDS,
+  BAREMETAL_CREATE_FORM_DRAFT_FC_BINDINGS,
+  getBaremetalCreateFormDraftScope,
+} from '@Compute/utils/baremetalCreateFormDraft'
 import DomainProject from '@/sections/DomainProject'
 import CloudregionZone from '@/sections/CloudregionZone'
 import Tag from '@/sections/Tag'
 import validateForm, { isRequired, isWithinRange } from '@/utils/validate'
 import { IMAGES_TYPE_MAP } from '@/constants/compute'
-import { sizestr } from '@/utils/utils'
+import { sizestr, uuid } from '@/utils/utils'
 import { WORKFLOW_TYPES } from '@/constants/workflow'
 import i18n from '@/locales'
-import { checkIpV6, getIpv6Start } from '@Compute/utils/createServer'
+import createFormDraftMixin from '@/mixins/createFormDraft'
 import BottomBar from './BottomBar'
-
 function checkIpInSegment (i, networkData) {
   return (rule, value, cb) => {
     const isIn = isWithinRange(value, networkData.guest_ip_start, networkData.guest_ip_end)
@@ -29,6 +38,7 @@ function checkIpInSegment (i, networkData) {
 }
 
 export default {
+  mixins: [createFormDraftMixin],
   props: {
     cloudEnv: {
       type: String,
@@ -54,7 +64,11 @@ export default {
     Tag,
   },
   data () {
-    const initData = this.isInitForm && this.initFormData
+    const initData = (this.isInitForm && this.initFormData) || {}
+    const initPreferZone = (Array.isArray(initData.prefer_zones) && initData.prefer_zones[0]) ||
+      initData.prefer_zone ||
+      initData.prefer_zone_id ||
+      ''
     const imageTypeInitValue = initData.extraData?.image_type || IMAGES_TYPE_MAP.standard.key
     let initImage = ''
     if (initData.disks) {
@@ -67,18 +81,9 @@ export default {
     if (initData.extraData?.image) {
       initImage = initData.extraData.image
     }
-    let initLoginType = 'random'
-    if (initData.keypair) {
-      initLoginType = 'keypair'
-    }
-    if (initData.hasOwnProperty('reset_password') && !initData.reset_password) {
-      initLoginType = 'image'
-    }
-    if (initData.hasOwnProperty('password') && initData.password) {
-      initLoginType = 'password'
-    }
+    const initLoginType = this.isInitForm ? resolveDraftLoginType(initData) : 'random'
     let initNetworkType = NETWORK_OPTIONS_MAP.default.key
-    let initBonding = false
+    let initBonding = !!(initData.extraData && initData.extraData.isBonding)
     if (initData.nets) {
       if (initData.nets[0] && initData.nets[0].hasOwnProperty('exit') && !initData.nets[0].exit) {
         if (initData.nets[0].require_teaming) {
@@ -90,7 +95,7 @@ export default {
         if (initData.nets[0].require_teaming) {
           initBonding = true
         }
-      } else {
+      } else if (initData.nets.length) {
         initNetworkType = NETWORK_OPTIONS_MAP.schedtag.key
         if (initData.nets[0].schedtags && initData.nets[0].schedtags.length && initData.nets[0].schedtags[0].require_teaming) {
           initBonding = true
@@ -101,10 +106,17 @@ export default {
     if (initData.prefer_host) {
       initSchedPolicyType = 'host'
     }
-    if (initData.schedtags && initData.schedtags.length) {
+    const seedSchedtags = initData.schedtags || initData.extraData?.schedtags
+    if (seedSchedtags && seedSchedtags.length) {
       initSchedPolicyType = 'schedtag'
     }
+    const initFakeCreateFromBmImport = (() => {
+      const flag = initData.fake_create_from_bm_import ?? initData.extraData?.fake_create_from_bm_import
+      return flag === true || flag === 'true' || flag === 1
+    })()
     return {
+      _initFormPromise: null,
+      _initFormDone: false,
       submiting: false,
       errors: {},
       formItemLayout: {
@@ -151,6 +163,7 @@ export default {
                 project_domain: values.domain.key,
               }
             }
+            this.syncBaremetalCreateFormFcDrafts(values)
           },
         }),
         fi: {
@@ -204,7 +217,7 @@ export default {
           zone: [
             'zone',
             {
-              initialValue: { key: initData.prefer_zone || '', label: '' },
+              initialValue: { key: initPreferZone || '', label: '' },
               rules: [
                 { required: true, message: i18n.t('compute.text_213') },
               ],
@@ -214,7 +227,7 @@ export default {
         count: [
           'count',
           {
-            initialValue: initData.count || 1,
+            initialValue: initData.__count__ || initData.count || 1,
           },
         ],
         imageOS: {
@@ -271,7 +284,8 @@ export default {
           password: [
             'loginPassword',
             {
-              initialValue: initData.password || '',
+              // 草稿不回填明文密码
+              initialValue: (this.isInitForm && initData.password) || '',
               validateFirst: true,
               rules: [
                 { required: true, message: i18n.t('compute.text_204') },
@@ -415,6 +429,9 @@ export default {
         },
         description: [
           'description',
+          {
+            initialValue: initData.description || '',
+          },
         ],
         __meta__: [
           '__meta__',
@@ -491,6 +508,8 @@ export default {
       },
       isBonding: initBonding,
       isShowFalseIcon: false,
+      // 从托管物理机新建：隐藏 OS/磁盘/密码/网络且不传相关参数
+      fakeCreateFromBmImport: initFakeCreateFromBmImport,
       count: 1,
       hostData: [],
       filterHostData: [],
@@ -498,17 +517,56 @@ export default {
       project_domain: '',
       projectId: '',
       domainId: '',
-      osSelectImageType: 'standard',
+      osSelectImageType: imageTypeInitValue,
       wires: [],
       tagDefaultChecked: {},
     }
   },
   computed: {
+    createFormDraftOptions () {
+      return {
+        formScope: getBaremetalCreateFormDraftScope({ type: this.cloudEnv }),
+        disableWhen: () => this.shouldDisableCreateFormDraft,
+      }
+    },
+    baremetalDraftFields () {
+      return BAREMETAL_CREATE_FORM_DRAFT_FIELDS
+    },
+    shouldDisableCreateFormDraft () {
+      if (this.isInitForm) return true
+      if (this.isModifyWorkflow) return true
+      if (this.isModifyShopCartOrder) return true
+      if (this.$route.query.host_id) return true
+      return false
+    },
+    ignoreLocalFormStorage () {
+      return this.shouldDisableCreateFormDraft
+    },
     ...mapGetters([
       'isAdminMode',
       'scope',
       'isDomainMode',
     ]),
+    isFormBackfill () {
+      return this.isInitForm
+    },
+    effectiveInitFormData () {
+      return this.isInitForm ? this.initFormData : {}
+    },
+    schedPolicyInitSchedtags () {
+      // 仅工单；普通草稿由 SchedPolicy 自管
+      if (!this.isInitForm) return []
+      const data = this.initFormData
+      if (!data) return []
+      return data.schedtags || data.extraData?.schedtags || []
+    },
+    workflowInitPreferHost () {
+      if (!this.isInitForm) return ''
+      return this.initFormData?.prefer_host || this.initFormData?.extraData?.prefer_host || ''
+    },
+    preserveAdvanceInitProps () {
+      return this.isFormBackfill || this.canUseCreateFormDraft
+    },
     routerQuery () {
       return this.$route.query
     },
@@ -529,7 +587,7 @@ export default {
         status: 'active',
         details: true,
         limit: 0,
-        'filter.0': 'disk_format.notequals(iso)',
+        'filter.0': 'disk_format.notin(iso,tgz)',
         scope: this.$store.getters.scope,
         is_standard: true,
       }
@@ -563,6 +621,8 @@ export default {
       if (this.isInstallOperationSystem) {
         return 'vpcs'
       }
+      // 区域未选时不拼空 id；有值后 OcSelect watch resource 再请求
+      if (!this.cloudregion) return ''
       return `cloudregions/${this.cloudregion}/vpcs`
     },
     scopeParams () {
@@ -580,6 +640,10 @@ export default {
         return true
       }
       return false
+    },
+    // 非「从托管物理机新建」时展示操作系统/硬盘/密码/网络
+    showBaremetalInstallFields () {
+      return !this.fakeCreateFromBmImport
     },
     isInstallOperationSystem () { // 是否是安装操作系统
       if (this.$route.query.host_id) {
@@ -599,6 +663,16 @@ export default {
     },
     isOpenWorkflow () {
       return this.checkWorkflowEnabled(WORKFLOW_TYPES.APPLY_MACHINE)
+    },
+    isOpenOrderSetWorkflow () {
+      return this.checkWorkflowEnabled(WORKFLOW_TYPES.EXECUTE_RESOURCE_ORDER_SET)
+    },
+    isModifyWorkflow () {
+      return !!this.$route.query.workflow
+    },
+    isModifyShopCartOrder () {
+      const { workflow, order_set_id } = this.$route.query
+      return !!(workflow && order_set_id)
     },
     isCheckedIso () {
       return this.osSelectImageType === 'iso'
@@ -623,9 +697,26 @@ export default {
     return {
       form: this.form,
       fi: this.form.fi,
+      getCreateFormDraftScope: () => this.getCreateFormDraftScope(),
+      canUseCreateFormFieldDraft: () => this.canRestoreCreateFormDraft,
+      canRestoreCreateFormFieldDraft: () => this.canRestoreCreateFormDraft,
+      canBackupCreateFormFieldDraft: () => this.canBackupCreateFormDraft,
+      canBackupCreateFormFieldDraftOnSubmit: () => this.canBackupCreateFormDraftOnSubmit,
+      registerCreateFormFieldDraftFlush: (fn) => this.registerCreateFormFieldDraftFlush(fn),
+      readCreateFormFieldDraft: (key) => this.readCreateFormFieldDraft(key),
+      writeCreateFormFieldDraft: (key, data, options) => this.writeCreateFormFieldDraft(key, data, options),
+      bindCreateFormFieldDraft: (spec) => this.bindCreateFormFieldDraft(spec),
+      isCreateFormFieldTouched: (key) => this.isCreateFormFieldTouched(key),
+      markCreateFormFieldTouched: (key) => this.markCreateFormFieldTouched(key),
+      isCreateFormFieldDraftFromLocal: (key) => this.isCreateFormFieldDraftFromLocal(key),
     }
   },
   watch: {
+    isBonding (val) {
+      if (!this.canUseCreateFormDraft || this.isFormBackfill) return
+      if (!this.createFormDraftUserInteracted) return
+      this.writeCreateFormFieldDraft(BAREMETAL_CREATE_FORM_DRAFT_FIELD.IS_BONDING, !!val)
+    },
     diskOptionsDate: {
       handler (val) {
         let isDistribution = false
@@ -654,12 +745,23 @@ export default {
       if (this.isInstallOperationSystem) this.fetchSpec()
       this.capability(this.zone)
     },
+    fakeCreateFromBmImport (val) {
+      if (!this.isInstallOperationSystem && this.canUseCreateFormDraft && !this.isFormBackfill && this.createFormDraftUserInteracted) {
+        this.writeCreateFormFieldDraft(BAREMETAL_CREATE_FORM_DRAFT_FIELD.FAKE_CREATE_FROM_BM_IMPORT, !!val)
+      }
+      if (this.isInstallOperationSystem) return
+      const hosts = this.form?.fi?.capability?.specs?.hosts
+      if (!hosts || R.isEmpty(hosts)) return
+      this._refreshSpecOptionsFromHosts()
+    },
   },
   created () {
     this.zonesM2 = new this.$Manager('zones')
     this.serverM = new this.$Manager('servers')
     this.schedulerM = new this.$Manager('schedulers', 'v1')
     this.fetchSpec = _.debounce(this._fetchSpec, 500)
+    this._baremetalDiskDraftApplied = false
+    this._baremetalDiskDraftRestoring = false
     if (this.$route.query.id) {
       this.fetchSpec()
       this.hostDetail()
@@ -671,6 +773,46 @@ export default {
     if (this.scope !== 'project') {
       this.loadHostOpt()
     }
+    this.bindCreateFormFieldDraft({
+      key: BAREMETAL_CREATE_FORM_DRAFT_FIELD.IS_BONDING,
+      kind: 'selection',
+      get: () => this.isBonding,
+      set: (val) => {
+        this.isBonding = !!val
+      },
+    })
+    this.bindCreateFormFieldDraft({
+      key: BAREMETAL_CREATE_FORM_DRAFT_FIELD.FAKE_CREATE_FROM_BM_IMPORT,
+      kind: 'selection',
+      get: () => !!this.fakeCreateFromBmImport,
+      set: (val) => {
+        this.fakeCreateFromBmImport = !!val
+      },
+    })
+    // 规格：selection 双写；回填在 _loadSpecificationOptions 对照 options
+    this.bindCreateFormFieldDraft({
+      key: BAREMETAL_CREATE_FORM_DRAFT_FIELD.SPECIFICATIONS,
+      kind: 'selection',
+      get: () => {
+        const v = this.form?.fc?.getFieldValue?.('specifications')
+        return (v === undefined || v === null || v === '') ? undefined : v
+      },
+    })
+    // 磁盘：composite 仅 session → 同 tab 落盘/回填；跨 tab 无 local，保持不回填
+    this.bindCreateFormFieldDraft({
+      key: BAREMETAL_CREATE_FORM_DRAFT_FIELD.DISK,
+      kind: 'composite',
+      get: () => {
+        if (!Array.isArray(this.diskOptionsDate) || !this.diskOptionsDate.length) return null
+        try {
+          return JSON.parse(JSON.stringify(this.diskOptionsDate))
+        } catch (e) {
+          return undefined
+        }
+      },
+    })
+    this.rememberAllCreateFormFieldDraftLocalOrigins()
+    this.bindBaremetalCreateFormFcDrafts()
   },
   mounted () {
     this.initForm()
@@ -690,92 +832,49 @@ export default {
       return this.zonesM2.get({ id: `${v}/capability`, params })
     },
     async initForm () {
-      const initData = this.initFormData
+      if (this._initFormPromise) return this._initFormPromise
+      this._initFormPromise = this._runInitForm()
+      try {
+        await this._initFormPromise
+      } finally {
+        this._initFormPromise = null
+      }
+    },
+    async _runInitForm () {
+      const initData = this.isInitForm ? this.initFormData : null
       let cData = {}
-      if (this.isInitForm && initData.extraData && this.form?.fc) {
-        try {
-          const { data: capabilityData } = await this.getCapability(initData.prefer_zone, initData)
+      const canInit = !!(this.isInitForm && initData?.extraData)
+      if (!canInit || !this.form?.fc) return
+      if (this._initFormDone) return
+      this._initFormDone = true
+      const preferZone = (Array.isArray(initData.prefer_zones) && initData.prefer_zones[0]) ||
+        initData.prefer_zone ||
+        initData.prefer_zone_id
+      // 尽早写入 zone，保证调度标签列表 params（zone_id）正确，避免回填后被清空
+      if (preferZone) {
+        this.zone = preferZone
+      }
+      if (initData.prefer_region) {
+        this.cloudregion = initData.prefer_region
+      }
+      try {
+        if (preferZone) {
+          const { data: capabilityData } = await this.getCapability(preferZone, initData)
           this.form.fi.capability = capabilityData
           cData = capabilityData
-        } catch (error) {
-          throw error
         }
-        this.$nextTick(() => {
-          // 初始化磁盘
-          if (initData.baremetal_disk_configs && initData.baremetal_disk_configs.length) {
-            let diskData = null
-            if (initData.extraData?.specifications && cData?.specs?.hosts) {
-              const keys = Object.keys(cData.specs.hosts)
-              for (const key of keys) {
-                if (key.replace(/model:.+\//, '') === initData.extraData?.specifications) {
-                  diskData = cData.specs.hosts[key].disk
-                }
-              }
-            }
-            if (diskData) {
-              initData.baremetal_disk_configs.forEach(item => {
-                const key = `${item.driver}.adapter${item.adapter}`
-                const info = _.get(diskData, key) || []
-                if (info.length) {
-                  const opt1 = `${info[0].type}:${sizestr(info[0].size, 'M', 1024)}`
-                  this.addDiskCallBack({
-                    computeCount: item.count, // TODO
-                    count: item.count,
-                    start_index: item.range[0],
-                    end_index: info[0].index,
-                    option: [`${item.driver}:adapter${item.adapter}`, opt1, item.conf],
-                  })
-                }
-              })
-            }
+      } catch (error) {
+        throw error
+      }
+      this.$nextTick(() => {
+        const fromBmImport = !!(initData.fake_create_from_bm_import ?? initData.extraData?.fake_create_from_bm_import)
+        // 从托管物理机新建：无操作系统/磁盘/网络，跳过安装相关回填
+        if (fromBmImport) {
+          this.fakeCreateFromBmImport = true
+          if (cData?.specs?.hosts) {
+            this._loadSpecificationOptions(cData.specs.hosts)
           }
-          // 初始化网络
-          if (this.$refs.networkRef && initData.nets) {
-            let initNetworkType = NETWORK_OPTIONS_MAP.default.key
-            if (initData.nets[0] && initData.nets[0].hasOwnProperty('exit') && !initData.nets[0].exit) {
-              initNetworkType = NETWORK_OPTIONS_MAP.default.key
-            } else if (initData.nets[0] && initData.nets[0].hasOwnProperty('network') && initData.extraData?.extraNets && initData.extraData?.extraNets[0] && initData.extraData?.extraNets[0].hasOwnProperty('network')) {
-              initNetworkType = NETWORK_OPTIONS_MAP.manual.key
-            } else {
-              initNetworkType = NETWORK_OPTIONS_MAP.schedtag.key
-            }
-            this.form.fc.setFieldsValue({
-              networkType: initNetworkType,
-            })
-            this.$refs.networkRef.change({ target: { value: initNetworkType }, name: 'default' })
-            if (initNetworkType === NETWORK_OPTIONS_MAP.manual.key) {
-              this.$nextTick(() => {
-                if (this.$refs.networkRef.$refs.networkConfigRef) {
-                  this.$refs.networkRef.$refs.networkConfigRef.initData(initData.extraData.extraNets)
-                }
-              })
-            }
-            if (initNetworkType === NETWORK_OPTIONS_MAP.schedtag.key) {
-              this.$nextTick(() => {
-                if (this.$refs.networkRef.$refs.networkSchedtagRef) {
-                  this.$refs.networkRef.$refs.networkSchedtagRef.initData(initData.nets)
-                }
-              })
-            }
-          }
-          // 高级配置
-          this.$nextTick(() => {
-            // 调度策略
-            if (this.$refs.schedPolicyRef) {
-              if (initData.prefer_host) {
-                this.$refs.schedPolicyRef.change({ target: { value: 'host' }, name: 'default' })
-              }
-              if (initData.schedtags && initData.schedtags.length) {
-                this.$refs.schedPolicyRef.change({ target: { value: 'schedtag' }, name: 'default' })
-                setTimeout(() => {
-                  if (this.$refs.schedPolicyRef.$refs.policySchedtagRef) {
-                    this.$refs.schedPolicyRef.$refs.policySchedtagRef.initData(initData.schedtags)
-                  }
-                }, 1000)
-              }
-            }
-          })
-          // 初始化标签
+          this.backfillSchedPolicyFromInitData(initData)
           if (initData.__meta__) {
             const ret = {}
             R.forEachObjIndexed((value, key) => {
@@ -783,11 +882,136 @@ export default {
             }, initData.__meta__)
             this.tagDefaultChecked = ret
           }
-        })
+          return
+        }
+        // 初始化磁盘
+        if (initData.baremetal_disk_configs && initData.baremetal_disk_configs.length) {
+          let diskData = null
+          if (initData.extraData?.specifications && cData?.specs?.hosts) {
+            const keys = Object.keys(cData.specs.hosts)
+            for (const key of keys) {
+              if (key.replace(/model:.+\//, '') === initData.extraData?.specifications) {
+                diskData = cData.specs.hosts[key].disk
+              }
+            }
+          }
+          if (diskData) {
+            initData.baremetal_disk_configs.forEach(item => {
+              const key = `${item.driver}.adapter${item.adapter}`
+              const info = _.get(diskData, key) || []
+              if (info.length) {
+                const opt1 = `${info[0].type}:${sizestr(info[0].size, 'M', 1024)}`
+                this.addDiskCallBack({
+                  computeCount: item.count, // TODO
+                  count: item.count,
+                  start_index: item.range[0],
+                  end_index: info[0].index,
+                  option: [`${item.driver}:adapter${item.adapter}`, opt1, item.conf],
+                })
+              }
+            })
+          }
+        }
+        // 初始化网络
+        if (this.$refs.networkRef && initData.nets) {
+          let initNetworkType = NETWORK_OPTIONS_MAP.default.key
+          if (initData.nets[0] && initData.nets[0].hasOwnProperty('exit') && !initData.nets[0].exit) {
+            initNetworkType = NETWORK_OPTIONS_MAP.default.key
+          } else if (initData.nets[0] && initData.nets[0].hasOwnProperty('network') && initData.extraData?.extraNets && initData.extraData?.extraNets[0] && initData.extraData?.extraNets[0].hasOwnProperty('network')) {
+            initNetworkType = NETWORK_OPTIONS_MAP.manual.key
+          } else if (initData.nets.length) {
+            initNetworkType = NETWORK_OPTIONS_MAP.schedtag.key
+          }
+          this.form.fc.setFieldsValue({
+            networkType: initNetworkType,
+          })
+          this.$refs.networkRef.change({ target: { value: initNetworkType }, name: 'default' })
+          if (initNetworkType === NETWORK_OPTIONS_MAP.manual.key) {
+            this.$nextTick(() => {
+              if (this.$refs.networkRef.$refs.networkConfigRef) {
+                this.$refs.networkRef.$refs.networkConfigRef.initData(initData.extraData.extraNets)
+              }
+            })
+          }
+          if (initNetworkType === NETWORK_OPTIONS_MAP.schedtag.key) {
+            this.$nextTick(() => {
+              if (this.$refs.networkRef.$refs.networkSchedtagRef) {
+                this.$refs.networkRef.$refs.networkSchedtagRef.initData(initData.nets)
+              }
+            })
+          }
+        }
+        // 高级配置：调度策略（指定调度标签）
+        this.backfillSchedPolicyFromInitData(initData)
+        // 初始化标签
+        if (initData.__meta__) {
+          const ret = {}
+          R.forEachObjIndexed((value, key) => {
+            ret[key] = R.is(Array, value) ? value : [value]
+          }, initData.__meta__)
+          this.tagDefaultChecked = ret
+        }
+      })
+    },
+    /**
+     * 回填调度策略：等待 PolicySchedtag 挂载后再 initData（只调一次，避免反复换 key）
+     */
+    backfillSchedPolicyFromInitData (initData) {
+      if (!initData || !this.$refs.schedPolicyRef) return
+      if (initData.prefer_host) {
+        this.form.fc.setFieldsValue({ schedPolicyType: 'host' })
+        this.$refs.schedPolicyRef.change({ target: { value: 'host' }, name: 'default' })
+        const preferHost = initData.prefer_host
+        const applyHost = () => {
+          if (!this.form?.fc || !preferHost) return
+          this.form.fc.setFieldsValue({
+            schedPolicyType: 'host',
+            schedPolicyHost: preferHost,
+          })
+          if (this.form.fd) this.$set(this.form.fd, 'schedPolicyHost', preferHost)
+        }
+        applyHost()
+        ;[500, 1500, 3000].forEach(ms => setTimeout(applyHost, ms))
+        return
       }
+      if (!initData.schedtags || !initData.schedtags.length) {
+        // 兼容只写在 extraData 的草稿
+        if (initData.extraData?.schedtags?.length) {
+          initData.schedtags = initData.extraData.schedtags
+        } else {
+          return
+        }
+      }
+      this.form.fc.setFieldsValue({ schedPolicyType: 'schedtag' })
+      this.$refs.schedPolicyRef.change({ target: { value: 'schedtag' }, name: 'default' })
+      let applied = false
+      const tryInit = () => {
+        if (applied) return true
+        const ref = this.$refs.schedPolicyRef && this.$refs.schedPolicyRef.$refs.policySchedtagRef
+        if (ref && ref.initData) {
+          ref.initData(initData.schedtags)
+          applied = true
+          return true
+        }
+        return false
+      }
+      this.$nextTick(() => {
+        if (tryInit()) return
+        setTimeout(tryInit, 300)
+        setTimeout(tryInit, 1000)
+      })
     },
     vpcResourceMapper (list) {
       return list.filter(val => val.id === 'default')
+    },
+    // CloudregionZone 程序化 setFieldsValue 不走 onValuesChange，用 update 事件同步
+    onCloudregionUpdate (item) {
+      this.cloudregion = item?.id || ''
+    },
+    onZoneUpdate (item) {
+      const zoneId = item?.id || ''
+      this.zone = zoneId
+      if (zoneId) this.capability(zoneId)
     },
     setSelectedImage ({ imageMsg }) {
       this.selectedImage = imageMsg
@@ -820,8 +1044,10 @@ export default {
       this.hostResourceMapper(this.hostData)
       // 获取此规格的包含的wire
       this.getSpecWire(value)
-      // 规格变动清空历史硬盘配置
-      this.diskOptionsDate = []
+      // 规格变动清空历史硬盘配置（工单/草稿磁盘回填期间保留）
+      if (!this.isFormBackfill && !this._baremetalDiskDraftRestoring) {
+        this.diskOptionsDate = []
+      }
     },
     // 获取物理机数据
     loadHostOpt () {
@@ -873,6 +1099,7 @@ export default {
       })
     },
     capability (v, isIso = false) { // 可用区查询
+      if (!v) return // 避免 zones//capability
       const data = {
         show_emulated: true,
         resource_type: this.resourceType,
@@ -912,6 +1139,10 @@ export default {
         }
       })
     },
+    isImportBaremetalSpec (spec) {
+      const flag = spec?.create_from_import_baremetal
+      return flag === true || flag === 'true' || flag === 1
+    },
     _loadSpecificationOptions (data) {
       const specs = {}
       let entries = Object.entries(data)
@@ -922,28 +1153,50 @@ export default {
       entries.forEach(item => {
         specs[item[0]] = item[1]
       })
+      this.form.fi.capability.specs.hosts = specs
+      this._refreshSpecOptionsFromHosts()
+    },
+    // 按「从托管物理机新建」过滤规格下拉；hosts 全量保留以便切换开关时重筛
+    _refreshSpecOptionsFromHosts () {
+      const specs = this.form.fi.capability.specs.hosts || {}
       const options = []
       for (const k in specs) {
-        const spec = {
+        if (!this.isInstallOperationSystem) {
+          const isImport = this.isImportBaremetalSpec(specs[k])
+          if (this.fakeCreateFromBmImport ? !isImport : isImport) continue
+        }
+        options.push({
           text: this.__getSpecification(specs[k]),
           value: k,
-        }
-        options.push(spec)
+        })
       }
-      this.form.fi.capability.specs.hosts = specs
       this.specOptions = this.__ignoreModel(options)
       if (this.specOptions && this.specOptions.length) {
-        // 规格默认选中第一项
+        // 工单/同 tab 草稿：优先已选规格，避免被默认第一项覆盖
+        let preferSpec = ''
+        if (this.isFormBackfill) {
+          preferSpec = this.effectiveInitFormData?.extraData?.specifications ||
+            this.form.fc.getFieldValue('specifications') || ''
+        } else if (this.canRestoreCreateFormDraft) {
+          const draftSpec = this.readCreateFormFieldDraft(BAREMETAL_CREATE_FORM_DRAFT_FIELD.SPECIFICATIONS)
+          preferSpec = draftSpec || this.form.fc.getFieldValue('specifications') || ''
+        } else {
+          preferSpec = this.form.fc.getFieldValue('specifications') || ''
+        }
+        const matched = preferSpec
+          ? this.specOptions.find(o => o.value === preferSpec)
+          : null
+        const selectedOption = matched || this.specOptions[0]
         this.$nextTick(() => {
-          this.form.fc.setFieldsValue({ specifications: this.specOptions[0].value })
+          this.form.fc.setFieldsValue({ specifications: selectedOption.value })
         })
         // 存储选中规格中的信息
-        this.diskData = this.form.fi.capability.specs.hosts[this.specOptions[0].value].disk
+        this.diskData = this.form.fi.capability.specs.hosts[selectedOption.value].disk
         this.hostResourceMapper(this.hostData)
         // 根据规格读取wire数据
-        this.getSpecWire(this.specOptions[0].value)
-        const originalValue = this.specOptions[0].value
-        const str = this.specOptions[0].value.replace(/\//g, ',')
+        this.getSpecWire(selectedOption.value)
+        const originalValue = selectedOption.value
+        const str = selectedOption.value.replace(/\//g, ',')
         const arr = str.split(',')
         const obj = {}
         for (var i = 0; i < arr.length; i++) {
@@ -956,7 +1209,37 @@ export default {
         if (R.has('isolated_devices')(currentSpec)) {
           this.selectedSpecItem.isolated_devices = currentSpec.isolated_devices
         }
+        this.$nextTick(() => this.restoreBaremetalDiskDraft())
+      } else {
+        this.specOptions = []
+        this.$nextTick(() => {
+          this.form.fc.setFieldsValue({ specifications: '' })
+        })
+        this.diskData = {}
+        this.selectedSpecItem = {}
       }
+    },
+    /**
+     * 同 tab（session）回填磁盘配置；跨 tab（仅 local）跳过，保持不回填
+     */
+    restoreBaremetalDiskDraft () {
+      if (this._baremetalDiskDraftApplied) return
+      if (!this.canRestoreCreateFormDraft || this.isInitForm) return
+      const diskKey = BAREMETAL_CREATE_FORM_DRAFT_FIELD.DISK
+      // 跨 tab：不回填磁盘（与虚机数据盘策略一致）
+      if (this.isCreateFormFieldDraftFromLocal(diskKey)) return
+      const draft = this.readCreateFormFieldDraft(diskKey)
+      if (!Array.isArray(draft) || !draft.length) return
+      this._baremetalDiskDraftApplied = true
+      this._baremetalDiskDraftRestoring = true
+      try {
+        this.diskOptionsDate = JSON.parse(JSON.stringify(draft))
+      } catch (e) {
+        this.diskOptionsDate = draft
+      }
+      this.$nextTick(() => {
+        this._baremetalDiskDraftRestoring = false
+      })
     },
     __getSpecification (spec) {
       const cpu = spec.cpu
@@ -1182,6 +1465,38 @@ export default {
         },
       })
     },
+    /**
+     * 从表单 / PolicySchedtag 组件收集调度标签
+     */
+    collectSchedtagsForDraft (values = {}) {
+      const schedtags = []
+      const pushItem = (idVal, strategyVal) => {
+        const id = typeof idVal === 'object' ? (idVal?.key || idVal?.id) : idVal
+        if (!id) return
+        const strategy = typeof strategyVal === 'object' ? (strategyVal?.key || strategyVal?.id) : strategyVal
+        schedtags.push({ id, strategy })
+      }
+      if (values.policySchedtagSchedtags && typeof values.policySchedtagSchedtags === 'object') {
+        Object.keys(values.policySchedtagSchedtags).forEach(key => {
+          pushItem(values.policySchedtagSchedtags[key], values.policySchedtagPolicys?.[key])
+        })
+      } else {
+        Object.keys(values).forEach(k => {
+          const m = /^policySchedtagSchedtags\[(.+)\]$/.exec(k)
+          if (!m || !values[k]) return
+          pushItem(values[k], values[`policySchedtagPolicys[${m[1]}]`])
+        })
+      }
+      if (!schedtags.length) {
+        const list = this.$refs.schedPolicyRef?.$refs?.policySchedtagRef?.schedtagPolicyList
+        if (Array.isArray(list)) {
+          list.forEach(item => {
+            if (item?.schedtag) pushItem(item.schedtag, item.policy)
+          })
+        }
+      }
+      return schedtags
+    },
     validateForm () {
       return new Promise((resolve, reject) => {
         this.form.fc.validateFields((err, values) => {
@@ -1212,24 +1527,31 @@ export default {
       }
       return size
     },
-    async handleConfirm (e) {
-      e.preventDefault()
+    async handleConfirm (e, action = 'submit') {
+      if (e && e.preventDefault) e.preventDefault()
       const diskConfigs = []
       const values = await this.validateForm()
       const disks = []
       const nets = []
+      const fromBmImport = !!this.fakeCreateFromBmImport
       const extraData = {
         formType: this.cloudEnv,
         __resource_type__: 'baremetal',
-        image_type: values.imageType,
-        os: values.os,
-        image: values.image.key,
         domain_id: values.domain?.key || this.$store.getters.userInfo.projectDomainId,
         specifications: values.specifications,
         extraNets: [],
+        isBonding: this.isBonding,
       }
-      // 判断数据盘是否合法
-      if (this.diskOptionsDate.length > 0) {
+      if (!fromBmImport) {
+        extraData.image_type = values.imageType
+        extraData.os = values.os
+        extraData.image = values.image && values.image.key
+        extraData.loginType = values.loginType
+      } else {
+        extraData.fake_create_from_bm_import = true
+      }
+      // 判断数据盘是否合法（从托管物理机新建不校验磁盘）
+      if (!fromBmImport && this.diskOptionsDate.length > 0) {
         if (this.isShowFalseIcon) {
           this.$message.error(i18n.t('compute.text_319'))
           throw new Error(i18n.t('compute.text_319'))
@@ -1283,90 +1605,97 @@ export default {
         // 根据adapter排序diskConfigs
         diskConfigs.sort((a, b) => { return a.adapter - b.adapter })
       }
-      if (values.networks) {
-        const networks = values.networks
-        for (const key in networks) {
-          const option = {
-            network: networks[key],
+      if (!fromBmImport) {
+        if (values.networks) {
+          const networks = values.networks
+          for (const key in networks) {
+            const option = {
+              network: networks[key],
+            }
+            if (!R.isNil(values.networkIps) && !R.isEmpty(values.networkIps)) {
+              option.address = values.networkIps[key]
+            }
+            if (values.networkIPv6s && values.networkIPv6s[key]) {
+              option.require_ipv6 = true
+            }
+            if (values.networkIpsAddress6 && values.networkIpsAddress6[key]) {
+              const ipv6Last = values.networkIpsAddress6[key]
+              const target = this.form.fi.networkList.filter(item => item.key === key)
+              const ipv6First = getIpv6Start(target[0]?.network?.guest_ip6_start)
+              option.address6 = ipv6First + ipv6Last
+            }
+            if (values.networkIPv6Modes && values.networkIPv6Modes[key] === 'only' && option.require_ipv6) {
+              option.strict_ipv6 = true
+            }
+            // 是否启用bonding
+            if (this.isBonding) {
+              option.require_teaming = true
+              if (this.isInstallOperationSystem) option.private = false
+              nets.push(option)
+              if (values.vpcs && values.vpcs[key]) {
+                const extraOption = { ...option, vpc: values.vpcs[key] }
+                extraData.extraNets.push(extraOption)
+              } else {
+                extraData.extraNets.push(option)
+              }
+            } else {
+              nets.push(option)
+              if (values.vpcs && values.vpcs[key]) {
+                const extraOption = { ...option, vpc: values.vpcs[key] }
+                extraData.extraNets.push(extraOption)
+              } else {
+                extraData.extraNets.push(option)
+              }
+            }
           }
-          if (!R.isNil(values.networkIps) && !R.isEmpty(values.networkIps)) {
-            option.address = values.networkIps[key]
-          }
-          if (values.networkIPv6s && values.networkIPv6s[key]) {
-            option.require_ipv6 = true
-          }
-          if (values.networkIpsAddress6 && values.networkIpsAddress6[key]) {
-            const ipv6Last = values.networkIpsAddress6[key]
-            const target = this.form.fi.networkList.filter(item => item.key === key)
-            const ipv6First = getIpv6Start(target[0]?.network?.guest_ip6_start)
-            option.address6 = ipv6First + ipv6Last
-          }
-          if (values.networkIPv6Modes && values.networkIPv6Modes[key] === 'only' && option.require_ipv6) {
-            option.strict_ipv6 = true
-          }
+        } else if (values.networkSchedtags) {
+          R.forEachObjIndexed((value, key) => {
+            const obj = {
+              id: value,
+            }
+            if (this.isBonding) {
+              obj.require_teaming = true
+            }
+            const strategy = values.networkPolicys[key]
+            if (strategy) {
+              obj.strategy = strategy
+            }
+            nets.push({
+              schedtags: [obj],
+            })
+          }, values.networkSchedtags)
+        } else {
           // 是否启用bonding
           if (this.isBonding) {
-            option.require_teaming = true
-            if (this.isInstallOperationSystem) option.private = false
-            nets.push(option)
-            if (values.vpcs && values.vpcs[key]) {
-              const extraOption = { ...option, vpc: values.vpcs[key] }
-              extraData.extraNets.push(extraOption)
-            } else {
-              extraData.extraNets.push(option)
-            }
+            nets.push({ exit: false, require_teaming: true })
           } else {
-            nets.push(option)
-            if (values.vpcs && values.vpcs[key]) {
-              const extraOption = { ...option, vpc: values.vpcs[key] }
-              extraData.extraNets.push(extraOption)
-            } else {
-              extraData.extraNets.push(option)
-            }
+            nets.push({ exit: false })
           }
-        }
-      } else if (values.networkSchedtags) {
-        R.forEachObjIndexed((value, key) => {
-          const obj = {
-            id: value,
-          }
-          if (this.isBonding) {
-            obj.require_teaming = true
-          }
-          const strategy = values.networkPolicys[key]
-          if (strategy) {
-            obj.strategy = strategy
-          }
-          nets.push({
-            schedtags: [obj],
-          })
-        }, values.networkSchedtags)
-      } else {
-        // 是否启用bonding
-        if (this.isBonding) {
-          nets.push({ exit: false, require_teaming: true })
-        } else {
-          nets.push({ exit: false })
         }
       }
       // 判断是否是安装操作系统
-      let params = {
+      const params = {
         project_id: this.projectId?.key,
         count: values.count,
         vmem_size: Number(this.selectedSpecItem.mem.substr(0, this.selectedSpecItem.mem.length - 1)),
         vcpu_count: Number(this.selectedSpecItem.cpu),
         generate_name: values.name,
         hypervisor: 'baremetal',
+        provider: this.cloudEnv === 'private' ? 'Cloudpods' : 'OneCloud',
         auto_start: true,
         vdi: 'vnc',
-        disks,
-        baremetal_disk_configs: diskConfigs,
-        nets,
         prefer_host: this.isInstallOperationSystem ? this.$route.query.id : values.schedPolicyHost,
         description: values.description,
         prefer_region: values.cloudregion ? values.cloudregion.key : this.$route.query.region_id,
         prefer_zone: values.zone ? values.zone.key : this.$route.query.zone_id,
         __meta__: values.__meta__,
+      }
+      if (fromBmImport) {
+        params.fake_create_from_bm_import = true
+      } else {
+        params.disks = disks
+        params.baremetal_disk_configs = diskConfigs
+        params.nets = nets
       }
       if (values.policySchedtagSchedtags) {
         const schedtags = []
@@ -1379,62 +1708,170 @@ export default {
           }
         }
         params.schedtags = schedtags
-      }
-      if (values.loginPassword) params.password = values.loginPassword
-      if (values.loginKeypair) params.keypair = values.loginKeypair.key
-      if (values.loginType === 'image') params.reset_password = false
-      if (this.selectedSpecItem.isolated_devices) params.isolated_devices = this.selectedSpecItem.isolated_devices
-      // 判断是否是iso导入
-      if (values.imageType === 'iso') {
-        params = {
-          ...params,
-          cdrom: values.image.key,
+        extraData.schedtags = schedtags
+      } else {
+        const schedtags = this.collectSchedtagsForDraft(values)
+        if (schedtags.length) {
+          params.schedtags = schedtags
+          extraData.schedtags = schedtags
         }
       }
+      if (!fromBmImport) {
+        if (values.loginPassword) params.password = values.loginPassword
+        if (values.loginKeypair) params.keypair = values.loginKeypair.key
+        if (values.loginType === 'image') params.reset_password = false
+        // 判断是否是iso导入
+        if (values.imageType === 'iso' && values.image && values.image.key) {
+          params.cdrom = values.image.key
+        }
+      }
+      if (this.selectedSpecItem.isolated_devices) params.isolated_devices = this.selectedSpecItem.isolated_devices
       if (this.isInstallOperationSystem) {
         // Reflect.deleteProperty(params, 'project_id')
         this.createBaremetal(params)
-      } else {
-        if (this.isOpenWorkflow) { // 提交工单
-          const workflowParams = {
-            ...params,
-            extraData,
-          }
-          const variables = {
-            process_definition_key: WORKFLOW_TYPES.APPLY_MACHINE,
-            initiator: this.$store.getters.userInfo.id,
-            'server-create-paramter': JSON.stringify(workflowParams),
-            project: this.projectId?.key,
-            project_domain: this.domainId?.key || this.$store.getters.userInfo.projectDomainId,
-          }
-          this.doCreateWorkflow(variables, workflowParams)
-        } else { // 创建裸金属
-          this.doForecast(params)
+      } else if (action === 'addCart') {
+        const workflowParams = {
+          ...params,
+          extraData,
         }
+        await this.checkCreateData(workflowParams)
+        await this.checkForecast(workflowParams)
+        const shopCart = this.buildShopCartParameter(workflowParams)
+        this.$message.success(this.$t('common.success'))
+        this.$store.commit('shopcart/ADD_SHOP_CART', shopCart)
+        this.flushCreateFormFieldDrafts()
+      } else if (this.isModifyShopCartOrder || this.isOpenWorkflow || this.isModifyWorkflow) {
+        const workflowParams = {
+          ...params,
+          extraData,
+        }
+        await this.checkCreateData(workflowParams)
+        await this.checkForecast(workflowParams)
+        const variables = {
+          process_definition_key: WORKFLOW_TYPES.APPLY_MACHINE,
+          initiator: this.$store.getters.userInfo.id,
+          'server-create-paramter': JSON.stringify(workflowParams),
+          project: this.projectId?.key,
+          project_domain: this.domainId?.key || this.$store.getters.userInfo.projectDomainId,
+        }
+        await this.doCreateWorkflow(variables, workflowParams)
+      } else if (this.isOpenOrderSetWorkflow) {
+        const workflowParams = {
+          ...params,
+          extraData,
+        }
+        await this.doCreateOrderSetWorkflow(workflowParams)
+      } else { // 创建裸金属
+        this.doForecast(params)
       }
     },
-    // 创建工单
-    doCreateWorkflow (variables, params) {
+    buildShopCartParameter (workflowParams) {
+      const { count, ...parameter } = workflowParams
+      const shopCart = {
+        action: 'create',
+        auto_execute: true,
+        count: count || 1,
+        resource: 'servers',
+        user_id: this.$store.getters.userInfo.id,
+        parameter,
+        project: this.projectId?.key || this.$store.getters.userInfo.projectId,
+        project_domain: this.domainId?.label || this.domainId?.key || this.$store.getters.userInfo.projectDomain,
+      }
+      return shopCart
+    },
+    async checkCreateData (data) {
+      return new this.$Manager('servers').create({ data: { ...data, dry_run: true } })
+    },
+    async checkForecast (params) {
+      const res = await this.schedulerM.rpc({ methodname: 'DoForecast', params })
+      if (res.data.can_create) {
+        return params
+      }
+      this.errors = this.getForecastErrors(res.data)
+      throw this.errors
+    },
+    async addShopCart () {
+      if (this.isInstallOperationSystem) return
+      try {
+        this.submiting = true
+        await this.handleConfirm(null, 'addCart')
+      } catch (error) {
+        throw error
+      } finally {
+        this.submiting = false
+      }
+    },
+    async doCreateOrderSetWorkflow (workflowParams) {
       this.submiting = true
-      if (this.$route.query.workflow) {
-        new this.$Manager('historic-process-instances', 'v1')
-          .update({ id: `${this.$route.query.workflow}/variables`, data: { variables } })
-          .then(() => {
-            this.submiting = false
-            this.$message.success(i18n.t('compute.text_320', [params.name]))
-            this.$router.push('/workflow')
-          })
-      } else {
-        new this.$Manager('process-instances', 'v1')
+      try {
+        await this.checkCreateData(workflowParams)
+        await this.checkForecast(workflowParams)
+        const { displayname, name } = this.$store.getters.userInfo
+        const shopCart = this.buildShopCartParameter(workflowParams)
+        const orderSetRes = await new this.$Manager('resource_order_sets').create({
+          data: {
+            auto_execute: false,
+            name: this.$t('common.shopcart_workflow_name', [displayname || name, this.$moment().format('YYYY-MM-DD'), uuid()]),
+            parameters: [shopCart],
+          },
+        })
+        const variables = {
+          process_definition_key: WORKFLOW_TYPES.EXECUTE_RESOURCE_ORDER_SET,
+          initiator: this.$store.getters.userInfo.id,
+          ids: orderSetRes.data.id,
+          parameter: '{}',
+          project: shopCart.project,
+          project_domain: shopCart.project_domain,
+        }
+        await new this.$Manager('process-instances', 'v1').create({ data: { variables } })
+        this.$message.success(i18n.t('compute.text_320', [workflowParams.generate_name]))
+        this.$router.push('/workflow')
+      } catch (error) {
+        throw error
+      } finally {
+        this.submiting = false
+      }
+    },
+    // 创建/修改工单
+    async doCreateWorkflow (variables, params) {
+      const { workflow = '', order_set_id = '', order_set_idx = '' } = this.$route.query
+      this.submiting = true
+      try {
+        if (order_set_id && workflow) {
+          const idx = Number(order_set_idx)
+          const res = await new this.$Manager('resource_order_sets').get({ id: order_set_id })
+          const existing = res.data?.parameters?.[idx]
+          if (!existing) {
+            this.$message.error(this.$t('common.failed'))
+            throw new Error('resource order set item not found')
+          }
+          const { count, ...parameter } = params
+          const parameters = [...res.data.parameters]
+          parameters[idx] = {
+            ...existing,
+            count: count || existing.count || 1,
+            parameter,
+          }
+          await new this.$Manager('resource_order_sets').update({ id: order_set_id, data: { parameters } })
+          this.$message.success(this.$t('common.success'))
+          this.$router.push('/workflow')
+          return
+        }
+        if (workflow) {
+          await new this.$Manager('historic-process-instances', 'v1')
+            .update({ id: `${workflow}/variables`, data: { variables } })
+          this.$message.success(i18n.t('compute.text_320', [params.name || params.generate_name]))
+          this.$router.push('/workflow')
+          return
+        }
+        await new this.$Manager('process-instances', 'v1')
           .create({ data: { variables } })
-          .then(() => {
-            this.submiting = false
-            this.$message.success(i18n.t('compute.text_320', [params.name]))
-            this.$router.push('/workflow')
-          })
-          .catch(() => {
-            this.submiting = false
-          })
+        this.$message.success(i18n.t('compute.text_320', [params.name || params.generate_name]))
+        this.$router.push('/workflow')
+      } catch (error) {
+        throw error
+      } finally {
+        this.submiting = false
       }
     },
     doForecast (params) {
@@ -1456,16 +1893,20 @@ export default {
     // 创建裸金属
     createBaremetal (data) {
       const { count } = data
+      const onSuccess = () => {
+        this.submiting = false
+        this.flushCreateFormFieldDrafts()
+        this.$message.success(i18n.t('compute.text_322'))
+        if (this.isInstallOperationSystem) {
+          this.$router.push('/physicalmachine')
+        } else {
+          this.$router.push('/baremetal')
+        }
+      }
       if (count > 1) {
         this.serverM.batchCreate({ data, count })
           .then(res => {
-            this.submiting = false
-            this.$message.success(i18n.t('compute.text_322'))
-            if (this.isInstallOperationSystem) {
-              this.$router.push('/physicalmachine')
-            } else {
-              this.$router.push('/baremetal')
-            }
+            onSuccess()
           })
           .catch(() => {
             this.submiting = false
@@ -1473,13 +1914,7 @@ export default {
       } else {
         this.serverM.create({ data })
           .then(res => {
-            this.submiting = false
-            this.$message.success(i18n.t('compute.text_322'))
-            if (this.isInstallOperationSystem) {
-              this.$router.push('/physicalmachine')
-            } else {
-              this.$router.push('/baremetal')
-            }
+            onSuccess()
           })
           .catch(() => {
             this.submiting = false
@@ -1532,6 +1967,25 @@ export default {
     },
     handleCancel () {
       this.$router.push({ name: 'Baremetal' })
+    },
+    bindBaremetalCreateFormFcDrafts () {
+      this._baremetalCreateFormFcDraftMap = Object.create(null)
+      ;(BAREMETAL_CREATE_FORM_DRAFT_FC_BINDINGS || []).forEach((item) => {
+        if (!item?.key || !item.formField) return
+        this._baremetalCreateFormFcDraftMap[item.formField] = item.key
+        this.bindFormFcFieldDraft(item.key, { formField: item.formField })
+      })
+    },
+    syncBaremetalCreateFormFcDrafts (newField) {
+      if (!this.canUseCreateFormDraft || !newField || typeof newField !== 'object') return
+      // 仅用户交互后落盘，避免程序化 setFieldsValue 污染草稿
+      if (!this.createFormDraftUserInteracted) return
+      const map = this._baremetalCreateFormFcDraftMap || {}
+      Object.keys(newField).forEach((formField) => {
+        const draftKey = map[formField]
+        if (!draftKey) return
+        this.writeCreateFormFieldDraft(draftKey, newField[formField])
+      })
     },
   },
 }

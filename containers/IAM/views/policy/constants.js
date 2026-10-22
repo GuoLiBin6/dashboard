@@ -117,8 +117,7 @@ export const RESOURCES_MAP = {
       { action: 'perform', label: i18n.t('compute.vminstance.actions.setup_ssh_authentication'), value: 'make-sshable' },
       { action: 'get', label: i18n.t('compute.vminstance.actions.detect_ssh_authentication'), value: 'sshable' },
       { action: 'perform', label: i18n.t('cloudenv.text_532'), value: 'save-image' },
-      { action: 'perform', label: i18n.t('cloudenv.text_533'), value: 'insertiso' },
-      { action: 'perform', label: i18n.t('cloudenv.text_534'), value: 'ejectiso' },
+      { action: 'perform', label: i18n.t('cloudenv.text_533'), value: 'set-iso' },
       { action: 'perform', label: i18n.t('cloudenv.text_535'), value: 'add-secgroup' },
       { action: 'perform', label: i18n.t('compute.revoke_secgroup'), value: 'revoke-secgroup' },
       { action: 'perform', label: i18n.t('compute.set_secgroup'), value: 'set-secgroup' },
@@ -796,6 +795,9 @@ export const RESOURCES_MAP = {
   },
   container_registries: {
     i18n: 'dictionary.container_registry',
+  },
+  container_images: {
+    i18n: 'dictionary.container_image',
   },
   organizations: {
     i18n: 'dictionary.organization',

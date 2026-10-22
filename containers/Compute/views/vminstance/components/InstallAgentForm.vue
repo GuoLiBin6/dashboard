@@ -1,12 +1,12 @@
 <template>
-  <div>
-    <div v-show="!installing">
+  <div class="install-agent-form">
+    <div v-show="!installing" class="install-agent-form-status">
       <a-tooltip>
         <template slot="title" v-if="install_failed_reason">
           {{ install_failed_reason }}
         </template>
         {{ installTips }}
-        <help-link :href="peHelpLink" v-if="showPEHelpLink">PE</help-link>
+        <help-link :href="peHelpLink" v-if="showPEHelpLink && showDocsLink()">PE</help-link>
       </a-tooltip>
       <a-tooltip>
         <template slot="title" v-if="disableTips">
@@ -17,17 +17,25 @@
         </a-button>
       </a-tooltip>
     </div>
-    <div v-show="installing">
+    <div v-show="installing" class="install-agent-form-status">
       {{ $t('compute.vminstance.monitor.install_agent.installing') }}
       <a-icon type="loading" />
     </div>
+    <a-tooltip v-if="agent_record_id">
+      <template slot="title">{{ $t('compute.vminstance.monitor.install_agent.view_log_tips') }}</template>
+      <span class="install-agent-form-log">
+        <a-button type="link" @click="handleViewLog">
+          {{ $t('compute.vminstance.monitor.install_agent.view_log') }}
+        </a-button>
+      </span>
+    </a-tooltip>
   </div>
 </template>
 
 <script>
 import _ from 'lodash'
 import WindowsMixin from '@/mixins/windows'
-import { genDocsUrl } from '@/utils/utils'
+import { DOCS_MAP, showDocsLink } from '@/constants/docs'
 
 export default {
   name: 'InstallAgentForm',
@@ -44,32 +52,21 @@ export default {
     isPageDestroyed: Boolean,
   },
   data () {
-    let agent_install_status
-    const deploy = _.get(this.data, ['metadata', 'telegraf_deployed'])
-    if (deploy) {
-      agent_install_status = 'installed'
-    } else if (this.data.hasOwnProperty('agent_status')) {
-      const { agent_status } = this.data
-      if (agent_status === 'succeed') {
-        agent_install_status = 'installed'
-      } else if (agent_status === 'applying') {
-        agent_install_status = 'installing'
-      } else if (agent_status === 'failed') {
-        agent_install_status = 'install_failed'
-      } else {
-        agent_install_status = 'install'
-      }
-    } else {
-      agent_install_status = 'install'
-    }
     return {
+      showDocsLink,
       /* install, installed, installing, install_failed */
-      agent_install_status,
+      agent_install_status: this.resolveAgentInstallStatus(this.data),
     }
   },
   computed: {
     installing () {
       return this.agent_install_status === 'installing'
+    },
+    // The side page passes the id of the script apply record of the latest attempt;
+    // it is absent for the install paths that are not driven by an ansible script
+    // (for instance the deploy of a ready KVM guest) and for the container hosts.
+    agent_record_id () {
+      return this.data.agent_record_id
     },
     showInstallButton () {
       return this.agent_install_status === 'install' || this.agent_install_status === 'install_failed'
@@ -83,7 +80,7 @@ export default {
             case 'Others':
               return this.$t('compute.vminstance.monitor.install_agent.tips_failed.others')
             case 'NoReachInfluxdb':
-              return this.$t('compute.vminstance.monitor.install_agent.tips_failed.no_reach_influxdb')
+              return showDocsLink() ? this.$t('compute.vminstance.monitor.install_agent.tips_failed.no_reach_influxdb') : this.$t('compute.vminstance.monitor.install_agent.tips_failed.no_reach_influxdb_1')
             case 'ServerNotSshable':
               return this.$t('compute.vminstance.monitor.install_agent.tips_failed.server_not_sshable')
             default:
@@ -99,12 +96,7 @@ export default {
       return this.agent_install_status === 'install_failed' && this.install_failed_code === 'NoReachInfluxdb'
     },
     peHelpLink () {
-      return genDocsUrl({
-        scope: this.$store.getters.scope,
-        isSysCE: this.$store.getters.isSysCE,
-        cePath: 'guides/onpremise/network/ssh/sshproxy',
-        eePath: 'web_ui/network/ssh/sshproxy',
-      })
+      return DOCS_MAP.sshProxy()
     },
     install_failed_code () {
       return this.agent_install_status === 'install_failed' && this.data.agent_fail_code
@@ -139,6 +131,13 @@ export default {
     },
   },
   watch: {
+    data: {
+      handler (val) {
+        const next = this.resolveAgentInstallStatus(val)
+        if (this.agent_install_status === 'installing' && next === 'install') return
+        this.agent_install_status = next
+      },
+    },
     'data.agent_status': {
       handler: function (val, oldval) {
         if (oldval === 'applying' || this.agent_install_status === 'installing') {
@@ -159,6 +158,19 @@ export default {
     },
   },
   methods: {
+    resolveAgentInstallStatus (data) {
+      if (!data) return 'install'
+      const deploy = _.get(data, ['metadata', 'telegraf_deployed'])
+      const monitorAgent = _.get(data, ['metadata', 'sys:monitor_agent']) || _.get(data, ['metadata', '__monitor_agent'])
+      const deployed = deploy === true || deploy === 'true'
+      if (deployed || monitorAgent) return 'installed'
+      if (Object.prototype.hasOwnProperty.call(data, 'agent_status')) {
+        if (data.agent_status === 'succeed') return 'installed'
+        if (data.agent_status === 'applying') return 'installing'
+        if (data.agent_status === 'failed') return 'install_failed'
+      }
+      return 'install'
+    },
     async handleInstallAgent (e) {
       if (this.data.hypervisor === 'kvm' || this.data.hypervisor === 'esxi') {
         if (this.data.status === 'running') {
@@ -207,6 +219,11 @@ export default {
       this.agent_install_status = 'installing'
       this.$bus.$emit('agentStatusQuery', id)
     },
+    handleViewLog () {
+      this.createDialog('MonitorAgentAnsibleLogDialog', {
+        recordId: this.agent_record_id,
+      })
+    },
     // async handleInstallTask (id) {
     //   if (!id) return
     //   this.agent_install_status = 'installing'
@@ -243,5 +260,22 @@ export default {
 </script>
 
 <style scoped>
-
+/* Keep the install status, the install button and the deploy log link on a single
+   line. The children are blocks by default, which used to push the log link onto a
+   line of its own. The status text is the only part allowed to shrink, so the log
+   link never breaks onto a separate line, the text wraps instead. */
+.install-agent-form {
+  display: flex;
+  align-items: center;
+}
+.install-agent-form-status {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+.install-agent-form-log {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  /* ml-2 equivalent, the install button next to it uses the same spacing */
+  margin-left: 8px;
+}
 </style>

@@ -1,15 +1,33 @@
 import qs from 'qs'
 import { SERVER_TYPE, SMART_SSH_FORM_DECORATORS } from '@Compute/constants'
+import { isServerNetworkTagMode } from '@Compute/utils/secgroupDisplay'
 import VncInfoFetcher from '@Compute/sections/VncInfoFetcher'
 import { disableDeleteAction } from '@/utils/common/tableActions'
 import { typeClouds, findPlatform } from '@/utils/common/hypervisor'
 import i18n from '@/locales'
-import { HOST_CPU_ARCHS } from '@/constants/compute'
 import { PROVIDER_MAP, BRAND_MAP } from '@/constants'
 import { hasSetupKey, isLicense2 } from '@/utils/auth'
 import { KVM_SHARE_STORAGES } from '@/constants/storage'
 import { POLICY_RES_NAME_KEY_MAP } from '@/constants/policy'
 import { commonUnabled, cloudEnabled, cloudUnabledTip, commonEnabled, commonTip, validateRescueMode } from '../utils'
+import { getRenewAction } from '../utils/renewActions'
+import { getAutoRenewAction } from '../utils/autoRenewActions'
+import { getStartAction } from '../utils/startActions'
+
+// 策略仅保留 server_perform_set_gpu（展示名：设置透传设备）；PCI/USB 均由此控制
+export const getHostIsolatedDeviceAvailableTypes = (vm, obj) => {
+  if (vm.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_set_gpu')) {
+    return []
+  }
+  const types = []
+  if (!obj || cloudEnabled('acttachGpu', obj)) {
+    types.push('pci')
+  }
+  if (!obj || cloudEnabled('acttachUsb', obj)) {
+    types.push('usb')
+  }
+  return types
+}
 
 const getSingleActions = function (ctx) {
   let hasBastionService = false
@@ -137,7 +155,8 @@ const getSingleActions = function (ctx) {
                 this.openWebConsole(obj, data, 'ws')
               })
             }
-            if (obj.os_type !== 'Windows') {
+            const isWindows = obj.os_type === 'Windows' || (obj.metadata?.os_distribution === 'Windows')
+            if (!isWindows) {
               options.push({
                 label: `SSH ${ipAddr}`,
                 permission: 'server_perform_list_forward,server_perform_open_forward',
@@ -372,23 +391,7 @@ const getSingleActions = function (ctx) {
                 hidden: () => this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_syncstatus'),
               },
               // 开机
-              {
-                label: i18n.t('compute.text_272'),
-                permission: 'server_perform_start',
-                action: (obj) => {
-                  this.createDialog('VmStartDialog', {
-                    data: [obj],
-                    columns: this.columns,
-                    onManager: this.onManager,
-                  })
-                },
-                meta: () => {
-                  return {
-                    validate: cloudEnabled('start', obj),
-                  }
-                },
-                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_start'),
-              },
+              getStartAction(this, obj),
               // 关机
               {
                 label: i18n.t('compute.text_273'),
@@ -644,6 +647,26 @@ const getSingleActions = function (ctx) {
                 },
                 hidden: (row) => !(hasSetupKey(['onecloud'])) || this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_screen_dump'),
               },
+              // 手动触发无人值守安装完成
+              {
+                label: i18n.t('compute.kickstart_complete'),
+                permission: 'server_perform_kickstart_complete',
+                action: () => {
+                  this.createDialog('VmKickstartComplateDialog', {
+                    data: [obj],
+                    columns: this.columns,
+                    onManager: this.onManager,
+                  })
+                },
+                meta: () => {
+                  const ret = {
+                    validate: obj.status === 'kickstart_installing',
+                    tooltip: obj.status !== 'kickstart_installing' ? '' : i18n.t('compute.kickstart_complete_tip'),
+                  }
+                  return ret
+                },
+                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_kickstart_complete'),
+              },
             ],
           },
           // * 属性设置
@@ -854,70 +877,9 @@ const getSingleActions = function (ctx) {
                 hidden: () => !(hasSetupKey(['onecloud'])) || this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_clone'),
               },
               // 续费
-              {
-                label: i18n.t('compute.text_1117'),
-                permission: 'server_perform_renew',
-                action: () => {
-                  this.$openNewWindowForMenuHook('vminstance_configured_callback_address.renew_callback_address', () => {
-                    this.createDialog('VmResourceFeeDialog', {
-                      data: [obj],
-                      columns: this.columns,
-                      onManager: this.onManager,
-                    })
-                  })
-                },
-                meta: () => {
-                  const ret = {
-                    validate: false,
-                    tooltip: null,
-                  }
-                  const rescueModeValid = validateRescueMode(obj)
-                  if (!rescueModeValid.validate) return rescueModeValid
-                  if (findPlatform(obj.hypervisor) !== SERVER_TYPE.public) {
-                    ret.tooltip = i18n.t('compute.text_1118')
-                    return ret
-                  }
-                  if (obj.billing_type !== 'prepaid') {
-                    ret.tooltip = i18n.t('compute.text_1119')
-                    return ret
-                  }
-                  ret.validate = true
-                  return ret
-                },
-                hidden: () => !(hasSetupKey(['aliyun', 'qcloud', 'huawei', 'ucloud', 'ecloud', 'jdcloud'])) || this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_Renew'),
-              },
+              getRenewAction(this, obj),
               // 自动续费设置
-              {
-                label: i18n.t('compute.text_1120'),
-                permission: 'server_perform_aet_auto_renew',
-                action: () => {
-                  this.createDialog('VmResourceRenewFeeDialog', {
-                    data: [obj],
-                    columns: this.columns,
-                    onManager: this.onManager,
-                    refresh: this.refresh,
-                  })
-                },
-                meta: () => {
-                  const ret = {
-                    validate: false,
-                    tooltip: null,
-                  }
-                  const rescueModeValid = validateRescueMode(obj)
-                  if (!rescueModeValid.validate) return rescueModeValid
-                  if (findPlatform(obj.hypervisor) !== SERVER_TYPE.public) {
-                    ret.tooltip = i18n.t('compute.text_1118')
-                    return ret
-                  }
-                  if (obj.billing_type !== 'prepaid') {
-                    ret.tooltip = i18n.t('compute.text_1119')
-                    return ret
-                  }
-                  ret.validate = true
-                  return ret
-                },
-                hidden: () => !(hasSetupKey(['aliyun', 'qcloud', 'huawei', 'ucloud', 'ecloud', 'jdcloud', 'ctyun'])) || this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_auto_renewal'),
-              },
+              getAutoRenewAction(this, obj),
               // 更改计费模式
               {
                 label: i18n.t('compute.change_billing_type'),
@@ -1008,10 +970,6 @@ const getSingleActions = function (ctx) {
                     ret.tooltip = i18n.t('compute.text_1111')
                     return ret
                   }
-                  if (obj.os_arch === HOST_CPU_ARCHS.arm.key && obj.status === 'running') {
-                    ret.tooltip = i18n.t('compute.text_1371')
-                    return ret
-                  }
                   if (obj.shutdown_mode === 'stop_charging' && obj.status === 'ready') {
                     ret.validate = false
                     ret.tooltip = i18n.t('compute.server.shutdown_mode.tooltip')
@@ -1024,15 +982,16 @@ const getSingleActions = function (ctx) {
                 },
                 hidden: () => this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_change_config'),
               },
-              // 设置GPU卡
+              // 设置透传宿主机设备（PCI / USB）
               {
-                label: i18n.t('compute.text_1112'),
+                label: i18n.t('compute.set_host_isolated_device'),
                 permission: 'server_perform_set_isolated_device,attach-isolated-device,server_perform_detach_isolated_device',
                 action: () => {
                   this.createDialog('VmAttachGpuDialog', {
                     data: [obj],
                     columns: this.columns,
                     onManager: this.onManager,
+                    availableTypes: getHostIsolatedDeviceAvailableTypes(this, obj),
                   })
                 },
                 meta: () => {
@@ -1051,44 +1010,15 @@ const getSingleActions = function (ctx) {
                     ret.tooltip = i18n.t('compute.text_473', [PROVIDER_MAP[provider].label])
                     return ret
                   }
-                  ret.validate = cloudEnabled('acttachGpu', obj)
+                  const availableTypes = getHostIsolatedDeviceAvailableTypes(this, obj)
+                  if (availableTypes.length) {
+                    ret.validate = true
+                    return ret
+                  }
                   ret.tooltip = cloudUnabledTip('acttachGpu', obj)
                   return ret
                 },
                 hidden: () => !(hasSetupKey(['onecloud'])) || this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_set_gpu'),
-              },
-              // 设置USB透传
-              {
-                label: i18n.t('compute.text_1399'),
-                permission: 'server_perform_set_isolated_device,attach-isolated-device,server_perform_detach_isolated_device',
-                action: () => {
-                  this.createDialog('VmAttachUsbDialog', {
-                    data: [obj],
-                    columns: this.columns,
-                    onManager: this.onManager,
-                  })
-                },
-                meta: () => {
-                  const provider = obj.provider
-                  const ret = {
-                    validate: false,
-                    tooltip: null,
-                  }
-                  const rescueModeValid = validateRescueMode(obj)
-                  if (!rescueModeValid.validate) return rescueModeValid
-                  if (!this.isAdminMode && !this.isDomainMode) {
-                    ret.tooltip = i18n.t('compute.text_1279', [i18n.t('dictionary.domain')])
-                    return ret
-                  }
-                  if (findPlatform(obj.hypervisor, 'hypervisor') !== SERVER_TYPE.idc) {
-                    ret.tooltip = i18n.t('compute.text_473', [PROVIDER_MAP[provider].label])
-                    return ret
-                  }
-                  ret.validate = cloudEnabled('acttachUsb', obj)
-                  ret.tooltip = cloudUnabledTip('acttachUsb', obj)
-                  return ret
-                },
-                hidden: () => !(hasSetupKey(['onecloud'])) || this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_set_usb'),
               },
               // 修改启动顺序
               {
@@ -1415,7 +1345,6 @@ const getSingleActions = function (ctx) {
                     typeClouds.hypervisorMap.openstack?.brand,
                     typeClouds.hypervisorMap.zstack?.brand,
                     // typeClouds.hypervisorMap.dstack?.brand,
-                    typeClouds.hypervisorMap.ucloud?.brand,
                     typeClouds.hypervisorMap.ctyun?.brand,
                     typeClouds.hypervisorMap.nutanix?.brand,
                     typeClouds.hypervisorMap.proxmox?.brand,
@@ -1432,10 +1361,10 @@ const getSingleActions = function (ctx) {
                 },
                 hidden: () => this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_save_image'),
               },
-              // 挂载ISO
+              // 挂载ISO（含卸载 / 换挂，统一 set-iso）
               {
                 label: i18n.t('compute.text_366'),
-                permission: 'server_perform_insertiso',
+                permission: 'server_perform_set_iso',
                 action: () => {
                   this.createDialog('VmMountIsoDialog', {
                     data: [obj],
@@ -1465,58 +1394,12 @@ const getSingleActions = function (ctx) {
                     return ret
                   }
                   if (commonUnabled(obj)) return ret
-                  if (obj.cdrom) {
-                    ret.tooltip = i18n.t('compute.text_1288')
-                    return ret
-                  }
-                  ret.validate = cloudEnabled('insertiso', obj)
-                  ret.tooltip = cloudUnabledTip('insertiso', obj)
+                  const action = obj.cdrom ? 'ejectiso' : 'insertiso'
+                  ret.validate = cloudEnabled(action, obj)
+                  ret.tooltip = cloudUnabledTip(action, obj)
                   return ret
                 },
                 hidden: () => !(hasSetupKey(['vmware', 'onecloud'])) || this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_mount_iso'),
-              },
-              // 卸载ISO
-              {
-                label: i18n.t('compute.text_367'),
-                permission: 'server_perform_ejectiso',
-                action: () => {
-                  this.createDialog('VmUnmountIsoDialog', {
-                    data: [obj],
-                    columns: this.columns,
-                    onManager: this.onManager,
-                    refresh: this.refresh,
-                  })
-                },
-                meta: () => {
-                  const provider = obj.provider
-                  const ret = {
-                    validate: false,
-                    tooltip: null,
-                  }
-                  const rescueModeValid = validateRescueMode(obj)
-                  if (!rescueModeValid.validate) return rescueModeValid
-                  if (obj.hypervisor === typeClouds.hypervisorMap.esxi.key) {
-                    ret.tooltip = i18n.t('compute.text_473', [PROVIDER_MAP[provider].label])
-                    return ret
-                  }
-                  if (findPlatform(obj.hypervisor) === SERVER_TYPE.public) {
-                    ret.tooltip = i18n.t('compute.text_473', [PROVIDER_MAP[provider].label])
-                    return ret
-                  }
-                  if (obj.hypervisor === typeClouds.hypervisorMap.sangfor.key) {
-                    ret.tooltip = i18n.t('compute.text_473', [typeClouds.hypervisorMap.sangfor.label])
-                    return ret
-                  }
-                  if (commonUnabled(obj)) return ret
-                  if (!obj.cdrom) {
-                    ret.tooltip = i18n.t('compute.text_1289')
-                    return ret
-                  }
-                  ret.validate = cloudEnabled('ejectiso', obj)
-                  ret.tooltip = cloudUnabledTip('ejectiso', obj)
-                  return ret
-                },
-                hidden: () => !(hasSetupKey(['vmware', 'onecloud'])) || this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_unmount_iso'),
               },
               // 创建快照
               {
@@ -1606,11 +1489,18 @@ const getSingleActions = function (ctx) {
                     columns: this.columns,
                     onManager: this.onManager,
                     refresh: this.refresh,
+                    type: 'vminstance',
                   })
                 },
                 meta: () => {
                   const rescueModeValid = validateRescueMode(obj)
                   if (!rescueModeValid.validate) return rescueModeValid
+                  if (isServerNetworkTagMode(obj)) {
+                    return {
+                      validate: false,
+                      tooltip: i18n.t('compute.network_tag_not_support_set_secgroup'),
+                    }
+                  }
                   const ret = {
                     validate: cloudEnabled('assignSecgroup', obj),
                     tooltip: cloudUnabledTip('assignSecgroup', obj),
@@ -1772,11 +1662,11 @@ const getSingleActions = function (ctx) {
                 },
                 meta: (obj) => {
                   const ret = { validate: true }
-                  if (obj.metadata?.bastion_server) {
-                    ret.validate = false
-                    ret.tooltip = i18n.t('compute.already_in_bastion')
-                    return ret
-                  }
+                  // if (obj.metadata?.bastion_server) {
+                  //   ret.validate = false
+                  //   ret.tooltip = i18n.t('compute.already_in_bastion')
+                  //   return ret
+                  // }
                   if (obj.status !== 'running') {
                     ret.validate = false
                     ret.tooltip = i18n.t('compute.text_1282')
@@ -2117,4 +2007,5 @@ const getSingleActions = function (ctx) {
 export default {
   name: POLICY_RES_NAME_KEY_MAP.vminstance.key,
   getSingleActions,
+  getHostIsolatedDeviceAvailableTypes,
 }

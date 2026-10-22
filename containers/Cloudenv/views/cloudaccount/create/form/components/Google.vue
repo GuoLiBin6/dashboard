@@ -12,7 +12,7 @@
       <upload-json-file :fc="form.fc">
         <a-form-item label="project_id">
           <a-input v-decorator="decorators.project_id" :placeholder="$t('cloudenv.text_247')" />
-          <div slot="extra">{{$t('cloudenv.text_248', [ `如何获取Google云project_id？点击查看帮助` ])}}<help-link :href="docs['google']">{{$t('cloudenv.text_237')}}</help-link>
+          <div slot="extra" v-if="showDocsLink()">{{$t('cloudenv.text_248', [ `如何获取Google云project_id？点击查看帮助` ])}}<help-link :href="docs['google']">{{$t('cloudenv.text_237')}}</help-link>
           </div>
         </a-form-item>
         <a-form-item label="private_key_id">
@@ -39,8 +39,9 @@ import ProxySetting from '@Cloudenv/views/cloudaccount/components/ProxySetting'
 import ShareMode from '@Cloudenv/views/cloudaccount/components/ShareMode'
 import ReadOnly from '@Cloudenv/views/cloudaccount/components/ReadOnly'
 import UploadJsonFile from '@Cloudenv/views/cloudaccount/components/UploadJsonFile'
-import { getCloudaccountDocs, keySecretFields } from '@Cloudenv/views/cloudaccount/constants'
+import { keySecretFields } from '@Cloudenv/views/cloudaccount/constants'
 import { isRequired } from '@/utils/validate'
+import { DOCS_MAP, showDocsLink } from '@/constants/docs'
 import createMixin from './createMixin'
 import DomainProject from '../../../components/DomainProject'
 
@@ -89,7 +90,8 @@ export default {
       initAutoCreateProject = auto_create_project
     }
     return {
-      docs: getCloudaccountDocs(this.$store.getters.scope),
+      docs: DOCS_MAP.cloudaccount(),
+      showDocsLink,
       keySecretField,
       decorators: {
         name: [

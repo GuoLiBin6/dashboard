@@ -72,6 +72,13 @@ export default {
     },
   },
   methods: {
+    normalizeUserData (content) {
+      if (content == null || content === '') return ''
+      if (typeof content === 'string') return content
+      // 组件初始值为 []，勿当正文
+      if (Array.isArray(content)) return content.length ? content.join('\n') : ''
+      return String(content)
+    },
     handleRemove (file) {
       const index = this.fileList.indexOf(file)
       const newFileList = this.fileList.slice()
@@ -98,12 +105,16 @@ export default {
       this.fileList = []
       this.codeMirrorData = ''
       this.customData = []
+      this.$emit('content-change')
     },
     handleCodeInput (_value) {
       this.customData = _value
+      this.$emit('content-change')
     },
     handleMirrorDataChange (_value) {
-      this.codeMirrorData = _value
+      const text = this.normalizeUserData(_value)
+      this.codeMirrorData = text
+      this.customData = text
     },
   },
 }

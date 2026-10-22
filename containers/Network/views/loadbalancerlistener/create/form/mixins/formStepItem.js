@@ -1,6 +1,5 @@
 import * as R from 'ramda'
 import _ from 'lodash'
-import { getDecorators } from '../utils'
 import ListenerTypes from '@Network/views/loadbalancerlistener/components/ListenerTypes'
 import SchedulerTypes from '@Network/views/loadbalancerlistener/components/SchedulerTypes'
 import { schedulerProviderMaps, healthCheckTypeProviderMaps, healthCheckHttpCodeOpts } from '@Network/views/loadbalancerlistener/constants'
@@ -10,7 +9,7 @@ import { getInitialValue } from '@/utils/common/ant'
 import NameRepeated from '@/sections/NameRepeated'
 import { HYPERVISORS_MAP } from '@/constants'
 import i18n from '@/locales'
-
+import { getDecorators } from '../utils'
 export default {
   components: {
     NameRepeated,
@@ -243,6 +242,32 @@ export default {
       if (this.currentComponent === 'Backendgroup') {
         this.fetchBackendList(this.listenerData.backend_group_id)
       }
+    },
+    certificateFormatter (item) {
+      var label = `${item.name}`
+      if (item.common_name) {
+        label += ` - ${item.common_name}`
+      }
+      var valid = true
+      const now = new Date()
+      if (item.not_before) {
+        var notBefore = new Date(item.not_before)
+        if (notBefore.getTime() > now.getTime()) {
+          valid = false
+        }
+      }
+      if (item.not_after) {
+        var notAfter = new Date(item.not_after)
+        if (notAfter.getTime() < now.getTime()) {
+          valid = false
+        }
+      }
+      if (valid) {
+        label += ` - ${this.$t('status.sslCertificate.available')}`
+      } else {
+        label += ` - ${this.$t('status.sslCertificate.expired')}`
+      }
+      return label
     },
   },
 }

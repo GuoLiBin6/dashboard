@@ -14,7 +14,7 @@ import {
   getTimeTableColumn,
   getCopyWithContentTableColumn,
 } from '@/utils/common/tableColumn'
-import { sizestr } from '@/utils/utils'
+import { sizestr, bytesPerSecondStr } from '@/utils/utils'
 import i18n from '@/locales'
 import { getHostSpecInfo } from '../utils/index'
 
@@ -135,6 +135,9 @@ export default {
           if (row.ipmi_ip) {
             list.push(`${row.ipmi_ip}${this.$t('compute.text_1320')}`)
           }
+          if (row.public_ip) {
+            list.push(`${row.public_ip} (EIP)`)
+          }
           return list.length ? list.join(',') : '-'
         },
       },
@@ -184,30 +187,26 @@ export default {
       },
       getOsArch({ field: 'cpu_architecture' }),
       {
-        field: 'cpu_usage',
+        field: 'cpu_usage_percent',
         title: this.$t('compute.text_563'),
         minWidth: 100,
         sortable: true,
-        // sortBy: 'order_by_cpu_commit',
         slots: {
           default: ({ row }) => {
-            const { cpu_count = 0, cpu_used = 0 } = getHostSpecInfo(row)
-            const title = `${this.$t('common_407')}: ${Math.round(cpu_used)}\n${this.$t('common_234')}: ${Math.round(cpu_count)}`
-            return [<UsedPercent used={cpu_used} total={cpu_count} title={title} usedFormatter={(val) => val > 0 ? (Math.max(Math.round(val), 1)) : Math.round(val)} totalFormatter={(val) => val > 0 ? (Math.max(Math.round(val), 1)) : Math.round(val)} />]
-          },
-          header: ({ column }) => {
+            const cpu_count = row.cpu_count || 0
+            const percent = Number(row.cpu_usage_percent) || 0
             return [
-              <span>
-                <span>{column.title}</span>
-                <a-tooltip class="ml-1" title={this.$t('compute.order_by_used_percent')}><a-icon type="question-circle" style="color: #aaa;" /></a-tooltip>
-              </span>,
+              <div>
+                <div style="font-size:12px;line-height:16px">{this.$t('common_234')}: {cpu_count}</div>
+                <UsedPercent used={percent} total={100} hiddenUsed={true} hiddenTotal={true} />
+              </div>,
             ]
           },
         },
         formatter: ({ row }) => {
-          const { cpu_count = 0, cpu_used = 0 } = getHostSpecInfo(row)
-          const title = `${this.$t('common_407')}: ${Math.round(cpu_used)}, ${this.$t('common_234')}: ${Math.round(cpu_count)}`
-          return title
+          const cpu_count = row.cpu_count || 0
+          const percent = Math.round(Number(row.cpu_usage_percent) || 0)
+          return `${this.$t('common_234')}: ${cpu_count}, ${percent}%`
         },
       },
       {
@@ -355,6 +354,50 @@ export default {
         },
       },
       {
+        field: 'disk_rate',
+        title: i18n.t('common.disk_rate'),
+        minWidth: 100,
+        slots: {
+          default: ({ row }) => {
+            if (row.alert_data && row.alert_data.hasOwnProperty('disk_read_rate') && row.alert_data.hasOwnProperty('disk_write_rate')) {
+              return [
+                <div>{i18n.t('common.disk_read_rate_value', [bytesPerSecondStr(row.alert_data.disk_read_rate)])}</div>,
+                <div>{i18n.t('common.disk_write_rate_value', [bytesPerSecondStr(row.alert_data.disk_write_rate)])}</div>,
+              ]
+            }
+            return '-'
+          },
+        },
+        formatter: ({ row }) => {
+          if (row.alert_data && row.alert_data.hasOwnProperty('disk_read_rate') && row.alert_data.hasOwnProperty('disk_write_rate')) {
+            return `${i18n.t('common.disk_read_rate_value', [bytesPerSecondStr(row.alert_data.disk_read_rate)])} / ${i18n.t('common.disk_write_rate_value', [bytesPerSecondStr(row.alert_data.disk_write_rate)])}`
+          }
+          return '-'
+        },
+      },
+      {
+        field: 'net_iops',
+        title: i18n.t('common.net_iops'),
+        minWidth: 100,
+        slots: {
+          default: ({ row }) => {
+            if (row.alert_data && row.alert_data.hasOwnProperty('net_in_rate') && row.alert_data.hasOwnProperty('net_out_rate')) {
+              return [
+                <div>{i18n.t('common.net_in_rate_value', [bytesPerSecondStr(row.alert_data.net_in_rate)])}</div>,
+                <div>{i18n.t('common.net_out_rate_value', [bytesPerSecondStr(row.alert_data.net_out_rate)])}</div>,
+              ]
+            }
+            return '-'
+          },
+        },
+        formatter: ({ row }) => {
+          if (row.alert_data && row.alert_data.hasOwnProperty('net_in_rate') && row.alert_data.hasOwnProperty('net_out_rate')) {
+            return `${i18n.t('common.net_in_rate_value', [bytesPerSecondStr(row.alert_data.net_in_rate)])} / ${i18n.t('common.net_out_rate_value', [bytesPerSecondStr(row.alert_data.net_out_rate)])}`
+          }
+          return '-'
+        },
+      },
+      {
         field: 'manufacture',
         title: i18n.t('compute.text_847'),
         width: 70,
@@ -458,6 +501,22 @@ export default {
       getPublicScopeTableColumn({ vm: this, resource: 'hosts' }),
       getProjectDomainTableColumn({ vm: this }),
       getRegionTableColumn({ vm: this }),
+      {
+        field: 'alert_data',
+        title: this.$t('compute.alert_status'),
+        hidden: () => {
+          return this.$isScopedPolicyMenuHidden('host_hidden_columns.alert_data')
+        },
+        slots: {
+          header: () => {
+            return [<span style="margin-right:5px">{this.$t('compute.alert_status')}</span>, <help-tooltip name="alertDataTimeRange" />]
+          },
+          default: ({ row }) => {
+            const state = row.alert_data?.alert_state || 'init'
+            return [<status status={state} statusModule='monitorresources' />]
+          },
+        },
+      },
       getTimeTableColumn(),
     ]
   },

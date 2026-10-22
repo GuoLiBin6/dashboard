@@ -1,6 +1,6 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{$t('compute.text_664')}}</div>
+    <div slot="header">{{params.imageType === 'appPackage' ? $t('compute.upload_app_package') : $t('compute.text_664')}}</div>
     <div slot="body">
       <a-alert class="mb-2" type="warning">
         <div slot="message">{{$t('compute.text_665')}}</div>
@@ -11,23 +11,16 @@
         <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])" class="mb-0" v-bind="formItemLayout">
           <domain-project :fc="form.fc" :decorators="{ project: decorators.project, domain: decorators.domain }" />
         </a-form-item>
-        <a-form-item :label="$t('compute.text_627')" v-bind="formItemLayout">
-          <a-input :placeholder="$t('compute.text_416')" v-decorator="decorators.name" />
-        </a-form-item>
-        <a-form-item :label="$t('compute.text_1365')">
-          <os-arch
-            v-decorator="decorators.os_arch"
-            :form="form" />
-        </a-form-item>
         <a-form-item :label="$t('compute.text_667')" v-bind="formItemLayout">
           <a-radio-group @change="handleUploadTypeChange" v-decorator="decorators.uploadType">
             <a-radio-button value="file">{{$t('compute.text_668')}}</a-radio-button>
             <a-radio-button value="url">{{$t('compute.text_669')}}</a-radio-button>
           </a-radio-group>
         </a-form-item>
-        <a-form-item :label="$t('compute.text_670')" v-bind="formItemLayout" v-if="byUpload" :help="$t('compute.text_671')">
+        <a-form-item :label="$t('compute.text_670')" v-bind="formItemLayout" v-if="byUpload" :help="uploadFileHelp">
           <a-upload
             @change="handleUploadChange"
+            @reject="handleUploadReject"
             :fileList="fileList"
             :beforeUpload="beforeUpload">
             <a-button> <a-icon type="upload" />{{$t('compute.text_245')}}</a-button>
@@ -39,7 +32,10 @@
             status="active" />
         </a-form-item>
         <a-form-item :label="$t('compute.text_672')" v-bind="formItemLayout" v-if="!byUpload">
-          <a-input :placeholder="$t('compute.text_673')" v-decorator="decorators.copy_from" />
+          <a-input :placeholder="$t('compute.text_673')" v-decorator="decorators.copy_from" @change="handleCopyFromChange" />
+        </a-form-item>
+        <a-form-item :label="$t('compute.text_627')" v-bind="formItemLayout">
+          <a-input :placeholder="$t('compute.text_416')" v-decorator="decorators.name" />
         </a-form-item>
         <a-form-item :label="$t('compute.text_267')" v-bind="formItemLayout">
           <a-radio-group v-decorator="decorators.os_type">
@@ -51,6 +47,11 @@
             </a-radio-button>
             <a-radio-button value="other">{{$t('compute.text_674')}}</a-radio-button>
           </a-radio-group>
+        </a-form-item>
+        <a-form-item :label="$t('compute.text_1365')">
+          <os-arch
+            v-decorator="decorators.os_arch"
+            :form="form" />
         </a-form-item>
         <a-form-item v-if="enableEncryption" :label="$t('compute.image.encryption')" :extra="$t('compute.image.encryption.extra')">
           <encrypt-keys :decorators="decorators.encrypt_keys" />
@@ -67,7 +68,7 @@
 <script>
 import { mapGetters } from 'vuex'
 import * as R from 'ramda'
-// import _ from 'lodash'
+import EncryptKeys from '@Compute/sections/encryptkeys'
 import { isRequired } from '@/utils/validate'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
@@ -75,8 +76,7 @@ import DomainProject from '@/sections/DomainProject'
 import i18n from '@/locales'
 import OsArch from '@/sections/OsArch'
 import { HOST_CPU_ARCHS } from '@/constants/compute'
-import EncryptKeys from '@Compute/sections/encryptkeys'
-
+// import _ from 'lodash'
 export default {
   name: 'ImageUploadDialog',
   components: {
@@ -192,6 +192,14 @@ export default {
     enableEncryption () {
       return this.$appConfig.isPrivate && !this.$store.getters.isSysCE
     },
+    isAppPackage () {
+      return this.params.imageType === 'appPackage'
+    },
+    uploadFileHelp () {
+      return this.isAppPackage
+        ? this.$t('compute.upload_app_package_file_help')
+        : this.$t('compute.text_671')
+    },
   },
   destroyed () {
     this.clearTimer()
@@ -203,19 +211,82 @@ export default {
       this.timer = null
       this.percentTimer = null
     },
+    isTarGzFile (name) {
+      const n = (name || '').toLowerCase()
+      return n.endsWith('.tar.gz') || n.endsWith('.tgz')
+    },
     beforeUpload (file) {
+      if (this.isAppPackage && !this.isTarGzFile(file.name)) {
+        this.$message.error(this.$t('compute.upload_app_package_format_tip'))
+        // 勿 return false：antd Upload 会把文件仍加入列表
+        return Promise.reject(new Error(this.$t('compute.upload_app_package_format_tip')))
+      }
       this.fileList = [file]
+      this.setImageName(file.name)
       return false
+    },
+    handleUploadReject () {
+      if (this.isAppPackage) {
+        this.$message.error(this.$t('compute.upload_app_package_format_tip'))
+      }
     },
     handleUploadTypeChange (e) {
       if (e.target.value === 'url') {
         this.byUpload = false
+        this.$nextTick(() => {
+          this.setImageNameFromUrl(this.form.fc.getFieldValue('copy_from'))
+        })
       } else {
         this.byUpload = true
+        this.setImageNameFromFileList(this.fileList)
       }
     },
-    handleUploadChange ({ file, fileList }) {
-      this.fileList = fileList
+    handleUploadChange ({ fileList }) {
+      if (!this.isAppPackage) {
+        this.fileList = fileList
+        this.setImageNameFromFileList(fileList)
+        return
+      }
+      const valid = (fileList || []).filter(f => this.isTarGzFile(f.name))
+      if (valid.length < (fileList || []).length) {
+        this.$message.error(this.$t('compute.upload_app_package_format_tip'))
+      }
+      this.fileList = valid.length ? valid.slice(-1) : []
+      this.setImageNameFromFileList(this.fileList)
+    },
+    handleCopyFromChange (e) {
+      const url = e && e.target ? e.target.value : e
+      this.setImageNameFromUrl(url)
+    },
+    getFileNameFromUrl (url) {
+      if (!url || typeof url !== 'string') return ''
+      const trimmed = url.trim()
+      if (!trimmed) return ''
+      let pathname = trimmed
+      try {
+        pathname = new URL(trimmed).pathname
+      } catch (e) {
+        pathname = trimmed.split('?')[0].split('#')[0]
+      }
+      const segments = pathname.split('/').filter(Boolean)
+      if (!segments.length) return ''
+      let fileName = segments[segments.length - 1]
+      try {
+        fileName = decodeURIComponent(fileName)
+      } catch (e) { /* keep raw */ }
+      return fileName
+    },
+    setImageName (name) {
+      if (!name) return
+      this.form.fc.setFieldsValue({ name })
+    },
+    setImageNameFromFileList (fileList) {
+      const file = fileList && fileList[0]
+      const fileName = file && (file.name || (file.originFileObj && file.originFileObj.name))
+      this.setImageName(fileName)
+    },
+    setImageNameFromUrl (url) {
+      this.setImageName(this.getFileNameFromUrl(url))
     },
     checkTemplateName (rule, value, callback) {
       if (!value) {
@@ -236,11 +307,21 @@ export default {
       })
     },
     validateUrl (rule, value, callback) {
-      if (value.startsWith('http://') || value.startsWith('https://')) {
-        callback()
-      } else {
+      if (!value.startsWith('http://') && !value.startsWith('https://')) {
         callback(new Error(this.$t('compute.text_675')))
+        return
       }
+      if (this.isAppPackage) {
+        let path = value
+        try {
+          path = new URL(value).pathname
+        } catch (e) { /* use raw value */ }
+        if (!this.isTarGzFile(path) && !this.isTarGzFile(value)) {
+          callback(new Error(this.$t('compute.upload_app_package_format_tip')))
+          return
+        }
+      }
+      callback()
     },
     handleUpload (data) {
       return this.$http({
@@ -317,7 +398,14 @@ export default {
             formData.append('encrypt_key_user_id', this.userInfo.id)
           }
           if (fileList.length > 0) {
-            formData.append('image_size', fileList[0].size)
+            const uploadFile = fileList[0]
+            const fileName = uploadFile.name || uploadFile.originFileObj?.name
+            if (this.isAppPackage && !this.isTarGzFile(fileName)) {
+              this.$message.error(this.$t('compute.upload_app_package_format_tip'))
+              this.loading = false
+              return false
+            }
+            formData.append('image_size', uploadFile.size)
             fileList.forEach(file => {
               formData.append('image', file.originFileObj)
             })

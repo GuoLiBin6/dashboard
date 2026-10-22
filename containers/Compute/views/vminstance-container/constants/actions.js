@@ -2,7 +2,11 @@ import { disableDeleteAction } from '@/utils/common/tableActions'
 import i18n from '@/locales'
 import { BRAND_MAP, PROVIDER_MAP } from '@/constants'
 import { typeClouds } from '@/utils/common/hypervisor'
-import { validateRescueMode, cloudEnabled, cloudUnabledTip } from '../utils'
+import { hasSetupKey } from '@/utils/auth'
+import { validateRescueMode, cloudEnabled, cloudUnabledTip, commonUnabled } from '../utils'
+import { getStartAction } from '../utils/startActions'
+import { getRenewAction } from '../utils/renewActions'
+import { getAutoRenewAction } from '../utils/autoRenewActions'
 // import { POLICY_RES_NAME_KEY_MAP } from '@/constants/policy'
 const getSingleActions = function () {
   return [
@@ -33,6 +37,7 @@ const getSingleActions = function () {
         }
         return ret
       },
+      hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_web_console'),
     },
     {
       label: i18n.t('compute.text_352'),
@@ -54,26 +59,10 @@ const getSingleActions = function () {
                     },
                   })
                 },
-                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_syncstatus'),
+                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_syncstatus'),
               },
               // 开机
-              {
-                label: i18n.t('compute.text_272'),
-                action: () => {
-                  this.onManager('performAction', {
-                    steadyStatus: 'running',
-                    id: obj.id,
-                    managerArgs: {
-                      action: 'start',
-                    },
-                  })
-                },
-                meta: () => {
-                  return {
-                    validate: obj.status === 'ready',
-                  }
-                },
-              },
+              getStartAction(this, obj),
               // 关机
               {
                 label: i18n.t('compute.text_273'),
@@ -90,6 +79,7 @@ const getSingleActions = function () {
                     validate: obj.status === 'running',
                   }
                 },
+                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_stop'),
               },
               // 重启
               {
@@ -106,6 +96,7 @@ const getSingleActions = function () {
                     validate: obj.status === 'running',
                   }
                 },
+                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_restart'),
               },
               // 重置
               {
@@ -132,6 +123,7 @@ const getSingleActions = function () {
                     validate: obj.status === 'running' || obj.status === 'stop_fail',
                   }
                 },
+                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_reset'),
               },
               // 推送配置
               {
@@ -157,7 +149,7 @@ const getSingleActions = function () {
                   ret.validate = true
                   return ret
                 },
-                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_sync_config'),
+                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_sync_config'),
               },
             ],
           },
@@ -195,7 +187,12 @@ const getSingleActions = function () {
                   ret.validate = true
                   return ret
                 },
+                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_create_same_config'),
               },
+              // 续费
+              getRenewAction(this, obj),
+              // 自动续费设置
+              getAutoRenewAction(this, obj),
               // 更改项目
               {
                 label: this.$t('compute.perform_change_owner', [this.$t('dictionary.project')]),
@@ -208,6 +205,7 @@ const getSingleActions = function () {
                     resource: 'servers',
                   })
                 },
+                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_change_owner'),
               },
               // 到期释放
               {
@@ -231,6 +229,7 @@ const getSingleActions = function () {
                   }
                   return ret
                 },
+                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_cancel_expire'),
               },
               // 加入反亲和组
               {
@@ -268,6 +267,7 @@ const getSingleActions = function () {
                   ret.validate = true
                   return ret
                 },
+                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_add_instancegroup'),
               },
             ],
           },
@@ -296,38 +296,41 @@ const getSingleActions = function () {
                   }
                   return ret
                 },
+                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_change_config'),
               },
-              // 设置GPU卡
+              // 设置透传宿主机设备（容器主机仅 PCI）
               {
-                label: i18n.t('compute.text_1112'),
+                label: i18n.t('compute.set_host_isolated_device'),
                 permission: 'server_perform_set_isolated_device,attach-isolated-device,server_perform_detach_isolated_device',
                 action: () => {
                   this.createDialog('VmContainerAttachGpuDialog', {
                     data: [obj],
                     columns: this.columns,
                     onManager: this.onManager,
+                    availableTypes: ['pci'],
                   })
                 },
-                // meta: () => {
-                //   const provider = obj.provider
-                //   const ret = {
-                //     validate: false,
-                //     tooltip: null,
-                //   }
-                //   const rescueModeValid = validateRescueMode(obj)
-                //   if (!rescueModeValid.validate) return rescueModeValid
-                //   if (!this.isAdminMode && !this.isDomainMode) {
-                //     ret.tooltip = i18n.t('compute.text_1279', [i18n.t('dictionary.domain')])
-                //     return ret
-                //   }
-                //   if (obj.brand !== BRAND_MAP.OneCloud.key) {
-                //     ret.tooltip = i18n.t('compute.text_473', [PROVIDER_MAP[provider].label])
-                //     return ret
-                //   }
-                //   ret.validate = cloudEnabled('acttachGpu', obj)
-                //   ret.tooltip = cloudUnabledTip('acttachGpu', obj)
-                //   return ret
-                // },
+                meta: () => {
+                  const provider = obj.provider
+                  const ret = {
+                    validate: false,
+                    tooltip: null,
+                  }
+                  const rescueModeValid = validateRescueMode(obj)
+                  if (!rescueModeValid.validate) return rescueModeValid
+                  if (!this.isAdminMode && !this.isDomainMode) {
+                    ret.tooltip = i18n.t('compute.text_1279', [i18n.t('dictionary.domain')])
+                    return ret
+                  }
+                  if (obj.brand !== BRAND_MAP.OneCloud.key) {
+                    ret.tooltip = i18n.t('compute.text_473', [PROVIDER_MAP[provider].label])
+                    return ret
+                  }
+                  ret.validate = cloudEnabled('acttachGpu', obj)
+                  ret.tooltip = cloudUnabledTip('acttachGpu', obj)
+                  return ret
+                },
+                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_set_gpu'),
               },
             ],
           },
@@ -346,6 +349,7 @@ const getSingleActions = function () {
                     columns: this.columns,
                     onManager: this.onManager,
                     refresh: this.refresh,
+                    type: 'vminstance-container',
                   })
                 },
                 meta: () => {
@@ -357,6 +361,7 @@ const getSingleActions = function () {
                   }
                   return ret
                 },
+                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_add_secgroup'),
               },
               // 设置源/目标检查
               {
@@ -387,6 +392,83 @@ const getSingleActions = function () {
                   }
                   return ret
                 },
+                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_set_source_check'),
+              },
+              // 绑定eip
+              {
+                label: i18n.t('compute.text_1179'),
+                permission: 'server_perform_create_eip',
+                action: () => {
+                  this.createDialog('VmBindEipDialog', {
+                    data: [obj],
+                    columns: this.columns,
+                    refresh: this.refresh,
+                    onManager: this.onManager,
+                  })
+                },
+                meta: () => {
+                  const ret = {
+                    validate: false,
+                    tooltip: null,
+                  }
+                  const rescueModeValid = validateRescueMode(obj)
+                  if (!rescueModeValid.validate) return rescueModeValid
+                  if (commonUnabled(obj)) return ret
+                  if (obj.eip_mode === 'public_ip' && obj.hypervisor !== 'aws') {
+                    ret.tooltip = i18n.t('compute.public_ip_tooltip')
+                    return ret
+                  }
+                  if (obj.eip_mode !== 'public_ip' && obj.eip) {
+                    ret.tooltip = i18n.t('compute.text_1291')
+                    return ret
+                  }
+                  if (obj.brand === 'OneCloud' && obj.vpc_id === 'default') {
+                    ret.tooltip = i18n.t('compute.text_1292')
+                    return ret
+                  }
+                  if (obj.vpc_external_access_mode === 'none') {
+                    ret.tooltip = i18n.t('compute.disable_bind_eip')
+                    return ret
+                  }
+                  ret.validate = cloudEnabled('bindEip', obj)
+                  ret.tooltip = cloudUnabledTip('bindEip', obj)
+                  return ret
+                },
+                hidden: () => !(hasSetupKey(['onecloud', 'cloudpods'])) || this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_bind_elastic_public_ip'),
+              },
+              // 解绑eip
+              {
+                label: i18n.t('compute.text_1264'),
+                permission: 'server_perform_dissociate_eip',
+                action: () => {
+                  this.createDialog('VmUnbindEipDialog', {
+                    data: [obj],
+                    columns: this.columns,
+                    onManager: this.onManager,
+                    refresh: this.refresh,
+                  })
+                },
+                meta: () => {
+                  const ret = {
+                    validate: false,
+                    tooltip: null,
+                  }
+                  const rescueModeValid = validateRescueMode(obj)
+                  if (!rescueModeValid.validate) return rescueModeValid
+                  if (commonUnabled(obj)) return ret
+                  if (obj.eip_mode !== 'elastic_ip') {
+                    ret.tooltip = i18n.t('compute.text_1293')
+                    return ret
+                  }
+                  if (obj.eip_mode === 'public_ip') {
+                    ret.tooltip = i18n.t('compute.text_1294')
+                    return ret
+                  }
+                  ret.validate = cloudEnabled('unbindEip', obj)
+                  ret.tooltip = cloudUnabledTip('unbindEip', obj)
+                  return ret
+                },
+                hidden: () => !(hasSetupKey(['onecloud', 'cloudpods'])) || this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_unbind_elastic_public_ip'),
               },
             ],
           },
@@ -400,6 +482,7 @@ const getSingleActions = function () {
                   const ret = { validate: true }
                   return ret
                 },
+                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_set_delete_protection'),
               }),
               // 删除
               {
@@ -419,6 +502,7 @@ const getSingleActions = function () {
                 meta: () => {
                   return this.$getDeleteResult(obj)
                 },
+                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_delete'),
               },
             ],
           },

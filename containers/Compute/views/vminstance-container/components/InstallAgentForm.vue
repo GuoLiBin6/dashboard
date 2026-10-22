@@ -6,7 +6,7 @@
           {{ install_failed_reason }}
         </template>
         {{ installTips }}
-        <help-link :href="peHelpLink" v-if="showPEHelpLink">PE</help-link>
+        <help-link :href="peHelpLink" v-if="showPEHelpLink && showDocsLink()">PE</help-link>
       </a-tooltip>
       <a-tooltip>
         <template slot="title" v-if="disableTips">
@@ -27,7 +27,7 @@
 <script>
 import _ from 'lodash'
 import WindowsMixin from '@/mixins/windows'
-import { genDocsUrl } from '@/utils/utils'
+import { DOCS_MAP, showDocsLink } from '@/constants/docs'
 
 export default {
   name: 'InstallAgentForm',
@@ -63,6 +63,7 @@ export default {
       agent_install_status = 'install'
     }
     return {
+      showDocsLink,
       /* install, installed, installing, install_failed */
       agent_install_status,
     }
@@ -83,7 +84,7 @@ export default {
             case 'Others':
               return this.$t('compute.vminstance.monitor.install_agent.tips_failed.others')
             case 'NoReachInfluxdb':
-              return this.$t('compute.vminstance.monitor.install_agent.tips_failed.no_reach_influxdb')
+              return this.showDocsLink() ? this.$t('compute.vminstance.monitor.install_agent.tips_failed.no_reach_influxdb') : this.$t('compute.vminstance.monitor.install_agent.tips_failed.no_reach_influxdb_1')
             case 'ServerNotSshable':
               return this.$t('compute.vminstance.monitor.install_agent.tips_failed.server_not_sshable')
             default:
@@ -99,12 +100,7 @@ export default {
       return this.agent_install_status === 'install_failed' && this.install_failed_code === 'NoReachInfluxdb'
     },
     peHelpLink () {
-      return genDocsUrl({
-        scope: this.$store.getters.scope,
-        isSysCE: this.$store.getters.isSysCE,
-        cePath: 'guides/onpremise/network/ssh/sshproxy',
-        eePath: 'web_ui/network/ssh/sshproxy',
-      })
+      return DOCS_MAP.sshProxy()
     },
     install_failed_code () {
       return this.agent_install_status === 'install_failed' && this.data.agent_fail_code

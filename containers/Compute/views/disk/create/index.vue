@@ -6,7 +6,31 @@
       :form="form.fc"
       hideRequiredMark>
       <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-bind="formItemLayout">
-        <domain-project :fc="form.fc" :decorators="{ project: decorators.project, domain: decorators.domain }" />
+        <domain-project
+          :fc="form.fc"
+          :fd="form.fd"
+          :decorators="{ project: decorators.project, domain: decorators.domain }"
+          :form-draft-key="diskDraftFields.domainProject"
+          @fetchDomainCallback="fetchDomainCallback"
+          @fetchProjectCallback="fetchProjectCallback" />
+      </a-form-item>
+      <a-form-item :label="$t('compute.text_228')" v-bind="formItemLayout">
+        <a-input v-decorator="decorators.name" :placeholder="$t('validator.resourceCreateName')" />
+      </a-form-item>
+      <a-form-item :label="$t('common.description')" v-bind="formItemLayout">
+        <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
+      </a-form-item>
+      <a-form-item v-if="isPublic" :label="$t('regionMap.enable_world_map')" v-bind="formItemLayout">
+        <a-switch v-decorator="decorators.enableWorldMap" />
+      </a-form-item>
+      <a-form-item v-if="isPublic && form.fd.enableWorldMap" :label="$t('compute.region_map')" v-bind="formItemLayout">
+        <region-map
+          :region-filter-params="regionMapParams"
+          filter-brand-resource="compute_engine"
+          :region-mapper="filterMapCloudregionList"
+          split-key="provider"
+          @select="onRegionSelect"
+          @params-change="onRegionMapParamsChange" />
       </a-form-item>
       <area-selects
         class="mb-0"
@@ -18,22 +42,39 @@
         :zoneParams="param.zone"
         :providerParams="param.provider"
         :isRequired="true"
+        :provider-multiple="isPublic"
+        :cloudregion-multiple="isPublic"
+        :cloudregion-mapper="filterCloudregionListByProvider"
+        :defaultActiveFirstOption="isPublic ? [] : true"
         :region.sync="regionList"
         filterBrandResource="compute_engine"
-        :zone.sync="zoneList" />
-      <a-form-item :label="$t('compute.text_228')" v-bind="formItemLayout">
-        <a-input v-decorator="decorators.name" :placeholder="$t('validator.resourceCreateName')" />
-      </a-form-item>
-      <a-form-item :label="$t('common.description')" v-bind="formItemLayout">
-        <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_176')" :extra="$t('compute.hypervisor_extra')" v-bind="formItemLayout">
+        :zone.sync="zoneList"
+        @change="handleAreaChange" />
+      <!-- 无私有云订阅时仍用平台单选；公有云/HCSO/HCS 由云订阅决定平台 -->
+      <a-form-item
+        v-if="showHypervisorRadio"
+        :label="$t('compute.text_176')"
+        :extra="$t('compute.hypervisor_extra')"
+        v-bind="formItemLayout">
         <hypervisor-radio
           :decorator="decorators.hypervisor"
           :type="form.fi.createType"
           :hypervisors="hypervisors"
           :disabledHypervisorMap="disabledHypervisorMap"
+          :form-draft-key="diskDraftFields.hypervisor"
           @change="changeHandle" />
+      </a-form-item>
+      <a-form-item v-if="showCloudprovider" :label="$t('compute.text_15')" v-bind="formItemLayout">
+        <base-select
+          class="w-50"
+          v-decorator="decorators.manager_id"
+          resource="cloudproviders"
+          :params="cloudproviderParams"
+          :isDefaultSelect="true"
+          :showSync="true"
+          :select-props="{ placeholder: $t('compute.text_149') }"
+          :resList.sync="cloudproviderData"
+          @update:item="cloudproviderSelected" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_100')" v-bind="formItemLayout">
         <a-row>
@@ -57,11 +98,13 @@
             <div class="d-flex">
               <disk-storage-select
                 v-if="showStorage"
+                ref="diskStorageSelect"
                 style="min-width: 480px; max-width: 500px;"
                 :decorators="decorators"
                 :form="form"
-                :storageParams="storageParams" />
-              <a-button class="mt-1" type="link" @click="showStorage = !showStorage">{{ showStorage ? $t('compute.text_135') : $t('compute.text_1350') }}</a-button>
+                :storageParams="storageParams"
+                @optionsReady="onDiskStorageOptionsReady" />
+              <a-button class="mt-1" type="link" @click="toggleDiskShowStorage">{{ showStorage ? $t('compute.text_135') : $t('compute.text_1350') }}</a-button>
             </div>
           </a-col>
           <a-col v-if="isShowIops" :span="5">
@@ -75,21 +118,21 @@
                   :max="iopsLimit.max"
                   :precision="0" />
               </a-tooltip>
-              <a-button class="mt-1" type="link" @click="() => showIops = !showIops">{{ showIops ? $t('compute.text_135') : $t('compute.set_iops') }}</a-button>
+              <a-button class="mt-1" type="link" @click="() => toggleDiskShowIops(!showIops)">{{ showIops ? $t('compute.text_135') : $t('compute.set_iops') }}</a-button>
             </div>
           </a-col>
           <a-col v-if="isShowThroughput" :span="5">
             <div class="d-flex">
-              <a-tooltip title="125 ~ 1000MiB/s" placement="top">
+              <a-tooltip :title="throughputTooltip" placement="top">
                 <a-input-number
                   v-if="showThroughput"
                   v-decorator="decorators.throughput"
                   :placeholder="$t('compute.throughput')"
-                  :min="125"
-                  :max="1000"
+                  :min="throughputLimit.min"
+                  :max="throughputLimit.max"
                   :precision="0" />
               </a-tooltip>
-              <a-button class="mt-1" type="link" @click="() => showThroughput = !showThroughput">{{ showThroughput ? $t('compute.text_135') : $t('compute.set_throughput') }}</a-button>
+              <a-button class="mt-1" type="link" @click="() => toggleDiskShowThroughput(!showThroughput)">{{ showThroughput ? $t('compute.text_135') : $t('compute.set_throughput') }}</a-button>
             </div>
           </a-col>
         </a-row>
@@ -99,23 +142,11 @@
       </a-form-item>
       <a-form-item :label="$t('compute.text_1154')" class="mb-0" v-bind="formItemLayout">
         <tag
-          v-decorator="decorators.__meta__" :allowNoValue="false" />
+          :key="`disk-tag-${cloudEnv}`"
+          v-decorator="decorators.__meta__"
+          :allowNoValue="false"
+          :default-checked="tagDefaultChecked" />
       </a-form-item>
-      <a-collapse :bordered="false" v-if="cloudEnv === 'public' || isHCSO || isHCS">
-        <a-collapse-panel :header="$t('compute.text_309')" key="1">
-          <a-form-item :label="$t('compute.text_15')" v-bind="formItemLayout">
-            <base-select
-              class="w-50"
-              v-decorator="decorators.manager_id"
-              resource="cloudproviders"
-              :params="cloudproviderParams"
-              :isDefaultSelect="true"
-              :showSync="true"
-              :select-props="{ placeholder: $t('compute.text_149') }"
-              :resList.sync="cloudproviderData" />
-          </a-form-item>
-        </a-collapse-panel>
-      </a-collapse>
     </a-form>
     <bottom-bar
       :current-cloudregion="currentCloudregion"
@@ -123,6 +154,7 @@
       :current-storage="storageItem"
       :storage-types="storageTypes"
       :provider="provider"
+      :cloudprovider-item="cloudproviderItem"
       :size="form.fd.size" />
   </div>
 </template>
@@ -133,7 +165,8 @@ import { mapGetters } from 'vuex'
 import { MEDIUM_MAP, CUSTOM_STORAGE_TYPES, STORAGE_TYPES } from '@Compute/constants'
 import EncryptKeys from '@Compute/sections/encryptkeys'
 import DiskStorageSelect from '@Compute/sections/Disk/components/Storage'
-import { HYPERVISORS_MAP, CLOUD_ENVS } from '@/constants'
+import RegionMap from '@Compute/sections/RegionMap'
+import { HYPERVISORS_MAP, CLOUD_ENVS, PROVIDER_MAP, BRAND_MAP, resolveHypervisorKey } from '@/constants'
 import AreaSelects from '@/sections/AreaSelects'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
@@ -142,13 +175,27 @@ import i18n from '@/locales'
 import DomainProject from '@/sections/DomainProject'
 import HypervisorRadio from '@/sections/HypervisorRadio'
 import { getCloudEnvOptions } from '@/utils/common/hypervisor'
+import { cloudregionFilterByCapability } from '@/utils/common/capability'
+import {
+  getGoogleDiskPerfElements,
+  getGoogleDiskIopsLimit,
+  getGoogleDiskThroughputLimit,
+} from '@/utils/common/googleDiskPerf'
 import Tag from '@/sections/Tag'
+import {
+  DISK_CREATE_FORM_DRAFT_FIELD,
+  DISK_CREATE_FORM_DRAFT_FIELDS,
+  DISK_CREATE_FORM_DRAFT_FC_BINDINGS,
+  getDiskCreateFormDraftScope,
+} from '@Compute/utils/diskCreateFormDraft'
+import createFormDraftMixin from '@/mixins/createFormDraft'
 import BottomBar from './components/BottomBar'
 
 export default {
   name: 'DiskCreate',
   components: {
     AreaSelects,
+    RegionMap,
     DomainProject,
     BottomBar,
     Tag,
@@ -156,7 +203,7 @@ export default {
     DiskStorageSelect,
     HypervisorRadio,
   },
-  mixins: [DialogMixin, WindowsMixin],
+  mixins: [DialogMixin, WindowsMixin, createFormDraftMixin],
   data () {
     const cloudEnvOptions = getCloudEnvOptions('compute_engine_brands', true)
     const queryType = this.$route.query.type
@@ -187,11 +234,17 @@ export default {
               }
             })
             if (values.hasOwnProperty('zone')) {
-              if (values.zone) {
-                this.fetchStorageList(values.zone)
-              } else {
+              this.$set(this.form.fd, 'zone', values.zone)
+              if (!this.pickSingleAreaValue(values.zone)) {
+                this.form.fc.setFieldsValue({ manager_id: undefined })
+                this.cloudproviderItem = null
                 this.storageOpts = []
                 this.form.fc.resetFields(['backend'])
+              } else if (this.showCloudprovider) {
+                // 等 zoneList / 云订阅自动选中同步后再拉，避免无订阅时抢先请求被后返回清空
+                this.$nextTick(() => this.refreshStorageByCloudprovider())
+              } else {
+                this.fetchStorageList(this.resolveZoneForCapability())
               }
             }
             if (values.hasOwnProperty('size')) {
@@ -234,6 +287,13 @@ export default {
           },
         ],
         description: ['description'],
+        enableWorldMap: [
+          'enableWorldMap',
+          {
+            valuePropName: 'checked',
+            initialValue: false,
+          },
+        ],
         backend: [
           'backend',
           {
@@ -261,6 +321,19 @@ export default {
         ],
         manager_id: [
           'manager_id',
+          {
+            rules: [
+              {
+                validator: (rule, value, cb) => {
+                  if (this.showCloudprovider && !value) {
+                    cb(new Error(this.$t('compute.text_149')))
+                    return
+                  }
+                  cb()
+                },
+              },
+            ],
+          },
         ],
         __meta__: [
           '__meta__',
@@ -344,12 +417,15 @@ export default {
       minDiskData: 1,
       step: 10,
       cloudproviderData: [],
+      cloudproviderItem: null,
+      storageFetchSeq: 0,
       regionList: {},
       zoneList: {},
       instance_capabilities: [],
       showStorage: false,
       showIops: false,
       showThroughput: false,
+      tagDefaultChecked: {},
       hypervisors: [],
       capbilityData: {},
       disabledHypervisorMap: {
@@ -359,18 +435,40 @@ export default {
     }
   },
   computed: {
+    createFormDraftOptions () {
+      return {
+        formScope: getDiskCreateFormDraftScope({ cloudEnv: this.cloudEnv }),
+        // 与全局 shouldUseCreateDraft 一致：有 workflow / 预填时禁用
+        disableWhen: () => !!this.$route.query.workflow,
+      }
+    },
+    diskDraftFields () {
+      return DISK_CREATE_FORM_DRAFT_FIELDS
+    },
     enableEncryption () {
       return this.$appConfig.isPrivate && !this.$store.getters.isSysCE
     },
     tooltip () {
       return this.$t('compute.text_137', [this.minDiskData, this.maxDiskData])
     },
-    ...mapGetters(['isAdminMode', 'scope', 'userInfo']),
-    currentCloudregion () {
-      return this.regionList[this.form.fd.cloudregion]
-    },
+    ...mapGetters(['isAdminMode', 'scope', 'userInfo', 'capability']),
     currentCloudzone () {
-      return this.zoneList[this.form.fd.zone]
+      const zoneId = this.resolveZoneForCapability()
+      return zoneId ? this.zoneList[zoneId] : undefined
+    },
+    currentCloudregion () {
+      // 优先可用区所属区域，避免多选 region 时与单选 zone 错配
+      const zone = this.currentCloudzone
+      const zoneRegionId = zone?.cloudregion_id || zone?.cloudregion
+      if (zoneRegionId && this.regionList[zoneRegionId]) {
+        return this.regionList[zoneRegionId]
+      }
+      if (this.cloudproviderItem?.cloudregion_id) {
+        return this.regionList[this.cloudproviderItem.cloudregion_id] ||
+          this.regionList[this.pickSingleAreaValue(this.form.fd.cloudregion)]
+      }
+      const regionId = this.pickSingleAreaValue(this.form.fd.cloudregion)
+      return this.regionList[regionId]
     },
     isHCSO () {
       if (this.currentCloudregion) {
@@ -396,8 +494,17 @@ export default {
       }
       return false
     },
+    isCAS () {
+      if (this.currentCloudregion) {
+        return this.currentCloudregion.provider === HYPERVISORS_MAP.cas.provider
+      }
+      return false
+    },
     isAws () {
       return this.currentCloudregion?.provider === HYPERVISORS_MAP.aws.provider
+    },
+    isGoogle () {
+      return this.currentCloudregion?.provider === HYPERVISORS_MAP.google.provider
     },
     isKVM () {
       return true
@@ -487,17 +594,53 @@ export default {
       }
       return ['provider', 'cloudregion', 'zone']
     },
+    showCloudprovider () {
+      return this.isPublic || this.isHCSO || this.isHCS
+    },
+    showHypervisorRadio () {
+      return !this.showCloudprovider
+    },
+    regionMapParams () {
+      const project_domain = this.form.fd.domain || this.userInfo.projectDomainId || this.userInfo.domain.id
+      const params = {
+        cloud_env: 'public',
+        usable: true,
+        show_emulated: true,
+        read_only: false,
+        project_domain,
+      }
+      return params
+    },
     cloudproviderParams () {
-      const { cloudregion, domain: project_domain, zone } = this.form.fd
+      const { domain: project_domain } = this.form.fd
+      const zoneId = this.pickSingleAreaValue(this.form.fd.zone)
+      const zone = zoneId ? this.zoneList[zoneId] : null
+      // 可用区单选：region / brand 优先取自已选 zone，各只传一个
+      const regionId = zone?.cloudregion_id || zone?.cloudregion ||
+        this.pickSingleAreaValue(this.form.fd.cloudregion)
+      const region = regionId
+        ? (this.regionList[regionId] || Object.values(this.regionList || {}).find(r => r.id === regionId))
+        : null
+      const brand = this.mapAreaProviderToBrand(
+        zone?.provider || zone?.brand || region?.provider || region?.brand ||
+        this.pickSingleAreaValue(this.form.fd.provider),
+      )
       const params = {
         limit: 0,
         enabled: true,
         read_only: false,
         'filter.0': 'status.equals("connected")',
         'filter.1': 'health_status.equals("normal")',
-        cloudregion,
         project_domain,
-        zone,
+      }
+      if (regionId) {
+        params.cloudregion = regionId
+      }
+      if (brand) {
+        params.brand = brand
+      }
+      if (zoneId) {
+        params.zone = zoneId
       }
       return params
     },
@@ -516,17 +659,37 @@ export default {
       return this.cloudEnv === 'onpremise'
     },
     isShowStorageSelect () {
-      return this.isIDC || this.isZettaKit || this.isUIS
+      return this.isIDC || this.isZettaKit || this.isUIS || this.isCAS
     },
     isShowIops () {
-      return this.isAws && (this.storageItem?.value?.startsWith('gp3') || this.storageItem?.value?.startsWith('io1'))
+      if (this.isAws) {
+        return this.storageItem?.value?.startsWith('gp3') ||
+          this.storageItem?.value?.startsWith('io1') ||
+          this.storageItem?.value?.startsWith('io2')
+      }
+      if (this.isGoogle) {
+        return getGoogleDiskPerfElements(this.storageItem?.value).includes('iops')
+      }
+      return false
     },
     isShowThroughput () {
-      return this.isAws && this.storageItem?.value?.startsWith('gp3')
+      if (this.isAws) {
+        return this.storageItem?.value?.startsWith('gp3')
+      }
+      if (this.isGoogle) {
+        return getGoogleDiskPerfElements(this.storageItem?.value).includes('throughput')
+      }
+      return false
     },
     iopsTooltip () {
-      if (this.iopsLimit.min && this.iopsLimit.max) {
+      if (this.iopsLimit.min != null && this.iopsLimit.max != null) {
         return `${this.iopsLimit.min} ~ ${this.iopsLimit.max}`
+      }
+      return ''
+    },
+    throughputTooltip () {
+      if (this.throughputLimit.min != null && this.throughputLimit.max != null) {
+        return `${this.throughputLimit.min} ~ ${this.throughputLimit.max} MiB/s`
       }
       return ''
     },
@@ -542,7 +705,7 @@ export default {
     storageParams () {
       const params = {
         project_domain: this.form.fd.domain,
-        zone: this.cloudproviderParams?.zone,
+        zone: this.resolveZoneForCapability(),
       }
       const storageVal = this.storageItem.value?.toLowerCase()
       if (storageVal) {
@@ -565,28 +728,52 @@ export default {
     iopsLimit () {
       let ret = { min: 0 }
       if (this.isAws) {
-        // gp3 iops 不能超过磁盘500倍
-        if ((this.storageItem?.value || '').startsWith('gp3')) {
-          ret = { min: 3000, max: 16000 }
-          const { size } = this.form.fd
+        const { size } = this.form.fd
+        const storageVal = this.storageItem?.value || ''
+        // gp3 iops 不能超过磁盘500倍，最大80000
+        if (storageVal.startsWith('gp3')) {
+          ret = { min: 3000, max: 80000 }
           if (size) {
-            ret.max = size * 500 < ret.max ? size * 500 : ret.max
+            ret.max = Math.min(size * 500, ret.max)
           }
         }
-        // io1 iops 不能超过磁盘50倍
-        if ((this.storageItem?.value || '').startsWith('io1')) {
+        // io1 iops 不能超过磁盘50倍，最大64000
+        if (storageVal.startsWith('io1')) {
           ret = { min: 100, max: 64000 }
-          const { size } = this.form.fd
           if (size) {
-            ret.max = size * 50 < ret.max ? size * 50 : ret.max
+            ret.max = Math.min(size * 50, ret.max)
+          }
+        }
+        // io2 iops 不能超过磁盘1000倍，最大256000
+        if (storageVal.startsWith('io2')) {
+          ret = { min: 100, max: 256000 }
+          if (size) {
+            ret.max = Math.min(size * 1000, ret.max)
           }
         }
       }
+      if (this.isGoogle) {
+        ret = getGoogleDiskIopsLimit(this.storageItem?.value, this.form.fd.size) || { min: 0, max: 0 }
+      }
       return ret
+    },
+    throughputLimit () {
+      if (this.isAws && this.storageItem?.value?.startsWith('gp3')) {
+        return { min: 125, max: 1000 }
+      }
+      if (this.isGoogle) {
+        return getGoogleDiskThroughputLimit(
+          this.storageItem?.value,
+          this.form.fd.size,
+          this.form.fd.iops,
+        ) || { min: 0, max: 0 }
+      }
+      return { min: 125, max: 1000 }
     },
   },
   watch: {
-    cloudEnv (val) {
+    async cloudEnv (val) {
+      this.bindDiskCreateFormFcDrafts()
       this.$nextTick(() => {
         const { query, path } = this.$router.history.current
         const newQuery = JSON.parse(JSON.stringify(query))
@@ -594,47 +781,340 @@ export default {
         this.form.fi.createType = newQuery.type
         this.$router.push({ path, query: newQuery })
       })
-      this.$refs.areaSelects.fetchs(['provider', 'cloudregion', 'zone'])
       this.storageItem = {}
+      this.storageOpts = []
+      this.cloudproviderItem = null
+      this.showStorage = false
+      this.showIops = false
+      this.showThroughput = false
+      this.tagDefaultChecked = {}
+      this.form.fc.setFieldsValue({ __meta__: undefined })
+      if (this.$refs.areaSelects) {
+        this.$refs.areaSelects.fetchs(this.areaselectsName)
+      }
     },
     'form.fd.domain' (newValue, oldValue) {
       if (newValue !== oldValue) {
-        this.$refs.areaSelects.fetchs(this.areaselectsName)
+        this.$refs.areaSelects && this.$refs.areaSelects.fetchs(this.areaselectsName)
       }
+    },
+    cloudproviderData (list) {
+      if (!this.showCloudprovider || !list || !list.length) return
+      this.$nextTick(() => this.refreshStorageByCloudprovider())
+    },
+    'form.fd.manager_id' (id) {
+      if (!this.showCloudprovider || !id) return
+      this.$nextTick(() => this.refreshStorageByCloudprovider())
     },
   },
   provide () {
     return {
       form: this.form,
+      getCreateFormDraftScope: () => this.getCreateFormDraftScope(),
+      canUseCreateFormFieldDraft: () => this.canRestoreCreateFormDraft,
+      canRestoreCreateFormFieldDraft: () => this.canRestoreCreateFormDraft,
+      canBackupCreateFormFieldDraft: () => this.canBackupCreateFormDraft,
+      canBackupCreateFormFieldDraftOnSubmit: () => this.canBackupCreateFormDraftOnSubmit,
+      registerCreateFormFieldDraftFlush: (fn) => this.registerCreateFormFieldDraftFlush(fn),
+      readCreateFormFieldDraft: (key) => this.readCreateFormFieldDraft(key),
+      writeCreateFormFieldDraft: (key, data, options) => this.writeCreateFormFieldDraft(key, data, options),
+      bindCreateFormFieldDraft: (spec) => this.bindCreateFormFieldDraft(spec),
+      flushCreateFormFieldDrafts: () => this.flushCreateFormFieldDrafts(),
+      isCreateFormFieldTouched: (key) => this.isCreateFormFieldTouched(key),
+      markCreateFormFieldTouched: (key) => this.markCreateFormFieldTouched(key),
+      isCreateFormFieldDraftFromLocal: (key) => this.isCreateFormFieldDraftFromLocal(key),
     }
   },
+  created () {
+    this.bindDiskCreateFormFcDrafts()
+  },
   methods: {
+    bindDiskCreateFormFcDrafts () {
+      this._diskCreateFormFcDraftMap = Object.create(null)
+      const type = this.cloudEnv === 'onpremise' ? 'idc' : this.cloudEnv
+      ;(DISK_CREATE_FORM_DRAFT_FC_BINDINGS || []).forEach((item) => {
+        if (!item?.key || !item.formField) return
+        if (item.types && !item.types.includes(type)) return
+        this._diskCreateFormFcDraftMap[item.formField] = item.key
+        this.bindFormFcFieldDraft(item.key, {
+          formField: item.formField,
+          kind: item.kind,
+        })
+      })
+      // backend / storage：只注册 flush 落盘；回填由 getStorageOpts / optionsReady 自管（无 set，避免进页抢写）
+      this._diskCreateFormFcDraftMap.backend = DISK_CREATE_FORM_DRAFT_FIELD.BACKEND
+      this.bindCreateFormFieldDraft({
+        key: DISK_CREATE_FORM_DRAFT_FIELD.BACKEND,
+        kind: 'selection',
+        get: () => this.form?.fc?.getFieldValue?.('backend'),
+      })
+      this._diskCreateFormFcDraftMap.storage = DISK_CREATE_FORM_DRAFT_FIELD.STORAGE_ID
+      this.bindCreateFormFieldDraft({
+        key: DISK_CREATE_FORM_DRAFT_FIELD.STORAGE_ID,
+        kind: 'selection',
+        get: () => {
+          if (!this.showStorage) return null
+          const val = this.form?.fc?.getFieldValue?.('storage')
+          return (val === undefined || val === null || val === '') ? null : val
+        },
+      })
+    },
+    toggleDiskShowStorage () {
+      if (this.showStorage) {
+        this._pendingDiskStorageDraft = null
+        this.form.fc.setFieldsValue({ storage: undefined })
+        if (this.form.fd) this.$delete(this.form.fd, 'storage')
+        this.clearCreateFormFieldDraft(DISK_CREATE_FORM_DRAFT_FIELD.STORAGE_ID)
+      }
+      this.showStorage = !this.showStorage
+    },
+    toggleDiskShowIops (show) {
+      if (this.showIops && !show) {
+        this.form.fc.setFieldsValue({ iops: undefined })
+        if (this.form.fd) this.$delete(this.form.fd, 'iops')
+      }
+      this.showIops = show
+    },
+    toggleDiskShowThroughput (show) {
+      if (this.showThroughput && !show) {
+        this.form.fc.setFieldsValue({ throughput: undefined })
+        if (this.form.fd) this.$delete(this.form.fd, 'throughput')
+      }
+      this.showThroughput = show
+    },
+    pickSingleAreaValue (value) {
+      if (Array.isArray(value)) return value[0] || undefined
+      return value || undefined
+    },
+    normalizeAreaValues (value) {
+      if (Array.isArray(value)) return value.filter(Boolean)
+      return value ? [value] : []
+    },
+    toAreaValue (value) {
+      if (value === undefined || value === null) return []
+      return Array.isArray(value) ? value : [value]
+    },
+    // area-selects 的平台值 → cloudproviders.brand（与虚机/文件系统一致）
+    mapAreaProviderToBrand (value) {
+      if (!value) return undefined
+      if (PROVIDER_MAP[value]) {
+        return PROVIDER_MAP[value].brand || PROVIDER_MAP[value].provider
+      }
+      if (BRAND_MAP[value]) {
+        return BRAND_MAP[value].brand || BRAND_MAP[value].provider
+      }
+      const hv = HYPERVISORS_MAP[String(value).toLowerCase()]
+      if (hv) {
+        return hv.brand || hv.provider
+      }
+      return value
+    },
+    resolveZoneForCapability () {
+      return this.pickSingleAreaValue(
+        this.form.fd.zone || this.form.fc.getFieldValue('zone'),
+      )
+    },
+    getSelectedProviderNames () {
+      return this.normalizeAreaValues(this.form.fd.provider).map(p => String(p))
+    },
+    normalizeAreaProviderKey (val) {
+      return resolveHypervisorKey(val)
+    },
+    isAreaProviderMatch (selected, itemProvider) {
+      return this.normalizeAreaProviderKey(selected) === this.normalizeAreaProviderKey(itemProvider)
+    },
+    filterCloudregionListByProvider (list = []) {
+      if (!this.isPublic) return list
+      const providers = this.getSelectedProviderNames()
+      if (!providers.length) return list
+      return list.filter(item => {
+        const raw = item.provider || item.brand || ''
+        return providers.some(p => this.isAreaProviderMatch(p, raw))
+      })
+    },
+    filterMapCloudregionList (list = []) {
+      return cloudregionFilterByCapability({
+        dataList: list,
+        capability: this.capability,
+        resource: 'compute_engine',
+      })
+    },
+    matchProviderFromList (list, hypervisor) {
+      const hvKey = String(hypervisor || '').toLowerCase()
+      const hvObj = HYPERVISORS_MAP[hvKey]
+      if (!hvObj || !list?.length) return null
+      const hvProvider = String(hvObj.provider || '').toLowerCase()
+      return list.find(item => {
+        const name = String(item.name || '').toLowerCase()
+        const provider = String(item.provider || '').toLowerCase()
+        return name === hvKey || name === hvProvider || provider === hvKey || provider === hvProvider
+      }) || null
+    },
+    handleAreaChange () {
+      if (this.showCloudprovider) {
+        this.$nextTick(() => this.refreshStorageByCloudprovider())
+        return
+      }
+      const zoneId = this.resolveZoneForCapability()
+      if (zoneId) {
+        this.fetchStorageList(zoneId)
+      }
+    },
+    clearPublicLocationFields () {
+      this.form.fc.setFieldsValue({
+        provider: [],
+        cloudregion: [],
+        zone: undefined,
+        manager_id: undefined,
+        hypervisor: undefined,
+      })
+      this.cloudproviderItem = null
+      this.storageOpts = []
+    },
+    onRegionSelect (payload) {
+      const regions = payload?.nearbyRegions || []
+      if (!regions.length) {
+        this.clearPublicLocationFields()
+        this.$nextTick(() => {
+          this.$refs.areaSelects && this.$refs.areaSelects.fetchs(this.areaselectsName)
+        })
+        return
+      }
+      this.applyMapSelectionToAreaSelects(regions)
+    },
+    onRegionMapParamsChange () {
+      if (!this.form.fd.enableWorldMap) return
+      this.onRegionSelect({ nearbyRegions: [] })
+    },
+    async applyMapSelectionToAreaSelects (regions = []) {
+      const providerList = this.$refs.areaSelects?.providerList || []
+      const providerKeys = [...new Set(regions.map(item => {
+        const raw = item.provider || item.brand
+        if (!raw) return null
+        const hvKey = resolveHypervisorKey(raw)
+        const matched = this.matchProviderFromList(providerList, hvKey)
+        return matched ? matched.name : hvKey
+      }).filter(Boolean))]
+      const cloudregionIds = regions.map(item => item.id).filter(Boolean)
+      this.form.fc.setFieldsValue({
+        manager_id: undefined,
+        zone: undefined,
+        hypervisor: undefined,
+      })
+      this.cloudproviderItem = null
+      await this.$nextTick()
+      const areaRef = this.$refs.areaSelects
+      if (areaRef) {
+        await areaRef.applyMultipleSelection({
+          provider: this.toAreaValue(providerKeys),
+          cloudregion: this.toAreaValue(cloudregionIds),
+        })
+      }
+    },
+    resolveHypervisorFromCloudprovider (item) {
+      if (!item) return undefined
+      const raw = item.provider || item.brand || item.name
+      if (!raw) return undefined
+      const fromMap = PROVIDER_MAP[raw]?.hypervisor
+      if (fromMap) return fromMap
+      return resolveHypervisorKey(raw)
+    },
+    applyHypervisorStorage (hypervisor) {
+      if (!hypervisor) {
+        this.storageOpts = []
+        return
+      }
+      const provider = Array.isArray(this.provider) ? this.provider[0] : this.provider
+      const data_storage_types = this.dataStorageTypes?.[hypervisor] || []
+      this.form.fc.setFieldsValue({ hypervisor })
+      this.$set(this.form.fd, 'hypervisor', hypervisor)
+      this.getStorageOpts(data_storage_types, provider)
+    },
+    cloudproviderSelected (item) {
+      this.cloudproviderItem = item || null
+      if (!this.showCloudprovider) return
+      // nextTick：等 zoneList / manager_id 写完再匹配 zone
+      this.$nextTick(() => this.refreshStorageByCloudprovider())
+    },
+    // 根据当前云订阅 + 已选 zone 拉磁盘类型（供自动选中与手动切换共用）
+    refreshStorageByCloudprovider () {
+      if (!this.showCloudprovider) return
+      const managerId = this.form.fc.getFieldValue('manager_id') || this.form.fd.manager_id
+      let item = this.cloudproviderItem
+      if (managerId && (!item || item.id !== managerId) && this.cloudproviderData?.length) {
+        item = this.cloudproviderData.find(i => i.id === managerId) || null
+        this.cloudproviderItem = item
+      }
+      if (!item) {
+        this.storageOpts = []
+        return
+      }
+      const zoneId = this.resolveZoneForCapability()
+      if (zoneId) {
+        this.fetchStorageList(zoneId)
+        return
+      }
+      this.storageOpts = []
+      this.form.fc.resetFields(['backend'])
+    },
     fetchStorageList (zoneId) {
+      if (!zoneId) {
+        this.storageOpts = []
+        return
+      }
       const params = { show_emulated: true }
       if (this.isAdminMode) {
         params.project_domain = this.project_domain
       } else {
         params.scope = this.scope
       }
+      // 请求序号：忽略过期响应，避免 zone 变更抢先请求清空手动/自动选订阅后的结果
+      const reqId = ++this.storageFetchSeq
+      const expectedCpId = this.cloudproviderItem?.id
       this.storageOpts = []
       new this.$Manager('capability').list({ ctx: [['zones', zoneId]], params })
         .then(({ data }) => {
+          if (reqId !== this.storageFetchSeq) return
+          if (this.showCloudprovider && expectedCpId && this.cloudproviderItem?.id !== expectedCpId) return
           try {
-            const provider = Array.isArray(this.provider) ? this.provider[0] : this.provider
+            // 用云订阅/当前区域对应的 provider 做磁盘类型文案映射
+            const providerFromCp = this.cloudproviderItem?.provider || this.cloudproviderItem?.brand
+            const provider = (providerFromCp ||
+              (Array.isArray(this.provider) ? this.provider[0] : this.provider) ||
+              '').toLowerCase()
             this.capbilityData = data
             this.instance_capabilities = data.instance_capabilities
             const hypervisors = Object.keys(this.dataStorageTypes || {})
-            let data_storage_types = []
             this.hypervisors = hypervisors
+            let data_storage_types = []
             if (hypervisors && hypervisors.length > 0) {
-              const supportHypervisors = hypervisors.filter(item => ![HYPERVISORS_MAP.esxi.key, HYPERVISORS_MAP.pod.key].includes(item))
-              const firstHypervisor = supportHypervisors[0]
-              this.$nextTick(() => {
-                this.form.fc.setFieldsValue({
-                  hypervisor: firstHypervisor,
+              if (this.showCloudprovider) {
+                // 公有云等：平台由云订阅决定
+                const hypervisor = this.resolveHypervisorFromCloudprovider(this.cloudproviderItem) ||
+                  this.form.fd.hypervisor
+                if (hypervisor && this.dataStorageTypes[hypervisor]) {
+                  this.form.fc.setFieldsValue({ hypervisor })
+                  data_storage_types = this.dataStorageTypes[hypervisor] || []
+                } else {
+                  this.storageOpts = []
+                  return
+                }
+              } else {
+                const supportHypervisors = hypervisors.filter(item => ![HYPERVISORS_MAP.esxi.key, HYPERVISORS_MAP.pod.key].includes(item))
+                // 优先草稿 hypervisor，避免总是落到第一项冲掉回填
+                const draftHyper = this.canUseCreateFormDraft
+                  ? this.readCreateFormFieldDraft(DISK_CREATE_FORM_DRAFT_FIELD.HYPERVISOR)
+                  : null
+                const preferHyper = (draftHyper && supportHypervisors.includes(draftHyper))
+                  ? draftHyper
+                  : supportHypervisors[0]
+                this.$nextTick(() => {
+                  this.form.fc.setFieldsValue({
+                    hypervisor: preferHyper,
+                  })
                 })
-              })
-              data_storage_types = this.dataStorageTypes[firstHypervisor]
+                data_storage_types = this.dataStorageTypes[preferHyper] || []
+              }
             }
             this.getStorageOpts(data_storage_types, provider)
           } catch (error) {
@@ -643,11 +1123,12 @@ export default {
         })
     },
     getStorageOpts (data_storage_types, provider) {
-      this.storageOpts = data_storage_types.map((item) => {
+      const list = data_storage_types || []
+      this.storageOpts = list.map((item) => {
         const types = item.split('/')
         const backend = types[0]
         const medium = types[1]
-        let opt = STORAGE_TYPES[provider][backend]
+        let opt = STORAGE_TYPES[provider] && STORAGE_TYPES[provider][backend]
         if (!this.isPublic && opt) {
           opt = {
             ...opt,
@@ -655,7 +1136,7 @@ export default {
           }
         }
         const getLabel = (backend) => { return backend.includes('rbd') ? `Ceph(${MEDIUM_MAP[medium]})` : `${backend}(${MEDIUM_MAP[medium]})` }
-        const backends = data_storage_types.filter(v => v.includes(backend))
+        const backends = list.filter(v => v.includes(backend))
         return {
           value: `${backend}__${medium}`,
           label: opt ? opt.label : getLabel(backend),
@@ -674,16 +1155,60 @@ export default {
           return true
         })
       }
-      if (provider === 'qcloud' || provider === 'ucloud') {
+      if (provider === 'qcloud' || provider === 'ucloud' || provider === 'rockbase') {
         this.storageOpts = this.storageOpts.filter((item) => {
           return !(item.value && item.value.toLowerCase().startsWith('local_'))
         })
       }
       this.form.fc.setFieldsValue({ backend: '' })
       if (this.storageOpts.length > 0) {
-        this.form.fc.setFieldsValue({ backend: this.storageOpts[0].value })
-        this.__newStorageChange(this.storageOpts[0].value)
+        const draftBackend = this.canUseCreateFormDraft
+          ? this.readCreateFormFieldDraft(DISK_CREATE_FORM_DRAFT_FIELD.BACKEND)
+          : null
+        const hit = draftBackend && this.storageOpts.find(o => o.value === draftBackend)
+        const backendVal = hit ? hit.value : this.storageOpts[0].value
+        this._diskStorageDraftRestoring = true
+        this.form.fc.setFieldsValue({ backend: backendVal })
+        this.__newStorageChange(backendVal, {
+          fromDraft: !!hit,
+        })
+        this.$nextTick(() => {
+          this.restoreDiskFieldDraftsAfterStorageReady()
+          this.$nextTick(() => {
+            this._diskStorageDraftRestoring = false
+          })
+        })
       }
+    },
+    /** storageOpts 就绪后回填 storage（选择类） */
+    restoreDiskFieldDraftsAfterStorageReady () {
+      if (!this.canUseCreateFormDraft || !this.form?.fc) return
+      const storageDraft = this.readCreateFormFieldDraft(DISK_CREATE_FORM_DRAFT_FIELD.STORAGE_ID)
+      if (storageDraft) {
+        this._pendingDiskStorageDraft = storageDraft
+        this.showStorage = true
+        this.$nextTick(() => this.tryRestoreDiskStorageDraft())
+      }
+    },
+    /** DiskStorageSelect optionsReady：opts 就绪后再尝试命中回填 */
+    onDiskStorageOptionsReady (options) {
+      this.tryRestoreDiskStorageDraft(options)
+    },
+    /** 指定存储：仅 options 命中才回填；列表空则等 optionsReady，不 setTimeout 重试 */
+    tryRestoreDiskStorageDraft (readyOptions) {
+      const storageDraft = this._pendingDiskStorageDraft
+      if (!storageDraft || !this.form?.fc) return
+      const select = this.$refs.diskStorageSelect
+      const options = Array.isArray(readyOptions)
+        ? readyOptions
+        : ((select && Array.isArray(select.options)) ? select.options : [])
+      if (!options.length) return
+      this._pendingDiskStorageDraft = null
+      if (!options.some(o => o.id === storageDraft)) {
+        this.form.fc.setFieldsValue({ storage: undefined })
+        return
+      }
+      this.form.fc.setFieldsValue({ storage: storageDraft })
     },
     _translateStorageOps (data) {
       const findStorageProvider = optItem => {
@@ -740,7 +1265,7 @@ export default {
         }
       })
     },
-    __newStorageChange (val) {
+    __newStorageChange (val, options = {}) {
       const item = this.storageOpts.find(v => v.value === val)
       this.storageItem = item
       try {
@@ -750,7 +1275,19 @@ export default {
       } catch (error) {
         console.warn(this.$t('compute.text_413', [STORAGE_TYPES[this.provider], item.storage_type]))
       }
-      this.form.fc.setFieldsValue({ size: 10 })
+      const fromDraft = !!(options && options.fromDraft) || this._diskStorageDraftRestoring
+      const preferSize = options && options.preferSize
+      // 有草稿容量时优先回填；用户手动切类型仍重置默认 10
+      if (preferSize != null && preferSize !== '') {
+        let size = Number(preferSize)
+        if (!Number.isNaN(size)) {
+          if (size > this.maxDiskData) size = this.maxDiskData
+          if (size < this.minDiskData) size = this.minDiskData
+          this.form.fc.setFieldsValue({ size })
+        }
+      } else if (!fromDraft) {
+        this.form.fc.setFieldsValue({ size: 10 })
+      }
       const size = this.form.fc.getFieldValue('size')
       if (size > this.maxDiskData) { // 如果当前容量大于当前集群的最大值，那么取最大值
         this.form.fc.setFieldsValue({ size: this.maxDiskData })
@@ -783,6 +1320,22 @@ export default {
       const data_storage_types = this.dataStorageTypes[v]
       const provider = Array.isArray(this.provider) ? this.provider[0] : this.provider
       this.getStorageOpts(data_storage_types, provider)
+    },
+    fetchDomainCallback () {
+      const domain = this.$route.query.domain_id
+      if (domain) {
+        this.form.fc.setFieldsValue({
+          domain: { key: domain },
+        })
+      }
+    },
+    fetchProjectCallback () {
+      const project = this.$route.query.tenant_id
+      if (project) {
+        this.form.fc.setFieldsValue({
+          project: { key: project },
+        })
+      }
     },
   },
 }

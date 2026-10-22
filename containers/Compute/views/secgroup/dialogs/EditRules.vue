@@ -16,13 +16,26 @@
             </a-select-option>
           </a-select>
         </a-form-item>
-        <a-form-item :label="decLabel" :extra="$t('compute.text_995')">
-          <a-select
+        <a-form-item :label="targetTypeLabel">
+          <a-select v-decorator="decorators.target_type" @change="targetTypeChange">
+            <a-select-option v-for="item in targetTypeOptions" :key="item.value" :value="item.value">
+              {{item.label}}
+            </a-select-option>
+          </a-select>
+        </a-form-item>
+        <a-form-item :label="decLabel" :extra="sourcePromptText">
+          <base-select v-if="targetType === 'ip_set'"
+            v-decorator="decorators.ip_set_id"
+            version="v2"
+            resource="ipsets"
+            filterable
+            :params="ipsetParams"
+            :isDefaultSelect="true"
+            :select-props="{ placeholder: $t('compute.secgroup.source.ip_set.placeholder') }" />
+          <a-select v-else-if="targetType === 'cidr'"
             mode="combobox"
-            @change="fetchSecgroups"
             option-filter-prop="children"
             :placeholder="$t('compute.secgroup.source.placeholder')"
-            :disabled="cidrDisabled || cidrChecked"
             v-decorator="decorators.source">
             <a-select-opt-group>
               <span slot="label">CIDR</span>
@@ -37,7 +50,8 @@
               </a-select-option>
             </a-select-opt-group> -->
           </a-select>
-          <a-checkbox v-if="cidrCheckedShow" class="right-checkbox" @change="cidrChange" :checked="cidrChecked">{{$t('compute.any_cidr.text')}}</a-checkbox>
+          <span v-else>ALL</span>
+          <!--a-checkbox v-if="cidrCheckedShow" class="right-checkbox" @change="cidrChange" :checked="cidrChecked">{{$t('compute.any_cidr.text')}}</a-checkbox-->
         </a-form-item>
         <a-form-item :label="$t('compute.text_980')">
           <a-select v-decorator="decorators.protocol" @change="protocolChange" :disabled="protocolDisabled || cidrDisabled">
@@ -75,6 +89,7 @@
 
 <script>
 import { mapGetters } from 'vuex'
+import { isUcloudLikeProvider } from '@/constants'
 import { REGEXP } from '@/utils/validate'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
@@ -95,6 +110,10 @@ export default {
       cidrCheckedShow = false
       cidrChecked = false
     }
+    let initTargetType = 'all'
+    if (selectItem && selectItem.target_type && (selectItem.target_type !== 'cidr' || selectItem.CIDR || selectItem.cidr)) {
+      initTargetType = selectItem.target_type
+    }
     return {
       loading: false,
       form: {
@@ -104,13 +123,28 @@ export default {
         type: [
           'type',
         ],
+        target_type: [
+          'target_type',
+          {
+            initialValue: initTargetType,
+          },
+        ],
         source: [
           'source',
           {
             validateFirst: true,
-            initialValue: selectItem.cidr || (cidrCheckedShow ? 'ALL' : '0.0.0.0/0'),
+            initialValue: selectItem.cidr || '0.0.0.0/0',
             rules: [
-              { validator: this.validateCIDR, required: !cidrCheckedShow },
+              { validator: this.validateCIDR, required: this.targetType === 'cidr' },
+            ],
+          },
+        ],
+        ip_set_id: [
+          'ip_set_id',
+          {
+            initialValue: selectItem.cidr || '',
+            rules: [
+              { required: this.targetType === 'ip_set' },
             ],
           },
         ],
@@ -202,7 +236,9 @@ export default {
       portsDisabled: JSON.stringify(selectItem) === '{}' ? false : !selectItem.ports,
       portsCheckboxDisabled: selectItem.protocol === 'any' || selectItem.protocol === 'icmp',
       portsChecked: JSON.stringify(selectItem) === '{}' ? false : !selectItem.ports,
+      targetTypeLabel: (this.params.type === 'in' ? this.$t('compute.text_979') : this.$t('compute.text_978')) + this.$t('compute.text_175'),
       decLabel: this.params.type === 'in' ? this.$t('compute.text_979') : this.$t('compute.text_978'),
+      targetType: initTargetType,
       protocolDisabled: this.params.title !== 'edit',
       priorityMin,
       priorityMax,
@@ -233,6 +269,35 @@ export default {
     isKsyun () {
       return this.params.brand === 'Ksyun'
     },
+    isKvm () {
+      return this.params.brand === 'OneCloud'
+    },
+    supportsIpSet () {
+      const brand = (this.params.brand || '').toLowerCase()
+      return ['onecloud', 'cloudpods', 'qcloud', 'aliyun'].includes(brand)
+    },
+    targetTypeOptions () {
+      const ret = [
+        { label: this.$t('compute.secgroup.rule.target_type.all'), value: 'all' },
+        { label: this.$t('compute.secgroup.rule.target_type.cidr'), value: 'cidr' },
+        // { label: this.$t('compute.title.ipsetGroup'), value: 'ip_set_group' },
+        // { label: this.$t('dictionary.secgroup'), value: 'security_group' },
+      ]
+      if (this.supportsIpSet) {
+        ret.push({ label: this.$t('compute.secgroup.rule.target_type.ip_set'), value: 'ip_set' })
+      }
+      if (this.isEdit) {
+        return ret.filter(item => {
+          if (this.targetType === 'all' || this.targetType === 'cidr') {
+            return item.value === 'all' || item.value === 'cidr'
+          } else {
+            return item.value === this.targetType
+          }
+        })
+      } else {
+        return ret
+      }
+    },
     protocolOptions () {
       let ret = [
         { label: 'TCP', value: 'tcp' },
@@ -240,7 +305,7 @@ export default {
         { label: 'ICMP', value: 'icmp' },
         { label: this.$t('compute.any_protocol.text'), value: 'any' },
       ]
-      if (this.params.brand && this.params.brand.toLowerCase() === 'ucloud') {
+      if (this.params.brand && isUcloudLikeProvider(this.params.brand)) {
         ret = ret.filter(item => item.value !== 'any')
       }
       return ret
@@ -251,8 +316,38 @@ export default {
       }
       return false
     },
+    isEdit () {
+      return this.params.title === 'edit'
+    },
     priorityDisabled () {
       return this.params.title === 'edit' && ['qcloud'].includes(this.params.brand.toLowerCase())
+    },
+    ipsetParams () {
+      const params = {
+        scope: this.scope,
+      }
+      const cloudregionId = this.params.cloudregion_id
+      const managerId = this.params.manager_id
+      const isQcloud = (this.params.brand || '').toLowerCase() === 'qcloud'
+      if (cloudregionId && !isQcloud) {
+        params.cloudregion_id = cloudregionId
+      }
+      if (managerId) {
+        params.manager_id = managerId
+      } else {
+        // local IDC / onpremise: only unmanaged ipsets
+        params.is_managed = false
+      }
+      return params
+    },
+    sourcePromptText () {
+      if (this.targetType === 'ip_set') {
+        return this.$t('compute.secgroup.secrule.source.ip_set.prompt')
+      } else if (this.targetType === 'cidr') {
+        return this.$t('compute.secgroup.secrule.source.prompt')
+      } else {
+        return this.$t('compute.secgroup.secrule.source.all.prompt')
+      }
     },
   },
   created () {
@@ -293,14 +388,24 @@ export default {
     },
     validateCIDR (rule, value, callback) {
       if (!this.cidrCheckedShow && !value) {
-        callback(new Error(this.$t('common.tips.input', [this.decLabel])))
+        return callback(new Error(this.$t('common.tips.input', [this.decLabel])))
       }
       if (this.cidrChecked || !value) {
-        callback()
-      } else if (!REGEXP.IPv6.regexp.test(value) && !REGEXP.IPv4.regexp.test(value) && !REGEXP.cidr.regexp.test(value) && !REGEXP.cidr6.regexp.test(value)) {
-        callback(new Error(this.$t('common.tips.input', ['IPv6'])))
+        return callback()
       }
-      callback()
+      if (value.indexOf(',') >= 0) {
+        const items = value.split(',').map(item => item.trim()).filter(item => item.length > 0)
+        for (const item of items) {
+          if (!REGEXP.IPv6.regexp.test(item) && !REGEXP.IPv4.regexp.test(item) && !REGEXP.cidr.regexp.test(item) && !REGEXP.cidr6.regexp.test(item)) {
+            return callback(new Error(this.$t('common.tips.input', ['IPv4/IPv6'])))
+          }
+        }
+        return callback()
+      }
+      if (!REGEXP.IPv6.regexp.test(value) && !REGEXP.IPv4.regexp.test(value) && !REGEXP.cidr.regexp.test(value) && !REGEXP.cidr6.regexp.test(value)) {
+        return callback(new Error(this.$t('common.tips.input', ['IPv4/IPv6'])))
+      }
+      return callback()
     },
     changeCidrChecked (bool) {
       this.cidrChecked = this.cidrCheckedShow ? bool : this.cidrCheckedShow
@@ -389,6 +494,9 @@ export default {
     //     this.secgroupOpts.splice(0, this.secgroupOpts.length, ...data)
     //   })
     // },
+    targetTypeChange (e) {
+      this.targetType = e
+    },
     portsChange (e) {
       this.portsChecked = !this.portsChecked
       this.portsDisabled = !this.portsDisabled
@@ -406,11 +514,11 @@ export default {
       this.cidrChecked = !this.cidrChecked
       if (e.target.checked) {
         this.$nextTick(() => {
-          this.form.fc.setFieldsValue({ source: 'ALL' })
+          this.form.fc.setFieldsValue({ source: 'ALL', target_type: 'cidr' })
         })
       } else {
         this.$nextTick(() => {
-          this.form.fc.setFieldsValue({ source: '0.0.0.0/0' })
+          this.form.fc.setFieldsValue({ source: '0.0.0.0/0', target_type: 'cidr' })
         })
       }
     },
@@ -462,22 +570,18 @@ export default {
         if (values.ports === 'ALL') {
           values.ports = ''
         }
-        if (this.cidrChecked) {
+        if (this.targetType === 'all') {
+          values.target_type = 'cidr'
           values.cidr = ''
-          if (values.source) {
-            delete values.source
-          }
-        } else if (values.source) {
-          // const isCidr = validate(values.source, 'cidr')
-          // if (!isCidr || isCidr.result === false) {
-          //   values.peer_secgroup_id = values.source
-          // } else {
+        } else if (this.targetType === 'cidr') {
+          values.target_type = 'cidr'
           values.cidr = values.source
-          // }
-          delete values.source
-        } else {
-          values.cidr = ''
+        } else if (this.targetType === 'ip_set') {
+          values.target_type = 'ip_set'
+          values.cidr = values.ip_set_id
         }
+        delete values.source
+        delete values.ip_set_id
         await this.saveEdit(values)
         this.loading = false
         this.params.refresh && this.params.refresh()

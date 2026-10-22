@@ -131,6 +131,11 @@ export default {
     success: ['ready'],
     info: ['init'],
   },
+  ipset: {
+    success: ['available'],
+    danger: ['create_failed', 'delete_failed', 'update_failed'],
+    info: ['unknown'],
+  },
   rdsAccount: {
     success: ['available'],
     danger: ['create_failed', 'delete_failed', 'reset_passwd_failed'],
@@ -271,6 +276,23 @@ export default {
     success: ['Complete'],
     danger: ['Failed'],
   },
+  k8s_resource_vcjob: {
+    success: ['Running', 'Completed'],
+    danger: ['Failed', 'Aborted'],
+    info: ['Terminating', 'Restarting', 'Completing', 'Aborting', 'Unknown', 'active', 'Active'],
+  },
+  k8s_resource_vcqueue: {
+    success: ['Open'],
+    info: ['Closed', 'Closing', 'Unknown', 'active', 'Active'],
+  },
+  k8s_resource_vcpodgroup: {
+    success: ['Running', 'Completed'],
+    info: ['Pending', 'Inqueue', 'Unknown', 'active', 'Active'],
+  },
+  k8s_resource_vchypernode: {
+    success: ['Ready'],
+    info: ['Pending', 'active', 'Active'],
+  },
   release: {
     success: ['deployed', 'created'],
     info: ['superseded'],
@@ -392,9 +414,8 @@ export default {
     danger: ['delete_fail', 'deleted'],
   },
   monitorresources: {
-    success: ['attach'],
+    success: ['attach', 'init'],
     danger: ['alerting', 'unknown'],
-    info: ['init'],
   },
   idpAutoCreateUser: {
     success: [true],
@@ -599,6 +620,10 @@ export default {
   phoneImage: {
     success: ['ready'],
   },
+  containerImage: {
+    success: ['ready'],
+    danger: ['create_failed', 'delete_failed'],
+  },
   webappDomains: {
     success: ['available'],
     danger: ['no_bind'],
@@ -640,9 +665,33 @@ export default {
     danger: ['delete_failed', 'create_failed'],
   },
   mcp: {
-    info: ['ready', 'unknown', 'no_server', 'no_container', 'start_save_model', 'saving_model', 'start_syncstatus', 'syncstatus', 'start_delete', 'deleting', 'deleted'],
+    info: ['ready', 'unknown', 'deleted'],
     success: ['running'],
     danger: ['create_fail', 'start_fail', 'stop_fail', 'save_model_failed', 'delete_fail'],
+  },
+  llm: {
+    info: ['ready', 'unknown', 'deleted'],
+    success: ['running'],
+    danger: ['create_fail', 'start_fail', 'stop_fail', 'save_model_failed', 'unbind_fail', 'bind_fail', 'restart_fail', 'delete_fail'],
+  },
+  llmSku: {
+    success: ['ready', 'available'],
+    danger: ['create_failed', 'delete_failed', 'import_model_failed'],
+    info: ['unknown', 'importing_model'],
+  },
+  llmDeployment: {
+    info: ['unknown', 'deleted'],
+    success: ['ready'],
+    danger: ['create_fail', 'create_failed', 'import_model_failed', 'create_sku_failed', 'delete_fail', 'delete_failed', 'start_fail'],
+  },
+  llmDeploymentAiproxy: {
+    info: ['unknown'],
+    success: ['synced', 'disabled'],
+    danger: ['failed'],
+  },
+  analysisAlarm: {
+    success: ['available'],
+    info: ['unknown'],
   },
   ...extraStatus,
 }

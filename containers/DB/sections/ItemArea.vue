@@ -2,6 +2,7 @@
   <area-selects
     ref="areaSelects"
     :decorators="decorators"
+    :form-draft-key="formDraftKey"
     v-bind="formItemLayout"
     :names="names"
     :isRequired="isRequired"
@@ -11,7 +12,8 @@
     :cloudregionParams="cloudregionParams"
     :filterBrandResource="filterBrandResource"
     @providerFetchSuccess="providerFetchSuccess"
-    @cloudregionFetchSuccess="cloudregionFetchSuccess" />
+    @cloudregionFetchSuccess="cloudregionFetchSuccess"
+    @fetchsDone="$emit('fetchsDone', $event)" />
 </template>
 <script>
 import AreaSelects from '@/sections/AreaSelects'
@@ -39,6 +41,10 @@ export default {
       type: String,
     },
     filterBrandResource: String,
+    formDraftKey: {
+      type: String,
+      default: '',
+    },
   },
   data () {
     return {

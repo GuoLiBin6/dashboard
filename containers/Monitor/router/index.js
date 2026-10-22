@@ -1,5 +1,5 @@
 import Layout from '@/layouts/RouterView'
-import { setupKeys } from '@/utils/auth'
+import { featureMenuHiddenCheck, hasServices } from '@/utils/auth'
 import i18n from '@/locales'
 import store from '@/store'
 import { isScopedPolicyMenuHidden } from '@/utils/scopedPolicy'
@@ -9,13 +9,20 @@ const CommonalertsIndex = () => import(/* webpackChunkName: "monitor" */ /* webp
 const commonalertsCreate = () => import(/* webpackChunkName: "monitor" */ /* webpackPrefetch: true */ '@Monitor/views/commonalert/create')
 const commonalertsUpdate = () => import(/* webpackChunkName: "monitor" */ /* webpackPrefetch: true */ '@Monitor/views/commonalert/update')
 const commonalertsClone = () => import(/* webpackChunkName: "monitor" */ /* webpackPrefetch: true */ '@Monitor/views/commonalert/clone')
-const MonitorresourcesIndex = () => import(/* webpackChunkName: "monitor" */ /* webpackPrefetch: true */ '@Monitor/views/monitorresource')
+// const MonitorresourcesIndex = () => import(/* webpackChunkName: "monitor" */ /* webpackPrefetch: true */ '@Monitor/views/monitorresource')
 const AlertresourceIndex = () => import(/* webpackChunkName: "monitor" */ /* webpackPrefetch: true */ '@Monitor/views/alertresource')
 const AlertrecordIndex = () => import(/* webpackChunkName: "monitor" */ /* webpackPrefetch: true */ '@Monitor/views/alertrecord')
 const Explorer = () => import(/* webpackChunkName: "monitor" */ /* webpackPrefetch: true */ '@Monitor/views/explorer')
 const Dashboard = () => import(/* webpackChunkName: "monitor" */ /* webpackPrefetch: true */ '@Monitor/views/dashboard')
 const MonitorDashboardChartCreate = () => import(/* webpackChunkName: "monitor" */ /* webpackPrefetch: true */ '@Monitor/views/dashboard/create')
 const AlertRecordShieldsIndex = () => import(/* webpackChunkName: "monitor" */ /* webpackPrefetch: true */ '@Monitor/views/alertrecordshields')
+
+const Notification = () => import(/* webpackChunkName: "iam" */ /* webpackPrefetch: true */ '@IAM/views/notification')
+const NotifyTopic = () => import(/* webpackChunkName: "iam" */ /* webpackPrefetch: true */ '@IAM/views/notify-topic')
+const Robots = () => import(/* webpackChunkName: "iam" */ /* webpackPrefetch: true */ '@IAM/views/robots')
+const NotifyConfigs = () => import(/* webpackChunkName: "iam" */ /* webpackPrefetch: true */ '@IAM/views/notifyconfig')
+const NotifyConfigCreate = () => import(/* webpackChunkName: "iam" */ /* webpackPrefetch: true */ '@IAM/views/notifyconfig/create')
+const Contact = () => import(/* webpackChunkName: "iam" */ /* webpackPrefetch: true */ '@IAM/views/contact')
 
 export default {
   index: 65,
@@ -27,80 +34,16 @@ export default {
     {
       path: '/monitoroverview',
       meta: {
-        label: i18n.t('monitor.text_18'),
+        label: i18n.t('common.monitor_overview'),
         permission: 'commonalerts_list',
-        hidden: () => {
+        hidden: (userInfo, menu) => {
           if (isScopedPolicyMenuHidden('sub_hidden_menus.monitoroverview')) {
             return true
           }
-          return !setupKeys.hasVersionedSetupKey({ '3.0': ['monitor'] }, true)
+          return featureMenuHiddenCheck(menu)
         },
       },
       component: Overview,
-    },
-    {
-      meta: {
-        label: i18n.t('monitor.monitorresources'),
-        t: 'dictionary.monitorresources',
-      },
-      submenus: [
-        {
-          path: '/monitorresources-guest',
-          meta: {
-            label: i18n.t('common.server'),
-            permission: 'monitorresources_list',
-            hidden: () => {
-              if (isScopedPolicyMenuHidden('sub_hidden_menus.monitorresources_guest')) {
-                return true
-              }
-
-              return process.env.VUE_APP_IS_PRIVATE ? !setupKeys.hasVersionedSetupKey({
-                '3.0': ['monitor'],
-                default: ['onestack', 'openstack', 'dstack', 'zstack', 'public', 'vmware', 'hcso', 'hcs'],
-              }) : false
-            },
-          },
-          component: Layout,
-          children: [
-            {
-              name: 'MonitorresourcesGuest',
-              path: '',
-              props: { res_type: 'guest' },
-              component: MonitorresourcesIndex,
-            },
-          ],
-        },
-        {
-          path: '/monitorresources-host',
-          meta: {
-            label: i18n.t('dictionary.host'),
-            permission: 'monitorresources_list',
-            hidden: () => {
-              if (isScopedPolicyMenuHidden('sub_hidden_menus.monitorresources_host')) {
-                return true
-              }
-
-              if (!(store.getters.isAdminMode || store.getters.isDomainMode)) {
-                return true
-              }
-
-              return process.env.VUE_APP_IS_PRIVATE ? !setupKeys.hasVersionedSetupKey({
-                '3.0': ['monitor'],
-                default: ['onestack', 'openstack', 'dstack', 'zstack', 'public', 'vmware', 'hcso', 'hcs'],
-              }) : false
-            },
-          },
-          component: Layout,
-          children: [
-            {
-              name: 'MonitorresourcesHost',
-              path: '',
-              props: { res_type: 'host' },
-              component: MonitorresourcesIndex,
-            },
-          ],
-        },
-      ],
     },
     {
       meta: {
@@ -113,15 +56,12 @@ export default {
           meta: {
             label: i18n.t('monitor.dashboard.title'),
             permission: 'unifiedmonitors_get',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.monitor_dashboard')) {
                 return true
               }
 
-              return process.env.VUE_APP_IS_PRIVATE ? !setupKeys.hasVersionedSetupKey({
-                '3.0': ['monitor'],
-                default: ['onestack', 'openstack', 'dstack', 'zstack', 'public', 'vmware', 'hcso', 'hcs'],
-              }) : false
+              return featureMenuHiddenCheck(menu)
             },
           },
           path: '/monitor-dashboard',
@@ -149,14 +89,11 @@ export default {
           meta: {
             label: i18n.t('monitor.text_119'),
             permission: 'unifiedmonitors_get',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.explorer')) {
                 return true
               }
-              return process.env.VUE_APP_IS_PRIVATE ? !setupKeys.hasVersionedSetupKey({
-                '3.0': ['monitor'],
-                default: ['onestack', 'openstack', 'dstack', 'zstack', 'public', 'vmware', 'hcso', 'hcs'],
-              }) : false
+              return featureMenuHiddenCheck(menu)
             },
           },
           path: '/explorer',
@@ -176,15 +113,12 @@ export default {
             label: i18n.t('monitor.text_2'),
             t: 'dictionary.commonalert',
             permission: 'commonalerts_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.commonalerts')) {
                 return true
               }
 
-              return process.env.VUE_APP_IS_PRIVATE ? !setupKeys.hasVersionedSetupKey({
-                '3.0': ['monitor'],
-                default: ['onestack', 'openstack', 'dstack', 'zstack', 'public', 'vmware', 'hcso', 'hcs'],
-              }) : false
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -222,12 +156,12 @@ export default {
             label: i18n.t('monitor.text_17'),
             // t: 'dictionary.alertresource',
             permission: 'alertresources_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.alertresource')) {
                 return true
               }
               if (!store.getters.isAdminMode) return true
-              return !setupKeys.hasVersionedSetupKey({ '3.0': ['monitor'] }, !(!store.getters.isAdminMode && process.env.VUE_APP_IS_PRIVATE))
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -244,14 +178,12 @@ export default {
           meta: {
             label: i18n.t('dictionary.alertrecord'),
             permission: 'alertrecords_list,monitorresourcealerts_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.alertrecord')) {
                 return true
               }
 
-              return !setupKeys.hasVersionedSetupKey({
-                '3.0': ['monitor'],
-              })
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -269,15 +201,12 @@ export default {
             label: i18n.t('monitor.text_2'),
             t: 'dictionary.monitorresourcealerts',
             permission: 'alertrecordshields_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.commonalerts')) {
                 return true
               }
 
-              return process.env.VUE_APP_IS_PRIVATE ? !setupKeys.hasVersionedSetupKey({
-                '3.0': ['monitor'],
-                default: ['onestack', 'openstack', 'dstack', 'zstack', 'public', 'vmware', 'huaweicloudstack'],
-              }) : false
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -286,6 +215,134 @@ export default {
               name: 'AlertRecordShieldsIndex',
               path: '',
               component: AlertRecordShieldsIndex,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      meta: {
+        label: i18n.t('system.text_564'),
+      },
+      submenus: [
+        {
+          path: '/notification',
+          meta: {
+            label: i18n.t('system.text_16'),
+            permission: 'notifications_list',
+            hidden: (userInfo, menu) => {
+              if (isScopedPolicyMenuHidden('sub_hidden_menus.notification')) {
+                return true
+              }
+              return !hasServices('notify') || featureMenuHiddenCheck(menu)
+            },
+            t: 'dictionary.webconsole',
+          },
+          component: Layout,
+          children: [
+            {
+              name: 'Notification',
+              path: '',
+              component: Notification,
+            },
+          ],
+        },
+        {
+          path: '/notify-topic',
+          meta: {
+            label: i18n.t('dictionary.notify-topic'),
+            permission: 'topics_list',
+            hidden: (userInfo, menu) => {
+              if (isScopedPolicyMenuHidden('sub_hidden_menus.notify_topic')) {
+                return true
+              }
+              if (!(store.getters.isAdminMode || store.getters.isDomainMode)) {
+                return true
+              }
+              return !hasServices('notify') || featureMenuHiddenCheck(menu)
+            },
+            t: 'dictionary.notify-topic',
+          },
+          component: Layout,
+          children: [
+            {
+              name: 'NotifyTopic',
+              path: '',
+              component: NotifyTopic,
+            },
+          ],
+        },
+        {
+          path: '/notifyconfig',
+          meta: {
+            label: i18n.t('system.text_19'),
+            permission: 'notifyconfigs_list',
+            hidden: (userInfo, menu) => {
+              if (isScopedPolicyMenuHidden('sub_hidden_menus.notifyconfig')) {
+                return true
+              }
+              if (!(store.getters.isAdminMode || store.getters.isDomainMode)) {
+                return true
+              }
+              return !hasServices('notify') || featureMenuHiddenCheck(menu)
+            },
+          },
+          component: Layout,
+          children: [
+            {
+              name: 'NotifyConfig',
+              path: '',
+              component: NotifyConfigs,
+            },
+            {
+              name: 'NotifyConfigCreate',
+              path: 'create',
+              component: NotifyConfigCreate,
+            },
+          ],
+        },
+        {
+          path: '/contact',
+          meta: {
+            label: i18n.t('common_27'),
+            permission: 'contacts_list',
+            hidden: (userInfo, menu) => {
+              if (isScopedPolicyMenuHidden('sub_hidden_menus.contact')) {
+                return true
+              }
+              if (!store.getters.isAdminMode && !store.getters.isDomainMode) {
+                return true
+              }
+              return featureMenuHiddenCheck(menu)
+            },
+          },
+          component: Layout,
+          children: [
+            {
+              name: 'Contact',
+              path: '',
+              component: Contact,
+            },
+          ],
+        },
+        {
+          path: '/robot',
+          meta: {
+            label: i18n.t('system.robot_manage'),
+            permission: 'robots_list',
+            hidden: (userInfo, menu) => {
+              if (isScopedPolicyMenuHidden('sub_hidden_menus.robot')) {
+                return true
+              }
+              return featureMenuHiddenCheck(menu)
+            },
+          },
+          component: Layout,
+          children: [
+            {
+              name: 'Robots',
+              path: '',
+              component: Robots,
             },
           ],
         },

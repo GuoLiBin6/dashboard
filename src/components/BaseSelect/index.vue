@@ -1,10 +1,10 @@
 <template>
-  <div>
+  <div class="base-select-wrap">
     <a-select
       class="base-select"
       :disabled="disabled"
       v-bind="{ ...selectProps, ...filterOpts, ...otherOpts }"
-      :style="{ width: (showSync ? 'calc(100% - 24px)' : '100%'), 'min-width': minWidth, ...selectStyle }"
+      :style="{ width: '100%', 'min-width': minWidth, ...selectStyle }"
       :value="value"
       :option-label-prop="optionLabelProp"
       @blur="onBlur"
@@ -31,15 +31,16 @@
         </a-select-option>
       </template>
     </a-select>
-    <a-icon v-if="showSync" type="sync" class="ml-2 primary-color" :spin="loading" @click="refresh" />
+    <a-icon v-if="showSync" type="sync" class="base-select-sync primary-color" :spin="loading" @click="refresh" />
   </div>
 </template>
 <script>
 import * as R from 'ramda'
 import _ from 'lodash'
 import debounce from 'lodash/debounce'
+import axios from 'axios'
 import { Manager } from '@/utils/manager'
-import { arrayToObj } from '@/utils/utils'
+import { arrayToObj, uuid } from '@/utils/utils'
 import i18n from '@/locales'
 import OptionLabel from './OptionLabel'
 import OptionLabelPrefix from './OptionLabelPrefix'
@@ -194,6 +195,9 @@ export default {
   },
   data () {
     this.loadOptsDebounce = debounce(this.loadOpts, 500)
+    // 同一 resource 的多个 BaseSelect 并发 list 时，http 层会按 url+method 取消旧请求；
+    // 用实例级 $t 区分请求，避免互相 cancel 导致已选项只显示 id。
+    this._selectRequestKey = uuid()
     return {
       resOpts: {},
       resList: [],
@@ -462,17 +466,22 @@ export default {
         }
       }
       if (R.is(Number, offset)) params.offset = offset
+      // 保留调用方传入的 $t；否则用实例 key，避免同 resource 多实例互相 cancel
+      if (R.isNil(params.$t)) {
+        params.$t = this._selectRequestKey
+      }
       return { manager, params }
     },
     genDefaultParams (fetchKeys) {
       const { manager, params } = this.genParams(this.query)
-      const idFilter = `${this.idKey}.in(${fetchKeys.join(',')})`
+      const idFilter = `${this.idKey}.in(${fetchKeys.map(item => `'${item}'`).join(',')})`
       if (params.filter) {
         params.filter = R.is(String, params.filter) ? [params.filter, idFilter] : [...params.filter, idFilter]
       } else {
-        params.filter = `${this.idKey}.in(${fetchKeys.join(',')})`
+        params.filter = `${this.idKey}.in(${fetchKeys.map(item => `'${item}'`).join(',')})`
       }
-      params.$t = 1
+      // 与列表请求区分，避免 loadDefaultSelectedOpts 取消刚完成的 list
+      params.$t = `${this._selectRequestKey}-default`
       return { manager, params }
     },
     async loadMore () {
@@ -505,7 +514,10 @@ export default {
       })
     },
     async loadOpts (query) {
-      if (this.options) return // 指定数据源是外传options,这里不请求
+      if (this.options) { // 指定数据源是外传options,这里不请求
+        this.$emit('refreshOptions')
+        return
+      }
       if (!query || (!R.isNil(query) && this.remote)) { // 没有query或者是有query但是需要有remote才执行
         const { manager, params } = this.genParams(query)
         this.loadMoreOffset = 0
@@ -547,10 +559,32 @@ export default {
           this.defaultSelect([...this.extraOpts, ...this.resList])
           return list
         } catch (error) {
+          // 被同 resource 其它请求取消时，至少保留 extraOpts，避免已选项只显示 id
+          if (axios.isCancel && axios.isCancel(error)) {
+            this.applyExtraOptsFallback(query)
+            return
+          }
           this.$emit('update:initError')
           throw error
         }
       }
+    },
+    applyExtraOptsFallback (query) {
+      const expectedSelectedList = this.getSelectedList(query)
+      const targetExtraOpts = (this.extraOpts || []).filter(item => {
+        if (!query) return true
+        if (item[this.searchKey] && item[this.searchKey].includes(query)) {
+          return true
+        }
+        return false
+      })
+      if (!targetExtraOpts.length && !expectedSelectedList.length) return
+      this.resList = this.mergeListByIdKey([...targetExtraOpts], expectedSelectedList)
+      this.$emit('update:resList', this.resList)
+      const resOpts = arrayToObj(this.resList)
+      this.resOpts = { ...this.resOpts, ...resOpts }
+      this.disabledOpts()
+      if (this.value) this.syncItem(this.value)
     },
     async fetchData (manager, params) {
       try {
@@ -675,6 +709,24 @@ export default {
 .dropdown-item-word-wrap {
   .ant-select-dropdown-menu-item {
     white-space: inherit;
+  }
+}
+
+.base-select-wrap {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  width: 100%;
+  min-width: 0;
+
+  .base-select {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .base-select-sync {
+    flex: 0 0 auto;
+    margin-left: 8px;
   }
 }
 </style>

@@ -14,7 +14,6 @@
     :export-data-options="exportDataOptions"
     :defaultSearchKey="defaultSearchKey"
     :refresh-method="handleListRefresh"
-    :tag-config-params="tagConfigParams"
     :tableOverviewIndexs="tableOverviewIndexs"
     :show-single-actions="!isTemplate"
     :show-page="!isTemplate" />
@@ -48,6 +47,9 @@ import regexp from '@/utils/regexp'
 import { Manager } from '@/utils/manager'
 import SingleActionsMixin from '../mixins/singleActions'
 import ColumnsMixin from '../mixins/columns'
+import { getBatchStartAction } from '../utils/startActions'
+import { getBatchRenewAction } from '../utils/renewActions'
+import { getBatchAutoRenewAction } from '../utils/autoRenewActions'
 
 export default {
   name: 'VmContainerInstanceList',
@@ -78,6 +80,9 @@ export default {
     const filter = {}
     if (this.$route.query.id) {
       filter.id = [this.$route.query.id]
+    }
+    if (this.$route.query.status) {
+      filter.status = this.$route.query.status
     }
 
     const filterOptions = {
@@ -162,34 +167,10 @@ export default {
             }
             return ret
           },
+          hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_create'),
         },
         // 开机
-        {
-          label: this.$t('compute.text_272'),
-          action: () => {
-            const ids = this.list.selectedItems.map(item => item.id)
-            this.list.onManager('batchPerformAction', {
-              steadyStatus: 'running',
-              id: ids,
-              managerArgs: {
-                action: 'start',
-              },
-            })
-          },
-          meta: () => {
-            const ret = { validate: true, tooltip: null }
-            if (this.list.selectedItems.length === 0) {
-              ret.validate = false
-              return ret
-            }
-            const isStatusOk = this.list.selectedItems.every(item => ['ready'].includes(item.status))
-            if (!isStatusOk) {
-              ret.validate = false
-              return ret
-            }
-            return ret
-          },
-        },
+        getBatchStartAction(this),
         // 批量关机
         {
           label: this.$t('compute.text_273'),
@@ -213,6 +194,7 @@ export default {
             }
             return ret
           },
+          hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_stop'),
         },
         // 重启
         {
@@ -237,6 +219,7 @@ export default {
             }
             return ret
           },
+          hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_restart'),
         },
         // 同步状态
         {
@@ -254,12 +237,17 @@ export default {
               validate: this.list.selectedItems.length > 0,
             }
           },
+          hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_syncstatus'),
         },
         /* 批量操作 */
         {
           label: this.$t('compute.text_275'),
           actions: () => {
             return [
+              // 续费
+              getBatchRenewAction(this),
+              // 自动续费设置
+              getBatchAutoRenewAction(this),
               // 更改项目
               {
                 label: this.$t('compute.perform_change_owner', [this.$t('dictionary.project')]),
@@ -272,6 +260,7 @@ export default {
                     resource: 'servers',
                   })
                 },
+                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_change_owner'),
               },
               // 到期释放
               {
@@ -311,6 +300,7 @@ export default {
                   }
                   return ret
                 },
+                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_cancel_expire'),
               },
               // 编辑标签
               {
@@ -330,6 +320,7 @@ export default {
                   const ret = { validate: true }
                   return ret
                 },
+                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_set_user_metadata'),
               },
               // 推送配置
               {
@@ -356,11 +347,41 @@ export default {
                   ret.validate = true
                   return ret
                 },
-                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_sync_config'),
+                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_sync_config'),
+              },
+              // 关联安全组
+              {
+                label: this.$t('compute.text_1116'),
+                permission: 'server_perform_add_secgroup',
+                action: () => {
+                  this.createDialog('VmSetSecgroupDialog', {
+                    vm: this,
+                    data: this.list.selectedItems,
+                    columns: this.columns,
+                    onManager: this.onManager,
+                    type: 'vminstance-container',
+                  })
+                },
+                meta: () => {
+                  const ret = {
+                    validate: true,
+                    tooltip: null,
+                  }
+                  const isAllRunningReady = this.list.selectedItems.every(item => (item.status === 'running' || item.status === 'ready'))
+                  if (!isAllRunningReady) {
+                    ret.validate = false
+                    ret.tooltip = this.$t('compute.text_1126')
+                    return ret
+                  }
+                  ret.validate = true
+                  return ret
+                },
+                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_add_secgroup'),
               },
               // 设置删除保护
               disableDeleteAction(Object.assign(this, {}), {
                 name: this.$t('compute.vminstance-container'),
+                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_set_delete_protection'),
               }),
               // 删除
               {
@@ -377,6 +398,7 @@ export default {
                 meta: () => {
                   return this.$getDeleteResult(this.list.selectedItems)
                 },
+                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_container_hidden_menus.server_perform_delete'),
               },
             ]
           },
@@ -393,16 +415,10 @@ export default {
         },
       ],
       execLoading: false,
-      tagConfigParams: {
-        title: this.$t('common.text00124'),
-        resource: 'servers',
-        queryTreeId: 'project-tag-value-tree',
-      },
-      hasContainerHost: false,
     }
   },
   computed: {
-    ...mapGetters(['isAdminMode']),
+    ...mapGetters(['isAdminMode', 'capability']),
     isSameHyper () {
       if (this.list.selectedItems.length > 0) {
         const arr = this.list.selectedItems.map(v => v.hypervisor)
@@ -410,6 +426,9 @@ export default {
         return noRepeatArr.length === 1
       }
       return true
+    },
+    hasContainerHost () {
+      return (this.capability?.hypervisors || []).includes('pod')
     },
     isSameArch () {
       return true
@@ -434,11 +453,8 @@ export default {
         async beforeExport () {
           const checkOpenExportUsernamePassword = async () => {
             try {
-              const configM = new Manager('services', 'v1')
-              const servicesRes = await configM.list({ params: { type: 'compute_v2' } })
-              const serviceId = servicesRes.data.data?.[0]?.id
-              const configData = await configM.getSpecific({ id: serviceId, spec: 'config' })
-              const { enable_export_username_password = false } = configData.data?.config?.default
+              const response = await new Manager('service_settings', 'v1').list()
+              const { enable_export_username_password = false } = (response.data && response.data.compute_v2) || {}
               ret.isOpenExportUsernamePassword = enable_export_username_password
               return enable_export_username_password
             } catch (error) {
@@ -530,7 +546,6 @@ export default {
     },
   },
   created () {
-    this.fetchHost()
     this.initSidePageTab('detail')
     this.list.fetchData().then(() => {
       this.$nextTick(() => {
@@ -547,20 +562,6 @@ export default {
     }, this)
   },
   methods: {
-    fetchHost () {
-      try {
-        new this.$Manager('hosts').list({
-          params: {
-            limit: 1,
-            enabled: true,
-            host_type: 'container',
-          },
-        }).then(res => {
-          const list = res.data?.data || []
-          this.hasContainerHost = list.length > 0
-        })
-      } catch (err) { }
-    },
     getParam () {
       const ret = {
         details: true,

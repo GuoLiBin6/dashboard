@@ -30,6 +30,7 @@ export const HYPERVISORS = [
   { key: 'h3c', label: i18n.t('cloudPrvidersMap.H3C'), provider: 'H3C', brand: 'H3C', host_type: 'h3c', hypervisor: 'h3c', env: 'private', cloud_env: 'private' },
   { key: 'zettakit', label: i18n.t('cloudPrvidersMap.ZettaKit'), provider: 'ZettaKit', brand: 'ZettaKit', host_type: 'ZettaKit', hypervisor: 'zettakit', env: 'private', cloud_env: 'private' },
   { key: 'uis', label: i18n.t('cloudPrvidersMap.UIS'), provider: 'UIS', brand: 'UIS', host_type: 'UIS', hypervisor: 'uis', env: 'private', cloud_env: 'private' },
+  { key: 'cas', label: i18n.t('cloudPrvidersMap.CAS'), provider: 'CAS', brand: 'CAS', host_type: 'CAS', hypervisor: 'cas', env: 'private', cloud_env: 'private' },
   { key: 'cnware', label: i18n.getOemDictionaryI18n('cnware', i18n.t('cloudPrvidersMap.CNware')), provider: 'CNware', brand: 'CNware', host_type: 'cnware', hypervisor: 'cnware', env: 'private', cloud_env: 'private' },
   // Public
   { key: 'aliyun', label: getProviderName('aliyun'), provider: 'Aliyun', brand: 'Aliyun', host_type: 'aliyun', hypervisor: 'aliyun', env: 'public', cloud_env: 'public' },
@@ -38,6 +39,7 @@ export const HYPERVISORS = [
   { key: 'qcloud', label: getProviderName('qcloud'), provider: 'Qcloud', brand: 'Qcloud', host_type: 'qcloud', hypervisor: 'qcloud', env: 'public', cloud_env: 'public' },
   { key: 'huawei', label: getProviderName('huawei'), provider: 'Huawei', brand: 'Huawei', host_type: 'huawei', hypervisor: 'huawei', env: 'public', cloud_env: 'public' },
   { key: 'ucloud', label: 'UCloud', provider: 'Ucloud', brand: 'Ucloud', host_type: 'ucloud', hypervisor: 'ucloud', env: 'public', cloud_env: 'public' },
+  { key: 'rockbase', label: 'RockBase', provider: 'RockBase', brand: 'RockBase', host_type: 'rockbase', hypervisor: 'rockbase', env: 'public', cloud_env: 'public' },
   { key: 'google', label: 'Google', provider: 'Google', brand: 'Google', host_type: 'google', hypervisor: 'google', env: 'public', cloud_env: 'public' },
   { key: 'ctyun', label: getProviderName('ctyun'), provider: 'Ctyun', brand: 'Ctyun', host_type: 'ctyun', hypervisor: 'ctyun', env: 'public', cloud_env: 'public' },
   { key: 'ecloud', label: getProviderName('ecloud'), provider: 'Ecloud', brand: 'Ecloud', host_type: 'ecloud', hypervisor: 'ecloud', env: 'public', cloud_env: 'public' },
@@ -54,6 +56,17 @@ export const HYPERVISORS = [
 ]
 
 export const HYPERVISORS_MAP = arrayToObj(HYPERVISORS, 'key')
+
+export const UCLOUD_LIKE_HYPERVISOR_KEYS = [HYPERVISORS_MAP.ucloud.key, HYPERVISORS_MAP.rockbase.key]
+
+export const isUcloudLikeHypervisor = (key) => UCLOUD_LIKE_HYPERVISOR_KEYS.includes(String(key || '').toLowerCase())
+
+export const isUcloudLikeProvider = (provider) => {
+  const v = String(provider || '').toLowerCase()
+  return [HYPERVISORS_MAP.ucloud, HYPERVISORS_MAP.rockbase].some(item => {
+    return item.provider.toLowerCase() === v || item.brand.toLowerCase() === v || item.key === v
+  })
+}
 
 export const CLOUD_ENVS = {
   onpremise: 'onpremise',
@@ -88,6 +101,26 @@ R.forEachObjIndexed((obj, key) => {
   }
 }, HYPERVISORS_MAP)
 
+/**
+ * 将 region.provider / brand、hypervisor key 等统一解析为
+ * AreaSelects provider 表单值（hypervisor key，同 HYPERVISORS_MAP.key / providerList[].name）
+ */
+export function resolveHypervisorKey (raw) {
+  if (!raw) return ''
+  const str = String(raw)
+  const lower = str.toLowerCase()
+  if (HYPERVISORS_MAP[lower]) return HYPERVISORS_MAP[lower].key
+  const fromProvider = PROVIDER_MAP[str]
+  if (fromProvider?.hypervisor) return fromProvider.hypervisor
+  const fromBrand = BRAND_MAP[str]
+  if (fromBrand?.hypervisor) return fromBrand.hypervisor
+  const providerKey = Object.keys(PROVIDER_MAP).find(k => k.toLowerCase() === lower)
+  if (providerKey && PROVIDER_MAP[providerKey].hypervisor) return PROVIDER_MAP[providerKey].hypervisor
+  const brandKey = Object.keys(BRAND_MAP).find(k => k.toLowerCase() === lower)
+  if (brandKey && BRAND_MAP[brandKey].hypervisor) return BRAND_MAP[brandKey].hypervisor
+  return lower
+}
+
 export const HYPERVISORS_GROUP = {
   idc: {
     kvm: HYPERVISORS_MAP.kvm,
@@ -110,6 +143,7 @@ export const HYPERVISORS_GROUP = {
     qcloud: HYPERVISORS_MAP.qcloud,
     huawei: HYPERVISORS_MAP.huawei,
     ucloud: HYPERVISORS_MAP.ucloud,
+    rockbase: HYPERVISORS_MAP.rockbase,
     google: HYPERVISORS_MAP.google,
     jdcloud: HYPERVISORS_MAP.jdcloud,
     ksyun: HYPERVISORS_MAP.ksyun,

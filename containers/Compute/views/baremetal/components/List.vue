@@ -28,7 +28,11 @@ import GlobalSearchMixin from '@/mixins/globalSearch'
 import regexp from '@/utils/regexp'
 import SingleActionsMixin from '../mixins/singleActions'
 import ColumnsMixin from '../mixins/columns'
-import { cloudEnabled, cloudUnabledTip } from '../../vminstance/utils'
+import { getBatchStartAction } from '../utils/startActions'
+import { getBatchRenewAction } from '../utils/renewActions'
+import { getBatchAutoRenewAction } from '../utils/autoRenewActions'
+import { getBatchDeleteAction } from '../utils/deleteActions'
+import { cloudEnabled, cloudUnabledTip, commonEnabled, validateRescueMode } from '../../vminstance/utils'
 
 export default {
   name: 'BaremetalList',
@@ -81,6 +85,14 @@ export default {
       project_domains: getDomainFilter(),
       status: getStatusFilter({ statusModule: 'server' }),
       os_type: getOsTypeFilter(),
+      billing_type: {
+        label: this.$t('table.title.bill_type'),
+        dropdown: true,
+        items: [
+          { label: this.$t('billingType.postpaid'), key: 'postpaid' },
+          { label: this.$t('billingType.prepaid'), key: 'prepaid' },
+        ],
+      },
       created_at: getCreatedAtFilter(),
     }
     this.hiddenFilterOptions.forEach(key => {
@@ -100,6 +112,7 @@ export default {
         hiddenColumns: ['host_sn', 'created_at'],
       }),
       groupActions: [
+        // 创建裸金属
         {
           label: this.$t('compute.perform_create'),
           permission: 'server_create',
@@ -117,34 +130,11 @@ export default {
               buttonType: 'primary',
             }
           },
+          hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_create'),
         },
-        {
-          label: this.$t('compute.text_272'),
-          permission: 'server_perform_start',
-          action: () => {
-            const ids = this.list.selectedItems.map(item => item.id)
-            this.onManager('batchPerformAction', {
-              steadyStatus: 'running',
-              id: ids,
-              managerArgs: {
-                action: 'start',
-              },
-            })
-          },
-          meta: () => {
-            let ret = {
-              validate: true,
-              tooltip: null,
-            }
-            ret.validate = this.list.selectedItems.length > 0
-            if (!ret.validate) return ret
-            ret = this.$isValidateResourceLock(this.list.selectedItems, () => {
-              ret.validate = this.list.selectedItems.every(item => item.status === 'ready')
-              return ret
-            })
-            return ret
-          },
-        },
+        // 批量启动
+        getBatchStartAction(this),
+        // 批量关机
         {
           label: this.$t('compute.text_273'),
           permission: 'server_perform_stop',
@@ -168,7 +158,9 @@ export default {
             })
             return ret
           },
+          hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_stop'),
         },
+        // 批量重启
         {
           label: this.$t('compute.text_274'),
           permission: 'server_perform_restart',
@@ -192,11 +184,18 @@ export default {
             })
             return ret
           },
+          hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_restart'),
         },
+        // 更多批量操作
         {
           label: this.$t('compute.text_275'),
           actions: () => {
             return [
+              // 续费
+              getBatchRenewAction(this),
+              // 自动续费设置
+              getBatchAutoRenewAction(this),
+              // 重置密码
               {
                 label: this.$t('compute.text_276'),
                 permission: 'server_perform_deploy',
@@ -229,7 +228,9 @@ export default {
                     tooltip: this.$t('compute.text_278'),
                   }
                 },
+                hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_reset_password'),
               },
+              // 批量变更归属项目
               {
                 label: this.$t('compute.perform_change_owner', [this.$t('dictionary.project')]),
                 permission: 'server_perform_change_owner',
@@ -254,7 +255,9 @@ export default {
                   }
                   return ret
                 },
+                hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_change_owner'),
               },
+              // 批量同步状态
               {
                 label: this.$t('compute.perform_sync_status'),
                 permission: 'server_perform_syncstatus',
@@ -266,7 +269,82 @@ export default {
                     },
                   })
                 },
+                hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_syncstatus'),
               },
+              // 设置免密登录
+              {
+                label: this.$t('compute.vminstance.actions.setup_ssh_authentication'),
+                permission: 'server_perform_setup_ssh_proxy',
+                action: () => {
+                  this.createDialog('SetupSSHDialog', {
+                    data: this.list.selectedItems,
+                    columns: this.columns,
+                    onManager: this.onManager,
+                  })
+                },
+                meta: () => {
+                  const ret = {
+                    validate: true,
+                    tooltip: null,
+                  }
+                  const items = this.list.selectedItems
+                  const rescueModeValid = validateRescueMode(items)
+                  if (!rescueModeValid.validate) return rescueModeValid
+                  const project = (items[0] && items[0].project) || ''
+                  const isSameProject = items.every(item => item.project === project)
+                  if (!isSameProject) {
+                    ret.validate = false
+                    ret.tooltip = this.$t('compute.vminstance.setup_ssh_authentication.group_action.project')
+                    return ret
+                  }
+                  const isLinux = items.every(item => item.os_type && item.os_type.toLowerCase() === 'linux')
+                  if (!isLinux) {
+                    ret.validate = false
+                    ret.tooltip = this.$t('compute.text_362')
+                    return ret
+                  }
+                  for (const item of items) {
+                    if (!commonEnabled(item, ['running'])) {
+                      ret.validate = false
+                      ret.tooltip = this.$t('db.text_156')
+                      return ret
+                    }
+                  }
+                  return ret
+                },
+                hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_setup_ssh_proxy'),
+              },
+              // 探测免密登录
+              {
+                label: this.$t('compute.vminstance.actions.detect_ssh_authentication'),
+                permission: 'server_perform_make_sshable',
+                action: () => {
+                  this.createDialog('DetectSSHDialog', {
+                    data: this.list.selectedItems,
+                    columns: this.columns,
+                    onManager: this.onManager,
+                  })
+                },
+                meta: () => {
+                  const ret = {
+                    validate: true,
+                    tooltip: null,
+                  }
+                  const items = this.list.selectedItems
+                  const rescueModeValid = validateRescueMode(items)
+                  if (!rescueModeValid.validate) return rescueModeValid
+                  for (const item of items) {
+                    if (!commonEnabled(item, ['running'])) {
+                      ret.validate = false
+                      ret.tooltip = this.$t('db.text_156')
+                      return ret
+                    }
+                  }
+                  return ret
+                },
+                hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_detect_ssh_proxy'),
+              },
+              // 批量安装Agent
               {
                 label: this.$t('compute.vminstance.monitor.install_agent'),
                 permission: 'server_perform_install_agent',
@@ -290,8 +368,9 @@ export default {
                   })
                   return ret
                 },
-                hidden: () => this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_detect_ssh_proxy'),
+                hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_install_agent'),
               },
+              // 批量设置标签
               {
                 label: this.$t('table.action.set_tag'),
                 permission: 'server_perform_set_user_metadata',
@@ -306,33 +385,14 @@ export default {
                     },
                   })
                 },
+                hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_set_user_metadata'),
               },
-              disableDeleteAction(Object.assign(this, { permission: 'server_update' })),
-              {
-                label: this.$t('compute.perform_delete'),
-                permission: 'server_delete',
-                action: () => {
-                  this.createDialog('DeleteResDialog', {
-                    vm: this,
-                    data: this.list.selectedItems,
-                    columns: this.columns,
-                    onManager: this.onManager,
-                    title: this.$t('compute.perform_delete'),
-                  })
-                },
-                meta: () => {
-                  const ret = {
-                    validate: true,
-                    tooltip: null,
-                  }
-                  if (this.list.selectedItems.some(item => item.billing_type === 'prepaid')) {
-                    ret.validate = false
-                    ret.tooltip = this.$t('compute.text_285')
-                    return ret
-                  }
-                  return this.$getDeleteResult(this.list.selectedItems)
-                },
-              },
+              // 批量设置删除保护
+              disableDeleteAction(Object.assign(this, { permission: 'server_update' }), {
+                hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_set_delete_protection'),
+              }),
+              // 批量删除（GPU scope 可自定义，默认 DeleteResDialog）
+              getBatchDeleteAction(this),
             ]
           },
           meta: () => {

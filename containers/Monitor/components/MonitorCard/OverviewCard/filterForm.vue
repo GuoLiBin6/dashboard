@@ -28,14 +28,13 @@
 import { getSignature } from '@/utils/crypto'
 import { sizestr, mathRoundFix, uuid } from '@/utils/utils'
 import setting from '@/config/setting'
+import MetricOptions from './metrics'
 import numerify from '../sections/chart/formatters'
 import BasicSelect from '../sections/select/basic'
 import MetricSelect from '../sections/select/metric'
 import TimeSelect from '../sections/select/timeselect'
 import TopNSelect from '../sections/select/topN'
 import refresh from '../sections/select/refresh'
-import MetricOptions from './metrics'
-
 function newChart (metircOption) {
   const chart = {
     metric: metircOption,
@@ -373,17 +372,11 @@ export default {
       if (['system', 'project_domain', 'tenant'].indexOf(this.dimension.name) >= 0) {
         namecolumn.slots = {
           default: ({ row }, h) => {
+            // 文本节点由 Vue 自动转义，避免 innerHTML 注入
             if (!row[this.dimension.id]) {
-              return [h('span', {
-                domProps: {
-                  innerHTML: row[this.dimension.name] || '-',
-                },
-              })]
+              return [h('span', row[this.dimension.name] || '-')]
             }
             return [h('a', {
-              domProps: {
-                innerHTML: row[this.dimension.name] || '-',
-              },
               props: {
                 value: row[this.dimension.id] || '-',
               },
@@ -392,7 +385,7 @@ export default {
                   self.changeNav(row)
                 },
               },
-            })]
+            }, row[this.dimension.name] || '-')]
           },
         }
       }

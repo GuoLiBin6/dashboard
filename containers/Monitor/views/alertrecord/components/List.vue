@@ -21,15 +21,14 @@
 <script>
 import * as R from 'ramda'
 import { levelMaps } from '@Monitor/constants'
+import { strategyColumn, levelColumn, getStrategyInfo } from '@Monitor/views/commonalert/utils'
 import WindowsMixin from '@/mixins/windows'
 import ListMixin from '@/mixins/list'
 import BrandIcon from '@/sections/BrandIcon'
 import storage from '@/utils/storage'
 import { getTimeRangeFilter, getStatusFilter, getDescriptionFilter } from '@/utils/common/tableFilter'
 import { getTimeTableColumn, getStatusTableColumn, getNameDescriptionTableColumn } from '@/utils/common/tableColumn'
-import { strategyColumn, levelColumn, getStrategyInfo } from '@Monitor/views/commonalert/utils'
 import ColumnsMixin from '../mixins/columns'
-
 const STORAGE_TIME_KEY = '__oc_alertrecord_time__'
 
 export default {
@@ -213,7 +212,7 @@ export default {
           },
         },
         strategyColumn('alert_rule'),
-        levelColumn,
+        levelColumn(),
         ...(this.hideAlertRecordResourceCount ? [] : [
           {
             field: 'res_num',
@@ -291,7 +290,7 @@ export default {
                     border
                     showOverflow={false}
                     row-config={{ isHover: true }}
-                    column-config={{ resizable: false }}
+                    column-config={{ resizable: false, minWidth: 120 }}
                     columns={columns}
                     data={evalData} />
                 </list-body-cell-popover>]

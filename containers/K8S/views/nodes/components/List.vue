@@ -3,9 +3,11 @@
   <page-list
     :list="list"
     :columns="columns"
-    :single-actions="singleActions">
+    :single-actions="singleActions"
+    :showSearchbox="showSearchbox"
+    :showGroupActions="showGroupActions">
     <template v-slot:group-actions-append>
-      <cluster-namespace :getParams.sync="list.getParams" :ignoreNamespace="true" @refresh="fetchData" class="ml-3" />
+      <cluster-namespace v-if="showGroupActions" :getParams.sync="list.getParams" :ignoreNamespace="true" @refresh="fetchData" class="ml-3" />
     </template>
     </page-list>
 </template>
@@ -29,6 +31,14 @@ export default {
     getParams: {
       type: Object,
       default: () => ({}),
+    },
+    showSearchbox: {
+      type: Boolean,
+      default: true,
+    },
+    showGroupActions: {
+      type: Boolean,
+      default: true,
     },
   },
   data () {

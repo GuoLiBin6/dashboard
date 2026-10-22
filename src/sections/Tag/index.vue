@@ -17,7 +17,22 @@
     <a-form-item :extra="extra" class="mt-2">
       <div class="d-flex">
         <div style="line-height: 40px;">
-          <tag-select :global="global" v-model="checked" :params="params" :managerInstance="managerInstance" :multiple="multiple" :button-text="$t('common_110')" :allowNoValue="allowNoValue" />
+          <tag-select
+            :global="global"
+            v-model="checked"
+            :params="params"
+            :managerInstance="managerInstance"
+            :multiple="multiple"
+            :button-text="$t('common_110')"
+            :allowNoValue="allowNoValue" />
+          <pre-defined-tag-select
+            v-if="showPreDefinedTagSelect"
+            :global="global"
+            v-model="checked"
+            :params="params"
+            :managerInstance="managerInstance"
+            :multiple="multiple"
+            :allowNoValue="allowNoValue" />
           <a-button class="ml-2" v-if="!showForm && canCreate" @click="() => showForm = true">{{$t('common_258')}}</a-button>
         </div>
         <a-form
@@ -45,12 +60,16 @@
 import * as R from 'ramda'
 import { getTagColor, getTagTitle } from '@/utils/common/tag'
 import TagSelect from '@/sections/TagSelect'
+import PreDefinedTagSelect from '@/sections/TagSelectPreDefined'
+import { isCE } from '@/utils/utils'
+import { hasPermission } from '@/utils/auth'
 import i18n from '@/locales'
 
 export default {
   name: 'Tag',
   components: {
     TagSelect,
+    PreDefinedTagSelect,
   },
   props: {
     extra: {
@@ -62,6 +81,9 @@ export default {
       default () {
         return {}
       },
+    },
+    defaultChecked: {
+      type: Object,
     },
     canCreate: {
       type: Boolean,
@@ -88,7 +110,7 @@ export default {
   },
   data () {
     return {
-      checked: this.value,
+      checked: this.defaultChecked || this.value || {},
       showForm: false,
       tagForm: {
         fc: this.$form.createForm(this),
@@ -114,6 +136,9 @@ export default {
     }
   },
   computed: {
+    showPreDefinedTagSelect () {
+      return !isCE() && !this.$store.getters.isSysCE && hasPermission('tags_list')
+    },
     tags () {
       const ret = []
       R.forEachObjIndexed((value, key) => {
@@ -133,6 +158,17 @@ export default {
     },
   },
   watch: {
+    // 草稿/工单回填；空对象表示清空（切 IDC/私有/公有时必须清，否则三端标签会串）
+    defaultChecked (val) {
+      if (!val || R.isEmpty(val)) {
+        if (!R.isEmpty(this.checked || {})) {
+          this.checked = {}
+        }
+        return
+      }
+      if (R.equals(val, this.checked)) return
+      this.checked = { ...val }
+    },
     tags (val) {
       let ret
       if (val && val.length > 0) {

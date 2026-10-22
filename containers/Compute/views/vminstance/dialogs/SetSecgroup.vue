@@ -4,10 +4,10 @@
     <div slot="body">
       <a-alert class="mb-2" type="warning" :message="message" />
       <dialog-selected-tips :name="$t('dictionary.server')" :count="params.data.length" :action="$t('compute.text_1116')" />
-      <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
+      <dialog-table v-if="params.columns && params.columns.length > 0" :data="params.data" :columns="(params.columns || []).slice(0, 3)" />
       <loader loading v-if="!(bindedSecgroupsLoaded && secgroupsInitLoaded)" />
       <a-form :form="form.fc" hideRequiredMark v-show="bindedSecgroupsLoaded && secgroupsInitLoaded" v-bind="formItemLayout">
-        <a-form-item :label="$t('compute.nic')" :extra="$t('compute.nic_empty_secgroups_tip')">
+        <a-form-item v-if="params.type === 'vminstance'" :label="$t('compute.nic')" :extra="$t('compute.nic_empty_secgroups_tip')">
           <base-select
             class="w-100"
             v-decorator="decorators.nic"
@@ -46,7 +46,7 @@ import { mapGetters } from 'vuex'
 import * as R from 'ramda'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
-import { HYPERVISORS_MAP } from '@/constants'
+import { HYPERVISORS_MAP, isUcloudLikeProvider } from '@/constants'
 import { SECGROUP_LIST_FOR_VMINSTANCE_SIDEPAGE_REFRESH } from '@/constants/event-bus'
 
 export default {
@@ -59,6 +59,9 @@ export default {
       const max = this.isBindOne ? 1 : 5
       if (value.length > max) {
         return callback(maxError)
+      }
+      if (this.params.type === 'vminstance' && this.form.fd.nic) {
+        return callback()
       }
       if (value.length < 1) {
         return callback(minError)
@@ -126,7 +129,7 @@ export default {
       return this.params.data[0].provider === HYPERVISORS_MAP.azure.provider
     },
     isUCloud () {
-      return this.params.data[0].provider === HYPERVISORS_MAP.ucloud.provider
+      return isUcloudLikeProvider(this.params.data[0].provider)
     },
     isZStack () {
       return this.params.data[0].provider === HYPERVISORS_MAP.zstack.provider
@@ -165,7 +168,7 @@ export default {
         params.scope = this.scope
       }
       if (this.params.data[0] && this.params.data[0].vpc_id) {
-        params.vpc_id = this.params.data[0].vpc_id
+        params.vpc_id = this.params.data[0].vpc_id.split(',')[0]
       }
       return params
     },
@@ -270,8 +273,8 @@ export default {
       try {
         const values = await this.form.fc.validateFields()
         // 如果选择了网卡，使用 set-network-secgroup 操作
+        const manager = new this.$Manager('servers')
         if (this.selectedNic) {
-          const manager = new this.$Manager('servers')
           const data = {
             network_index: this.selectedNic.index,
             guest: this.params.data[0].id,
@@ -288,21 +291,11 @@ export default {
           const data = {
             secgroup_ids: values.secgroups,
           }
-          if (this.params.manager) {
-            await this.params.manager.batchPerformAction({
-              ids,
-              action: 'set-secgroup',
-              data,
-            })
-          } else {
-            await this.params.onManager('batchPerformAction', {
-              id: ids,
-              managerArgs: {
-                action: 'set-secgroup',
-                data,
-              },
-            })
-          }
+          await manager.batchPerformAction({
+            ids,
+            action: 'set-secgroup',
+            data,
+          })
         }
         this.params.refresh && this.params.refresh()
         this.$bus.$emit(SECGROUP_LIST_FOR_VMINSTANCE_SIDEPAGE_REFRESH)

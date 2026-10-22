@@ -1,10 +1,9 @@
 import { mount, createLocalVue } from '@vue/test-utils'
 import Vuex from 'vuex'
-import ImageSelect from '../ImageSelect'
 import { IMAGES_TYPE_MAP } from '@/constants/compute'
 import { Manager } from '@/utils/manager'
 import i18n from '@/locales'
-
+import ImageSelect from '../ImageSelect'
 const idcStandardImageList = [
   {
     name: 'test1',
@@ -47,7 +46,7 @@ const idcStandardImageParams = {
   status: 'active',
   is_guest_image: false,
   scope: 'system',
-  'filter.0': 'disk_format.notequals(iso)',
+  'filter.0': 'disk_format.notin(iso,tgz)',
   is_standard: true,
 }
 

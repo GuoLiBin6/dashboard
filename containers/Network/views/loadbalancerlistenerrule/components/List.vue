@@ -8,13 +8,12 @@
 
 <script>
 import * as R from 'ramda'
-import ColumnsMixin from '../mixins/columns'
-import SingleActionsMixin from '../mixins/singleActions'
 import ListMixin from '@/mixins/list'
 import WindowsMixin from '@/mixins/windows'
 import { getNameFilter } from '@/utils/common/tableFilter'
 import expectStatus from '@/constants/expectStatus'
-
+import ColumnsMixin from '../mixins/columns'
+import SingleActionsMixin from '../mixins/singleActions'
 export default {
   name: 'LoadbalancerlistenerruleList',
   mixins: [WindowsMixin, ListMixin, ColumnsMixin, SingleActionsMixin],
@@ -45,6 +44,7 @@ export default {
               data: this.list.selectedItems,
               onManager: this.onManager,
               refresh: this.refresh,
+              lbDetail: this.lbData,
               lbListenerData: this.data,
             })
           },

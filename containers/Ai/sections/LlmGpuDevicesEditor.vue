@@ -1,0 +1,535 @@
+<!--
+  GPU 型号 + 共享模式 + 数量编辑，用于推理/桌面模板创建/编辑。
+  HAMI 时可选手动显存（memory_mb）；留空则建 Pod 时回退模型估算 claim。
+  local_path / ComfyUI 等无法估算模型显存的场景可通过 requireHamiMemoryMb 强制必填。
+  allowEmpty 为 true 时（如桌面模板）默认不展示空行，仅通过「添加 GPU」再填。
+-->
+<template>
+  <div class="llm-gpu-devices-editor">
+    <div
+      v-for="(row, index) in innerRows"
+      :key="rowKeys[index]"
+      class="llm-gpu-devices-editor__row">
+      <base-select
+        :value="row.sharing_mode"
+        :options="sharingModeOptions"
+        :select-props="sharingModeSelectProps"
+        class="llm-gpu-devices-editor__sharing"
+        @change="val => onSharingModeChange(index, val)" />
+      <base-select
+        v-if="showVendorField"
+        :value="row.vendor"
+        :options="vendorOptionsForRow(row)"
+        :select-props="vendorSelectProps"
+        class="llm-gpu-devices-editor__vendor"
+        @change="val => onVendorChange(index, val)" />
+      <base-select
+        :value="modelSelectValue(row)"
+        :options="modelOptionsForRow(row)"
+        :select-props="modelSelectProps"
+        class="llm-gpu-devices-editor__model"
+        @change="val => onModelChange(index, val)" />
+      <a-input-number
+        :value="row.count"
+        :min="1"
+        :max="isRowMthreadsHami(row) ? 1 : maxCount"
+        :precision="0"
+        class="llm-gpu-devices-editor__count"
+        @change="val => onCountChange(index, val)" />
+      <span class="llm-gpu-devices-editor__unit">{{ $t('aice.devices.count_unit') }}</span>
+      <template v-if="row.sharing_mode === 'HAMI'">
+        <base-select
+          v-if="isRowMthreadsHami(row)"
+          :value="mthreadsMemoryValue(row)"
+          :options="mthreadsMemoryOptionsForRow(row)"
+          :filterable="false"
+          :min-width="'160px'"
+          :select-props="mthreadsMemorySelectProps"
+          class="llm-gpu-devices-editor__memory-select"
+          @change="val => onMemoryMbChange(index, val)" />
+        <template v-else>
+          <a-input-number
+            :value="row.memory_mb"
+            :min="1"
+            :step="1024"
+            :precision="0"
+            class="llm-gpu-devices-editor__memory"
+            :placeholder="memoryMbPlaceholder"
+            @change="val => onMemoryMbChange(index, val)" />
+          <span class="llm-gpu-devices-editor__unit">MB</span>
+        </template>
+      </template>
+      <a-button
+        v-if="canRemoveRow"
+        shape="circle"
+        icon="minus"
+        size="small"
+        class="llm-gpu-devices-editor__remove"
+        @click="removeRow(index)" />
+    </div>
+    <div
+      v-if="innerRows.some(r => r.sharing_mode === 'HAMI')"
+      class="text-color-help llm-gpu-devices-editor__help">
+      {{ memoryMbHelp }}
+    </div>
+    <div
+      v-if="hasMthreadsHamiRow"
+      class="text-color-help llm-gpu-devices-editor__help">
+      {{ $t('compute.pci.memory_request.mthreads_sgpu_hint') }}
+    </div>
+    <div
+      v-if="hasMthreadsHamiRow"
+      class="text-color-help llm-gpu-devices-editor__help">
+      {{ $t('aice.devices.mthreads_sgpu_single_card') }}
+    </div>
+    <a-button type="link" icon="plus" class="pl-0" @click="addRow">
+      {{ $t('aice.devices.add') }}
+    </a-button>
+  </div>
+</template>
+
+<script>
+import { uuid } from '@/utils/utils'
+import { mthreadsSgpuMemoryOptions, normalizeMthreadsSgpuMemory } from '@Compute/constants'
+import {
+  createEmptyDeviceRow,
+  normalizeDeviceRows,
+  LLM_SHARING_MODE_VALUES,
+  DEFAULT_SHARING_MODE,
+  resolveSharingMode,
+  listVendorsForSharingMode,
+  buildModelSelectEntries,
+  resolveVendorForModel,
+  getPodPciModelTypes,
+  shouldShowVendorSelect,
+  isMthreadsHamiDeviceRow,
+  mthreadsHamiMemoryMaxMb,
+} from '@Ai/utils/deviceFormUtils'
+
+const SHARING_MODE_I18N = {
+  HAMI: 'compute.sharing_mode.hami',
+  UNLIMITED: 'compute.sharing_mode.unlimited',
+  MPS: 'compute.sharing_mode.mps',
+  EXCLUSIVE: 'compute.sharing_mode.exclusive',
+}
+
+export default {
+  name: 'LlmGpuDevicesEditor',
+  props: {
+    value: {
+      type: Array,
+      default: () => [],
+    },
+    maxCount: {
+      type: Number,
+      default: 16,
+    },
+    requireHamiMemoryMb: {
+      type: Boolean,
+      default: false,
+    },
+    allowEmpty: {
+      type: Boolean,
+      default: false,
+    },
+    sharingModeValues: {
+      type: Array,
+      default: null,
+    },
+    defaultSharingMode: {
+      type: String,
+      default: '',
+    },
+  },
+  data () {
+    return {
+      rowKeys: [uuid()],
+    }
+  },
+  computed: {
+    podPciModels () {
+      return getPodPciModelTypes(this.$store.getters.capability)
+    },
+    resolvedSharingModeValues () {
+      if (Array.isArray(this.sharingModeValues) && this.sharingModeValues.length) {
+        return this.sharingModeValues
+      }
+      return LLM_SHARING_MODE_VALUES
+    },
+    resolvedDefaultSharingMode () {
+      const preferred = String(this.defaultSharingMode || '').trim()
+      if (preferred && this.resolvedSharingModeValues.includes(preferred)) {
+        return preferred
+      }
+      return this.resolvedSharingModeValues[0] || DEFAULT_SHARING_MODE
+    },
+    sharingModeOptions () {
+      return this.resolvedSharingModeValues.map(value => ({
+        key: value,
+        label: this.$t(SHARING_MODE_I18N[value] || value),
+      }))
+    },
+    sharingModeSelectProps () {
+      return {
+        placeholder: this.$t('common.tips.select', [this.$t('aice.devices.sharing_mode')]),
+        allowClear: false,
+      }
+    },
+    modelSelectProps () {
+      return {
+        placeholder: this.$t('common.tips.select', [this.$t('aice.devices')]),
+        allowClear: true,
+      }
+    },
+    vendorSelectProps () {
+      return {
+        placeholder: this.$t('common.tips.select', [this.$t('aice.devices.vendor')]),
+        allowClear: true,
+      }
+    },
+    memoryMbPlaceholder () {
+      return this.requireHamiMemoryMb
+        ? this.$t('aice.devices.memory_mb.placeholder_required')
+        : this.$t('aice.devices.memory_mb.placeholder')
+    },
+    memoryMbHelp () {
+      return this.requireHamiMemoryMb
+        ? this.$t('aice.devices.memory_mb.help_required')
+        : this.$t('aice.devices.memory_mb.help')
+    },
+    hasMthreadsHamiRow () {
+      return this.innerRows.some(row => this.isRowMthreadsHami(row))
+    },
+    mthreadsMemorySelectProps () {
+      return {
+        placeholder: this.$t('compute.pci.memory_request.mthreads_sgpu_placeholder'),
+        allowClear: !this.requireHamiMemoryMb,
+      }
+    },
+    innerRows () {
+      return this.resolveRows(this.value)
+    },
+    canRemoveRow () {
+      return this.allowEmpty ? this.innerRows.length >= 1 : this.innerRows.length > 1
+    },
+    showVendorField () {
+      return shouldShowVendorSelect(this.podPciModels)
+    },
+  },
+  watch: {
+    value: {
+      immediate: true,
+      handler (val) {
+        const rows = this.resolveRows(val)
+        while (this.rowKeys.length < rows.length) {
+          this.rowKeys.push(uuid())
+        }
+        while (this.rowKeys.length > rows.length) {
+          this.rowKeys.pop()
+        }
+        this.maybeAutoFillVendors(rows)
+        this.maybeCoerceSharingModes(rows)
+        this.maybeClearOffBucketMemory(rows)
+        this.maybeClampMthreadsCount(rows)
+      },
+    },
+    podPciModels () {
+      this.maybeAutoFillVendors(this.innerRows)
+      this.maybeClearOffBucketMemory(this.innerRows)
+      this.maybeClampMthreadsCount(this.innerRows)
+    },
+  },
+  methods: {
+    emptyRow () {
+      return createEmptyDeviceRow(this.resolvedDefaultSharingMode)
+    },
+    coerceSharingMode (mode) {
+      const raw = String(mode || '').trim()
+      if (this.resolvedSharingModeValues.includes(raw)) return raw
+      return this.resolvedDefaultSharingMode
+    },
+    resolveRows (rows) {
+      if (this.allowEmpty && (!Array.isArray(rows) || rows.length === 0)) {
+        return []
+      }
+      return normalizeDeviceRows(rows).map((row) => {
+        const sharingMode = this.coerceSharingMode(row.sharing_mode)
+        const next = { ...row, sharing_mode: sharingMode }
+        if (sharingMode !== 'HAMI') {
+          delete next.memory_mb
+        }
+        return next
+      })
+    },
+    maybeCoerceSharingModes (rows) {
+      if (!Array.isArray(rows) || rows.length === 0) return
+      let changed = false
+      const next = rows.map((row) => {
+        const sharingMode = this.coerceSharingMode(row.sharing_mode)
+        if (sharingMode === row.sharing_mode && (sharingMode === 'HAMI' || !row.memory_mb)) {
+          return row
+        }
+        changed = true
+        const coerced = { ...row, sharing_mode: sharingMode }
+        if (sharingMode !== 'HAMI') {
+          delete coerced.memory_mb
+        }
+        return coerced
+      })
+      if (changed) {
+        this.emitRows(next)
+      }
+    },
+    maybeAutoFillVendors (rows) {
+      if (!Array.isArray(rows) || rows.length === 0) return
+      let changed = false
+      const next = rows.map((row) => {
+        if (String(row?.vendor || '').trim()) return row
+        const sharingMode = resolveSharingMode(row?.sharing_mode)
+        const model = String(row?.model || '').trim()
+        const vendors = listVendorsForSharingMode(this.podPciModels, sharingMode, {
+          model: model || undefined,
+        })
+        if (vendors.length === 1) {
+          changed = true
+          return { ...row, vendor: vendors[0] }
+        }
+        return row
+      })
+      if (changed) {
+        this.emitRows(next)
+      }
+    },
+    vendorOptionsForRow (row) {
+      const sharingMode = resolveSharingMode(row?.sharing_mode)
+      const model = String(row?.model || '').trim()
+      const vendors = listVendorsForSharingMode(this.podPciModels, sharingMode, {
+        model: model || undefined,
+      })
+      if (row?.vendor && !vendors.includes(row.vendor)) {
+        vendors.push(String(row.vendor).trim())
+        vendors.sort()
+      }
+      return vendors.map(v => ({ key: v, label: v }))
+    },
+    modelSelectValue (row) {
+      if (!row?.model) return undefined
+      const vendor = String(row?.vendor || '').trim()
+      return vendor ? `${row.model}\0${vendor}` : row.model
+    },
+    modelOptionsForRow (row) {
+      const sharingMode = resolveSharingMode(row?.sharing_mode)
+      const vendor = String(row?.vendor || '').trim()
+      const entries = buildModelSelectEntries(this.podPciModels, {
+        sharingMode,
+        vendor: vendor || undefined,
+      })
+      if (row?.model) {
+        const key = vendor ? `${row.model}\0${vendor}` : row.model
+        if (!entries.some(e => e.key === key)) {
+          entries.push({
+            key,
+            label: row.model,
+            model: row.model,
+            vendor: vendor || undefined,
+          })
+        }
+      }
+      return entries
+    },
+    emitRows (rows) {
+      const normalized = this.allowEmpty && (!Array.isArray(rows) || rows.length === 0)
+        ? []
+        : this.resolveRows(rows.length ? rows : (this.allowEmpty ? [] : [this.emptyRow()]))
+      this.$emit('input', normalized)
+      this.$emit('change', normalized)
+    },
+    onSharingModeChange (index, sharingMode) {
+      const mode = this.coerceSharingMode(sharingMode)
+      const rows = this.innerRows.map((row, i) => {
+        if (i !== index) return { ...row }
+        const next = { ...row, sharing_mode: mode, model: undefined }
+        delete next.memory_mb
+        delete next.vendor
+        const scopedVendors = listVendorsForSharingMode(this.podPciModels, mode)
+        if (scopedVendors.length === 1) {
+          next.vendor = scopedVendors[0]
+        }
+        return next
+      })
+      this.emitRows(rows)
+    },
+    onVendorChange (index, vendor) {
+      const rows = this.innerRows.map((row, i) => {
+        if (i !== index) return { ...row }
+        const next = { ...row }
+        const v = String(vendor || '').trim()
+        if (v) {
+          next.vendor = v
+        } else {
+          delete next.vendor
+        }
+        const options = this.modelOptionsForRow(next)
+        if (next.model && !options.some(opt => opt.model === next.model)) {
+          next.model = undefined
+        }
+        return next
+      })
+      this.emitRows(rows)
+    },
+    onModelChange (index, selectKey) {
+      const options = this.modelOptionsForRow(this.innerRows[index])
+      const opt = options.find(o => o.key === selectKey)
+      const rows = this.innerRows.map((row, i) => {
+        if (i !== index) return { ...row }
+        const next = { ...row, model: opt?.model || selectKey }
+        const sharingMode = resolveSharingMode(next.sharing_mode)
+        if (opt?.vendor) {
+          next.vendor = opt.vendor
+        } else {
+          const resolved = resolveVendorForModel(next.model, this.podPciModels, { sharingMode })
+          if (resolved) {
+            next.vendor = resolved
+          } else {
+            delete next.vendor
+          }
+        }
+        return next
+      })
+      this.emitRows(rows)
+    },
+    onCountChange (index, count) {
+      const rows = this.innerRows.map((row, i) => {
+        if (i !== index) return { ...row }
+        let nextCount = count ?? 1
+        if (this.isRowMthreadsHami(row) && Number(nextCount) > 1) nextCount = 1
+        return { ...row, count: nextCount }
+      })
+      this.emitRows(rows)
+    },
+    isRowMthreadsHami (row) {
+      return isMthreadsHamiDeviceRow(row, this.podPciModels)
+    },
+    mthreadsMemoryOptionsForRow (row) {
+      return mthreadsSgpuMemoryOptions(mthreadsHamiMemoryMaxMb(row, this.podPciModels))
+    },
+    mthreadsMemoryValue (row) {
+      return normalizeMthreadsSgpuMemory(row?.memory_mb, mthreadsHamiMemoryMaxMb(row, this.podPciModels))
+    },
+    maybeClearOffBucketMemory (rows) {
+      if (!Array.isArray(rows) || rows.length === 0) return
+      let changed = false
+      const next = rows.map((row) => {
+        if (!this.isRowMthreadsHami(row)) return row
+        const normalized = this.mthreadsMemoryValue(row)
+        const raw = parseInt(row?.memory_mb, 10)
+        const current = raw > 0 ? raw : undefined
+        if (current === normalized) return row
+        changed = true
+        const copy = { ...row }
+        if (normalized) {
+          copy.memory_mb = normalized
+        } else {
+          delete copy.memory_mb
+        }
+        return copy
+      })
+      if (changed) this.emitRows(next)
+    },
+    maybeClampMthreadsCount (rows) {
+      if (!Array.isArray(rows) || rows.length === 0) return
+      let changed = false
+      const next = rows.map((row) => {
+        if (!this.isRowMthreadsHami(row) || Number(row.count) <= 1) return row
+        changed = true
+        return { ...row, count: 1 }
+      })
+      if (changed) this.emitRows(next)
+    },
+    onMemoryMbChange (index, memoryMb) {
+      const rows = this.innerRows.map((row, i) => {
+        if (i !== index) return { ...row }
+        const next = { ...row }
+        if (this.isRowMthreadsHami(row)) {
+          const normalized = normalizeMthreadsSgpuMemory(memoryMb, mthreadsHamiMemoryMaxMb(row, this.podPciModels))
+          if (normalized) {
+            next.memory_mb = normalized
+          } else {
+            delete next.memory_mb
+          }
+          return next
+        }
+        const n = parseInt(memoryMb, 10)
+        if (n > 0) {
+          next.memory_mb = n
+        } else {
+          delete next.memory_mb
+        }
+        return next
+      })
+      this.emitRows(rows)
+    },
+    addRow () {
+      this.rowKeys.push(uuid())
+      const newRow = this.emptyRow()
+      const vendors = listVendorsForSharingMode(this.podPciModels, newRow.sharing_mode)
+      if (vendors.length === 1) {
+        newRow.vendor = vendors[0]
+      }
+      this.emitRows([...this.innerRows, newRow])
+    },
+    removeRow (index) {
+      if (!this.allowEmpty && this.innerRows.length <= 1) return
+      this.rowKeys.splice(index, 1)
+      const rows = this.innerRows.filter((_, i) => i !== index)
+      if (rows.length === 0 && this.allowEmpty) {
+        this.emitRows([])
+        return
+      }
+      this.emitRows(rows.length ? rows : [this.emptyRow()])
+    },
+  },
+}
+</script>
+
+<style lang="less" scoped>
+.llm-gpu-devices-editor__row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.llm-gpu-devices-editor__sharing {
+  width: 140px;
+  flex-shrink: 0;
+}
+.llm-gpu-devices-editor__vendor {
+  width: 120px;
+  flex-shrink: 0;
+}
+.llm-gpu-devices-editor__model {
+  flex: 1;
+  min-width: 160px;
+}
+.llm-gpu-devices-editor__count {
+  width: 88px;
+}
+.llm-gpu-devices-editor__memory {
+  width: 120px;
+}
+.llm-gpu-devices-editor__memory-select {
+  width: 160px;
+  flex-shrink: 0;
+}
+.llm-gpu-devices-editor__unit {
+  color: rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
+}
+.llm-gpu-devices-editor__help {
+  margin-bottom: 4px;
+}
+.llm-gpu-devices-editor__remove {
+  flex-shrink: 0;
+}
+</style>

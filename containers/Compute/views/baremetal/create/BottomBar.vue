@@ -22,12 +22,29 @@
       </template>
       <template v-slot:right>
         <div class="d-flex align-items-center">
-          <a-button
+          <a-dropdown-button
+            v-if="!isInstallOperationSystem && $appConfig.isPrivate && !$store.getters.isSysCE && hasCartPermission && !isModifyWorkflow"
             type="primary"
             native-type="submit"
             html-type="submit"
             :loading="loading"
-            :disabled="!!errors.length">{{ isOpenWorkflow && !isInstallOperationSystem ? (isInitForm ? $t('common.modify_workflow') : $t('compute.text_288')) : $t('compute.text_289') }}</a-button>
+            placement="topLeft"
+            :disabled="!!errors.length">
+            {{ confirmText }}
+            <a-menu slot="overlay" @click="handleMenuClick">
+              <a-menu-item key="add">
+                {{ $t('scope.shopcart.add') }}
+              </a-menu-item>
+            </a-menu>
+            <a-icon slot="icon" type="down" />
+          </a-dropdown-button>
+          <a-button
+            v-else
+            type="primary"
+            native-type="submit"
+            html-type="submit"
+            :loading="loading"
+            :disabled="!!errors.length">{{ confirmText }}</a-button>
           <a-button class="ml-3" @click="handleCancel">{{$t('common.cancel')}}</a-button>
         </div>
         <side-errors :error-title="$t('compute.text_290')" :errors="errors" @update:errors="changeErrors" />
@@ -40,6 +57,7 @@
 import * as R from 'ramda'
 import { RESOURCE_TYPES_MAP, SERVER_TYPE, BILL_TYPES_MAP } from '@Compute/constants'
 import { sizestrWithUnit } from '@/utils/utils'
+import { hasPermission, hasServices } from '@/utils/auth'
 // import { HYPERVISORS_MAP, PROVIDER_MAP } from '@/constants'
 import SideErrors from '@/sections/SideErrors'
 import { currencyUnitMap } from '@/constants/currency'
@@ -81,6 +99,10 @@ export default {
       type: Boolean,
       default: false,
     },
+    isOpenOrderSetWorkflow: {
+      type: Boolean,
+      default: false,
+    },
     isServertemplate: {
       type: Boolean,
       default: false,
@@ -90,6 +112,14 @@ export default {
       default: true,
     },
     isInitForm: {
+      type: Boolean,
+      default: false,
+    },
+    isModifyWorkflow: {
+      type: Boolean,
+      default: false,
+    },
+    fakeCreateFromBmImport: {
       type: Boolean,
       default: false,
     },
@@ -147,7 +177,7 @@ export default {
       return ret.join('、')
     },
     image () {
-      return this.fd.image.label
+      return this.fd.image?.label || this.fd.image?.name || ''
     },
     tips () {
       const ret = [
@@ -161,7 +191,9 @@ export default {
         ],
         [
           { label: this.$t('compute.text_295'), labelClass: 'label-w-80', value: this.config },
-          { label: this.$t('compute.text_267'), labelClass: 'label-w-80', value: this.image },
+          this.fakeCreateFromBmImport
+            ? { label: this.$t('compute.server_package.fake_create_from_bm_import'), labelClass: 'label-w-80', value: this.$t('table.title.on') }
+            : { label: this.$t('compute.text_267'), labelClass: 'label-w-80', value: this.image },
         ],
       ]
       return ret
@@ -171,6 +203,15 @@ export default {
         return true
       }
       return false
+    },
+    confirmText () {
+      if (this.isInstallOperationSystem) return this.$t('compute.text_289')
+      if (this.isModifyWorkflow || this.isInitForm) return this.$t('common.modify_workflow')
+      if (this.isOpenWorkflow || this.isOpenOrderSetWorkflow) return this.$t('compute.text_288')
+      return this.$t('compute.text_289')
+    },
+    hasCartPermission () {
+      return hasServices('billing') && hasPermission({ key: 'resource_order_sets_create' })
     },
   },
   created () {
@@ -195,6 +236,11 @@ export default {
     },
     handleCancel () {
       this.$emit('cancel')
+    },
+    handleMenuClick (e) {
+      if (e.key === 'add') {
+        this.$emit('add-cart')
+      }
     },
   },
 }

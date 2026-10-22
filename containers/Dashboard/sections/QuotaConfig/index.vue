@@ -95,7 +95,7 @@
           v-decorator="decorators.all_usage_key"
           :usages="totalUsageOptions"
           @change="allUsageChange" />
-        <div slot="extra">
+        <div slot="extra" v-if="showDocsLink()">
           <i18n path="metricConfig.create_form.all_usage_extra">
             <template #link>
               <help-link :href="metricDoc">{{$t('metricConfig.create_form.all_usage_link')}}</help-link>
@@ -130,6 +130,11 @@
         <a-input class="w-100" v-decorator="decorators.un_usage_label" />
       </a-form-item>
     </a-form-item>
+    <a-form-item :label="$t('dashboard.all_usage_metric_name')" class="mb-0" v-if="decorators.all_usage_label">
+      <a-form-item :wrapperCol="{ span: 24 }">
+        <a-input class="w-100" v-decorator="decorators.all_usage_label" />
+      </a-form-item>
+    </a-form-item>
   </div>
 </template>
 
@@ -141,6 +146,7 @@ import { USAGE_CONFIG, getMetricDocs } from '@Dashboard/constants'
 import { typeClouds } from '@/utils/common/hypervisor'
 import { usageMap } from '@/constants/generalUsage'
 import PairsTag from '@/sections/PairsTag'
+import { showDocsLink } from '@/constants/docs'
 import UsageSelect from './UsageSelect'
 
 export default {
@@ -181,6 +187,7 @@ export default {
   },
   data () {
     return {
+      showDocsLink,
       regionAccountType: _.get(this.decorators, 'regionAccountType[1].initialValue') || 'region',
       cloudEnvs: [],
       cloudEnvData: {},
@@ -538,7 +545,7 @@ export default {
                   usageMap[res].field[part][this.scope].map(key => {
                     keys.push(key)
                   })
-                } else {
+                } else if (R.is(String, usageMap[res].field[part][this.scope])) {
                   keys.push(usageMap[res].field[part][this.scope])
                 }
               }

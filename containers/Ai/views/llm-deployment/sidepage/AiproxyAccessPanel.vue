@@ -1,0 +1,517 @@
+<template>
+  <div class="aiproxy-access-panel p-3">
+    <div v-if="onManager" class="aiproxy-access-actions mb-3">
+      <a-button
+        type="primary"
+        size="small"
+        class="mr-2"
+        :loading="registerLoading"
+        :disabled="!registerMeta.validate"
+        v-on:click="handleRegister">
+        {{ $t('aice.llm_deployment.register_aiproxy') }}
+      </a-button>
+      <a-button
+        size="small"
+        :loading="unregisterLoading"
+        :disabled="!unregisterMeta.validate"
+        v-on:click="handleUnregister">
+        {{ $t('aice.llm_deployment.unregister_aiproxy') }}
+      </a-button>
+      <div v-if="registerMeta.tooltip || unregisterMeta.tooltip" class="text-color-help mt-1">
+        {{ registerMeta.tooltip || unregisterMeta.tooltip }}
+      </div>
+    </div>
+    <template v-if="!autoRegister">
+      <a-empty :description="$t('aice.llm_deployment.aiproxy_routing_disabled')" />
+    </template>
+    <template v-else-if="syncFailed">
+      <a-alert type="error" show-icon :message="formatSyncStatus(resolveAiproxySyncStatus(data))">
+        <template v-slot:description>
+          {{ $t('aice.llm_deployment.aiproxy_access_failed_hint') }}
+        </template>
+      </a-alert>
+    </template>
+    <template v-else-if="waitingSync">
+      <a-spin :spinning="true">
+        <div class="py-4 text-color-secondary">
+          {{ $t('aice.llm_deployment.aiproxy_access_syncing') }}
+        </div>
+      </a-spin>
+    </template>
+    <template v-else>
+      <a-divider orientation="left">{{ $t('aice.llm_deployment.aiproxy_instances') }}</a-divider>
+      <a-table
+        size="small"
+        row-key="llm_id"
+        :columns="accessColumns"
+        :data-source="accessRows"
+        :pagination="false"
+        class="mb-1">
+        <template v-slot:llm_id="text, row">
+          <a v-if="text" @click="handleOpenLlmInstanceSidepage(text)">{{ llmInstanceName(row) }}</a>
+          <span v-else>-</span>
+        </template>
+        <template v-slot:model="text">
+          <span>{{ text || '-' }}</span>
+          <copy v-if="text" class="ml-1" :message="text" />
+        </template>
+        <template v-slot:provider="text, row">
+          <a v-if="text" @click="handleOpenAiProviderSidepage(text)">{{ row.ai_provider_name || text }}</a>
+          <span v-else>-</span>
+        </template>
+        <template v-slot:sync_status="text">
+          {{ formatSyncStatus(text) }}
+        </template>
+        <template v-slot:endpoint="text">
+          <span>{{ text }}</span>
+          <copy v-if="text" class="ml-1" :message="text" />
+        </template>
+      </a-table>
+      <p class="text-color-help mb-3">{{ $t('aice.llm_deployment.aiproxy_client_model_alias_hint') }}</p>
+      <div class="mb-3">
+        <div class="mb-1">{{ $t('aice.aiproxy.access_protocol') }}</div>
+        <p class="text-color-help mb-2">{{ $t('aice.aiproxy.access_protocol_hint') }}</p>
+        <a-radio-group
+          v-model="activeProtocol"
+          button-style="solid"
+          size="small">
+          <a-radio-button value="openai">
+            {{ $t('aice.aiproxy.protocol.openai') }}
+          </a-radio-button>
+          <a-radio-button value="anthropic">
+            {{ $t('aice.aiproxy.protocol.anthropic') }}
+          </a-radio-button>
+        </a-radio-group>
+      </div>
+      <div class="mb-3">
+        <div class="mb-1">{{ $t('aice.llm_deployment.aiproxy_access_select_vk') }}</div>
+        <div class="d-flex align-items-center">
+          <base-select
+            v-model="selectedVirtualKeyId"
+            resource="ai_virtual_keys"
+            :params="virtualKeySelectParams"
+            :extra-opts="virtualKeyExtraOpts"
+            filterable
+            version="v2"
+            allow-clear
+            class="virtual-key-select flex-fill"
+            @change="onVirtualKeyChange" />
+          <a-button
+            v-if="hasConfiguredApiKey"
+            type="link"
+            size="small"
+            class="ml-2 flex-shrink-0"
+            @click="handleQuickChatTest">
+            {{ $t('aice.llm_deployment.chat_test_quick') }}
+          </a-button>
+        </div>
+      </div>
+      <div v-if="showModelSelect" class="mb-3">
+        <div class="mb-1">{{ $t('aice.aiproxy.client_model_select') }}</div>
+        <a-select
+          v-model="selectedClientModelId"
+          class="client-model-select"
+          style="width: 100%; max-width: 480px;">
+          <a-select-option
+            v-for="opt in clientModelOptions"
+            :key="opt.id"
+            :value="opt.id">
+            {{ opt.id }}
+            <span v-if="opt.kind === 'flat'" class="text-color-help ml-1">
+              ({{ $t('aice.aiproxy.client_model_flat') }})
+            </span>
+          </a-select-option>
+        </a-select>
+        <p class="text-color-help mt-1 mb-0">{{ $t('aice.aiproxy.hierarchical_model_hint') }}</p>
+      </div>
+      <aiproxy-client-access-detail
+        :protocol="activeProtocol"
+        :openai-base-url="openaiBaseUrl"
+        :anthropic-base-url="anthropicBaseUrl"
+        :openai-endpoint-url="endpointUrl"
+        :anthropic-messages-url="anthropicMessagesUrl"
+        :virtual-key="selectedVirtualKey"
+        :virtual-key-ref="selectedVirtualKeyRef"
+        :model="agentAccessModel"
+        :client-model-options="clientModelOptions"
+        :routing="routingDetail"
+        :routing-ref="routingDetail.name || routingDetail.id || data.aiproxy_routing_id" />
+    </template>
+
+    <aiproxy-routing-panel :data="data" embedded />
+  </div>
+</template>
+
+<script>
+import WindowsMixin from '@/mixins/windows'
+import AiproxyLlmLinkListMixin from '@Ai/mixins/aiproxyLlmLinkListMixin'
+import AiproxyVirtualKeySelectMixin from '@Ai/mixins/aiproxyVirtualKeySelectMixin'
+import AiproxyClientAccessDetail from '@Ai/sections/AiproxyClientAccessDetail'
+import {
+  buildDeploymentClientModelOptions,
+  defaultClientModelOption,
+  fetchRoutingClientModelOptions,
+  mergeClientModelOptions,
+} from '@Ai/utils/aiproxyClientModelId'
+import {
+  resolveAiproxyAnthropicBaseUrl,
+  resolveAiproxyAnthropicMessagesUrl,
+  resolveAiproxyChatCompletionsUrl,
+  resolveAiproxyOpenAIBaseUrl,
+} from '@Ai/utils/aiproxyEndpoint'
+import { getLlmInstanceDisplayName } from '@Ai/utils/llmInstanceNames'
+import {
+  getRegisterAiproxyMeta,
+  getUnregisterAiproxyMeta,
+  performLlmDeploymentRegisterAiproxy,
+  performLlmDeploymentUnregisterAiproxy,
+  pollDeploymentDetailRefresh,
+  resolveAiproxySyncStatus,
+} from '@Ai/utils/aiproxyDeploymentActions'
+import AiproxyRoutingPanel from './AiproxyRoutingPanel'
+
+const POLL_INTERVAL_MS = 5000
+const MAX_POLL_COUNT = 24
+const AIPROXY_IN_PROGRESS = new Set(['pending', 'syncing'])
+const AIPROXY_TERMINAL = new Set(['synced', 'partial', 'failed', 'disabled'])
+
+export default {
+  name: 'LlmDeploymentAiproxyAccessPanel',
+  components: { AiproxyRoutingPanel, AiproxyClientAccessDetail },
+  mixins: [WindowsMixin, AiproxyLlmLinkListMixin, AiproxyVirtualKeySelectMixin],
+  props: {
+    data: {
+      type: Object,
+      required: true,
+    },
+    onManager: {
+      type: Function,
+      default: undefined,
+    },
+  },
+  data () {
+    return {
+      activeProtocol: 'openai',
+      endpointUrl: '',
+      openaiBaseUrl: '',
+      anthropicBaseUrl: '',
+      anthropicMessagesUrl: '',
+      endpointLoading: false,
+      pollTimer: null,
+      pollCount: 0,
+      registerLoading: false,
+      unregisterLoading: false,
+      clientModelOptions: [],
+      selectedClientModelId: '',
+      routingDetail: {},
+    }
+  },
+  computed: {
+    registerMeta () {
+      return getRegisterAiproxyMeta(this.data, this)
+    },
+    unregisterMeta () {
+      return getUnregisterAiproxyMeta(this.data, this)
+    },
+    autoRegister () {
+      return this.data?.auto_register_aiproxy !== false
+    },
+    aiproxyInstances () {
+      return Array.isArray(this.data?.aiproxy_bindings) ? this.data.aiproxy_bindings : []
+    },
+    readyInstances () {
+      return this.aiproxyInstances.filter(item => {
+        if (!item?.client_model_alias) return false
+        return item.sync_status === 'synced' || !item.sync_status
+      })
+    },
+    syncFailed () {
+      return resolveAiproxySyncStatus(this.data) === 'failed'
+    },
+    waitingSync () {
+      if (this.endpointLoading) return true
+      const aiproxyStatus = resolveAiproxySyncStatus(this.data)
+      if (aiproxyStatus === 'failed') return false
+      if (AIPROXY_IN_PROGRESS.has(aiproxyStatus)) return true
+      if (this.data?.status === 'deploying' && this.autoRegister) return true
+      if (AIPROXY_TERMINAL.has(aiproxyStatus)) {
+        if (aiproxyStatus === 'failed') return false
+        return !this.readyInstances.length || !this.endpointUrl || !this.openaiBaseUrl || !this.anthropicBaseUrl
+      }
+      return false
+    },
+    accessRows () {
+      return this.aiproxyInstances.map(item => ({
+        ...item,
+        endpoint: this.endpointUrl || '',
+      }))
+    },
+    accessColumns () {
+      return [
+        {
+          title: this.$t('aice.aiproxy.llm_id'),
+          dataIndex: 'llm_id',
+          scopedSlots: { customRender: 'llm_id' },
+        },
+        {
+          title: this.$t('aice.aiproxy.model_key'),
+          dataIndex: 'client_model_alias',
+          scopedSlots: { customRender: 'model' },
+        },
+        {
+          title: this.$t('aice.aiproxy.provider'),
+          dataIndex: 'ai_provider_id',
+          scopedSlots: { customRender: 'provider' },
+        },
+        {
+          title: this.$t('aice.llm_deployment.aiproxy_sync_status'),
+          dataIndex: 'sync_status',
+          scopedSlots: { customRender: 'sync_status' },
+        },
+        {
+          title: this.$t('aice.llm_deployment.aiproxy_access_endpoint'),
+          dataIndex: 'endpoint',
+          scopedSlots: { customRender: 'endpoint' },
+        },
+      ]
+    },
+    showModelSelect () {
+      return this.clientModelOptions.length > 1
+    },
+    agentAccessModel () {
+      if (this.selectedClientModelId) {
+        return this.selectedClientModelId
+      }
+      const fromOptions = defaultClientModelOption(this.clientModelOptions)
+      if (fromOptions) return fromOptions
+      return this.readyInstances[0]?.client_model_alias || ''
+    },
+  },
+  watch: {
+    'data.status' () {
+      this.syncPollingState()
+    },
+    'data.aiproxy_sync_status' () {
+      this.syncPollingState()
+    },
+    'data.aiproxy_bindings': {
+      deep: true,
+      handler () {
+        this.syncPollingState()
+        this.loadEndpoint()
+        this.loadClientModelOptions()
+        this.enrichBindingDisplayNames()
+      },
+    },
+    'data.aiproxy_routing_id' () {
+      this.loadEndpoint()
+      this.loadClientModelOptions()
+    },
+    'data.auto_register_aiproxy' () {
+      if (this.data?.auto_register_aiproxy === false) {
+        this.resetAccessState()
+      }
+    },
+  },
+  mounted () {
+    this.loadEndpoint()
+    this.loadClientModelOptions()
+    this.syncPollingState()
+    this.enrichBindingDisplayNames()
+  },
+  beforeDestroy () {
+    this.stopPolling()
+  },
+  methods: {
+    resolveAiproxySyncStatus,
+    async handleRegister () {
+      if (!this.onManager || !this.registerMeta.validate) return
+      this.registerLoading = true
+      try {
+        await performLlmDeploymentRegisterAiproxy(this, this.data)
+        this.pollCount = 0
+        this.$bus.$emit('refresh-detail')
+        this.syncPollingState()
+      } finally {
+        this.registerLoading = false
+      }
+    },
+    handleUnregister () {
+      if (!this.onManager || !this.unregisterMeta.validate) return
+      this.createDialog('ConfirmDialog', {
+        title: this.$t('aice.llm_deployment.unregister_aiproxy'),
+        content: this.$t('aice.llm_deployment.unregister_aiproxy_confirm'),
+        onOk: async () => {
+          this.unregisterLoading = true
+          try {
+            await performLlmDeploymentUnregisterAiproxy(this, this.data)
+            this.resetAccessState()
+            await pollDeploymentDetailRefresh(
+              this,
+              () => this.data?.auto_register_aiproxy === false,
+            )
+          } finally {
+            this.unregisterLoading = false
+          }
+        },
+      })
+    },
+    resetAccessState () {
+      this.endpointUrl = ''
+      this.openaiBaseUrl = ''
+      this.anthropicBaseUrl = ''
+      this.anthropicMessagesUrl = ''
+      this.endpointLoading = false
+      this.pollCount = 0
+      this.clientModelOptions = []
+      this.selectedClientModelId = ''
+      this.routingDetail = {}
+      this.stopPolling()
+    },
+    formatSyncStatus (status) {
+      if (!status) return '-'
+      const key = `aice.llm_deployment.aiproxy_sync_status.${status}`
+      const text = this.$t(key)
+      return text === key ? status : text
+    },
+    formatDeploymentStatus (status) {
+      if (!status) return '-'
+      const key = `status.llmDeployment.${status}`
+      const text = this.$t(key)
+      return text === key ? status : text
+    },
+    llmInstanceName (row) {
+      return getLlmInstanceDisplayName(row, this.llmInstanceNameMap)
+    },
+    enrichBindingDisplayNames () {
+      if (!this.aiproxyInstances.length) return
+      this.enrichRowsWithAiProviderLinks({ data: { data: this.aiproxyInstances } })
+      this.enrichRowsWithAiproxyLlmLinks({ data: { data: this.aiproxyInstances } }, { withInstance: true })
+    },
+    async loadClientModelOptions () {
+      if (!this.autoRegister || this.syncFailed || !this.readyInstances.length) {
+        this.clientModelOptions = []
+        this.selectedClientModelId = ''
+        this.routingDetail = {}
+        return
+      }
+      try {
+        const deploymentOptions = buildDeploymentClientModelOptions(this.readyInstances)
+        const routingId = String(this.data?.aiproxy_routing_id || '').trim()
+        let routingOptions = []
+        let routingDetail = {}
+        if (routingId) {
+          const result = await fetchRoutingClientModelOptions(routingId, {}, this)
+          routingOptions = result.options || []
+          routingDetail = result.routing || {}
+        }
+        this.clientModelOptions = mergeClientModelOptions(deploymentOptions, routingOptions)
+        this.routingDetail = routingDetail
+        this.selectedClientModelId = defaultClientModelOption(this.clientModelOptions)
+      } catch (e) {
+        this.clientModelOptions = buildDeploymentClientModelOptions(this.readyInstances)
+        this.routingDetail = {}
+        this.selectedClientModelId = defaultClientModelOption(this.clientModelOptions)
+      }
+    },
+    async loadEndpoint () {
+      if (!this.autoRegister || this.syncFailed) {
+        this.endpointUrl = ''
+        this.openaiBaseUrl = ''
+        this.anthropicBaseUrl = ''
+        this.anthropicMessagesUrl = ''
+        return
+      }
+      if (!this.readyInstances.length) {
+        this.endpointUrl = ''
+        this.openaiBaseUrl = ''
+        this.anthropicBaseUrl = ''
+        this.anthropicMessagesUrl = ''
+        return
+      }
+      this.endpointLoading = true
+      try {
+        const routingId = this.data?.aiproxy_routing_id
+        const [chatUrl, openaiBase, anthropicBase, anthropicMessages] = await Promise.all([
+          resolveAiproxyChatCompletionsUrl(this, { routingId }),
+          resolveAiproxyOpenAIBaseUrl(this, { routingId }),
+          resolveAiproxyAnthropicBaseUrl(this, { routingId }),
+          resolveAiproxyAnthropicMessagesUrl(this, { routingId }),
+        ])
+        this.endpointUrl = chatUrl
+        this.openaiBaseUrl = openaiBase
+        this.anthropicBaseUrl = anthropicBase
+        this.anthropicMessagesUrl = anthropicMessages
+      } catch (e) {
+        this.endpointUrl = ''
+        this.openaiBaseUrl = ''
+        this.anthropicBaseUrl = ''
+        this.anthropicMessagesUrl = ''
+      } finally {
+        this.endpointLoading = false
+        this.syncPollingState()
+      }
+    },
+    shouldPoll () {
+      if (!this.autoRegister || this.syncFailed) return false
+      if (this.pollCount >= MAX_POLL_COUNT) return false
+      const aiproxyStatus = resolveAiproxySyncStatus(this.data)
+      if (AIPROXY_IN_PROGRESS.has(aiproxyStatus)) return true
+      if (this.data?.status === 'deploying' && this.autoRegister) return true
+      if (['synced', 'partial'].includes(aiproxyStatus)) {
+        return !this.readyInstances.length || !this.endpointUrl || !this.openaiBaseUrl || !this.anthropicBaseUrl
+      }
+      return false
+    },
+    syncPollingState () {
+      if (this.shouldPoll()) {
+        this.startPolling()
+      } else {
+        this.stopPolling()
+      }
+    },
+    startPolling () {
+      if (this.pollTimer) return
+      this.pollTimer = setInterval(() => {
+        this.pollCount += 1
+        if (!this.shouldPoll()) {
+          this.stopPolling()
+          return
+        }
+        this.$bus.$emit('refresh-detail')
+        if (this.pollCount >= MAX_POLL_COUNT) {
+          this.stopPolling()
+        }
+      }, POLL_INTERVAL_MS)
+    },
+    stopPolling () {
+      if (this.pollTimer) {
+        clearInterval(this.pollTimer)
+        this.pollTimer = null
+      }
+    },
+    handleQuickChatTest () {
+      this.$bus.$emit('llmDeploymentOpenChatTest', {
+        deploymentId: this.data.id,
+        virtualKeyId: this.selectedVirtualKeyId,
+        virtualKey: this.selectedVirtualKey,
+        clientModel: this.agentAccessModel,
+      })
+    },
+  },
+}
+</script>
+
+<style lang="less" scoped>
+.aiproxy-access-panel {
+  pre {
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  .virtual-key-select,
+  .client-model-select {
+    max-width: 480px;
+  }
+}
+</style>

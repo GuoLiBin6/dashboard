@@ -1,20 +1,45 @@
 <template>
   <div>
-    <a-radio-group v-model="skuType" @change="skuTypeChange">
-      <a-radio-button
-        v-for="item of skuInfo.categoryOptions"
-        :value="item.key"
-        :key="item.key"
-        :disabled="item.disabled">{{ item.label }}</a-radio-button>
-    </a-radio-group>
+    <div style="display: flex;justify-content: space-between;" class="mb-1 mt-1">
+      <a-radio-group v-model="skuType" @change="skuTypeChange">
+        <a-radio-button
+          v-for="item of skuInfo.categoryOptions"
+          :value="item.key"
+          :key="item.key"
+          :disabled="item.disabled">{{ item.label }}</a-radio-button>
+      </a-radio-group>
+      <a-popover
+        v-model="columnSettingVisible"
+        placement="bottomRight"
+        trigger="click"
+        overlay-class-name="sku-column-setting-popover">
+        <template slot="content">
+          <a-checkbox-group v-model="visibleColumnFields" class="sku-column-setting">
+            <div
+              v-for="col in configurableColumns"
+              :key="col.field"
+              class="sku-column-setting-item">
+              <a-checkbox :value="col.field">{{ col.title }}</a-checkbox>
+            </div>
+          </a-checkbox-group>
+        </template>
+        <a-tooltip :title="$t('common.text00011')">
+          <a-button class="ml-2">
+            <icon type="setting" />
+          </a-button>
+        </a-tooltip>
+      </a-popover>
+    </div>
     <vxe-grid
       row-id="id"
       ref="tableRef"
       min-height="260"
       resizable
-      :columns="tableColumn"
+      :columns="tableShowColumns"
       :data="skuResults"
-      :radio-config="{ reserve: true }"
+      :sort-config="tableSortConfig"
+      :radio-config="radioConfig"
+      @sort-change="skuSortChangeHandle"
       @cell-click="skuChange"
       @radio-change="skuChange">
       <template v-slot:empty>
@@ -31,6 +56,7 @@
       <div class="mt-1" v-if="selectedTip">{{$t('compute.text_171', [ selectedTip ])}}</div>
     </div>
     <div class="mt-1" v-if="unfindTip" style="color: red;">{{$t('compute.sku_unfind_tip', [ unfindTip ])}}</div>
+    <div class="mt-1" v-if="disableSkuType && !supportSkuTypes.length" style="color: red;">{{dataList.length > 1 ? $t('compute.disable_sku_type_tip_2') : $t('compute.disable_sku_type_tip')}}</div>
   </div>
 </template>
 
@@ -38,16 +64,89 @@
 import * as R from 'ramda'
 import { ALL_SKU_CATEGORY_OPT, SKU_CATEGORY_MAP } from '@Compute/constants'
 import { Manager } from '@/utils/manager'
-import { PROVIDER_MAP, HYPERVISORS_MAP } from '@/constants'
+import { PROVIDER_MAP } from '@/constants'
+import { HOST_CPU_ARCHS } from '@/constants/compute'
 import { sizestr } from '@/utils/utils'
 import i18n from '@/locales'
+import storage from '@/utils/storage'
+import RegionalAvailabilityPopover from '@/sections/RegionalAvailabilityPopover'
+import createFormFieldDraftMixin from '@/mixins/createFormFieldDraft'
+
+const SKU_HIDDEN_COLUMNS_KEY = '__oc_sku_hidden_columns'
+const DEFAULT_HIDDEN_COLUMNS = ['cpu_model', 'nic_bandwidth', 'disk_performance']
+const SKU_FILTERABLE_FIELDS = ['cpu_arch', 'name', 'cpu_model', 'nic_bandwidth', 'disk_performance']
+const SKU_SELECT_FILTER_FIELDS = ['cpu_arch']
+
+const escapeSkuFilterValue = (val = '') => String(val).replace(/"/g, '\\"')
+
+const buildSkuColumnFilterExpr = (field, val = '') => {
+  const value = escapeSkuFilterValue(val.trim())
+  if (!value) return ''
+  if (SKU_SELECT_FILTER_FIELDS.includes(field)) {
+    return `${field}.equals("${value}")`
+  }
+  return `${field}.contains("${value}")`
+}
+
+const isSkuColumnFilterExpr = (filter = '') => {
+  const expr = String(filter)
+  return SKU_FILTERABLE_FIELDS.some(field => {
+    if (SKU_SELECT_FILTER_FIELDS.includes(field)) {
+      return expr.startsWith(`${field}.equals(`)
+    }
+    return expr.startsWith(`${field}.contains(`)
+  })
+}
+
+const createSkuColumnFilterState = () => SKU_FILTERABLE_FIELDS.reduce((ret, field) => {
+  ret[field] = ''
+  return ret
+}, {})
+
+const createSkuColumnFilterVisibleState = () => SKU_FILTERABLE_FIELDS.reduce((ret, field) => {
+  ret[field] = false
+  return ret
+}, {})
+
+const sanitizeSkuParams = (params = {}) => {
+  const ret = { ...params }
+  if (ret.cpu_core_count === 0) {
+    delete ret.cpu_core_count
+  }
+  if (ret.memory_size_mb === 0) {
+    delete ret.memory_size_mb
+  }
+  delete ret.limit
+  delete ret.offset
+  delete ret['@local_category']
+  if (ret.filter) {
+    const items = (Array.isArray(ret.filter) ? ret.filter : [ret.filter])
+      .filter(item => !isSkuColumnFilterExpr(item))
+    if (items.length) {
+      ret.filter = items
+    } else {
+      delete ret.filter
+    }
+  }
+  return ret
+}
 
 const keys = ['hour_price', 'month_price', 'year_price']
 const units = [i18n.t('compute.text_172'), i18n.t('compute.text_173'), i18n.t('compute.text_174')]
 
 export default {
   name: 'SKU',
+  mixins: [createFormFieldDraftMixin],
   props: {
+    formDraftKey: {
+      type: String,
+      default: '',
+    },
+    /** selection：radio/单选 select/switch 类，local + session 双写、可跨 tab 回填 */
+    formDraftKind: {
+      type: String,
+      default: 'selection',
+    },
     billType: {
       type: String,
     },
@@ -123,12 +222,19 @@ export default {
       type: Object,
       default: () => ({}),
     },
+    supportSkuTypes: {
+      type: Array,
+      default: () => [],
+    },
+    disableSkuType: {
+      type: Boolean,
+      default: () => false,
+    },
   },
   data () {
+    const stored = storage.get(SKU_HIDDEN_COLUMNS_KEY)
     return {
       skuList: [], // 套餐列表
-      ratesList: [], // 套餐价格列表
-      rateLoading: false,
       skuLoading: false,
       selectedSkuData: {},
       skuType: ALL_SKU_CATEGORY_OPT.key,
@@ -137,9 +243,21 @@ export default {
         pageSize: 10,
         totalResult: 0,
       },
+      skuSort: {
+        order_by: '',
+        order: '',
+      },
+      skuColumnFilters: createSkuColumnFilterState(),
+      skuColumnFilterDraft: createSkuColumnFilterState(),
+      skuColumnFilterVisible: createSkuColumnFilterVisibleState(),
       skuTypes: [],
       hasOriginSku: false,
       unfindTip: '',
+      hiddenColumns: Array.isArray(stored) ? stored : DEFAULT_HIDDEN_COLUMNS,
+      columnSettingVisible: false,
+      skuParamsSnapshot: '',
+      sortRestoreSeq: 0,
+      stableTableColumns: [],
     }
   },
   computed: {
@@ -162,57 +280,70 @@ export default {
     isIDC () {
       return this.type === 'idc'
     },
-    tableColumn () {
-      const column = [
-        { field: 'instance_type_category_i18n', title: this.$t('compute.text_175') },
-        { field: 'region', title: this.$t('compute.text_177') },
-        { field: 'name', title: this.$t('compute.text_178') },
-        { field: 'cpu_core_count', title: this.$t('compute.text_179') },
-        { field: 'cpu_arch', title: this.$t('compute.cpu_arch'), slots: { default: ({ row }) => { return row.cpu_arch ? this.$t(`compute.cpu_arch.${row.cpu_arch}`) : '-' } } },
-        { field: 'memory_size_mb_compute', title: this.$t('compute.text_180') },
-      ]
+    radioConfig () {
+      const config = { reserve: true }
       if (this.skuDisabled) {
-        column.unshift({ field: 'radio', width: 40, slots: { default: ({ row }) => { return [row.id === this.selectedSkuData?.id ? <vxe-radio disabled></vxe-radio> : <vxe-radio disabled value={false}></vxe-radio>] } } })
-      } else {
-        column.unshift({ type: 'radio', width: 40 })
+        config.checkMethod = () => false
+        return config
       }
-      const providerColumn = {
-        field: 'provider',
-        title: this.$t('compute.text_176'),
-        slots: {
-          default: ({ row }) => {
-            return [
-              this.getHypervisor(row),
-            ]
-          },
-        },
+      if (this.disableSkuType && this.supportSkuTypes.length) {
+        config.checkMethod = ({ row }) => this.supportSkuTypes.includes(row.name)
       }
-      if (this.isPublic) {
-        column.splice(1, 0, providerColumn)
-        if (this.hasMeterService) {
-          column.push({
-            field: 'hour_price',
-            title: this.$t('compute.text_181'),
-            slots: {
-              default: ({ row }) => {
-                const price = this.getFormatPrice(row.hour_price)
-                if (price > 0) {
-                  let ret = [<a-icon type="loading" />]
-                  if (!this.rateLoading) {
-                    ret = [
-                      <span style="color: rgb(230, 139, 80);">{ price }</span>,
-                      <span> {this.$t(`currencys.${row.currency}`)} / { this.priceUnit.unit }</span>,
-                    ]
-                  }
-                  return ret
-                }
-                return [<span style="color: rgb(230, 139, 80);">--</span>]
-              },
-            },
-          })
+      return config
+    },
+    tableColumnVersionKey () {
+      return [
+        this.type,
+        this.skuDisabled,
+        this.hasMeterService,
+        this.priceUnit.key,
+      ].join('|')
+    },
+    tableSortConfig () {
+      const config = {
+        remote: true,
+        orders: ['asc', 'desc', null],
+      }
+      const { order_by, order } = this.skuSort
+      if (order_by && order) {
+        config.defaultSort = {
+          field: this.getSortColumnField(order_by),
+          order,
         }
       }
-      return column
+      return config
+    },
+    tableShowColumns () {
+      return this.stableTableColumns.filter(item => !this.hiddenColumns.includes(item.field))
+    },
+    configurableColumns () {
+      return this.stableTableColumns.filter(col => col.field && col.field !== 'radio')
+    },
+    cpuArchFilterOptions () {
+      return Object.values(HOST_CPU_ARCHS)
+        .sort((a, b) => a.order - b.order)
+        .map(arch => {
+          const value = arch.key === HOST_CPU_ARCHS.arm.key ? arch.capabilityKey : arch.key
+          const i18nKey = this.$te(`compute.cpu_arch.${value}`) ? `compute.cpu_arch.${value}` : ''
+          return {
+            value,
+            label: i18nKey ? this.$t(i18nKey) : arch.label,
+          }
+        })
+    },
+    visibleColumnFields: {
+      get () {
+        return this.configurableColumns
+          .filter(col => !this.hiddenColumns.includes(col.field))
+          .map(col => col.field)
+      },
+      set (val) {
+        const allFields = this.configurableColumns.map(col => col.field)
+        this.hiddenColumns = allFields.filter(field => !val.includes(field))
+        const allHiddenColumns = (storage.get(SKU_HIDDEN_COLUMNS_KEY) || []).filter(field => !allFields.includes(field))
+
+        storage.set(SKU_HIDDEN_COLUMNS_KEY, Array.from(new Set([...this.hiddenColumns, ...allHiddenColumns])))
+      },
     },
     skuInfo () {
       let currentCategory = SKU_CATEGORY_MAP[this.hypervisor] || []
@@ -260,13 +391,6 @@ export default {
         // 翻译类型
         item.instance_type_category_i18n = this.getI18NValue(`skuCategoryOptions['${hypervisor}']['${category}']`, category)
         item.memory_size_mb_compute = item.memory_size_mb / 1024
-        if (this.isPublic) {
-          item.rate_key = this.genRateKey(item)
-          if (this.ratesMap[item.rate_key]) {
-            item.hour_price = this.ratesMap[item.rate_key][this.priceUnit.key]
-            item.currency = this.ratesMap[item.rate_key].currency
-          }
-        }
         if (this.isSkuEnabled(item)) {
           skuOptions[key].push(item)
           skuOptions[ALL_SKU_CATEGORY_OPT.key].push(item)
@@ -277,19 +401,12 @@ export default {
         skuOptions,
       }
     },
-    ratesMap () {
-      const ret = {}
-      for (let i = 0, len = this.ratesList.length; i < len; i++) {
-        const item = this.ratesList[i]
-        ret[item.data_key] = item
-      }
-      return ret
-    },
     skuResults () {
       if (!this.canSkuShow) return []
       const ret = this.skuInfo.skuOptions[this.skuType]
-      if (ret && ret.length > 0 && ret[0].hour_price) {
-        ret.sort((a, b) => a.hour_price - b.hour_price)
+      const priceKey = this.priceUnit.key
+      if (!this.skuSort.order_by && ret && ret.length > 0 && ret[0][priceKey]) {
+        ret.sort((a, b) => (a[priceKey] || 0) - (b[priceKey] || 0))
       }
       return ret
     },
@@ -307,42 +424,183 @@ export default {
   },
   watch: {
     skuParams: {
-      handler (val, oldV) {
-        if (!R.isEmpty(val)) {
-          if (!R.equals(val, oldV)) {
-            this.resetPageInfo()
-            this.fetchData()
-          }
-        } else {
+      handler (val) {
+        if (R.isEmpty(val)) {
+          this.skuParamsSnapshot = ''
           this.skuList = []
+          this.resetSortState()
           this.setSku({})
+          return
         }
+        const snapshot = this.getSkuParamsSnapshot(val)
+        if (snapshot === this.skuParamsSnapshot) return
+        this.skuParamsSnapshot = snapshot
+        this.resetPageInfo()
+        this.resetColumnFilters()
+        this.applySkuTypeFromDraft()
+        this.fetchData()
       },
+      deep: true,
     },
     skuResults: {
+      immediate: true,
       handler (val, oldV) {
-        if (!R.equals(val, oldV)) {
-          if (val.length) {
-            this.setSku(val[0], false)
-          } else {
+        if (this.skuLoading) return
+        if (!val || !val.length) {
+          if (this.selectedSkuData?.id) {
             this.setSku({})
           }
+          return
+        }
+        const prevFirstId = oldV && oldV.length ? oldV[0].id : null
+        const nextFirstId = val[0].id
+        if (oldV === undefined || prevFirstId !== nextFirstId || !(oldV && oldV.length)) {
+          this.setSku(val[0], false)
         }
       },
       deep: true,
     },
+    tableColumnVersionKey: {
+      immediate: true,
+      handler () {
+        this.stableTableColumns = this.buildTableColumns()
+      },
+    },
+    skuSort: {
+      deep: true,
+      handler () {
+        this.$nextTick(() => {
+          this.syncSortHeaderUI()
+        })
+      },
+    },
   },
   created () {
     this.skusM = new Manager('serverskus')
-    this.ratesM = new Manager('cloud_sku_rates', 'v1')
+    this.applySkuTypeFromDraft()
     if (this.skuParams && !R.isEmpty(this.skuParams)) {
+      this.skuParamsSnapshot = this.getSkuParamsSnapshot(this.skuParams)
       this.fetchData()
     }
   },
   methods: {
+    /**
+     * 草稿回填套餐类型（radio），需在 fetch 前调用以便按 @local_category 拉列表
+     */
+    applySkuTypeFromDraft () {
+      if (!this.canRestoreFormFieldDraft()) return
+      if (this.initSkuData?.name || this.instanceType) return
+      const draft = this.readFormFieldDraft()
+      if (!draft || typeof draft !== 'object') return
+      const type = draft.skuType
+      if (type && type !== this.skuType) {
+        this.skuType = type
+      }
+    },
+    getSortHeaderClass (field = '') {
+      const { order_by, order } = this.skuSort
+      if (!order_by || !order) return ''
+      if (this.getSortColumnField(order_by) !== field) return ''
+      return `sku-col-sort--${order}`
+    },
+    withSortableColumn (column = {}) {
+      if (!column.sortable) return column
+      return {
+        ...column,
+        headerClassName: ({ column: col }) => this.getSortHeaderClass(col.property),
+      }
+    },
+    buildTableColumns () {
+      const column = [
+        { type: 'radio', width: 40 },
+        {
+          field: 'region',
+          title: this.$t('compute.text_177'),
+          minWidth: 120,
+          showOverflow: 'ellipsis',
+          slots: this.isPublic ? {
+            default: ({ row }) => {
+              return this.renderRegionalAvailability(row, 'region')
+            },
+          } : undefined,
+        },
+        { field: 'instance_type_category_i18n', title: this.$t('compute.text_175') },
+        this.getFilterableColumn('cpu_arch', this.$t('compute.cpu_arch'), {
+          filterType: 'select',
+          defaultSlot: ({ row }) => (row.cpu_arch ? this.$t(`compute.cpu_arch.${row.cpu_arch}`) : '-'),
+        }),
+        this.getFilterableColumn('name', this.$t('compute.text_178')),
+        this.withSortableColumn({
+          field: 'cpu_core_count',
+          title: this.$t('compute.text_179'),
+          sortable: true,
+        }),
+        this.withSortableColumn({
+          field: 'memory_size_mb_compute',
+          title: this.$t('compute.text_180'),
+          sortable: true,
+        }),
+      ]
+      const providerColumn = {
+        field: 'provider',
+        title: this.$t('compute.text_176'),
+        slots: {
+          default: ({ row }) => {
+            return [
+              this.getHypervisor(row),
+            ]
+          },
+        },
+      }
+      if (this.isPublic) {
+        column.splice(1, 0, providerColumn)
+        column.splice(3, 0, {
+          field: 'zone',
+          title: this.$t('compute.text_270'),
+          minWidth: 120,
+          showOverflow: 'ellipsis',
+          slots: {
+            default: ({ row }) => {
+              return this.renderRegionalAvailability(row, 'zone')
+            },
+          },
+        })
+        column.push(this.getFilterableColumn('cpu_model', this.$t('compute.cpu_model')))
+        column.push(this.getFilterableColumn('nic_bandwidth', this.$t('compute.nic_bandwidth')))
+        column.push(this.getFilterableColumn('disk_performance', this.$t('compute.disk_performance')))
+        if (this.hasMeterService) {
+          column.push(this.withSortableColumn({
+            field: this.priceUnit.key,
+            title: this.$t('compute.text_181'),
+            sortable: true,
+            slots: {
+              default: ({ row }) => {
+                const price = this.getFormatPrice(row[this.priceUnit.key])
+                if (price > 0) {
+                  return [
+                    <span style="color: rgb(230, 139, 80);">{ price }</span>,
+                    <span> {this.$t(`currencys.${row.currency}`)} / { this.priceUnit.unit }</span>,
+                  ]
+                }
+                return [<span style="color: rgb(230, 139, 80);">--</span>]
+              },
+            },
+          }))
+        }
+      }
+      return column
+    },
+    getFirstSupportedSku (list = []) {
+      if (!this.disableSkuType || !this.supportSkuTypes.length) return null
+      if (!Array.isArray(list) || !list.length) return null
+      return list.find(item => item?.name && this.supportSkuTypes.includes(item.name)) || null
+    },
     fetchData () {
       this.fetchSkuTypes()
-      this.fetchSkuList().then(this.fetchCloudSkuRatesList)
+      this.fetchSkuListData()
+    },
+    fetchSkuListData () {
+      return this.fetchSkuList()
     },
     getFormatPrice (price) {
       if (price) {
@@ -350,11 +608,52 @@ export default {
       }
       return '0'
     },
-    skuChange ({ row }) {
+    renderRegionalAvailability (row, type) {
+      const { region, zone, regional_availability: regionalAvailability } = row
+      if (!Array.isArray(regionalAvailability) || !regionalAvailability.length) {
+        const ret = []
+        if (type === 'region' && region) {
+          ret.push(<a onClick={e => e.preventDefault()}>{ region }</a>)
+        }
+        if (type === 'zone' && zone) {
+          ret.push(<a class="link-color-light" onClick={e => e.preventDefault()}>{ zone }</a>)
+        }
+        return ret.length ? ret : '-'
+      }
+      const chargeTypes = []
+      if (this.skuParams.postpaid_status === 'available') {
+        chargeTypes.push('postpaid')
+      }
+      if (this.skuParams.prepaid_status === 'available') {
+        chargeTypes.push('prepaid')
+      }
+      return [
+        this.$createElement(RegionalAvailabilityPopover, {
+          props: { region, zone, regionalAvailability, chargeTypes, skuData: row, hiddenRegion: type === 'zone', hiddenZone: type === 'region' },
+        }),
+      ]
+    },
+    skuChange ({ row } = {}) {
       if (this.skuDisabled) return
+      if (!row) return
+      const tableRef = this.$refs.tableRef
+      const selectedRow = tableRef && typeof tableRef.getRadioRecord === 'function'
+        ? tableRef.getRadioRecord()
+        : null
+      // 与 radioConfig.checkMethod 一致：非当前选中且不在 supportSkuTypes 内时不触发切换
+      if (
+        this.disableSkuType &&
+        this.supportSkuTypes.length &&
+        !this.supportSkuTypes.includes(row.name) &&
+        row.id !== (selectedRow && selectedRow.id)
+      ) {
+        return
+      }
       this.setSku(row, true)
     },
     skuTypeChange () {
+      this.resetSortState()
+      this.skuPage.currentPage = 1
       this.fetchData()
       if (this.skuResults && this.skuResults.length) {
         this.setSku(this.skuResults[0], true)
@@ -380,22 +679,80 @@ export default {
           chooseSku = sku
         }
       }
+      // 组件草稿：options 变化后若上次 SKU name 仍在列表中则回填；类型 radio 一并回填
+      if (!isSkuChange && !this.initSkuData?.name && !this.instanceType) {
+        const draft = this.readFormFieldDraft()
+        const preferredName = (draft && typeof draft === 'object') ? draft.name : draft
+        const preferredType = (draft && typeof draft === 'object') ? draft.skuType : undefined
+        if (preferredType && preferredType !== this.skuType) {
+          this.skuType = preferredType
+        }
+        const draftSku = this.matchFormFieldDraftInOptions(this.skuList, preferredName, {
+          getId: item => item.name,
+        })
+        if (draftSku) {
+          chooseSku = draftSku
+        }
+      }
+      // 自动选中时：若开启 disableSkuType 且存在 supportSkuTypes，则选中一个“可用”的 sku（name 在支持列表内）
+      if (
+        !isSkuChange &&
+        this.disableSkuType &&
+        this.supportSkuTypes.length &&
+        chooseSku?.name &&
+        !this.supportSkuTypes.includes(chooseSku.name)
+      ) {
+        const supportedSku = this.getFirstSupportedSku(this.skuResults) || this.getFirstSupportedSku(this.skuList)
+        if (supportedSku) {
+          chooseSku = supportedSku
+        } else {
+          // 没有任何受支持的 sku 时，不自动选中不可用项
+          chooseSku = {}
+        }
+      }
       this.$nextTick(() => {
-        this.selectedSkuData = chooseSku
-        this.$refs.tableRef && this.$refs.tableRef.setRadioRow(chooseSku)
-        this.$emit('change', chooseSku)
+        const hasSelected = !!chooseSku?.id
+        this.selectedSkuData = hasSelected ? chooseSku : {}
+        if (this.$refs.tableRef) {
+          if (hasSelected) {
+            this.$refs.tableRef.setRadioRow(chooseSku)
+          } else if (typeof this.$refs.tableRef.clearRadioRow === 'function') {
+            this.$refs.tableRef.clearRadioRow()
+          } else {
+            // 兼容旧版本：传 null/undefined 以清空选中
+            this.$refs.tableRef.setRadioRow(null)
+          }
+        }
+        this.$emit('change', hasSelected ? chooseSku : {})
+        this.restoreTableSort()
       })
+    },
+    /**
+     * 提交时获取表单草稿（name + 套餐类型 radio）
+     */
+    serializeFormFieldDraft () {
+      const name = this.selectedSkuData?.name
+      if (!name) return undefined
+      return {
+        name,
+        skuType: this.skuType || ALL_SKU_CATEGORY_OPT.key,
+      }
+    },
+    getSortColumnField (orderBy = '') {
+      const fieldMap = {
+        memory_size_mb: 'memory_size_mb_compute',
+      }
+      return fieldMap[orderBy] || orderBy
+    },
+    getSortOrderByField (property = '') {
+      const orderByMap = {
+        cpu_core_count: 'cpu_core_count',
+        memory_size_mb_compute: 'memory_size_mb',
+      }
+      return orderByMap[property] || property
     },
     getHypervisor (data) {
       return data.provider ? PROVIDER_MAP[data.provider].label : PROVIDER_MAP.OneCloud.label
-    },
-    genRateKey (data) {
-      const provider = this.getSkuItemProvider(data)
-      let ret = `${provider}::${data.region_ext_id}::${data.name}`
-      if (provider === HYPERVISORS_MAP.ucloud.key || provider === HYPERVISORS_MAP.azure.key) {
-        ret = `${provider}::${data.region_ext_id}::::instance::${data.name}`
-      }
-      return ret
     },
     getI18NValue (key, originVal) {
       if (this.$te(key)) {
@@ -403,30 +760,40 @@ export default {
       }
       return originVal
     },
+    getSkuParamsSnapshot (params = this.skuParams) {
+      if (!params || R.isEmpty(params)) return ''
+      const normalized = sanitizeSkuParams(params)
+      if (normalized.filter && Array.isArray(normalized.filter)) {
+        normalized.filter = [...normalized.filter].sort()
+      }
+      return JSON.stringify(normalized)
+    },
+    buildSkuListParams () {
+      const params = {
+        ...sanitizeSkuParams(this.skuParams),
+        limit: this.skuPage.pageSize,
+        offset: (this.skuPage.currentPage - 1) * this.skuPage.pageSize,
+        '@local_category': this.skuType,
+      }
+      if (this.skuSort.order_by && this.skuSort.order) {
+        params.order_by = this.skuSort.order_by
+        params.order = this.skuSort.order
+      }
+      this.buildColumnFilters().forEach(filter => this.appendSkuFilter(params, filter))
+      if (this.skuType === 'all') {
+        delete params['@local_category']
+      }
+      if (!this.skuParams.zone_id) {
+        params.distinct = true
+      }
+      params.enabled = true
+      return params
+    },
     async fetchSkuList () {
       try {
         this.skuLoading = true
         this.skuList = []
-        if (this.skuParams.cpu_core_count === 0) {
-          delete this.skuParams.cpu_core_count
-        }
-        if (this.skuParams.memory_size_mb === 0) {
-          delete this.skuParams.memory_size_mb
-        }
-        const params = {
-          ...this.skuParams,
-          limit: this.skuPage.pageSize,
-          offset: (this.skuPage.currentPage - 1) * this.skuPage.pageSize,
-          '@local_category': this.skuType,
-          // prepaid_status: 'available',
-        }
-        if (this.skuType === 'all') {
-          delete params['@local_category']
-        }
-        if (!this.skuParams.zone_id) {
-          params.distinct = true
-        }
-        params.enabled = true
+        const params = this.buildSkuListParams()
         let { data } = await this.skusM.list({ params: params })
         this.skuPage.pageSize = data.limit || 10
         this.skuPage.totalResult = data.total || 0
@@ -443,48 +810,154 @@ export default {
                 this.hasOriginSku = true
               }
             }
-            this.setSku(this.skuResults[0], false)
+            const first = this.skuResults[0]
+            if (first?.id && this.selectedSkuData?.id === first.id && !this.initSkuData?.name) {
+              this.$nextTick(() => {
+                const tableRef = this.$refs.tableRef
+                if (tableRef) {
+                  tableRef.setRadioRow(first)
+                }
+                this.restoreTableSort()
+              })
+            } else {
+              await this.resolveInitSku(first)
+            }
+          } else if (this.initSkuData?.name) {
+            await this.resolveInitSku({})
           }
         }
         this.skuLoading = false
+        if (!this.skuList || !this.skuList.length) {
+          this.restoreTableSort()
+        }
         return data
       } catch (error) {
         this.skuLoading = false
         throw error
       }
     },
-    fetchCloudSkuRatesList () { // 公有云套餐价格
-      if (!this.hasMeterService) return // 没有 meter 服务
-      if (!this.isPublic) return
-      if (!this.skuList || !this.skuList.length) return
-      let paramKeys = this.skuList.map(item => {
-        const provider = this.getSkuItemProvider(item)
-        let ret = `${provider}::${item.region_ext_id || 'NA'}::${item.name || 'NA'}`
-        if (provider === HYPERVISORS_MAP.ucloud.key || provider === HYPERVISORS_MAP.azure.key) {
-          ret = `${provider}::${item.region_ext_id}::::instance::${item.name}`
+    async resolveInitSku (fallback) {
+      const name = this.initSkuData?.name
+      if (!name) {
+        this.setSku(fallback, false)
+        return
+      }
+      if (this.skuList.some(item => item.name === name)) {
+        this.setSku(fallback, false)
+        return
+      }
+      try {
+        const base = sanitizeSkuParams(this.skuParams)
+        delete base.cpu_core_count
+        delete base.memory_size_mb
+        const { data } = await this.skusM.list({
+          params: {
+            ...base,
+            name,
+            limit: 1,
+            enabled: true,
+          },
+        })
+        const list = data?.data || data
+        const sku = Array.isArray(list) ? list[0] : null
+        if (sku?.id) {
+          this.skuList = [sku, ...this.skuList.filter(item => item.id !== sku.id)]
+          // 程序化回填不写草稿
+          this.setSku(sku, false)
+          return
         }
-        return ret
-      })
-      paramKeys = Array.from(new Set(paramKeys))
-      const params = {
-        param_keys: paramKeys.join('$'),
-      }
-      this.rateLoading = true
-      this.ratesM.list({ params })
-        .then(({ data: { data = [] } }) => {
-          this.ratesList = data
-          this.rateLoading = false
-        })
-        .catch(() => {
-          this.rateLoading = false
-        })
+      } catch (e) { /* ignore */ }
+      this.setSku(fallback, false)
     },
-    getSkuItemProvider (item) { // 兼容阿里金融云
-      let provider = item.provider.toLowerCase()
-      if (this.isPublic && item.cloud_env) {
-        provider = item.cloud_env.toLowerCase()
+    restoreTableSort () {
+      const { order_by, order } = this.skuSort
+      if (!order_by || !order) return
+
+      const seq = ++this.sortRestoreSeq
+      const property = this.getSortColumnField(order_by)
+
+      const applySort = () => {
+        if (seq !== this.sortRestoreSeq) return
+        const current = this.skuSort
+        if (!current.order_by || !current.order) {
+          this.clearTableSortUI()
+          return
+        }
+        if (
+          this.getSortColumnField(current.order_by) !== property ||
+          current.order !== order
+        ) {
+          return
+        }
+        const grid = this.$refs.tableRef
+        const xTable = grid && grid.$refs ? grid.$refs.xTable : null
+        if (!xTable || typeof xTable.getColumnByField !== 'function') return
+
+        const column = xTable.getColumnByField(property)
+        if (!column) return
+
+        xTable.tableFullColumn.forEach(col => {
+          col.order = null
+        })
+        column.order = order
+
+        const refresh = () => {
+          if (seq !== this.sortRestoreSeq) return
+          this.syncSortHeaderUI()
+          if (typeof xTable.updateStyle === 'function') {
+            xTable.updateStyle()
+          }
+          if (typeof xTable.recalculate === 'function') {
+            xTable.recalculate(true)
+          }
+        }
+
+        if (typeof xTable.$nextTick === 'function') {
+          xTable.$nextTick().then(refresh)
+        } else {
+          refresh()
+        }
       }
-      return provider
+
+      this.$nextTick(() => {
+        this.$nextTick(() => {
+          if (typeof window !== 'undefined' && window.requestAnimationFrame) {
+            window.requestAnimationFrame(applySort)
+          } else {
+            applySort()
+          }
+        })
+      })
+    },
+    syncSortHeaderUI () {
+      const grid = this.$refs.tableRef
+      const xTable = grid && grid.$refs ? grid.$refs.xTable : null
+      if (xTable && typeof xTable.$forceUpdate === 'function') {
+        xTable.$forceUpdate()
+      }
+    },
+    clearTableSortUI () {
+      const grid = this.$refs.tableRef
+      const xTable = grid && grid.$refs ? grid.$refs.xTable : null
+      if (!xTable) return
+      if (typeof xTable.clearSort === 'function') {
+        xTable.clearSort()
+      } else if (xTable.tableFullColumn) {
+        xTable.tableFullColumn.forEach(col => {
+          col.order = null
+        })
+      }
+      this.syncSortHeaderUI()
+    },
+    resetSortState () {
+      this.sortRestoreSeq += 1
+      this.skuSort = {
+        order_by: '',
+        order: '',
+      }
+      this.$nextTick(() => {
+        this.clearTableSortUI()
+      })
     },
     isSupportDiskTypes (supported, required) {
       for (let i = 0; i < required.length; i++) {
@@ -503,29 +976,176 @@ export default {
       }
       return true
     },
+    getFilterableColumn (field, title, { defaultSlot, filterType = 'input' } = {}) {
+      return {
+        field,
+        title,
+        params: {
+          columnFilter: this.skuColumnFilters[field] || '',
+          columnFilterType: filterType,
+        },
+        slots: {
+          header: () => [this.renderColumnFilterHeader(field, title, filterType)],
+          default: defaultSlot || (({ row }) => row[field] || '-'),
+        },
+      }
+    },
+    renderColumnFilterContent (field, filterType = 'input') {
+      if (filterType === 'select' && field === 'cpu_arch') {
+        return (
+          <a-select
+            value={this.skuColumnFilterDraft[field] || undefined}
+            allowClear
+            placeholder={this.$t('common.select')}
+            style={{ width: '160px' }}
+            dropdownClassName="sku-column-filter-select-dropdown"
+            dropdownStyle={{ zIndex: 1070 }}
+            getPopupContainer={() => document.body}
+            onChange={value => this.handleColumnFilterDraftChange(field, value || '')}>
+            {this.cpuArchFilterOptions.map(opt => (
+              <a-select-option key={opt.value} value={opt.value}>
+                { opt.label }
+              </a-select-option>
+            ))}
+          </a-select>
+        )
+      }
+      return (
+        <a-input
+          value={this.skuColumnFilterDraft[field]}
+          allowClear
+          placeholder={this.$t('common.search')}
+          onChange={e => this.handleColumnFilterDraftChange(field, e.target.value)}
+          onPressEnter={e => {
+            e.stopPropagation()
+            this.applyColumnFilter(field)
+          }}
+        />
+      )
+    },
+    renderColumnFilterHeader (field, title, filterType = 'input') {
+      const hasFilter = Boolean((this.skuColumnFilters[field] || '').trim())
+      return (
+        <span class="sku-column-filter-header">
+          <span class="sku-column-filter-title">{ title }</span>
+          <a-popover
+            trigger="click"
+            placement="bottomRight"
+            overlayClassName="sku-column-filter-popover"
+            destroyTooltipOnHide
+            visible={this.skuColumnFilterVisible[field]}
+            overlayStyle={{ zIndex: 1060 }}
+            getPopupContainer={() => document.body}
+            onVisibleChange={visible => this.handleColumnFilterVisibleChange(field, visible)}>
+            <template slot="content">
+              { this.renderColumnFilterContent(field, filterType) }
+              <div
+                class="sku-column-filter-actions"
+                onMousedown={e => e.preventDefault()}>
+                <a-button
+                  size="small"
+                  onClick={e => {
+                    e.stopPropagation()
+                    this.resetColumnFilter(field)
+                  }}>
+                  {this.$t('common.reset')}
+                </a-button>
+                <a-button
+                  size="small"
+                  type="primary"
+                  class="ml-2"
+                  onClick={e => {
+                    e.stopPropagation()
+                    this.applyColumnFilter(field)
+                  }}>
+                  {this.$t('common.ok')}
+                </a-button>
+              </div>
+            </template>
+            <span
+              class="sku-column-filter-trigger"
+              onClick={e => e.stopPropagation()}>
+              <a-icon
+                type="filter"
+                class={{ 'sku-column-filter-icon': true, 'is-active': hasFilter }}
+              />
+            </span>
+          </a-popover>
+        </span>
+      )
+    },
+    closeOtherColumnFilterPopovers (activeField) {
+      SKU_FILTERABLE_FIELDS.forEach(field => {
+        if (field !== activeField && this.skuColumnFilterVisible[field]) {
+          this.$set(this.skuColumnFilterVisible, field, false)
+        }
+      })
+    },
+    handleColumnFilterVisibleChange (field, visible) {
+      if (visible) {
+        this.closeOtherColumnFilterPopovers(field)
+        this.$set(this.skuColumnFilterDraft, field, this.skuColumnFilters[field] || '')
+      }
+      this.$set(this.skuColumnFilterVisible, field, visible)
+    },
+    handleColumnFilterDraftChange (field, value) {
+      this.$set(this.skuColumnFilterDraft, field, value)
+    },
+    applyColumnFilter (field) {
+      this.$set(this.skuColumnFilters, field, (this.skuColumnFilterDraft[field] || '').trim())
+      this.$set(this.skuColumnFilterVisible, field, false)
+      this.skuPage.currentPage = 1
+      this.fetchSkuListData()
+    },
+    resetColumnFilter (field) {
+      this.$set(this.skuColumnFilterDraft, field, '')
+      this.$set(this.skuColumnFilters, field, '')
+      this.$set(this.skuColumnFilterVisible, field, false)
+      this.skuPage.currentPage = 1
+      this.fetchSkuListData()
+    },
+    buildColumnFilters () {
+      return SKU_FILTERABLE_FIELDS
+        .map(field => buildSkuColumnFilterExpr(field, this.skuColumnFilters[field] || ''))
+        .filter(Boolean)
+    },
+    appendSkuFilter (params, filter) {
+      if (!filter) return
+      const items = Array.isArray(filter) ? filter : [filter]
+      if (!params.filter) {
+        params.filter = items
+        return
+      }
+      if (!Array.isArray(params.filter)) {
+        params.filter = [params.filter]
+      }
+      params.filter.push(...items)
+    },
+    skuSortChangeHandle ({ property, order }) {
+      if (!order) {
+        this.resetSortState()
+      } else {
+        this.skuSort = {
+          order_by: this.getSortOrderByField(property),
+          order,
+        }
+      }
+      this.skuPage.currentPage = 1
+      this.fetchSkuListData()
+    },
     skuPageChangeHandle ({ currentPage = 1, pageSize = 10 }) {
       this.skuPage = {
         ...this.skuPage,
         currentPage,
         pageSize,
       }
-      this.fetchData()
+      this.fetchSkuListData()
     },
     async fetchSkuTypes () {
       try {
         const params = {
-          ...this.skuParams,
+          ...sanitizeSkuParams(this.skuParams),
           field: 'local_category',
-          // postpaid_status: 'available',
-        }
-        delete params.limit
-        delete params.offset
-        delete params['@local_category']
-        if (this.skuParams.cpu_core_count === 0) {
-          delete params.cpu_core_count
-        }
-        if (this.skuParams.memory_size_mb === 0) {
-          delete params.memory_size_mb
         }
         const { data } = await this.skusM.get({ id: 'distinct-field', params })
         this.skuTypes = data[params.field]
@@ -539,6 +1159,15 @@ export default {
         pageSize: 10,
         totalResult: 0,
       }
+      this.resetSortState()
+    },
+    resetColumnFilters () {
+      this.skuColumnFilters = createSkuColumnFilterState()
+      this.skuColumnFilterDraft = createSkuColumnFilterState()
+      this.skuColumnFilterVisible = createSkuColumnFilterVisibleState()
+    },
+    handleCustomList () {
+      this.columnSettingVisible = true
     },
   },
 }
@@ -549,5 +1178,56 @@ export default {
   flex-direction: row-reverse;
   justify-content: space-between;
   align-items: center;
+}
+.sku-column-setting {
+  max-height: 320px;
+  overflow-y: auto;
+  &-item {
+    margin-bottom: 4px;
+    white-space: nowrap;
+  }
+}
+</style>
+<style lang="scss">
+.sku-column-filter-header {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  .sku-column-filter-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .sku-column-filter-trigger {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .sku-column-filter-icon {
+    color: #bfbfbf;
+    flex-shrink: 0;
+    &.is-active {
+      color: #1890ff;
+    }
+  }
+}
+.ant-popover.sku-column-filter-popover {
+  z-index: 1060 !important;
+  width: 220px;
+  .sku-column-filter-actions {
+    margin-top: 8px;
+    text-align: right;
+  }
+}
+.sku-column-filter-select-dropdown {
+  z-index: 1070 !important;
+}
+.vxe-header--column.sku-col-sort--asc .vxe-sort--asc-btn {
+  color: #409eff !important;
+}
+.vxe-header--column.sku-col-sort--desc .vxe-sort--desc-btn {
+  color: #409eff !important;
 }
 </style>

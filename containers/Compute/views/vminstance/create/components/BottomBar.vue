@@ -38,7 +38,7 @@
             </div>
           </div>
           <a-dropdown-button
-            v-if="!isServertemplate && $appConfig.isPrivate && !$store.getters.isSysCE && hasCartPermission"
+            v-if="!isServertemplate && $appConfig.isPrivate && !$store.getters.isSysCE && hasCartPermission && !isModifyWorkflow"
             :title="confirmText"
             class="text-truncate"
             type="primary"
@@ -78,7 +78,7 @@ import * as R from 'ramda'
 import _ from 'lodash'
 import { SERVER_TYPE, BILL_TYPES_MAP, EIP_TYPES_MAP } from '@Compute/constants'
 import { sizestrWithUnit } from '@/utils/utils'
-import { hasPermission, hasMeterService } from '@/utils/auth'
+import { hasPermission, hasServices } from '@/utils/auth'
 import { PriceFetcher } from '@/utils/common/price'
 import SideErrors from '@/sections/SideErrors'
 import DiscountPrice from '@/sections/DiscountPrice'
@@ -111,6 +111,14 @@ export default {
       type: String,
     },
     isOpenWorkflow: {
+      type: Boolean,
+      default: false,
+    },
+    isOpenOrderSetWorkflow: {
+      type: Boolean,
+      default: false,
+    },
+    isModifyWorkflow: {
       type: Boolean,
       default: false,
     },
@@ -242,7 +250,9 @@ export default {
     },
     confirmText () {
       if (this.isServertemplate) return this.$t('compute.text_1139')
-      return this.isOpenWorkflow ? (this.$route.query.workflow ? this.$t('common.modify_workflow') : this.$t('compute.text_288')) : this.$t('compute.text_289')
+      if (this.isModifyWorkflow) return this.$t('common.modify_workflow')
+      if (this.isOpenWorkflow || this.isOpenOrderSetWorkflow) return this.$t('compute.text_288')
+      return this.$t('compute.text_289')
     },
     dataDiskObj () {
       if (R.is(Object, this.fd.dataDiskTypes)) {
@@ -275,7 +285,7 @@ export default {
       return this.origin_price
     },
     hasCartPermission () {
-      return hasMeterService() && hasPermission({ key: 'resource_order_sets_create' })
+      return hasServices('billing') && hasPermission({ key: 'resource_order_sets_create' })
     },
   },
   watch: {
@@ -324,6 +334,7 @@ export default {
       'fd.gpu',
       'fd.gpuCount',
     ], (val, oldval) => {
+      if (R.equals(val, oldval)) return
       if (val) {
         this.getPriceList()
       }

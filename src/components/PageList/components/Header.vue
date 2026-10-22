@@ -84,7 +84,7 @@
       </div>
       <div class="ml-4 d-flex flex-shrink-0 justify-content-end">
         <slot name="right-tools-prepend" />
-        <template v-if="exportDataOptions || id || !hiddenPin">
+        <template v-if="exportDataOptions || (id && !hiddenListConfig) || !hiddenPin">
           <a-tooltip :title="pinTip" v-if="!hiddenPin">
             <a-button @click="handlePin" :disabled="!selected.length && !isPinActive" :type="isPinActive ? 'primary' : ''">
               <icon type="pin" />
@@ -95,7 +95,7 @@
               <icon type="download" />
             </a-button>
           </a-tooltip>
-          <a-tooltip :title="$t('common.text00011')" v-if="id">
+          <a-tooltip :title="$t('common.text00011')" v-if="id && !hiddenListConfig">
             <a-button class="ml-2" @click="handleCustomList">
               <icon type="setting" />
             </a-button>
@@ -273,6 +273,7 @@ export default {
     tagBtnText: String,
     hiddenExportKeys: Array,
     hiddenPin: Boolean,
+    hiddenListConfig: Boolean,
     idKey: String,
     exportUseIdKey: Boolean,
     data: Array,
@@ -292,7 +293,7 @@ export default {
         }
         return !item.hidden
       }, this.filterOptions)
-      const filterSortKeys = ['external_id', 'id', 'search', 'name', 'description', 'brand', 'provider', 'ip', 'ips', 'status', 'enabled', 'sn', 'os_type', 'cidr', 'ports', 'tenant', 'region', 'host', 'billing_type']
+      const filterSortKeys = ['external_id', 'id', 'search', 'name', 'description', 'brand', 'provider', 'ip', 'ips', 'status', 'llm_type', 'enabled', 'sn', 'os_type', 'cidr', 'ports', 'tenant', 'region', 'host', 'billing_type']
       const ret = {}
       filterSortKeys.forEach(k => {
         const _k = k.toLowerCase()

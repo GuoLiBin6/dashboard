@@ -1,10 +1,10 @@
 import { mapGetters } from 'vuex'
 import { diskResizeConfig, diskCreateSnapshotConfig } from '@Compute/views/disk/utils'
+import { STORAGE_TYPES } from '@Compute/constants'
 import i18n from '@/locales'
 import { BRAND_MAP, PROVIDER_MAP, HYPERVISORS_MAP } from '@/constants'
 import { getDisabledProvidersActionMeta } from '@/utils/common/hypervisor'
 import { hasSetupKey } from '@/utils/auth'
-import { STORAGE_TYPES } from '@Compute/constants'
 const supportShpolcyBrand = ['OneCloud', 'Qcloud', 'Aliyun']
 
 export default {
@@ -316,7 +316,7 @@ export default {
               extraMeta: obj => {
                 return getDisabledProvidersActionMeta({
                   row: obj,
-                  disabledProviders: ['BingoCloud', 'VolcEngine', 'SangFor', 'ZettaKit', 'UIS'],
+                  disabledProviders: ['BingoCloud', 'VolcEngine', 'SangFor', 'ZettaKit', 'UIS', 'CAS'],
                 })
               },
               hidden: () => this.$isScopedPolicyMenuHidden('disk_hidden_menus.disk_perform_create_backup'),
@@ -369,7 +369,7 @@ export default {
                       }
                     }
                   }
-                  if (brand === 'ucloud') {
+                  if (brand === 'ucloud' || brand === 'rockbase') {
                     if (obj.storage_type !== 'CLOUD_NORMAL') {
                       return {
                         validate: false,
@@ -409,7 +409,7 @@ export default {
               extraMeta: obj => {
                 return getDisabledProvidersActionMeta({
                   row: obj,
-                  disabledProviders: ['BingoCloud', 'SangFor', 'ZettaKit', 'UIS'],
+                  disabledProviders: ['BingoCloud', 'SangFor', 'ZettaKit', 'UIS', 'CAS'],
                 })
               },
               hidden: () => this.$isScopedPolicyMenuHidden('disk_hidden_menus.disk_perform_setup_snapshot_policy'),
@@ -444,7 +444,7 @@ export default {
             },
             {
               label: i18n.t('compute.driver.update'),
-              permission: 'disks_update',
+              permission: 'server_perform_change_disk_driver',
               action: () => {
                 this.createDialog('DiskDriverUpdateDialog', {
                   data: [obj],
@@ -452,6 +452,9 @@ export default {
                   onManager: this.onManager,
                   resource: 'disks',
                   name: i18n.t('compute.text_100'),
+                  ok: (disk_id) => {
+                    this.list.singleRefresh(disk_id)
+                  },
                 })
               },
               meta: () => {
@@ -461,17 +464,23 @@ export default {
                 if (!(obj.brand === HYPERVISORS_MAP.kvm.brand)) {
                   ret.validate = false
                   ret.tooltip = i18n.t('compute.text_1388')
+                  return ret
                 }
                 if (!obj.guest) {
                   ret.validate = false
                   ret.tooltip = i18n.t('compute.disk_update_driver_prompt')
+                  return ret
+                }
+                if (obj.guest_status !== 'ready') {
+                  ret.validate = false
+                  ret.tooltip = i18n.t('compute.text_1308')
                 }
                 return ret
               },
               extraMeta: obj => {
                 return getDisabledProvidersActionMeta({
                   row: obj,
-                  disabledProviders: ['BingoCloud', 'SangFor', 'ZettaKit', 'UIS'],
+                  disabledProviders: ['BingoCloud', 'SangFor', 'ZettaKit', 'UIS', 'CAS'],
                 })
               },
               hidden: () => !this.isAdminMode,
@@ -505,7 +514,7 @@ export default {
               extraMeta: obj => {
                 return getDisabledProvidersActionMeta({
                   row: obj,
-                  disabledProviders: ['BingoCloud', 'SangFor', 'ZettaKit', 'UIS'],
+                  disabledProviders: ['BingoCloud', 'SangFor', 'ZettaKit', 'UIS', 'CAS'],
                 })
               },
               hidden: () => this.$isScopedPolicyMenuHidden('disk_hidden_menus.disk_perform_change_project'),

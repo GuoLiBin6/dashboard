@@ -48,6 +48,9 @@
           :type="type"
           :sku-params="skuParam"
           :hypervisor="form.fd.hypervisor" />
+        <div slot="extra" v-if="showSkuCreateTip">
+          {{ $t('compute.text_196') }}<help-link href="/sku">{{ $t('compute.perform_create') }}</help-link>
+        </div>
       </a-form-item>
       <a-form-item :label="$t('compute.text_49')" class="mb-0">
         <system-disk
@@ -92,7 +95,6 @@
           :storageParams="dataDiskStorageParams"
           :storageHostParams="storageHostParams"
           @storageHostChange="storageHostChange" />
-        <div slot="extra" class="warning-color" v-if="isStorageShow">{{ $t('compute.select_storage_no_schetag') }}</div>
       </a-form-item>
       <bottom-bar
         ref="bottomBarRef"
@@ -113,9 +115,10 @@ import _ from 'lodash'
 import * as R from 'ramda'
 import { HYPERVISORS_MAP } from '@/constants'
 import { resolveValueChangeField } from '@/utils/common/ant'
-import { IMAGES_TYPE_MAP, STORAGE_TYPES, HOST_CPU_ARCHS } from '@/constants/compute'
+import { IMAGES_TYPE_MAP, STORAGE_TYPES, getOsArchParam, isOsArch, mapHostCpuArchOptions } from '@/constants/compute'
 import OsArch from '@/sections/OsArch'
 import { diskSupportTypeMedium, getOriginDiskKey } from '@/utils/common/hypervisor'
+import { hasPermission } from '@/utils/auth'
 import mixin from './mixin'
 
 export default {
@@ -139,10 +142,13 @@ export default {
       return this.form.fd.imageType === IMAGES_TYPE_MAP.iso.key
     },
     isArm () {
-      return this.form.fd.os_arch === HOST_CPU_ARCHS.arm.key
+      return isOsArch(this.form.fd.os_arch, 'arm')
     },
     isLoongarch64 () {
-      return this.form.fd.os_arch === HOST_CPU_ARCHS.loongarch64.key
+      return isOsArch(this.form.fd.os_arch, 'loongarch64')
+    },
+    isRiscv64 () {
+      return isOsArch(this.form.fd.os_arch, 'riscv64')
     },
     hypervisors () {
       const { hypervisors = [] } = this.form.fi.capability
@@ -174,12 +180,10 @@ export default {
     cacheImageParams () {
       const params = {
         cloudregion_id: _.get(this.form.fd, 'cloudregion.key'),
-        os_arch: HOST_CPU_ARCHS.x86.key,
+        os_arch: getOsArchParam(this.form.fd.os_arch),
       }
       if (!params.cloudregion_id) return {}
       if (this.form.fd.imageType === 'vmware') params.image_type = 'system'
-      if (this.isArm) params.os_arch = HOST_CPU_ARCHS.arm.key
-      if (this.isLoongarch64) params.os_arch = HOST_CPU_ARCHS.loongarch64.key
       return params
     },
     showSku () {
@@ -187,6 +191,14 @@ export default {
         return true
       }
       return false
+    },
+    /** 仅 IDC 且有套餐页/创建权限时展示「没有您想要的？可以新建」 */
+    showSkuCreateTip () {
+      if (this.type !== 'idc') return false
+      if (this.$isScopedPolicyMenuHidden('sub_hidden_menus.sku')) return false
+      if (!hasPermission({ key: 'serverskus_list' })) return false
+      if (!hasPermission({ key: 'skus_create' })) return false
+      return true
     },
     skuParam () {
       return {
@@ -232,6 +244,9 @@ export default {
       }
       if ([HYPERVISORS_MAP.esxi.key].includes(this.form.fd.hypervisor)) {
         params.host_type = 'esxi'
+      }
+      if ([HYPERVISORS_MAP.proxmox.key].includes(this.form.fd.hypervisor)) {
+        params.host_type = 'proxmox'
       }
       if ([HYPERVISORS_MAP.esxi.key, HYPERVISORS_MAP.kvm.key].includes(this.form.fd.hypervisor)) {
         if (this.form.fd[this.decorators.systemDisk.storage[0]]) {
@@ -381,21 +396,14 @@ export default {
     imageParams () {
       const params = {
         ...this.scopeParams,
-        os_arch: HOST_CPU_ARCHS.x86.key,
+        os_arch: getOsArchParam(this.form.fd.os_arch),
       }
-      if (this.isArm) params.os_arch = HOST_CPU_ARCHS.arm.key
-      if (this.isLoongarch64) params.os_arch = HOST_CPU_ARCHS.loongarch64.key
       return params
     },
     archOptions () {
       let opts = []
       if (this.form.fi.capability.host_cpu_archs && this.form.fi.capability.host_cpu_archs.length) {
-        opts = this.form.fi.capability.host_cpu_archs.map(item => {
-          if (item === HOST_CPU_ARCHS.arm.capabilityKey) return HOST_CPU_ARCHS.arm.key
-          if (item === HOST_CPU_ARCHS.x86.capabilityKey) return HOST_CPU_ARCHS.x86.key
-          if (item === HOST_CPU_ARCHS.loongarch64.capabilityKey) return HOST_CPU_ARCHS.loongarch64.key
-          return item
-        })
+        opts = mapHostCpuArchOptions(this.form.fi.capability.host_cpu_archs, true)
       }
       return opts
     },

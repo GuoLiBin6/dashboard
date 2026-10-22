@@ -5,7 +5,16 @@
  */
 import * as R from 'ramda'
 import { hasPermission, checkSessionUser, decodeToken } from '@/utils/auth'
-import { isCE, isSAAS } from '@/utils/utils'
+import {
+  isCE,
+  isSAAS,
+  getAuthRedirectPath,
+  getAuthRedirectPathQuery,
+  isExternalAuthPath,
+  normalizeAuthRedirectPath,
+  genReferRouteQuery,
+} from '@/utils/utils'
+import { getAuthRedirectCorsHosts, safeAuthRedirectUrl } from '@/utils/safeRedirect'
 import router from './router'
 import store from './store'
 
@@ -20,10 +29,11 @@ scopePermission.keys().forEach(name => {
 const toLogin = (to, from, next) => {
   const query = {
     pathAuth: true,
-    path: to.path,
+    path: getAuthRedirectPath(to),
   }
-  if (!R.isNil(to.query) && !R.isEmpty(to.query)) {
-    query.pathQuery = JSON.stringify(to.query)
+  const pathQuery = getAuthRedirectPathQuery(to.query)
+  if (pathQuery) {
+    query.pathQuery = JSON.stringify(pathQuery)
   }
   return next({
     path: '/auth/login',
@@ -70,12 +80,27 @@ router.beforeEach(async (to, from, next) => {
     // sso登录携带query的情况
     const { rf, pathAuthPage, pathAuth, path, pathQuery } = to.query
     if (rf) {
-      document.location.href = rf
-      return
+      const corsHosts = await getAuthRedirectCorsHosts(store)
+      const safeRf = safeAuthRedirectUrl(rf, corsHosts)
+      if (safeRf) {
+        document.location.href = safeRf
+        return
+      }
+      // 不安全的 rf 忽略，继续默认流程
     }
     if (!pathAuthPage && pathAuth && path) {
+      if (isExternalAuthPath(path)) {
+        const corsHosts = await getAuthRedirectCorsHosts(store)
+        const safePath = safeAuthRedirectUrl(path, corsHosts)
+        if (safePath) {
+          document.location.href = safePath
+          return
+        }
+        // 外链未通过安全校验：放弃回跳，回首页
+        return next('/')
+      }
       return next({
-        path,
+        path: normalizeAuthRedirectPath(path),
         query: pathQuery && JSON.parse(pathQuery),
       })
     }
@@ -130,6 +155,8 @@ router.beforeEach(async (to, from, next) => {
         'fee_hidden_items',
         'bill_resource_hidden_columns',
         'vminstance_hidden_menus',
+        'vminstance_container_hidden_menus',
+        'baremetal_hidden_menus',
         'vminstance_configured_callback_address',
       ],
     })
@@ -151,13 +178,16 @@ scopeBeforeEach && router.beforeEach(scopeBeforeEach)
 
 // 检测权限，无权限导向403
 router.beforeEach((to, from, next) => {
-  const { meta = {} } = to.matched[0] || {}
+  const matched = to.matched[0]
+  const { meta = {} } = matched || {}
   if (meta.permission) {
     const isPermission = hasPermission({ key: meta.permission })
     if (!isPermission) return next('/403')
   }
-  if (meta.hidden) {
-    const isHidden = meta.hidden()
+  if (!R.isNil(meta.hidden)) {
+    const isHidden = R.is(Function, meta.hidden)
+      ? meta.hidden(store.getters.userInfo, matched)
+      : meta.hidden
     if (isHidden) return next('/403')
   }
   next()
@@ -167,8 +197,11 @@ router.afterEach((to, from) => {
   const isSessionUser = checkSessionUser()
   if (!isSessionUser) {
     store.dispatch('auth/logout')
-    router.push({
-      path: '/auth/login',
-    })
+    if (!to.meta.authPage) {
+      router.push({
+        path: '/auth/login',
+        query: genReferRouteQuery(to),
+      })
+    }
   }
 })

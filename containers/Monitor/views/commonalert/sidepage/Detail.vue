@@ -21,6 +21,7 @@ import {
   getVerifiedContactTypesTableColumn,
   robotsColumn,
   rolesColumn,
+  reasonColumn,
 } from '../utils'
 
 export default {
@@ -40,17 +41,25 @@ export default {
     return {
       baseInfo: [
         getResTypeColumn(),
-        projectTableColumn,
+        projectTableColumn(),
         getEnabledTableColumn(),
-        levelColumn,
+        levelColumn(),
         getProjectTableColumn(),
         getVerifiedContactTypesTableColumn({ vm: this }),
+        {
+          field: 'disable_notify_recovery',
+          title: this.$t('monitor.commonalerts.disable_notify_recovery'),
+          formatter: ({ row }) => {
+            return row.disable_notify_recovery ? this.$t('common.true') : this.$t('common.false')
+          },
+        },
       ],
       extraInfo: [
         {
           title: this.$t('monitor.commonalert.alarm_strategy'),
           items: [
             strategyColumn(),
+            reasonColumn(),
           ],
         },
       ],

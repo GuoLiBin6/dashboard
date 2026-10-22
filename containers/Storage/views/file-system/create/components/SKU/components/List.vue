@@ -9,6 +9,7 @@
         :loading="loading"
         :columns="tableColumn"
         :data="skuList"
+        resizable
         @radio-change="handleSkuChange"
         @cell-click="handleSkuChange">
         <template v-slot:empty>
@@ -26,14 +27,14 @@
 
 <script>
 import * as R from 'ramda'
-import PageListEmpty from '@/components/PageList/Loader'
 import {
   getFileSystemTypeColumn,
   getFileSystemStorageTypeColumn,
   getFileSystemProtocolColumn,
 } from '@Storage/views/file-system/mixins/columns'
+import PageListEmpty from '@/components/PageList/Loader'
+import { PROVIDER_MAP } from '@/constants'
 import { hasMeterService } from '@/utils/auth'
-
 export default {
   name: 'SKUList',
   inject: ['form', 'formItemLayout', 'tailFormItemLayout'],
@@ -73,6 +74,28 @@ export default {
     tableColumn () {
       const column = [
         { type: 'radio', width: 40 },
+        {
+          field: 'provider',
+          title: this.$t('compute.text_176'),
+          showOverflow: 'ellipsis',
+          slots: {
+            default: ({ row }) => {
+              return row.provider
+                ? (PROVIDER_MAP[row.provider]?.label || row.provider)
+                : '-'
+            },
+          },
+        },
+        {
+          field: 'cloudregion',
+          title: this.$t('dictionary.region'),
+          showOverflow: 'ellipsis',
+          slots: {
+            default: ({ row }) => {
+              return row.cloudregion || row.region || '-'
+            },
+          },
+        },
         getFileSystemTypeColumn(),
         getFileSystemStorageTypeColumn(),
         getFileSystemProtocolColumn(),
@@ -170,9 +193,14 @@ export default {
         this.rateLoading = false
       }
     },
+    hasCloudregionParam (params = {}) {
+      if (params.cloudregion_id && params.cloudregion_id.length !== 0) return true
+      const filters = Array.isArray(params.filter) ? params.filter : (params.filter ? [params.filter] : [])
+      return filters.some(item => String(item).includes('cloudregion_id.in'))
+    },
     async fetchSkus (params) {
       const manager = new this.$Manager('nas_skus', 'v2')
-      if (!params.cloudregion_id || params.cloudregion_id.length === 0) {
+      if (!this.hasCloudregionParam(params)) {
         this.skuList = []
         return
       }

@@ -51,6 +51,7 @@ export default {
     `,
     monitorDashboardOverviewTips: 'Resource overview statistics have cycles, and statistics results will be delayed',
     ipSupplement: 'Please ensure that the IP submitted this time is consistent with the actual IP, and cannot be modified once the submission is successful',
+    ipSupplementTip: 'The network card information of the current host is not detected, please synchronize the virtual machine status or synchronize the cloud account again before retrying',
     disable_user_on_import: 'Enable means that the user status is enabled, then the users brought in this time can use the system, if disabled, you can reset it in the user list after the import is successful',
     defaultServerNetwork: 'The server will be assigned an IP address from the IP subnet that belongs to the automatically assigned address pool',
     deleteDiskAtTheSameTime: 'If it is not checked, only the system disk will be deleted. After checking, the mounted data disk will be deleted together with the system disk.',
@@ -70,6 +71,7 @@ export default {
     secgroupSystemGuestCnt: 'Number of virtual machines bound by security group as system resources',
     v2vTransferType: 'After the migration is successful, a new KVM virtual machine with the same configuration will be created automatically, the IP will be migrated to the new instance, and the original instance will be retained',
     billCostConversionRateTip: 'The resource price coefficient is the official website price of the product',
+    alertDataTimeRange: 'Query the alert status data in the last hour',
   },
   notify: {
     TooManyRequests: 'Too Many Requests',
@@ -83,6 +85,8 @@ export default {
     InvalidIdpStatus: 'Invalid IDP Status',
     InvalidIdpStatusDetail: 'Please check user\'s IDP was disabled or in invalid status.',
     DuplicateNameError: 'Name duplication',
+    OutOfResource: 'Insufficient resources',
+    OutOfQuotaError: 'Insufficient quota',
 
     ServerError: 'Server Side Error',
     ClientError: 'Client Side Error',

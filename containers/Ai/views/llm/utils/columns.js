@@ -1,6 +1,32 @@
 import i18n from '@/locales'
 import { sizestr } from '@/utils/utils'
 import { getCopyWithContentTableColumn } from '@/utils/common/tableColumn'
+import { renderDesktopAppNameCell } from '@Ai/utils/communityImages'
+
+function llmTypeColumnTitle ({ isApplyType = false, isDesktopType = false } = {}) {
+  if (isDesktopType) return i18n.t('aice.llm_type.desktop')
+  if (isApplyType) return i18n.t('aice.llm_type.app')
+  return i18n.t('aice.llm_type.llm')
+}
+
+function llmSkuColumnTitle ({ isApplyType = false, isDesktopType = false } = {}) {
+  if (isDesktopType) return i18n.t('aice.desktop_llm_sku')
+  if (isApplyType) return i18n.t('aice.app_llm_sku')
+  return i18n.t('aice.llm_sku')
+}
+
+export const getLlmTypeTableColumn = (opts = {}) => {
+  const isApplyType = typeof opts === 'boolean' ? opts : opts.isApplyType
+  const isDesktopType = typeof opts === 'object' ? opts.isDesktopType : false
+  return {
+    field: 'llm_type',
+    title: llmTypeColumnTitle({ isApplyType, isDesktopType }),
+    width: 120,
+    formatter: ({ row }) => {
+      return row.llm_type || '-'
+    },
+  }
+}
 
 export const getLlmIpColumn = () => {
   return {
@@ -23,10 +49,10 @@ export const getLlmIpColumn = () => {
   }
 }
 
-export const getLlmSkuColumn = ({ vm = {} } = {}) => {
+export const getLlmSkuColumn = ({ vm = {}, isApplyType = false, isDesktopType = false } = {}) => {
   return {
     field: 'llm_sku',
-    title: i18n.t('aice.llm_sku'),
+    title: llmSkuColumnTitle({ isApplyType, isDesktopType }),
     width: 120,
     slots: {
       default: ({ row }, h) => {
@@ -44,10 +70,29 @@ export const getLlmSkuColumn = ({ vm = {} } = {}) => {
   }
 }
 
+export const getAppNameTableColumn = ({ layout = 'vertical' } = {}) => {
+  const isHorizontal = layout === 'horizontal'
+  return {
+    field: 'app_name',
+    title: i18n.t('aice.llm_image.app_name'),
+    width: isHorizontal ? 160 : 120,
+    align: isHorizontal ? 'left' : 'center',
+    formatter: ({ row }) => {
+      return row.app_name || '-'
+    },
+    slots: {
+      default: ({ row }, h) => {
+        if (!row.app_name) return '-'
+        return [renderDesktopAppNameCell(h, row.app_name, { layout })]
+      },
+    },
+  }
+}
+
 export const getLlmImageColumn = ({ vm = {} } = {}) => {
   return {
     field: 'llm_image',
-    title: i18n.t('aice.image'),
+    title: i18n.t('aice.llm_image'),
     width: 120,
     slots: {
       default: ({ row }, h) => {

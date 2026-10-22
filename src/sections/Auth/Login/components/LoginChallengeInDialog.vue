@@ -32,7 +32,7 @@
       <!-- 用户名 -->
       <template v-if="showUsernameInput">
         <a-form-model-item prop="username">
-          <a-input v-model="fd.username" :placeholder="placeholderOpts.username" :autocomplete="isForgetLoginUser?'off':'on'">
+          <a-input v-model="fd.username" :placeholder="placeholderOpts.username" :autocomplete="isForgetLoginUser?'off':'on'" @pressEnter="handleLogin">
             <a-icon slot="prefix" type="user" style="color: rgba(0, 0, 0, .25)" />
           </a-input>
         </a-form-model-item>
@@ -40,12 +40,12 @@
       <!-- 密码 -->
       <a-form-model-item v-if="isForgetLoginUser" prop="password">
         <a-input type="text" style="display: none" />
-        <a-input :type="inputType" v-model="fd.password" :placeholder="placeholderOpts.password" autocomplete="new-password" :readonly="passwordReadonly" @focus="inputFocus" @blur="inputBlur">
+        <a-input :type="inputType" v-model="fd.password" :placeholder="placeholderOpts.password" autocomplete="new-password" :readonly="passwordReadonly" @focus="inputFocus" @blur="inputBlur" @pressEnter="handleLogin">
           <a-icon slot="prefix" type="lock" style="color: rgba(0, 0, 0, .25)" />
         </a-input>
       </a-form-model-item>
       <a-form-model-item v-else prop="password">
-        <a-input-password v-model="fd.password" :placeholder="placeholderOpts.password">
+        <a-input-password v-model="fd.password" :placeholder="placeholderOpts.password" @pressEnter="handleLogin">
           <a-icon slot="prefix" type="lock" style="color: rgba(0, 0, 0, .25)" />
         </a-input-password>
       </a-form-model-item>
@@ -74,7 +74,7 @@
       <!-- 验证码 -->
       <template v-if="showCaptchaInput">
         <a-form-model-item prop="captcha" class="captcha-form-item">
-          <a-input v-model="fd.captcha" :placeholder="placeholderOpts.captcha">
+          <a-input v-model="fd.captcha" :placeholder="placeholderOpts.captcha" @pressEnter="handleLogin">
             <a-icon slot="prefix" type="safety-certificate" style="color: rgba(0, 0, 0, .25)" />
             <template #suffix>
               <div class="captcha-suffix d-flex align-items-center justify-content-end">
@@ -146,6 +146,7 @@ import { mapState } from 'vuex'
 import { Base64 } from 'js-base64'
 import { aesEncrypt } from '@/utils/crypto'
 import { setLoginDomain, getLoginDomain } from '@/utils/common/cookie'
+import { sanitizeSsoRedirectSearch } from '@/utils/safeRedirect'
 // import { removeQueryKeys } from '@/utils/utils'
 import EditForm from '@/components/Edit/Form'
 import { setSsoIdpIdInCookie, removeSsoIdpIdInCookie } from '@/utils/auth'
@@ -385,20 +386,23 @@ export default {
       const { origin, search } = window.location
       const { id } = idpItem
       setSsoIdpIdInCookie(id)
-      window.location.href = `${origin}/api/v1/auth/sso/redirect/${id}${search || ''}`
+      window.location.href = `${origin}/api/v1/auth/sso/redirect/${id}${sanitizeSsoRedirectSearch(search, this.$store.getters.auth?.regions?.cors_hosts)}`
     },
     submitLoginDomain (value) {
       this.showSetDomainPopover = false
       this.changeDomain(value.input)
     },
     changeDomain (domain) {
-      var params = { rf: this.$route.query.rf }
+      const params = { ...this.$route.query }
       if (domain) {
         params.domain = domain
+      } else {
+        delete params.domain
       }
       this.loginDomain = domain
       this.$store.dispatch('auth/getRegions', params)
-      this.$router.replace({ path: '/auth/login', query: params })
+      // 保留当前登录页路径（账号输入/选择账号/手机号），避免乱跳
+      this.$router.replace({ path: this.$route.path, query: params })
     },
     inputFocus (item) {
       this.passwordReadonly = false

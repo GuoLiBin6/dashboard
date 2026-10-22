@@ -52,18 +52,20 @@
 // import * as R from 'ramda'
 // import _ from 'lodash'
 import { ENGINE_ARCH } from '@DB/views/redis/constants'
+import { SERVER_TYPE } from '@Compute/constants'
 import { sizestrWithUnit } from '@/utils/utils'
 import { Manager } from '@/utils/manager'
 import PriceFetcher from '@/components/PriceFetcher'
-import { SERVER_TYPE } from '@Compute/constants'
 import { findPlatform } from '@/utils/common/hypervisor'
-
 export default {
   name: 'BottomBar',
   components: {
     PriceFetcher,
   },
-  inject: ['form'],
+  inject: {
+    form: { default: undefined },
+    flushCreateFormFieldDrafts: { default: undefined },
+  },
   props: {
     values: {
       type: Object,
@@ -159,10 +161,14 @@ export default {
     },
     async doCreate () {
       if (!this.validateForm()) return false
+      if (typeof this.flushCreateFormFieldDrafts === 'function') {
+        this.flushCreateFormFieldDrafts()
+      }
       const manager = new Manager('elasticcaches', 'v2')
       this.loading = true
       try {
         await manager.create({ data: this.formatParams() })
+        this.$emit('create-success')
         this.$router.push('/redis')
       } catch (err) {
         throw err

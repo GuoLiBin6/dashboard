@@ -4,9 +4,13 @@ import {
 } from '@/utils/common/tableColumn'
 import {
   getImageTableColumn,
+  getContainerImageTableColumn,
   getEnvTableColumn,
   getCommandTableColumn,
   getArgsTableColumn,
+  getCapabilitiesTableColumn,
+  getLxcfsTableColumn,
+  getOverlayTableColumn,
 } from '../utils/columns'
 
 export default {
@@ -28,10 +32,14 @@ export default {
         },
       }),
       getStatusTableColumn({ statusModule: 'container' }),
+      getContainerImageTableColumn({ vm: this }),
       getImageTableColumn(),
       getEnvTableColumn(),
       getCommandTableColumn(),
       getArgsTableColumn(),
+      getCapabilitiesTableColumn(),
+      getLxcfsTableColumn(),
+      getOverlayTableColumn(),
     ]
   },
 }

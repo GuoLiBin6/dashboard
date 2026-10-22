@@ -26,6 +26,14 @@ export default {
     apiVersion: 'v1',
     steadyStatus: Object.values(expectStatus.image).flat(),
   },
+  ContainerImageSidePage: {
+    resource: 'container_images',
+    apiVersion: 'v1',
+  },
+  K8sReposSidePage: {
+    resource: 'container_registries',
+    apiVersion: 'v1',
+  },
   // 硬盘
   DiskSidePage: {
     resource: 'disks',
@@ -122,6 +130,10 @@ export default {
   SecGroupSidePage: {
     resource: 'secgroups',
   },
+  // IP地址集
+  IpSetSidePage: {
+    resource: 'ipsets',
+  },
   // 代理
   ProxysettingSidePage: {
     resource: 'proxysettings',
@@ -187,12 +199,47 @@ export default {
   },
   LlmInstantModelSidePage: {
     resource: 'llm_instant_models',
+    getParams: () => ({ details: true }),
   },
   LlmSkuSidePage: {
     resource: 'llm_skus',
   },
   LlmSidePage: {
     resource: 'llms',
+  },
+  LlmDeploymentSidePage: {
+    resource: 'llm_deployments',
+    steadyStatus: [
+      ...(expectStatus.llmDeployment?.success || []),
+      ...(expectStatus.llmDeployment?.danger || []),
+    ],
+  },
+  LlmBenchmarkSidePage: {
+    resource: 'llm_benchmarks',
+    steadyStatus: {
+      state: ['completed', 'stopped', 'error'],
+    },
+  },
+  McpSidePage: {
+    resource: 'mcp_agents',
+  },
+  AiProviderSidePage: {
+    resource: 'ai_providers',
+  },
+  AiModelSidePage: {
+    resource: 'ai_models',
+  },
+  AiKeySidePage: {
+    resource: 'ai_keys',
+  },
+  AiVirtualKeySidePage: {
+    resource: 'ai_virtual_keys',
+  },
+  AiRoutingSidePage: {
+    resource: 'ai_routings',
+  },
+  AiProxyNodeSidePage: {
+    resource: 'ai_proxy_nodes',
   },
   ...extraConfig,
 }

@@ -107,6 +107,15 @@ export default {
       type: Boolean,
       default: false,
     },
+    ignoreStorage: {
+      type: Boolean,
+      default: false,
+    },
+    /** 控件级草稿偏好 { imageType, os, image }；列表就绪后再回填 */
+    preferDraft: {
+      type: Object,
+      default: null,
+    },
     hypervisor: {
       type: String,
     },
@@ -170,6 +179,8 @@ export default {
       return this.images.cacheimagesList.map(item => item.id)
     },
     storageSelectImage () { // public__select_image: {os: OS_TYPE_OPTION_MAP.Windows.value, image: {id: xxx, name: xxx}}
+      // 工单 ignoreStorage / 草稿 preferDraft / query 场景：不读 storage，避免双源抢填
+      if (this.ignoreStorage || this.preferDraft) return null
       return storage.get(`${this.cloudType}${SELECT_IMAGE_KEY_SUFFIX}`)
     },
     showCloudaccount () {
@@ -280,7 +291,8 @@ export default {
         })
       }
     },
-    'form.fd.vmem' (val) {
+    'form.fd.vmem' (val, oldVal) {
+      if (R.equals(val, oldVal)) return
       if (this.imagesInfo.osOpts && this.imagesInfo.osOpts.length) {
         const { os, image } = this.form.fc.getFieldsValue([this.decorator.os[0], this.decorator.image[0]])
         this.defaultSelect(os, image)
@@ -299,6 +311,14 @@ export default {
     vgaPci (val, oldVal) {
       if (R.equals(val, oldVal)) return
       this.getImagesInfo()
+    },
+    preferDraft: {
+      handler (val, oldVal) {
+        if (!val || R.equals(val, oldVal)) return
+        if (!this.imagesInfo?.osOpts?.length) return
+        this.$nextTick(() => this.fillImageOpts())
+      },
+      deep: true,
     },
   },
   created () {
@@ -336,13 +356,13 @@ export default {
           break
       }
     },
-    imageChange (imageObj) {
+    imageChange (imageObj, isAuto = false) {
       let imageMsg = {}
       if (imageObj && R.is(Object, imageObj)) {
         const list = this.imageOptions
         imageMsg = list.find(image => image.id === imageObj.key)
       }
-      this.$emit('updateImageMsg', { imageMsg })
+      this.$emit('updateImageMsg', { imageMsg, isAuto })
     },
     osChange (osValue, imageValue) {
       this.defaultSelect(osValue, imageValue)
@@ -378,15 +398,15 @@ export default {
       }
       if (this.imageType === IMAGES_TYPE_MAP.iso.key) {
         params.disk_formats = 'iso'
-        if (params['filter.0'] && params['filter.0'] === 'disk_format.notequals(iso)') Reflect.deleteProperty(params, 'filter.0')
+        if (params['filter.0'] && params['filter.0'] === 'disk_format.notin(iso,tgz)') Reflect.deleteProperty(params, 'filter.0')
         Reflect.deleteProperty(params, 'is_standard')
       } else if (this.imageType === IMAGES_TYPE_MAP.standard.key || this.imageType === IMAGES_TYPE_MAP.customize.key || this.imageType === IMAGES_TYPE_MAP.host.key) {
         // Cloudpods 支持选择iso
         const target = (this.cloudproviderList || []).filter(item => item.id === this.cloudprovider)
         if (target.length && target[0].provider === 'Cloudpods') {
-          if (params['filter.0'] && params['filter.0'] === 'disk_format.notequals(iso)') Reflect.deleteProperty(params, 'filter.0')
+          if (params['filter.0'] && params['filter.0'] === 'disk_format.notin(iso,tgz)') Reflect.deleteProperty(params, 'filter.0')
         } else {
-          params['filter.0'] = 'disk_format.notequals(iso)'
+          params['filter.0'] = 'disk_format.notin(iso,tgz)'
         }
       }
       if (this.imageType === IMAGES_TYPE_MAP.customize.key) {
@@ -578,7 +598,7 @@ export default {
           })
         }
       }
-      let osOpts = [{ label: '全部', key: 'all' }]
+      let osOpts = [{ label: this.$t('common_95'), key: 'all' }]
       const imageOptsMap = {
         all: [],
       }
@@ -707,7 +727,7 @@ export default {
           const currentImage = this.form.fc.getFieldValue(this.decorator.image[0])
           if (currentImage && imageValue && currentImage.key === imageValue.key) {
           } else {
-            this.imageChange(image)
+            this.imageChange(image, true)
           }
         }
         this.form.fc.setFieldsValue({ os })
@@ -742,21 +762,67 @@ export default {
       return images || []
     },
     fillImageOpts () {
-      let lastSelectedImageInfo = storage.get('oc_selected_image') || {}
-      // 默认值
-      if (this.decorator.os[1].initialValue && this.decorator.image[1].initialValue) {
-        lastSelectedImageInfo = { ...lastSelectedImageInfo, imageOs: this.decorator.os[1].initialValue, imageId: this.decorator.image[1].initialValue.key }
+      // 回填互斥：query → 草稿 → 工单(decorator) → storage，不同时混用
+      const query = this.$route?.query || {}
+      const hasQueryPrefer = !!(query.imageType || query.imageOs || query.imageId)
+      let preferInfo = {}
+
+      if (hasQueryPrefer) {
+        preferInfo = {
+          imageOs: query.imageOs,
+          imageId: query.imageId,
+        }
+      } else if (this.preferDraft) {
+        // 父级仅在草稿独占时传入；即使只有 imageType 也不回落 storage
+        if (this.preferDraft.os || this.preferDraft.image) {
+          const draftImageId = this.preferDraft.image && typeof this.preferDraft.image === 'object'
+            ? this.preferDraft.image.key
+            : this.preferDraft.image
+          preferInfo = {
+            imageOs: this.preferDraft.os,
+            imageId: draftImageId,
+          }
+        }
+      } else if (this.ignoreStorage || this.edit) {
+        const osInit = this.decorator.os[1].initialValue
+        const imageInit = this.decorator.image[1].initialValue
+        if (osInit && imageInit) {
+          preferInfo = {
+            imageOs: osInit,
+            imageId: imageInit.key,
+          }
+        }
+      } else {
+        preferInfo = storage.get('oc_selected_image') || {}
       }
-      const { imageOs = lastSelectedImageInfo.imageOs, imageId = lastSelectedImageInfo.imageId } = this.$route.query
+
+      const imageOs = preferInfo.imageOs
+      const imageId = preferInfo.imageId
 
       if (imageOs) {
-        const os = imageOs.replace(imageOs[0], imageOs[0].toUpperCase())
-        const images = this.imagesInfo.imageOptsMap[os] || []
+        let os = imageOs.replace(imageOs[0], imageOs[0].toUpperCase())
+        let images = this.imagesInfo.imageOptsMap[os] || []
+        if (!images.length) {
+          const matchedKey = Object.keys(this.imagesInfo.imageOptsMap || {}).find(
+            k => k !== 'all' && String(k).toLowerCase() === String(imageOs).toLowerCase(),
+          )
+          if (matchedKey) {
+            os = matchedKey
+            images = this.imagesInfo.imageOptsMap[matchedKey] || []
+          }
+        }
         if (images?.length > 0) {
           this.form.fc.setFieldsValue({ os })
         }
         let image = images.find((item) => { return item.id === imageId })
-        this.defaultSelect(os === 'Nfs' ? 'nfs' : os)
+        // 草稿/记忆的 os key 可能大小写或 nfs 特例
+        const osKey = os === 'Nfs' ? 'nfs' : os
+        const preferImage = image
+          ? { key: image.id, label: image.name }
+          : (this.preferDraft?.image && typeof this.preferDraft.image === 'object'
+            ? this.preferDraft.image
+            : undefined)
+        this.defaultSelect(osKey, preferImage)
         if (image) {
           image = { key: image.id, label: image.name }
           if (this.imageOptions.length === 0) {
@@ -764,9 +830,29 @@ export default {
           } else {
             this.form.fc.setFieldsValue({ image })
           }
-          this.imageChange(image)
+          this.imageChange(image, true)
         }
       } else {
+        // 仅有镜像 id 草稿时：在 map 里反查 os
+        const draftImageId = this.preferDraft?.image && typeof this.preferDraft.image === 'object'
+          ? this.preferDraft.image.key
+          : this.preferDraft?.image
+        if (draftImageId && this.imagesInfo.imageOptsMap) {
+          let foundOs = ''
+          Object.keys(this.imagesInfo.imageOptsMap).some((key) => {
+            if (key === 'all') return false
+            const hit = (this.imagesInfo.imageOptsMap[key] || []).find(item => item.id === draftImageId)
+            if (hit) {
+              foundOs = key
+              return true
+            }
+            return false
+          })
+          if (foundOs) {
+            this.defaultSelect(foundOs, { key: draftImageId, label: this.preferDraft?.image?.label })
+            return
+          }
+        }
         this.defaultSelect()
       }
     },

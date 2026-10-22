@@ -1,3 +1,4 @@
+import { parseLlmRoute } from '@Ai/utils/llmRouteContext'
 
 export default {
   created () {
@@ -16,9 +17,71 @@ export default {
         },
       },
       {
+        label: this.$t('compute.repo.terminal'),
+        actions: (obj) => {
+          const data = obj.cmp_info || {}
+          const containers = data.containers || []
+          return containers.map(item => {
+            return {
+              label: item.name,
+              action: async () => {
+                const connectRes = await this.fetchConnectUrl(item.id)
+                this.openWebConsole(connectRes)
+              },
+            }
+          })
+        },
+        meta: (obj) => {
+          const data = obj.cmp_info || {}
+          const ret = { validate: true }
+          if (!data.containers?.length) {
+            ret.validate = false
+            return ret
+          }
+          if (data.status !== 'running' && data.status !== 'probing') {
+            ret.tooltip = this.$t('compute.repo.helper.terminal', [this.$t('compute.vminstance-container')])
+            ret.validate = false
+          }
+          return ret
+        },
+      },
+      {
         label: this.$t('compute.text_352'),
         actions: obj => {
           return [
+            {
+              label: this.$t('aice.llm_spec_update'),
+              action: (row) => {
+                this.createDialog('LlmUpdateSpecDialog', {
+                  data: [row],
+                  onManager: this.onManager,
+                  refresh: this.refresh,
+                })
+              },
+              meta: (row) => {
+                const ret = {
+                  validate: (row.llm_type || '').toLowerCase() === 'openclaw',
+                  tooltip: null,
+                }
+                return ret
+              },
+            },
+            {
+              label: this.$t('aice.llm_update_config'),
+              action: (row) => {
+                this.createDialog('LlmUpdateConfigDialog', {
+                  data: [row],
+                  onManager: this.onManager,
+                  refresh: this.refresh,
+                })
+              },
+              meta: (row) => {
+                return {
+                  validate: ['ollama', 'vllm', 'comfyui'].includes((row.llm_type || '').toLowerCase()),
+                  tooltip: null,
+                }
+              },
+            },
             // 开机
             {
               label: this.$t('compute.text_272'),
@@ -58,30 +121,30 @@ export default {
                 }
                 return ret
               },
+              hidden: () => this.isApplyType,
             },
             // 重启
-            // {
-            //   label: this.$t('aice.action.restart'),
-            //   permission: 'server_perform_restart',
-            //   action: (obj) => {
-            //     this.createDialog('LlmBatchConfirmDialog', {
-            //       data: [obj],
-            //       columns: this.columns,
-            //       onManager: this.onManager,
-            //       action: 'restart',
-            //       actionText: this.$t('aice.action.restart'),
-            //       steadyStatus: 'running',
-            //     })
-            //   },
-            //   meta: (obj) => {
-            //     const ret = {
-            //       validate: ['running', 'stop_fail', 'ready'].includes(obj.status),
-            //       tooltip: null,
-            //     }
-            //     return ret
-            //   },
-            //   hidden: () => this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_restart'),
-            // },
+            {
+              label: this.$t('aice.action.restart'),
+              permission: 'server_perform_restart',
+              action: (obj) => {
+                this.createDialog('LlmBatchConfirmDialog', {
+                  data: [obj],
+                  columns: this.columns,
+                  onManager: this.onManager,
+                  action: 'restart',
+                  actionText: this.$t('aice.action.restart'),
+                  steadyStatus: 'running',
+                })
+              },
+              meta: (obj) => {
+                const ret = {
+                  validate: ['running', 'stop_fail', 'ready'].includes(obj.status),
+                  tooltip: null,
+                }
+                return ret
+              },
+            },
             // 更改项目
             {
               label: this.$t('compute.perform_change_owner', [this.$t('dictionary.project')]),
@@ -139,20 +202,33 @@ export default {
       },
     ]
   },
+  computed: {
+    llmRouteCtx () {
+      return parseLlmRoute(this.$route.path)
+    },
+    isApplyType () {
+      return this.llmRouteCtx.isApplyType
+    },
+    isDesktopType () {
+      return this.llmRouteCtx.isDesktopType
+    },
+  },
   methods: {
     openWebConsole (data) {
       this.$openWebConsole(data)
     },
-    async fetchConnectUrl (obj, conn) {
+    async fetchConnectUrl (containerId) {
       const { data } = await new this.$Manager('webconsole', 'v1').objectRpc({
-        methodname: 'DoAdbShell',
-        objId: obj.cmp_id,
+        methodname: 'DoContainerExec',
         params: {
-          server_id: obj.cmp_id,
-          conn: conn,
+          container_id: containerId,
         },
       })
-      return Promise.resolve(data)
+      return Promise.resolve({
+        ...data,
+        // instance_name 用后端 connect_params 完整值（如 guest/container），勿用短名覆盖
+        extra_param_str: '&resource=containers',
+      })
     },
   },
 }

@@ -46,8 +46,17 @@ export default {
   components: {
     DiscountPrice,
   },
-  inject: ['form', 'cloudEnv'],
+  inject: {
+    form: { default: undefined },
+    flushCreateFormFieldDrafts: { default: undefined },
+    persistEipDraftAfterValidate: { default: undefined },
+    resolvePublicSubmitLocation: { default: undefined },
+  },
   props: {
+    cloudEnv: {
+      type: String,
+      default: undefined,
+    },
     currentCloudregion: {
       type: Object,
     },
@@ -177,9 +186,29 @@ export default {
       this.loading = true
       try {
         const values = await this.form.fc.validateFields()
+        if (typeof this.flushCreateFormFieldDrafts === 'function') {
+          this.flushCreateFormFieldDrafts()
+        }
+        // bgp_type：用校验结果再写一次，避免 flush get 读空导致未落盘
+        if (typeof this.persistEipDraftAfterValidate === 'function') {
+          this.persistEipDraftAfterValidate(values)
+        }
         values.domain = values.domain?.key
         values.tenant = values.project.key
         Reflect.deleteProperty(values, 'project')
+        Reflect.deleteProperty(values, 'enableWorldMap')
+        if (this.cloudEnv === 'public' && typeof this.resolvePublicSubmitLocation === 'function') {
+          const resolved = this.resolvePublicSubmitLocation(values)
+          if (resolved.cloudregionId) values.cloudregion = resolved.cloudregionId
+          if (resolved.provider) values.provider = resolved.provider
+        } else {
+          if (Array.isArray(values.cloudregion)) {
+            values.cloudregion = values.cloudregion[0]
+          }
+          if (Array.isArray(values.provider)) {
+            values.provider = values.provider[0]
+          }
+        }
         if (this.cloudEnv === 'private' && !this.isHCSO && !this.isHCS) {
           delete values.charge_type
           values.bandwidth = 0
@@ -189,6 +218,7 @@ export default {
           }
         }
         await this.doCreate(values)
+        this.$emit('create-success')
         this.loading = false
         this.$message.success(this.$t('k8s.text_184'))
         this.$router.push('/eip')

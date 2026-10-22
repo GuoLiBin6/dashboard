@@ -71,10 +71,9 @@
 
 <script>
 import _ from 'lodash'
-import { uuid } from '@/utils/utils'
 import { metric_zh } from '@Monitor/constants'
+import { uuid } from '@/utils/utils'
 import thresholdInput from './thresholdInput'
-
 export default {
   name: 'AlertCondition',
   components: {
@@ -125,6 +124,9 @@ export default {
     }
   },
   computed: {
+    hasDeltaCondition () {
+      return this.conditionList.some(item => this.form.fd.reduce && this.form.fd.reduce[item.key] === 'delta')
+    },
     metricKeyOpts () {
       return (this.res_type_measurements[this.metric_res_type] || []).map(val => {
         let label = val.measurement
@@ -141,11 +143,19 @@ export default {
       })
     },
   },
+  watch: {
+    hasDeltaCondition: {
+      handler (v) {
+        this.$emit('delta-change', v)
+      },
+      immediate: true,
+    },
+  },
   methods: {
-    add () {
+    add (params = {}) {
       const key = uuid()
       this.conditionList.push({ key })
-      this.showThresholdMap[key] = true
+      this.showThresholdMap[key] = params.comparator !== 'nodata'
     },
     del (item) {
       const index = this.conditionList.findIndex(val => val.key === item.key)

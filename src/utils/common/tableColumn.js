@@ -12,9 +12,26 @@ import { HOST_CPU_ARCHS } from '@/constants/compute'
 import expectStatus from '@/constants/expectStatus'
 import { status as statusMap } from '@/locales/zh-CN'
 import setting from '@/config/setting'
+import SystemIcon from '@/sections/SystemIcon'
+import RegionalAvailabilityPopover from '@/sections/RegionalAvailabilityPopover'
 const brandMap = typeClouds.getBrand()
 
-export const getProjectTableColumn = ({ vm = {}, field = 'tenant', title = i18n.t('res.project'), projectsItem = 'tenant', sortable = true, hidden = false, minWidth = 100 } = {}) => {
+/**
+ * 计费列桥接：优先加载 GPU scope/utils/billingTableColumns.js
+ * dashboard 无此文件时 keys 为空，回退下方默认实现
+ */
+function loadScopeBillingColumns () {
+  try {
+    const ctx = require.context('../../../scope', true, /[/\\]utils[/\\]billingTableColumns\.js$/)
+    const key = (ctx.keys() || []).find(k => /billingTableColumns\.js$/.test(k))
+    if (key) return ctx(key)
+  } catch (e) { /* ignore */ }
+  return null
+}
+
+const scopeBillingColumns = loadScopeBillingColumns()
+
+export const getProjectTableColumn = ({ vm = {}, field = 'tenant', title = i18n.t('res.project'), projectsItem = 'tenant', sortable = true, hidden = false, minWidth = 100, domainField } = {}) => {
   return {
     field,
     title,
@@ -34,7 +51,7 @@ export const getProjectTableColumn = ({ vm = {}, field = 'tenant', title = i18n.
         } else {
           ret.push(<list-body-cell-wrap copy field={field} row={{ [field]: project }} />)
         }
-        const domain = row.project_domain || row.domain
+        const domain = (domainField && row[domainField]) || row.project_domain || row.domain
         if (domain) {
           ret.push(
             <list-body-cell-wrap hide-field copy field="domain" row={{ domain }}>
@@ -86,6 +103,45 @@ export const getRegionTableColumn = ({ field = 'region', title = i18n.t('res.reg
     },
     hidden: () => {
       return R.is(Function, hidden) ? hidden() : hidden
+    },
+  }
+}
+
+export const getMultipleRegionTableColumn = ({ field = 'regional_availability', title = i18n.t('res.region'), regionField = 'region', zoneField = 'zone', chargeTypes = [] } = {}) => {
+  return {
+    field: regionField,
+    title,
+    showOverflow: 'ellipsis',
+    minWidth: 120,
+    slots: {
+      default: ({ row }, h) => {
+        const region = _.get(row, regionField)
+        const zone = _.get(row, zoneField)
+        const regionalAvailability = _.get(row, field)
+        if (Array.isArray(regionalAvailability) && regionalAvailability.length) {
+          return [
+            h(RegionalAvailabilityPopover, {
+              props: { region, zone, regionalAvailability, chargeTypes, skuData: row },
+            }),
+          ]
+        }
+        const ret = []
+        if (region) {
+          ret.push(
+            <list-body-cell-wrap hide-field copy field={regionField} row={row}>
+              <a onClick={e => e.preventDefault()}>{region}</a>
+            </list-body-cell-wrap>,
+          )
+        }
+        if (zone) {
+          ret.push(
+            <list-body-cell-wrap hide-field copy field={zoneField} row={row}>
+              <a class='link-color-light' onClick={e => e.preventDefault()}>{zone}</a>
+            </list-body-cell-wrap>,
+          )
+        }
+        return ret.length ? ret : ['-']
+      },
     },
   }
 }
@@ -881,7 +937,17 @@ export const getAccountTableColumn = ({
   }
 }
 
-export const getBillingTypeTableColumn = ({ field = 'billing_type', title = i18n.t('table.title.bill_type'), width = '120px', hidden } = {}) => {
+export const getBillingTypeTableColumn = (options = {}) => {
+  if (scopeBillingColumns && typeof scopeBillingColumns.getBillingTypeTableColumn === 'function') {
+    try {
+      const custom = scopeBillingColumns.getBillingTypeTableColumn(options)
+      if (custom) return custom
+    } catch (e) { /* fallback */ }
+  }
+  return getDefaultBillingTypeTableColumn(options)
+}
+
+const getDefaultBillingTypeTableColumn = ({ field = 'billing_type', title = i18n.t('table.title.bill_type'), width = '120px', hidden } = {}) => {
   return {
     field,
     title,
@@ -890,11 +956,38 @@ export const getBillingTypeTableColumn = ({ field = 'billing_type', title = i18n
     slots: {
       default: ({ row }, h) => {
         const ret = []
-        if (row[field] === 'postpaid') {
-          ret.push(<div style={{ color: '#0A1F44' }}>{i18n.t('billingType.postpaid')}</div>)
-        } else if (row[field] === 'prepaid') {
-          ret.push(<div style={{ color: '#0A1F44' }}>{i18n.t('billingType.prepaid')}</div>)
+        const billingText = (row) => {
+          if (row.charge_type) {
+            if (row[field] === 'postpaid' && row.charge_type === 'traffic') {
+              return i18n.t('billingType.postpaid_traffic')
+            } else if (row[field] === 'postpaid' && row.charge_type === 'bandwidth') {
+              return i18n.t('billingType.postpaid_bandwidth')
+            } else if (row[field] === 'prepaid' && row.charge_type === 'traffic') {
+              return i18n.t('billingType.prepaid_traffic')
+            } else if (row[field] === 'prepaid' && row.charge_type === 'bandwidth') {
+              return i18n.t('billingType.prepaid_bandwidth')
+            } else {
+              if (row[field] && row.charge_type) {
+                return `${row[field]}/${row.charge_type}`
+              } else if (row[field]) {
+                return row[field]
+              } else if (row.charge_type) {
+                return row.charge_type
+              } else {
+                return ''
+              }
+            }
+          } else {
+            if (row[field] === 'postpaid') {
+              return i18n.t('billingType.postpaid')
+            } else if (row[field] === 'prepaid') {
+              return i18n.t('billingType.prepaid')
+            } else {
+              return row[field]
+            }
+          }
         }
+        ret.push(<div style={{ color: '#0A1F44' }}>{billingText(row)}</div>)
         if (row.expired_at) {
           const dateArr = moment(row.expired_at).fromNow().split(' ')
           const date = dateArr.join(' ')
@@ -1168,7 +1261,17 @@ export const getApplicationScopeTableColumn = ({
   }
 }
 
-export const getBillingTableColumn = ({
+export const getBillingTableColumn = (options = {}) => {
+  if (scopeBillingColumns && typeof scopeBillingColumns.getBillingTableColumn === 'function') {
+    try {
+      const custom = scopeBillingColumns.getBillingTableColumn(options)
+      if (custom) return custom
+    } catch (e) { /* fallback */ }
+  }
+  return getDefaultBillingTableColumn(options)
+}
+
+const getDefaultBillingTableColumn = ({
   vm,
   field = 'billing_type',
   title = i18n.t('table.title.bill_type'),
@@ -1317,6 +1420,76 @@ export const getOsArch = ({
         return _.get(HOST_CPU_ARCHS, `${arch}.label`) || arch
       }
       return HOST_CPU_ARCHS.x86.label
+    },
+    hidden: () => {
+      return R.is(Function, hidden) ? hidden() : hidden
+    },
+  }
+}
+
+export const getOsDist = ({
+  field = 'os_dist',
+  title = i18n.t('table.title.os'),
+  show_label,
+  hidden,
+} = {}) => {
+  return {
+    field,
+    title,
+    width: 100,
+    sortable: true,
+    slots: {
+      default: ({ row }, h) => {
+        if (!row.metadata && !row.properties) return
+        const dist = row.metadata?.os_distribution || row.metadata?.distro || row.properties?.os_distribution || row.properties?.distro
+        const version = row.metadata?.os_version || row.metadata?.version || row.properties?.os_version || row.properties?.version
+        const osType = row.metadata?.os_type || row.properties?.os_type || row.os_type
+
+        let name = ''
+        let tooltip = ''
+        if (dist) {
+          tooltip = version ? (version.includes(dist) ? version : `${decodeURI(dist)} ${version}`) : dist
+        } else if (osType) {
+          tooltip = osType
+        } else {
+          tooltip = i18n.t('compute.text_339')
+        }
+
+        name = dist || osType || ''
+        if (name.includes('Windows') || name.includes('windows')) {
+          name = 'Windows'
+        } else if (name.startsWith('Linux') || name.startsWith('linux')) {
+          name = 'Linux'
+        } else if (name === 'Others Linux') {
+          name = 'Linux'
+          tooltip = row.metadata?.os_full_name || tooltip
+        }
+        const ret = [
+          <SystemIcon tooltip={tooltip} name={name} />,
+        ]
+        if (show_label) {
+          ret.push(<span class='text-truncate'> {tooltip}</span>)
+        }
+        return ret
+      },
+    },
+    formatter: ({ row }) => {
+      if (!row.metadata) return
+      const dist = row.metadata.os_distribution || row.metadata.distro
+      const version = row.metadata.os_version || row.metadata.version
+      let tooltip = ''
+
+      if (dist) {
+        tooltip = version ? (version.includes(dist) ? version : `${decodeURI(dist)} ${version}`) : dist
+      } else if (row.metadata.os_type) {
+        tooltip = row.metadata.os_type
+      } else if (row.os_type) {
+        tooltip = row.os_type
+      } else {
+        tooltip = i18n.t('compute.text_339')
+      }
+
+      return tooltip
     },
     hidden: () => {
       return R.is(Function, hidden) ? hidden() : hidden

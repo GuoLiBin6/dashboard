@@ -1,7 +1,7 @@
 <template>
   <base-side-page
     @cancel="cancelSidePage"
-    :title="$t('compute.text_97')"
+    :title="$route.path.includes('app-package') ? $t('dictionary.app_package') : $t('compute.text_97')"
     icon="res-image"
     :res-name="detailData.name"
     :current-tab="params.windowData.currentTab"
@@ -34,13 +34,12 @@
 import SidePageMixin from '@/mixins/sidePage'
 import WindowsMixin from '@/mixins/windows'
 import Actions from '@/components/PageList/Actions'
-import ChildrenImageList from '../../host-image/sidepage/ChildrenImage'
-import SingleActionsMixin from '../mixins/singleActions'
-import ColumnsMixin from '../mixins/columns'
 import SystemImageDetail from './Detail'
 import CacheList from './Cache'
 import CachedImageEventDrawer from './CachedImageEventList'
-
+import ChildrenImageList from '../../host-image/sidepage/ChildrenImage'
+import SingleActionsMixin from '../mixins/singleActions'
+import ColumnsMixin from '../mixins/columns'
 export default {
   name: 'SystemImageSidePage',
   components: {

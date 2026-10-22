@@ -1,27 +1,46 @@
 import * as R from 'ramda'
 import i18n from '@/locales'
+import { FEATURE_MENUS as CE_FEATURE_MENUS } from '@/constants/ceFeatureMenus'
 
-const vIsAccount = R.pipe(R.path(['meta', 'is_account']), R.equals(true))
-const vIsOnestack = R.whereEq({ key: 'onestack' })
-const vIsCloudPlatform = R.pipe(R.path(['meta', 'group']), (group) => { return group && ['onecloud', 'private', 'public'].indexOf(group) >= 0 })
-const vIsCloudAccount = R.and(vIsAccount, vIsCloudPlatform)
-
-class validators {
-  static onestackSelected (items) {
-    if (R.any(vIsOnestack, items)) return { disabled: false, reason: '' }
-    return { disabled: true, reason: i18n.t('scope.text_115') }
-  }
-
-  static hasAccount (items) {
-    if (R.any(vIsAccount, items)) return { disabled: false, reason: '' }
-    return { disabled: true, reason: i18n.t('license.validator.is_account') }
-  }
-
-  static hasCloudAccount (items) {
-    if (R.any(vIsCloudAccount, items)) return { disabled: false, reason: '' }
-    return { disabled: true, reason: i18n.t('scope.text_116') }
+/** 可选：存在 generalScope/constants/featureMenus.js 且导出 FEATURE_MENUS 时，与 CE 底表 merge（EE 增量）；否则仅用 CE。 */
+function loadFeatureMenusFromGeneralScope () {
+  try {
+    const ctx = require.context('../../', true, /^\.\/generalScope\/constants\/featureMenus\.js$/)
+    const keys = ctx.keys()
+    if (!keys.length) return null
+    const mod = ctx(keys[0])
+    return mod && mod.FEATURE_MENUS != null ? mod.FEATURE_MENUS : null
+  } catch (e) {
+    return null
   }
 }
+
+const FEATURE_MENUS_SCOPE = loadFeatureMenusFromGeneralScope()
+
+// const vIsAccount = R.pipe(R.path(['meta', 'is_account']), R.equals(true))
+// const vIsOnestack = R.whereEq({ key: 'onestack' })
+// const vIsCloudPlatform = R.pipe(R.path(['meta', 'group']), (group) => { return group && ['onecloud', 'private', 'public'].indexOf(group) >= 0 })
+// const vIsCloudAccount = R.and(vIsAccount, vIsCloudPlatform)
+
+// class validators {
+//   static onestackSelected (items) {
+//     if (R.any(vIsOnestack, items)) return { disabled: false, reason: '' }
+//     return { disabled: true, reason: i18n.t('scope.text_115') }
+//   }
+
+//   static hasAccount (items) {
+//     if (R.any(vIsAccount, items)) return { disabled: false, reason: '' }
+//     return { disabled: true, reason: i18n.t('license.validator.is_account') }
+//   }
+
+//   static hasCloudAccount (items) {
+//     if (R.any(vIsCloudAccount, items)) return { disabled: false, reason: '' }
+//     return { disabled: true, reason: i18n.t('scope.text_116') }
+//   }
+// }
+
+// 哪些组开启组验证（即 通过组验证组中任意一个key开启）
+export const GROUP_VALIDATION_GROUPS = ['onecloud', 'public', 'private']
 
 const meta = (module = 'default', group = 'default', is_account = false) => {
   module = module || 'default'
@@ -31,6 +50,7 @@ const meta = (module = 'default', group = 'default', is_account = false) => {
     group: group,
     is_account: is_account,
     is_feature: !is_account,
+    group_validation: GROUP_VALIDATION_GROUPS.includes(group),
   }
 }
 
@@ -55,7 +75,10 @@ const LicenseItems = [
   {
     key: 'pod',
     meta: meta('resource_managent', 'onecloud', false),
-    validators: [validators.onestackSelected],
+  },
+  {
+    key: 'ai',
+    meta: meta('resource_managent', 'onecloud', false),
   },
   {
     key: 'baremetal',
@@ -64,7 +87,6 @@ const LicenseItems = [
   {
     key: 'lb',
     meta: meta('resource_managent', 'onecloud', false),
-    validators: [validators.onestackSelected],
   },
   {
     key: 'aliyun',
@@ -96,6 +118,10 @@ const LicenseItems = [
   },
   {
     key: 'ucloud',
+    meta: meta('resource_managent', 'public', true),
+  },
+  {
+    key: 'rockbase',
     meta: meta('resource_managent', 'public', true),
   },
   {
@@ -200,6 +226,10 @@ const LicenseItems = [
     },
   },
   {
+    key: 'cas',
+    meta: meta('resource_managent', 'private', true),
+  },
+  {
     key: 's3',
     meta: meta('resource_managent', 'storage', true),
   },
@@ -223,30 +253,29 @@ const LicenseItems = [
   {
     key: 'k8s',
     meta: meta('resource_managent', 'container', false),
-    validators: [validators.hasCloudAccount],
   },
   {
     key: 'monitor',
     origin_key: 'monitor',
-    meta: meta('resource_managent', 'monitor', false),
+    meta: meta('resource_managent', 'monitors', false),
   },
   {
     key: 'appstore',
     origin_key: 'app_store',
-    meta: meta('resource_managent', 'monitor', false),
+    meta: meta('resource_managent', 'monitors', false),
   },
   {
     key: 'report',
-    meta: meta('resource_managent', 'monitor', false),
+    meta: meta('resource_managent', 'monitors', false),
   },
   {
     key: 'extdb',
-    meta: meta('resource_managent', 'monitor', false),
+    meta: meta('resource_managent', 'monitors', false),
   },
   {
     key: 'bastionhost',
     origin_key: 'bastion_host',
-    meta: meta('resource_managent', 'monitor', false),
+    meta: meta('resource_managent', 'monitors', false),
   },
   {
     key: 'bill_private',
@@ -295,6 +324,11 @@ const LicenseItems = [
   {
     key: 'bill_ksyun',
     origin_key: 'ksyun',
+    meta: meta('resource_managent', 'bill', true),
+  },
+  {
+    key: 'bill_oraclecloud',
+    origin_key: 'oraclecloud',
     meta: meta('resource_managent', 'bill', true),
   },
   {
@@ -429,9 +463,41 @@ function getModuleGroups () {
 
 fullfillLicenseItems()
 
+/**
+ * 合并 CE 底表与 generalScope 增量：
+ * - 未在 EE 声明的 key：沿用 CE.ceMenus
+ * - EE 只写 eeMenus 时：ceMenus 仍取 CE
+ * - EE 显式写 ceMenus 时：覆盖该 key 的 ceMenus（含 EE 独有 feature）
+ */
+function mergeFeatureMenus (ceMap = {}, eePatch) {
+  if (!eePatch) return ceMap
+  const ret = {}
+  Object.keys(ceMap).forEach((key) => {
+    const base = ceMap[key] || {}
+    ret[key] = {
+      ceMenus: base.ceMenus ? base.ceMenus.slice() : [],
+      eeMenus: base.eeMenus ? base.eeMenus.slice() : [],
+    }
+  })
+  Object.keys(eePatch).forEach((key) => {
+    const patch = eePatch[key] || {}
+    const base = ret[key] || { ceMenus: [], eeMenus: [] }
+    ret[key] = {
+      ceMenus: patch.ceMenus != null ? patch.ceMenus.slice() : base.ceMenus.slice(),
+      eeMenus: patch.eeMenus != null ? patch.eeMenus.slice() : base.eeMenus.slice(),
+    }
+  })
+  return ret
+}
+
+const FEATURE_MENUS = CE_FEATURE_MENUS
+
+const featureMenus = mergeFeatureMenus(FEATURE_MENUS, FEATURE_MENUS_SCOPE)
+
 export default {
   modules: getMetaValues('module'),
   groups: getMetaValues('group'),
   items: LicenseItems,
   moduleGroups: getModuleGroups(),
+  featureMenus,
 }

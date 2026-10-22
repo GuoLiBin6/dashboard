@@ -1,6 +1,6 @@
 import Layout from '@/layouts/RouterView'
 import store from '@/store'
-import { hasSetupKey } from '@/utils/auth'
+import { featureMenuHiddenCheck } from '@/utils/auth'
 import i18n from '@/locales'
 import { isScopedPolicyMenuHidden } from '@/utils/scopedPolicy'
 
@@ -43,6 +43,15 @@ const Job = () => import(/* webpackChunkName: "k8s" */ /* webpackPrefetch: true 
 const K8sJobCreate = () => import(/* webpackChunkName: "k8s" */ /* webpackPrefetch: true */ '@K8S/views/job/create')
 const CronJob = () => import(/* webpackChunkName: "k8s" */ /* webpackPrefetch: true */ '@K8S/views/cronjob')
 const K8sCronJobCreate = () => import(/* webpackChunkName: "k8s" */ /* webpackPrefetch: true */ '@K8S/views/cronjob/create')
+const Vcjob = () => import(/* webpackChunkName: "k8s" */ /* webpackPrefetch: true */ '@K8S/views/vcjob')
+const K8sVcjobCreate = () => import(/* webpackChunkName: "k8s" */ /* webpackPrefetch: true */ '@K8S/views/vcjob/create')
+const Vcqueue = () => import(/* webpackChunkName: "k8s" */ /* webpackPrefetch: true */ '@K8S/views/vcqueue')
+const K8sVcqueueCreate = () => import(/* webpackChunkName: "k8s" */ /* webpackPrefetch: true */ '@K8S/views/vcqueue/create')
+const K8sVcqueueUpdate = () => import(/* webpackChunkName: "k8s" */ /* webpackPrefetch: true */ '@K8S/views/vcqueue/update')
+const Vchypernode = () => import(/* webpackChunkName: "k8s" */ /* webpackPrefetch: true */ '@K8S/views/vchypernode')
+const K8sVchypernodeCreate = () => import(/* webpackChunkName: "k8s" */ /* webpackPrefetch: true */ '@K8S/views/vchypernode/create')
+const Priorityclass = () => import(/* webpackChunkName: "k8s" */ /* webpackPrefetch: true */ '@K8S/views/priorityclass')
+const K8sPriorityclassCreate = () => import(/* webpackChunkName: "k8s" */ /* webpackPrefetch: true */ '@K8S/views/priorityclass/create')
 const Persistentvolumeclaim = () => import(/* webpackChunkName: "k8s" */ /* webpackPrefetch: true */ '@K8S/views/persistentvolumeclaim')
 const K8sPersistentvolumeclaimCreate = () => import(/* webpackChunkName: "k8s" */ /* webpackPrefetch: true */ '@K8S/views/persistentvolumeclaim/create')
 const Service = () => import(/* webpackChunkName: "k8s" */ /* webpackPrefetch: true */ '@K8S/views/service')
@@ -55,7 +64,7 @@ const Secret = () => import(/* webpackChunkName: "k8s" */ /* webpackPrefetch: tr
 const K8sSecretCreate = () => import(/* webpackChunkName: "k8s" */ /* webpackPrefetch: true */ '@K8S/views/secret/create')
 const FederatednamespaceCreate = () => import(/* webpackChunkName: "k8s" */ /* webpackPrefetch: true */ '@K8S/views/federatednamespace/create')
 const FederatedroleCreate = () => import(/* webpackChunkName: "k8s" */ /* webpackPrefetch: true */ '@K8S/views/federatedrole/create')
-const K8sRepos = () => import(/* webpackChunkName: "k8s" */ /* webpackPrefetch: true */ '@K8S/views/repos')
+// const K8sRepos = () => import(/* webpackChunkName: "k8s" */ /* webpackPrefetch: true */ '@K8S/views/repos')
 
 export default {
   index: 30,
@@ -75,11 +84,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_4'),
             permission: 'k8s_deployments_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_deployment')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -101,11 +110,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_5'),
             permission: 'k8s_statefulsets_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_statefulset')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -127,11 +136,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_6'),
             permission: 'k8s_daemonsets_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_daemonset')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -153,11 +162,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_7'),
             permission: 'k8s_jobs_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_job')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -179,11 +188,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_8'),
             permission: 'k8s_cronjobs_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_cronjob')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -205,11 +214,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_9'),
             permission: 'k8s_pods_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_pod')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -226,11 +235,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_10'),
             permission: 'k8s_persistentvolumeclaims_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_persistentvolumeclaim')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -251,35 +260,6 @@ export default {
     },
     {
       meta: {
-        label: i18n.t('k8s.repo'),
-      },
-      submenus: [
-        {
-          path: '/k8s-repos',
-          meta: {
-            label: i18n.t('k8s.text_158'),
-            permission: 'k8s_container_registries_list',
-            hidden: () => {
-              if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_service')) {
-                return true
-              }
-              if (!store.getters.isAdminMode) return true
-              return !hasSetupKey('k8s')
-            },
-          },
-          component: Layout,
-          children: [
-            {
-              name: 'K8sRepos',
-              path: '',
-              component: K8sRepos,
-            },
-          ],
-        },
-      ],
-    },
-    {
-      meta: {
         label: i18n.t('k8s.text_11'),
         labelAlias: i18n.t('k8s.text_12'),
       },
@@ -289,11 +269,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_13'),
             permission: 'k8s_services_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_service')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -315,11 +295,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_14'),
             permission: 'k8s_ingresses_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_ingress')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -349,11 +329,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_17'),
             permission: 'k8s_configmaps_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_configmap')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -375,11 +355,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_18'),
             permission: 'k8s_secrets_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_secret')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -400,9 +380,127 @@ export default {
     },
     {
       meta: {
+        label: i18n.t('k8s.vc_menu'),
+      },
+      submenus: [
+        {
+          path: '/k8s-vcjob',
+          meta: {
+            label: i18n.t('k8s.vc_job'),
+            permission: 'k8s_vcjobs_list',
+            hidden: (userInfo, menu) => {
+              if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_vcjob')) {
+                return true
+              }
+              return featureMenuHiddenCheck(menu)
+            },
+          },
+          component: Layout,
+          children: [
+            {
+              name: 'K8sVcjobList',
+              path: '',
+              component: Vcjob,
+            },
+            {
+              name: 'K8sVcjobCreate',
+              path: 'create',
+              component: K8sVcjobCreate,
+            },
+          ],
+        },
+        {
+          path: '/k8s-vcqueue',
+          meta: {
+            label: i18n.t('k8s.vc_queue'),
+            permission: 'k8s_vcqueues_list',
+            hidden: (userInfo, menu) => {
+              if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_vcqueue')) {
+                return true
+              }
+              return featureMenuHiddenCheck(menu)
+            },
+          },
+          component: Layout,
+          children: [
+            {
+              name: 'K8sVcqueueList',
+              path: '',
+              component: Vcqueue,
+            },
+            {
+              name: 'K8sVcqueueCreate',
+              path: 'create',
+              component: K8sVcqueueCreate,
+            },
+            {
+              name: 'K8sVcqueueUpdate',
+              path: 'update',
+              component: K8sVcqueueUpdate,
+            },
+          ],
+        },
+        {
+          path: '/k8s-vchypernode',
+          meta: {
+            label: i18n.t('k8s.vc_hypernode'),
+            permission: 'k8s_vchypernodes_list',
+            hidden: (userInfo, menu) => {
+              if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_vchypernode')) {
+                return true
+              }
+              return featureMenuHiddenCheck(menu)
+            },
+          },
+          component: Layout,
+          children: [
+            {
+              name: 'K8sVchypernodeList',
+              path: '',
+              component: Vchypernode,
+            },
+            {
+              name: 'K8sVchypernodeCreate',
+              path: 'create',
+              component: K8sVchypernodeCreate,
+            },
+          ],
+        },
+        {
+          path: '/k8s-priorityclass',
+          meta: {
+            label: i18n.t('k8s.vc_priority_class'),
+            permission: 'k8s_priorityclasses_list',
+            hidden: (userInfo, menu) => {
+              if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_priorityclass')) {
+                return true
+              }
+              return featureMenuHiddenCheck(menu)
+            },
+          },
+          component: Layout,
+          children: [
+            {
+              name: 'K8sPriorityclassList',
+              path: '',
+              component: Priorityclass,
+            },
+            {
+              name: 'K8sPriorityclassCreate',
+              path: 'create',
+              component: K8sPriorityclassCreate,
+            },
+          ],
+        },
+      ],
+    },
+    {
+      meta: {
         label: i18n.t('k8s.text_19'),
         labelAlias: i18n.t('k8s.text_20'),
-        hidden: () => store.getters.isProjectMode,
+        hidden: (userInfo, menu) => {
+          return store.getters.isProjectMode
+        },
       },
       submenus: [
         {
@@ -410,11 +508,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_19'),
             permission: 'k8s_kubeclusters_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_cluster')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -441,11 +539,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_21'),
             permission: 'k8s_k8sNode_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_node')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -462,11 +560,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_22'),
             permission: 'k8s_storageclasses_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_storageclass')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -488,11 +586,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_23'),
             permission: 'k8s_namespace_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_namespace')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -514,11 +612,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_24'),
             permission: 'k8s_rbacroles_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_rbacrole')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -540,11 +638,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_371'),
             permission: 'k8s_rbacclusterroles_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_rbacclusterrole')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -566,11 +664,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_25'),
             permission: 'k8s_rbacrolebindings_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_rbacrolebinding')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -592,11 +690,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_372'),
             permission: 'k8s_rbacclusterrolebindings_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_rbacclusterrolebinding')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -618,11 +716,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_26'),
             permission: 'k8s_serviceaccounts_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_serviceaccount')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -639,11 +737,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_27'),
             permission: 'k8s_kubeclusters_list', // 服务组件权限和 集群list 权限一致
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_kubecomponent')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -675,7 +773,9 @@ export default {
     {
       meta: {
         label: i18n.t('k8s.text_364'),
-        hidden: () => store.getters.isProjectMode,
+        hidden: (userInfo, menu) => {
+          return store.getters.isProjectMode
+        },
       },
       submenus: [
         {
@@ -683,11 +783,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_365'),
             permission: 'k8s_federatednamespaces_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_federatednamespace')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -709,11 +809,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_370'),
             permission: 'k8s_federatedroles_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_federatedrole')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -735,11 +835,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_373'),
             permission: 'k8s_federatedclusterroles_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_federatedclusterrole')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -761,11 +861,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_374'),
             permission: 'k8s_federatedrolebindings_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_federatedrolebinding')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -787,11 +887,11 @@ export default {
           meta: {
             label: i18n.t('k8s.text_375'),
             permission: 'k8s_federatedclusterrolebindings_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.k8s_federatedclusterrolebinding')) {
                 return true
               }
-              return !hasSetupKey('k8s')
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,

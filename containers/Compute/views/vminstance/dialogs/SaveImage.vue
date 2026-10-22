@@ -37,11 +37,10 @@
 
 <script>
 import * as R from 'ramda'
+import { SERVER_TYPE } from '@Compute/constants'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import { typeClouds, findPlatform } from '@/utils/common/hypervisor'
-import { SERVER_TYPE } from '@Compute/constants'
-
 const hypervisorMap = typeClouds.hypervisorMap
 
 export default {
@@ -112,7 +111,6 @@ export default {
     },
     isPublic () {
       const noSupportBrand = [
-        typeClouds.hypervisorMap.ucloud.brand,
         typeClouds.hypervisorMap.ctyun.brand,
       ]
       return (findPlatform(this.params.data[0].hypervisor) === SERVER_TYPE.public && !noSupportBrand.includes(this.params.data[0].brand))

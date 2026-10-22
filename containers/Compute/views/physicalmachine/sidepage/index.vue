@@ -16,10 +16,14 @@
       :is="params.windowData.currentTab"
       :id="listId"
       :res-id="data.id"
+      :data="detailData"
       :hostInfo="detailData"
       :on-manager="onManager"
       :getParams="getParams"
       :columns="columns"
+      :force-kvm="true"
+      :guest_id="detailData.server_id || ''"
+      cloud-env="baremetal"
       taskResource="compute-tasks"
       @tab-change="handleTabChange" />
   </base-side-page>
@@ -29,15 +33,15 @@
 import SidePageMixin from '@/mixins/sidePage'
 import WindowsMixin from '@/mixins/windows'
 import Actions from '@/components/PageList/Actions'
-import StorageList from '../../host/sidepage/Storage'
-import GpuList from '../../host/sidepage/Gpu'
-import SingleActionsMixin from '../mixins/singleActions'
-import ColumnsMixin from '../mixins/columns'
 import BaremetalList from './Baremetal'
 import PhysicalmachineDetail from './Detail'
 import NetworkList from './Network'
 import BmcLog from './BMCLog'
-
+import StorageList from '../../host/sidepage/Storage'
+import GpuList from '../../host/sidepage/Gpu'
+import Monitor from '../../baremetal/sidepage/Monitor'
+import SingleActionsMixin from '../mixins/singleActions'
+import ColumnsMixin from '../mixins/columns'
 export default {
   name: 'PhysicalmachineSidePage',
   components: {
@@ -47,6 +51,7 @@ export default {
     StorageList,
     GpuList,
     BmcLog,
+    Monitor,
     Actions,
   },
   mixins: [SidePageMixin, WindowsMixin, ColumnsMixin, SingleActionsMixin],
@@ -58,6 +63,7 @@ export default {
         { label: this.$t('compute.text_104'), key: 'network-list' },
         { label: this.$t('compute.text_99'), key: 'storage-list' },
         { label: this.$t('compute.text_607'), key: 'gpu-list' },
+        { label: this.$t('compute.text_608'), key: 'monitor' },
         { label: this.$t('compute.text_865'), key: 'bmc-log' },
         { label: this.$t('table.title.task'), key: 'task-drawer' },
         { label: this.$t('compute.text_240'), key: 'event-drawer' },

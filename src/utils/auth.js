@@ -10,6 +10,7 @@ import setting from '@/config/setting'
 import i18n from '@/locales'
 import { aesDecryptWithCustomKey } from '@/utils/crypto'
 import { HYPERVISORS } from '@/constants/index'
+import { GROUP_VALIDATION_GROUPS } from '@/constants/feature'
 
 const ONECLOUD_AUTH_KEY = 'yunionauth'
 const HISTORY_USERS_STORAGE_KEY = '__oc_history_users__'
@@ -285,8 +286,8 @@ const GlobalSetupKeys = class {
     let f = false
     for (let i = 0; i < _envs.length; i++) {
       const env = _envs[i]
-      // 若为组，则同时判断该组下的成员信息
-      if (Features.default.groups.includes(env)) {
+      // 开启组验证的组只校验成员，不单独校验组 key；其他情况直接校验 env
+      if (Features.default.groups.includes(env) && GROUP_VALIDATION_GROUPS.includes(env)) {
         const childs = Features.default.items.filter(item => item.meta?.group === env)
         for (let j = 0; j < childs.length; j++) {
           if (this.setupKeys.indexOf(childs[j].key) > -1) {
@@ -295,8 +296,7 @@ const GlobalSetupKeys = class {
           }
         }
         if (f) break
-      }
-      if (this.setupKeys.indexOf(env) > -1) {
+      } else if (this.setupKeys.indexOf(env) > -1) {
         f = true
         break
       }
@@ -362,8 +362,8 @@ export function hasSetupKey (envs) {
   let f = false
   for (let i = 0; i < _envs.length; i++) {
     const env = _envs[i]
-    // 若为组，则同时判断该组下的成员信息
-    if (Features.default.groups.includes(env)) {
+    // 开启组验证的组只校验成员，不单独校验组 key；其他情况直接校验 env
+    if (Features.default.groups.includes(env) && GROUP_VALIDATION_GROUPS.includes(env)) {
       const childs = Features.default.items.filter(item => item.meta?.group === env)
       for (let j = 0; j < childs.length; j++) {
         if (setupKeys.indexOf(childs[j].key) > -1) {
@@ -372,13 +372,43 @@ export function hasSetupKey (envs) {
         }
       }
       if (f) break
-    }
-    if (setupKeys.indexOf(env) > -1) {
+    } else if (setupKeys.indexOf(env) > -1) {
       f = true
       break
     }
   }
   return f
+}
+
+/** 侧栏 hidden：参数无效或未在全量 featureMenus 登记则 true；已登记时若不在「按 setupKeys 过滤后」任一项中则 true，否则 false */
+export function featureMenuHiddenCheck (menu) {
+  if (!menu || !menu.path) return true
+  const raw = menu.path
+  if (!raw) return true
+  const menuId = raw.replace(/^\/+|\/+$/g, '')
+  if (!menuId) return true
+  const featureMenus = Features.default.featureMenus
+  if (!featureMenus) return true
+
+  const inMenus = (menusObj) => {
+    return Object.keys(menusObj).some((fk) => {
+      const entry = menusObj[fk]
+      if (!entry) return false
+      const ce = entry.ceMenus || []
+      const ee = entry.eeMenus || []
+      return ce.indexOf(menuId) > -1 || ee.indexOf(menuId) > -1
+    })
+  }
+  if (!inMenus(featureMenus)) {
+    return true
+  }
+  const filtered = {}
+  Object.keys(featureMenus).forEach((k) => {
+    if (hasSetupKey([k])) {
+      filtered[k] = featureMenus[k]
+    }
+  })
+  return !inMenus(filtered)
 }
 
 export const hasMeterService = function () {
@@ -390,7 +420,7 @@ export const hasMeterService = function () {
   return false
 }
 
-export const billSupportBrands = ['aliyun', 'aws', 'azure', 'google', 'huawei', 'jdcloud', 'qcloud', 'volcengine', 'ksyun']
+export const billSupportBrands = ['aliyun', 'aws', 'azure', 'google', 'huawei', 'jdcloud', 'qcloud', 'volcengine', 'ksyun', 'oraclecloud']
 export const billPrivateSupportBrands = ['onestack', ...HYPERVISORS.filter(item => item.env === 'private').map(item => item.key)]
 
 export const billItems = billSupportBrands.map(key => `bill_${key}`)

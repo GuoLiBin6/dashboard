@@ -2,6 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{$t('compute.bind_resource')}} - {{ resourceType === 'server' ? $t('dictionary.server') : $t('dictionary.disk') }}</div>
     <div slot="body">
+      <a-alert class="mb-2" type="warning" :message="resourceType === 'disk' ? $t('compute.snapshotpolicy_bind_disk_tip') : $t('compute.snapshotpolicy_bind_server_tip')" />
       <dialog-selected-tips :count="params.data.length" :action="$t('compute.bind_resource')" :name="$t('dictionary.snapshotpolicy')" />
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <loader loading v-if="!bindedDisksLoaded && !bindedServersLoaded" />
@@ -36,7 +37,7 @@ import { mapGetters } from 'vuex'
 import * as R from 'ramda'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
-import { HYPERVISORS_MAP } from '@/constants'
+import { HYPERVISORS_MAP, isUcloudLikeProvider } from '@/constants'
 import ListSelect from '@/sections/ListSelect'
 import DiskPropsMixin from '../mixins/diskProps'
 import ServerPropsMixin from '../mixins/serverProps'
@@ -90,7 +91,7 @@ export default {
       return this.params.data[0].provider === HYPERVISORS_MAP.azure.provider
     },
     isUCloud () {
-      return this.params.data[0].provider === HYPERVISORS_MAP.ucloud.provider
+      return isUcloudLikeProvider(this.params.data[0].provider)
     },
     message () {
       return this.$t('compute.text_1086')
@@ -170,7 +171,7 @@ export default {
       }
     },
     async handleConfirm () {
-      const manager = new this.$Manager(this.resourceType === 'disk' ? 'disks' : 'snapshotpolicies')
+      const manager = new this.$Manager(this.resourceType === 'disk' ? 'disks' : 'servers')
       this.loading = true
       try {
         const values = await this.form.fc.validateFields()
@@ -183,7 +184,7 @@ export default {
           if (resource.addDisks.length > 0) {
             await manager.batchPerformAction({
               ids: resource.addDisks,
-              action: 'bind-snapshotpolicy',
+              action: 'set-snapshotpolicy',
               data,
             })
           }
@@ -196,15 +197,14 @@ export default {
           }
         } else {
           if (resource.addServers.length > 0) {
-            await manager.performAction({
-              id: this.params.data[0].id,
-              action: 'bind-resources',
-              data: {
-                resources: resource.addServers.map((item) => { return { id: item, type: 'server' } }),
-              },
+            await manager.batchPerformAction({
+              ids: resource.addServers,
+              action: 'set-snapshotpolicy',
+              data,
             })
           }
           if (resource.delServers.length > 0) {
+            const manager = new this.$Manager('snapshotpolicies')
             await manager.performAction({
               id: this.params.data[0].id,
               action: 'unbind-resources',

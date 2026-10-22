@@ -1,0 +1,66 @@
+<template>
+  <base-side-page
+    @cancel="cancelSidePage"
+    :title="$t('dictionary.container_image')"
+    icon="res-image"
+    :res-name="detailData.name"
+    :current-tab="params.windowData.currentTab"
+    :tabs="detailTabs"
+    :loaded="loaded"
+    @tab-change="handleTabChange">
+    <template v-slot:actions>
+      <actions
+        :options="singleActions"
+        :row="detailData"
+        button-type="link"
+        button-size="small" />
+    </template>
+    <component
+      :is="params.windowData.currentTab"
+      :res-id="data.id"
+      :id="listId"
+      :data="detailData"
+      :getParams="getParams"
+      :on-manager="onManager"
+      :columns="columns" />
+  </base-side-page>
+</template>
+
+<script>
+import SidePageMixin from '@/mixins/sidePage'
+import WindowsMixin from '@/mixins/windows'
+import Actions from '@/components/PageList/Actions'
+import Detail from './Detail'
+import SingleActionsMixin from '../mixins/singleActions'
+import ColumnsMixin from '../mixins/columns'
+
+export default {
+  name: 'ContainerImageSidePage',
+  components: {
+    Detail,
+    Actions,
+  },
+  mixins: [SidePageMixin, WindowsMixin, ColumnsMixin, SingleActionsMixin],
+  data () {
+    return {
+      detailTabs: [
+        { label: this.$t('common_386'), key: 'detail' },
+        { label: this.$t('compute.text_240'), key: 'event-drawer' },
+      ],
+    }
+  },
+  computed: {
+    getParams () {
+      return null
+    },
+    listId () {
+      switch (this.params.windowData.currentTab) {
+        case 'event-drawer':
+          return 'EventListForContainerImageSidePage'
+        default:
+          return ''
+      }
+    },
+  },
+}
+</script>

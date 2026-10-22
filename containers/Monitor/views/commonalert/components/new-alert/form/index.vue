@@ -8,6 +8,9 @@
     <a-form-item :label="$t('common.description')">
       <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
     </a-form-item>
+    <a-form-item :label="$t('monitor.alert_reason')">
+      <a-input v-decorator="decorators.reason" :placeholder="$t('common.placeholder')" />
+    </a-form-item>
     <a-form-item :label="$t('monitor.text_97')">
       <base-select
         v-decorator="decorators.metric_res_type"
@@ -19,20 +22,6 @@
     </a-form-item>
     <container-title :title="$t('monitor.commonalert.alarm_strategy')" />
     <a-form-item :label="$t('monitor.commonalert.alert_condition')">{{$t('monitor.commonalert.alert_condition.content')}}</a-form-item>
-    <a-form-item :label="$t('monitor.commonalert.query_condition')" class="mb-0">
-      <a-row :gutter="2">
-        <a-col :span="6">
-          <a-form-item>
-            <base-select v-decorator="decorators.period" :options="preiodOpts" />
-          </a-form-item>
-        </a-col>
-        <a-col :span="6">
-          <a-form-item>
-            <base-select v-decorator="decorators.alert_duration" :options="durationOpts" />
-          </a-form-item>
-        </a-col>
-      </a-row>
-    </a-form-item>
     <a-form-item :label="$t('monitor.condition')">
       <condition
         ref="conditionRef"
@@ -40,7 +29,33 @@
         :res_type_measurements="res_type_measurements"
         :metric_res_type="form.fd.metric_res_type"
         :disabled="disabled"
-        @metricChange="metricChangeHandle" />
+        @metricChange="metricChangeHandle"
+        @delta-change="hasDeltaCondition = $event" />
+    </a-form-item>
+    <a-form-item
+      :label="$t('monitor.commonalert.query_condition')"
+      :extra="hasDeltaCondition ? $t('monitor.commonalert.delta_condition_no_duration') : undefined">
+      <a-row :gutter="2">
+        <a-col :span="6">
+          <a-form-item class="mb-0">
+            <base-select v-decorator="decorators.period" :options="preiodOpts" />
+          </a-form-item>
+        </a-col>
+        <a-col v-if="!hasDeltaCondition" :span="6">
+          <a-form-item class="mb-0">
+            <base-select v-decorator="decorators.alert_duration" :options="durationOpts" />
+          </a-form-item>
+        </a-col>
+        <a-col v-else :span="12" class="d-flex align-items-center ml-4">
+          <span class="mr-1">{{ $t('monitor.commonalert.from_period_label') }}</span>
+          <a-form-item class="mb-0">
+            <base-select
+              v-decorator="decorators.from"
+              :options="fromOpts"
+              :select-props="{ placeholder: $t('monitor.commonalert.from_period_placeholder') }" />
+          </a-form-item>
+        </a-col>
+      </a-row>
     </a-form-item>
     <a-form-item :label="$t('monitor.monitor_filters')">
       <a-row>
@@ -73,6 +88,9 @@
         </template>
         </a-tooltip>
       </a-form-item>
+    </a-form-item>
+    <a-form-item :label="$t('monitor.commonalerts.disable_notify_recovery')">
+      <a-switch v-decorator="decorators.disable_notify_recovery" :checked-children="$t('common.true')" :un-checked-children="$t('common.false')" />
     </a-form-item>
     <a-form-item :label="$t('monitor.level')">
       <a-radio-group v-decorator="decorators.level">
@@ -150,14 +168,13 @@ import * as R from 'ramda'
 import _ from 'lodash'
 import { mapGetters } from 'vuex'
 import Filters from '@Monitor/sections/Filters'
-import ScopeRadio from '@/sections/ScopeRadio'
 import { levelMaps, preiodMaps } from '@Monitor/constants'
+import ScopeRadio from '@/sections/ScopeRadio'
 import { resolveValueChangeField } from '@/utils/common/ant'
 import NotifyTypes from '@/sections/NotifyTypes'
 import workflowMixin from '@/mixins/workflow'
 import { WORKFLOW_TYPES } from '@/constants/workflow'
 import Condition from './Condition'
-
 export default {
   name: 'CommonalertForm',
   components: {
@@ -203,7 +220,8 @@ export default {
       period: '5m',
       comparator: '>=',
       alert_duration: 2,
-      silent_period: '360m',
+      from: '10m',
+      silent_period: '5m',
       reduce: 'avg',
       level: 'normal',
       scope: this.$store.getters.scope,
@@ -211,6 +229,7 @@ export default {
       robot_ids: [],
       channel: ['webconsole'],
       notifyTypes: [],
+      disable_notify_recovery: false,
     }
     if (this.commonalertId) {
       initialValue.name = this.alertData.name
@@ -220,6 +239,8 @@ export default {
       initialValue.project = this.alertData.tenant_id
       initialValue.silent_period = this.alertData.silent_period
       initialValue.res_type = _.get(this.alertData, 'common_alert_metric_details[0].res_type')
+      initialValue.reason = this.alertData.reason
+      initialValue.description = this.alertData.description
       tags = _.get(this.alertData, 'common_alert_metric_details[0].filters') || []
 
       if (this.alertData.robot_ids && this.alertData.robot_ids.length) {
@@ -250,6 +271,9 @@ export default {
       }
       if (initialValue.project) {
         initialValue.scope = 'project'
+      }
+      if (this.alertData.disable_notify_recovery) {
+        initialValue.disable_notify_recovery = true
       }
     }
 
@@ -302,7 +326,18 @@ export default {
             ],
           },
         ],
-        description: ['description'],
+        description: [
+          'description',
+          {
+            initialValue: initialValue.description,
+          },
+        ],
+        reason: [
+          'reason',
+          {
+            initialValue: initialValue.reason,
+          },
+        ],
         metric_res_type: [
           'metric_res_type',
           {
@@ -484,6 +519,15 @@ export default {
             ],
           },
         ],
+        from: [
+          'from',
+          {
+            initialValue: initialValue.from,
+            rules: [
+              { required: true, message: this.$t('common.select') },
+            ],
+          },
+        ],
         silent_period: [
           'silent_period',
           {
@@ -495,6 +539,13 @@ export default {
           'level',
           {
             initialValue: initialValue.level,
+          },
+        ],
+        disable_notify_recovery: [
+          'disable_notify_recovery',
+          {
+            valuePropName: 'checked',
+            initialValue: initialValue.disable_notify_recovery,
           },
         ],
         notify_type: [
@@ -564,6 +615,16 @@ export default {
         { key: '1440m', label: this.$t('monitor.duration.silent.hour', [24]) },
       ],
       preiodOpts: Object.values(preiodMaps),
+      fromPeriodOpts: [
+        { key: '10m', label: this.$t('monitor.duration.silent.minute', [10]) },
+        { key: '30m', label: this.$t('monitor.duration.silent.minute', [30]) },
+        { key: '60m', label: this.$t('monitor.duration.silent.hour', [1]) },
+        { key: '180m', label: this.$t('monitor.duration.silent.hour', [3]) },
+        { key: '360m', label: this.$t('monitor.duration.silent.hour', [6]) },
+        { key: '720m', label: this.$t('monitor.duration.silent.hour', [12]) },
+        { key: '1440m', label: this.$t('monitor.duration.silent.hour', [24]) },
+        { key: '2880m', label: this.$t('monitor.duration.silent.hour', [48]) },
+      ],
       durationOpts: [
         { key: 1, label: this.$t('monitor.duration.label', [1]) },
         { key: 2, label: this.$t('monitor.duration.label', [2]) },
@@ -586,6 +647,7 @@ export default {
       label: this.$t('monitor.text00015'),
       isFirstMetricChange: this.isUpdate,
       conditionMap: new Map(),
+      hasDeltaCondition: false,
     }
   },
   computed: {
@@ -607,6 +669,11 @@ export default {
         scope: this.currentScope,
         limit: 0,
       }
+    },
+    fromOpts () {
+      const period = this.form.fd.period
+      const pMin = this.periodMinutes(period)
+      return this.fromPeriodOpts.filter(opt => this.periodMinutes(opt.key) > pMin)
     },
     robotParams () {
       if (this.currentScope === 'project' && this.formScopeParams.project_id) {
@@ -706,8 +773,21 @@ export default {
     } else {
       this.$refs.conditionRef.add()
     }
+    this.$nextTick(() => {
+      const from = this.form.fd.from
+      const opts = this.fromOpts
+      if (opts.length && !opts.some(opt => opt.key === from)) {
+        this.form.fc.setFieldsValue({ from: opts[0].key })
+      }
+    })
   },
   methods: {
+    periodMinutes (periodKey) {
+      if (!periodKey || typeof periodKey !== 'string') return 0
+      const num = parseInt(periodKey, 10)
+      const unit = periodKey.slice(-1)
+      return unit === 'h' ? num * 60 : num
+    },
     initResType () {
       this.form.fd.metric_res_type = this.alertData.common_alert_metric_details[0].res_type
     },
@@ -716,7 +796,7 @@ export default {
       const conditionRef = this.$refs.conditionRef
       conditionRef.reset(false)
       metric_details.forEach((item, idx) => {
-        conditionRef.add()
+        conditionRef.add({ comparator: item.comparator })
         this.$nextTick(() => {
           const conditionList = conditionRef.conditionList
           this.form.fc.setFieldsValue({
@@ -832,6 +912,14 @@ export default {
           this.$set(this.form.fd, key, item)
         }
       }, newField)
+      if (newField.hasOwnProperty('period')) {
+        const opts = this.fromOpts
+        const curFrom = this.form.fd.from
+        const valid = opts.some(opt => opt.key === curFrom)
+        if (!valid && opts.length) {
+          this.form.fc.setFieldsValue({ from: opts[0].key })
+        }
+      }
       this.$nextTick(this.toParams)
       if (newField.hasOwnProperty('notify_type')) {
         this.notifyTypes = newField.notify_type
@@ -891,11 +979,24 @@ export default {
     },
     toParams () {
       const fd = this.form.fc.getFieldsValue()
+      let fromValue
+      if (fd.from) {
+        fromValue = fd.from
+      } else if (fd.period && fd.alert_duration != null) {
+        const periodNum = parseInt(fd.period, 10)
+        const unit = String(fd.period).slice(-1)
+        if (unit === 'm' && periodNum * fd.alert_duration < 10) {
+          fromValue = '10m'
+        } else {
+          fromValue = (periodNum * fd.alert_duration) + unit
+        }
+      }
+      if (!fromValue) fromValue = '24h'
       const metric_query = []
       const conditionList = this.$refs.conditionRef.conditionList
       conditionList.forEach(({ key }) => {
         const params = {
-          from: '24h',
+          from: fromValue,
         }
         const model = {
           database: this.metricKeyItem.database || _.get(this.alertData, 'common_alert_metric_details[0].db', 'telegraf'),
@@ -926,7 +1027,8 @@ export default {
             if (value) {
               let val = value
               if ((fd.tagOperators[key] === '=~' || fd.tagOperators[key] === '!~') && val && val.length) {
-                val = `/${val.map(v => `^${v}$`).join('|')}/`
+                const arr = Array.isArray(val) ? val : [val]
+                val = `/${arr.map(v => `^${v}$`).join('|')}/`
               }
               const tag = {
                 key: fd.tagKeys[key],

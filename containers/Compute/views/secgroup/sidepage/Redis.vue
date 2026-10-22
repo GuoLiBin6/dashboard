@@ -7,11 +7,12 @@
     :columns="columns"
     :list="list"
     :showSearchbox="showSearchbox"
-    :export-data-options="exportDataOptions"
-    :tag-config-params="tagConfigParams" />
+    :export-data-options="exportDataOptions" />
 </template>
 
 <script>
+import ColumnsMixin from '@DB/views/redis/mixins/columns'
+import { ENGINE_ARCH } from '@DB/views/redis/constants'
 import ListMixin from '@/mixins/list'
 import {
   getNameFilter,
@@ -27,9 +28,6 @@ import {
 } from '@/utils/common/tableFilter'
 import expectStatus from '@/constants/expectStatus'
 import WindowsMixin from '@/mixins/windows'
-import ColumnsMixin from '@DB/views/redis/mixins/columns'
-import { ENGINE_ARCH } from '@DB/views/redis/constants'
-
 export default {
   name: 'RedisList',
   mixins: [WindowsMixin, ListMixin, ColumnsMixin],
@@ -107,10 +105,6 @@ export default {
         hiddenColumns: ['metadata', 'instance_type', 'created_at'],
         autoHiddenFilterKey: 'redis_hidden_columns',
       }),
-      tagConfigParams: {
-        resource: 'elasticcaches',
-        queryTreeId: 'project-tag-value-tree',
-      },
     }
   },
   computed: {

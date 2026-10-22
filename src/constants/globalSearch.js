@@ -4,7 +4,7 @@ import store from '@/store'
 import { hasPermission } from '@/utils/auth'
 import { changeToArr } from '@/utils/utils'
 
-export const getSearchMaps = (searchRes = {}) => {
+export const getSearchMaps = (searchRes = {}, extraResMaps = {}) => {
   const commonSearchQuery = {
     scope: store.getters.scope,
     limit: 20,
@@ -1218,8 +1218,9 @@ export const getSearchMaps = (searchRes = {}) => {
       resData: {},
     },
     alertResource: {
+      globalSearchHidden: true,
       menu_key: 'alertresource',
-      res_name: 'alert_resources',
+      res_name: 'monitorresourcealerts',
       label: i18n.t('dictionary.alertresource'),
       id: 'alertResource',
       component: 'AlertResourceList',
@@ -1228,12 +1229,11 @@ export const getSearchMaps = (searchRes = {}) => {
         common: {
           ...commonSearchQuery,
         },
-        name: {
-          filter: `name.contains(${getFilter('name')})`,
-        },
+        res_name: searchRes.name,
       },
       resData: {},
     },
+    ...extraResMaps,
   }
 
   const validMaps = R.filter((val, key) => {

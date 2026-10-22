@@ -29,6 +29,7 @@
       :show-create-action="false"
       :isPageDestroyed="isPageDestroyed"
       taskResource="compute-tasks"
+      gpuResource="guestisolateddevices"
       @refresh="refresh"
       @single-refresh="singleRefresh"
       @tab-change="handleTabChange" />
@@ -37,21 +38,20 @@
 
 <script>
 import * as R from 'ramda'
+import GpuList from '@Compute/views/gpu/components/List'
+import ContainerList from '@Compute/views/pod-container/components/List'
 import SidePageMixin from '@/mixins/sidePage'
 import WindowsMixin from '@/mixins/windows'
 import Actions from '@/components/PageList/Actions'
-import GpuList from '@Compute/views/gpu/components/List'
-import ContainerList from '@Compute/views/pod-container/components/List'
 import Detail from './Detail'
 import SecgroupList from './Secgroup'
-// import Terminal from './Terminal'
 import NetworkList from './Network'
 import DiskList from './DiskList'
 import Monitor from './Monitor'
-// import Alert from './Alert'
 import SingleActionsMixin from '../mixins/singleActions'
 import ColumnsMixin from '../mixins/columns'
-
+// import Terminal from './Terminal'
+// import Alert from './Alert'
 export default {
   name: 'VmContainerInstanceSidePage',
   components: {
@@ -68,7 +68,7 @@ export default {
   },
   mixins: [SidePageMixin, WindowsMixin, ColumnsMixin, SingleActionsMixin],
   data () {
-    let detailTabs = [
+    const detailTabs = [
       { label: this.$t('compute.text_238'), key: 'detail' },
       { label: this.$t('compute.container', []), key: 'container-list' },
       { label: this.$t('compute.text_105'), key: 'secgroup-list' },
@@ -78,12 +78,8 @@ export default {
       { label: this.$t('compute.text_608'), key: 'monitor' },
       // { label: this.$t('compute.text_1301'), key: 'alert' },
       { label: this.$t('table.title.task'), key: 'task-drawer' },
-      // { label: this.$t('compute.repo.terminal'), key: 'terminal' },
       { label: this.$t('compute.text_240'), key: 'event-drawer' },
     ]
-    if (this.$store.getters.isProjectMode) {
-      detailTabs = R.remove(R.findIndex(R.propEq('key', 'gpu-list'))(detailTabs), 1, detailTabs)
-    }
     return {
       detailTabs,
       agent_status: '',
@@ -261,7 +257,7 @@ export default {
     },
     beforeShowMenu () {
       return this.$store.dispatch('scopedPolicy/get', {
-        category: ['vminstance_hidden_menus', 'vminstance_configured_callback_address', 'disk_hidden_menus'],
+        category: ['vminstance_container_hidden_menus', 'vminstance_configured_callback_address', 'disk_hidden_menus'],
       })
     },
     async handleInstallTask (params) {

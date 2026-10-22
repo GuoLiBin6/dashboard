@@ -2,7 +2,7 @@
   <base-dialog @cancel="cancelDialog">
     <div slot="header">{{action}}</div>
     <div slot="body">
-      <dialog-selected-tips :name="$t('aice.llm')" :count="params.data.length" :action="action" />
+      <dialog-selected-tips :name="instanceLabel" :count="params.data.length" :action="action" />
       <dialog-table :data="params.data" :columns="columns" />
       <a-form :form="form.fc" v-bind="formItemLayout">
         <a-form-item :label="$t('aice.model')">
@@ -19,6 +19,7 @@
 
 <script>
 import { mapGetters } from 'vuex'
+import { parseLlmRoute } from '@Ai/utils/llmRouteContext'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 
@@ -27,6 +28,10 @@ export default {
   mixins: [DialogMixin, WindowsMixin],
   data () {
     return {
+      ...(() => {
+        const ctx = parseLlmRoute(this.$route.path)
+        return { isApplyType: ctx.isApplyType, isDesktopType: ctx.isDesktopType }
+      })(),
       loading: false,
       action: this.params.actionText,
       form: {
@@ -65,6 +70,11 @@ export default {
   },
   computed: {
     ...mapGetters(['userInfo']),
+    instanceLabel () {
+      if (this.isDesktopType) return this.$t('aice.desktop_llm')
+      if (this.isApplyType) return this.$t('aice.app_llm')
+      return this.$t('aice.llm')
+    },
     columns () {
       const showFields = ['name', 'phone_ip', 'phone_image', 'phone_model']
       return this.params.columns.filter((item) => { return showFields.includes(item.field) })

@@ -7,9 +7,15 @@ export const usageMap = {
   cpu: {
     field: {
       used: {
-        system: ['all.servers.cpu', 'all.running_servers.cpu'],
-        domain: ['domain.servers.cpu', 'domain.running_servers.cpu'],
-        project: ['servers.cpu', 'running_servers.cpu'],
+        // 数组供面板「使用量指标」下拉可选；getUsageData 会对非 total 的数组求和
+        system: ['all.servers.cpu', 'all.containers.cpu'],
+        domain: ['domain.servers.cpu', 'domain.containers.cpu'],
+        project: ['servers.cpu', 'containers.cpu'],
+      },
+      running: {
+        system: ['all.running_servers.cpu', 'all.running_containers.cpu'],
+        domain: ['domain.running_servers.cpu', 'domain.running_containers.cpu'],
+        project: ['running_servers.cpu', 'running_containers.cpu'],
       },
       total: {
         system: ['hosts.cpu', 'hosts.cpu.virtual'],
@@ -21,9 +27,14 @@ export const usageMap = {
   memory: {
     field: {
       used: {
-        system: ['all.servers.memory', 'all.running_servers.memory'],
-        domain: ['domain.servers.memory', 'domain.running_servers.memory'],
-        project: ['servers.memory', 'running_servers.memory'],
+        system: ['all.servers.memory', 'all.containers.memory'],
+        domain: ['domain.servers.memory', 'domain.containers.memory'],
+        project: ['servers.memory', 'containers.memory'],
+      },
+      running: {
+        system: ['all.running_servers.memory', 'all.running_containers.memory'],
+        domain: ['domain.running_servers.memory', 'domain.running_containers.memory'],
+        project: ['running_servers.memory', 'running_containers.memory'],
       },
       total: {
         system: ['hosts.memory', 'hosts.memory.virtual'],
@@ -38,6 +49,12 @@ export const usageMap = {
         system: 'all.disks',
         domain: 'domain.disks',
         project: 'disks',
+      },
+      // 与 used 并列，供 storages.virtual 下可选 all.servers.disk（二者不可简单相加）
+      servers_disk: {
+        system: 'all.servers.disk',
+        domain: 'domain.servers.disk',
+        project: 'servers.disk',
       },
       total: {
         system: ['storages', 'storages.virtual'],
@@ -100,6 +117,31 @@ export const usageMap = {
         system: 'all.pending_delete_servers',
         domain: 'domain.pending_delete_servers',
         project: 'pending_delete_servers',
+      },
+    },
+    unit: i18n.t('common_62'),
+  },
+  containerInstance: {
+    field: {
+      total: {
+        system: 'all.containers',
+        domain: 'domain.containers',
+        project: 'containers',
+      },
+      running: {
+        system: 'all.running_containers',
+        domain: 'domain.running_containers',
+        project: 'running_containers',
+      },
+      ready: {
+        system: 'all.ready_containers',
+        domain: 'domain.ready_containers',
+        project: 'ready_containers',
+      },
+      delete: {
+        system: 'all.pending_delete_containers',
+        domain: 'domain.pending_delete_containers',
+        project: 'pending_delete_containers',
       },
     },
     unit: i18n.t('common_62'),
@@ -432,17 +474,29 @@ export const getUsageData = (F, resData, dataMap, scope = 'project', scale = 102
     const field = value[scope]
     data[scopeKey] = {}
     if (R.is(Function, field)) {
-      data[scopeKey].value = field(resData)
-      data[scopeKey].formatValue = field(resData)
+      const val = field(resData)
+      data[scopeKey].value = val
+      if (UNITS.includes(fieldObj.unit)) {
+        data[scopeKey].formatValue = sizestr(val, fieldObj.unit, scale)
+      } else {
+        data[scopeKey].formatValue = val
+      }
     } else if (R.is(Array, field)) {
-      field.map(usageKey => {
-        data[scopeKey].value = resData[usageKey]
-        if (UNITS.includes(fieldObj.unit)) {
-          data[scopeKey].formatValue = sizestr(resData[usageKey], fieldObj.unit, scale)
-        } else {
-          data[scopeKey].formatValue = resData[usageKey]
-        }
-      })
+      // total 数组表示可选的总量指标（取最后一项用于概览展示）
+      // used/running 等数组表示可选项，概览展示时求和
+      let val
+      if (scopeKey === 'total') {
+        const usageKey = field[field.length - 1]
+        val = resData[usageKey]
+      } else {
+        val = field.reduce((acc, usageKey) => acc + (resData[usageKey] || 0), 0)
+      }
+      data[scopeKey].value = val
+      if (UNITS.includes(fieldObj.unit)) {
+        data[scopeKey].formatValue = sizestr(val, fieldObj.unit, scale)
+      } else {
+        data[scopeKey].formatValue = val
+      }
     } else {
       data[scopeKey].value = resData[field]
       if (UNITS.includes(fieldObj.unit)) {

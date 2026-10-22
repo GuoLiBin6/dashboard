@@ -6,10 +6,112 @@ import i18n from '@/locales'
 import store from '@/store'
 import windowsMixin from '@/mixins/windows'
 import { hasPermission } from '@/utils/auth'
+import { maskSensitiveData, maskSensitiveUrlQuery } from '@/utils/maskSensitive'
 
 const WindowVue = Vue.extend({
   mixins: [windowsMixin],
 })
+
+// 后端正常响应会携带的链路追踪头，缺失则多为代理/WAF 等非后端错误页
+const BACKEND_TRACE_HEADERS = ['x-request-id', 'x-request-host-id']
+
+export const hasBackendTraceHeaders = (headers = {}) => {
+  if (!headers || typeof headers !== 'object') return false
+  const normalized = {}
+  Object.keys(headers).forEach(key => {
+    normalized[key.toLowerCase()] = headers[key]
+  })
+  return BACKEND_TRACE_HEADERS.every(name => {
+    const val = normalized[name]
+    return val !== undefined && val !== null && String(val).trim() !== ''
+  })
+}
+
+export const isNonBackendHttpError = (error) => {
+  const status = error?.response?.status
+  if (!status || status < 400 || status >= 600) return false
+  return !hasBackendTraceHeaders(error.response.headers)
+}
+
+export const getProxyWafInterceptHint = () => i18n.t('common.message.error.proxy_waf_intercept')
+
+/** 错误详情弹窗「错误源信息」展示格式化，避免字符串被展开为 {0:'P',1:'r',...} */
+export const formatErrorResourceForDisplay = (resource) => {
+  if (resource == null || resource === '') return ''
+  if (R.is(String, resource)) return resource
+  if (typeof resource === 'object') {
+    try {
+      return JSON.stringify(resource, null, 2)
+    } catch (e) {
+      return String(resource)
+    }
+  }
+  return String(resource)
+}
+
+const normalizeErrorResponseResource = (response) => {
+  if (!response) return null
+  const { status, statusText, headers, data } = response
+  if (R.is(String, data)) {
+    return {
+      status,
+      statusText,
+      body: data,
+      headers,
+    }
+  }
+  if (data != null && typeof data === 'object') {
+    return data
+  }
+  return {
+    status,
+    statusText,
+    body: data != null ? `${data}` : '',
+    headers,
+  }
+}
+
+/** 在已有业务错误信息基础上，追加代理/WAF 补充提示 */
+const attachProxyWafHintSupplement = (errorMsg, err) => {
+  if (!errorMsg || !isNonBackendHttpError(err)) return errorMsg
+  const hint = getProxyWafInterceptHint()
+  const detail = errorMsg.detail || ''
+  return {
+    ...errorMsg,
+    proxyWafHint: hint,
+    detail,
+    detailWithProxyHint: detail ? `${detail}\n\n${hint}` : hint,
+  }
+}
+
+/** 无其它可展示错误时，仅以代理/WAF 提示兜底 */
+export const buildFallbackHttpErrorMessage = (err) => {
+  const hint = getProxyWafInterceptHint()
+  const status = err?.response?.status
+  return {
+    class: status ? `HTTP ${status}` : i18n.t('common.message.error.request_failed'),
+    detail: '',
+    proxyWafHint: hint,
+    detailWithProxyHint: hint,
+    resource: normalizeErrorResponseResource(err?.response),
+  }
+}
+
+/**
+ * 统一解析 HTTP 错误展示内容：先解析常规后端错误，再处理代理/WAF
+ * - 有常规错误 + 非后端响应 → 常规错误 + 补充提示
+ * - 无常规错误 + 非后端响应 → 仅代理/WAF 兜底提示
+ */
+export const resolveHttpErrorDisplay = (err) => {
+  const errorMsg = getHttpErrorMessage(err)
+  if (errorMsg) {
+    return isNonBackendHttpError(err) ? attachProxyWafHintSupplement(errorMsg, err) : errorMsg
+  }
+  if (isNonBackendHttpError(err)) {
+    return buildFallbackHttpErrorMessage(err)
+  }
+  return null
+}
 
 const getDetailInfo = (data) => {
   const details = data.split(':') || []
@@ -47,9 +149,12 @@ export const getErrorBody = data => {
 //   })
 // }
 
-// 获取http请求报错信息
+// 获取http请求报错信息（仅解析后端/业务错误，不含代理/WAF 兜底逻辑）
 export const getHttpErrorMessage = (err, isErrorBody = false) => {
-  if (!isErrorBody && (!err.response || !err.response.data)) return
+  if (!isErrorBody && !err.response) return
+  if (!isErrorBody && !err.response.data) {
+    return
+  }
   const errorData = isErrorBody ? err : err.response.data
   let errorBody = getErrorBody(errorData)
   if (R.is(Object, errorBody.error)) errorBody = errorBody.error
@@ -87,56 +192,61 @@ export const getHttpErrorMessage = (err, isErrorBody = false) => {
     // class: errorInfo ? errorInfo['zh-CN'] : errorBody.class,
     class: errorClass || errorBody.class,
     detail: ret,
-    resource: !isErrorBody ? err.response.data : err,
+    resource: !isErrorBody ? normalizeErrorResponseResource(err.response) : err,
   }
 }
 
-// 获取http请求信息
+// 获取http请求信息（敏感字段已脱敏，避免密码/token 随错误详情回显）
 export const getHttpReqMessage = error => {
   const { headers, method, params, data, url } = error.config
   const req = {
     method,
-    url,
-    headers,
+    url: maskSensitiveUrlQuery(url),
+    headers: maskSensitiveData(headers),
   }
-  if (data) req.data = R.is(String, data) ? JSON.parse(data) : data
-  if (params) req.params = R.is(String, params) ? JSON.parse(params) : params
+  if (data) req.data = maskSensitiveData(R.is(String, data) ? JSON.parse(data) : data)
+  if (params) req.params = maskSensitiveData(R.is(String, params) ? JSON.parse(params) : params)
   return req
 }
 
 // 获取列表删除操作权限
+const getDeleteItemLabel = (item) => {
+  if (!item) return ''
+  const name = String(item.name || '').trim()
+  if (name) return name
+  return String(item.id || '').trim()
+}
+
+const formatDeleteFailReason = (failReason) => {
+  if (!failReason) return ''
+  const errorMessage = getHttpErrorMessage(failReason, true)
+  return errorMessage?.detail || ''
+}
+
 export const getDeleteResult = (row, deleteField = 'can_delete', failKey = 'delete_fail_reason') => {
   let validate = true
   let tooltip = null
-  let data = R.is(Array, row) ? row : [row]
-  if (data.length === 0) {
+  const items = R.is(Array, row) ? row : [row]
+  if (items.length === 0) {
     return {
       validate: false,
     }
   }
-  data = data.filter(item => !item?.[deleteField])
-  const len = data.length
-  if (len > 0) {
+  const blocked = items.filter(item => !item?.[deleteField])
+  if (blocked.length > 0) {
     validate = false
-    let deleteFailReason = []
-    // 只有一项不可删除条目时
-    if (len === 1) {
-      deleteFailReason = [data[0]?.[failKey]]
-    }
-    // 有多条不可删除条目时
-    if (len > 1) {
-      deleteFailReason = data.map(item => item?.[failKey]).filter(val => !!val)
-    }
-    // 处理获取到的 deleteFailReason
-    if (deleteFailReason.length > 1 || deleteFailReason.length <= 0) {
-      tooltip = i18n.t('common_604')
+    const lines = blocked.map(item => {
+      const label = getDeleteItemLabel(item)
+      const reason = formatDeleteFailReason(item?.[failKey])
+      if (label && reason) return `${label}: ${reason}`
+      if (label) return label
+      if (reason) return reason
+      return ''
+    }).filter(line => !!line)
+    if (lines.length > 0) {
+      tooltip = lines.join('\n')
     } else {
-      deleteFailReason = deleteFailReason[0]
-      if (deleteFailReason) {
-        const error = deleteFailReason
-        const errorMessage = getHttpErrorMessage(error, true)
-        tooltip = errorMessage.detail
-      }
+      tooltip = i18n.t('common_604')
     }
   }
   return {
@@ -204,10 +314,27 @@ export const getBatchErrorMessage = (response, idKey = 'id') => {
 
 export const getDescription = (errorMsg, h) => {
   if (R.is(Array, errorMsg)) { // 批量报错的话直接返回第一个class
-    return <div>{ errorMsg[0].class }</div>
+    const first = errorMsg[0]
+    if (first?.proxyWafHint) {
+      return (
+        <div>
+          <div>{ first.class }</div>
+          <div class="mt-2" style="color: #fa8c16;">{ first.proxyWafHint }</div>
+        </div>
+      )
+    }
+    return <div>{ first.class }</div>
   }
-  const vnode = classDriver(errorMsg, h)
-  return vnode
+  if (errorMsg.proxyWafHint) {
+    const vnode = classDriver(errorMsg, h)
+    return (
+      <div>
+        <div>{ vnode }</div>
+        <div class="mt-2" style="color: #fa8c16;">{ errorMsg.proxyWafHint }</div>
+      </div>
+    )
+  }
+  return classDriver(errorMsg, h)
 }
 
 const classDriver = (errorMsg, h) => {

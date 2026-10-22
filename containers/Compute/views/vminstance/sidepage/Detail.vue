@@ -15,8 +15,12 @@
 <script>
 import 'codemirror/theme/material.css'
 import * as R from 'ramda'
-import { ALL_STORAGE, SERVER_TYPE, GPU_DEV_TYPE_OPTION_MAP } from '@Compute/constants/index'
+import { ALL_STORAGE, SERVER_TYPE } from '@Compute/constants/index'
 import PasswordFetcher from '@Compute/sections/PasswordFetcher'
+import { formatCpuNumaPin } from '@Compute/views/vminstance/utils'
+import { formatServerSecgroupText, getNetworkTags, renderNetworkTagNodes } from '@Compute/utils/secgroupDisplay'
+import { getPortMappingDetailColumn } from '@Compute/utils/portMappingDisplay'
+import { getIsolatedDeviceDetailColumns } from '@Compute/views/gpu/utils/columns'
 import {
   getUserTagColumn,
   // getExtTagColumn,
@@ -26,17 +30,18 @@ import {
   getBrandTableColumn,
   getSwitchTableColumn,
   getOsArch,
+  getOsDist,
   getIpsTableColumn,
   getServerMonitorAgentInstallStatus,
   getStatusTableColumn,
   getNameDescriptionTableColumn,
+  getTimeTableColumn,
 } from '@/utils/common/tableColumn'
 import WindowsMixin from '@/mixins/windows'
 import { findPlatform } from '@/utils/common/hypervisor'
 import { BRAND_MAP, HYPERVISORS_MAP } from '@/constants'
 import { sizestr, sizestrWithUnit } from '@/utils/utils'
 import { hasPermission } from '@/utils/auth'
-
 export default {
   name: 'VmInstanceDetail',
   mixins: [WindowsMixin],
@@ -53,6 +58,7 @@ export default {
   },
   data () {
     return {
+      alertData: null,
       baseInfo: [
         getStatusTableColumn({
           field: 'power_states',
@@ -97,6 +103,20 @@ export default {
         // getExtTagColumn({ onManager: this.onManager, resource: 'server', columns: () => this.serverColumns, tipName: this.$t('dictionary.server') }),
         getServerMonitorAgentInstallStatus(),
         {
+          field: 'alert_data',
+          title: (h) => [
+            <span style="margin-right:5px">{this.$t('compute.alert_status')}</span>,
+            <help-tooltip name="alertDataTimeRange" />,
+          ],
+          slots: {
+            default: () => {
+              const state = this.alertData?.alert_state || 'init'
+              return [<status status={state} statusModule="monitorresources" />]
+            },
+          },
+          hidden: () => this.$isScopedPolicyMenuHidden('server_hidden_columns.alert_data'),
+        },
+        {
           field: 'keypair',
           hiddenField: 'password',
           title: this.$t('compute.text_33'),
@@ -136,8 +156,13 @@ export default {
             },
           },
         },
+        getTimeTableColumn({
+          field: 'last_start_at',
+          title: this.$t('compute.last_start_at'),
+        }),
       ],
       imageExist: false,
+      guestIsolatedDevices: [],
       cmOptions: {
         tabSize: 2,
         styleActiveLine: true,
@@ -149,6 +174,7 @@ export default {
         readOnly: true,
       },
       cmdline: '',
+      qemu_version: '',
       showCmdline: false,
     }
   },
@@ -279,16 +305,11 @@ export default {
         {
           title: this.$t('compute.text_368'),
           items: [
-            {
-              field: 'os_type',
+            getOsDist({
               title: this.$t('compute.text_267'),
-              formatter: ({ row }) => {
-                const distribution = (row.metadata && row.metadata.os_distribution) ? row.metadata.os_distribution : row.os_type
-                const { os_version: version = '' } = row.metadata || {}
-                return distribution + ' ' + (version === '-' ? '' : version)
-              },
+              show_label: true,
               hidden: () => this.$isScopedPolicyMenuHidden('server_hidden_columns.os_type'),
-            },
+            }),
             getIpsTableColumn({ field: 'ip', title: 'IP', vm: this, hidden: () => this.$isScopedPolicyMenuHidden('server_hidden_columns.ips') }),
             {
               field: 'sub_ips',
@@ -363,7 +384,11 @@ export default {
               title: this.$t('compute.text_105'),
               slots: {
                 default: ({ row }) => {
-                  if (!row.secgroups) return '-'
+                  const networkTags = getNetworkTags(row)
+                  if (networkTags.length) {
+                    return renderNetworkTagNodes(networkTags)
+                  }
+                  if (!row.secgroups?.length) return '-'
                   return row.secgroups.map((item) => {
                     return <list-body-cell-wrap copy hideField={true} field='name' row={item} message={item.name}>
                       <side-page-trigger permission='secgroups_get' name='SecGroupSidePage' id={item.id} vm={this}>{item.name}</side-page-trigger>
@@ -371,6 +396,7 @@ export default {
                   })
                 },
               },
+              formatter: ({ row }) => formatServerSecgroupText(row) || '-',
               hidden: () => this.$isScopedPolicyMenuHidden('server_hidden_columns.secgroups'),
             },
             {
@@ -427,6 +453,13 @@ export default {
               hidden: () => this.$isScopedPolicyMenuHidden('server_hidden_columns.vmem_size'),
             },
             {
+              field: 'cpu_numa_pin',
+              title: this.$t('compute.text_609'),
+              formatter: ({ row }) => {
+                return formatCpuNumaPin(row)
+              },
+            },
+            {
               field: 'sysDisk',
               title: this.$t('compute.text_49'),
               formatter: ({ row }) => {
@@ -475,63 +508,30 @@ export default {
             })(),
             {
               field: 'isolated_devices',
-              title: this.$t('compute.text_113'),
+              title: this.$t('compute.isolated_device.category.pci'),
               formatter: ({ row }) => {
-                if (!row.isolated_devices && !row.gpu_count) return '-'
-                const gpuArr = row.isolated_devices || []
-                const obj = {}
-                const devTypeMap = {}
-                const ids = {}
-                gpuArr.forEach(val => {
-                  if (val.dev_type !== 'USB') {
-                    if (!obj[val.model]) {
-                      obj[val.model] = 1
-                    } else {
-                      obj[val.model] += 1
-                    }
-                    ids[val.model] = val.id
-                    devTypeMap[val.model] = val.dev_type
-                  }
-                })
-                if (Object.keys(obj).length === 0) {
+                if (!row.isolated_devices?.length && !row.gpu_count) return '-'
+                const devices = this.getIsolatedDevicesForDisplay(row).filter(val => val.dev_type !== 'USB')
+                if (!devices.length) {
                   if (row.gpu_count && row.gpu_model) {
                     return this.$t('compute.text_370', [row.gpu_count, row.gpu_model])
-                  } else {
-                    return '-'
                   }
+                  return '-'
                 }
-                return Object.keys(obj).map(k => {
-                  const gpuLabel = `${GPU_DEV_TYPE_OPTION_MAP[devTypeMap[k]]?.label || devTypeMap[k]}-${k}`
-                  return <side-page-trigger permission='isolated_devices_get' name='GpuSidePage' id={ids[k]} vm={this}>{this.$t('compute.text_370', [obj[k], gpuLabel])}</side-page-trigger>
-                })
+                return this.renderIsolatedDeviceRows(devices)
               },
             },
             {
               field: 'isolated_devices',
-              title: 'USB',
+              title: this.$t('compute.isolated_device.category.usb'),
               formatter: ({ row }) => {
-                if (!row.isolated_devices) return '-'
-                const gpuArr = row.isolated_devices
-                const obj = {}
-                const ids = {}
-                gpuArr.forEach(val => {
-                  if (val.dev_type === 'USB') {
-                    if (!obj[val.model]) {
-                      obj[val.model] = 1
-                    } else {
-                      obj[val.model] += 1
-                    }
-                    ids[val.model] = val.id
-                  }
-                })
-                if (Object.keys(obj).length === 0) {
-                  return '-'
-                }
-                return Object.keys(obj).map(k => {
-                  return <side-page-trigger permission='isolated_devices_get' name='GpuSidePage' id={ids[k]} vm={this}>{this.$t('compute.text_370', [obj[k], k])}</side-page-trigger>
-                })
+                if (!row.isolated_devices?.length) return '-'
+                const devices = this.getIsolatedDevicesForDisplay(row).filter(val => val.dev_type === 'USB')
+                if (!devices.length) return '-'
+                return this.renderIsolatedDeviceRows(devices)
               },
             },
+            getPortMappingDetailColumn(),
             {
               field: 'is_daemon',
               title: () => {
@@ -638,17 +638,49 @@ export default {
         },
       ]
       if (this.isKvm && this.cmdline) {
-        infos[infos.length - 1].items.unshift({
-          field: 'metadata',
-          title: this.$t('compute.qemu_cmdline'),
-          slots: {
-            default: ({ row }, h) => {
-              return [
-                <a-button type="link" class="mb-2" style="height: 21px;padding:0" onclick={this.viewCmdline}>{this.showCmdline ? this.$t('table.title.off') : this.$t('compute.text_958')}</a-button>,
-                <code-mirror style={this.showCmdline ? {} : { visibility: 'hidden', height: '0px' }} value={this.cmdline} view-height="300px" options={this.cmOptions} />]
+        infos[0].items.push(
+          {
+            field: 'machine',
+            title: this.$t('compute.machine'),
+            formatter: ({ row }) => {
+              return row.machine?.toUpperCase() || 'PC'
             },
           },
-        })
+          {
+            field: 'vdi',
+            title: this.$t('compute.vdi_protocol'),
+            formatter: ({ row }) => {
+              return row.vdi?.toUpperCase() || 'VNC'
+            },
+          },
+          {
+            field: 'vga',
+            title: this.$t('compute.vga'),
+            formatter: ({ row }) => {
+              return row.vga?.toUpperCase() || 'VGA'
+            },
+          },
+          {
+            field: 'qemu_version',
+            title: this.$t('compute.qemu_version'),
+            formatter: () => {
+              return this.qemu_version || '-'
+            },
+          },
+        )
+        infos[infos.length - 1].items.unshift(
+          {
+            field: 'metadata',
+            title: this.$t('compute.qemu_cmdline'),
+            slots: {
+              default: ({ row }, h) => {
+                return [
+                  <a-button type="link" class="mb-2" style="height: 21px;padding:0" onclick={this.viewCmdline}>{this.showCmdline ? this.$t('table.title.off') : this.$t('compute.text_958')}</a-button>,
+                  <code-mirror style={this.showCmdline ? {} : { visibility: 'hidden', height: '0px' }} value={this.cmdline} view-height="300px" options={this.cmOptions} />]
+              },
+            },
+          },
+        )
       }
       return infos
     },
@@ -669,11 +701,80 @@ export default {
       immediate: true,
       deep: true,
     },
+    'data.id': {
+      handler () {
+        this.fetchAlertData()
+        this.fetchGuestIsolatedDevices()
+      },
+      immediate: true,
+    },
+    'data.isolated_devices': {
+      handler () {
+        this.fetchGuestIsolatedDevices()
+      },
+    },
   },
   created () {
     this.initQemuInfo()
   },
   methods: {
+    getIsolatedDevicesForDisplay (row) {
+      if (this.guestIsolatedDevices.length) return this.guestIsolatedDevices
+      return row.isolated_devices || []
+    },
+    renderIsolatedDeviceRows (devices) {
+      const deviceList = Array.isArray(devices) ? devices.slice() : []
+      return [
+        this.$createElement('div', [
+          this.$createElement('vxe-grid', {
+            class: 'mb-2',
+            props: {
+              data: deviceList,
+              columns: getIsolatedDeviceDetailColumns(this, deviceList),
+              resizable: true,
+            },
+          }),
+        ]),
+      ]
+    },
+    async fetchGuestIsolatedDevices () {
+      if (!this.data?.id || !this.data.isolated_devices?.length) {
+        this.guestIsolatedDevices = []
+        return
+      }
+      try {
+        const res = await new this.$Manager('guestisolateddevices').list({
+          params: {
+            limit: 0,
+            guest_id: this.data.id,
+            scope: this.$store.getters.scope,
+          },
+        })
+        this.guestIsolatedDevices = res.data.data || []
+      } catch (e) {
+        this.guestIsolatedDevices = []
+      }
+    },
+    async fetchAlertData () {
+      this.alertData = null
+      const id = this.data?.id
+      if (!id) return
+      if (this.$isScopedPolicyMenuHidden('server_hidden_columns.alert_data')) return
+      try {
+        const monitorManager = new this.$Manager('unifiedmonitors', 'v1')
+        const res = await monitorManager.get({
+          id: 'resource-metrics',
+          params: {
+            res_ids: [id],
+            res_type: 'guest',
+          },
+        })
+        const metrics = res.data?.resource_metrics?.[id]
+        this.alertData = metrics || null
+      } catch (e) {
+        this.alertData = null
+      }
+    },
     _diskStringify (diskObj) {
       let str = ''
       const storageArr = Object.values(ALL_STORAGE)
@@ -720,8 +821,9 @@ export default {
               spec: 'qemu-info',
             },
           })
-          const { cmdline = '' } = res.data
+          const { cmdline = '', version = '' } = res.data
           this.cmdline = cmdline
+          this.qemu_version = version
         }
       } catch (err) {
         console.error(err)

@@ -29,18 +29,20 @@
   </page-footer>
 </template>
 <script>
+import { SERVER_TYPE } from '@Compute/constants'
 import { sizestr } from '@/utils/utils'
 import { Manager } from '@/utils/manager'
 import PriceFetcher from '@/components/PriceFetcher'
-import { SERVER_TYPE } from '@Compute/constants'
 import { findPlatform } from '@/utils/common/hypervisor'
-
 export default {
   name: 'BottomBar',
   components: {
     PriceFetcher,
   },
-  inject: ['form'],
+  inject: {
+    form: { default: undefined },
+    flushCreateFormFieldDrafts: { default: undefined },
+  },
   props: {
     values: {
       type: Object,
@@ -150,10 +152,14 @@ export default {
     },
     async doCreate () {
       if (!this.validateForm()) return false
+      if (typeof this.flushCreateFormFieldDrafts === 'function') {
+        this.flushCreateFormFieldDrafts()
+      }
       this.loading = true
       const manager = new Manager('dbinstances', 'v2')
       try {
         await manager.create({ data: this.formatParams() })
+        this.$emit('create-success')
         this.$router.push('/rds')
       } catch (err) {
         throw err

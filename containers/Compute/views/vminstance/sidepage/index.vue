@@ -30,6 +30,7 @@
       :hiddenColumns="hiddenColumns"
       :hiddenSingleActions="hiddenSingleActions"
       :hiddenActionKeys="['SetReserveResource']"
+      gpuResource="guestisolateddevices"
       taskResource="compute-tasks"
       @refresh="refresh"
       @single-refresh="singleRefresh"
@@ -47,19 +48,18 @@ import Actions from '@/components/PageList/Actions'
 import { hasPermission } from '@/utils/auth'
 import { isScopedPolicyMenuHidden } from '@/utils/scopedPolicy'
 import NetworkListForVmInstanceSidepage from './Network'
-import SingleActionsMixin from '../mixins/singleActions'
-import ColumnsMixin from '../mixins/columns'
-// import { cloudEnabled, cloudUnabledTip } from '../utils'
 import VmInstanceDetail from './Detail'
 import VmInstanceMonitorSidepage from './Monitor'
-import VmInstanceAlertSidepage from './Alert'
+import VmInstanceAlertHistory from './AlertHistory'
 import VmSnapshotSidepage from './Snapshot'
 import SecgroupList from './Secgroup'
 import DiskListForVmInstanceSidepage from './DiskList'
+import SingleActionsMixin from '../mixins/singleActions'
+import ColumnsMixin from '../mixins/columns'
+// import { cloudEnabled, cloudUnabledTip } from '../utils'
 // import DiskSnapshotListForVmInstanceSidepage from '@Compute/views/snapshot/components/List'
 // import InstanceSnapshotListForVmInstanceSidepage from '@Compute/views/snapshot-instance/components/List'
 // import EipListForVmInstanceSidepage from './EipList'
-
 export default {
   name: 'VmInstanceSidePage',
   components: {
@@ -72,7 +72,7 @@ export default {
     SecgroupList,
     // HostList,
     VmInstanceMonitorSidepage,
-    VmInstanceAlertSidepage,
+    VmInstanceAlertHistory,
     VmSnapshotSidepage,
     GpuList,
     ScheduledtasksList,
@@ -92,7 +92,7 @@ export default {
       // { label: this.$t('compute.text_102'), key: 'instance-snapshot-list-for-vm-instance-sidepage' },
       { label: this.$t('compute.text_113'), key: 'gpu-list' },
       { label: this.$t('compute.text_608'), key: 'vm-instance-monitor-sidepage' },
-      { label: this.$t('compute.text_1301'), key: 'vm-instance-alert-sidepage' },
+      { label: this.$t('dictionary.alertrecord'), key: 'vm-instance-alert-history' },
       { label: this.$t('table.title.task'), key: 'task-drawer' },
       { label: this.$t('cloudenv.text_431'), key: 'scheduledtasks-list' },
       { label: this.$t('compute.text_240'), key: 'event-drawer' },
@@ -109,9 +109,6 @@ export default {
     if (!hasPermission({ key: 'eip_list' })) {
       detailTabs = detailTabs.filter(item => item.key !== 'eip-list-for-vm-instance-sidepage')
     }
-    if (this.$store.getters.isProjectMode) {
-      detailTabs = detailTabs.filter(item => item.key !== 'gpu-list')
-    }
     if (isScopedPolicyMenuHidden('sub_hidden_menus.disk_snapshot') && isScopedPolicyMenuHidden('sub_hidden_menus.instance_snapshot')) {
       detailTabs = detailTabs.filter(item => item.key !== 'vm-snapshot-sidepage')
     }
@@ -123,6 +120,7 @@ export default {
       agent_status: '',
       agent_fail_reason: '',
       agent_fail_code: '',
+      agent_record_id: '',
       isPageDestroyed: false,
     }
   },
@@ -213,8 +211,6 @@ export default {
           return 'DiskLiskForVminstanceSidepage'
         case 'secgroup-list':
           return 'SecgroupLiskForVminstanceSidepage'
-        case 'vm-instance-alert-sidepage':
-          return 'AlertLiskForVminstanceSidepage'
         case 'event-drawer':
           return 'EventListForVminstanceSidepage'
         case 'gpu-list':
@@ -228,7 +224,7 @@ export default {
       }
     },
     componentData () {
-      return Object.assign({}, this.detailData, { agent_status: this.agent_status, agent_fail_reason: this.agent_fail_reason, agent_fail_code: this.agent_fail_code })
+      return Object.assign({}, this.detailData, { agent_status: this.agent_status, agent_fail_reason: this.agent_fail_reason, agent_fail_code: this.agent_fail_code, agent_record_id: this.agent_record_id })
     },
     hiddenColumns () {
       if (this.params.windowData.currentTab === 'scheduledtasks-list') {
@@ -294,6 +290,7 @@ export default {
         const { data: { data = [] } } = await new this.$Manager('scriptapplyrecords').list({ params: { server_id: this.data.data.id, details: false, limit: 1 } })
         if (data[0]) {
           this.agent_status = data[0].status
+          this.agent_record_id = data[0].id || ''
           if (data[0].status === 'applying') {
             if (!this.componentData.id) return
             this.handleInstallTask({
@@ -322,6 +319,7 @@ export default {
           }
           const { data: { data = [] } } = await new this.$Manager('scriptapplyrecords').list({ params: params })
           if (data[0]) {
+            this.agent_record_id = data[0].id || ''
             if (data[0].status === 'succeed' || data[0].status === 'failed') {
               this.agent_status = data[0].status
               this.agent_fail_reason = data[0].reason

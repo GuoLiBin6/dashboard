@@ -3,11 +3,13 @@
     :list="list"
     :columns="columns"
     :group-actions="groupActions"
-    :single-actions="singleActions" />
+    :single-actions="singleActions"
+    :hide-rowselect="$store.getters.isProjectMode" />
 </template>
 
 <script>
 import PasswordFetcher from '@Compute/sections/PasswordFetcher'
+import { cloudEnabled, cloudUnabledTip } from '@Compute/views/vminstance/utils'
 import { sizestr } from '@/utils/utils'
 import {
   getProjectTableColumn,
@@ -22,9 +24,8 @@ import {
 import SystemIcon from '@/sections/SystemIcon'
 import WindowsMixin from '@/mixins/windows'
 import ListMixin from '@/mixins/list'
-import { cloudEnabled, cloudUnabledTip } from '@Compute/views/vminstance/utils'
 import expectStatus from '@/constants/expectStatus'
-
+import { getServerGpuBinds } from '../utils/index'
 const commonUnabled = (value, statusArr = ['sched_fail', 'net_fail', 'disk_fail']) => {
   return statusArr.includes(value.status)
 }
@@ -35,6 +36,10 @@ export default {
   props: {
     data: {
       type: Object,
+      required: true,
+    },
+    gpuColumns: {
+      type: Array,
       required: true,
     },
   },
@@ -63,7 +68,7 @@ export default {
           addBackup: true,
           slotCallback: row => {
             return (
-              <side-page-trigger onTrigger={ () => this.sidePageTriggerHandle(row.id, 'VmInstanceSidePage') }>{ row.name }</side-page-trigger>
+              <side-page-trigger onTrigger={ () => this.sidePageTriggerHandle(this, 'VmInstanceSidePage', { id: row.id, resource: 'servers' }) }>{ row.name }</side-page-trigger>
             )
           },
         }),
@@ -163,7 +168,7 @@ export default {
             this.createDialog('GpuAttachServerDialog', {
               data: [this.data],
               title: this.$t('compute.text_483', [this.$t('dictionary.server')]),
-              columns: this.columns,
+              columns: this.gpuColumns,
               refresh: this.refresh,
             })
           },
@@ -174,12 +179,9 @@ export default {
               ret.tooltip = this.$t('compute.sriov_device_nic_notsupport')
               return ret
             }
-            if (this.data.guest_id) {
-              ret.validate = false
-              return ret
-            }
             return ret
           },
+          hidden: () => this.$store.getters.isProjectMode,
         },
       ],
       singleActions: [
@@ -228,6 +230,7 @@ export default {
               refresh: this.refresh,
               name: this.$t('dictionary.server'),
               device: this.data,
+              binds: getServerGpuBinds([obj], 'servers'),
             })
           },
           meta: obj => {
@@ -239,7 +242,7 @@ export default {
               return ret
             }
 
-            if (obj.status !== 'ready' && obj.status !== 'running') {
+            if (obj.status !== 'ready' && obj.status !== 'running' && obj.status !== 'unknown') {
               ret.validate = false
               ret.tooltip = this.$t('compute.text_489', [this.$t('compute.text_113')])
               return ret
@@ -248,6 +251,7 @@ export default {
             ret.tooltip = cloudUnabledTip('acttachGpu', obj)
             return ret
           },
+          hidden: () => this.$store.getters.isProjectMode,
         },
       ],
     }
@@ -260,17 +264,18 @@ export default {
     },
   },
   created () {
-    this.initSidePageTab('detail')
+    this.initSidePageTab('vm-instance-detail')
     this.list.fetchData()
   },
   methods: {
     refresh () {
+      this.list.fetchData()
       this.$bus.$emit('gpu-sidepage-refresh')
     },
     getParam () {
       return {
-        'filter.0': `id.equals(${this.data.guest_id})`,
-        'filter.1': 'hypervisor.notin(baremetal,container,pod)',
+        isolated_device_id: this.data.id,
+        'filter.0': 'hypervisor.notin(baremetal,container,pod)',
       }
     },
   },

@@ -14,7 +14,7 @@ import {
   SECGROUP_OPTIONS_MAP,
   FORECAST_FILTERS_MAP,
   RESOURCE_TYPES_MAP,
-  GPU_DEV_TYPE_OPTION_MAP,
+  GPU_TYPE_OPTION_MAP,
 } from '@Compute/constants'
 import { IMAGES_TYPE_MAP, HOST_CPU_ARCHS } from '@/constants/compute'
 
@@ -75,9 +75,22 @@ export function checkIpV6 (i, networkData) {
   }
 }
 
+/** 宿主机端口：可空；填写时需为 [min, max] 整数（默认 20000-25000） */
+export function validateHostPortRange (min = 20000, max = 25000) {
+  return (rule, value, callback) => {
+    if (value === undefined || value === null || value === '') return callback()
+    const port = Number(value)
+    if (!Number.isInteger(port) || port < min || port > max) {
+      return callback(new Error(i18n.t('compute.port_mappings.invalid_host_port', [min, max])))
+    }
+    return callback()
+  }
+}
+
 export function diskValidator (rule, value, callback) {
+  // 空值由 required 规则提示「请填写挂载点」，此处只校验路径格式
   if (R.isNil(value) || R.isEmpty(value)) {
-    return callback(new Error(i18n.t('compute.text_206')))
+    return callback()
   }
   if (!value.startsWith('/')) {
     return callback(new Error(i18n.t('compute.text_207')))
@@ -86,6 +99,67 @@ export function diskValidator (rule, value, callback) {
     return callback(new Error(i18n.t('compute.text_208')))
   }
   callback()
+}
+
+/** 将字符串/数组/对象形式的 zone 规范为 id 数组 */
+export function normalizePreferZonesFromRaw (value) {
+  const zones = []
+  if (R.is(String, value) && value) {
+    zones.push(value)
+  } else if (Array.isArray(value)) {
+    value.forEach((v) => {
+      if (R.is(String, v) && v) {
+        zones.push(v)
+      } else if (R.is(Object, v) && v.key) {
+        zones.push(v.key)
+      }
+    })
+  } else if (R.is(Object, value) && value.key) {
+    zones.push(value.key)
+  }
+  return zones
+}
+
+/** initData 优先 prefer_zones，其次 prefer_zone，再次 prefer_zone_id */
+export function getInitPreferZonesRaw (initData = {}) {
+  if (initData.prefer_zones !== undefined && initData.prefer_zones !== null) {
+    const zones = normalizePreferZonesFromRaw(initData.prefer_zones)
+    if (zones.length) {
+      return initData.prefer_zones
+    }
+  }
+  if (initData.prefer_zone !== undefined && initData.prefer_zone !== null) {
+    return initData.prefer_zone
+  }
+  if (initData.prefer_zone_id !== undefined && initData.prefer_zone_id !== null && initData.prefer_zone_id !== '') {
+    return initData.prefer_zone_id
+  }
+  return undefined
+}
+
+/** 初始化回填：非公有云为字符串，公有云为数组 */
+export function resolveInitPreferZone (initData = {}, isPublic) {
+  const zones = normalizePreferZonesFromRaw(getInitPreferZonesRaw(initData))
+  if (isPublic) {
+    return zones
+  }
+  return zones[0] || ''
+}
+
+/** 仅从表单解析 prefer_zones，不从 sku 解析 */
+export function parsePreferZonesFromForm (zone) {
+  return normalizePreferZonesFromRaw(zone)
+}
+
+/** 从提交/工单参数解析 prefer zones（兼容 prefer_zones / prefer_zone / prefer_zone_id） */
+export function getPreferZonesFromParam (params = {}) {
+  return normalizePreferZonesFromRaw(getInitPreferZonesRaw(params))
+}
+
+/** 从提交/工单参数解析 prefer zone（兼容 prefer_zones / prefer_zone / prefer_zone_id，取首项） */
+export function getPreferZoneFromParam (params = {}) {
+  const zones = getPreferZonesFromParam(params)
+  return zones[0] || ''
 }
 
 export const createVmDecorators = (type, initData = {}) => {
@@ -138,7 +212,9 @@ export const createVmDecorators = (type, initData = {}) => {
     initEipType = EIP_TYPES_MAP.public.key
   }
   let initSecgroupType = 'default'
-  if (initData.secgroups && initData.secgroups.length) {
+  if (initData.network_tags && initData.network_tags.length) {
+    initSecgroupType = SECGROUP_OPTIONS_MAP.networkTag.key
+  } else if (initData.secgroups && initData.secgroups.length) {
     initSecgroupType = 'bind'
   }
   let initSchedPolicyType = 'default'
@@ -217,6 +293,13 @@ export const createVmDecorators = (type, initData = {}) => {
         ],
       },
     ],
+    enableWorldMap: [
+      'enableWorldMap',
+      {
+        valuePropName: 'checked',
+        initialValue: false,
+      },
+    ],
     cloudregionZone: {
       cloudregion: [
         'cloudregion',
@@ -230,7 +313,7 @@ export const createVmDecorators = (type, initData = {}) => {
       zone: [
         'zone',
         {
-          initialValue: { key: initData.prefer_zone || '', label: '' },
+          initialValue: { key: resolveInitPreferZone(initData, false), label: '' },
           rules: [
             { validator: isRequired(), message: i18n.t('compute.text_213') },
           ],
@@ -269,6 +352,20 @@ export const createVmDecorators = (type, initData = {}) => {
         'imageType',
         {
           initialValue: initData.extraData?.image_type || imageTypeInitValue,
+        },
+      ],
+    },
+    kickstart: {
+      kickstart_enabled: [
+        'kickstart_enabled',
+        {
+          initialValue: false,
+        },
+      ],
+      kickstart_config: [
+        'kickstart_config',
+        {
+          initialValue: '',
         },
       ],
     },
@@ -340,10 +437,10 @@ export const createVmDecorators = (type, initData = {}) => {
           initialValue: 1,
         },
       ],
-      devType: [
-        'devType',
+      gpuType: [
+        'gpuType',
         {
-          initialValue: GPU_DEV_TYPE_OPTION_MAP['GPU-VGA'].value,
+          initialValue: GPU_TYPE_OPTION_MAP.HPC.value,
         },
       ],
     },
@@ -358,6 +455,12 @@ export const createVmDecorators = (type, initData = {}) => {
       pciDevType: i => [
         `pciDevType[${i}]`,
       ],
+      pciGpuType: i => [
+        `pciGpuType[${i}]`,
+        {
+          initialValue: GPU_TYPE_OPTION_MAP.HPC.value,
+        },
+      ],
       pciModel: i => [
         `pciModel[${i}]`,
         {
@@ -370,6 +473,27 @@ export const createVmDecorators = (type, initData = {}) => {
         `pciCount[${i}]`,
         {
           initialValue: 1,
+        },
+      ],
+      memoryRequest: i => [
+        `memory_request[${i}]`,
+        {
+          rules: [
+            { required: true, message: i18n.t('compute.pci.memory_request.required') },
+            {
+              validator: (rule, value, callback) => {
+                if (value === undefined || value === null || value === '') {
+                  callback()
+                  return
+                }
+                if (!Number.isInteger(Number(value)) || Number(value) <= 0) {
+                  callback(new Error(i18n.t('compute.pci.memory_request.invalid')))
+                  return
+                }
+                callback()
+              },
+            },
+          ],
         },
       ],
     },
@@ -533,6 +657,7 @@ export const createVmDecorators = (type, initData = {}) => {
       mountPath: i => [
         `dataDiskMountPaths[${i}]`,
         {
+          validateFirst: true,
           validateTrigger: ['blur', 'change'],
           rules: [{
             required: true,
@@ -694,6 +819,35 @@ export const createVmDecorators = (type, initData = {}) => {
             }],
           },
         ],
+        // 端口映射：挂在每张网卡下 networkContainerPorts[netKey][rowKey]
+        portMapping: {
+          key: (netKey, i) => [
+            `networkContainerPorts[${netKey}][${i}]`,
+            {
+              rules: [
+                { required: true, message: i18n.t('common.tips.input', [i18n.t('compute.repo.container_port')]) },
+              ],
+            },
+          ],
+          value: (netKey, i) => [
+            `networkHostPorts[${netKey}][${i}]`,
+            {
+              validateTrigger: ['change', 'blur'],
+              rules: [
+                { validator: validateHostPortRange(20000, 25000) },
+              ],
+            },
+          ],
+          protocol: (netKey, i) => [
+            `networkPortProtocols[${netKey}][${i}]`,
+            {
+              initialValue: 'tcp',
+              rules: [
+                { required: true, message: i18n.t('common.tips.select', [i18n.t('compute.port_mappings.protocol')]) },
+              ],
+            },
+          ],
+        },
       },
       networkSchedtag: {
         schedtags: i => [
@@ -845,7 +999,8 @@ export const createVmDecorators = (type, initData = {}) => {
       duration: [
         'duration',
         {
-          initialValue: initData.duration === '1w' ? '7d' : initData.duration || '1m',
+          // 包年包月时长 key 为大写（1M/1Y）；勿与按量 Duration 的小写 duration 混用初始值
+          initialValue: initData.duration || '1M',
         },
       ],
       autoRenew: [
@@ -913,6 +1068,12 @@ export const createVmDecorators = (type, initData = {}) => {
             { required: true, message: i18n.t('compute.text_190') },
             // { validator: secgroupValidator }, // Azure和Ucloud的安全组最大关联一个，动态效验放在组件内部
           ],
+        },
+      ],
+      network_tags: [
+        'network_tags',
+        {
+          initialValue: initData.network_tags || [],
         },
       ],
     },
@@ -999,7 +1160,8 @@ export const createVmDecorators = (type, initData = {}) => {
       bastion_host_id: [
         'bastion_host_id',
         {
-          initialValue: initData.bastion_server?.bastion_host_id || '',
+          // 勿用 ''：Select 有空字符串时不展示 placeholder
+          initialValue: initData.bastion_server?.bastion_host_id || undefined,
           rules: [
             { required: true, message: i18n.t('compute.bastionHost.bastion_host.placeholder') },
           ],
@@ -1008,7 +1170,7 @@ export const createVmDecorators = (type, initData = {}) => {
       bastion_org_id: [
         'bastion_org_id',
         {
-          initialValue: initData.bastion_server?.bastion_org_id || '',
+          initialValue: initData.bastion_server?.bastion_org_id || undefined,
           rules: [
             { required: true, message: i18n.t('compute.bastionHost.bastion_org.placeholder') },
           ],
@@ -1051,7 +1213,8 @@ export const createVmDecorators = (type, initData = {}) => {
       bastion_domain_id: [
         'bastion_domain_id',
         {
-          initialValue: initData.bastion_server?.bastion_domain_id || '',
+          // 勿用 ''：Select 有空字符串时不展示 placeholder
+          initialValue: initData.bastion_server?.bastion_domain_id || undefined,
         },
       ],
     },
@@ -1062,12 +1225,18 @@ export const createVmDecorators = (type, initData = {}) => {
         initialValue: initData.is_daemon || false,
       },
     ],
+    qemu_version: [
+      'qemu_version',
+      {
+        initialValue: initData.qemu_version || '',
+      },
+    ],
   }
 }
 
 const decoratorGroup = {
-  idc: ['domain', 'project', 'cloudregionZone', 'name', 'description', 'reason', 'count', 'imageOS', 'loginConfig', 'hypervisor', 'gpu', 'vcpu', 'vmem', 'sku', 'systemDisk', 'dataDisk', 'network', 'secgroup', 'schedPolicy', 'bios', 'vdi', 'vga', 'machine', 'backup', 'duration', 'groups', 'tag', 'servertemplate', 'eip', 'os_arch', 'hostName', 'encrypt_keys', 'custom_data_type', 'deploy_telegraf', 'pci', 'bastion_host', 'is_daemon'],
-  public: ['domain', 'project', 'name', 'description', 'count', 'imageOS', 'reason', 'loginConfig', 'vcpu', 'vmem', 'sku', 'systemDisk', 'dataDisk', 'network', 'schedPolicy', 'bill', 'eip', 'secgroup', 'resourceType', 'tag', 'servertemplate', 'duration', 'cloudprovider', 'hostName', 'custom_data_type', 'bastion_host'],
+  idc: ['domain', 'project', 'cloudregionZone', 'name', 'description', 'reason', 'count', 'imageOS', 'loginConfig', 'hypervisor', 'gpu', 'vcpu', 'vmem', 'sku', 'kickstart', 'systemDisk', 'dataDisk', 'network', 'secgroup', 'schedPolicy', 'bios', 'vdi', 'vga', 'machine', 'backup', 'duration', 'groups', 'tag', 'servertemplate', 'eip', 'os_arch', 'hostName', 'encrypt_keys', 'custom_data_type', 'deploy_telegraf', 'pci', 'bastion_host', 'is_daemon', 'qemu_version'],
+  public: ['domain', 'project', 'name', 'description', 'count', 'enableWorldMap', 'imageOS', 'reason', 'loginConfig', 'vcpu', 'vmem', 'sku', 'systemDisk', 'dataDisk', 'network', 'schedPolicy', 'bill', 'eip', 'secgroup', 'resourceType', 'tag', 'servertemplate', 'duration', 'cloudprovider', 'hostName', 'custom_data_type', 'bastion_host'],
   private: ['domain', 'project', 'cloudregionZone', 'name', 'description', 'reason', 'count', 'imageOS', 'loginConfig', 'hypervisor', 'vcpu', 'vmem', 'sku', 'systemDisk', 'dataDisk', 'network', 'secgroup', 'schedPolicy', 'duration', 'tag', 'servertemplate', 'cloudprovider', 'hostName', 'custom_data_type', 'bastion_host', 'pci'],
 }
 
@@ -1126,7 +1295,7 @@ export class GenCreateData {
       backend: item.type === STORAGE_AUTO.key ? '' : item.type,
       size: item.size * 1024,
     }
-    if (type === 'sys' && this.fd.imageType !== IMAGES_TYPE_MAP.iso.key && this.fd.hypervisor !== HYPERVISORS_MAP.proxmox.key && this.fd.hypervisor !== HYPERVISORS_MAP.sangfor.key && this.fd.hypervisor !== HYPERVISORS_MAP.uis.key) {
+    if (type === 'sys' && this.fd.imageType !== IMAGES_TYPE_MAP.iso.key && this.fd.hypervisor !== HYPERVISORS_MAP.sangfor.key && this.fd.hypervisor !== HYPERVISORS_MAP.uis.key && this.fd.hypervisor !== HYPERVISORS_MAP.cas.key) {
       if (this.fd.image && this.fd.image.key) {
         ret.image_id = this.fd.image.key
       }
@@ -1300,6 +1469,58 @@ export class GenCreateData {
   }
 
   /**
+   * 组装指定网卡的端口映射
+   * 字段形如 networkContainerPorts[netKey][rowKey] / networkHostPorts / networkPortProtocols
+   */
+  getPortMappingsByNetworkKey (netKey) {
+    const port_mappings = []
+    const ports = this.fd.networkContainerPorts && this.fd.networkContainerPorts[netKey]
+    if (!ports) return port_mappings
+    const hostPorts = (this.fd.networkHostPorts && this.fd.networkHostPorts[netKey]) || {}
+    const protocols = (this.fd.networkPortProtocols && this.fd.networkPortProtocols[netKey]) || {}
+    for (const k in ports) {
+      const port = ports[k]
+      if (port == null || port === '') continue
+      const pm = {
+        port,
+        protocol: (protocols[k] || 'tcp').toLowerCase(),
+      }
+      if (hostPorts[k] != null && hostPorts[k] !== '') {
+        pm.host_port = hostPorts[k]
+      }
+      port_mappings.push(pm)
+    }
+    return port_mappings
+  }
+
+  /**
+   * 汇总所有网卡端口映射（兼容旧草稿 containerPorts / hostPorts）
+   */
+  getPortMappings () {
+    const port_mappings = []
+    const portsByNet = this.fd.networkContainerPorts || {}
+    Object.keys(portsByNet).forEach((netKey) => {
+      port_mappings.push(...this.getPortMappingsByNetworkKey(netKey))
+    })
+    // 兼容旧表单：高级配置全局 Labels
+    if (!port_mappings.length && this.fd.containerPorts) {
+      for (const k in this.fd.containerPorts) {
+        const port = this.fd.containerPorts[k]
+        if (port == null || port === '') continue
+        const pm = {
+          port,
+          protocol: ((this.fd.portProtocols && this.fd.portProtocols[k]) || 'tcp').toLowerCase(),
+        }
+        if (this.fd.hostPorts && this.fd.hostPorts[k] != null && this.fd.hostPorts[k] !== '') {
+          pm.host_port = this.fd.hostPorts[k]
+        }
+        port_mappings.push(pm)
+      }
+    }
+    return port_mappings
+  }
+
+  /**
    * 组装所有网络数据
    *
    * @returns { Array }
@@ -1308,6 +1529,7 @@ export class GenCreateData {
   genNetworks () {
     let ret = [{ exit: false }]
     const extraRet = []
+    const legacyPortMappings = this.getPortMappings()
     // 指定 IP 子网
     if (this.fd.networkType === NETWORK_OPTIONS_MAP.manual.key) {
       ret = []
@@ -1374,6 +1596,10 @@ export class GenCreateData {
             obj.secgroups = secgroup
           }
         }
+        const portMappings = this.getPortMappingsByNetworkKey(key)
+        if (portMappings.length > 0) {
+          obj.port_mappings = portMappings
+        }
         ret.push(obj)
         extraRet.push({ ...obj, ...extraObj })
       }, this.fd.networks)
@@ -1396,11 +1622,19 @@ export class GenCreateData {
             obj.sriov_device = { model: device }
           }
         }
-        ret.push({
+        const netObj = {
           schedtags: [obj],
-        })
-        extraRet.push({ schedtags: [{ ...obj, ...extraObj }] })
+        }
+        const extraNetObj = { schedtags: [{ ...obj, ...extraObj }] }
+        ret.push(netObj)
+        extraRet.push(extraNetObj)
       }, this.fd.networkSchedtags)
+    }
+    // 自动调度：旧草稿全局端口映射仍挂第一块网卡
+    if (legacyPortMappings.length > 0 &&
+      this.fd.networkType !== NETWORK_OPTIONS_MAP.manual.key &&
+      this.fd.networkType !== NETWORK_OPTIONS_MAP.schedtag.key) {
+      ret[0].port_mappings = legacyPortMappings
     }
     return { networks: ret, extraNetworks: extraRet }
   }
@@ -1434,18 +1668,36 @@ export class GenCreateData {
    */
   genPciDevices () {
     const ret = []
-    const { pciCount, pciModel } = this.fd
+    const { pciCount, pciModel, memory_request, pciDevType, pciGpuType } = this.fd
     const pciKeys = Object.keys(this.fd.pciCount)
     pciKeys.forEach(key => {
+      const pciKey = pciDevType?.[key] || this.fd[`pciDevType[${key}]`] || ''
+      const idx = pciKey.indexOf('/')
+      const devType = idx === -1 ? pciKey : pciKey.slice(0, idx)
+      const sharingMode = idx === -1 ? '' : pciKey.slice(idx + 1)
+      const gpuType = pciGpuType?.[key] || this.fd[`pciGpuType[${key}]`]
       for (let i = 0, len = pciCount[key]; i < len; i++) {
         const regexp = /vendor=(.+):(.+)/
         const matched = pciModel[key].match(regexp)
         const model = matched[2]
         const vendor = matched[1]
-        ret.push({
+        const device = {
           model,
           vendor,
-        })
+        }
+        if (devType) {
+          device.dev_type = devType
+        }
+        if (sharingMode) {
+          device.sharing_mode = sharingMode
+        }
+        if (devType === 'GPU' && gpuType) {
+          device.gpu_type = gpuType
+        }
+        if (memory_request?.[key]) {
+          device.memory_request = memory_request[key]
+        }
+        ret.push(device)
       }
     })
     return ret
@@ -1558,20 +1810,24 @@ export class GenCreateData {
   }
 
   /**
-   * 获取Zone
+   * 获取 prefer_zones（仅从表单解析）
+   *
+   * @returns { Array<String> }
+   * @memberof GenCreateData
+   */
+  getPreferZones () {
+    return parsePreferZonesFromForm(this.fd.zone)
+  }
+
+  /**
+   * 获取Zone（兼容单 zone 场景，取 prefer_zones 首项）
    *
    * @returns { String }
    * @memberof GenCreateData
    */
   getPreferZone () {
-    let ret = ''
-    if (R.is(Object, this.fd.zone)) {
-      ret = this.fd.zone.key
-    }
-    if (R.is(String, this.fd.zone)) { // 字符串形式是公有云 AreaSelect 的 zone
-      ret = this.fd.zone
-    }
-    return ret
+    const zones = this.getPreferZones()
+    return zones[0] || ''
   }
 
   /**
@@ -1644,11 +1900,21 @@ export class GenCreateData {
       os_arch: _.get(HOST_CPU_ARCHS, `[${this.fd.os_arch}].key`),
       hostname: this.fd.hostName,
       extraData: {
-        domain_id: (this.fd.domain && this.fd.domain.key) || store.getters.userInfo.domainId,
+        domain_id: (this.fd.domain && this.fd.domain.key) || store.getters.userInfo.projectDomainId,
         image_type: this.fd.imageType,
         os: this.fd.os,
         nets: extraNetworks,
       },
+    }
+    const allPortMappings = this.getPortMappings()
+    if (allPortMappings.length) {
+      data.extraData.port_mappings = allPortMappings
+    }
+    // 私有云按 hypervisor 显式指定 provider，避免落到 OneCloud
+    const hypervisor = this.getHypervisor()
+    const hypervisorProvider = _.get(HYPERVISORS_MAP, `[${hypervisor}].provider`)
+    if (hypervisorProvider && !this.isPublic && !this.isIDC) {
+      data.provider = hypervisorProvider
     }
     // 非预付费资源池不会添加sku
     if (!this.isPrepaid) {
@@ -1702,6 +1968,9 @@ export class GenCreateData {
     if (this.fd.secgroup_type && this.fd.secgroup_type === SECGROUP_OPTIONS_MAP.bind.key) {
       data.secgroups = this.fd.secgroup
     }
+    if (this.fd.secgroup_type === SECGROUP_OPTIONS_MAP.networkTag.key) {
+      data.network_tags = this.fd.network_tags
+    }
     // 如果设置了调度策略则拼装调度所需数据 或者 通过云账号过滤镜像
     if ((this.fd.schedPolicyType !== SCHED_POLICY_OPTIONS_MAP.default.key) || this.showPreferManager()) {
       const schedPolicyValueKey = this.getSchedPolicyValueKey()
@@ -1713,9 +1982,9 @@ export class GenCreateData {
       data.prefer_backup_host = this.fd.backup
     }
     // zone
-    const zoneId = this.getPreferZone()
-    if (zoneId) {
-      data.prefer_zone = zoneId
+    const preferZones = this.getPreferZones()
+    if (preferZones.length) {
+      data.prefer_zones = preferZones
     }
     const prefer_manager_id = this.getPreferManagerId()
     if (prefer_manager_id) {
@@ -1737,9 +2006,21 @@ export class GenCreateData {
       }
       data.billing_type = 'postpaid'
     }
-    // 镜像类型为 iso 需要加参数 cdrom
-    if (this.fd.imageType === IMAGES_TYPE_MAP.iso.key || this.fd.imageType === IMAGES_TYPE_MAP.private_iso.key) {
-      data.cdrom = this.fd.image.key
+    // 镜像类型为 iso / private_iso 需要加参数 cdrom
+    // CAS/UIS/SangFor 仅支持 ISO，即使 imageType 未及时切换也要带上 cdrom
+    const isPrivateIsoHypervisor = [
+      HYPERVISORS_MAP.sangfor.key,
+      HYPERVISORS_MAP.uis.key,
+      HYPERVISORS_MAP.cas.key,
+    ].includes(this.fd.hypervisor)
+    if (
+      this.fd.imageType === IMAGES_TYPE_MAP.iso.key ||
+      this.fd.imageType === IMAGES_TYPE_MAP.private_iso.key ||
+      isPrivateIsoHypervisor
+    ) {
+      if (this.fd.image && this.fd.image.key) {
+        data.cdrom = this.fd.image.key
+      }
     }
     // 主机镜像需要guest image id参数，并且把磁盘中的镜像ID回填回去
     if (this.fd.imageType === IMAGES_TYPE_MAP.host.key) {
@@ -1793,6 +2074,16 @@ export class GenCreateData {
     if (this.fd.custom_data_type) {
       data.custom_data_type = this.fd.custom_data_type
     }
+    // kickstart
+    const { os_distribution = '' } = this.fi?.imageMsg?.properties || this.fi?.imageMsg?.info?.properties || {}
+    const isTargetOsType = ['centos', 'rhel', 'openeuler', 'ubuntu'].some(item => os_distribution.toLowerCase().includes(item))
+    if (isTargetOsType && this.fd.hypervisor === HYPERVISORS_MAP.kvm.key && this.fd.imageType === IMAGES_TYPE_MAP.iso.key) {
+      data.kickstart_config = {
+        config: this.fd.kickstart_config,
+        enabled: this.fd.kickstart_enabled,
+        os_type: os_distribution.toLowerCase(),
+      }
+    }
     // 安装监控 agent
     if (this.isIDC) {
       if ((this.isWindows() && this.fd.os_arch !== HOST_CPU_ARCHS.arm.key) || !this.isWindows()) {
@@ -1804,6 +2095,9 @@ export class GenCreateData {
     if (this.fd.hypervisor === HYPERVISORS_MAP.kvm.key) {
       if (this.fd.is_daemon) {
         data.is_daemon = this.fd.is_daemon
+      }
+      if (this.fd.qemu_version) {
+        data.qemu_version = this.fd.qemu_version
       }
     }
     if (this.fi.showCpuSockets) {

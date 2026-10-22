@@ -6,13 +6,21 @@ import {
   getDomainFilter,
   getCreatedAtFilter,
 } from '@/utils/common/tableFilter'
+import { LLM_TYPE_OPTIONS } from '../constants/llmTypeConfig'
 
 export const filterOptions = {
   id: {
     label: i18n.t('table.title.id'),
   },
   name: getNameFilter(),
-  status: getStatusFilter('sku'),
+  status: getStatusFilter('llmSku'),
+  llm_type: {
+    label: i18n.t('aice.llm_type'),
+    dropdown: true,
+    items: LLM_TYPE_OPTIONS.map(opt => ({ key: opt.id, label: i18n.t(opt.name) })),
+    filter: true,
+    formatter: val => `llm_type.equals('${val}')`,
+  },
   projects: getTenantFilter(),
   project_domains: getDomainFilter(),
   image: getNameFilter({ label: i18n.t('aice.image') }),

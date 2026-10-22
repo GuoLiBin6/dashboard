@@ -15,7 +15,7 @@
       </a-form-item>
       <a-form-item :label="keySecretField.label.k">
         <a-input v-decorator="decorators.username" :placeholder="keySecretField.placeholder.k" />
-        <div slot="extra">
+        <div slot="extra" v-if="showDocsLink()">
            {{$t('cloudenv.text_236', [keySecretField.text, keySecretField.label.k])}}
            <help-link :href="docs[provider.toLowerCase()]">{{$t('cloudenv.text_237')}}</help-link>
         </div>
@@ -36,9 +36,9 @@
 import AutoSync from '@Cloudenv/views/cloudaccount/components/AutoSync'
 import ProxySetting from '@Cloudenv/views/cloudaccount/components/ProxySetting'
 import ShareMode from '@Cloudenv/views/cloudaccount/components/ShareMode'
-import { getCloudaccountDocs, keySecretFields } from '@Cloudenv/views/cloudaccount/constants'
+import { keySecretFields } from '@Cloudenv/views/cloudaccount/constants'
 import { isRequired } from '@/utils/validate'
-import { genDocsUrl } from '@/utils/utils'
+import { DOCS_MAP, showDocsLink } from '@/constants/docs'
 import createMixin from './createMixin'
 import DomainProject from '../../../components/DomainProject'
 
@@ -78,7 +78,8 @@ export default {
       initPort = list[1] || 443
     }
     return {
-      docs: getCloudaccountDocs(this.$store.getters.scope),
+      docs: DOCS_MAP.cloudaccount(),
+      showDocsLink,
       decorators: {
         name: [
           'name',
@@ -149,12 +150,7 @@ export default {
   },
   computed: {
     vmDocLink () {
-      return genDocsUrl({
-        scope: this.$store.getters.scope,
-        isSysCE: this.$store.getters.isSysCE,
-        cePath: 'guides/cmp/cloudaccounts/vmware_net',
-        eePath: 'function_principle/multicloud/cloudaccounts/vmware_net',
-      })
+      return DOCS_MAP.cloudaccountVMwareNet()
     },
   },
 }

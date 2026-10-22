@@ -6,6 +6,7 @@ import { numerify } from '@/filters'
 import setting from '@/config/setting'
 import { currencyUnitMap } from '@/constants/currency'
 import { getLanguage } from '@/utils/common/cookie'
+import { safeAuthRedirectUrl } from '@/utils/safeRedirect'
 // import { encodeURI } from 'js-base64'
 
 let tIndex = 0
@@ -174,6 +175,35 @@ class Sizestr {
   percentStr (val) {
     return '' + this.round(val * 100, 0) + '%'
   }
+
+  /**
+   * 字节/秒 → 带单位的速率字符串（1024 进制，与 transformUnit(value, 'Bps', 1024).text 一致）
+   * @param {Number} bytesPerSec 字节/s
+   * @param {String} numerifyFormat 数值格式，同 numerify
+   * @returns {String} 如 "1.2 KBps"、"3.45 MBps"
+   */
+  bytesPerSecondStr (bytesPerSec, numerifyFormat = '0.00') {
+    const number = Number(bytesPerSec)
+    if (!R.is(Number, number) || Number.isNaN(number)) {
+      return '0 Bps'
+    }
+    const obj = splitUnit(this.sizestr(number, 'B', 1024))
+    const numValue = parseFloat(obj.value)
+    const formattedValue = parseFloat(numerify(numValue, numerifyFormat))
+    const b = 'B'
+    const textMatch = obj.text.match(/^(\d+\.?\d*)\s*(.*)$/)
+    if (textMatch) {
+      const originalUnit = textMatch[2]
+      if (obj.text.endsWith('B')) {
+        return `${formattedValue} ${b}ps`
+      }
+      return `${formattedValue} ${originalUnit}${b}ps`
+    }
+    if (obj.text.endsWith('B')) {
+      return `${formattedValue} ${b}ps`
+    }
+    return `${formattedValue} Bps`
+  }
 }
 const sizestrInstance = new Sizestr()
 
@@ -181,6 +211,7 @@ export const sizestr = sizestrInstance.sizestr.bind(sizestrInstance) // -> 12G  
 export const sizestrWithUnit = sizestrInstance.sizestrWithUnit.bind(sizestrInstance) // -> 12 GB   4.5 TB
 export const sizeToDesignatedUnit = sizestrInstance.sizeToDesignatedUnit.bind(sizestrInstance) // -> 12 GB   4.5 TB
 export const percentstr = sizestrInstance.percentStr.bind(sizestrInstance)
+export const bytesPerSecondStr = sizestrInstance.bytesPerSecondStr.bind(sizestrInstance)
 
 /**
  * 对象数组转对象
@@ -599,16 +630,91 @@ export const cityMap = (cities, val) => {
   return result
 }
 
+/** 是否为 http(s) 完整外链（登录后应整页跳转） */
+export const isExternalAuthPath = (path) => {
+  return typeof path === 'string' && /^https?:\/\//i.test(path)
+}
+
+/** 站内路径规范化：保证以 / 开头；外链原样返回 */
+export const normalizeAuthRedirectPath = (path) => {
+  if (!path || typeof path !== 'string') return path
+  if (isExternalAuthPath(path)) return path
+  return path.startsWith('/') ? path : `/${path}`
+}
+
+/**
+ * 从当前 route 提取登录回跳目标 path
+ * 优先使用 query.path（pathAuth 场景），避免被当前页 path（如 /dashboard）覆盖
+ */
+export const getAuthRedirectPath = (route) => {
+  const queryPath = route?.query?.path
+  if (queryPath) return queryPath
+  return route?.path
+}
+
+/**
+ * 登录回跳用的其余 query（去掉 pathAuth 相关字段，避免嵌套覆盖目标 path）
+ */
+export const getAuthRedirectPathQuery = (routeQuery = {}) => {
+  if (R.isNil(routeQuery) || R.isEmpty(routeQuery)) return null
+  const restQuery = { ...routeQuery }
+  delete restQuery.path
+  delete restQuery.pathAuth
+  delete restQuery.pathAuthPage
+  delete restQuery.pathQuery
+  if (R.isEmpty(restQuery)) return null
+  return restQuery
+}
+
+/**
+ * 登录成功后跳转：外链用 location，站内用 router
+ * @param {Object} router vue-router 实例
+ * @param {Object} options { path, pathQuery }
+ * @param {Array|String} corsHosts 服务端 cors_hosts 白名单（可选）
+ * @returns {boolean} 是否已处理跳转；外链未通过安全校验时返回 false，由调用方兜底
+ */
+export const redirectAfterAuth = (router, { path, pathQuery } = {}, corsHosts = []) => {
+  if (!path) return false
+  if (isExternalAuthPath(path)) {
+    const safePath = safeAuthRedirectUrl(path, corsHosts)
+    if (!safePath) return false
+    document.location.href = safePath
+    return true
+  }
+  const nextPath = normalizeAuthRedirectPath(path)
+  let query = {}
+  if (pathQuery) {
+    query = typeof pathQuery === 'string' ? JSON.parse(pathQuery) : pathQuery
+  }
+  router.replace({
+    path: nextPath,
+    query,
+  })
+  return true
+}
+
 export const genReferRouteQuery = (route) => {
   const query = {
     pathAuthPage: route.meta.authPage,
     pathAuth: route.meta.auth || true,
-    path: route.path,
+    path: getAuthRedirectPath(route),
   }
-  if (!R.isNil(route.query) && !R.isEmpty(route.query)) {
-    query.pathQuery = JSON.stringify(route.query)
+  const pathQuery = getAuthRedirectPathQuery(route.query)
+  if (pathQuery) {
+    query.pathQuery = JSON.stringify(pathQuery)
   }
   return query
+}
+
+/**
+ * 登录页跳转时去掉已选用户相关 query，避免 chooser↔login 时旧用户信息覆盖新选择
+ */
+export const omitLoginUserQuery = (query = {}) => {
+  const next = { ...query }
+  delete next.username
+  delete next.fd_domain
+  delete next.displayname
+  return next
 }
 
 /**
@@ -661,6 +767,45 @@ export const completionDate = (data, currentMonth, keys = [], monthInYear) => {
     }
   }
   return result
+}
+
+/**
+ * 将用户输入的月份字符串解析为标准月份格式
+ * @param {String|Array} val 月份值，支持字符串或单元素数组（如过滤器的输入值）
+ * @param {String} [format='YYYYMM'] 输出格式，支持 'YYYYMM' | 'YYYY-MM'
+ * @returns {String|null} 解析成功返回指定格式的月份字符串，无效输入返回 null
+ * @example
+ * parseMonthToBackend('2026-06')           // '202606'
+ * parseMonthToBackend('2026-6')            // '202606'
+ * parseMonthToBackend('202606')            // '202606'
+ * parseMonthToBackend('20266')             // '202606'
+ * parseMonthToBackend('2026/06')           // '202606'
+ * parseMonthToBackend('2026-06', 'YYYY-MM') // '2026-06'
+ */
+export function parseMonthToBackend (val, format = 'YYYYMM') {
+  const str = `${Array.isArray(val) ? val[0] : val}`.trim()
+  if (!str) return null
+  let year
+  let month
+  const dashMatch = str.match(/^(\d{4})[-/](\d{1,2})$/)
+  if (dashMatch) {
+    year = dashMatch[1]
+    month = dashMatch[2].padStart(2, '0')
+  } else if (/^\d{6}$/.test(str)) {
+    year = str.slice(0, 4)
+    month = str.slice(4, 6)
+  } else if (/^\d{5}$/.test(str)) {
+    year = str.slice(0, 4)
+    month = str.slice(4).padStart(2, '0')
+  } else {
+    return null
+  }
+  const monthNum = parseInt(month, 10)
+  if (monthNum < 1 || monthNum > 12) return null
+  if (format === 'YYYY-MM') {
+    return `${year}-${month}`
+  }
+  return `${year}${month}`
 }
 
 /*
@@ -835,7 +980,18 @@ export function isSAAS () {
   return !!process.env.VUE_APP_IS_SAAS
 }
 
-export function getDocsUrl (scope, isSysCE) {
+export function getConfiguredDocsUrl () {
+  return (process.env.VUE_APP_DOCS_URL || '').trim()
+}
+
+export function isDocsDisabled () {
+  return getConfiguredDocsUrl().toLowerCase() === 'none'
+}
+
+export function getDocsUrl (scope, isSysCE, targetOrigin = window.location.origin) {
+  if (isDocsDisabled()) return ''
+  const configured = getConfiguredDocsUrl()
+  if (configured) return configured
   let prefix = 'docs'
   const useCe = isCE() || isSysCE
   if (useCe) {
@@ -844,10 +1000,13 @@ export function getDocsUrl (scope, isSysCE) {
   if (scope === 'domain' || scope === 'project') {
     prefix = prefix + '/domain'
   }
-  return `${window.location.origin}/${prefix}/${language}/docs/`
+  return `${targetOrigin}/${prefix}/zh/docs/`
 }
 
 export function genDocsUrl ({ scope, isSysCE, cePath, eePath, anchor = '' }) {
+  if (isDocsDisabled()) return ''
+  const configured = getConfiguredDocsUrl()
+  if (configured) return configured
   const useCe = isCE() || isSysCE
   return getDocsUrl(scope, isSysCE) + (useCe ? cePath : eePath) + anchor
 }
@@ -986,7 +1145,7 @@ export function getKeyIgnoreCase (dict, needle) {
 
 /* eslint-disable */
 export const escapeHTML = str =>
-  str.replace(
+  String(str == null ? '' : str).replace(
     /[&<>'"]/g,
     tag =>
     ({

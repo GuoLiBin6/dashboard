@@ -8,7 +8,14 @@
       hideRequiredMark>
       <servertemplate v-if="isServertemplate" :decorators="decorators.servertemplate">
         <a-form-item :label="$t('compute.text_297', [$t('dictionary.project')])">
-          <domain-project :fc="form.fc" :decorators="{ project: decorators.project, domain: decorators.domain }" />
+          <domain-project
+            :fc="form.fc"
+            :fd="form.fd"
+            :decorators="{ project: decorators.project, domain: decorators.domain }"
+            :form-draft-key="vmDraftFields.domainProject"
+            :ignoreStorage="ignoreLocalFormStorage"
+            @fetchDomainCallback="fetchDomainCallback"
+            @fetchProjectCallback="fetchProjectCallback" />
         </a-form-item>
       </servertemplate>
       <!-- <a-divider orientation="left">{{$t('compute.text_300')}}</a-divider> -->
@@ -17,7 +24,8 @@
           :fc="form.fc"
           :fd="form.fd"
           :decorators="{ project: decorators.project, domain: decorators.domain }"
-          :ignoreStorage="isInitForm"
+          :form-draft-key="vmDraftFields.domainProject"
+          :ignoreStorage="ignoreLocalFormStorage"
           @fetchDomainCallback="fetchDomainCallback"
           @fetchProjectCallback="fetchProjectCallback" />
       </a-form-item>
@@ -33,17 +41,29 @@
       <a-form-item :label="$t('common.description')" v-if="!isServertemplate">
         <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
       </a-form-item>
-      <a-form-item :label="$t('compute.text_1041')" v-if="isOpenWorkflow">
+      <a-form-item :label="$t('compute.text_1041')" v-if="showReason">
         <a-input v-decorator="decorators.reason" :placeholder="$t('compute.text_1042')" />
       </a-form-item>
       <a-form-item class="mb-0" :label="$t('compute.text_498')">
-        <bill :decorators="decorators.bill" :form="form" :provider-list="form.fi.providerList" />
+        <bill :decorators="decorators.bill" :form="form" :provider-list="form.fi.providerList" :form-draft-key="vmDraftFields.bill" />
       </a-form-item>
       <a-form-item v-if="form.fd.billType === 'quantity' && !isServertemplate" :label="$t('compute.text_1132')">
-        <duration useServerDuration :decorators="decorators.duration" :form="form" />
+        <duration useServerDuration :decorators="decorators.duration" :form="form" :form-draft-key="vmDraftFields.duration" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_294')" v-show="!isServertemplate">
         <a-input-number v-decorator="decorators.count" @blur="countBlur" :min="1" :max="100" />
+      </a-form-item>
+      <a-form-item :label="$t('regionMap.enable_world_map')">
+        <a-switch v-decorator="decorators.enableWorldMap" @change="onWorldMapModeChange" />
+      </a-form-item>
+      <a-form-item v-if="form.fd.enableWorldMap" :label="$t('compute.region_map')">
+        <region-map
+          :region-filter-params="regionMapParams"
+          filter-brand-resource="compute_engine"
+          :region-mapper="filterMapCloudregionList"
+          split-key="provider"
+          @select="onRegionSelect"
+          @params-change="onRegionMapParamsChange" />
       </a-form-item>
       <area-selects
         class="mb-0"
@@ -52,14 +72,38 @@
         :labelCol="formItemLayout.labelCol"
         ref="areaSelectRef"
         :providerParams="providerParams"
-        :cloudregionParams="cloudregionParams"
+        :cloudregionParams="areaCloudregionParams"
         :zoneParams="zoneParams"
-        :defaultActiveFirstOption="isInitForm ? false : ['provider', 'cloudregion']"
+        :provider-multiple="true"
+        :cloudregion-multiple="true"
+        :zone-multiple="true"
+        :cloudregion-mapper="filterCloudregionListByProvider"
+        :zone-mapper="filterZoneListByProvider"
+        :defaultActiveFirstOption="areaDefaultActiveFirstOption"
         filterBrandResource="compute_engine"
-        @providerFetchSuccess="providerFetchSuccess" />
+        @providerFetchSuccess="providerFetchSuccess"
+        @fetchsDone="onAreaSelectsFetchsDone" />
       <!-- <a-form-item class="mb-0" :label="$t('compute.text_1159')">
         <resource :decorator="decorators.resourceType" />
       </a-form-item> -->
+      <a-form-item :label="$t('compute.text_1058')" class="mb-0">
+        <cpu-radio :decorator="decorators.vcpu" :options="form.fi.cpuMem.cpus || []" :showUnlimited="true" :form="form" :form-draft-key="vmDraftFields.vcpu" @change="cpuChange" />
+      </a-form-item>
+      <a-form-item :label="$t('compute.text_369')" class="mb-0">
+        <mem-radio :decorator="decorators.vmem" :options="form.fi.cpuMem.mems_mb || []" :showUnlimited="true" :form-draft-key="vmDraftFields.vmem" />
+      </a-form-item>
+      <a-form-item :label="$t('compute.text_109')">
+        <sku
+          ref="skuRef"
+          v-decorator="decorators.sku"
+          :priceUnit="skuPriceUnit"
+          :type="type"
+          :sku-params="skuParam"
+          :hypervisor="hypervisor"
+          :hasMeterService="hasMeterService"
+          :init-sku-data="initSkuData"
+          :form-draft-key="vmDraftFields.sku" />
+      </a-form-item>
       <a-form-item :label="$t('compute.text_15')">
         <base-select
           resource="cloudproviders"
@@ -69,22 +113,6 @@
           :showSync="true"
           :select-props="{ placeholder: $t('compute.text_149') }"
           @update:item="cloudproviderSelected" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_1058')" class="mb-0">
-        <cpu-radio :decorator="decorators.vcpu" :options="form.fi.cpuMem.cpus || []" :showUnlimited="true" @change="cpuChange" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_369')" class="mb-0">
-        <mem-radio :decorator="decorators.vmem" :options="form.fi.cpuMem.mems_mb || []" :showUnlimited="true" />
-      </a-form-item>
-      <a-form-item :label="$t('compute.text_109')">
-        <sku
-          v-decorator="decorators.sku"
-          :priceUnit="skuPriceUnit"
-          :type="type"
-          :sku-params="skuParam"
-          :hypervisor="hypervisor"
-          :hasMeterService="hasMeterService"
-          :init-sku-data="initSkuData" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_267')" :extra="$t('compute.text_302')">
         <os-select
@@ -97,6 +125,8 @@
           :imageParams="imageParams"
           :cacheImageParams="cacheImageParams"
           :cloudproviderParamsExtra="cloudproviderParamsExtra"
+          :ignore-storage="ignoreLocalFormStorage"
+          :form-draft-key="vmDraftFields.osSelect"
           @updateImageMsg="updateFi" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_49')" class="mb-0">
@@ -112,12 +142,13 @@
           :image="form.fi.imageMsg"
           :isServertemplate="isServertemplate"
           is-iops-show
-          is-throughput-show />
+          is-throughput-show
+          :form-draft-key="vmDraftFields.systemDisk" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_50')">
         <data-disk
           v-if="form.fd.sku"
-          :isInitForm="isInitForm"
+          :isInitForm="isFormBackfill"
           :decorator="decorators.dataDisk"
           :type="type"
           :form="form"
@@ -128,14 +159,21 @@
           :isServertemplate="isServertemplate"
           ref="dataDiskRef"
           is-iops-show
-          is-throughput-show />
+          is-throughput-show
+          :form-draft-key="vmDraftFields.dataDisk" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_1372')" v-if="showServerAccount">
         <server-account :form="form" :hypervisor="hypervisor" :instance_capabilities="form.fi.capability.instance_capabilities" :osType="osType" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_308')">
-        <server-password :decorator="decorators.loginConfig" :loginTypes="loginTypes" :form="form" />
+        <server-password :decorator="decorators.loginConfig" :loginTypes="loginTypes" :form="form" :form-draft-key="vmDraftFields.loginConfig" />
       </a-form-item>
+      <a-alert
+        v-if="needsSkuForAreaDownstream"
+        type="info"
+        show-icon
+        :message="$t('regionMap.select_sku_first_tip')"
+        class="mb-2" />
       <a-form-item :label="$t('compute.text_104')" class="mb-0">
         <server-network
           ref="networkRef"
@@ -147,61 +185,67 @@
           :vpcResource="vpcResource"
           :serverCount="form.fd.count"
           :networkResourceMapper="networkResourceMapper"
-          :cloudprovider="form.fd.cloudprovider" />
+          :cloudprovider="form.fd.cloudprovider"
+          :ignore-auto-network-type="ignoreAutoNetworkTypeForDraft"
+          :form-draft-key="vmDraftFields.serverNetwork" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_1154')" class="mb-0">
         <tag
           v-decorator="decorators.tag" :default-checked="tagDefaultChecked" />
       </a-form-item>
-      <!-- <a-divider orientation="left">{{$t('compute.text_309')}}</a-divider> -->
-      <a-collapse :bordered="false" v-model="collapseActive">
-        <a-collapse-panel :header="$t('compute.text_309')" key="1">
-          <eip-config
-            v-if="enableEip"
-            ref="eipConfigRef"
-            :decorators="decorators.eip"
-            :eip-params="eipParams"
-            :hypervisor="hypervisor"
-            :showBind="false"
-            :isServertemplate="isServertemplate"
-            :cloud-env="type"
+      <advance-config-block ref="advanceConfigBlock" collapsible>
+        <eip-config
+          v-if="enableEip"
+          ref="eipConfigRef"
+          :decorators="decorators.eip"
+          :eip-params="eipParams"
+          :hypervisor="hypervisor"
+          :showBind="false"
+          :isServertemplate="isServertemplate"
+          :cloud-env="type"
+          :form="form"
+          :hasPublicIp="hypervisor === 'qcloud' || hypervisor === 'aliyun'"
+          :formItemLayout="formItemLayout" :form-draft-key="vmDraftFields.eip" />
+        <a-form-item v-if="!isServertemplate">
+          <span slot="label">
+            {{ $t('common_388') }}&nbsp;
+            <a-tooltip :title="hostNameTips">
+              <a-icon type="question-circle-o" />
+            </a-tooltip>
+          </span>
+          <host-name v-decorator="decorators.hostName" :isWindows="isWindows" />
+        </a-form-item>
+        <a-form-item :label="$t('compute.text_105')">
+          <secgroup-config
+            ref="secgroupConfigRef"
+            :provider="hypervisor"
             :form="form"
-            :hasPublicIp="hypervisor === 'qcloud' || hypervisor === 'aliyun'"
-            :formItemLayout="formItemLayout" />
-          <a-form-item v-if="!isServertemplate">
-            <span slot="label">
-              {{ $t('common_388') }}&nbsp;
-              <a-tooltip :title="hostNameTips">
-                <a-icon type="question-circle-o" />
-              </a-tooltip>
-            </span>
-            <host-name v-decorator="decorators.hostName" :isWindows="isWindows" />
-          </a-form-item>
-          <a-form-item :label="$t('compute.text_105')">
-            <secgroup-config
-              :provider="hypervisor"
-              :form="form"
-              :decorators="decorators.secgroup"
-              :secgroup-params="secgroupParams"
-              :hypervisor="hypervisor"
-              :showSecgroupBind="showSecgroupBind" />
-          </a-form-item>
-          <a-form-item :label="$t('compute.text_311')" v-show="!isServertemplate" class="mb-0">
-            <sched-policy
-              ref="schedPolicyRef"
-              :form="form"
-              :provider="hypervisor"
-              :server-type="form.fi.createType"
-              :disabled-host="policyHostDisabled"
-              :policy-host-params="policyHostParams"
-              :decorators="decorators.schedPolicy"
-              :hideCloudaccountSched="hideCloudaccountSched"
-              :policy-schedtag-params="policySchedtagParams" />
-          </a-form-item>
-          <custom-data v-if="showCustomData" ref="customData" :decorators="decorators" :form="form" />
-          <bastion-host v-if="!isOpenSourceVersion && hasBastionService" :decorator="decorators.bastion_host" :form="form" />
-        </a-collapse-panel>
-      </a-collapse>
+            :decorators="decorators.secgroup"
+            :secgroup-params="secgroupParams"
+            :hypervisor="hypervisor"
+            :showSecgroupBind="showSecgroupBind"
+            :ignore-auto-type-reset="preserveAdvanceInitProps"
+            :init-secgroups="workflowInitSecgroups" />
+        </a-form-item>
+        <a-form-item :label="$t('compute.text_311')" v-show="!isServertemplate" class="mb-0">
+          <sched-policy
+            ref="schedPolicyRef"
+            :form="form"
+            :provider="hypervisor"
+            :server-type="form.fi.createType"
+            :disabled-host="policyHostDisabled"
+            :policy-host-params="policyHostParams"
+            :decorators="decorators.schedPolicy"
+            :hideCloudaccountSched="hideCloudaccountSched"
+            :policy-schedtag-params="policySchedtagParams"
+            :init-prefer-host="workflowInitPreferHost"
+            :preserve-init-prefer-host="preserveAdvanceInitProps"
+            :init-schedtags="workflowInitSchedtags"
+            :form-draft-key="vmDraftFields.schedPolicy" />
+        </a-form-item>
+        <custom-data v-if="showCustomData" ref="customData" :decorators="decorators" :form="form" />
+        <bastion-host ref="bastionHostRef" v-if="!isOpenSourceVersion && hasBastionService" :decorator="decorators.bastion_host" :form="form" :form-draft-key="vmDraftFields.bastionHost" />
+      </advance-config-block>
       <bottom-bar
         :loading="submiting"
         :form="form"
@@ -210,6 +254,8 @@
         :resourceType="form.fd.resourceType"
         :dataDiskSizes="dataDiskSizes"
         :isOpenWorkflow="isOpenWorkflow"
+        :isOpenOrderSetWorkflow="isOpenOrderSetWorkflow"
+        :isModifyWorkflow="isModifyWorkflow"
         :isServertemplate="isServertemplate"
         :hasMeterService="hasMeterService"
         :cloudaccountId="cloudaccountId"
@@ -221,17 +267,18 @@
 <script>
 /* eslint-disable */
 import * as R from 'ramda'
-import mixin from './mixin'
 import Bill from '@Compute/sections/Bill'
 import { LOGIN_TYPES_MAP, BILL_TYPES_MAP } from '@Compute/constants'
+import { resolveInitPreferZone } from '@Compute/utils/createServer'
 import EipConfig from '@Compute/sections/EipConfig'
 import SecgroupConfig from '@Compute/sections/SecgroupConfig'
+import RegionMap from '@Compute/sections/RegionMap'
 import { resolveValueChangeField } from '@/utils/common/ant'
-import { PROVIDER_MAP, HYPERVISORS_MAP } from '@/constants'
-import { HOST_CPU_ARCHS } from '@/constants/compute'
+import { PROVIDER_MAP, HYPERVISORS_MAP, isUcloudLikeHypervisor, resolveHypervisorKey } from '@/constants'
+import { IMAGES_TYPE_MAP, getOsArchParam, isOsArch } from '@/constants/compute'
 import AreaSelects from '@/sections/AreaSelects'
-import { IMAGES_TYPE_MAP } from '@/constants/compute'
-
+import { cloudregionFilterByCapability } from '@/utils/common/capability'
+import mixin from './mixin'
 export default {
   name: 'VMPublicCreate',
   components: {
@@ -239,6 +286,7 @@ export default {
     AreaSelects,
     EipConfig,
     SecgroupConfig,
+    RegionMap,
   },
   mixins: [mixin],
   data () {
@@ -252,10 +300,13 @@ export default {
       return this.form.fd.billType === BILL_TYPES_MAP.package.key
     },
     isArm () {
-      return this.form.fd.sku && this.form.fd.sku.cpu_arch === HOST_CPU_ARCHS.arm.capabilityKey
+      return isOsArch(this.form.fd.sku && this.form.fd.sku.cpu_arch, 'arm')
     },
     isLoongarch64 () {
-      return this.form.fd.sku && this.form.fd.sku.cpu_arch === HOST_CPU_ARCHS.loongarch64.capabilityKey
+      return isOsArch(this.form.fd.sku && this.form.fd.sku.cpu_arch, 'loongarch64')
+    },
+    isRiscv64 () {
+      return isOsArch(this.form.fd.sku && this.form.fd.sku.cpu_arch, 'riscv64')
     },
     osArch () {
       if (this.form.fd.sku && this.form.fd.sku.cpu_arch) {
@@ -274,18 +325,75 @@ export default {
       }
       return true
     },
+    areaDefaultActiveFirstOption () {
+      if (this.isFormBackfill) return false
+      return []
+    },
+    selectedCloudregionIds () {
+      const { cloudregion } = this.form.fd
+      if (Array.isArray(cloudregion)) return cloudregion.filter(Boolean)
+      return cloudregion ? [cloudregion] : []
+    },
+    // 任一区域字段存在多个选中值
+    hasMultipleAreaSelection () {
+      const { provider, cloudregion, zone } = this.form.fd
+      const isMultiValue = val => Array.isArray(val) && val.length > 1
+      return isMultiValue(provider) || isMultiValue(cloudregion) || isMultiValue(zone)
+    },
+    // 未选 SKU 时，网络等下游暂不可用
+    needsSkuForAreaDownstream () {
+      return this.hasMultipleAreaSelection && !R.is(Object, this.form.fd.sku)
+    },
+    resolvedAreaFilterParams () {
+      const { provider, cloudregion, zone, sku } = this.form.fd
+      const fromForm = {
+        provider: this.pickSingleAreaValue(provider),
+        cloudregion: this.pickSingleAreaValue(cloudregion),
+        zone: this.pickSingleAreaValue(zone),
+      }
+      if (R.is(Object, sku)) {
+        return {
+          provider: sku.provider || fromForm.provider,
+          cloudregion: sku.cloudregion_id || fromForm.cloudregion,
+          zone: sku.zone_id || fromForm.zone,
+        }
+      }
+      if (this.hasMultipleAreaSelection) {
+        return {}
+      }
+      return fromForm
+    },
+    cloudregionZoneParams () {
+      const { cloudregion, zone } = this.resolvedAreaFilterParams
+      const params = {}
+      if (cloudregion) params.cloudregion = cloudregion
+      if (zone) params.zone = zone
+      this.applyAreaProviderFilter(params, this.providers)
+      return params
+    },
     networkParam () {
       if (!this.cloudregionZoneParams.cloudregion) return {}
+      const { filter: areaFilter, ...areaParams } = this.cloudregionZoneParams
       const params = {
-        filter: 'server_type.notin(ipmi, pxe)',
+        filter: 'server_type.notin(ipmi, pxe, hostlocal)',
         usable: true,
-        ...this.cloudregionZoneParams,
+        ...areaParams,
         ...this.scopeParams,
+      }
+      if (areaFilter) {
+        const filters = Array.isArray(areaFilter) ? areaFilter : [areaFilter]
+        filters.forEach(filter => this.appendSkuFilter(params, filter))
       }
       if (this.isGoogle) {
         params.show_emulated = true
       }
       return params
+    },
+    providers () {
+      return this.normalizeAreaValues(this.form.fd.provider)
+    },
+    cloudregions () {
+      return this.selectedCloudregionIds
     },
     providerParams () {
       return {
@@ -294,7 +402,21 @@ export default {
         ...this.scopeParams,
       }
     },
-    cloudregionParams () {
+    regionMapParams () {
+      return {
+        cloud_env: 'public',
+        usable: true,
+        show_emulated: true,
+        read_only: false,
+        capability: 'compute',
+        public_cloud: true,
+        // 触发 RegionMap 在计费方式变化时重新过滤点位
+        billType: this.form.fd.billType,
+        duration: this.form.fd.duration,
+        ...this.scopeParams,
+      }
+    },
+    areaCloudregionParams () {
       return {
         cloud_env: 'public',
         usable: true,
@@ -303,7 +425,7 @@ export default {
       }
     },
     zoneParams () {
-      return {
+      const params = {
         cloud_env: 'public',
         usable: true,
         show_emulated: true,
@@ -311,26 +433,25 @@ export default {
         order: 'asc',
         ...this.scopeParams,
       }
+      this.applyAreaProviderFilter(params, this.providers)
+      return params
     },
     imageParams () {
       const params = {}
       if (R.is(Object, this.form.fd.sku)) {
-        params.os_arch = HOST_CPU_ARCHS.x86.key
-        if (this.isArm) params.os_arch = HOST_CPU_ARCHS.arm.key
-        if (this.isLoongarch64) params.os_arch = HOST_CPU_ARCHS.loongarch64.key
+        params.os_arch = getOsArchParam(this.form.fd.sku.cpu_arch)
       }
       return params
     },
     cacheImageParams () {
-      const {imageType, cloudprovider} = this.form.fd
+      const { imageType } = this.form.fd
       const params = {}
       if (imageType !== IMAGES_TYPE_MAP.public.key) {
         params.manager_id = this.form.fd.cloudprovider
       }
-      if (R.is(Object, this.form.fd.sku)) {
-        if (this.cloudregionZoneParams.cloudregion) {
-          params.cloudregion_id = this.cloudregionZoneParams.cloudregion
-        }
+      const { cloudregion } = this.cloudregionZoneParams
+      if (cloudregion) {
+        params.cloudregion_id = cloudregion
       }
       if (!params.cloudregion_id) return {}
       return params
@@ -365,19 +486,17 @@ export default {
         // manager: this.form.fd.cloudprovider,
         ...this.scopeParams,
       }
-      if (this.form.fd.cloudregion) params.cloudregion = this.form.fd.cloudregion
-      if (this.form.fd.zone) params.zone_id = this.form.fd.zone
-      const { provider } = this.form.fd
-      if (provider) {
-        params.provider = PROVIDER_MAP[provider] ? PROVIDER_MAP[provider].hypervisor : provider
-      } else {
-        const providerList = this.form.fi.providerList
-        if (providerList && providerList.length) {
-          const providers = providerList.map(item => item.name)
-          params.filter = `provider.in(${providers.join(',')})`
-        } else { // 公有云条件下没有 provider 不用请求接口
-          return {} // sku 组件没有参数不会请求数据
-        }
+      const regionIds = this.cloudregions
+      if (regionIds.length) {
+        params.cloudregion_id = regionIds
+      }
+      const zoneValues = this.normalizeAreaValues(this.form.fd.zone)
+      if (zoneValues.length) {
+        params.zone_ids = zoneValues
+      }
+      const { values: skuProviderValues, explicit: hasExplicitProvider } = this.getSkuProviderValues()
+      if (!this.applySkuProviderParam(params, skuProviderValues, hasExplicitProvider)) {
+        return {}
       }
       if (this.form.fd.billType === 'quantity') {
         params.postpaid_status = 'available'
@@ -417,7 +536,7 @@ export default {
     loginTypes () {
       const loginTypes = { ...LOGIN_TYPES_MAP }
       const hypervisor = this.hypervisor
-      if (HYPERVISORS_MAP.ucloud.key === hypervisor) {
+      if (isUcloudLikeHypervisor(hypervisor)) {
         delete loginTypes[LOGIN_TYPES_MAP.image.key]
         delete loginTypes[LOGIN_TYPES_MAP.keypair.key]
       }
@@ -431,9 +550,6 @@ export default {
       if (HYPERVISORS_MAP.ctyun.key === hypervisor) {
         delete loginTypes[LOGIN_TYPES_MAP.image.key]
       }
-      if (HYPERVISORS_MAP.google.key === hypervisor) {
-        delete loginTypes[LOGIN_TYPES_MAP.image.key]
-      }
       if (HYPERVISORS_MAP.qcloud.key === hypervisor) {
         delete loginTypes[LOGIN_TYPES_MAP.image.key]
       }
@@ -444,6 +560,7 @@ export default {
           HYPERVISORS_MAP.aliyun.key,
           HYPERVISORS_MAP.qcloud.key,
           HYPERVISORS_MAP.ucloud.key,
+          HYPERVISORS_MAP.rockbase.key,
           HYPERVISORS_MAP.esxi.key,
         ]
         if (disableKeypairHyper.includes(hypervisor)) {
@@ -471,17 +588,16 @@ export default {
         usable: true,
         enabled: true,
       }
-      const { provider, cloudregion, zone } = this.form.fd
-      if (provider) params.provider = provider
-      if (cloudregion) params.cloudregion = cloudregion
-      if (zone) params.zone = zone
+      this.applyInstanceSpecRegionFilter(params, this.cloudregions)
+      this.applyInstanceSpecZoneFilter(params, this.normalizeAreaValues(this.form.fd.zone))
+      this.applyInstanceSpecProviderFilter(params, this.providers)
       return params
     },
     cloudproviderParamsExtra () {
       const params = {
         ...this.scopeParams,
       }
-      const { cloudregion } = this.form.fd
+      const { cloudregion } = this.resolvedAreaFilterParams
       if (this.form.fd.sku && this.form.fd.sku.provider) {
         params.provider = this.form.fd.sku.provider
       }
@@ -494,79 +610,364 @@ export default {
     policycloudproviderParams () {
       const params = {
         limit: 0,
-        brand: this.form.fd.provider,
-        cloudregion: this.form.fd.cloudregion,
         enabled: true,
         read_only: false,
         filter: 'status.equals(\'connected\')',
         ...this.scopeParams,
       }
-      if (this.form.fd.zone) {
-        params.zone = this.form.fd.zone
-      }
+      const { provider, cloudregion, zone } = this.resolvedAreaFilterParams
+      if (provider) params.brand = provider
+      if (cloudregion) params.cloudregion = cloudregion
+      if (zone) params.zone = zone
       return params
     },
   },
   watch: {
-    'form.fd.billType' (val) {
+    'form.fd.billType' (val, oldVal) {
+      // form.fd 兄弟字段 $set 会误触发本 watch，同值直接跳过
+      if (R.equals(val, oldVal)) return
       // 计费方式为包年包月平台不含 azure、aws，这里统一做清空处理
       if (val === BILL_TYPES_MAP.package.key) {
         this.form.fc.setFieldsValue({
-          provider: undefined,
-          cloudregion: undefined,
-          zone: undefined,
+          provider: [],
+          cloudregion: [],
+          zone: [],
         })
       }
-      this.$refs.areaSelectRef.fetchs(['provider'])
+      // AreaSelects 自身也 watch billType 会 fetchs；此处补拉平台列表
+      this.$refs.areaSelectRef?.fetchs?.(['provider'])
     },
     'form.fd.duration' (val, oldVal) {
+      if (R.equals(val, oldVal)) return
       if (this.form.fd.billType === BILL_TYPES_MAP.package.key) {
         if (val === '1W' || oldVal === '1W') {
           this.form.fc.setFieldsValue({
-            provider: undefined,
-            cloudregion: undefined,
-            zone: undefined,
+            provider: [],
+            cloudregion: [],
+            zone: [],
           })
-          this.$refs.areaSelectRef.fetchs(['provider', 'cloudregion', 'zone'])
+          this.$refs.areaSelectRef?.fetchs?.(['provider', 'cloudregion', 'zone'])
         }
       }
     },
   },
   created () {
-    this.baywatch(['form.fd.provider', 'form.fd.cloudregion', 'form.fd.zone'], this.fetchInstanceSpecs)
+    // form.fd 任意兄弟 $set 会连带触发本 watch，需 equals 去重
+    this.baywatch(['form.fd.provider', 'form.fd.cloudregion', 'form.fd.zone'], (val, oldVal) => {
+      if (R.equals(val, oldVal)) return
+      this.fetchInstanceSpecs()
+    })
     this.baywatch(['form.fd.sku', 'form.fd.zone'], this.withFetchCapbilites)
+    this.baywatch(['form.fd.sku'], this.onResolvedSkuChange)
   },
   methods: {
+    onResolvedSkuChange (val, oldVal) {
+      if (R.equals(val, oldVal)) return
+      if (this.hasMultipleAreaSelection && R.is(Object, val)) {
+        this.fetchInstanceSpecs()
+      }
+    },
+    pickSingleAreaValue (value) {
+      if (Array.isArray(value)) return value[0] || undefined
+      return value || undefined
+    },
+    normalizeAreaValues (value) {
+      if (Array.isArray(value)) return value.filter(Boolean)
+      return value ? [value] : []
+    },
+    mapAreaProviderFilterValues (providerValues = []) {
+      return providerValues.map(p => (
+        PROVIDER_MAP[p]
+          ? PROVIDER_MAP[p].provider
+          : (HYPERVISORS_MAP[String(p).toLowerCase()]?.provider || p)
+      ))
+    },
+    getAllProviderListValues () {
+      return (this.form.fi.providerList || []).map(item => item.name).filter(Boolean)
+    },
+    getSkuProviderValues () {
+      if (this.providers.length) {
+        return { values: this.providers, explicit: true }
+      }
+      return { values: this.getAllProviderListValues(), explicit: false }
+    },
+    applySkuProviderParam (params, providerValues = [], explicit = false) {
+      if (!providerValues.length) return false
+      if (explicit && providerValues.length === 1) {
+        params.provider = PROVIDER_MAP[providerValues[0]]
+          ? PROVIDER_MAP[providerValues[0]].hypervisor
+          : providerValues[0]
+        return true
+      }
+      const providers = this.mapAreaProviderFilterValues(providerValues)
+      this.appendSkuFilter(params, `provider.in(${providers.join(',')})`)
+      return true
+    },
+    applyAreaProviderFilter (params, providerValues = []) {
+      if (!providerValues.length) return
+      if (providerValues.length === 1) {
+        params.provider = PROVIDER_MAP[providerValues[0]]
+          ? PROVIDER_MAP[providerValues[0]].hypervisor
+          : providerValues[0]
+        return
+      }
+      const providers = this.mapAreaProviderFilterValues(providerValues)
+      params.filter = `provider.in(${providers.join(',')})`
+    },
+    applyInstanceSpecProviderFilter (params, providerValues = []) {
+      const explicit = providerValues.length > 0
+      const values = explicit ? providerValues : this.getAllProviderListValues()
+      if (!values.length) return
+      if (explicit && values.length === 1) {
+        params.provider = PROVIDER_MAP[values[0]] ? PROVIDER_MAP[values[0]].hypervisor : values[0]
+        return
+      }
+      const providers = this.mapAreaProviderFilterValues(values)
+      this.appendSkuFilter(params, `provider.in(${providers.join(',')})`)
+    },
+    applyInstanceSpecRegionFilter (params, regionIds = []) {
+      if (!regionIds.length) return
+      if (regionIds.length === 1) {
+        params.cloudregion = regionIds[0]
+        return
+      }
+      this.appendSkuFilter(params, `cloudregion.in(${regionIds.join(',')})`)
+    },
+    applyInstanceSpecZoneFilter (params, zoneValues = []) {
+      if (!zoneValues.length) return
+      if (zoneValues.length === 1) {
+        params.zone = zoneValues[0]
+        return
+      }
+      this.appendSkuFilter(params, `zone.in(${zoneValues.join(',')})`)
+    },
+    refreshSkuByAreaSelection () {
+      this.form.fc.setFieldsValue({ sku: undefined })
+      this._setNewFieldToFd({ sku: undefined }, this.form.fc.getFieldsValue())
+      this.$nextTick(() => {
+        if (this.$refs.skuRef && typeof this.$refs.skuRef.fetchData === 'function') {
+          this.$refs.skuRef.fetchData()
+        }
+        this.fetchInstanceSpecs()
+      })
+    },
+    appendSkuFilter (params, filter) {
+      if (!params.filter) {
+        params.filter = [filter]
+        return
+      }
+      if (!Array.isArray(params.filter)) {
+        params.filter = [params.filter]
+      }
+      params.filter.push(filter)
+    },
+    getSelectedProviderNames () {
+      return this.providers.map(p => String(p))
+    },
+    normalizeAreaProviderKey (val) {
+      return resolveHypervisorKey(val)
+    },
+    isAreaProviderMatch (selected, itemProvider) {
+      return this.normalizeAreaProviderKey(selected) === this.normalizeAreaProviderKey(itemProvider)
+    },
+    filterCloudregionListByProvider (list = []) {
+      return this.filterAreaListByProvider(list)
+    },
+    filterZoneListByProvider (list = []) {
+      return this.filterAreaListByProvider(list)
+    },
+    filterAreaListByProvider (list = []) {
+      const providers = this.getSelectedProviderNames()
+      if (!providers.length) return list
+      return list.filter(item => {
+        const raw = item.provider || item.brand || ''
+        return providers.some(p => this.isAreaProviderMatch(p, raw))
+      })
+    },
+    filterMapCloudregionList (list = []) {
+      let result = cloudregionFilterByCapability({
+        dataList: list,
+        capability: this.$store.getters.capability,
+        resource: 'compute_engine',
+      })
+      result = result.filter(item => {
+        const provider = String(item.provider || item.brand || '').toLowerCase()
+        return ![HYPERVISORS_MAP.jdcloud.key, HYPERVISORS_MAP.ecloud.key].includes(provider)
+      })
+      if (this.form.fd.billType === BILL_TYPES_MAP.package.key) {
+        if (this.form.fd.duration === '1W') {
+          result = result.filter(item => HYPERVISORS_MAP.aliyun.key === String(item.provider || '').toLowerCase())
+        } else {
+          result = result.filter(item => {
+            const provider = String(item.provider || '').toLowerCase()
+            return ![HYPERVISORS_MAP.azure.key, HYPERVISORS_MAP.aws.key, HYPERVISORS_MAP.google.key].includes(provider)
+          })
+        }
+      }
+      return result
+    },
+    toAreaValue (value) {
+      if (value === undefined || value === null) return []
+      return Array.isArray(value) ? value : [value]
+    },
+    matchProviderFromList (list, hypervisor) {
+      const hvKey = resolveHypervisorKey(hypervisor) || String(hypervisor || '').toLowerCase()
+      if (!hvKey || !list?.length) return null
+      const hvObj = HYPERVISORS_MAP[hvKey]
+      const hvProvider = String(hvObj?.provider || '').toLowerCase()
+      return list.find(item => {
+        const name = resolveHypervisorKey(item.name) || String(item.name || '').toLowerCase()
+        const provider = resolveHypervisorKey(item.provider) || String(item.provider || '').toLowerCase()
+        return name === hvKey ||
+          provider === hvKey ||
+          (hvProvider && (name === hvProvider || provider === hvProvider))
+      }) || null
+    },
+    async applyMapSelectionToAreaSelects (regions = []) {
+      const providerList = this.$refs.areaSelectRef?.providerList || this.form.fi.providerList || []
+      const providerKeys = [...new Set(regions.map(item => {
+        const raw = item.provider || item.brand
+        if (!raw) return null
+        const hvKey = resolveHypervisorKey(raw)
+        const matched = this.matchProviderFromList(providerList, hvKey)
+        return matched ? matched.name : hvKey
+      }).filter(Boolean))]
+      const cloudregionIds = regions.map(item => item.id).filter(Boolean)
+      const areaFields = {
+        cloudprovider: undefined,
+        sku: undefined,
+      }
+      this.form.fc.setFieldsValue(areaFields)
+      this._setNewFieldToFd(areaFields, this.form.fc.getFieldsValue())
+      if (Object.prototype.hasOwnProperty.call(this.$data, 'cloudaccountId')) {
+        this.cloudaccountId = ''
+      }
+      await this.$nextTick()
+      const areaRef = this.$refs.areaSelectRef
+      if (areaRef) {
+        await areaRef.applyMultipleSelection({
+          provider: this.toAreaValue(providerKeys),
+          cloudregion: this.toAreaValue(cloudregionIds),
+          zone: [],
+        })
+        this._setNewFieldToFd(this.form.fc.getFieldsValue(), this.form.fc.getFieldsValue())
+      }
+      this.refreshSkuByAreaSelection()
+    },
+    resolveDraftProviderNames (list = []) {
+      const initData = this.effectiveInitFormData || {}
+      let candidates = initData.extraData?.providers
+      if (!Array.isArray(candidates) || !candidates.length) {
+        const single = initData.extraData?.provider || initData.hypervisor
+        candidates = single ? [single] : []
+      }
+      const names = []
+      candidates.forEach((c) => {
+        const matched = this.matchProviderFromList(list, c)
+        if (matched && !names.includes(matched.name)) {
+          names.push(matched.name)
+        }
+      })
+      return names
+    },
+    resolveDraftPreferRegions () {
+      const initData = this.effectiveInitFormData || {}
+      const fromExtra = initData.extraData?.prefer_regions
+      if (Array.isArray(fromExtra) && fromExtra.length) {
+        return fromExtra.filter(Boolean)
+      }
+      return this.toAreaValue(initData.prefer_region).filter(Boolean)
+    },
+    /**
+     * AreaSelects.fetchs 整链结束后再回填工单 initFormData（普通新建不落盘/不回填区域）
+     */
+    onAreaSelectsFetchsDone () {
+      if (this._publicAreaApplying) {
+        this._publicAreaRestoreAgain = true
+        return
+      }
+      if (!this.isFormBackfill) return
+      const list = this.$refs.areaSelectRef?.providerList || this.form.fi.providerList || []
+      const providerNames = this.resolveDraftProviderNames(list)
+      if (providerNames.length) {
+        this.applyInitPublicAreaFields(providerNames)
+      }
+    },
+    async applyInitPublicAreaFields (providerNames) {
+      // 工单回填公有云 provider / region / zone（支持多选）
+      const provider = this.toAreaValue(providerNames).filter(Boolean)
+      if (!this.isFormBackfill || !provider.length) return
+      if (this._publicAreaApplying) {
+        this._publicAreaRestoreAgain = true
+        return
+      }
+      this._publicAreaApplying = true
+      try {
+        const initData = this.effectiveInitFormData || {}
+        const region = this.resolveDraftPreferRegions()
+        const zone = this.toAreaValue(resolveInitPreferZone(initData, true)).filter(Boolean)
+        const areaRef = this.$refs.areaSelectRef
+        if (!areaRef) return
+
+        // 先写 provider 并同步 fd，保证后续 cloudregion mapper / zoneParams 能读到平台
+        this.form.fc.setFieldsValue({ provider })
+        this._setNewFieldToFd({ provider }, this.form.fc.getFieldsValue())
+        await this.$nextTick()
+
+        if (typeof areaRef.fetchListsOnly === 'function') {
+          await areaRef.fetchListsOnly(['cloudregion'], { skipDefaultSelect: true })
+        }
+        if (region.length) {
+          this.form.fc.setFieldsValue({ cloudregion: region })
+          this._setNewFieldToFd({ cloudregion: region }, this.form.fc.getFieldsValue())
+          await this.$nextTick()
+        }
+
+        if (typeof areaRef.fetchListsOnly === 'function') {
+          await areaRef.fetchListsOnly(['zone'], { skipDefaultSelect: true })
+        }
+        if (zone.length) {
+          this.form.fc.setFieldsValue({ zone })
+          this._setNewFieldToFd({ zone }, this.form.fc.getFieldsValue())
+        }
+
+        if (initData.prefer_manager_id) {
+          this.form.fc.setFieldsValue({ cloudprovider: initData.prefer_manager_id })
+          this._setNewFieldToFd({ cloudprovider: initData.prefer_manager_id }, this.form.fc.getFieldsValue())
+        }
+      } finally {
+        this._publicAreaApplying = false
+        if (this._publicAreaRestoreAgain && this.isFormBackfill) {
+          this._publicAreaRestoreAgain = false
+          this.$nextTick(() => this.onAreaSelectsFetchsDone())
+        }
+      }
+    },
     providerFetchSuccess (list) {
       // 计费方式为包年包月平台不含 azure、aws、google
       if (this.form.fd.billType === BILL_TYPES_MAP.package.key) {
         if (this.form.fd.duration === '1W') {
-          list = list.filter(item => HYPERVISORS_MAP.aliyun.key === item.name.toLowerCase())
+          list = list.filter(item => HYPERVISORS_MAP.aliyun.key === item.name)
           this.form.fc.setFieldsValue({
-            provider: HYPERVISORS_MAP.aliyun.provider,
+            provider: this.toAreaValue(HYPERVISORS_MAP.aliyun.key),
           })
         } else {
           list = list.filter(item => {
-            return ![HYPERVISORS_MAP.azure.key, HYPERVISORS_MAP.aws.key, HYPERVISORS_MAP.google.key].includes(item.name.toLowerCase())
+            return ![HYPERVISORS_MAP.azure.key, HYPERVISORS_MAP.aws.key, HYPERVISORS_MAP.google.key].includes(item.name)
           })
         }
       }
       // 过滤京东云和移动云等只读的云
       list = list.filter(item => {
-        return ![HYPERVISORS_MAP.jdcloud.key, HYPERVISORS_MAP.ecloud.key].includes(item.name.toLowerCase())
+        return ![HYPERVISORS_MAP.jdcloud.key, HYPERVISORS_MAP.ecloud.key].includes(item.name)
       })
-      // 回填
-      if (this.isInitForm && this.initFormData.hypervisor && list.some(item => item.name.toLowerCase() === this.initFormData.hypervisor)) {
-        if (HYPERVISORS_MAP[this.initFormData.hypervisor]) {
-          this.form.fc.setFieldsValue({
-            provider: HYPERVISORS_MAP[this.initFormData.hypervisor].provider,
-            cloudregion: this.initFormData.prefer_region,
-            zone: this.initFormData.prefer_zone,
-            cloudprovider: this.initFormData.prefer_manager_id,
-          })
-        }
-      }
+      // 仅缓存列表；平台/区域/可用区在 @fetchsDone 里回填，避免与 fetchs 竞态
       this.$set(this.form.fi, 'providerList', list)
+      if (!this.providers.length) {
+        this.$nextTick(() => {
+          this.fetchInstanceSpecs()
+        })
+      }
       return list
     },
     onValuesChange (vm, changedFields) {
@@ -574,6 +975,16 @@ export default {
         const formValue = this.form.fc.getFieldsValue()
         const newField = resolveValueChangeField(changedFields)
         this._setNewFieldToFd(newField, formValue)
+        if (changedFields.schedPolicyType === 'host') {
+          const keepHost = this.isFormBackfill ||
+            this.form?.fi?.advanceDraftRestoring ||
+            Object.prototype.hasOwnProperty.call(changedFields, 'schedPolicyHost') ||
+            this.$refs.schedPolicyRef?.pendingPreferHost ||
+            this.$refs.schedPolicyRef?._draftApplying
+          if (!keepHost) {
+            this.$set(this.form.fd, 'schedPolicyHost', undefined)
+          }
+        }
       })
     },
     async fetchCapability () {

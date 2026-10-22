@@ -67,9 +67,9 @@ import ServerPassword from '@Compute/sections/ServerPassword'
 import { SERVER_TYPE, LOGIN_TYPES_MAP } from '@Compute/constants'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
-import { HYPERVISORS_MAP } from '@/constants'
+import { HYPERVISORS_MAP, isUcloudLikeHypervisor } from '@/constants'
 import { Manager } from '@/utils/manager'
-import { IMAGES_TYPE_MAP, HOST_CPU_ARCHS } from '@/constants/compute'
+import { IMAGES_TYPE_MAP, HOST_CPU_ARCHS, isOsArch } from '@/constants/compute'
 import { isRequired, passwordValidator } from '@/utils/validate'
 import { findPlatform } from '@/utils/common/hypervisor'
 
@@ -152,8 +152,12 @@ export default {
     },
     osArch () {
       const { instance_type = '', os_arch } = this.params.data[0]
-      if (instance_type.startsWith('k') || os_arch === HOST_CPU_ARCHS.arm.capabilityKey) {
+      // 兼容后端返回 aarch64 / arm
+      if (instance_type.startsWith('k') || isOsArch(os_arch, 'arm')) {
         return HOST_CPU_ARCHS.arm.capabilityKey
+      }
+      if (isOsArch(os_arch, 'riscv64')) {
+        return HOST_CPU_ARCHS.riscv64.capabilityKey
       }
       return ''
     },
@@ -166,6 +170,8 @@ export default {
       }
       if (this.osArch === HOST_CPU_ARCHS.arm.capabilityKey) {
         params.os_arch = HOST_CPU_ARCHS.arm.key
+      } else if (this.osArch === HOST_CPU_ARCHS.riscv64.capabilityKey) {
+        params.os_arch = HOST_CPU_ARCHS.riscv64.key
       }
       return params
     },
@@ -329,7 +335,7 @@ export default {
     loginTypes () {
       const loginTypes = { ...LOGIN_TYPES_MAP }
       const hypervisor = this.hypervisor
-      if (HYPERVISORS_MAP.ucloud.key === hypervisor) {
+      if (isUcloudLikeHypervisor(hypervisor)) {
         delete loginTypes[LOGIN_TYPES_MAP.image.key]
         delete loginTypes[LOGIN_TYPES_MAP.keypair.key]
       }
@@ -373,7 +379,8 @@ export default {
       const { os } = this.form.fd
       if (![HYPERVISORS_MAP.kvm.key, HYPERVISORS_MAP.esxi.key].includes(this.hypervisor)) return false
       if (os === 'Windows') {
-        return this.osArch !== HOST_CPU_ARCHS.arm.capabilityKey
+        return this.osArch !== HOST_CPU_ARCHS.arm.capabilityKey &&
+          this.osArch !== HOST_CPU_ARCHS.riscv64.capabilityKey
       }
       return true
     },

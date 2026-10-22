@@ -13,7 +13,7 @@
       <template v-if="isAzure && isEA">
         <a-form-item :label="$t('cloudenv.text_195')">
           <a-input v-decorator="decorators.enrollment_number" />
-          <span slot="extra">
+          <span slot="extra" v-if="showDocsLink()">
             {{ $t('cloudenv.text_572') }}
             <help-link :href="enrollmentNumberUrl">{{ $t('cloudenv.text_197') }}</help-link>
           </span>
@@ -32,12 +32,12 @@
           </div>
         </a-form-item>
       </template>
-      <template v-if="useBillingBucket && !isEA">
+      <template v-if="useBillingBucket && !isEA && !isApi">
         <a-divider v-if="!isHiddenDriver" orientation="left">{{ $t('cloudenv.text_199') }}</a-divider>
         <a-form-item :label="$t('cloudenv.text_200')">
           <a-radio-group v-model="cloudAccountType">
             <a-radio-button :value="1">{{ $t('cloudenv.text_201') }}</a-radio-button>
-            <a-radio-button v-if="!isHuawei" :value="2">{{ $t('cloudenv.text_202') }}</a-radio-button>
+            <a-radio-button v-if="!isHuawei && !isAzure" :value="2">{{ $t('cloudenv.text_202') }}</a-radio-button>
           </a-radio-group>
         </a-form-item>
         <a-form-item
@@ -56,7 +56,7 @@
         </a-form-item>
         <a-form-item :label="$t('cloudenv.text_204')">
           <a-input v-decorator="decorators.billing_report_bucket" />
-          <span slot="extra" v-if="bucketUrl">
+          <span slot="extra" v-if="bucketUrl && showDocsLink()">
             <!-- 请正确输入账单文件所在存储桶的URL，例如：https://bucket-name.oss-cn-beijing.aliyuncs.com <br /> -->
             {{ $t('cloudenv.text_196') }}
             <help-link :href="bucketUrl">{{ $t('cloudenv.text_205') }}</help-link>
@@ -92,6 +92,57 @@
           </a-form-item>
         </template>
       </template>
+      <template v-if="isApi">
+        <a-divider v-if="!isHiddenDriver" orientation="left">{{ $t('cloudenv.text_199') }}</a-divider>
+        <a-form-item :label="$t('cloudenv.text_200')">
+          <a-radio-group v-model="cloudAccountType">
+            <a-radio-button :value="1">{{ $t('cloudenv.text_201') }}</a-radio-button>
+            <a-radio-button v-if="!isHuawei" :value="2">{{ $t('cloudenv.text_202') }}</a-radio-button>
+          </a-radio-group>
+        </a-form-item>
+        <a-form-item
+          :label="$t('cloudenv.text_201')"
+          v-if="cloudAccountType === 2"
+          :extra="$t('cloudenv.text_203')">
+          <a-select
+            :filterOption="filterOption"
+            showSearch
+            :loading="cloudAccountLoading"
+            v-decorator="decorators.billing_account">
+            <template v-for="item in cloudAccounts">
+              <a-select-option v-if="id !== item.id" :key="item.id" :value="item.id">{{ item.name }}</a-select-option>
+            </template>
+          </a-select>
+        </a-form-item>
+        <a-form-item :label="$t('cloudenv.billing_scope')">
+          <div slot="extra">
+            <div>{{ $t('cloudenv.billing_scope.extra') }}</div>
+            <div>{{ $t('cloudenv.billing_scope.extra_note') }}</div>
+          </div>
+          <a-radio-group v-decorator="decorators.billing_scope">
+            <a-radio-button value="managed" key="managed">{{ $t('cloudenv.billing_scope.managed') }}</a-radio-button>
+            <a-radio-button
+              value="all"
+              key="all"
+              :disabled="billingScopeDisabled">{{ $t('cloudenv.billing_scope.all') }}</a-radio-button>
+          </a-radio-group>
+        </a-form-item>
+      </template>
+      <template v-if="isOracle">
+        <a-form-item :label="$t('cloudenv.billing_scope')">
+          <div slot="extra">
+            <div>{{ $t('cloudenv.billing_scope.extra') }}</div>
+            <div>{{ $t('cloudenv.billing_scope.extra_note') }}</div>
+          </div>
+          <a-radio-group v-decorator="decorators.billing_scope">
+            <a-radio-button value="managed" key="managed">{{ $t('cloudenv.billing_scope.managed') }}</a-radio-button>
+            <a-radio-button
+              value="all"
+              key="all"
+              :disabled="billingScopeDisabled">{{ $t('cloudenv.billing_scope.all') }}</a-radio-button>
+          </a-radio-group>
+        </a-form-item>
+      </template>
       <a-form-item :label="$t('cloudenv.text_210')" :extra="$t('cloudenv.text_211')">
         <a-switch v-decorator="decorators.sync_info" />
       </a-form-item>
@@ -121,10 +172,9 @@ import * as R from 'ramda'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import { HYPERVISORS_MAP } from '@/constants'
+import { DOCS_MAP, showDocsLink } from '@/constants/docs'
 import {
   keySecretFields,
-  getBillBucketUrlDocs,
-  getEnrollmentNumberDocs,
   BILL_TYPES,
   BILL_TYPE_MAP,
 } from '../../constants'
@@ -139,6 +189,7 @@ export default {
   },
   data () {
     return {
+      showDocsLink,
       loading: false,
       cloudAccounts: [],
       cloudAccountLoading: false,
@@ -214,6 +265,9 @@ export default {
     isKsyun () {
       return this.provider === HYPERVISORS_MAP.ksyun.provider
     },
+    isOracle () {
+      return this.provider === HYPERVISORS_MAP.oracle.provider
+    },
     useBillingBucket () {
       const supportProviders = [
         HYPERVISORS_MAP.aliyun.provider,
@@ -227,6 +281,9 @@ export default {
       ]
       return supportProviders.includes(this.provider)
     },
+    isApi () {
+      return this.isAzure && this.billType === BILL_TYPE_MAP.Api.value
+    },
     brandCn () {
       const { brand } = this.cloudAccount
       return brand ? keySecretFields[brand.toLowerCase()].text : ''
@@ -234,11 +291,11 @@ export default {
     bucketUrl () {
       const { brand } = this.cloudAccount
       return brand
-        ? getBillBucketUrlDocs(this.$store.getters.scope)[brand.toLowerCase()]
+        ? DOCS_MAP.billBucket()[brand.toLowerCase()]
         : ''
     },
     enrollmentNumberUrl () {
-      return getEnrollmentNumberDocs(this.$store.getters.scope)
+      return DOCS_MAP.enrollmentNumber()
     },
     decorators () {
       const options = this.cloudAccount.options || {}
@@ -247,6 +304,12 @@ export default {
           'billing_bucket_account',
           {
             initialValue: options.billing_bucket_account,
+          },
+        ],
+        billing_account: [
+          'billing_account',
+          {
+            initialValue: options.billing_account,
           },
         ],
         billing_report_bucket: [
@@ -349,6 +412,7 @@ export default {
         HYPERVISORS_MAP.qcloud.provider,
         HYPERVISORS_MAP.azure.provider,
         HYPERVISORS_MAP.ksyun.provider,
+        HYPERVISORS_MAP.oracle.provider,
       ]
       return !supportProviders.includes(this.provider)
     },
@@ -367,9 +431,16 @@ export default {
           this.billType = BILL_TYPE_MAP.EA.value
         } else if (billing_report_bucket) {
           this.billType = BILL_TYPE_MAP.Bucket.value
+        } else {
+          this.billType = BILL_TYPE_MAP.Api.value
         }
       } else {
         this.billType = BILL_TYPE_MAP.Bucket.value
+      }
+    },
+    billType (val) {
+      if (val === BILL_TYPE_MAP.Bucket.value) {
+        this.cloudAccountType = 1
       }
     },
   },
@@ -431,7 +502,7 @@ export default {
             data.options.billing_scope || this.getDefaultBillingScope()
         }
         this.cloudAccount = data
-        if (data && data.options && data.options.billing_bucket_account) {
+        if (data && data.options && (data.options.billing_bucket_account || data.options.billing_account)) {
           this.cloudAccountType = 2
         }
         return data
@@ -483,6 +554,7 @@ export default {
           params.data = {
             remove_options: [
               'billing_bucket_account',
+              'billing_account',
               'billing_bigquery_table',
             ],
             ...params.data,
@@ -493,7 +565,20 @@ export default {
           if (this.isEA) {
             params.data = {
               ...params.data,
-              remove_options: [...remove_options, 'billing_report_bucket'],
+              remove_options: [...remove_options, 'billing_report_bucket', 'billing_account'],
+            }
+          } else if (this.isApi) {
+            params.data = {
+              ...params.data,
+              remove_options: [
+                ...remove_options,
+                // 非 API 方式独有的字段，切到 API 时需要清理
+                'billing_report_bucket',
+                'billing_file_prefix',
+                'billing_bucket_account',
+                'enrollment_number',
+                'balance_key',
+              ],
             }
           } else {
             params.data = {
@@ -501,6 +586,7 @@ export default {
               remove_options: [
                 ...remove_options,
                 'enrollment_number',
+                'billing_account',
                 'balance_key',
               ],
             }

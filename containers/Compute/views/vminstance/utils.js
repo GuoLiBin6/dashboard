@@ -1,5 +1,10 @@
+import Vue from 'vue'
 import { typeClouds } from '@/utils/common/hypervisor'
 import i18n from '@/locales'
+import { sizestr } from '@/utils/utils'
+
+const __cpuNumaPinHVm = new Vue()
+const _cpuNumaPinH = (...args) => __cpuNumaPinHVm.$createElement(...args)
 
 const hypervisorMap = typeClouds.hypervisorMap
 
@@ -35,6 +40,7 @@ const actionEableMap = {
       zstack: ['ready'],
       dstack: ['ready'],
       ucloud: ['ready'],
+      rockbase: ['ready'],
       ctyun: ['ready'],
       google: ['ready'],
       apsara: ['ready'],
@@ -49,6 +55,7 @@ const actionEableMap = {
       sangfor: ['ready'],
       zettakit: ['ready'],
       uis: ['ready'],
+      cas: ['ready'],
       ksyun: ['ready'],
       cnware: ['ready'],
       baidu: ['ready'],
@@ -72,6 +79,7 @@ const actionEableMap = {
       zstack: ['running', 'stop_fail'],
       dstack: ['running', 'stop_fail'],
       ucloud: ['running', 'stop_fail'],
+      rockbase: ['running', 'stop_fail'],
       ctyun: ['running', 'stop_fail'],
       google: ['running', 'stop_fail'],
       apsara: ['running', 'stop_fail'],
@@ -86,6 +94,7 @@ const actionEableMap = {
       sangfor: ['running', 'stop_fail'],
       zettakit: ['running', 'stop_fail'],
       uis: ['running', 'stop_fail'],
+      cas: ['running', 'stop_fail'],
       ksyun: ['running', 'stop_fail'],
       cnware: ['running', 'stop_fail'],
       baidu: ['running', 'stop_fail'],
@@ -109,6 +118,7 @@ const actionEableMap = {
       zstack: ['running', 'stop_fail'],
       dstack: ['running', 'stop_fail'],
       ucloud: ['running', 'stop_fail'],
+      rockbase: ['running', 'stop_fail'],
       ctyun: ['running', 'stop_fail'],
       google: ['running', 'stop_fail'],
       apsara: ['running', 'stop_fail'],
@@ -123,6 +133,7 @@ const actionEableMap = {
       sangfor: ['running', 'stop_fail'],
       zettakit: ['running', 'stop_fail'],
       uis: ['running', 'stop_fail'],
+      cas: ['running', 'stop_fail'],
       ksyun: ['running', 'stop_fail'],
       cnware: ['running', 'stop_fail'],
       baidu: ['running', 'stop_fail'],
@@ -146,10 +157,11 @@ const actionEableMap = {
       zstack: ['ready'],
       dstack: ['ready'],
       ucloud: ['ready'],
+      rockbase: ['ready'],
       ctyun: ['ready'],
       google: ['ready'],
       apsara: ['running', 'ready'],
-      proxmox: false,
+      proxmox: ['ready'],
       nutanix: false,
       bingocloud: false,
       incloudsphere: false,
@@ -158,6 +170,7 @@ const actionEableMap = {
       sangfor: false,
       zettakit: ['running'],
       uis: ['running'],
+      cas: ['running'],
       ksyun: ['ready'],
       cnware: false,
       baidu: ['ready', 'running'],
@@ -181,10 +194,11 @@ const actionEableMap = {
       zstack: ['running'],
       dstack: ['running'],
       ucloud: ['ready'],
+      rockbase: ['ready'],
       ctyun: ['running'],
       google: ['ready'],
       apsara: ['running'],
-      proxmox: false,
+      proxmox: ['ready'],
       nutanix: false,
       bingocloud: false,
       incloudsphere: ['running'],
@@ -193,6 +207,7 @@ const actionEableMap = {
       sangfor: false,
       zettakit: false,
       uis: false,
+      cas: false,
       ksyun: ['ready', 'running'],
       cnware: false,
       baidu: ['ready', 'running'],
@@ -216,10 +231,11 @@ const actionEableMap = {
       zstack: ['running'],
       dstack: ['running'],
       ucloud: false,
+      rockbase: false,
       ctyun: ['ready', 'running'],
       google: ['ready'],
       apsara: ['running'],
-      proxmox: false,
+      proxmox: ['ready'],
       nutanix: false,
       bingocloud: false,
       incloudsphere: ['running'],
@@ -228,6 +244,7 @@ const actionEableMap = {
       sangfor: false,
       zettakit: false,
       uis: false,
+      cas: false,
       ksyun: ['ready'],
       cnware: false,
       baidu: false,
@@ -251,10 +268,11 @@ const actionEableMap = {
       zstack: ['running'],
       dstack: ['running'],
       ucloud: false,
+      rockbase: false,
       ctyun: ['ready', 'running'],
       google: ['ready'],
       apsara: ['running'],
-      proxmox: false,
+      proxmox: ['ready'],
       nutanix: false,
       bingocloud: false,
       incloudsphere: false,
@@ -263,6 +281,7 @@ const actionEableMap = {
       sangfor: false,
       zettakit: false,
       uis: false,
+      cas: false,
       ksyun: ['ready', 'running'],
       cnware: false,
       baidu: false,
@@ -272,7 +291,7 @@ const actionEableMap = {
     cn: i18n.t('compute.text_1100'),
     brand: {
       azure: ['ready', 'running'],
-      qcloud: ['ready'],
+      qcloud: ['ready', 'running'],
       aliyun: ['ready', 'running'],
       aws: ['ready', 'running'],
       onecloud: ['ready', 'running'],
@@ -280,24 +299,26 @@ const actionEableMap = {
       vmware: ['ready', 'running'],
       baremetal: false,
       huawei: ['ready', 'running'],
-      hcso: ['ready'],
-      hcs: ['ready'],
+      hcso: ['ready', 'running'],
+      hcs: ['ready', 'running'],
       openstack: ['ready', 'running'],
-      zstack: ['ready'],
-      dstack: ['ready'],
-      ucloud: ['ready'],
+      zstack: ['ready', 'running'],
+      dstack: ['ready', 'running'],
+      ucloud: ['ready', 'running'],
+      rockbase: ['ready', 'running'],
       ctyun: ['ready', 'running'],
       google: ['ready', 'running'],
-      apsara: ['ready'],
-      nutanix: ['ready'],
+      apsara: ['ready', 'running'],
+      nutanix: ['ready', 'running'],
       proxmox: ['ready', 'running'],
       bingocloud: false,
       incloudsphere: ['ready', 'running'],
       remotefile: false,
       volcengine: ['ready', 'running'],
-      sangfor: ['ready'],
-      zettakit: ['ready'],
-      uis: ['ready'],
+      sangfor: ['ready', 'running'],
+      zettakit: ['ready', 'running'],
+      uis: ['ready', 'running'],
+      cas: ['ready', 'running'],
       ksyun: ['ready', 'running'],
       cnware: false,
       baidu: ['ready', 'running'],
@@ -320,7 +341,8 @@ const actionEableMap = {
       openstack: ['running'],
       zstack: ['running'],
       dstack: ['running'],
-      ucloud: false,
+      ucloud: ['running'],
+      rockbase: ['running'],
       ctyun: ['running'],
       google: false,
       apsara: ['running'],
@@ -335,6 +357,7 @@ const actionEableMap = {
       sangfor: ['running'],
       zettakit: ['running'],
       uis: ['running'],
+      cas: ['running'],
       ksyun: ['running'],
       cnware: ['running'],
       baidu: ['running'],
@@ -358,19 +381,21 @@ const actionEableMap = {
       zstack: ['running'],
       dstack: ['running'],
       ucloud: ['running'],
+      rockbase: ['running'],
       ctyun: ['running'],
       google: ['running'],
       apsara: ['running'],
       jdcloud: ['running'],
       ecloud: ['running'],
       nutanix: ['running'],
-      proxmox: false,
+      proxmox: ['running'],
       bingocloud: false,
       remotefile: false,
       volcengine: ['running'],
       sangfor: ['running'],
       zettakit: ['running'],
       uis: ['running'],
+      cas: ['running'],
       ksyun: ['running'],
       cnware: false,
       baidu: ['running'],
@@ -394,6 +419,7 @@ const actionEableMap = {
       zstack: false,
       dstack: false,
       ucloud: false,
+      rockbase: false,
       ctyun: false,
       google: false,
       apsara: false,
@@ -402,12 +428,13 @@ const actionEableMap = {
       nutanix: ['running'],
       bingocloud: false,
       incloudsphere: ['running'],
-      proxmox: false,
+      proxmox: ['running'],
       remotefile: false,
       volcengine: ['running'],
       sangfor: ['running'],
       zettakit: ['running'],
       uis: ['running'],
+      cas: ['running'],
       ksyun: false,
       cnware: false,
       baidu: ['running'],
@@ -431,6 +458,7 @@ const actionEableMap = {
       zstack: ['running', 'ready'],
       dstack: ['running', 'ready'],
       ucloud: false,
+      rockbase: false,
       ctyun: false,
       google: ['running', 'ready'],
       apsara: false,
@@ -443,6 +471,7 @@ const actionEableMap = {
       sangfor: false,
       zettakit: false,
       uis: false,
+      cas: false,
       ksyun: false,
       cnware: ['running', 'ready'],
       baidu: ['running', 'ready'],
@@ -466,6 +495,7 @@ const actionEableMap = {
       zstack: false,
       dstack: false,
       ucloud: false,
+      rockbase: false,
       ctyun: false,
       google: false,
       apsara: false,
@@ -478,6 +508,7 @@ const actionEableMap = {
       sangfor: false,
       zettakit: false,
       uis: false,
+      cas: false,
       ksyun: false,
       cnware: false,
       baidu: false,
@@ -501,6 +532,7 @@ const actionEableMap = {
       zstack: false,
       dstack: false,
       ucloud: false,
+      rockbase: false,
       ctyun: false,
       google: false,
       apsara: false,
@@ -513,6 +545,7 @@ const actionEableMap = {
       sangfor: false,
       zettakit: false,
       uis: false,
+      cas: false,
       ksyun: false,
       cnware: false,
       baidu: false,
@@ -536,6 +569,7 @@ const actionEableMap = {
       zstack: false,
       dstack: false,
       ucloud: false,
+      rockbase: false,
       ctyun: false,
       google: false,
       apsara: false,
@@ -548,6 +582,7 @@ const actionEableMap = {
       sangfor: false,
       zettakit: false,
       uis: false,
+      cas: false,
       ksyun: false,
       cnware: false,
       baidu: false,
@@ -571,6 +606,7 @@ const actionEableMap = {
       zstack: true,
       dstack: true,
       ucloud: true,
+      rockbase: true,
       ctyun: true,
       google: true,
       apsara: false,
@@ -583,6 +619,7 @@ const actionEableMap = {
       sangfor: false,
       zettakit: false,
       uis: false,
+      cas: false,
       ksyun: false,
       cnware: false,
       baidu: false,
@@ -605,6 +642,7 @@ const actionEableMap = {
       zstack: false,
       dstack: false,
       ucloud: false,
+      rockbase: false,
       ctyun: false,
       google: false,
       apsara: false,
@@ -617,6 +655,7 @@ const actionEableMap = {
       sangfor: false,
       zettakit: false,
       uis: false,
+      cas: false,
       ksyun: false,
       cnware: false,
       baidu: false,
@@ -639,6 +678,7 @@ const actionEableMap = {
       zstack: false,
       dstack: false,
       ucloud: false,
+      rockbase: false,
       ctyun: false,
       google: false,
       apsara: false,
@@ -651,6 +691,7 @@ const actionEableMap = {
       sangfor: false,
       zettakit: false,
       uis: false,
+      cas: false,
       ksyun: false,
       cnware: false,
       baidu: false,
@@ -674,6 +715,7 @@ const actionEableMap = {
       zstack: ['running', 'ready'],
       dstack: ['running', 'ready'],
       ucloud: ['running', 'ready'],
+      rockbase: ['running', 'ready'],
       ctyun: ['running', 'ready'],
       google: ['running', 'ready'],
       apsara: false,
@@ -686,6 +728,7 @@ const actionEableMap = {
       sangfor: false,
       zettakit: false,
       uis: false,
+      cas: false,
       ksyun: ['running', 'ready'],
       cnware: false,
       baidu: ['running', 'ready'],
@@ -709,6 +752,7 @@ const actionEableMap = {
       zstack: ['running', 'ready'],
       dstack: ['running', 'ready'],
       ucloud: ['running', 'ready'],
+      rockbase: ['running', 'ready'],
       ctyun: ['running', 'ready'],
       google: ['running', 'ready'],
       apsara: false,
@@ -721,6 +765,7 @@ const actionEableMap = {
       sangfor: false,
       zettakit: false,
       uis: false,
+      cas: false,
       ksyun: ['running', 'ready'],
       cnware: false,
       baidu: ['running', 'ready'],
@@ -738,6 +783,7 @@ const actionEableMap = {
       sangfor: false,
       zettakit: false,
       uis: false,
+      cas: false,
       cloudpods: false,
       baidu: false,
     },
@@ -754,6 +800,7 @@ const actionEableMap = {
       sangfor: false,
       zettakit: false,
       uis: false,
+      cas: false,
       cloudpods: false,
       baidu: false,
     },
@@ -772,6 +819,7 @@ const actionEableMap = {
       sangfor: false,
       zettakit: false,
       uis: false,
+      cas: false,
       baidu: false,
     },
   },
@@ -784,6 +832,7 @@ const actionEableMap = {
       sangfor: false,
       zettakit: false,
       uis: false,
+      cas: false,
       baidu: false,
     },
   },
@@ -795,6 +844,7 @@ const actionEableMap = {
       sangfor: false,
       zettakit: false,
       uis: false,
+      cas: false,
       baidu: false,
     },
   },
@@ -923,4 +973,76 @@ export const validateRescueMode = (val) => {
     }
   }
   return ret
+}
+
+/** cpu_numa_pin：每项一行；内存 sizestr；绑定 CPU 取全部 pcpu 排序后合并连续区间 */
+export const formatSortedPcpuRanges = (sortedPcpus) => {
+  if (!sortedPcpus.length) return '-'
+  const parts = []
+  let start = sortedPcpus[0]
+  let end = sortedPcpus[0]
+  for (let i = 1; i < sortedPcpus.length; i++) {
+    const cur = sortedPcpus[i]
+    if (cur === end + 1) {
+      end = cur
+    } else {
+      parts.push(start === end ? String(start) : `${start}-${end}`)
+      start = cur
+      end = cur
+    }
+  }
+  parts.push(start === end ? String(start) : `${start}-${end}`)
+  return parts.join(',')
+}
+
+const getCpuNumaPinLineData = (item) => {
+  const nodeId = item.node_id
+  const sizeMb = item.size_mb
+  const pin = item.vcpu_pin || []
+  const pcpus = [...new Set(
+    pin
+      .filter(p => p && typeof p.pcpu === 'number')
+      .map(p => p.pcpu),
+  )].sort((a, b) => a - b)
+  const cpuStr = formatSortedPcpuRanges(pcpus)
+  const memStr = sizestr(sizeMb, 'M', 1024)
+  return { nodeId, memStr, cpuStr }
+}
+
+export const formatCpuNumaPinLine = (item) => {
+  const { nodeId, memStr, cpuStr } = getCpuNumaPinLineData(item)
+  return `node:${nodeId} mem: ${memStr} cpu: ${cpuStr}`
+}
+
+const CPU_NUMA_PIN_LINE_GAP = '12px'
+
+export const formatCpuNumaPin = (row) => {
+  const raw = row.cpu_numa_pin
+  if (raw === undefined || raw === null || raw === '') return '-'
+  let arr = raw
+  if (typeof raw === 'string') {
+    try {
+      arr = JSON.parse(raw)
+    } catch (e) {
+      return '-'
+    }
+  }
+  if (!Array.isArray(arr) || arr.length === 0) return '-'
+  return _cpuNumaPinH('div', arr.map((item, idx) => {
+    const { nodeId, memStr, cpuStr } = getCpuNumaPinLineData(item)
+    return _cpuNumaPinH('div', {
+      key: idx,
+      style: {
+        display: 'flex',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        columnGap: CPU_NUMA_PIN_LINE_GAP,
+        rowGap: '4px',
+      },
+    }, [
+      _cpuNumaPinH('span', `NUMA: ${nodeId}`),
+      _cpuNumaPinH('span', i18n.t('compute.text_369') + `: ${memStr}`),
+      _cpuNumaPinH('span', `CPU: ${cpuStr}`),
+    ])
+  }))
 }

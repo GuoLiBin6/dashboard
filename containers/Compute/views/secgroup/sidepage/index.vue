@@ -30,16 +30,16 @@
 
 <script>
 import * as R from 'ramda'
+import { isUcloudLikeProvider } from '@/constants'
 import SidePageMixin from '@/mixins/sidePage'
 import WindowsMixin from '@/mixins/windows'
 import Actions from '@/components/PageList/Actions'
-import SingleActionsMixin from '../mixins/singleActions'
-import ColumnsMixin from '../mixins/columns'
 import AssociatedInstances from './AssociatedInstances'
 import SecgroupDetail from './Detail'
 import InDirection from './InDirection'
 import OutDirection from './OutDirection'
-
+import SingleActionsMixin from '../mixins/singleActions'
+import ColumnsMixin from '../mixins/columns'
 export default {
   name: 'SecGroupSidePage',
   components: {
@@ -62,7 +62,7 @@ export default {
     if (this.params.hiddenSidepageTabs && this.params.hiddenSidepageTabs.includes('associated-instances')) {
       detailTabs = R.remove(R.findIndex(R.propEq('key', 'associated-instances'))(detailTabs), 1, detailTabs)
     }
-    if (this.params.row && this.params.row.brand && this.params.row.brand.toLowerCase() === 'ucloud') {
+    if (this.params.row && this.params.row.brand && isUcloudLikeProvider(this.params.row.brand)) {
       detailTabs = R.remove(R.findIndex(R.propEq('key', 'out-direction'))(detailTabs), 1, detailTabs)
     }
     return {

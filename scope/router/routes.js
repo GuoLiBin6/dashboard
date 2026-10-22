@@ -1,3 +1,5 @@
+import Licenses from '@scope/views/licenses'
+import Credential from '@Ai/views/credentials'
 import AuthLayout from '@/layouts/Auth'
 import Login from '@/sections/Auth/Login'
 import LoginChooser from '@/sections/Auth/Login/components/LoginChooser'
@@ -6,9 +8,7 @@ import SecretVerify from '@/sections/Auth/SecretVerify'
 import BindSecret from '@/sections/Auth/BindSecret'
 import SetSecretQuestion from '@/sections/Auth/SetSecretQuestion'
 import ResetSecretQuestion from '@/sections/Auth/ResetSecretQuestion'
-import Licenses from '@scope/views/licenses'
 import Layout from '@/layouts/RouterView'
-
 const routes = [
   { name: 'Home', path: '/', redirect: '/dashboard' },
   {
@@ -77,6 +77,18 @@ const routes = [
         name: 'Licenses',
         path: '',
         component: Licenses,
+      },
+    ],
+  },
+  {
+    path: '/credentials',
+    meta: {},
+    component: Layout,
+    children: [
+      {
+        name: 'Credential',
+        path: '',
+        component: Credential,
       },
     ],
   },

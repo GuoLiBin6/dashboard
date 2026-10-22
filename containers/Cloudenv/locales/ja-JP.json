@@ -171,6 +171,7 @@
   "cloudenv.text_128": "{0}#新しいTencent Cloudアカウントを作成する",
   "cloudenv.text_129": "{0}#新しいHuawei Cloudアカウントを作成する",
   "cloudenv.text_130": "{0}#新しいUCloudアカウントを作成する",
+  "cloudenv.create_rockbase": "{0}#新しいRockBaseアカウントを作成する",
   "cloudenv.text_131": "{0}#新しいZStack DStackアカウントを作成する",
   "cloudenv.text_132": "{0}#新しいOpenStackアカウントを作成する",
   "cloudenv.text_133": "{0}#新しいVMwareアカウントを作成する",
@@ -562,6 +563,7 @@
     "create_form": {
       "saml_user_label": "パスワード不要モード",
       "saml_user_extra": "有効にすると、システムのSAML情報が自動的にクラウドに同期され、システムはSSOシングルサインオン機能を備えたクラウドログインIDプロバイダーになることができます(詳細については{link}を参照してください)。",
+      "saml_user_extra_1": "有効にすると、システムのSAML情報が自動的にクラウドに同期され、システムはSSOシングルサインオン機能を備えたクラウドログインIDプロバイダーになることができます。",
       "saml_user_link": "ID プロバイダー"
     },
     "sidepage": {
@@ -593,7 +595,7 @@
   "cloudenv.text_519": "プロジェクトを変更する",
   "cloudenv.text_520": "@:dictionary.snapshotの作成",
   "cloudenv.text_521": "同じ構成を作成する",
-  "cloudenv.text_522": "GPU カードをセットアップする",
+  "cloudenv.text_522": "透過デバイスを設定する",
   "cloudenv.text_523": "ディスク速度を設定する",
   "cloudenv.text_524": "有効期限のリリース",
   "cloudenv.text_525": "ホストのクローン作成",
@@ -696,6 +698,8 @@
   "cloudenv.res_networks": "IP サブネット",
   "cloudenv.res_ports": "IP の総数",
   "cloudenv.disk_hidden_menus": "ハードドライブの操作メニューを非表示にします",
+  "cloudenv.vminstance_container_hidden_menus": "コンテナホストのメニューを非表示にする",
+  "cloudenv.baremetal_hidden_menus": "ベアメタルのメニューを非表示にする",
   "cloudenv.sub_hidden_menus": "メインメニューを非表示にする",
   "cloudenv.billing_scope": "請求分析の範囲",
   "cloudenv.billing_scope.extra": "このプラットフォームの管理アカウントの請求書:プラットフォームによって同期されたマスターアカウントとマスターアカウントのすべてのサブアカウントの請求書のみを収集し、請求ファイルに他の請求書がある場合は破棄されます。 すべてのアカウントの請求書: 請求ファイル内のすべての請求書が収集され、対応する Alibaba Cloud アカウントの請求エントリがプラットフォームで見つからない場合、Alibaba Cloud サブスクリプションは「このアカウント名 - 請求項目に関連付けられている Alibaba Cloud アカウントのデジタル ID」と表示されます。",
@@ -854,8 +858,10 @@
   "cloudenv.create_sangfor": "{0}#新建深信服超融合云账号",
   "cloudenv.create_zettakit": "{0}#新建泽塔云云账号",
   "cloudenv.zettakit": "泽塔云",
+  "cloudenv.create_cas": "{0}#新建CAS云账号",
   "cloudenv.create_uis": "{0}#新建UIS云账号",
   "cloudenv.create_cloudflare": "{0}#新建Cloudflare云账号",
+  "cloudenv.cas": "CAS",
   "cloudenv.uis": "UIS",
   "cloudenv.view_record": "レコードの表示",
   "cloudenv.old_sth": "原作{0}",
@@ -912,5 +918,6 @@
   "cloudenv.check_mon_host": "正しいMon Hostフォーマットを入力してください",
   "cloudenv.mon_host_extra": "フォーマット：IP：ポート、例：192.168.1.1：80、複数のアドレスは英語のカンマで区切られる",
   "cloudenv.enable_mfa": "MFAを有効にする",
-  "cloudenv.run_all_bills": "履歴を含むすべての請求書"
+  "cloudenv.run_all_bills": "請求書を通過したすべての過去の月",
+  "cloudenv.api_bill": "API請求書"
 }

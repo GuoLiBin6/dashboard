@@ -1,14 +1,17 @@
 import { mapGetters } from 'vuex'
-// import { Base64 } from 'js-base64'
 import qs from 'qs'
+import { SMART_SSH_FORM_DECORATORS } from '@Compute/constants'
 import { disableDeleteAction } from '@/utils/common/tableActions'
 import expectStatus from '@/constants/expectStatus'
 import i18n from '@/locales'
-import { SMART_SSH_FORM_DECORATORS } from '@Compute/constants'
-import { commonUnabled, cloudEnabled, cloudUnabledTip } from '../../vminstance/utils'
+import { typeClouds } from '@/utils/common/hypervisor'
+import { commonUnabled, cloudEnabled, cloudUnabledTip, commonEnabled, validateRescueMode } from '../../vminstance/utils'
 import { solWebConsole, jnlpConsole } from '../../../utils/webconsole'
 import { hostServerActions } from '../../../utils/hostActions'
-
+import { getRenewAction } from '../utils/renewActions'
+import { getAutoRenewAction } from '../utils/autoRenewActions'
+import { getDeleteAction } from '../utils/deleteActions'
+// import { Base64 } from 'js-base64'
 export default {
   computed: {
     ...mapGetters(['isAdminMode', 'isDomainMode', 'userInfo', 'auth', 'common']),
@@ -33,7 +36,9 @@ export default {
         permission: 'server_get_vnc',
         actions: obj => {
           let ret = []
-          ret.push(solWebConsole(this.webconsoleManager, obj, this.openWebConsole, this.createDialog))
+          if (this.isAdminMode) {
+            ret.push(solWebConsole(this.webconsoleManager, obj, this.openWebConsole, this.createDialog))
+          }
           const openWebConsole = (params) => {
             this.webconsoleManager.performAction(params).then(({ data }) => {
               const connectParams = qs.parse(data.connect_params)
@@ -43,7 +48,7 @@ export default {
                   manager: this.webconsoleManager,
                   params,
                   errorMsg: connectParams.login_error_message,
-                  data: { name: obj.name, ip: params.action, id: obj.id, resource: 'servers' },
+                  data: { name: obj.name, ip: params.data?.ip, id: obj.id, resource: 'servers' },
                   success: (data) => {
                     this.openWebConsole(obj, data, 'ws')
                   },
@@ -81,16 +86,22 @@ export default {
                 }
                 return ret
               }
+              // 与虚拟机一致：webconsole ssh 的 action 使用实例 id，ip 放在 data 中
+              const buildSshParams = (extra = {}) => ({
+                id: 'ssh',
+                action: obj.id,
+                data: {
+                  id: obj.id,
+                  ip: v,
+                  type: 'server',
+                  ...extra,
+                },
+              })
               options.push({
                 label: `SSH ${v}`,
                 action: () => {
                   const success = () => {
-                    const params = {
-                      id: 'ssh',
-                      action: v,
-                      data: {},
-                    }
-                    openWebConsole(params)
+                    openWebConsole(buildSshParams())
                   }
                   if (this.enableMFA) {
                     this.createDialog('SecretVertifyDialog', {
@@ -116,11 +127,7 @@ export default {
                   }
                   const sshConnectHandle = () => {
                     const success = () => {
-                      openWebConsole({
-                        action: v,
-                        data: { },
-                        id: 'ssh',
-                      })
+                      openWebConsole(buildSshParams())
                     }
                     if (this.enableMFA) {
                       this.createDialog('SecretVertifyDialog', {
@@ -135,12 +142,11 @@ export default {
                       title: i18n.t('compute.custom_ssh_connect', ['SSH']),
                       data: [obj],
                       callback: async (data) => {
-                        const pms = {
-                          action: v,
-                          data: { port: data.port, username: data.username, password: data.password },
-                          id: 'ssh',
-                        }
-                        openWebConsole(pms)
+                        openWebConsole(buildSshParams({
+                          port: data.port,
+                          username: data.username,
+                          password: data.password,
+                        }))
                       },
                       decorators: SMART_SSH_FORM_DECORATORS,
                     })
@@ -159,57 +165,6 @@ export default {
                   </a-tooltip>
                 },
               })
-              // options.push({
-              //   label: i18n.t('compute.text_345', [v]),
-              //   action: () => {
-              //     this.createDialog('SmartFormDialog', {
-              //       title: i18n.t('compute.text_346'),
-              //       data: [obj],
-              //       callback: async (data) => {
-              //         const success = () => {
-              //           const params = {
-              //             action: v,
-              //             data,
-              //             id: 'ssh',
-              //           }
-              //           openWebConsole(params)
-              //         }
-              //         if (this.enableMFA) {
-              //           this.createDialog('SecretVertifyDialog', {
-              //             success,
-              //           })
-              //         } else {
-              //           success()
-              //         }
-              //       },
-              //       decorators: {
-              //         port: [
-              //           'port',
-              //           {
-              //             validateFirst: true,
-              //             rules: [
-              //               { required: true, message: i18n.t('compute.text_347') },
-              //               {
-              //                 validator: (rule, value, _callback) => {
-              //                   const num = parseFloat(value)
-              //                   if (!/^\d+$/.test(value) || !num || num > 65535) {
-              //                     _callback(i18n.t('compute.text_348'))
-              //                   }
-              //                   _callback()
-              //                 },
-              //               },
-              //             ],
-              //           },
-              //           {
-              //             label: i18n.t('compute.text_349'),
-              //             placeholder: i18n.t('compute.text_350'),
-              //           },
-              //         ],
-              //       },
-              //     })
-              //   },
-              //   meta,
-              // })
             })
             return options
           }
@@ -218,7 +173,9 @@ export default {
           eips = eips.length ? mapIpActions(eips, 'EIP SSH') : []
           ips = ips.length ? mapIpActions(ips, 'IP SSH') : []
           ret = ret.concat(eips).concat(ips)
-          ret.push({ ...jnlpConsole(new this.$Manager('servers', 'v2'), obj, this.createDialog), permission: 'server_get_jnlp' })
+          if (this.isAdminMode) {
+            ret.push({ ...jnlpConsole(new this.$Manager('servers', 'v2'), obj, this.createDialog), permission: 'server_get_jnlp' })
+          }
           return ret
         },
         meta: (obj) => {
@@ -229,6 +186,7 @@ export default {
           ret = this.$isValidateResourceLock(obj)
           return ret
         },
+        hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_web_console'),
       },
       {
         label: i18n.t('compute.text_352'),
@@ -271,6 +229,7 @@ export default {
                     ret.tooltip = cloudUnabledTip('rebuildRoot', { ...obj, brand: 'baremetal' })
                     return ret
                   },
+                  hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_rebuild_root'),
                 },
                 {
                   label: i18n.t('compute.perform_sync_status'),
@@ -284,6 +243,7 @@ export default {
                       },
                     })
                   },
+                  hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_syncstatus'),
                 },
                 {
                   label: this.$t('compute.perform_change_owner', [this.$t('dictionary.project')]),
@@ -305,6 +265,7 @@ export default {
                     ret.validate = true
                     return ret
                   },
+                  hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_change_owner'),
                 },
                 {
                   label: i18n.t('compute.text_359'),
@@ -329,7 +290,12 @@ export default {
                     }
                     return ret
                   },
+                  hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_create_same_config'),
                 },
+                // 续费
+                getRenewAction(this, obj),
+                // 自动续费设置
+                getAutoRenewAction(this, obj),
               ],
             },
             {
@@ -365,6 +331,7 @@ export default {
                     ret.tooltip = cloudUnabledTip('resetPassword', { ...obj, brand: 'baremetal' })
                     return ret
                   },
+                  hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_reset_password'),
                 },
                 {
                   label: i18n.t('compute.text_361'),
@@ -401,6 +368,7 @@ export default {
                     ret.tooltip = cloudUnabledTip('bindKeyPair', obj)
                     return ret
                   },
+                  hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_bind_key'),
                 },
                 {
                   label: i18n.t('compute.text_364'),
@@ -437,6 +405,77 @@ export default {
                     ret.tooltip = cloudUnabledTip('unBindKeyPair', obj)
                     return ret
                   },
+                  hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_unbind_key'),
+                },
+                // 设置免密登录
+                {
+                  label: i18n.t('compute.vminstance.actions.setup_ssh_authentication'),
+                  permission: 'server_perform_setup_ssh_proxy',
+                  action: () => {
+                    this.createDialog('SetupSSHDialog', {
+                      data: [obj],
+                      columns: this.columns,
+                      onManager: this.onManager,
+                    })
+                  },
+                  meta: () => {
+                    const ret = {
+                      validate: true,
+                      tooltip: null,
+                    }
+                    if (obj.hypervisor === typeClouds.hypervisorMap.sangfor.key) {
+                      ret.validate = false
+                      ret.tooltip = i18n.t('compute.text_473', [typeClouds.hypervisorMap.sangfor.label])
+                      return ret
+                    }
+                    const rescueModeValid = validateRescueMode(obj)
+                    if (!rescueModeValid.validate) return rescueModeValid
+                    const isLinux = obj.os_type && obj.os_type.toLowerCase() === 'linux'
+                    if (!isLinux) {
+                      ret.validate = false
+                      ret.tooltip = i18n.t('compute.text_362')
+                      return ret
+                    }
+                    if (!commonEnabled(obj, ['running'])) {
+                      ret.validate = false
+                      ret.tooltip = i18n.t('db.text_156')
+                      return ret
+                    }
+                    return ret
+                  },
+                  hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_setup_ssh_proxy'),
+                },
+                // 探测免密登录
+                {
+                  label: i18n.t('compute.vminstance.actions.detect_ssh_authentication'),
+                  permission: 'server_perform_make_sshable',
+                  action: () => {
+                    this.createDialog('DetectSSHDialog', {
+                      data: [obj],
+                      columns: this.columns,
+                      onManager: this.onManager,
+                    })
+                  },
+                  meta: () => {
+                    const ret = {
+                      validate: true,
+                      tooltip: null,
+                    }
+                    if (obj.hypervisor === typeClouds.hypervisorMap.sangfor.key) {
+                      ret.validate = false
+                      ret.tooltip = i18n.t('compute.text_473', [typeClouds.hypervisorMap.sangfor.label])
+                      return ret
+                    }
+                    const rescueModeValid = validateRescueMode(obj)
+                    if (!rescueModeValid.validate) return rescueModeValid
+                    if (!commonEnabled(obj, ['running'])) {
+                      ret.validate = false
+                      ret.tooltip = i18n.t('db.text_156')
+                      return ret
+                    }
+                    return ret
+                  },
+                  hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_detect_ssh_proxy'),
                 },
               ],
             },
@@ -445,7 +484,7 @@ export default {
               submenus: [
                 {
                   label: i18n.t('compute.text_366'),
-                  permission: 'server_perform_insertiso',
+                  permission: 'server_perform_set_iso',
                   action: () => {
                     this.createDialog('VmMountIsoDialog', {
                       data: [obj],
@@ -456,65 +495,21 @@ export default {
                   },
                   meta: () => {
                     return {
-                      validate: obj.cdrom_support && !obj.cdrom,
+                      validate: !!obj.cdrom_support,
                     }
                   },
-                },
-                {
-                  label: i18n.t('compute.text_367'),
-                  permission: 'server_perform_ejectiso',
-                  action: () => {
-                    this.createDialog('VmUnmountIsoDialog', {
-                      data: [obj],
-                      columns: this.columns,
-                      onManager: this.onManager,
-                      refresh: this.refresh,
-                    })
-                  },
-                  meta: () => {
-                    return {
-                      validate: obj.cdrom_support && obj.cdrom,
-                    }
-                  },
+                  hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_perform_mount_iso'),
                 },
               ],
             },
             {
               label: i18n.t('compute.perform_delete'),
               submenus: [
-                disableDeleteAction(this),
-                {
-                  label: i18n.t('compute.perform_delete'),
-                  permission: 'server_delete',
-                  action: () => {
-                    this.createDialog('DeleteResDialog', {
-                      vm: this,
-                      data: [obj],
-                      columns: this.columns,
-                      onManager: this.onManager,
-                      title: i18n.t('compute.perform_delete'),
-                      success: () => {
-                        this.destroySidePages()
-                      },
-                    })
-                  },
-                  meta: () => {
-                    const ret = {
-                      validate: false,
-                      tooltip: null,
-                    }
-                    if (this.isAdminMode && obj.billing_type === 'prepaid') {
-                      ret.tooltip = i18n.t('compute.text_285')
-                      return ret
-                    }
-                    if (!obj.can_delete) {
-                      ret.tooltip = i18n.t('compute.text_284')
-                      return ret
-                    }
-                    ret.validate = true
-                    return ret
-                  },
-                },
+                disableDeleteAction(this, {
+                  hidden: () => this.$isScopedPolicyMenuHidden('baremetal_hidden_menus.server_set_delete_protection'),
+                }),
+                // 删除（GPU scope 可自定义，默认 DeleteResDialog）
+                getDeleteAction(this, obj),
               ],
             },
           ]

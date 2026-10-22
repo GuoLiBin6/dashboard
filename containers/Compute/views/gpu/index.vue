@@ -8,9 +8,8 @@
 </template>
 
 <script>
-import PciList from '../pci/components/PciList'
 import GpuList from './components/List'
-
+import PciList from '../pci/components/PciList'
 export default {
   name: 'GPUIndex',
   components: {
@@ -21,11 +20,15 @@ export default {
     return {
       listId: 'GpuList',
       curTab: 'gpu-list',
-      tabOptions: [
+    }
+  },
+  computed: {
+    tabOptions () {
+      return [
         { label: this.$t('compute.pci.passthrough_device'), key: 'gpu-list' },
         { label: this.$t('compute.pci.passthrough_device_type'), key: 'pci-list' },
-      ],
-    }
+      ]
+    },
   },
 }
 </script>

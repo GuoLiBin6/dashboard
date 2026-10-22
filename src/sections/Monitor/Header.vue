@@ -15,6 +15,7 @@
     </template>
     <refresh-button v-else-if="showSync" :loading="loading" @refresh="refresh" class="mr-2" />
     <a-radio-group class="mr-3" @change="timeChange" :value="time">
+      <a-radio-button v-if="allowEmptyTime" key="all" value="all">{{ $t('common_737') }}</a-radio-button>
       <a-radio-button v-for="item in timeOpts" v-show="!item.hidden" :key="item.key" :value="item.key">{{ item.label }}</a-radio-button>
       <slot name="radio-button-append" v-if="showCustomTime">
         <custom-date @update:time="(val) => timeChange({target: {value: val}})" :customTimeUseTimeStamp="customTimeUseTimeStamp" :customTime="customTime" @update:customTime="customTimeChange" :showCustomTimeText="isCustom" />
@@ -31,7 +32,7 @@
       <div class="ant-form-item-label">
         <label :title="$t('common_166')">{{$t('common_166')}}</label>
       </div>
-      <a-select class="mr-2" style="width: 80px" :value="timeGroup" @change="timeGroupChange">
+      <a-select class="mr-2" style="width: 90px" :value="timeGroup" @change="timeGroupChange">
         <a-select-option v-for="item in timeGroupOpts" :key="item.key" :value="item.key">{{ item.label }}</a-select-option>
       </a-select>
     </template>
@@ -211,6 +212,10 @@ export default {
       type: Boolean,
       default: true,
     },
+    allowEmptyTime: {
+      type: Boolean,
+      default: false,
+    },
   },
   data () {
     let timer
@@ -248,7 +253,14 @@ export default {
       return this.time === 'custom'
     },
     timeGroupOpts () {
-      return this.isCustom ? this.customTimeGroupOpts : this.timeOpts[this.time || '1h'].timeGroupOpts
+      if (this.isCustom) {
+        return this.customTimeGroupOpts
+      }
+      if (this.timeOpts[this.time]) {
+        return this.timeOpts[this.time].timeGroupOpts
+      } else {
+        return this.timeOpts[`${1}h`].timeGroupOpts
+      }
     },
   },
   watch: {
@@ -269,6 +281,10 @@ export default {
     timeChange (val) {
       const time = val.target.value
       console.log('time', time)
+      if (time === 'all') {
+        this.$emit('update:time', 'all')
+        return
+      }
       if (time === 'custom') {
         this.$emit('update:time', time, 'YYYY-MM-DD HH:mm')
       } else {

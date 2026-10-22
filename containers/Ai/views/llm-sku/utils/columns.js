@@ -1,5 +1,10 @@
 import { sizestr } from '@/utils/utils'
 import i18n from '@/locales'
+import { formatDevicesDisplay } from '@Ai/utils/deviceFormUtils'
+import { getSkuModelDisplayText } from './modelDisplay'
+import LlmSkuMountedModels from '../components/LlmSkuMountedModels.vue'
+
+export { getSourceTableColumn } from './skuSourceDisplay'
 
 export const getDeviceModelTableColumn = () => {
   return {
@@ -8,21 +13,27 @@ export const getDeviceModelTableColumn = () => {
     minWidth: 120,
     slots: {
       default: ({ row }, h) => {
-        const devices = row.devices
-        if (devices?.length) {
-          return devices.map(v => {
-            return <div class={'mb-1'}><a-tag>{v.model}</a-tag></div>
-          })
-        }
-        return '-'
+        const text = formatDevicesDisplay(row.devices, { fallbackMemoryMb: row.vram_claim_mb })
+        if (text === '-') return '-'
+        return text.split(', ').map(part => (
+          h('div', { class: 'mb-1' }, [h('a-tag', [part])])
+        ))
       },
     },
     formatter: ({ row }) => {
-      const devices = row.devices
-      if (devices?.length) {
-        return devices.map(v => v.model).join(',')
-      }
-      return '-'
+      return formatDevicesDisplay(row.devices, { fallbackMemoryMb: row.vram_claim_mb })
+    },
+  }
+}
+
+export const getVramClaimTableColumn = () => {
+  return {
+    field: 'vram_claim_mb',
+    title: i18n.t('aice.vram_claim_mb'),
+    width: 120,
+    formatter: ({ row }) => {
+      if (!row.vram_claim_mb) return '-'
+      return `${row.vram_claim_mb} MB`
     },
   }
 }
@@ -36,7 +47,7 @@ export const getEnvsTableColumn = () => {
       default: ({ row }, h) => {
         if (row.envs?.length) {
           return row.envs.map(v => {
-            return <div class={'mb-1'}><a-tag>{v.key}={v.value}</a-tag></div>
+            return h('div', { class: 'mb-1' }, [h('a-tag', [`${v.key}=${v.value}`])])
           })
         }
         return '-'
@@ -51,6 +62,17 @@ export const getEnvsTableColumn = () => {
   }
 }
 
+export const getAppNameTableColumn = () => {
+  return {
+    field: 'app_name',
+    title: i18n.t('aice.llm_image.app_name'),
+    width: 160,
+    formatter: ({ row }) => {
+      return row.app_name || '-'
+    },
+  }
+}
+
 export const getImageTableColumn = ({ vm = {} } = {}) => {
   return {
     field: 'image',
@@ -60,11 +82,27 @@ export const getImageTableColumn = ({ vm = {} } = {}) => {
       return row.image || '-'
     },
     slots: {
-      default: ({ row }, h) => {
+      default: ({ row }) => {
+        if (!row.image) return '-'
         return [
-          <list-body-cell-wrap copy hideField={true} field='image' row={row} message={row.image}>
-            <side-page-trigger permission='llm_images_get' name='LlmImageSidePage' id={row.llm_image_id} vm={vm}>{row.image}</side-page-trigger>
-          </list-body-cell-wrap>,
+          vm.$createElement('list-body-cell-wrap', {
+            props: {
+              copy: true,
+              hideField: true,
+              field: 'image',
+              row,
+              message: row.image,
+            },
+          }, [
+            vm.$createElement('side-page-trigger', {
+              props: {
+                permission: 'llm_images_get',
+                name: 'LlmImageSidePage',
+                id: row.llm_image_id,
+                vm,
+              },
+            }, [row.image]),
+          ]),
         ]
       },
     },
@@ -84,32 +122,66 @@ export const getBandwidthTableColumn = () => {
   }
 }
 
-export const getCpuTableColumn = () => {
+const formatCgroupLimit = (value) => {
+  const status = value ? i18n.t('status.enabled.true') : i18n.t('status.enabled.false')
+  return `${i18n.t('aice.enable_cgroup')}: ${status}`
+}
+
+export const getCpuTableColumn = (opts = {}) => {
+  const { showCgroupLimit = false } = opts
   return {
     field: 'cpu',
     title: 'CPU',
-    width: 120,
+    width: showCgroupLimit ? 220 : 120,
     sortable: true,
+    slots: showCgroupLimit
+      ? {
+        default: ({ row }, h) => {
+          return [
+            h('span', [row.cpu]),
+            h('span', { class: 'ml-3' }, [formatCgroupLimit(row.enable_cgroup_cpu)]),
+          ]
+        },
+      }
+      : undefined,
     formatter: ({ row }) => {
+      if (showCgroupLimit) {
+        return `${row.cpu} ${formatCgroupLimit(row.enable_cgroup_cpu)}`
+      }
       return row.cpu
     },
   }
 }
 
-export const getMemoryTableColumn = () => {
+export const getMemoryTableColumn = (opts = {}) => {
+  const { showCgroupLimit = false } = opts
   return {
     field: 'memory',
     title: i18n.t('aice.memory'),
-    width: 120,
+    width: showCgroupLimit ? 220 : 120,
+    slots: showCgroupLimit
+      ? {
+        default: ({ row }, h) => {
+          return [
+            h('span', [sizestr(row.memory, 'M', 1024)]),
+            h('span', { class: 'ml-3' }, [formatCgroupLimit(row.enable_cgroup_memory)]),
+          ]
+        },
+      }
+      : undefined,
     formatter: ({ row }) => {
-      return sizestr(row.memory, 'M', 1024)
+      const size = sizestr(row.memory, 'M', 1024)
+      if (showCgroupLimit) {
+        return `${size} ${formatCgroupLimit(row.enable_cgroup_memory)}`
+      }
+      return size
     },
   }
 }
 
 export const getDiskTableColumn = () => {
   return {
-    field: 'disk',
+    field: 'volumes',
     title: i18n.t('aice.disk'),
     width: 120,
     formatter: ({ row }) => {
@@ -123,10 +195,15 @@ export const getDiskTableColumn = () => {
   }
 }
 
-export const getLlmTypeTableColumn = () => {
+export const getLlmTypeTableColumn = (opts = {}) => {
+  const isApplyType = typeof opts === 'boolean' ? opts : opts.isApplyType
+  const isDesktopType = typeof opts === 'object' ? opts.isDesktopType : false
+  let title = i18n.t('aice.llm_type.llm')
+  if (isDesktopType) title = i18n.t('aice.llm_type.desktop_type')
+  else if (isApplyType) title = i18n.t('aice.llm_type.app')
   return {
     field: 'llm_type',
-    title: i18n.t('aice.llm_type'),
+    title,
     formatter: ({ row }) => {
       return row.llm_type || '-'
     },
@@ -136,27 +213,21 @@ export const getLlmTypeTableColumn = () => {
 export const getLlmModelNameTableColumn = ({ vm = {} } = {}) => {
   return {
     field: 'mounted_models',
-    title: i18n.t('aice.model'),
+    title: i18n.t('aice.llm_instantmodel.menu'),
     formatter: ({ row }) => {
-      if (row.mounted_model_details && row.mounted_model_details.length) {
-        return row.mounted_model_details.map(v => v.fullname).join(',')
-      }
-      return '-'
+      const text = getSkuModelDisplayText(row)
+      return text || '-'
     },
     slots: {
-      default: ({ row }, h) => {
-        if (row.mounted_model_details && row.mounted_model_details.length) {
-          const ret = []
-          row.mounted_model_details.forEach(v => {
-            ret.push(
-              <list-body-cell-wrap copy hideField={true} field='id' row={v} message={v.fullname}>
-                <side-page-trigger permission='llm_instant_models_get' name='LlmInstantModelSidePage' id={v.id} vm={vm}>{v.fullname}</side-page-trigger>
-              </list-body-cell-wrap>,
-            )
-          })
-          return ret
+      default: ({ row }) => {
+        if (!row.mounted_model_details?.length && !getSkuModelDisplayText(row)) {
+          return '-'
         }
-        return '-'
+        return [
+          vm.$createElement(LlmSkuMountedModels, {
+            props: { row, vm, showLabel: false },
+          }),
+        ]
       },
     },
   }

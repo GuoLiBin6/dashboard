@@ -50,6 +50,7 @@ export default {
       <div>ユーザーをそのシステム内のアイテムに同期させる場合は、CAS内の同名のロールを優先し、システム内に対応するロールがない場合はデフォルトのロールを使用します。</div>
     `,
     ipSupplement: '今回のコミットIPが実際のIPと一致していることを確認してください。コミットが成功すると修正できません',
+    ipSupplementTip: '現在のホストのネットワークカード情報が検出されないため、仮想マシンの状態を同期するか、クラウドアカウントを同期してから再試行してください',
     monitorDashboardOverviewTips: 'リソース概要統計にはサイクルがあり、統計結果には遅延があります',
     disable_user_on_import: '有効：ユーザーのステータスが有効であることを示す場合、今回のインバウンドユーザーは本システムを使用でき、無効にすると、インポートに成功した後にユーザーリストで再設定することができます',
     defaultServerNetwork: '自動スケジュール可能なIPサブネットから仮想マシンにIPアドレスを割り当てる',
@@ -70,6 +71,7 @@ export default {
     secgroupSystemGuestCnt: 'セキュリティグループがシステムリソースとしてバインドしているVMの数',
     v2vTransferType: '移行が成功すると、同じ構成のKVM VMが自動的に1台新規に作成され、IPが新しいインスタンスに移行され、元のインスタンスが保持されます',
     billCostConversionRateTip: '資源価格係数は当該製品に対する公式サイト価格である',
+    alertDataTimeRange: '近1時間の告警状態データをクエリ',
   },
   notify: {
     TooManyRequests: '認証コードを送信する頻度が高すぎるので、後で再試行してください',
@@ -84,6 +86,8 @@ export default {
     InvalidIdpStatus: '無効な認証ソースステータス',
     InvalidIdpStatusDetail: 'ユーザーホーム認証ソースが無効になっているか、またはステータスが無効であるかを確認してください',
     DuplicateNameError: '名前が重複しています',
+    OutOfResource: 'リソース不足',
+    OutOfQuotaError: 'クォータ不足',
 
     ServerError: 'サーバー側エラー',
     ClientError: 'クライアント側エラー',

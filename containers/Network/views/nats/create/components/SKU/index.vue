@@ -1,9 +1,5 @@
 <template>
   <div>
-    <item-filters
-      :getParams="getParams"
-      :disableds="disableds"
-      :decorators="decorators" />
     <sku-list
       :filterSkuCallback="filterSkuCallback"
       ref="SKU_LIST" />
@@ -11,9 +7,8 @@
 </template>
 
 <script>
-import SkuList from './components/List'
 import { SKU_PARAMS } from '@Network/views/nats/constants'
-
+import SkuList from './components/List'
 export default {
   name: 'NatCreateSku',
   components: {
@@ -51,9 +46,12 @@ export default {
     getCloudregionId () {
       return this.$refs.SKU_LIST.getCloudregionId()
     },
-    async fetchSkus () {
+    async fetchSkus (extraParams) {
       const { fetchSkus } = this.$refs.SKU_LIST
-      const values = this.getParams(SKU_PARAMS)
+      // 支持直接传入请求参数对象（多选区域），或字段名数组
+      const values = (extraParams && !Array.isArray(extraParams) && typeof extraParams === 'object')
+        ? { scope: 'domain', ...extraParams }
+        : this.getParams(extraParams || SKU_PARAMS)
       try {
         await fetchSkus(values)
       } catch (err) {

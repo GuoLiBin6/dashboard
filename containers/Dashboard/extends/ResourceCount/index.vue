@@ -30,11 +30,10 @@
 
 <script>
 import { mapGetters } from 'vuex'
-import { chartColors } from '@/constants'
 import { load } from '@Dashboard/utils/cache'
 import BaseDrawer from '@Dashboard/components/BaseDrawer'
+import { chartColors } from '@/constants'
 import { getRequestT } from '@/utils/utils'
-
 export default {
   name: 'ResourceCount',
   components: {
@@ -127,6 +126,16 @@ export default {
           label: this.$t('common_239'),
           key: ['all.servers', 'domain.servers', 'servers'],
           required: true,
+        },
+        {
+          label: this.$t('compute.vminstance-container'),
+          key: ['all.containers', 'domain.containers', 'containers'],
+          required: false,
+        },
+        {
+          label: this.$t('usage')['all.running_containers'],
+          key: ['all.running_containers', 'domain.running_containers', 'running_containers'],
+          required: false,
         },
         {
           label: 'RDS',

@@ -11,6 +11,7 @@
       <image-list
         v-if="cloudEnv === 'onpremise'"
         id="ImageList"
+        :imageType="imageType"
         :cloud-env="cloudEnv"
         :filterParams="filterParams"
         :diskFormats="diskFormats"
@@ -29,10 +30,9 @@
 </template>
 
 <script>
-import ResStatisticsV2Mixin from '@/mixins/resStatisticsV2Mixin'
 import CacheImageList from '@Compute/views/cached-image/components/List'
+import ResStatisticsV2Mixin from '@/mixins/resStatisticsV2Mixin'
 import ImageList from './components/List'
-
 export default {
   name: 'ImageIndex',
   components: {
@@ -51,12 +51,16 @@ export default {
       apiVersion: 'v1',
       statusNormalList: ['active'],
       cloudEnv: 'onpremise',
-      cloudEnvOptions: [
+    }
+  },
+  computed: {
+    cloudEnvOptions () {
+      return [
         { label: this.$t('dictionary.onpremise_env'), key: 'onpremise' },
         { label: this.$t('dictionary.private_env'), key: 'private' },
         { label: this.$t('dictionary.public_env'), key: 'public' },
-      ],
-    }
+      ]
+    },
   },
 }
 </script>

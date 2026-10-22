@@ -41,6 +41,7 @@
             v-decorator="decorators.wire"
             :selectProps="{ 'placeholder': $t('network.text_572') }"
             :isDefaultSelect="true"
+            :item.sync="curWire"
             :labelFormat="wireLabelFormat"
             :params="wireParams" />
         </a-form-item>
@@ -53,6 +54,7 @@
           <a-radio-group v-decorator="decorators.server_type">
             <a-radio-button
               v-for="item of serverTypeOpts"
+              :disabled="item.disabled"
               :key="item.key"
               :value="item.key">{{ item.label }}</a-radio-button>
           </a-radio-group>
@@ -84,7 +86,7 @@
         </a-form-item>
         <a-form-item :label="$t('network.text_575')" v-bind="formItemLayout" :validate-status="guestIpPrefixValidateStatus" :help="guestIpPrefixHelp" required v-if="isGroupGuestIpPrefix">
           <template slot="extra">
-            <div>{{$t('network.text_578')}}</div>
+            <div>{{$t('network.prefix_in_cidr_range.prompt', [curVpcCidrText])}}</div>
             <div>{{$t('network.text_580')}}</div>
           </template>
           <!-- 网段 -->
@@ -119,7 +121,7 @@
         </a-form-item>
         <a-collapse :bordered="false" v-if="isShowAdvanceOptions">
           <a-collapse-panel :header="$t('network.text_94')" key="1" forceRender>
-            <a-form-item :label="$t('network.text_743')" v-bind="formItemLayout" v-if="form.fd.server_type === 'eip'">
+            <a-form-item :label="$t('network.text_743')" v-bind="formItemLayout" v-if="hasBgpType">
               <a-input v-decorator="decorators.bgp_type" />
               <span slot="extra">{{$t('network.text_744')}}</span>
             </a-form-item>
@@ -186,6 +188,7 @@ const masks = {
   aliyun: { min: 17, max: 29 },
   aws: { min: 16, max: 28 },
   ucloud: { min: 16, max: 29 },
+  rockbase: { min: 16, max: 29 },
   huawei: { min: 16, max: 29 },
   onecloud: undefined,
   vmware: undefined,
@@ -195,7 +198,10 @@ const masks = {
   dstack: undefined,
 }
 
+const stripIpWhitespace = value => (typeof value === 'string' ? value.replace(/\s/g, '') : value)
+
 function validateGateway (rule, value, callback) {
+  value = stripIpWhitespace(value)
   if (!value) {
     return callback()
   }
@@ -209,6 +215,7 @@ function validateGateway (rule, value, callback) {
 }
 
 function validateGateway6 (rule, value, callback) {
+  value = stripIpWhitespace(value)
   if (!value) {
     return callback()
   }
@@ -231,7 +238,7 @@ export default {
   },
   data () {
     const cloudEnvOptions = getCloudEnvOptions('network_manage_brands', true)
-    const queryType = this.$route.query.type
+    const { vpc: initVpc, wire: initWire, domain: initDomain, project: initProject, type: queryType } = this.$route.query
     let cloudEnv = queryType === 'idc' ? 'onpremise' : this.$route.query.type
     let routerQuery = this.$route.query.type
     if (!cloudEnvOptions.find(val => val.key === cloudEnv)) {
@@ -271,6 +278,7 @@ export default {
         domain: [
           'domain',
           {
+            initialValue: initDomain,
             rules: [
               { validator: isRequired(), message: i18n.t('rules.domain'), trigger: 'change' },
             ],
@@ -279,6 +287,7 @@ export default {
         project: [
           'project',
           {
+            initialValue: initProject,
             rules: [
               { validator: isRequired(), message: i18n.t('rules.project'), trigger: 'change' },
             ],
@@ -299,6 +308,7 @@ export default {
         vpc: [
           'vpc',
           {
+            initialValue: initVpc,
             rules: [
               { required: true, message: this.$t('network.text_274') },
             ],
@@ -307,6 +317,7 @@ export default {
         wire: [
           'wire',
           {
+            initialValue: initWire,
             rules: [
               { required: true, message: this.$t('network.text_572') },
             ],
@@ -323,7 +334,7 @@ export default {
         server_type: [
           'server_type',
           {
-            initialValue: 'guest',
+            initialValue: '',
             rules: [
               { required: true, message: this.$t('network.text_592') },
             ],
@@ -340,6 +351,7 @@ export default {
           {
             initialValue: '',
             validateTrigger: ['change', 'blur'],
+            normalize: stripIpWhitespace,
             rules: [
               { validator: this.$validate('IPs', false) },
             ],
@@ -370,6 +382,7 @@ export default {
             {
               initialValue: '',
               validateFirst: true,
+              normalize: stripIpWhitespace,
               rules: [
                 // { required: true, message: this.$t('network.text_593') },
                 { validator: this.validateIpv4 },
@@ -381,6 +394,7 @@ export default {
             {
               initialValue: '',
               validateFirst: true,
+              normalize: stripIpWhitespace,
               rules: [
                 // { required: true, message: this.$t('network.text_594') },
                 { validator: this.validateIpv4 },
@@ -402,6 +416,7 @@ export default {
               initialValue: '',
               validateTrigger: ['change', 'blur'],
               validateFirst: true,
+              normalize: stripIpWhitespace,
               rules: [
                 { validator: this.validateIpv4 },
                 { validator: validateGateway },
@@ -413,6 +428,7 @@ export default {
             {
               initialValue: '',
               validateFirst: true,
+              normalize: stripIpWhitespace,
               rules: [
                 { validator: this.validateIpv6 },
               ],
@@ -423,6 +439,7 @@ export default {
             {
               initialValue: '',
               validateFirst: true,
+              normalize: stripIpWhitespace,
               rules: [
                 { validator: this.validateIpv6 },
               ],
@@ -443,6 +460,7 @@ export default {
               initialValue: '',
               validateTrigger: ['change', 'blur'],
               validateFirst: true,
+              normalize: stripIpWhitespace,
               rules: [
                 { validator: this.validateIpv6 },
                 { validator: validateGateway6 },
@@ -461,6 +479,7 @@ export default {
           {
             initialValue: '',
             validateFirst: true,
+            normalize: stripIpWhitespace,
             rules: [
               { validator: this.validatePublicIpPrefix },
             ],
@@ -471,6 +490,7 @@ export default {
           {
             initialValue: '',
             validateFirst: true,
+            normalize: stripIpWhitespace,
             rules: [
               { validator: this.validatePublicIpPrefix6 },
             ],
@@ -480,6 +500,7 @@ export default {
           'guest_dhcp',
           {
             validateFirst: true,
+            normalize: stripIpWhitespace,
             rules: [
               { validator: this.$validate('IPs', false) },
             ],
@@ -500,15 +521,6 @@ export default {
           },
         ],
       },
-      serverTypeOpts: [
-        { label: this.$t('network.text_226'), key: 'guest' },
-        { label: this.$t('network.text_598'), key: 'baremetal' },
-        // { label: this.$t('network.text_599'), key: 'container' },
-        { label: 'PXE', key: 'pxe' },
-        { label: 'IPMI', key: 'ipmi' },
-        { label: this.$t('network.text_221'), key: 'eip' },
-        { label: this.$t('network.server_type.hostlocal.text'), key: 'hostlocal' },
-      ],
       allocPolicyoptions: [
         { label: this.$t('network.text_600'), key: 'none' },
         { label: this.$t('network.text_601'), key: 'stepdown' },
@@ -526,6 +538,7 @@ export default {
       project_domain: '',
       vpcId: '',
       curVpc: null,
+      curWire: null,
     }
   },
   computed: {
@@ -641,6 +654,37 @@ export default {
       }
       return cidrs.join(', ')
     },
+    hasBgpType () {
+      return this.form.fd.server_type === 'eip' || this.form.fd.server_type === 'guest' || this.form.fd.server_type === 'baremetal' || this.form.fd.server_type === 'hostlocal'
+    },
+    serverTypeOpts () {
+      const opts = [
+        { label: this.$t('network.text_226'), key: 'guest', disabled: false },
+        { label: this.$t('network.text_598'), key: 'baremetal', disabled: false },
+        // { label: this.$t('network.text_599'), key: 'container' },
+        { label: 'PXE', key: 'pxe', disabled: false },
+        { label: 'IPMI', key: 'ipmi', disabled: false },
+        { label: this.$t('network.text_221'), key: 'eip', disabled: false },
+        { label: this.$t('network.server_type.hostlocal.text'), key: 'hostlocal', disabled: false },
+      ]
+      const isHostLocalWire = this.curWire?.id === '__host_local__'
+      for (let i = 0; i < opts.length; i++) {
+        if (opts[i].key === 'hostlocal') {
+          if (isHostLocalWire) {
+            opts[i].disabled = false
+          } else {
+            opts[i].disabled = true
+          }
+        } else {
+          if (isHostLocalWire) {
+            opts[i].disabled = true
+          } else {
+            opts[i].disabled = false
+          }
+        }
+      }
+      return opts
+    },
   },
   provide () {
     return {
@@ -658,7 +702,7 @@ export default {
         this.isGroupGuestIpPrefix = false
       } else {
         this.show = true
-        this.isGroupGuestIpPrefix = true
+        this.isGroupGuestIpPrefix = !this.isDefaultVpc()
       }
     },
     'form.fd.guest_ip_prefix': {
@@ -675,24 +719,63 @@ export default {
         }
       },
     },
+    'form.fd.vpc': {
+      handler (newValue) {
+        if (newValue === 'default') {
+          this.$nextTick(() => {
+            if (this.curWire?.id === '__host_local__') { // 如果当前选择的网线是主机本地网线，则设置服务器类型为主机本地
+              this.form.fc.setFieldsValue({
+                server_type: 'hostlocal',
+              })
+            } else { // 如果当前选择的网线不是主机本地网线，则设置服务器类型为虚拟机
+              this.form.fc.setFieldsValue({
+                server_type: 'guest',
+              })
+            }
+          })
+        }
+      },
+    },
+    'form.fd.wire': {
+      handler (newValue) {
+        console.log('newValue', newValue)
+        if (newValue === '__host_local__') {
+          this.$nextTick(() => {
+            this.form.fc.setFieldsValue({
+              server_type: 'hostlocal',
+            })
+          })
+        } else {
+          this.$nextTick(() => {
+            this.form.fc.setFieldsValue({
+              server_type: 'guest',
+            })
+          })
+        }
+      },
+    },
   },
   created () {
     this.initState()
   },
   methods: {
     validateIpv4 (rule, value, callback) {
+      value = stripIpWhitespace(value)
       if (!value) {
-        callback()
-      } else if (!REGEXP.IPv4.regexp.test(value)) {
-        callback(new Error(this.$t('common.tips.input', ['IPv4'])))
+        return callback()
+      }
+      if (!REGEXP.IPv4.regexp.test(value)) {
+        return callback(new Error(this.$t('common.tips.input', ['IPv4'])))
       }
       callback()
     },
     validateIpv6 (rule, value, callback) {
+      value = stripIpWhitespace(value)
       if (!value) {
-        callback()
-      } else if (!REGEXP.IPv6.regexp.test(value)) {
-        callback(new Error(this.$t('common.tips.input', ['IPv6'])))
+        return callback()
+      }
+      if (!REGEXP.IPv6.regexp.test(value)) {
+        return callback(new Error(this.$t('common.tips.input', ['IPv6'])))
       }
       callback()
     },
@@ -712,6 +795,11 @@ export default {
       }
       callback()
     },
+    // curVpc 在 created 时尚为空，需回退到表单值 / 路由 query，避免把 default 误判成 VPC 网段模式
+    isDefaultVpc () {
+      const vpcId = this.curVpc?.id || this.form.fd?.vpc || this.$route.query.vpc
+      return !vpcId || vpcId === 'default'
+    },
     initState () {
       if (this.cloudEnv === 'private') {
         this.show = false
@@ -721,7 +809,7 @@ export default {
         this.isGroupGuestIpPrefix = false
       } else {
         this.show = true
-        this.isGroupGuestIpPrefix = true
+        this.isGroupGuestIpPrefix = !this.isDefaultVpc()
       }
     },
     handleValuesChange (props, values) {
@@ -791,8 +879,7 @@ export default {
             server_type: 'guest',
           })
         }
-      }
-      if (this.cloudEnv === 'private' && this.curVpc?.brand === 'Cloudpods' && this.curVpc?.external_id === 'default') {
+      } else if (this.cloudEnv === 'private' && this.curVpc?.brand === 'Cloudpods' && this.curVpc?.external_id === 'default') {
         this.isShowWire = true
         this.isGroupGuestIpPrefix = true
       } else {
@@ -824,6 +911,7 @@ export default {
       return (<div>{ item.name }</div>)
     },
     validatePublicIpPrefix (rule, value, callback) {
+      value = stripIpWhitespace(value)
       if (value) {
         if (!networkSegment.regexp.test(value)) {
           callback(new Error(networkSegment.message))
@@ -844,6 +932,7 @@ export default {
       callback()
     },
     validatePublicIpPrefix6 (rule, value, callback) {
+      value = stripIpWhitespace(value)
       if (value) {
         if (!networkSegment6.regexp.test(value)) {
           callback(new Error(networkSegment6.message))

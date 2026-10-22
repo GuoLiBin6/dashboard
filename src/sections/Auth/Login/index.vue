@@ -2,7 +2,7 @@
   <div class="login-index-wrap flex-fill d-flex h-100 align-items-center" v-loading.fullscreen="!regionsLoading">
     <div class="login-index-left d-flex flex-fill align-items-center pl-4 pr-4 pt-4" :style="{backgroundImage: loginBg}">
       <div>
-        <h2 :style="{ color: getI18nColorVal(companyInfo, 'login_page_slogan'), lineHeight: getI18nVal(companyInfo, 'login_page_slogan').includes('<br') ? '1.5em' : '1em' }" v-html="getI18nVal(companyInfo, 'login_page_slogan') || $t('login.desc1')" />
+        <h2 :style="{ color: getI18nColorVal(companyInfo, 'login_page_slogan'), lineHeight: loginSlogan.includes('<br') ? '1.5em' : '1em' }" v-html="loginSlogan" />
         <h4 :style="{ color: getI18nColorVal(companyInfo, 'login_page_sub_slogan') }">{{ getI18nVal(companyInfo, 'login_page_sub_slogan') || $t('login.desc2') }}</h4>
       </div>
     </div>
@@ -40,7 +40,9 @@ import * as R from 'ramda'
 import { mapGetters, mapState } from 'vuex'
 import { getLoginDomain } from '@/utils/common/cookie'
 import { getI18nVal, getI18nColorVal } from '@/utils/i18n'
+import { sanitizeHtml } from '@/utils/sanitizeHtml'
 import { getLoginModeInStorage } from '@/utils/auth'
+import { omitLoginUserQuery } from '@/utils/utils'
 
 export default {
   name: 'AccountIndex',
@@ -107,10 +109,18 @@ export default {
       if (!bg_img) return `url(${require('./assets/bg.png')})`
       return `url(data:image/png;base64,${bg_img})`
     },
+    loginSlogan () {
+      // slogan 来自 OEM 品牌配置，经 DOMPurify 消毒后再 v-html 渲染
+      return sanitizeHtml(getI18nVal(this.companyInfo, 'login_page_slogan') || this.$t('login.desc1'))
+    },
   },
   watch: {
     regions: {
-      handler: function (val) {
+      handler: function (val, oldVal) {
+        // 仅当已成功拉过 regions（有 api_server）后再刷新时跳过，避免设置登录域乱跳
+        // 注意：store 初始 regions 是非空对象，不能用 R.isEmpty 判断
+        const hadLoadedRegions = !!(oldVal && oldVal.api_server)
+        if (hadLoadedRegions) return
         if (this.isMobleCodeAuthEnabled && this.isDefaultLoginModeMobile) {
           this.loginMode = 'mobile'
         } else {
@@ -122,6 +132,9 @@ export default {
     },
   },
   async created () {
+    this.$bus.$on('after-login', (data) => {
+      this.switchLoginUrl(data)
+    })
     // 获取domains、regions、idps、captcha信息
     try {
       // 如果有设置为default的idp，则用default的idp方式登录
@@ -194,6 +207,23 @@ export default {
     this.switchLoginMode()
   },
   methods: {
+    async switchLoginUrl (data) {
+      // 登录注释
+      // try {
+      //   const response = await new this.$Manager('customers').list({
+      //     params: {
+      //       scope: this.$store.getters.scope,
+      //       filter: `mobile.contains(${data.mobile})`,
+      //     },
+      //   })
+      //   if (response.data.data.length > 0) {
+      //     window.location.href = '/account'
+      //   }
+      // } catch (error) {
+      //   console.error(error)
+      // }
+      this.$store.dispatch('auth/onAfterLogin')
+    },
     gethost (str) {
       if (str.startsWith('http://')) {
         return str.substr(7)
@@ -214,7 +244,7 @@ export default {
         if (!R.isEmpty(data) && !this.isForgetLoginUser) {
           this.$router.replace({
             path: '/auth/login/chooser',
-            query,
+            query: omitLoginUserQuery(query),
           })
         } else {
           this.$router.replace({

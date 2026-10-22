@@ -23,6 +23,7 @@
     <div slot="footer">
       <a-button type="primary" :loading="loading" @click="handleConfirm">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="handleLogout">{{ $t('common_348') }}</a-button>
+      <a-button v-if="!isForcedReset" @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
     </div>
   </base-dialog>
 </template>
@@ -42,27 +43,16 @@ export default {
   data () {
     const validatePassword = async (rule, value, callback) => {
       if (R.isNil(this.minPasswordLen) || R.isNil(this.complexity)) {
-        const manager = new this.$Manager('services', 'v1')
         try {
-          const response = await manager.list({
-            params: {
-              type: 'identity',
-            },
-          })
-          const id = response.data.data && response.data.data[0] && response.data.data[0].id
-          if (id) {
-            const configRes = await manager.getSpecific({
-              id,
-              spec: 'config',
-            })
-            const len = configRes.data.config && configRes.data.config.default && configRes.data.config.default.password_minimal_length
-            const complexity = configRes.data.config && configRes.data.config.default && configRes.data.config.default.password_char_complexity
-            if (!R.isNil(len)) {
-              this.minPasswordLen = len
-            }
-            if (!R.isNil(complexity)) {
-              this.complexity = complexity
-            }
+          const response = await new this.$Manager('service_settings', 'v1').list()
+          const identity = (response.data && response.data.identity) || {}
+          const len = identity.password_minimal_length
+          const complexity = identity.password_char_complexity
+          if (!R.isNil(len)) {
+            this.minPasswordLen = len
+          }
+          if (!R.isNil(complexity)) {
+            this.complexity = complexity
           }
         } catch (error) {
           callback()
@@ -145,6 +135,10 @@ export default {
       regions: state => state.regions,
     }),
     ...mapGetters(['userInfo']),
+    isForcedReset () {
+      const modalProps = (this.params && this.params.modalProps) || {}
+      return !!(this.userInfo.need_reset_password || (this.params && this.params.tip) || modalProps.closable === false)
+    },
   },
   destroyed () {
     this.manager = null

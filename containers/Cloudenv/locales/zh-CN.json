@@ -172,6 +172,7 @@
   "cloudenv.text_128": "{0}#新建腾讯云账号",
   "cloudenv.text_129": "{0}#新建华为云账号",
   "cloudenv.text_130": "{0}#新建ucloud账号",
+  "cloudenv.create_rockbase": "{0}#新建RockBase账号",
   "cloudenv.text_131": "{0}#新建zstackdstack账号",
   "cloudenv.text_132": "{0}#新建openstack账号",
   "cloudenv.text_133": "{0}#新建vmware账号",
@@ -563,6 +564,7 @@
     "create_form": {
       "saml_user_label": "开启免密登录",
       "saml_user_extra": "开启后，会自动同步本系统SAML信息至云上，本系统即可成为云上登录身份提供商，具有SSO单点登录能力，详见{link}",
+      "saml_user_extra_1": "开启后，会自动同步本系统SAML信息至云上，本系统即可成为云上登录身份提供商，具有SSO单点登录能力。",
       "saml_user_link": "身份提供商"
     },
     "sidepage": {
@@ -594,7 +596,7 @@
   "cloudenv.text_519": "更改项目",
   "cloudenv.text_520": "创建@:dictionary.snapshot",
   "cloudenv.text_521": "创建相同配置",
-  "cloudenv.text_522": "设置GPU卡",
+  "cloudenv.text_522": "设置透传设备",
   "cloudenv.text_523": "设置磁盘速度",
   "cloudenv.text_524": "到期释放",
   "cloudenv.text_525": "主机克隆",
@@ -697,6 +699,8 @@
   "cloudenv.res_networks": "IP子网",
   "cloudenv.res_ports": "IP总量",
   "cloudenv.disk_hidden_menus": "隐藏硬盘操作菜单",
+  "cloudenv.vminstance_container_hidden_menus": "隐藏容器主机菜单",
+  "cloudenv.baremetal_hidden_menus": "隐藏裸金属菜单",
   "cloudenv.sub_hidden_menus": "隐藏主菜单",
   "cloudenv.billing_scope": "账单分析范围",
   "cloudenv.billing_scope.extra": "本平台纳管账号的账单：只采集该主账号以及本平台同步的该主账号下的所有子账号的账单，如果账单文件中有其他账单将被舍弃。所有账号的账单：将采集账单文件中的所有账单，其中无法在本平台找到对应云账号的账单条目的，其云订阅将显示为“本云账号名称-该账单条目关联云账号的数字ID”",
@@ -855,8 +859,10 @@
   "cloudenv.create_sangfor": "{0}#新建深信服超融合账号",
   "cloudenv.create_zettakit": "{0}#新建泽塔云云账号",
   "cloudenv.zettakit": "泽塔云",
+  "cloudenv.create_cas": "{0}#新建CAS云账号",
   "cloudenv.create_uis": "{0}#新建UIS云账号",
   "cloudenv.create_cloudflare": "{0}#新建Cloudflare云账号",
+  "cloudenv.cas": "CAS",
   "cloudenv.uis": "UIS",
   "cloudenv.view_record": "查看记录",
   "cloudenv.old_sth": "原{0}",
@@ -914,5 +920,6 @@
   "cloudenv.check_mon_host": "请输入正确的 Mon Host 格式",
   "cloudenv.mon_host_extra": "格式为：IP:Port，如：192.168.1.1:80, 多个地址用英文逗号分隔",
   "cloudenv.enable_mfa": "启用MFA",
-  "cloudenv.run_all_bills": "含历史所有账单"
+  "cloudenv.run_all_bills": "所有已跑过账单的历史月份",
+  "cloudenv.api_bill": "API账单"
 }

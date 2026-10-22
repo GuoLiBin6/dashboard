@@ -13,10 +13,21 @@
 import * as R from 'ramda'
 import _ from 'lodash'
 import { HOST_CPU_ARCHS } from '@/constants/compute'
+import createFormFieldDraftMixin from '@/mixins/createFormFieldDraft'
 
 export default {
   name: 'OsArch',
+  mixins: [createFormFieldDraftMixin],
   props: {
+    formDraftKey: {
+      type: String,
+      default: '',
+    },
+    /** selection：radio/单选 select/switch 类，local + session 双写、可跨 tab 回填 */
+    formDraftKind: {
+      type: String,
+      default: 'selection',
+    },
     options: {
       type: Array,
       default: () => Object.values(HOST_CPU_ARCHS),
@@ -50,20 +61,18 @@ export default {
     },
   },
   watch: {
-    optionsC (val, oldV) {
-      if (val.length) {
-        if (!_.isEqual(val, oldV)) {
-          this.emit(val[0].key)
+    optionsC: {
+      immediate: true,
+      handler (val, oldV) {
+        if (val.length) {
+          if (oldV === undefined || !_.isEqual(val, oldV)) {
+            this.applyOsArchDefault(val)
+          }
+        } else if (oldV !== undefined) {
+          this.emit(undefined)
         }
-      } else {
-        this.emit(undefined)
-      }
+      },
     },
-  },
-  mounted () {
-    if (!this.form.fc.getFieldValue('os_arch') && this.optionsC.length) {
-      this.emit(this.optionsC[0].key)
-    }
   },
   methods: {
     emit (v) {
@@ -71,6 +80,17 @@ export default {
     },
     onChange (e) {
       this.emit(e.target.value)
+    },
+    applyOsArchDefault (opts) {
+      const hit = this.matchFormFieldDraftInOptions(opts)
+      const next = hit?.key || opts[0]?.key
+      this.emit(next)
+    },
+    /**
+     * 提交时获取表单草稿
+     */
+    serializeFormFieldDraft () {
+      return this.form?.fc?.getFieldValue?.(this.decoratorField) || undefined
     },
   },
 }

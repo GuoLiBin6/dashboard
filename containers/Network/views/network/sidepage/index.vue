@@ -34,8 +34,6 @@ import ReservedIpList from '@Network/views/reserved-ip/components/List'
 import SidePageMixin from '@/mixins/sidePage'
 import WindowsMixin from '@/mixins/windows'
 import Actions from '@/components/PageList/Actions'
-import SingleActionsMixin from '../mixins/singleActions'
-import ColumnsMixin from '../mixins/columns'
 import NetworkDetail from './Detail'
 import HostMachineip from './HostMachineIp'
 import HostIp from './HostIp'
@@ -43,7 +41,9 @@ import LbIp from './LbIp'
 import FlexIp from './FlexIp'
 import IPList from './IPList'
 import NetworkIpMacs from './NetworkIpMacs'
-
+import StaticRoutes from './StaticRoutes'
+import SingleActionsMixin from '../mixins/singleActions'
+import ColumnsMixin from '../mixins/columns'
 export default {
   name: 'NetworkSidePage',
   components: {
@@ -56,11 +56,12 @@ export default {
     Actions,
     IPList,
     NetworkIpMacs,
+    StaticRoutes,
   },
   mixins: [SidePageMixin, WindowsMixin, ColumnsMixin, SingleActionsMixin],
-  data () {
-    return {
-      detailTabs: [
+  computed: {
+    detailTabs () {
+      const tabs = [
         { label: this.$t('network.text_67'), key: 'network-detail' },
         { label: this.$t('network.text_669'), key: 'i-p-list' },
         // { label: '宿主机IP', key: 'host-machineip' },
@@ -71,10 +72,15 @@ export default {
         // { label: '弹性网卡IP', key: 'flex-ip' },
         { label: this.$t('table.title.task'), key: 'task-drawer' },
         { label: this.$t('network.text_150'), key: 'event-drawer' },
-      ],
-    }
-  },
-  computed: {
+      ]
+      if (this.detailData.provider === 'OneCloud') {
+        tabs.splice(tabs.findIndex(item => item.key === 'task-drawer'), 0, {
+          label: this.$t('network.static_routes'),
+          key: 'static-routes',
+        })
+      }
+      return tabs
+    },
     getParams () {
       if (this.params.windowData.currentTab === 'reserved-ip-list') {
         return {

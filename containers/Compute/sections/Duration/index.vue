@@ -14,12 +14,24 @@
 <script>
 import * as R from 'ramda'
 import { getDurationLabel } from '@/utils/utils'
+import createFormFieldDraftMixin from '@/mixins/createFormFieldDraft'
+import { DRAFT_KIND } from '@/utils/createFormDraft'
 
 const defaultOpts = ['none', '1h', '6h', '1d', '3d', '1w', '1m', 'custom']
 
 export default {
   name: 'Duration',
+  mixins: [createFormFieldDraftMixin],
   props: {
+    formDraftKey: {
+      type: String,
+      default: '',
+    },
+    // 选择类：跨 tab 回填 radio；custom 时长为输入不落盘、不回填
+    formDraftKind: {
+      type: String,
+      default: DRAFT_KIND.SELECTION,
+    },
     decorators: {
       type: Object,
       required: true,
@@ -39,6 +51,15 @@ export default {
       loading: false,
       showDuration: this.decorators.durationStandard[1].initialValue === 'custom',
     }
+  },
+  watch: {
+    opts: {
+      handler (list) {
+        if (Array.isArray(list) && list.length) {
+          this.scheduleApplyDurationDraft()
+        }
+      },
+    },
   },
   created () {
     this.getOpts()
@@ -126,6 +147,7 @@ export default {
               }
             })
           }
+          this.loading = false
         } catch (error) {
           console.log('error', error)
           this.loading = false
@@ -145,15 +167,64 @@ export default {
         })
       }
     },
+    scheduleApplyDurationDraft () {
+      // 等 radio 注册进 form 后再回填（有草稿则覆盖上面 scoped-policy 默认）
+      this.$nextTick(() => this.applyDurationDraft())
+    },
     getLabel (item) {
       return getDurationLabel(item)
     },
     change (e) {
-      if (e.target.value === 'custom') {
+      if (e?.target?.value === 'custom') {
         this.showDuration = true
       } else {
         this.showDuration = false
       }
+    },
+    /**
+     * 提交时获取表单草稿
+     */
+    serializeFormFieldDraft () {
+      const fc = this.resolveFormFc()
+      if (!fc) return undefined
+      const durationStandard = fc.getFieldValue(this.decorators.durationStandard[0])
+      if (durationStandard == null || durationStandard === '') return undefined
+      // custom 仅展示输入框，时长输入不回填；落盘 custom 无意义，提交时清空该控件草稿
+      if (durationStandard === 'custom') return null
+      return { durationStandard }
+    },
+    /** 兼容历史：对象 / 纯字符串；custom 不落盘、不回填 */
+    resolveDurationStandardFromDraft (draft) {
+      if (draft == null || draft === '') return undefined
+      if (typeof draft === 'string') {
+        return draft === 'custom' ? undefined : draft
+      }
+      if (typeof draft === 'object') {
+        const std = draft.durationStandard
+        if (std != null && std !== '' && std !== 'custom') {
+          return std
+        }
+      }
+      return undefined
+    },
+    /**
+     * options 就绪后：草稿 durationStandard 仍在 opts 中则回填
+     * @returns {boolean} 是否已按草稿回填
+     */
+    applyDurationDraft () {
+      const fc = this.resolveFormFc()
+      if (!fc || !this.opts.length) return false
+      const preferredStd = this.resolveDurationStandardFromDraft(this.readFormFieldDraft())
+      const stdField = this.decorators.durationStandard[0]
+      if (preferredStd == null) return false
+      if (!this.opts.some(item => item.key === preferredStd)) return false
+      const current = fc.getFieldValue(stdField)
+      if (current === preferredStd || String(current) === String(preferredStd)) {
+        return true
+      }
+      this.showDuration = false
+      this.applyFormFieldValues({ [stdField]: preferredStd })
+      return true
     },
   },
 }

@@ -7,6 +7,11 @@
 </template>
 
 <script>
+import {
+  getCapabilitiesTableColumn,
+  getLxcfsTableColumn,
+  getOverlayTableColumn,
+} from '@Compute/views/pod-container/utils/columns'
 import ListMixin from '@/mixins/list'
 import WindowsMixin from '@/mixins/windows'
 import expectStatus from '@/constants/expectStatus'
@@ -18,7 +23,6 @@ import {
   getNameFilter,
   getStatusFilter,
 } from '@/utils/common/tableFilter'
-
 export default {
   name: 'ContainerListForVmContainerInstanceSidepage',
   mixins: [ListMixin, WindowsMixin],
@@ -102,6 +106,9 @@ export default {
             },
           },
         },
+        getCapabilitiesTableColumn(),
+        getLxcfsTableColumn(),
+        getOverlayTableColumn(),
       ],
       groupActions: [
         // 启动

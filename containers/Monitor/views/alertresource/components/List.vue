@@ -3,6 +3,7 @@
     <monitor-header
       v-if="isTemplate && isTemplateEdit"
       :time.sync="time"
+      :allow-empty-time="allowEmptyTime"
       :showCustomTime="false"
       :showGroupFunc="false"
       :showTimegroup="false"
@@ -22,6 +23,7 @@
           class-name="ml-2"
           :time.sync="time"
           :customTime.sync="customTime"
+          :allow-empty-time="allowEmptyTime"
           :showGroupFunc="false"
           :showTimegroup="false"
           :show-sync="false"
@@ -34,18 +36,18 @@
 <script>
 import * as R from 'ramda'
 import { levelMaps } from '@Monitor/constants'
+import { strategyColumn, levelColumn, getStrategyInfo } from '@Monitor/views/commonalert/utils'
 import WindowsMixin from '@/mixins/windows'
 import ListMixin from '@/mixins/list'
 import BrandIcon from '@/sections/BrandIcon'
 import { getNameFilter, getDescriptionFilter } from '@/utils/common/tableFilter'
 import { getTimeTableColumn, getStatusTableColumn, getNameDescriptionTableColumn, getCopyWithContentTableColumn } from '@/utils/common/tableColumn'
-import { strategyColumn, levelColumn, getStrategyInfo } from '@Monitor/views/commonalert/utils'
 import GlobalSearchMixin from '@/mixins/globalSearch'
 import ResTemplateListMixin from '@/mixins/resTemplateList'
 import MonitorHeader from '@/sections/Monitor/Header'
+import { isCE } from '@/utils/utils'
 import ColumnsMixin from '../mixins/columns'
 import SingleAction from '../mixins/singleActions'
-
 export default {
   name: 'AlertResourceList',
   components: {
@@ -72,16 +74,27 @@ export default {
       type: Object,
       default: () => ({}),
     },
+    defaultTime: {
+      type: String,
+      default: '168h',
+    },
   },
   data () {
+    let resource = 'monitorresourcealertees'
+    if (isCE() || this.$store.getters.isSysCE || (!(this.$store.getters.workflow?.enabledKeys || []).includes('alert-event') && !(this.$store.getters.workflow?.enabledKeys || []).includes('alert-ticket'))) {
+      resource = 'monitorresourcealerts'
+    }
     return {
-      list: this.$list.createList(this, this.listOptions('monitorresourcealerts')),
+      list: this.$list.createList(this, this.listOptions(resource)),
       resTypeItems: [],
-      time: this.templateParams.time || '168h',
+      time: this.templateParams.time ?? (this.defaultTime === '' ? 'all' : this.defaultTime),
       customTime: null,
     }
   },
   computed: {
+    allowEmptyTime () {
+      return this.defaultTime === ''
+    },
     columns () {
       let columns = this.listColumns()
       if (this.hiddenColumns.length) {
@@ -108,6 +121,9 @@ export default {
   },
   watch: {
     time (val) {
+      if (val === 'all') {
+        this.customTime = null
+      }
       this.list.fetchData()
     },
     customTime (val) {
@@ -229,7 +245,7 @@ export default {
             return strategy
           },
         },
-        levelColumn,
+        levelColumn(),
         getCopyWithContentTableColumn({
           field: 'ip',
           title: 'IP',
@@ -245,7 +261,14 @@ export default {
         {
           field: 'alert_name',
           title: this.$t('monitor.text_99'),
-          formatter: ({ row }) => row.alert_name || '-',
+          slots: {
+            default: ({ row }) => {
+              if (!row.alert_name) return '-'
+              return [
+                <side-page-trigger onTrigger={() => this.handleOpenAlertSidepage(row)}>{ row.alert_name }</side-page-trigger>,
+              ]
+            },
+          },
         },
         {
           field: 'alert_count',
@@ -291,12 +314,13 @@ export default {
       ]
     },
     getParam () {
+      const base = R.is(Function, this.getParams) ? this.getParams() : (this.getParams || {})
       const ret = {
-        ...(R.is(Function, this.getParams) ? this.getParams() : this.getParams),
         details: true,
         alerting: true,
+        ...base,
       }
-      if (this.time) {
+      if (this.time && this.time !== 'all') {
         let timeFilter = ''
         if (this.time.includes('h')) {
           ret.start_time = this.$moment().utc().subtract(this.time.replace('h', ''), 'hours').format('YYYY-MM-DD HH:mm:ss')
@@ -325,6 +349,13 @@ export default {
         ret.top = this.templateParams?.topN
       }
       return ret
+    },
+    handleOpenAlertSidepage (row) {
+      this.sidePageTriggerHandle(this, 'CommonalertsSidePage', {
+        id: row.alert_id,
+        resource: 'commonalerts',
+        apiVersion: 'v1',
+      })
     },
     handleOpenSidepage (row) {
       const { tags = {} } = row.data || {}

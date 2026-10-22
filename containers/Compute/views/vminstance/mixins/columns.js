@@ -1,5 +1,6 @@
 import PasswordFetcher from '@Compute/sections/PasswordFetcher'
 import { SERVER_TYPE } from '@Compute/constants'
+import { formatServerSecgroupText, getNetworkTags, renderNetworkTagNodes } from '@Compute/utils/secgroupDisplay'
 import {
   getProjectTableColumn,
   getRegionTableColumn,
@@ -12,10 +13,10 @@ import {
   getBillingTableColumn,
   getTimeTableColumn,
   getOsArch,
+  getOsDist,
   getAccountTableColumn,
 } from '@/utils/common/tableColumn'
-import SystemIcon from '@/sections/SystemIcon'
-import { sizestr } from '@/utils/utils'
+import { sizestr, bytesPerSecondStr } from '@/utils/utils'
 import { findPlatform, typeClouds } from '@/utils/common/hypervisor'
 import i18nLocale from '@/locales'
 import { HYPERVISORS_MAP } from '@/constants'
@@ -112,6 +113,14 @@ export default {
               columns: this.columns,
               onManager: this.onManager,
             })}>{this.$t('common.cancel')}</a>
+          const forceShutdown = <a class="ml-1"
+            onClick={() => this.createDialog('VmShutDownDialog', {
+              data: [row],
+              columns: this.columns,
+              onManager: this.onManager,
+              formData: { is_force: true },
+              forceLocked: true,
+            })}>{this.$t('compute.force_shutdown')}</a>
           const shutdown = <span class="text-color-help">({this.$t('compute.server.shutdown_mode.stop_charging')})</span>
           const rescue_mode = <span class="text-color-help">({this.$t('compute.rescue')})</span>
           const health = <span style="background:rgb(241, 229, 172);padding:2px 5px;font-size:12px;">{this.$t('compute.health_status.initializing')}</span>
@@ -124,6 +133,7 @@ export default {
               {row.metadata && getToolTip(row)}
               {row.status?.includes('fail') ? log : null}
               {row.status === 'live_migrating' ? cancel : null}
+              {[HYPERVISORS_MAP.kvm.hypervisor].includes(row.hypervisor) && ['stopping', 'stop_fail'].includes(row.status) && !this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_stop') ? forceShutdown : null}
               {row.status === 'ready' && row.shutdown_mode === 'stop_charging' ? shutdown : null}
               {row.rescue_mode === true ? rescue_mode : null}
             </div>,
@@ -244,65 +254,11 @@ export default {
           return this.$isScopedPolicyMenuHidden('server_hidden_columns.instance_type')
         },
       },
-      {
-        field: 'os_dist',
-        title: i18nLocale.t('table.title.os'),
-        width: 100,
-        sortable: true,
-        slots: {
-          default: ({ row }) => {
-            if (!row.metadata) return
-            const dist = row.metadata.os_distribution || row.metadata.distro
-            const version = row.metadata.os_version || row.metadata.version
-
-            let name = ''
-            let tooltip = ''
-            if (dist) {
-              tooltip = version ? (version.includes(dist) ? version : `${decodeURI(dist)} ${version}`) : dist
-            } else if (row.metadata.os_type) {
-              tooltip = row.metadata.os_type
-            } else if (row.os_type) {
-              tooltip = row.os_type
-            } else {
-              tooltip = i18nLocale.t('compute.text_339')
-            }
-
-            name = dist || row.metadata.os_type || row.os_type || ''
-            if (name.includes('Windows') || name.includes('windows')) {
-              name = 'Windows'
-            } else if (name.startsWith('Linux') || name.startsWith('linux')) {
-              name = 'Linux'
-            } else if (name === 'Others Linux') {
-              name = 'Linux'
-              tooltip = row.metadata.os_full_name || tooltip
-            }
-            return [
-              <SystemIcon tooltip={tooltip} name={name} />,
-            ]
-          },
-        },
-        formatter: ({ row }) => {
-          if (!row.metadata) return
-          const dist = row.metadata.os_distribution || row.metadata.distro
-          const version = row.metadata.os_version || row.metadata.version
-          let tooltip = ''
-
-          if (dist) {
-            tooltip = version ? (version.includes(dist) ? version : `${decodeURI(dist)} ${version}`) : dist
-          } else if (row.metadata.os_type) {
-            tooltip = row.metadata.os_type
-          } else if (row.os_type) {
-            tooltip = row.os_type
-          } else {
-            tooltip = i18nLocale.t('compute.text_339')
-          }
-
-          return tooltip
-        },
+      getOsDist({
         hidden: () => {
           return this.$isScopedPolicyMenuHidden('server_hidden_columns.os_type')
         },
-      },
+      }),
       {
         field: 'vcpu_count',
         title: 'CPU',
@@ -369,31 +325,83 @@ export default {
       {
         field: 'cpu_usage',
         title: i18nLocale.t('table.title.cpu_usage'),
-        sortable: true,
-        minWidth: 150,
-        hidden: () => true,
+        minWidth: 100,
         slots: {
           default: ({ row }) => {
-            if (row.cpu_usage) {
-              return [<a-progress percent={row.cpu_usage.toFixed(4) * 100} size="small" />]
+            if (row.alert_data && row.alert_data.hasOwnProperty('cpu_usage')) {
+              return [<UsedPercent used={row.alert_data.cpu_usage} total={100} hiddenTotal={true} hiddenUsed={true} />]
             }
-            return [<a-progress percent={0} size="small" />]
+            return '-'
           },
+        },
+        formatter: ({ row }) => {
+          if (row.alert_data && row.alert_data.hasOwnProperty('cpu_usage')) {
+            return `${row.alert_data.cpu_usage.toFixed(2)}%`
+          }
+          return '-'
         },
       },
       {
         field: 'mem_usage',
         title: i18nLocale.t('table.title.mem_usage'),
-        sortable: true,
-        minWidth: 150,
-        hidden: () => true,
+        minWidth: 100,
         slots: {
           default: ({ row }) => {
-            if (row.mem_usage) {
-              return [<a-progress percent={row.mem_usage.toFixed(4) * 100} size="small" />]
+            if (row.alert_data && row.alert_data.hasOwnProperty('mem_usage')) {
+              return [<UsedPercent used={row.alert_data.mem_usage} total={100} hiddenTotal={true} hiddenUsed={true} />]
             }
-            return [<a-progress percent={0} size="small" />]
+            return '-'
           },
+        },
+        formatter: ({ row }) => {
+          if (row.alert_data && row.alert_data.hasOwnProperty('mem_usage')) {
+            return `${row.alert_data.mem_usage.toFixed(2)}%`
+          }
+          return '-'
+        },
+      },
+      {
+        field: 'disk_rate',
+        title: i18nLocale.t('common.disk_rate'),
+        minWidth: 100,
+        slots: {
+          default: ({ row }) => {
+            if (row.alert_data && row.alert_data.hasOwnProperty('disk_read_rate') && row.alert_data.hasOwnProperty('disk_write_rate')) {
+              return [
+                <div>{i18nLocale.t('common.disk_read_rate_value', [bytesPerSecondStr(row.alert_data.disk_read_rate)])}</div>,
+                <div>{i18nLocale.t('common.disk_write_rate_value', [bytesPerSecondStr(row.alert_data.disk_write_rate)])}</div>,
+              ]
+            }
+            return '-'
+          },
+        },
+        formatter: ({ row }) => {
+          if (row.alert_data && row.alert_data.hasOwnProperty('disk_read_rate') && row.alert_data.hasOwnProperty('disk_write_rate')) {
+            return `${i18nLocale.t('common.disk_read_rate_value', [bytesPerSecondStr(row.alert_data.disk_read_rate)])} / ${i18nLocale.t('common.disk_write_rate_value', [bytesPerSecondStr(row.alert_data.disk_write_rate)])}`
+          }
+          return '-'
+        },
+      },
+      {
+        field: 'net_iops',
+        title: i18nLocale.t('common.net_iops'),
+        minWidth: 100,
+        slots: {
+          default: ({ row }) => {
+            if (row.alert_data && row.alert_data.hasOwnProperty('net_in_rate') && row.alert_data.hasOwnProperty('net_out_rate')) {
+              return [
+                <div>{i18nLocale.t('common.net_in_rate_value', [bytesPerSecondStr(row.alert_data.net_in_rate)])}</div>,
+                <div>{i18nLocale.t('common.net_out_rate_value', [bytesPerSecondStr(row.alert_data.net_out_rate)])}</div>,
+              ]
+            }
+            return '-'
+          },
+        },
+        formatter: ({ row }) => {
+          if (row.alert_data && row.alert_data.hasOwnProperty('net_in_rate') && row.alert_data.hasOwnProperty('net_out_rate')) {
+            return `${i18nLocale.t('common.net_in_rate_value', [bytesPerSecondStr(row.alert_data.net_in_rate)])} / ${i18nLocale.t('common.net_out_rate_value', [bytesPerSecondStr(row.alert_data.net_out_rate)])}`
+          }
+          return '-'
         },
       },
       {
@@ -431,12 +439,15 @@ export default {
         showOverflow: 'ellipsis',
         slots: {
           default: ({ row }) => {
-            if (this.isPreLoad && !row.secgroups) return [<data-loading />]
-            return row.secgroups?.map(item => item.name).join(',')
+            if (this.isPreLoad && !row.secgroups && !row.network_tags?.length) return [<data-loading />]
+            const networkTags = getNetworkTags(row)
+            if (networkTags.length) return renderNetworkTagNodes(networkTags)
+            const text = formatServerSecgroupText(row)
+            return text || '-'
           },
         },
         formatter: ({ row }) => {
-          return row.secgroups?.map(item => item.name).join(',')
+          return formatServerSecgroupText(row) || '-'
         },
         hidden: () => {
           return this.$isScopedPolicyMenuHidden('server_hidden_columns.secgroups')
@@ -517,6 +528,22 @@ export default {
           return this.$isScopedPolicyMenuHidden('server_hidden_columns.region')
         },
       }),
+      {
+        field: 'alert_data',
+        title: this.$t('compute.alert_status'),
+        hidden: () => {
+          return this.$isScopedPolicyMenuHidden('server_hidden_columns.alert_data')
+        },
+        slots: {
+          header: () => {
+            return [<span style="margin-right:5px">{this.$t('compute.alert_status')}</span>, <help-tooltip name="alertDataTimeRange" />]
+          },
+          default: ({ row }) => {
+            const state = row.alert_data?.alert_state || 'init'
+            return [<status status={state} statusModule='monitorresources' />]
+          },
+        },
+      },
       getTimeTableColumn({
         hidden: () => {
           return this.$isScopedPolicyMenuHidden('server_hidden_columns.created_at')

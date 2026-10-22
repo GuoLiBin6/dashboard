@@ -81,11 +81,10 @@
 import * as R from 'ramda'
 import _ from 'lodash'
 import { mapGetters } from 'vuex'
-import CloudregionZone from '@/sections/CloudregionZone'
 import EipConfig from '@Compute/sections/EipConfig'
+import CloudregionZone from '@/sections/CloudregionZone'
 import { HYPERVISORS_MAP } from '@/constants'
 import lbCreate from './mixin'
-
 export default {
   name: 'LbOnecloudCreate',
   components: {
@@ -122,6 +121,9 @@ export default {
         params.limit = 0
         params.vpc = this.form.fd.vpc
         if (this.zoneObj && this.zoneObj.id) params.zone = this.zoneObj.id
+        if (this.form.fd.vpc === 'default') {
+          params.lb_cluster_id = this.form.fd.cluster_id
+        }
       }
       return params
     },

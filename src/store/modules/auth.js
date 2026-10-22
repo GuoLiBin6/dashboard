@@ -1,5 +1,6 @@
 import * as R from 'ramda'
 import _ from 'lodash'
+import { clear as clearDashboardCache } from '@Dashboard/utils/cache'
 import http from '@/utils/http'
 import { PERMISSION, ALL_RESOURCES } from '@/constants/permission'
 import {
@@ -24,11 +25,10 @@ import {
 } from '@/utils/auth'
 import { SCOPES_MAP } from '@/constants'
 import router from '@/router'
-import { removeKeyIgnoreCase, getKeyIgnoreCase } from '@/utils/utils'
-import { clear as clearDashboardCache } from '@Dashboard/utils/cache'
+import { removeKeyIgnoreCase, getKeyIgnoreCase, redirectAfterAuth, genReferRouteQuery } from '@/utils/utils'
+import { safeAuthRedirectUrl } from '@/utils/safeRedirect'
 import storage from '@/utils/storage'
 import { aesEncryptWithCustomKey } from '@/utils/crypto'
-
 const initialState = {
   scope: getScopeFromCookie() || 'project',
   tenant: getTenantFromCookie(),
@@ -336,6 +336,7 @@ export default {
           await commit('CLEAR_LOGGED_USERS')
         }
         await commit('CLEAR_DASHBOARD_CACHE')
+        await commit('app/CLEAR_BILLING_ACCOUNT_CHECK', null, { root: true })
         // 清除本地用户
         storage.session.remove(SESSION_LOGIN_USER_KEY)
         return response.data
@@ -354,6 +355,7 @@ export default {
           await dispatch('logout')
           router.push({
             path: '/auth/login',
+            query: genReferRouteQuery(router.currentRoute),
           })
           return {}
         }
@@ -497,7 +499,7 @@ export default {
           throw error
         }
       } else if (
-        !_.get(state.historyUsers, [getters.currentHistoryUserKey, 'secret']) &&
+        !_.get(getKeyIgnoreCase(state.historyUsers, getters.currentHistoryUserKey) || {}, 'secret') &&
         totp_on &&
         system_totp_on &&
         !totp_verified &&
@@ -510,7 +512,7 @@ export default {
           },
         })
       } else if (
-        _.get(state.historyUsers, [getters.currentHistoryUserKey, 'secret']) &&
+        _.get(getKeyIgnoreCase(state.historyUsers, getters.currentHistoryUserKey) || {}, 'secret') &&
         totp_on &&
         system_totp_on &&
         !totp_verified &&
@@ -525,14 +527,17 @@ export default {
       } else {
         const { rf, pathAuthPage, pathAuth, path, pathQuery } = router.currentRoute.query
         if (rf) {
-          document.location.href = rf
-          return
+          const safeRf = safeAuthRedirectUrl(rf, state.regions?.cors_hosts)
+          if (safeRf) {
+            document.location.href = safeRf
+            return
+          }
+          // 不安全的 rf 忽略，继续默认流程
         }
         if (!pathAuthPage && pathAuth && path) {
-          router.replace({
-            path,
-            query: pathQuery && JSON.parse(pathQuery),
-          })
+          if (!redirectAfterAuth(router, { path, pathQuery }, state.regions?.cors_hosts)) {
+            router.replace('/')
+          }
         } else {
           router.replace('/')
         }

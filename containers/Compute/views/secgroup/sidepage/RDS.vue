@@ -8,11 +8,11 @@
     :list="list"
     :showSearchbox="showSearchbox"
     :defaultSearchKey="defaultSearchKey"
-    :export-data-options="exportDataOptions"
-    :tag-config-params="tagConfigParams" />
+    :export-data-options="exportDataOptions" />
 </template>
 <script>
 
+import ColumnsMixin from '@DB/views/rds/mixins/columns'
 import ListMixin from '@/mixins/list'
 import {
   getNameFilter,
@@ -29,8 +29,6 @@ import {
 import expectStatus from '@/constants/expectStatus'
 import WindowsMixin from '@/mixins/windows'
 import regexp from '@/utils/regexp'
-import ColumnsMixin from '@DB/views/rds/mixins/columns'
-
 export default {
   name: 'RDSList',
   mixins: [WindowsMixin, ListMixin, ColumnsMixin],
@@ -99,10 +97,6 @@ export default {
         hiddenColumns: ['metadata', 'vcpu_count', 'account', 'created_at'],
         autoHiddenFilterKey: 'rds_hidden_columns',
       }),
-      tagConfigParams: {
-        resource: 'dbinstances',
-        queryTreeId: 'project-tag-value-tree',
-      },
     }
   },
   computed: {

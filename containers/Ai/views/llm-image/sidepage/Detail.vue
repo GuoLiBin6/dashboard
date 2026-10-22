@@ -3,6 +3,7 @@
     :onManager="onManager"
     :data="data"
     :base-info="baseInfo"
+    :name-rules="nameRules"
     status-module="phoneImage"
     resource="llm_images" />
 </template>
@@ -14,6 +15,8 @@ import {
 import {
   getImageNameTableColumn,
   getImageLabelTableColumn,
+  getImageSourceTableColumn,
+  getContainerImageTableColumn,
 } from '../utils/columns'
 
 export default {
@@ -30,8 +33,14 @@ export default {
   },
   data () {
     return {
+      nameRules: [
+        { required: true, message: this.$t('compute.text_210') },
+        { validator: this.$validate('imageName') },
+      ],
       baseInfo: [
         getOsArch(),
+        getImageSourceTableColumn(),
+        getContainerImageTableColumn({ vm: this }),
         getImageNameTableColumn(),
         getImageLabelTableColumn(),
       ],

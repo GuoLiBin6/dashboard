@@ -12,6 +12,8 @@
           :fc="form.fc"
           :fd="form.fd"
           :decorators="{ project: decorators.project, domain: decorators.domain }"
+          :ignoreStorage="ignoreLocalFormStorage"
+          :form-draft-key="containerDraftFields.domainProject"
           @fetchDomainCallback="fetchDomainCallback"
           @fetchProjectCallback="fetchProjectCallback" />
       </a-form-item>
@@ -20,6 +22,7 @@
           :zone-params="zoneParams"
           :cloudregion-params="cloudregionParams"
           :decorator="decorators.cloudregionZone"
+          :form-draft-key="containerDraftFields.cloudregionZone"
           filterBrandResource="compute_engine" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_228')">
@@ -31,11 +34,11 @@
       <a-form-item :label="$t('common.description')">
         <a-textarea :auto-size="{ minRows: 1, maxRows: 3 }" v-decorator="decorators.description" :placeholder="$t('common_367')" />
       </a-form-item>
-      <a-form-item :label="$t('compute.text_1041')" v-if="isOpenWorkflow">
+      <a-form-item :label="$t('compute.text_1041')" v-if="showReason">
         <a-input v-decorator="decorators.reason" :placeholder="$t('compute.text_1042')" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_1132')">
-        <duration :decorators="decorators.duration" :form="form" />
+        <duration :decorators="decorators.duration" :form="form" :form-draft-key="containerDraftFields.duration" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_294')">
         <a-input-number v-decorator="decorators.count" @blur="countBlur" :min="1" :max="100" />
@@ -45,7 +48,8 @@
         <os-arch
           v-decorator="decorators.os_arch"
           :form="form"
-          :options="archOptions" />
+          :options="archOptions"
+          :form-draft-key="containerDraftFields.osArch" />
       </a-form-item>
       <a-form-item>
         <span slot="label">
@@ -54,20 +58,25 @@
             <a-icon type="question-circle-o" />
           </a-tooltip>
         </span>
-        <pci :decorators="decorators.pci" :pciDevTypeOptions="pciDevTypeOptions" :form="form" :pci-options="pciOptions" />
+        <pci :decorators="decorators.pci" :pciDevTypeOptions="pciDevTypeOptions" :form="form" :pci-options="pciOptions" :form-draft-key="containerDraftFields.pci" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_1058')" class="mb-0">
-        <cpu-radio :decorator="decorators.vcpu" :options="form.fi.cpuMem.cpus || []" :showUnlimited="true" :form="form" :hypervisor="form.fd.hypervisor" @change="cpuChange" />
+        <cpu-radio :decorator="decorators.vcpu" :options="form.fi.cpuMem.cpus || []" :showUnlimited="true" :form="form" :hypervisor="form.fd.hypervisor" :form-draft-key="containerDraftFields.vcpu" @change="cpuChange" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_369')" class="mb-0">
-        <mem-radio :decorator="decorators.vmem" :options="form.fi.cpuMem.mems_mb || []" :showUnlimited="true" />
+        <mem-radio :decorator="decorators.vmem" :options="form.fi.cpuMem.mems_mb || []" :showUnlimited="true" :form-draft-key="containerDraftFields.vmem" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_109')" v-if="showSku">
         <sku
           v-decorator="decorators.sku"
           :type="type"
           :sku-params="skuParam"
-          :hypervisor="form.fd.hypervisor" />
+          :hypervisor="form.fd.hypervisor"
+          :init-sku-data="initSkuData"
+          :form-draft-key="containerDraftFields.sku" />
+        <div slot="extra" v-if="showSkuCreateTip">
+          {{ $t('compute.text_196') }}<help-link href="/sku">{{ $t('compute.perform_create') }}</help-link>
+        </div>
       </a-form-item>
       <a-form-item :label="$t('compute.text_50')">
         <data-disk
@@ -85,10 +94,12 @@
           :isVminstanceContainer="true"
           :storageParams="dataDiskStorageParams"
           :storageHostParams="storageHostParams"
+          :form-draft-key="containerDraftFields.dataDisk"
           @storageHostChange="storageHostChange" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_104')" class="mb-0">
         <server-network
+          ref="networkRef"
           hiddenAdd
           :form="form"
           :decorator="decorators.network"
@@ -101,16 +112,29 @@
           :vpcResourceMapper="vpcResourceMapper"
           :networkResourceMapper="networkResourceMapper"
           :showMacConfig="true"
-          :showDeviceConfig="true" />
+          :showDeviceConfig="true"
+          :showPortMapping="true"
+          :ignore-auto-network-type="isFormBackfill"
+          :form-draft-key="containerDraftFields.serverNetwork" />
       </a-form-item>
       <a-form-item :label="$t('compute.text_1154')" class="mb-0">
         <tag
-          v-decorator="decorators.tag" />
+          v-decorator="decorators.tag"
+          :default-checked="tagDefaultChecked" />
       </a-form-item>
-      <a-collapse :bordered="false" v-model="collapseActive">
-        <a-collapse-panel :header="$t('compute.text_309')" key="1">
+      <advance-config-block :title="$t('compute.eci.container_config')">
+        <spec-container
+          ref="specContainerRef"
+          :form="form"
+          :panes.sync="form.fi.containerPanes"
+          :errPanes="form.fi.errPanes"
+          :decorators="decorators.containers"
+          :initContainers="containerInitList" />
+      </advance-config-block>
+      <advance-config-block ref="advanceConfigBlock" collapsible>
           <eip-config
             v-if="showEip"
+            ref="eipConfigRef"
             :decorators="decorators.eip"
             :eip-params="eipParams"
             :hypervisor="form.fd.hypervisor"
@@ -118,7 +142,8 @@
             :showNew="false"
             :cloud-env="type"
             :form="form"
-            :formItemLayout="formItemLayout" />
+            :formItemLayout="formItemLayout"
+            :form-draft-key="containerDraftFields.eip" />
           <a-form-item
             :validate-status="hostNameValidate.validateStatus"
             :help="hostNameValidate.errorMsg">
@@ -132,15 +157,19 @@
           </a-form-item>
           <a-form-item :label="$t('compute.text_105')">
             <secgroup-config
+              ref="secgroupConfigRef"
               :form="form"
               :isSnapshotImageType="isSnapshotImageType"
               :decorators="decorators.secgroup"
               :secgroup-params="secgroupParams"
               :hypervisor="form.fd.hypervisor"
-              :showSecgroupBind="showSecgroupBind" />
+              :showSecgroupBind="showSecgroupBind"
+              :ignore-auto-type-reset="preserveAdvanceInitProps"
+              :init-secgroups="workflowInitSecgroups" />
           </a-form-item>
           <a-form-item :label="$t('compute.text_311')" class="mb-0">
             <sched-policy
+              ref="schedPolicyRef"
               :form="form"
               :server-type="form.fi.createType"
               :disabled-host="policyHostDisabled"
@@ -148,36 +177,27 @@
               :decorators="decorators.schedPolicy"
               :policy-schedtag-params="policySchedtagParams"
               :showSchedCloudprovider="showSchedCloudprovider"
-              :cloudproviderParamsExtra="cloudproviderParamsExtra" />
+              :cloudproviderParamsExtra="cloudproviderParamsExtra"
+              :init-schedtags="workflowInitSchedtags"
+              :init-prefer-host="workflowInitPreferHost"
+              :preserve-init-prefer-host="preserveAdvanceInitProps"
+              :form-draft-key="containerDraftFields.schedPolicy" />
           </a-form-item>
           <a-form-item :label="$t('dictionary.instancegroup')" :extra="$t('compute.text_1158')">
-            <instance-groups :decorators="decorators.groups" :params="instanceGroupsParams" />
+            <instance-groups
+              ref="instanceGroupsRef"
+              :decorators="instanceGroupDecorators"
+              :params="instanceGroupsParams" />
           </a-form-item>
-          <a-form-item :label="$t('compute.repo.port_mapping')">
-            <labels
-              ref="labelRef"
-              :decorators="decorators.portMapping"
-              :disableConf="portMappingDisableConf"
-              :title="$t('compute.repo.port_mapping')"
-              :keyLabel="$t('compute.repo.container_port')"
-              :valueLabel="$t('compute.repo.host_port')"
-              :keyPlaceholder="$t('compute.repo.example', ['443'])"
-              :valuePlaceholder="$t('compute.repo.example', ['443'])" />
-          </a-form-item>
-        </a-collapse-panel>
-      </a-collapse>
-      <container-title :title="$t('compute.eci.container_config')" />
-      <spec-container
-        :form="form"
-        :panes.sync="form.fi.containerPanes"
-        :errPanes="form.fi.errPanes"
-        :decorators="decorators.containers" />
+      </advance-config-block>
       <bottom-bar
         :loading="submiting"
         :form="form"
         :type="type"
         :dataDiskSizes="dataDiskSizes"
         :isOpenWorkflow="isOpenWorkflow"
+        :isOpenOrderSetWorkflow="isOpenOrderSetWorkflow"
+        :isModifyWorkflow="isModifyWorkflow"
         :errors.sync="errors"
         :hasMeterService="hasMeterService"
         @add-cart="addShopCart"
@@ -190,14 +210,14 @@ import _ from 'lodash'
 import * as R from 'ramda'
 import SecgroupConfig from '@Compute/sections/SecgroupConfig'
 import EipConfig from '@Compute/sections/EipConfig'
-import Labels from '@Compute/sections/Labels'
 import SpecContainer from '@Compute/sections/SpecContainer'
 import { NETWORK_OPTIONS_MAP } from '@Compute/constants'
 import OsArch from '@/sections/OsArch'
-import { IMAGES_TYPE_MAP, STORAGE_TYPES, HOST_CPU_ARCHS } from '@/constants/compute'
+import { IMAGES_TYPE_MAP, STORAGE_TYPES, HOST_CPU_ARCHS, getOsArchParam, isOsArch, mapHostCpuArchOptions } from '@/constants/compute'
 import { resolveValueChangeField } from '@/utils/common/ant'
 import { HYPERVISORS_MAP } from '@/constants'
 import { diskSupportTypeMedium, getOriginDiskKey } from '@/utils/common/hypervisor'
+import { hasPermission } from '@/utils/auth'
 import mixin from './mixin'
 import ContainerTitle from '../components/ContainerTitle'
 
@@ -209,7 +229,6 @@ export default {
     OsArch,
     ContainerTitle,
     SpecContainer,
-    Labels,
   },
   mixins: [mixin],
   data () {
@@ -229,10 +248,20 @@ export default {
       return this.form.fd.imageType === IMAGES_TYPE_MAP.iso.key
     },
     isArm () {
-      return this.form.fd.os_arch === HOST_CPU_ARCHS.arm.key
+      return isOsArch(this.form.fd.os_arch, 'arm')
     },
     isLoongarch64 () {
-      return this.form.fd.os_arch === HOST_CPU_ARCHS.loongarch64.key
+      return isOsArch(this.form.fd.os_arch, 'loongarch64')
+    },
+    isRiscv64 () {
+      return isOsArch(this.form.fd.os_arch, 'riscv64')
+    },
+    instanceGroupDecorators () {
+      if (this.decorators && this.decorators.groups) return this.decorators.groups
+      return {
+        groupsEnable: ['groupsEnable', { valuePropName: 'checked', initialValue: false }],
+        groups: ['groups', { initialValue: [] }],
+      }
     },
     vdi () {
       return this.form.fd.vdi
@@ -267,7 +296,7 @@ export default {
     cacheImageParams () {
       const params = {
         cloudregion_id: _.get(this.form.fd, 'cloudregion.key'),
-        os_arch: HOST_CPU_ARCHS.x86.key,
+        os_arch: getOsArchParam(this.form.fd.os_arch),
       }
       if (!params.cloudregion_id) return {}
       if (this.form.fd.imageType === 'vmware') {
@@ -280,6 +309,14 @@ export default {
         return true
       }
       return false
+    },
+    /** 仅 IDC 且有套餐页/创建权限时展示「没有您想要的？可以新建」 */
+    showSkuCreateTip () {
+      if (this.type !== 'idc') return false
+      if (this.$isScopedPolicyMenuHidden('sub_hidden_menus.sku')) return false
+      if (!hasPermission({ key: 'serverskus_list' })) return false
+      if (!hasPermission({ key: 'skus_create' })) return false
+      return true
     },
     skuParam () {
       return {
@@ -301,7 +338,7 @@ export default {
           usable: true,
           zone,
           host_type: 'container',
-          os_arch: HOST_CPU_ARCHS.x86.key,
+          os_arch: getOsArchParam(this.form.fd.os_arch),
           ...this.scopeParams,
         }
         if ([HYPERVISORS_MAP.esxi.key, HYPERVISORS_MAP.kvm.key].includes(params.hypervisor)) {
@@ -319,8 +356,6 @@ export default {
           }
           params.cloudprovider = this.form.fd.prefer_manager
         }
-        if (this.isArm) params.os_arch = HOST_CPU_ARCHS.arm.key
-        if (this.isLoongarch64) params.os_arch = HOST_CPU_ARCHS.loongarch64.key
         return params
       }
       return {}
@@ -332,6 +367,7 @@ export default {
         usable: true,
         ...this.cloudregionZoneParams,
         ...this.scopeParams,
+        host_type: 'container',
       }
       if ([HYPERVISORS_MAP.kvm.key].includes(this.form.fd.hypervisor)) {
         if (this.storageHostParams.disk &&
@@ -469,21 +505,14 @@ export default {
     imageParams () {
       const params = {
         ...this.scopeParams,
-        os_arch: HOST_CPU_ARCHS.x86.key,
+        os_arch: getOsArchParam(this.form.fd.os_arch),
       }
-      if (this.isArm) params.os_arch = HOST_CPU_ARCHS.arm.key
-      if (this.isLoongarch64) params.os_arch = HOST_CPU_ARCHS.loongarch64.key
       return params
     },
     archOptions () {
       let opts = []
       if (this.form.fi.capability.host_cpu_archs && this.form.fi.capability.host_cpu_archs.length) {
-        opts = this.form.fi.capability.host_cpu_archs.map(item => {
-          if (item === HOST_CPU_ARCHS.arm.capabilityKey) return HOST_CPU_ARCHS.arm
-          if (item === HOST_CPU_ARCHS.x86.capabilityKey) return HOST_CPU_ARCHS.x86
-          if (item === HOST_CPU_ARCHS.loongarch64.capabilityKey) return HOST_CPU_ARCHS.loongarch64
-          return item
-        })
+        opts = mapHostCpuArchOptions(this.form.fi.capability.host_cpu_archs)
       }
       return opts.sort((a, b) => a.order - b.order)
     },
@@ -496,14 +525,17 @@ export default {
     enableEncryption () {
       return this.$appConfig.isPrivate
     },
-    isMultiServer () {
-      return this.form.fd.count > 1
-    },
-    portMappingDisableConf () {
-      return {
-        tooltip: this.isMultiServer ? this.$t('compute.container.port_mapping.tooltip') : '',
-        disabled: this.isMultiServer,
+    containerInitList () {
+      // 修改工单 / 草稿回填：优先 props，其次草稿，再次路由 params
+      if (this.$route.query.workflow) {
+        const fromProp = this.initFormData?.pod?.containers
+        const fromRoute = this.$route.params?.data?.pod?.containers
+        return fromProp || fromRoute || []
       }
+      if (this.isFormBackfill && this.effectiveInitFormData?.pod?.containers?.length) {
+        return this.effectiveInitFormData.pod.containers
+      }
+      return []
     },
   },
   watch: {
@@ -512,6 +544,8 @@ export default {
       handler (val, oldVal) {
         if (R.equals(val, oldVal)) return
         this.$nextTick(() => {
+          // 回填期间镜像变化不要清空数据盘，否则工单/草稿里的盘会被冲掉
+          if (this.isFormBackfill) return
           this.form.fi.dataDiskDisabled = false
           this.form.fi.sysDiskDisabled = false
           if (this.form.fd.imageType === IMAGES_TYPE_MAP.host.key) {
@@ -581,13 +615,6 @@ export default {
         })
       },
     },
-    isMultiServer (val) {
-      if (val && this.$refs.labelRef) {
-        this.$refs.labelRef.reset()
-        this.form.fd.containerPorts = {}
-        this.form.fd.hostPorts = {}
-      }
-    },
   },
   destroyed () {
     this.timer = null
@@ -609,7 +636,15 @@ export default {
           this.$nextTick(this.fetchInstanceSpecs)
         }
         if (changedFields.schedPolicyType === 'host') {
-          this.$set(this.form.fd, 'schedPolicyHost', undefined)
+          // 控件草稿/工单回填指定宿主机时不要清空
+          const keepHost = this.isFormBackfill ||
+            this.form?.fi?.advanceDraftRestoring ||
+            Object.prototype.hasOwnProperty.call(changedFields, 'schedPolicyHost') ||
+            this.$refs.schedPolicyRef?.pendingPreferHost ||
+            this.$refs.schedPolicyRef?._schedPolicyDraftApplying
+          if (!keepHost) {
+            this.$set(this.form.fd, 'schedPolicyHost', undefined)
+          }
         }
         this.setIsLocalDisk()
       })
@@ -675,10 +710,13 @@ export default {
             ...data,
             hypervisors,
           }
+          // 容器主机固定 pod，避免被 kvm 等平台覆盖导致套餐列表异常
           this.form.fc.setFieldsValue({
-            hypervisor: hypervisors[0], // 赋值默认第一个平台
+            hypervisor: HYPERVISORS_MAP.pod.key,
           })
           this.init()
+          // 区域是 setFields 写入的，onValuesChange 不一定带 cloudregion，这里补拉规格
+          this.$nextTick(this.fetchInstanceSpecs)
         })
     },
     fetchInstanceSpecs () {
@@ -686,10 +724,25 @@ export default {
       this.serverskusM.get({ id: 'instance-specs', params: this.instanceSpecParmas })
         .then(({ data }) => {
           this.form.fi.cpuMem = data
+          const initData = (this.isFormBackfill && this.effectiveInitFormData && !R.isEmpty(this.effectiveInitFormData))
+            ? this.effectiveInitFormData
+            : ((!R.isEmpty(this.initFormData) && this.initFormData) || this.$route.params?.data || {})
           const vcpuDecorator = this.decorators.vcpu
           const vcpuInit = vcpuDecorator[1].initialValue
-          const cpu = this.form.fd.vcpu || vcpuInit
+          const cpu = Number(initData.vcpu_count || this.form.fd.vcpu || vcpuInit)
+          const mem = Number(initData.vmem_size || this.form.fd.vmem)
+          if (cpu) {
+            this.form.fc.setFieldsValue({ vcpu: cpu, ...(mem ? { vmem: mem } : {}) })
+          }
           this.cpuChange(cpu)
+          if (mem) {
+            this.$nextTick(() => {
+              const memOpts = this.form.fi.cpuMem.mems_mb || []
+              if (memOpts.some(m => Number(m) === mem)) {
+                this.form.fc.setFieldsValue({ vmem: mem })
+              }
+            })
+          }
         })
     },
     gpuChange (val) {
@@ -713,6 +766,8 @@ export default {
             canUseOsArch = HOST_CPU_ARCHS.x86.key
           } else if (os_arch.indexOf('aarch') !== -1) {
             canUseOsArch = HOST_CPU_ARCHS.arm.key
+          } else if (os_arch.indexOf('riscv') !== -1) {
+            canUseOsArch = HOST_CPU_ARCHS.riscv64.key
           }
           if (!canUseOsArch) return
           this.form.fc.setFieldsValue({ os_arch: canUseOsArch })
@@ -721,7 +776,7 @@ export default {
     },
     getMachineDecorator () {
       let initValue = 'pc'
-      if (this.isArm) {
+      if (this.isArm || this.isRiscv64) {
         initValue = 'virt'
       }
       return [

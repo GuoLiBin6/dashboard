@@ -145,14 +145,14 @@ export const STORAGE_TYPES = {
       label: i18n.t('common.storage.st1'),
       key: 'st1',
       sysUnusable: true, // 系统盘不可用
-      min: 500,
+      min: 125,
       max: 16384,
     },
     sc1: {
       label: 'Cold HDD',
       key: 'sc1',
       sysUnusable: true, // 系统盘不可用
-      min: 500,
+      min: 125,
       max: 16384,
     },
     standard: {
@@ -167,9 +167,9 @@ export const STORAGE_TYPES = {
       label: i18n.t('compute.storage_gp3'),
       key: 'gp3',
       min: 1,
-      max: 16384,
+      max: 65536,
       sysMin: 1,
-      sysMax: 16384,
+      sysMax: 65536,
     },
   },
   [HYPERVISORS_MAP.qcloud.key]: {
@@ -482,6 +482,51 @@ export const STORAGE_TYPES = {
     },
   },
   [HYPERVISORS_MAP.ucloud.key]: {
+    LOCAL_NORMAL: {
+      label: i18n.t('common.storage.LOCAL_NORMAL'),
+      key: 'LOCAL_NORMAL',
+      min: 20,
+      max: 2000,
+      sysMin: 10,
+      sysMax: 500,
+      skuFamily: ['N1', 'N2', 'N3', 'D1'],
+    },
+    LOCAL_SSD: {
+      label: i18n.t('common.storage.LOCAL_SSD'),
+      key: 'LOCAL_SSD',
+      min: 20,
+      max: 2000,
+      sysMin: 10,
+      sysMax: 500,
+      skuFamily: ['C1', 'I2', 'G2', 'G3', 'I1', 'G1'],
+    },
+    CLOUD_NORMAL: {
+      label: i18n.t('common.storage.cloud'),
+      key: 'CLOUD_NORMAL',
+      min: 20,
+      max: 8000,
+      sysUnusable: true, // 系统盘不可用
+      skuFamily: ['N2', 'N3'],
+    },
+    CLOUD_SSD: {
+      label: i18n.t('common.storage.cloudssd'),
+      key: 'CLOUD_SSD',
+      min: 20,
+      max: 4000,
+      sysMin: 20,
+      sysMax: 500,
+      skuFamily: ['N3', 'C1', 'N2', 'I2', 'G2', 'G3'],
+    },
+    EXCLUSIVE_LOCAL_DISK: {
+      label: i18n.t('common.storage.EXCLUSIVE_LOCAL_DISK'),
+      key: 'EXCLUSIVE_LOCAL_DISK',
+      min: 4096,
+      max: 4096,
+      sysUnusable: true, // 系统盘不可用
+      skuFamily: ['D1'],
+    },
+  },
+  [HYPERVISORS_MAP.rockbase.key]: {
     LOCAL_NORMAL: {
       label: i18n.t('common.storage.LOCAL_NORMAL'),
       key: 'LOCAL_NORMAL',
@@ -876,6 +921,48 @@ export const HOST_CPU_ARCHS = {
     capabilityKey: 'loongarch64',
     order: 3,
   },
+  riscv64: {
+    key: 'riscv64',
+    label: 'riscv64',
+    capabilityKey: 'riscv64',
+    order: 4,
+  },
+}
+
+/** capability / sku.cpu_arch / 表单 os_arch → 标准 key；无法识别时原样返回 */
+export function resolveOsArchKey (arch) {
+  if (!arch) return null
+  const hit = Object.values(HOST_CPU_ARCHS).find(
+    item => item.key === arch || item.capabilityKey === arch,
+  )
+  return hit ? hit.key : arch
+}
+
+/** 请求参数用的 os_arch，缺省为 x86 */
+export function getOsArchParam (arch, defaultKey = HOST_CPU_ARCHS.x86.key) {
+  return resolveOsArchKey(arch) || defaultKey
+}
+
+/** 是否为指定架构（type 为 HOST_CPU_ARCHS 的 key，如 arm / riscv64） */
+export function isOsArch (arch, type) {
+  const conf = HOST_CPU_ARCHS[type]
+  if (!conf) return false
+  return getOsArchParam(arch) === conf.key
+}
+
+/**
+ * host_cpu_archs → OsArch options
+ * @param {string[]} hostCpuArchs
+ * @param {boolean} asKey true 时返回 key 字符串，否则返回 HOST_CPU_ARCHS 项
+ */
+export function mapHostCpuArchOptions (hostCpuArchs = [], asKey = false) {
+  return (hostCpuArchs || []).map((item) => {
+    const hit = Object.values(HOST_CPU_ARCHS).find(
+      a => a.capabilityKey === item || a.key === item,
+    )
+    if (!hit) return item
+    return asKey ? hit.key : hit
+  })
 }
 
 export const DISK_LABEL_MAP = {

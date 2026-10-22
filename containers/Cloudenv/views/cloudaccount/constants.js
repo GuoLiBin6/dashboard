@@ -1,7 +1,6 @@
 import { typeClouds } from '@/utils/common/hypervisor'
-import { arrayToObj, genDocsUrl } from '@/utils/utils'
+import { arrayToObj } from '@/utils/utils'
 import i18n from '@/locales'
-import store from '@/store'
 const providerMap = typeClouds.getProviderlowcase()
 const aliyunLogo = require('@/assets/images/providers/aliyun.svg')
 const awsLogo = require('@/assets/images/providers/aws.svg')
@@ -9,6 +8,7 @@ const azureLogo = require('@/assets/images/providers/azure.svg')
 const huaweiLogo = require('@/assets/images/providers/huawei.svg')
 const qcloudLogo = require('@/assets/images/providers/qcloud.svg')
 const ucloudLogo = require('@/assets/images/providers/ucloud.svg')
+const rockbaseLogo = require('@/assets/images/providers/rockbase.svg')
 const vmwareLogo = require('@/assets/images/providers/vmware.svg')
 const openstackLogo = require('@/assets/images/providers/openstack.svg')
 // const dstackLogo = require('@/assets/images/providers/dstack.svg')
@@ -39,18 +39,10 @@ const oraclecloudLogo = require('@/assets/images/providers/oraclecloud.svg')
 const sangforLogo = require('@/assets/images/providers/sangfor.svg')
 const zettakitLogo = require('@/assets/images/providers/zettakit.svg')
 const uisLogo = require('@/assets/images/providers/uis.svg')
+const casLogo = require('@/assets/images/providers/cas.svg')
 const cloudflareLogo = require('@/assets/images/providers/cloudflare.svg')
 const cnwareLogo = require('@/assets/images/providers/cnware.svg')
 const oceanbaseLogo = require('@/assets/images/providers/oceanbase.svg')
-
-function getDocsCloudaccountPath (scope) {
-  return genDocsUrl({
-    scope,
-    isSysCE: store.getters.isSysCE,
-    cePath: 'guides/cmp/cloudaccounts/cloudaccount',
-    eePath: 'web_ui/multiplecloud/cloudaccount/cloudaccount',
-  })
-}
 
 export const CLOUDACCOUNT_TYPES = {
   public: {
@@ -93,6 +85,12 @@ export const CLOUDACCOUNT_TYPES = {
       logo: ucloudLogo,
       component: 'UcloudCreate',
       provider: providerMap.ucloud.key,
+    },
+    rockbase: {
+      name: providerMap.rockbase.label,
+      logo: rockbaseLogo,
+      component: 'RockBaseCreate',
+      provider: providerMap.rockbase.key,
     },
     google: {
       name: providerMap.google.label,
@@ -305,6 +303,12 @@ export const CLOUDACCOUNT_TYPES = {
         height: '14px',
       },
     },
+    cas: {
+      name: providerMap.cas.label,
+      logo: casLogo,
+      component: 'CASCreate',
+      provider: providerMap.cas.key,
+    },
     cnware: {
       name: providerMap.cnware.label,
       logo: cnwareLogo,
@@ -347,61 +351,6 @@ export const ENV_TITLE = {
   private: i18n.t('cloudenv.text_124'),
 }
 
-export function getCloudaccountDocs (scope) {
-  const docs_path = getDocsCloudaccountPath(scope)
-  const docs = {
-    aliyun: i18n.t('cloudenv.text_125', [docs_path]),
-    azure: i18n.t('cloudenv.text_126', [docs_path]),
-    aws: i18n.t('cloudenv.text_127', [docs_path]),
-    qcloud: i18n.t('cloudenv.text_128', [docs_path]),
-    huawei: i18n.t('cloudenv.text_129', [docs_path]),
-    ucloud: i18n.t('cloudenv.text_130', [docs_path]),
-    zstack: i18n.t('cloudenv.text_131', [docs_path]),
-    dstack: i18n.t('cloudenv.text_131', [docs_path]),
-    openstack: i18n.t('cloudenv.text_132', [docs_path]),
-    vmware: i18n.t('cloudenv.text_133', [docs_path]),
-    s3: i18n.t('cloudenv.text_134', [docs_path]),
-    ceph: i18n.t('cloudenv.text_135', [docs_path]),
-    cephfs: i18n.t('cloudenv.text_135', [docs_path]),
-    xsky: i18n.t('cloudenv.text_136', [docs_path]),
-    google: i18n.t('cloudenv.text_137', [docs_path]),
-    ctyun: i18n.t('cloudenv.text_138', [docs_path]),
-    apsara: i18n.t('cloudenv.create_apsara_cloud_account', [docs_path]),
-    ecloud: i18n.t('cloudenv.create_ecloud', [docs_path]),
-    jdcloud: i18n.t('cloudenv.create_jdcloud', [docs_path]),
-    cloudpods: i18n.t('cloudenv.create_cloudpods', [docs_path]),
-    hcso: i18n.t('cloudenv.create_hcso', [docs_path]),
-    hcs: i18n.t('cloudenv.create_hcs', [docs_path]),
-    nutanix: i18n.t('cloudenv.create_nutanix', [docs_path]),
-    bingocloud: i18n.t('cloudenv.create_bingocloud', [docs_path]),
-    incloudsphere: i18n.t('cloudenv.create_incloudsphere', [docs_path]),
-    proxmox: i18n.t('cloudenv.create_proxmox', [docs_path]),
-    h3c: i18n.t('cloudenv.create_h3c', [docs_path]),
-    zettakit: i18n.t('cloudenv.create_zettakit', [docs_path]),
-    uis: i18n.t('cloudenv.create_uis', [docs_path]),
-    ksyun: i18n.t('cloudenv.create_ksyun', [docs_path]),
-    baidu: i18n.t('cloudenv.create_baidu', [docs_path]),
-    qingcloud: i18n.t('cloudenv.create_qingcloud', [docs_path]),
-    chinaunion: i18n.t('cloudenv.create_chinaunion', [docs_path]),
-    volcengine: i18n.t('cloudenv.create_volcengine', [docs_path]),
-    oraclecloud: i18n.t('cloudenv.create_oraclecloud', [docs_path]),
-    sangfor: i18n.t('cloudenv.create_sangfor', [docs_path]),
-    cloudflare: i18n.t('cloudenv.create_cloudflare', [docs_path]),
-    cnware: i18n.t('cloudenv.create_cnware', [docs_path]),
-    oceanbase: i18n.t('cloudenv.create_oceanbase', [docs_path]),
-  }
-  // if (isCE()) {
-  //   Object.keys(docs).forEach(v => {
-  //     docs[v] = `${docs_path}/tutorial/create`
-  //   })
-  // } else {
-  //   Object.keys(docs).forEach(v => {
-  //     docs[v] = `${docs_path}/tutorial/create`
-  //   })
-  // }
-  return docs
-}
-
 export const ACCESS_URL = {
   huawei: {
     // InternationalCloud: i18n.t('cloudenv.text_139'),
@@ -426,6 +375,7 @@ export const ACCESS_URL = {
     FinanceCloud: i18n.t('cloudenv.finance_cloud'),
   },
   ucloud: {},
+  rockbase: {},
   ecloud: {},
   jdcloud: {},
 }
@@ -526,6 +476,19 @@ export const keySecretFields = {
     k: 'access_key_id',
     s: 'access_key_secret',
     text: 'UCloud',
+    placeholder: {
+      k: i18n.t('cloudenv.text_157'),
+      s: i18n.t('cloudenv.text_158'),
+    },
+    label: {
+      k: i18n.t('cloudenv.text_159'),
+      s: i18n.t('cloudenv.text_160'),
+    },
+  },
+  rockbase: {
+    k: 'access_key_id',
+    s: 'access_key_secret',
+    text: 'RockBase',
     placeholder: {
       k: i18n.t('cloudenv.text_157'),
       s: i18n.t('cloudenv.text_158'),
@@ -795,6 +758,19 @@ export const keySecretFields = {
       s: i18n.t('cloudenv.text_147'),
     },
   },
+  cas: {
+    k: 'username',
+    s: 'password',
+    text: i18n.t('cloudenv.cas'),
+    placeholder: {
+      k: i18n.t('cloudenv.text_151'),
+      s: i18n.t('cloudenv.text_150'),
+    },
+    label: {
+      k: i18n.t('cloudenv.text_94'),
+      s: i18n.t('cloudenv.text_147'),
+    },
+  },
   ksyun: {
     k: 'access_key_id',
     s: 'access_key_secret',
@@ -940,29 +916,6 @@ export const keySecretFields = {
   },
 }
 
-export function getBillBucketUrlDocs (scope) {
-  const docsUrl = getDocsCloudaccountPath(scope)
-  return {
-    aliyun: i18n.t('cloudenv.text_164', [docsUrl]),
-    volcengine: i18n.t('cloudenv.bill_bucket_url', [docsUrl, 'url-4']),
-    aws: i18n.t('cloudenv.text_165', [docsUrl]),
-    huawei: i18n.t('cloudenv.text_166', [docsUrl]),
-    google: i18n.t('cloudenv.text_167', [docsUrl]),
-    qcloud: i18n.t('cloudenv.bill_bucket_url', [docsUrl, 'url-3']),
-    ksyun: i18n.t('cloudenv.ksyun_bucket_url', [docsUrl]),
-  }
-}
-
-export function getSamlUserDocs (scope) {
-  const docsUrl = getDocsCloudaccountPath(scope)
-  return i18n.t('cloudenv.dentity_provider', [docsUrl])
-}
-
-export function getEnrollmentNumberDocs (scope) {
-  const docsUrl = getDocsCloudaccountPath(scope)
-  return docsUrl + i18n.t('cloudenv.text_219')
-}
-
 export const notSupportSelectRegion = [
   providerMap.vmware.key,
   providerMap.nutanix.key,
@@ -983,6 +936,7 @@ export const notSupportSelectRegion = [
   providerMap.h3c.key,
   providerMap.zettakit.key,
   providerMap.uis.key,
+  providerMap.cas.key,
   providerMap.proxmox.key,
   providerMap.oraclecloud.key,
   providerMap.cloudflare.key,
@@ -991,5 +945,6 @@ export const notSupportSelectRegion = [
 export const BILL_TYPES = [
   { label: i18n.t('cloudenv.text_344'), value: 'EA' },
   { label: i18n.t('cloudenv.bill_bucket'), value: 'Bucket' },
+  { label: i18n.t('cloudenv.api_bill'), value: 'Api' },
 ]
 export const BILL_TYPE_MAP = arrayToObj(BILL_TYPES, 'value')

@@ -6,8 +6,14 @@
       <dialog-table :data="params.data" :columns="params.columns.slice(0, 3)" />
       <a-form
         :form="form.fc">
+        <a-form-item :label="$t('compute.force_detach')" v-if="isGuestHasUnknown || isGuestHasReady" v-bind="formItemLayout">
+          <a-tooltip v-if="isGuestHasUnknown" :title="$t('compute.force_detach_tooltip')">
+            <a-switch :checkedChildren="$t('compute.text_115')" disabled :unCheckedChildren="$t('compute.text_116')" v-decorator="decorators.is_force" />
+          </a-tooltip>
+          <a-switch v-else :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-decorator="decorators.is_force" @change="onForceChange" />
+        </a-form-item>
         <a-form-item :label="$t('compute.text_494')" v-if="isShowAutoStart" v-bind="formItemLayout" :extra="$t('compute.text_495')">
-          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" v-decorator="decorators.autoStart" />
+          <a-switch :checkedChildren="$t('compute.text_115')" :unCheckedChildren="$t('compute.text_116')" :disabled="isForceChecked" v-decorator="decorators.autoStart" />
         </a-form-item>
       </a-form>
     </div>
@@ -28,6 +34,8 @@ export default {
   data () {
     return {
       loading: false,
+      isForceChecked: this.params.data.some(o => o.guest_status === 'unknown'),
+      autoStartSnapshot: null,
       form: {
         fc: this.$form.createForm(this),
       },
@@ -37,6 +45,13 @@ export default {
           {
             valuePropName: 'checked',
             initialValue: true,
+          },
+        ],
+        is_force: [
+          'is_force',
+          {
+            valuePropName: 'checked',
+            initialValue: this.params.data.some(o => o.guest_status === 'unknown'),
           },
         ],
       },
@@ -51,17 +66,32 @@ export default {
     }
   },
   computed: {
-    selectedItems () {
-      return this.params.data
-    },
-    isGuestAllRunning () {
-      return this.selectedItems.every(o => o.guest_status === 'running')
-    },
     isShowAutoStart () {
-      return !this.isGuestAllRunning
+      return !this.params.data.every(o => o.guest_status === 'running')
+    },
+    isGuestHasUnknown () {
+      return this.params.data.some(o => o.guest_status === 'unknown')
+    },
+    isGuestHasReady () {
+      return this.params.data.some(o => o.guest_status === 'ready')
     },
   },
+  mounted () {
+    if (this.isForceChecked) {
+      this.form.fc.setFieldsValue({ autoStart: false })
+    }
+  },
   methods: {
+    onForceChange (checked) {
+      if (checked) {
+        this.autoStartSnapshot = this.form.fc.getFieldValue('autoStart')
+        this.form.fc.setFieldsValue({ autoStart: false })
+      } else {
+        this.form.fc.setFieldsValue({ autoStart: this.autoStartSnapshot ?? true })
+        this.autoStartSnapshot = null
+      }
+      this.isForceChecked = checked
+    },
     validateForm () {
       return new Promise((resolve, reject) => {
         this.form.fc.validateFields((err, values) => {
@@ -73,24 +103,55 @@ export default {
         })
       })
     },
-    doUpdate (values) {
+    async fetchGuestIsolatedDeviceIndexs (bind) {
+      const guestId = bind.server_id
+      const deviceId = bind.gpu_ids.length
+      if (!guestId || !deviceId) return undefined
+      try {
+        const res = await new this.$Manager('guestisolateddevices').list({
+          params: {
+            limit: 0,
+            guest_id: guestId,
+            scope: this.$store.getters.scope,
+          },
+        })
+        const record = (res.data.data || []).filter(item => bind.gpu_ids.includes(item.id) || bind.gpu_ids.includes(item.isolated_device_id))
+        return record.map(item => {
+          return {
+            device: item.id || item.isolated_device_id,
+            index: item.index,
+          }
+        })
+      } catch (e) {
+        // ignore
+      }
+      return undefined
+    },
+    async doUpdate (values, bind) {
+      const data = {
+        auto_start: this.isShowAutoStart ? values.autoStart : false,
+      }
+      if (values.is_force) {
+        data.is_force = true
+      }
+      const index = await this.fetchGuestIsolatedDeviceIndexs(bind)
+      if (index !== undefined) {
+        data.devices = index
+      }
       return new this.$Manager('servers').performAction({
-        id: this.params.data[0].id,
+        id: bind.server_id,
         action: 'detach-isolated-device',
-        data: {
-          auto_start: this.isShowAutoStart ? values.autoStart : false,
-          device: this.params.device.id,
-        },
+        data,
       })
     },
     async handleConfirm () {
       try {
         this.loading = true
         const values = await this.validateForm()
-        if (this.params.data.length === 1) {
-          await this.doUpdate(values)
-        } else {
-          await this.doDetachSubmit(values)
+        if (this.params.binds) {
+          for (let i = 0; i < this.params.binds.length; i++) {
+            await this.doUpdate(values, this.params.binds[i])
+          }
         }
         this.loading = false
         this.params.refresh()
@@ -98,20 +159,6 @@ export default {
       } catch (error) {
         this.loading = false
       }
-    },
-    doDetachSubmit (values) {
-      const data = {
-        detach_all: true,
-        auto_start: this.isShowAutoStart ? values.autoStart : false,
-      }
-      const selectedIds = this.params.data.map((item) => {
-        return item.guest_id
-      })
-      return new this.$Manager('servers').batchPerformAction({
-        ids: selectedIds,
-        action: 'detach-isolated-device',
-        data,
-      })
     },
   },
 }

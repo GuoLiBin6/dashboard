@@ -1,5 +1,5 @@
 <template>
-    <div class="table-container d-flex">
+    <div class="table-container d-flex" :class="{ 'with-org-tree': showTagConfig && treeToggleOpen }">
       <template v-if="showTagConfig">
         <tree-project
           ref="projectTag"
@@ -9,7 +9,7 @@
           @select="handleProjectTagSelect"
           @treeProjectConfig="handleTreeProjectConfig" />
       </template>
-      <div style="width: 100%">
+      <div class="table-main">
         <vxe-grid
           show-header-overflow
           show-overflow
@@ -40,8 +40,16 @@
               :total="tablePage.total"
               @page-change="handlePageChange">
               <template v-if="!loading && showTableOverviewIndexs" v-slot:left>
-                <div class="table-overview">
-                  {{ $t('common.table.overview') }}：{{ tableOverview }}
+                <div class="table-overview table-overview-content">
+                  <span>{{ $t('common.table.overview') }}：</span>
+                  <template v-for="(item, idx) in tableOverviewIndexs">
+                    <span :key="idx" class="table-overview-item">
+                      <span v-if="idx > 0" class="table-overview-sep">{{ overviewSeparator }}</span>
+                      <a-tag v-if="item.tag" class="table-overview-tag">{{ item.key }}</a-tag>
+                      <span v-else>{{ item.key }}: </span>
+                      <span>{{ item.value }}</span>
+                    </span>
+                  </template>
                 </div>
               </template>
             </vxe-pager>
@@ -49,7 +57,7 @@
         </vxe-grid>
         <template v-if="loadMoreShow">
           <div class="vxe-pager d-flex align-items-center justify-content-end mt-2">
-            <a-select v-model="loadMoreSize" style="min-width:100px;font-size:12px" size="small" @change="handleLoadMoreSizeChange">
+            <a-select :value="loadMoreSize" style="min-width:100px;font-size:12px" size="small" @change="handleLoadMoreSizeChange">
               <a-select-option v-for="size in loadMorePagings" :value="size" :key="size" style="text-align:center;font-size:12px">{{$t('common.some_items_peer_time', [size])}}</a-select-option>
             </a-select>
             <span class="ml-3">{{$t('common.current_total_items', [tableData.length])}}</span>
@@ -72,9 +80,8 @@ import { getTagTitle } from '@/utils/common/tag'
 import storage from '@/utils/storage'
 import TreeProject from '@/sections/TreeProject'
 import WindowsMixin from '@/mixins/windows'
-import Actions from '../Actions'
 import MultipleSort from './MultipleSort'
-
+import Actions from '../Actions'
 export default {
   name: 'PageListFixedTable',
   components: {
@@ -133,6 +140,10 @@ export default {
     config: Object,
     nextMarker: String,
     pagerType: String,
+    loadMoreSize: {
+      type: Number,
+      default: 20,
+    },
     selectionType: {
       type: String,
       required: true,
@@ -155,7 +166,7 @@ export default {
     treeToggleOpen: Boolean,
     tagConfigParams: {
       type: Object,
-      default: () => {},
+      default: () => ({}),
     },
     // create list传递的resource
     resource: [String, Object, Function],
@@ -177,7 +188,6 @@ export default {
       finalLimit: this.getLimit(),
       storageKey,
       storageConfig: this.id && storage.get(storageKey),
-      loadMoreSize: 20,
       loadMorePagings: [20, 100, 200, 500, 1000],
     }
   },
@@ -261,13 +271,8 @@ export default {
     showTableOverviewIndexs () {
       return this.tableOverviewIndexs?.length > 0
     },
-    tableOverview () {
-      if (this.showTableOverviewIndexs) {
-        return this.tableOverviewIndexs.map(item => {
-          return `${item.key}: ${item.value}`
-        }).join('、')
-      }
-      return []
+    overviewSeparator () {
+      return this.tableOverviewIndexs?.some(item => item.tag) ? '；' : '、'
     },
   },
   watch: {
@@ -579,6 +584,9 @@ export default {
       this.$emit('project-tag-filter-change', filter)
     },
     handleTreeProjectConfig () {
+      // 组织架构只读侧栏（默认）不开放层级配置
+      const mode = this.tagConfigParams && this.tagConfigParams.treeMode
+      if (!mode || mode === 'organization') return
       this.createDialog('TreeConfigDialog', {
         title: this.$t('common.text00011'),
         resource: this.resource,
@@ -590,6 +598,20 @@ export default {
 </script>
 
 <style lang="less" scoped>
+.table-container {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  &.with-org-tree {
+    overflow: hidden;
+  }
+}
+.table-main {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+}
 .page-list-grid {
   min-width: 100%;
   ::v-deep {
@@ -613,5 +635,24 @@ export default {
   transform: translateY(-50%);
   z-index: 10;
   font-size: 14px;
+}
+.table-overview-content {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.table-overview-item {
+  display: inline-flex;
+  align-items: center;
+}
+.table-overview-sep {
+  margin: 0 4px;
+}
+.table-overview-tag {
+  margin-right: 4px;
+  line-height: 18px;
+  height: 20px;
+  padding: 0 6px;
+  font-size: 12px;
 }
 </style>

@@ -7,6 +7,9 @@
 .link-color {
   color: @link-color;
 }
+.link-color-light {
+  color: @primary-5;
+}
 .success-color {
   color: @success-color;
 }
@@ -46,6 +49,12 @@
 // vxe table
 .vxe-table {
   font-size: 14px !important;
+  .list-body-cell-wrap a {
+    color: @link-color;
+    &:hover {
+      color: @link-color;
+    }
+  }
 }
 .vxe-table .vxe-cell--checkbox:not(.is--disabled):hover .vxe-checkbox--icon:before {
   border-color: @primary-color !important;
@@ -269,6 +278,23 @@ body {
   }
   .option-show {
     display: inline-block !important;
+  }
+  .area-select-cloudregion-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    &__name {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding-right: 8px;
+    }
+    &__icon {
+      flex-shrink: 0;
+      line-height: 1;
+    }
   }
 }
 

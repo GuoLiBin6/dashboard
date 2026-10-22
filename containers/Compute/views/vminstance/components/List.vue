@@ -15,7 +15,6 @@
     :showSearchbox="showSearchbox"
     :defaultSearchKey="defaultSearchKey"
     :refresh-method="handleListRefresh"
-    :tag-config-params="tagConfigParams"
     :tableOverviewIndexs="tableOverviewIndexs"
     :show-page="!isTemplate" />
 </template>
@@ -50,14 +49,18 @@ import { typeClouds, findPlatform } from '@/utils/common/hypervisor'
 import GlobalSearchMixin from '@/mixins/globalSearch'
 import ResTemplateListMixin from '@/mixins/resTemplateList'
 import regexp from '@/utils/regexp'
-import { hasSetupKey } from '@/utils/auth'
+import { hasSetupKey, isLicense2 } from '@/utils/auth'
 import { sizeToDesignatedUnit } from '@/utils/utils'
 import { Manager } from '@/utils/manager'
 import { PROVIDER_MAP, BRAND_MAP } from '@/constants'
 import { KVM_SHARE_STORAGES } from '@/constants/storage'
 import SingleActionsMixin from '../mixins/singleActions'
 import ColumnsMixin from '../mixins/columns'
+import { getHostIsolatedDeviceAvailableTypes } from '../constants/actions'
 import { cloudEnabled, cloudUnabledTip, commonEnabled, validateRescueMode } from '../utils'
+import { getBatchRenewAction } from '../utils/renewActions'
+import { getBatchAutoRenewAction } from '../utils/autoRenewActions'
+import { getBatchStartAction } from '../utils/startActions'
 
 export default {
   name: 'VmInstanceList',
@@ -167,7 +170,15 @@ export default {
     this.hiddenFilterOptions.forEach(key => {
       delete filterOptions[key]
     })
+    let hasBastionService = false
+    const { services = [] } = this.$store?.getters?.userInfo || {}
+    const bastionService = services.find(val => val.type === 'bastionhost')
+    if (bastionService && bastionService.status === true) {
+      hasBastionService = true
+    }
+    const monitorManager = new this.$Manager('unifiedmonitors', 'v1')
     return {
+      monitorManager,
       list: this.$list.createList(this, {
         ctx: this,
         id: this.id,
@@ -184,8 +195,30 @@ export default {
         responseData: this.responseData,
         isTemplate: this.isTemplate,
         templateLimit: this.templateLimit,
-        hiddenColumns: ['is_gpu', 'metadata', 'instance_type', 'os_type', 'vpc', 'host', 'account', 'created_at', 'macs', 'os_arch', 'vcpu_count', 'vmem_size', 'disk', 'power_states'],
+        hiddenColumns: ['is_gpu', 'metadata', 'instance_type', 'os_type', 'vpc', 'host', 'account', 'created_at', 'macs', 'os_arch', 'vcpu_count', 'vmem_size', 'disk', 'power_states', 'cpu_usage', 'mem_usage', 'disk_rate', 'net_iops'],
         autoHiddenFilterKey: 'server_hidden_columns',
+        fetchDataCb: async (response) => {
+          if (response.data?.data?.length) {
+            const list = response.data?.data || []
+            const ids = list.map(item => item.id).filter(Boolean)
+            if (ids.length) {
+              const res = await monitorManager.get({
+                id: 'resource-metrics',
+                params: {
+                  res_ids: ids,
+                  res_type: 'guest',
+                },
+              })
+              const { resource_metrics = {} } = res.data || {}
+              for (const key in resource_metrics) {
+                const metrics = resource_metrics[key]
+                list.find(item => item.id === key).alert_data = metrics
+              }
+            }
+            response.data.data = list
+          }
+          return response
+        },
       }),
       groupActions: [
         // 新建
@@ -212,37 +245,7 @@ export default {
           hidden: () => this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_create') || this.hiddenActions.includes('create'),
         },
         // 开机
-        {
-          label: this.$t('compute.text_272'),
-          permission: 'server_perform_start',
-          action: () => {
-            this.createDialog('VmStartDialog', {
-              data: this.list.selectedItems,
-              columns: this.columns,
-              onManager: this.onManager,
-            })
-          },
-          meta: () => {
-            let ret = {
-              validate: true,
-              tooltip: null,
-            }
-            ret.validate = this.list.selectedItems.length > 0
-            if (!ret.validate) return ret
-            // 某些云不支持
-            const unenableCloudCheck = this.hasSomeCloud(this.list.selectedItems)
-            if (!unenableCloudCheck.validate) {
-              ret = unenableCloudCheck
-              return ret
-            }
-            ret = this.$isValidateResourceLock(this.list.selectedItems, () => {
-              ret.validate = this.list.selectedItems.every(item => item.status === 'ready')
-              return ret
-            })
-            return ret
-          },
-          hidden: () => this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_start'),
-        },
+        getBatchStartAction(this),
         // 批量关机
         {
           label: this.$t('compute.text_273'),
@@ -569,7 +572,7 @@ export default {
                         return ret
                       }
                       // 某些云不支持
-                      const unenableCloudCheck = this.hasSomeCloud(this.list.selectedItems, [typeClouds.hypervisorMap.zettakit.key, typeClouds.hypervisorMap.uis.key])
+                      const unenableCloudCheck = this.hasSomeCloud(this.list.selectedItems, [typeClouds.hypervisorMap.zettakit.key, typeClouds.hypervisorMap.uis.key, typeClouds.hypervisorMap.cas.key])
                       if (!unenableCloudCheck.validate) {
                         ret = unenableCloudCheck
                         return ret
@@ -613,7 +616,7 @@ export default {
                         return ret
                       }
                       // 某些云不支持
-                      const unenableCloudCheck = this.hasSomeCloud(this.list.selectedItems, [typeClouds.hypervisorMap.bingocloud.key, typeClouds.hypervisorMap.sangfor.key, typeClouds.hypervisorMap.zettakit.key, typeClouds.hypervisorMap.uis.key])
+                      const unenableCloudCheck = this.hasSomeCloud(this.list.selectedItems, [typeClouds.hypervisorMap.bingocloud.key, typeClouds.hypervisorMap.sangfor.key, typeClouds.hypervisorMap.zettakit.key, typeClouds.hypervisorMap.uis.key, typeClouds.hypervisorMap.cas.key])
                       if (!unenableCloudCheck.validate) {
                         ret = unenableCloudCheck
                         return ret
@@ -677,70 +680,9 @@ export default {
                     hidden: () => !hasSetupKey(['onecloud']) || this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_clone'),
                   },
                   // 续费
-                  {
-                    label: this.$t('compute.text_1117'),
-                    permission: 'server_perform_renew',
-                    action: () => {
-                      this.createDialog('VmResourceFeeDialog', {
-                        data: this.list.selectedItems,
-                        columns: this.columns,
-                        onManager: this.onManager,
-                      })
-                    },
-                    meta: () => {
-                      const ret = {
-                        validate: true,
-                        tooltip: null,
-                      }
-                      const rescueModeValid = validateRescueMode(this.list.selectedItems)
-                      if (!rescueModeValid.validate) return rescueModeValid
-                      const isAllPublic = this.list.selectedItems.every(item => findPlatform(item.hypervisor) === SERVER_TYPE.public)
-                      const isAllPrepaid = this.list.selectedItems.every(item => item.billing_type === 'prepaid')
-                      if (!isAllPublic) {
-                        ret.validate = false
-                        ret.tooltip = this.$t('compute.text_1118')
-                      }
-                      if (!isAllPrepaid) {
-                        ret.validate = false
-                        ret.tooltip = this.$t('compute.text_1119')
-                      }
-                      return ret
-                    },
-                    hidden: () => !hasSetupKey(['aliyun', 'qcloud', 'huawei', 'ucloud', 'ecloud', 'jdcloud', 'ctyun']) || this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_Renew'),
-                  },
+                  getBatchRenewAction(this),
                   // 自动续费设置
-                  {
-                    label: this.$t('compute.text_1120'),
-                    permission: 'server_perform_aet_auto_renew',
-                    action: () => {
-                      this.createDialog('VmResourceRenewFeeDialog', {
-                        data: this.list.selectedItems,
-                        columns: this.columns,
-                        onManager: this.onManager,
-                        refresh: this.refresh,
-                      })
-                    },
-                    meta: () => {
-                      const ret = {
-                        validate: true,
-                        tooltip: null,
-                      }
-                      const rescueModeValid = validateRescueMode(this.list.selectedItems)
-                      if (!rescueModeValid.validate) return rescueModeValid
-                      const isAllPublic = this.list.selectedItems.every(item => findPlatform(item.hypervisor) === SERVER_TYPE.public)
-                      const isAllPrepaid = this.list.selectedItems.every(item => item.billing_type === 'prepaid')
-                      if (!isAllPublic) {
-                        ret.validate = false
-                        ret.tooltip = this.$t('compute.text_1118')
-                      }
-                      if (!isAllPrepaid) {
-                        ret.validate = false
-                        ret.tooltip = this.$t('compute.text_1119')
-                      }
-                      return ret
-                    },
-                    hidden: () => !(hasSetupKey(['aliyun', 'qcloud', 'huawei', 'ucloud', 'ecloud', 'jdcloud', 'ctyun'])) || this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_auto_renewal'),
-                  },
+                  getBatchAutoRenewAction(this),
                   // 更改计费模式
                   {
                     label: this.$t('compute.change_billing_type'),
@@ -800,6 +742,7 @@ export default {
                       }
                       return ret
                     },
+                    hidden: () => this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_set_user_metadata'),
                   },
                 ],
               },
@@ -915,15 +858,20 @@ export default {
                     },
                     hidden: () => this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_change_config'),
                   },
-                  // 设置透传设备
+                  // 设置透传设备（单条按能力含 USB；多条操作仅 PCI）
                   {
-                    label: this.$t('compute.text_1112'),
+                    label: this.$t('compute.set_host_isolated_device'),
                     permission: 'attach-isolated-device,server_perform_detach_isolated_device,server_perform_set_isolated_device',
                     action: () => {
+                      const selected = this.list.selectedItems
+                      const availableTypes = selected.length === 1
+                        ? getHostIsolatedDeviceAvailableTypes(this, selected[0])
+                        : ['pci']
                       this.createDialog('VmAttachGpuDialog', {
-                        data: this.list.selectedItems,
+                        data: selected,
                         columns: this.columns,
                         onManager: this.onManager,
+                        availableTypes,
                       })
                     },
                     meta: () => {
@@ -943,7 +891,7 @@ export default {
                         return ret
                       }
                       // 某些云不支持
-                      const unenableCloudCheck = this.hasSomeCloud(this.list.selectedItems, [typeClouds.hypervisorMap.bingocloud.key, 'esxi', typeClouds.hypervisorMap.zettakit.key, typeClouds.hypervisorMap.uis.key])
+                      const unenableCloudCheck = this.hasSomeCloud(this.list.selectedItems, [typeClouds.hypervisorMap.bingocloud.key, 'esxi', typeClouds.hypervisorMap.zettakit.key, typeClouds.hypervisorMap.uis.key, typeClouds.hypervisorMap.cas.key])
                       if (!isAllIdc) {
                         ret.validate = false
                         ret.tooltip = this.$t('compute.text_1115')
@@ -956,6 +904,32 @@ export default {
                       return ret
                     },
                     hidden: () => !hasSetupKey(['onecloud']) || this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_set_gpu'),
+                  },
+                  // 批量安装Agent
+                  {
+                    label: this.$t('compute.vminstance.monitor.install_agent'),
+                    permission: 'server_perform_install_agent',
+                    action: () => {
+                      this.createDialog('InstallAgentDialog', {
+                        data: this.list.selectedItems,
+                        columns: this.columns,
+                        onManager: this.onManager,
+                      })
+                    },
+                    meta: () => {
+                      let ret = {
+                        validate: true,
+                        tooltip: null,
+                      }
+                      ret.validate = this.list.selectedItems.length > 0
+                      if (!ret.validate) return ret
+                      ret = this.$isValidateResourceLock(this.list.selectedItems, () => {
+                        ret.validate = this.list.selectedItems.every(item => ['running'].includes(item.status))
+                        return ret
+                      })
+                      return ret
+                    },
+                    hidden: () => this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_install_agent'),
                   },
                 ],
               },
@@ -992,7 +966,7 @@ export default {
                         tooltip: cloudUnabledTip('resetPassword', this.list.selectedItems),
                       }
                     },
-                    hidden: () => this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_deploy'),
+                    hidden: () => this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_reset_password'),
                   },
                   // 设置免密登录
                   {
@@ -1013,7 +987,7 @@ export default {
                       const rescueModeValid = validateRescueMode(this.list.selectedItems)
                       if (!rescueModeValid.validate) return rescueModeValid
                       // 某些云不支持
-                      const unenableCloudCheck = this.hasSomeCloud(this.list.selectedItems, [typeClouds.hypervisorMap.sangfor.key, typeClouds.hypervisorMap.zettakit.key, typeClouds.hypervisorMap.uis.key])
+                      const unenableCloudCheck = this.hasSomeCloud(this.list.selectedItems, [typeClouds.hypervisorMap.sangfor.key, typeClouds.hypervisorMap.zettakit.key, typeClouds.hypervisorMap.uis.key, typeClouds.hypervisorMap.cas.key])
                       if (!unenableCloudCheck.validate) {
                         ret = unenableCloudCheck
                         return ret
@@ -1069,7 +1043,7 @@ export default {
                       const rescueModeValid = validateRescueMode(this.list.selectedItems)
                       if (!rescueModeValid.validate) return rescueModeValid
                       // 某些云不支持
-                      const unenableCloudCheck = this.hasSomeCloud(this.list.selectedItems, [typeClouds.hypervisorMap.sangfor.key, typeClouds.hypervisorMap.zettakit.key, typeClouds.hypervisorMap.uis.key])
+                      const unenableCloudCheck = this.hasSomeCloud(this.list.selectedItems, [typeClouds.hypervisorMap.sangfor.key, typeClouds.hypervisorMap.zettakit.key, typeClouds.hypervisorMap.uis.key, typeClouds.hypervisorMap.cas.key])
                       if (!unenableCloudCheck.validate) {
                         ret = unenableCloudCheck
                         return ret
@@ -1092,26 +1066,27 @@ export default {
                 label: this.$t('compute.text_1290'),
                 submenus: [
                   // 关联安全组
-                  // {
-                  //   label: this.$t('compute.text_1116'),
-                  //   permission: 'server_perform_add_secgroup',
-                  //   action: () => {
-                  //     this.createDialog('VmSetSecgroupDialog', {
-                  //       vm: this,
-                  //       data: this.list.selectedItems,
-                  //       columns: this.columns,
-                  //       onManager: this.onManager,
-                  //     })
-                  //   },
-                  //   meta: () => {
-                  //     const ret = {
-                  //       validate: cloudEnabled('assignSecgroup', this.list.selectedItems),
-                  //       tooltip: cloudUnabledTip('assignSecgroup', this.list.selectedItems),
-                  //     }
-                  //     return ret
-                  //   },
-                  //   hidden: () => !(hasSetupKey(['onestack', 'onecloud', 'public', 'openstack', 'dstack', 'zstack', 'apsara', 'cloudpods', 'hcso', 'hcs'])) || this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_add_secgroup'),
-                  // },
+                  {
+                    label: this.$t('compute.text_1116'),
+                    permission: 'server_perform_add_secgroup',
+                    action: () => {
+                      this.createDialog('VmSetSecgroupDialog', {
+                        vm: this,
+                        data: this.list.selectedItems,
+                        columns: this.columns,
+                        onManager: this.onManager,
+                        type: 'vminstance',
+                      })
+                    },
+                    meta: () => {
+                      const ret = {
+                        validate: cloudEnabled('assignSecgroup', this.list.selectedItems),
+                        tooltip: cloudUnabledTip('assignSecgroup', this.list.selectedItems),
+                      }
+                      return ret
+                    },
+                    hidden: () => !(hasSetupKey(['onestack', 'onecloud', 'openstack', 'dstack', 'zstack', 'apsara', 'cloudpods', 'hcso', 'hcs'])) || this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_add_secgroup'),
+                  },
                   // 公网IP转EIP
                   {
                     label: this.$t('compute.text_1121'),
@@ -1179,6 +1154,76 @@ export default {
                       return ret
                     },
                     hidden: () => !(hasSetupKey(['onecloud'])) || this.$isScopedPolicyMenuHidden('vminstance_hidden_menus.server_perform_set_source_check'),
+                  },
+                  // 添加到堡垒机
+                  {
+                    label: this.$t('compute.add_to_bastion'),
+                    permission: 'bastion_servers_create',
+                    action: () => {
+                      this.createDialog('VmAddToBastionDialog', {
+                        data: this.list.selectedItems,
+                        columns: this.columns,
+                        onManager: this.onManager,
+                        refresh: this.refresh,
+                      })
+                    },
+                    meta: () => {
+                      const ret = { validate: true }
+                      // const isSomeBastionServer = this.list.selectedItems.some((item) => { return item.metadata?.bastion_server })
+                      // if (isSomeBastionServer) {
+                      //   ret.validate = false
+                      //   ret.tooltip = this.$t('compute.already_in_bastion')
+                      //   return ret
+                      // }
+                      const isEveryRunning = this.list.selectedItems.every((item) => { return item.status === 'running' })
+                      if (!isEveryRunning) {
+                        ret.validate = false
+                        ret.tooltip = this.$t('compute.text_1282')
+                        return ret
+                      }
+                      const rescueModeValid = validateRescueMode(this.list.selectedItems)
+                      return rescueModeValid
+                    },
+                    hidden: () => {
+                      if (!this.$appConfig.isPrivate || this.$store.getters.isSysCE || this.$isScopedPolicyMenuHidden('sub_hidden_menus.bastion_host') || (isLicense2() && !hasSetupKey('bastionhost')) || !hasBastionService) {
+                        return true
+                      }
+                      return false
+                    },
+                  },
+                  // 从堡垒机移除
+                  {
+                    label: this.$t('compute.remove_from_bastion'),
+                    permission: 'bastion_servers_delete',
+                    action: () => {
+                      this.createDialog('VmRemoveFromBastionDialog', {
+                        data: this.list.selectedItems,
+                        columns: this.columns,
+                        onManager: this.onManager,
+                        refresh: this.refresh,
+                      })
+                    },
+                    meta: () => {
+                      const ret = { validate: true }
+                      const isEveryBastionServer = this.list.selectedItems.every((item) => { return item.metadata?.bastion_server })
+                      if (!isEveryBastionServer) {
+                        ret.validate = false
+                        return ret
+                      }
+                      const isEveryRunning = this.list.selectedItems.every((item) => { return item.status === 'running' || item.status === 'ready' })
+                      if (!isEveryRunning) {
+                        ret.validate = false
+                        ret.tooltip = this.$t('compute.text_1126')
+                        return ret
+                      }
+                      return ret
+                    },
+                    hidden: () => {
+                      if (!this.$appConfig.isPrivate || this.$store.getters.isSysCE || this.$isScopedPolicyMenuHidden('sub_hidden_menus.bastion_host') || (isLicense2() && !hasSetupKey('bastionhost')) || !hasBastionService) {
+                        return true
+                      }
+                      return false
+                    },
                   },
                 ],
               },
@@ -1434,11 +1479,6 @@ export default {
         },
       ],
       execLoading: false,
-      tagConfigParams: {
-        title: this.$t('common.text00124'),
-        resource: 'servers',
-        queryTreeId: 'project-tag-value-tree',
-      },
     }
   },
   computed: {
@@ -1482,11 +1522,8 @@ export default {
         async beforeExport () {
           const checkOpenExportUsernamePassword = async () => {
             try {
-              const configM = new Manager('services', 'v1')
-              const servicesRes = await configM.list({ params: { type: 'compute_v2' } })
-              const serviceId = servicesRes.data.data?.[0]?.id
-              const configData = await configM.getSpecific({ id: serviceId, spec: 'config' })
-              const { enable_export_username_password = false } = configData.data?.config?.default
+              const response = await new Manager('service_settings', 'v1').list()
+              const { enable_export_username_password = false } = (response.data && response.data.compute_v2) || {}
               ret.isOpenExportUsernamePassword = enable_export_username_password
               return enable_export_username_password
             } catch (error) {
@@ -1664,10 +1701,13 @@ export default {
     },
     hasSomeCloud (selectItems, clouds = [typeClouds.hypervisorMap.bingocloud.key]) {
       const ret = { validate: true, tooltip: '' }
-      const hasList = selectItems.filter(item => clouds.includes(item.hypervisor))
+      const items = Array.isArray(selectItems) ? selectItems : []
+      const hasList = items.filter(item => clouds.includes(item.hypervisor))
       if (hasList && hasList[0]) {
+        const hv = hasList[0].hypervisor
+        const label = (typeClouds.hypervisorMap[hv] && typeClouds.hypervisorMap[hv].label) || hv
         ret.validate = false
-        ret.tooltip = this.$t('compute.text_473', [typeClouds.hypervisorMap[hasList[0].hypervisor].label])
+        ret.tooltip = this.$t('compute.text_473', [label])
       }
       return ret
     },

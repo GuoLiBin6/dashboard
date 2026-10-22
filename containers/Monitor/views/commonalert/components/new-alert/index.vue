@@ -17,11 +17,10 @@
 <script>
 import * as R from 'ramda'
 import _ from 'lodash'
+import { MONITOR_MAX_POINTERS } from '@Monitor/constants'
 import { getSignature } from '@/utils/crypto'
 import { timeOpts } from '@/constants/monitor'
-import { MONITOR_MAX_POINTERS } from '@Monitor/constants'
 import AlertForm from './form'
-
 export default {
   name: 'Commonalert',
   components: {
@@ -189,12 +188,14 @@ export default {
           alert_duration: fd.alert_duration,
           generate_name: fd.name,
           description: fd.description,
+          reason: fd.reason,
           period: fd.period,
           channel: fd.channel,
           recipients: fd.recipients,
           alert_type: 'normal', // normal(自定义) system(系统内置)
           level: fd.level,
           metric_query,
+          disable_notify_recovery: fd.disable_notify_recovery,
         }
 
         if (fd.silent_period) {
@@ -222,12 +223,16 @@ export default {
         }
         if (fd.domain || fd.domain_id) data.domain_id = (fd.domain || fd.domain_id)
         if (fd.project) data.project_id = fd.project
-        const periodNum = parseInt(fd.period)
-        const unit = fd.period.split('').pop()
-        if (unit === 'm' && periodNum * fd.alert_duration < 10) {
-          data.from = '10m'
+        if (fd.from) {
+          data.from = fd.from
         } else {
-          data.from = (periodNum * fd.alert_duration) + unit
+          const periodNum = parseInt(fd.period)
+          const unit = fd.period.split('').pop()
+          if (unit === 'm' && periodNum * fd.alert_duration < 10) {
+            data.from = '10m'
+          } else {
+            data.from = (periodNum * fd.alert_duration) + unit
+          }
         }
         if (data.metric_query && data.metric_query.length > 1) {
           data.metric_query.map(item => {

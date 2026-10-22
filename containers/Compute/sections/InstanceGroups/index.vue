@@ -35,8 +35,6 @@ export default {
       showGroups: this.decorators.groupsEnable[1].initialValue,
     }
   },
-  computed: {
-  },
   methods: {
     change (val) {
       this.showGroups = val

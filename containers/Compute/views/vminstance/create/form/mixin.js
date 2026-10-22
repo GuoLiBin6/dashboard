@@ -1,6 +1,6 @@
 import * as R from 'ramda'
 import _ from 'lodash'
-import { SCHED_POLICY_OPTIONS_MAP, SERVER_TYPE, SELECT_IMAGE_KEY_SUFFIX, LOGIN_TYPES_MAP, NETWORK_OPTIONS_MAP } from '@Compute/constants'
+import { SCHED_POLICY_OPTIONS_MAP, SERVER_TYPE, LOGIN_TYPES_MAP, NETWORK_OPTIONS_MAP } from '@Compute/constants'
 import OsSelect from '@Compute/sections/OsSelect'
 import ServerPassword from '@Compute/sections/ServerPassword'
 import CpuRadio from '@Compute/sections/CpuRadio'
@@ -8,7 +8,20 @@ import MemRadio from '@Compute/sections/MemRadio'
 import sku from '@Compute/sections/SKU'
 import gpu from '@Compute/sections/GPU/index'
 import pci from '@Compute/sections/PCI'
-import { Decorator, GenCreateData } from '@Compute/utils/createServer'
+import { Decorator, GenCreateData, resolveInitPreferZone } from '@Compute/utils/createServer'
+import {
+  resolveDraftNetworkType,
+  resolveDraftLoginType,
+  resolveDraftPortMappings,
+  normalizeDraftUserData,
+  hasAdvanceConfigInitFields,
+} from '@Compute/utils/vminstanceCreateDraft'
+import {
+  VM_CREATE_FORM_DRAFT_FIELD,
+  VM_CREATE_FORM_DRAFT_FIELDS,
+  VM_CREATE_FORM_DRAFT_FC_BINDINGS,
+  getVmCreateFormDraftScope,
+} from '@Compute/utils/vminstanceCreateFormDraft'
 import ServerNetwork from '@Compute/sections/ServerNetwork'
 import ServerAccount from '@Compute/sections/ServerAccount'
 import SchedPolicy from '@Compute/sections/SchedPolicy'
@@ -18,7 +31,6 @@ import Duration from '@Compute/sections/Duration'
 import InstanceGroups from '@Compute/sections/InstanceGroups'
 import DataDisk from '@Compute/sections/DataDisk'
 import HostName from '@Compute/sections/HostName'
-import storage from '@/utils/storage'
 import { WORKFLOW_TYPES } from '@/constants/workflow'
 import workflowMixin from '@/mixins/workflow'
 import { Manager } from '@/utils/manager'
@@ -31,8 +43,10 @@ import { getInitialValue } from '@/utils/common/ant'
 import { IMAGES_TYPE_MAP } from '@/constants/compute'
 import { HYPERVISORS_MAP } from '@/constants'
 import i18n from '@/locales'
-import { deleteInvalid } from '@/utils/utils'
+import { deleteInvalid, uuid } from '@/utils/utils'
+import { diskSupportTypeMedium } from '@/utils/common/hypervisor'
 import { hasSetupKey, isLicense2 } from '@/utils/auth'
+import createFormDraftMixin from '@/mixins/createFormDraft'
 import Tag from '../components/Tag'
 import SystemDisk from '../components/SystemDisk'
 import Servertemplate from '../components/Servertemplate'
@@ -83,7 +97,7 @@ export default {
     CustomData,
     BastionHost,
   },
-  mixins: [workflowMixin],
+  mixins: [workflowMixin, createFormDraftMixin],
   props: {
     type: {
       type: String,
@@ -100,10 +114,26 @@ export default {
     },
   },
   data () {
-    const decorators = new Decorator(SERVER_TYPE[this.type]).createDecorators(this.initFormData)
+    // 组件级草稿：不再整表种 Decorator；工单仍用 initFormData
+    const seedFormData = this.initFormData
+    const decorators = new Decorator(SERVER_TYPE[this.type]).createDecorators(seedFormData)
+    // 兜底：部分类型/覆盖包可能缺 groups，反亲和组仍需可渲染
+    if (!decorators.groups) {
+      decorators.groups = {
+        groupsEnable: ['groupsEnable', { valuePropName: 'checked', initialValue: false }],
+        groups: ['groups', { initialValue: [] }],
+      }
+    }
     const initFd = getInitialValue(decorators)
     return {
-      initSkuData: { name: this.initFormData?.sku },
+      _initFormPromise: null,
+      // 磁盘回填进行中：挡住 imageMsg / typesMap 的清盘逻辑
+      _diskBackfillPending: false,
+      // initForm 只允许成功进入一次
+      _initFormDone: false,
+      // 公有云磁盘依赖 sku 挂载，单独标记避免重复回填
+      _diskBackfillCompleted: false,
+      initSkuData: {},
       submiting: false,
       errors: {},
       formItemLayout: {
@@ -132,7 +162,6 @@ export default {
       decorators,
       capabilityParams: {}, // 防止 capability 反复调用，这里对当前的接口参数做记录
       price: null,
-      collapseActive: [],
       hostNameValidate: {
         validateStatus: '',
         errorMsg: '',
@@ -143,11 +172,63 @@ export default {
     }
   },
   provide () {
+    // 组件 provide 会覆盖 mixin，需带上草稿 inject（回填 / 备份拆分）
     return {
       form: this.form,
+      getCreateFormDraftScope: () => this.getCreateFormDraftScope(),
+      canUseCreateFormFieldDraft: () => this.canRestoreCreateFormDraft,
+      canRestoreCreateFormFieldDraft: () => this.canRestoreCreateFormDraft,
+      canBackupCreateFormFieldDraft: () => this.canBackupCreateFormDraft,
+      canBackupCreateFormFieldDraftOnSubmit: () => this.canBackupCreateFormDraftOnSubmit,
+      registerCreateFormFieldDraftFlush: (fn) => this.registerCreateFormFieldDraftFlush(fn),
+      readCreateFormFieldDraft: (key) => this.readCreateFormFieldDraft(key),
+      writeCreateFormFieldDraft: (key, data, options) => this.writeCreateFormFieldDraft(key, data, options),
+      bindCreateFormFieldDraft: (spec) => this.bindCreateFormFieldDraft(spec),
+      isCreateFormFieldTouched: (key) => this.isCreateFormFieldTouched(key),
+      markCreateFormFieldTouched: (key) => this.markCreateFormFieldTouched(key),
+      isCreateFormFieldDraftFromLocal: (key) => this.isCreateFormFieldDraftFromLocal(key),
     }
   },
   computed: {
+    /**
+     * formScope + fieldKey：唯一约定见 vminstanceCreateFormDraft.js
+     */
+    createFormDraftOptions () {
+      return {
+        formScope: getVmCreateFormDraftScope({
+          type: this.type,
+          isServertemplate: this.isServertemplate,
+        }),
+        // 工单回填 / 工单表单（含修改）：只关回填，仍可备份
+        disableWhen: () => this.shouldDisableCreateFormDraft,
+      }
+    },
+    /** 模板传 :form-draft-key="vmDraftFields.sku" */
+    vmDraftFields () {
+      return VM_CREATE_FORM_DRAFT_FIELDS
+    },
+    /**
+     * 工单回填、带 workflow 的表单（修改工单、改购物车订单）期间禁用草稿回填
+     */
+    shouldDisableCreateFormDraft () {
+      if (this.isInitForm) return true
+      if (this.isModifyWorkflow) return true
+      if (this.isModifyShopCartOrder) return true
+      return false
+    },
+    /** 工单回填时关闭局部 storage；普通新建交给组件级草稿 */
+    ignoreLocalFormStorage () {
+      return this.shouldDisableCreateFormDraft
+    },
+    isFormBackfill () {
+      if (this.isInitForm) return true
+      if (this._diskBackfillPending) return true
+      return false
+    },
+    effectiveInitFormData () {
+      if (this.isInitForm) return this.initFormData
+      return this.initFormData || {}
+    },
     isServertemplate () { // 主机模板
       return this.$route.query.source === 'servertemplate'
     },
@@ -267,11 +348,78 @@ export default {
       return params
     },
     showSecgroupBind () {
+      // 工单回填指定安全组时，即使网络类型尚未切到 manual，也要保留 bind 选项
+      if (this.isFormBackfill) {
+        const init = this.effectiveInitFormData || this.initFormData
+        if (init?.secgroups?.length) return true
+      }
       return this.form.fd.networkType === 'manual'
+    },
+    /** 高级区内调度等 init 保护：工单回填或控件草稿开启时 */
+    preserveAdvanceInitProps () {
+      return this.isFormBackfill || this.canUseCreateFormDraft
+    },
+    /** 仅工单：安全组 init */
+    workflowInitSecgroups () {
+      if (!this.isFormBackfill) return []
+      const secgroups = this.effectiveInitFormData?.secgroups || []
+      if (!Array.isArray(secgroups)) return []
+      return secgroups.map((item) => {
+        if (item == null) return null
+        if (typeof item === 'string' || typeof item === 'number') return String(item)
+        return item.id || item.key || item.value || null
+      }).filter(Boolean)
+    },
+    /** 仅工单：调度宿主机 */
+    workflowInitPreferHost () {
+      if (!this.isFormBackfill) return ''
+      const init = this.effectiveInitFormData || {}
+      return init.prefer_host || init.extraData?.prefer_host || ''
+    },
+    /** 仅工单：调度标签 */
+    workflowInitSchedtags () {
+      if (!this.isFormBackfill) return []
+      const init = this.effectiveInitFormData || {}
+      if (init.schedtags?.length) return init.schedtags
+      if (init.extraData?.schedtags?.length) return init.extraData.schedtags
+      return []
+    },
+    /** 仅工单：端口映射 */
+    /** 端口映射：仅 kvm / pod 支持（普通创建页的可选 hypervisor 已过滤 pod） */
+    showPortMapping () {
+      const hypervisor = this.form.fd.hypervisor
+      return hypervisor === HYPERVISORS_MAP.kvm.key || hypervisor === HYPERVISORS_MAP.pod.key
+    },
+    /** 有网络控件草稿时禁止 capability 刷新拆掉 NetworkConfig */
+    ignoreAutoNetworkTypeForDraft () {
+      if (this.isFormBackfill) return true
+      if (!this.canUseCreateFormDraft) return false
+      const draft = this.readCreateFormFieldDraft(VM_CREATE_FORM_DRAFT_FIELD.SERVER_NETWORK)
+      if (!draft) return false
+      if (draft.networkType) return true
+      if (Array.isArray(draft.nets) && draft.nets.length) return true
+      return false
     },
     isOpenWorkflow () {
       if (this.isServertemplate) return false
       return this.checkWorkflowEnabled(WORKFLOW_TYPES.APPLY_MACHINE)
+    },
+    isOpenOrderSetWorkflow () {
+      if (this.isServertemplate) return false
+      return this.checkWorkflowEnabled(WORKFLOW_TYPES.EXECUTE_RESOURCE_ORDER_SET)
+    },
+    isModifyShopCartOrder () {
+      const { workflow, order_set_id } = this.$route.query
+      return !!(workflow && order_set_id)
+    },
+    isWorkflowSubmit () {
+      return this.isOpenWorkflow || this.isOpenOrderSetWorkflow || this.isModifyWorkflow
+    },
+    isModifyWorkflow () {
+      return !!this.$route.query.workflow
+    },
+    showReason () {
+      return this.isOpenWorkflow || this.isOpenOrderSetWorkflow || this.isModifyWorkflow
     },
     isHostImageType () { // 镜像类型为主机镜像
       return this.form.fd.imageType === IMAGES_TYPE_MAP.host.key
@@ -441,9 +589,17 @@ export default {
       this.price = price
     })
     this.$store.dispatch('app/fetchWorkflowEnabledKeys')
+    // 扫描 scope 内已有草稿，固化跨 tab 来源（不必枚举组件）
+    this.rememberAllCreateFormFieldDraftLocalOrigins()
+    // 页面零散 form.fc 选择类字段
+    this.bindVmCreateFormFcDrafts()
   },
   mounted () {
-    this.initForm()
+    // 工单走 initForm；普通新建控件草稿走各组件 + restoreAdvance*
+    this.$nextTick(() => {
+      this.initForm()
+      this.restoreAdvanceFormFieldDrafts()
+    })
   },
   watch: {
     'form.fi.imageMsg': {
@@ -451,11 +607,51 @@ export default {
       handler (val, oldVal) {
         if (R.equals(val, oldVal)) return
         this.$nextTick(() => {
-          if (!this.isInitForm) {
-            this._resetDataDisk() // 重置数据盘数据
+          // 回填期间镜像变化不要清空数据盘，否则工单/草稿里的盘会被冲掉
+          if (this.isFormBackfill || this.form?.fi?.diskDraftRestoring) return
+          // 首屏：有磁盘/网络草稿时，镜像异步到位优先重试回填，勿清空
+          if (this.canUseCreateFormDraft && !this.createFormDraftUserInteracted) {
+            const hasDiskDraft = this.readCreateFormFieldDraft(VM_CREATE_FORM_DRAFT_FIELD.SYSTEM_DISK) ||
+              this.readCreateFormFieldDraft(VM_CREATE_FORM_DRAFT_FIELD.DATA_DISK)
+            const hasNetworkDraft = this.readCreateFormFieldDraft(VM_CREATE_FORM_DRAFT_FIELD.SERVER_NETWORK)
+            if (hasDiskDraft || hasNetworkDraft) {
+              if (!this._imageDraftRestoreOnce) {
+                this._imageDraftRestoreOnce = true
+                this.restoreDeferredFormFieldDrafts({ force: true })
+              }
+              return
+            }
           }
+          // 首屏：有数据盘草稿时，镜像异步到位不要立刻清空（仅跳过一次）
+          if (this.canUseCreateFormDraft && !this._diskDraftSkipImageResetOnce) {
+            // 仅同 session 数据盘草稿才跳过清空；跨 tab local 不回填数据盘，无需保护
+            if (!this.isCreateFormFieldDraftFromLocal(VM_CREATE_FORM_DRAFT_FIELD.DATA_DISK)) {
+              const diskDraft = this.readCreateFormFieldDraft(VM_CREATE_FORM_DRAFT_FIELD.DATA_DISK)
+              if (diskDraft?.__dataDiskKeys?.length) {
+                this._diskDraftSkipImageResetOnce = true
+                return
+              }
+            }
+          }
+          this._resetDataDisk() // 重置数据盘数据
         })
       },
+    },
+    'form.fi.capability.hypervisors' (val, oldVal) {
+      if (!Array.isArray(val) || !val.length) return
+      if (R.equals(val, oldVal)) return
+      if (!this.canUseCreateFormDraft) return
+      this.restoreDeferredFormFieldDrafts()
+    },
+    'form.fd.hypervisor' (val, oldVal) {
+      if (!this.canUseCreateFormDraft) return
+      if (val === oldVal || val == null || val === '') return
+      this.restoreDeferredFormFieldDrafts()
+    },
+    'form.fd.zone.key' (val, oldVal) {
+      if (!this.canUseCreateFormDraft || this.isInitForm) return
+      if (val === oldVal || !val) return
+      this.restoreDeferredFormFieldDrafts()
     },
     isWindows (val) {
       const hostName = this.form.fd.hostName
@@ -469,8 +665,416 @@ export default {
     isKvm () {
       return this.form.fd.hypervisor === 'kvm'
     },
+    'form.fd.sku' (val, oldVal) {
+      // form.fd 兄弟字段 $set 会误触发，同值跳过
+      if (R.equals(val, oldVal)) return
+      // 公有云盘组件 v-if="sku"：sku 就绪后再回填磁盘类型/大小，并随后回填网络
+      if (this.type === 'public' && this.canUseCreateFormDraft) {
+        this.$nextTick(() => this.restoreVmDiskFormFieldDrafts())
+      }
+      if (this.type !== 'public') return
+      if (!this.isFormBackfill && !this.isInitForm) return
+      if (!R.is(Object, val) || this._diskBackfillCompleted || this._diskBackfilling) return
+      const initData = this.initFormData
+      if (!initData?.extraData) {
+        this._diskBackfillCompleted = true
+        return
+      }
+      this.$nextTick(async () => {
+        try {
+          if (initData.disks && initData.disks.length) {
+            await this.backfillDisksFromInitData(initData)
+          }
+          await this.backfillNetworksFromInitData(initData)
+          await this.backfillAdvanceConfigFromInitData(initData)
+        } finally {
+          this._diskBackfillCompleted = true
+        }
+      })
+    },
   },
   methods: {
+    /**
+     * 高级配置区：页面零散 FC（is_daemon 等 v-if=isKvm 晚挂载）再补一次。
+     * 组件日常回填已改为自管 watch；此处仅补晚挂载时序。折叠用 v-show，字段仍挂载。
+     */
+
+    hasAdvanceFieldDrafts () {
+      if (!this.canUseCreateFormDraft) return false
+      const keys = [
+        VM_CREATE_FORM_DRAFT_FIELD.EIP,
+        VM_CREATE_FORM_DRAFT_FIELD.SCHED_POLICY,
+        VM_CREATE_FORM_DRAFT_FIELD.BACKUP,
+        VM_CREATE_FORM_DRAFT_FIELD.BASTION_HOST,
+        VM_CREATE_FORM_DRAFT_FIELD.ENCRYPT_KEYS,
+        VM_CREATE_FORM_DRAFT_FIELD.BIOS,
+        VM_CREATE_FORM_DRAFT_FIELD.VDI,
+        VM_CREATE_FORM_DRAFT_FIELD.VGA,
+        VM_CREATE_FORM_DRAFT_FIELD.MACHINE,
+        VM_CREATE_FORM_DRAFT_FIELD.IS_DAEMON,
+        VM_CREATE_FORM_DRAFT_FIELD.QEMU_VERSION,
+      ]
+      return keys.some((key) => {
+        const draft = this.readCreateFormFieldDraft(key)
+        if (draft === null || draft === undefined) return false
+        if (typeof draft === 'object' && !Array.isArray(draft) && !Object.keys(draft).length) return false
+        return true
+      })
+    },
+    /**
+     * 高级配置区：页面零散 FC（is_daemon 等 v-if=isKvm 晚挂载）再补一次。
+     * 组件日常回填已改为自管 watch；此处仅补晚挂载时序。
+     */
+    restoreAdvanceFormFieldDrafts () {
+      if (!this.canUseCreateFormDraft) return
+      if (this.isInitForm) return
+      if (this._advanceDraftRestoreRunning) return
+      this._advanceDraftRestoreRunning = true
+      if (this.form?.fi) this.$set(this.form.fi, 'advanceDraftRestoring', true)
+      try {
+        // 有高级区草稿需回填：进页只自动展开一次，之后跟用户
+        if (this.hasAdvanceFieldDrafts()) {
+          const advanceRef = this.$refs.advanceConfigBlock
+          if (advanceRef && typeof advanceRef.tryAutoOpenOnce === 'function') {
+            advanceRef.tryAutoOpenOnce()
+          }
+        }
+        ;[
+          VM_CREATE_FORM_DRAFT_FIELD.IS_DAEMON,
+          VM_CREATE_FORM_DRAFT_FIELD.QEMU_VERSION,
+          VM_CREATE_FORM_DRAFT_FIELD.DEPLOY_TELEGRAF,
+        ].forEach((key) => {
+          try { this.restoreCreateFormFieldDraft(key) } catch (e) { /* ignore */ }
+        })
+        this.$nextTick(() => {
+          this.invokeAdvanceDraftComponentRestores()
+          setTimeout(() => this.clearAdvanceDraftRestoring(), 400)
+        })
+      } finally {
+        this.$nextTick(() => {
+          this._advanceDraftRestoreRunning = false
+        })
+      }
+    },
+
+    invokeAdvanceDraftComponentRestores () {
+      ;[
+        this.$refs.biosRef,
+        this.$refs.vdiRef,
+        this.$refs.vgaRef,
+        this.$refs.machineRef,
+        this.$refs.eipConfigRef,
+        this.$refs.schedPolicyRef,
+        this.$refs.backupRef,
+        this.$refs.bastionHostRef,
+        this.$refs.encryptKeysRef,
+      ].forEach((ref) => {
+        if (ref && typeof ref.restoreFormFieldDraftFields === 'function') {
+          try { ref.restoreFormFieldDraftFields() } catch (e) { /* ignore */ }
+        }
+      })
+    },
+    clearAdvanceDraftRestoring () {
+      if (this.form?.fi && this.form.fi.advanceDraftRestoring) {
+        this.$set(this.form.fi, 'advanceDraftRestoring', false)
+      }
+    },
+    restoreNetworkFormFieldDraft () {
+      const ref = this.$refs.networkRef
+      if (ref && typeof ref.restoreFormFieldDraftFields === 'function') {
+        try { ref.restoreFormFieldDraftFields() } catch (e) { /* ignore */ }
+      }
+    },
+    restoreDeferredFormFieldDrafts (options = {}) {
+      if (!this.canUseCreateFormDraft) return
+      if (this.isInitForm) return
+      if (this.createFormDraftUserInteracted && !options.force) return
+      if (this._deferredDraftRestoreScheduled) return
+      this._deferredDraftRestoreScheduled = true
+      this.$nextTick(() => {
+        this._deferredDraftRestoreScheduled = false
+        this._runDeferredFormFieldDraftRestore(options)
+      })
+    },
+    _runDeferredFormFieldDraftRestore (options = {}) {
+      if (this._deferredDraftRestoreRunning) return
+      this._deferredDraftRestoreRunning = true
+      try {
+        if (options.force) this._diskDraftRestoreDone = false
+        this.restoreVmDiskFormFieldDrafts(options)
+        this.restoreNetworkFormFieldDraft()
+        this.restoreAdvanceFormFieldDrafts()
+      } finally {
+        this.$nextTick(() => {
+          this._deferredDraftRestoreRunning = false
+        })
+      }
+    },
+    isVmDiskDraftRestoreComplete (sysDraft, sysRef, fromLocal) {
+      if (!sysDraft) return true
+      if (!sysRef?.typesMap || !Object.keys(sysRef.typesMap).length) return false
+      if (fromLocal || typeof sysRef.hasSysDiskAdvancedDraft !== 'function') return true
+      if (!sysRef.hasSysDiskAdvancedDraft(sysDraft)) return true
+      const disk = sysRef.$refs?.disk
+      if (!disk?.showAdvanced) return false
+      const adv = sysRef.pickSysDiskAdvancedDraft?.(sysDraft) || {}
+      if ((adv.systemDiskStorage || adv[sysRef.decorator?.storage?.[0]]) && !disk.showStorage) return false
+      if ((adv.systemDiskSchedtag || adv.systemDiskPolicy ||
+        adv[sysRef.decorator?.schedtag?.[0]] || adv[sysRef.decorator?.policy?.[0]]) &&
+        !disk.showSchedtag) return false
+      if ((adv.systemDiskSnapshot || adv[sysRef.decorator?.snapshot?.[0]]) && !disk.showSnapshot) return false
+      if ((adv.systemDiskPreallocation || adv[sysRef.decorator?.preallocation?.[0]]) && !disk.showPreallocation) {
+        return false
+      }
+      return true
+    },
+    async restoreVmDiskFormFieldDrafts (options = {}) {
+      if (!this.canUseCreateFormDraft) return
+      if (this.isInitForm) return
+      if (this._diskDraftRestoreRunning) return
+      if (this._diskDraftRestoreDone && !options.force) return
+      if (options.force) this._diskDraftRestoreDone = false
+      if (this._diskBackfilling) return
+      // 再次确保来源已固化（created 已记过则直接命中缓存）
+      this.rememberCreateFormFieldDraftLocalOrigin(VM_CREATE_FORM_DRAFT_FIELD.SYSTEM_DISK)
+      this.rememberCreateFormFieldDraftLocalOrigin(VM_CREATE_FORM_DRAFT_FIELD.DATA_DISK)
+      const sysFromLocal = this.isCreateFormFieldDraftFromLocal(VM_CREATE_FORM_DRAFT_FIELD.SYSTEM_DISK)
+      const dataFromLocal = this.isCreateFormFieldDraftFromLocal(VM_CREATE_FORM_DRAFT_FIELD.DATA_DISK)
+      const sysDraft = this.readCreateFormFieldDraftForRestore(VM_CREATE_FORM_DRAFT_FIELD.SYSTEM_DISK)
+      const dataDraft = this.readCreateFormFieldDraftForRestore(VM_CREATE_FORM_DRAFT_FIELD.DATA_DISK)
+      if (!sysDraft && !dataDraft) return
+      // 公有云需 sku 后盘组件才挂载
+      if (this.type === 'public' && !this.form?.fd?.sku) return
+      if (this.type !== 'public' && !this.form?.fd?.hypervisor) return
+
+      this._diskDraftRestoreRunning = true
+      this._diskBackfillPending = true
+      if (this.form.fi) this.$set(this.form.fi, 'diskDraftRestoring', true)
+
+      const waitRef = (getter, timeout = 12000) => new Promise(resolve => {
+        const startAt = Date.now()
+        const tick = () => {
+          const val = typeof getter === 'function' ? getter() : null
+          if (val) {
+            resolve(val)
+            return
+          }
+          if (Date.now() - startAt >= timeout) {
+            resolve(null)
+            return
+          }
+          setTimeout(tick, 100)
+        }
+        this.$nextTick(tick)
+      })
+      const waitTypesMap = (getter, timeout = 15000) => new Promise(resolve => {
+        const startAt = Date.now()
+        const tick = () => {
+          const map = typeof getter === 'function' ? getter() : null
+          if (map && typeof map === 'object' && Object.keys(map).length) {
+            resolve(map)
+            return
+          }
+          if (Date.now() - startAt >= timeout) {
+            resolve(null)
+            return
+          }
+          setTimeout(tick, 200)
+        }
+        this.$nextTick(tick)
+      })
+
+      try {
+        if (sysDraft) {
+          await this.restoreSystemDiskFromFieldDraft(sysDraft, { waitRef, waitTypesMap, fromLocal: sysFromLocal })
+        }
+        // 跨 tab（仅 local）：不回填数据盘；同 session 仍全量回填
+        if (dataDraft && !dataFromLocal) {
+          await this.restoreDataDiskFromFieldDraft(dataDraft, { waitRef, waitTypesMap })
+        }
+        const sysRef = this.$refs.systemDiskRef
+        if (this.isVmDiskDraftRestoreComplete(sysDraft, sysRef, sysFromLocal)) {
+          this._diskDraftRestoreDone = true
+        }
+        this.$nextTick(() => this.reconcileDiskFormStateBeforeSubmit())
+      } finally {
+        this._diskDraftRestoreRunning = false
+        this._diskBackfillPending = false
+        const diskRef = this.$refs.systemDiskRef
+        if (this.form?.fi && !diskRef?.sysDiskDraftRestoring) {
+          this.$set(this.form.fi, 'diskDraftRestoring', false)
+        }
+      }
+    },
+    async restoreSystemDiskFromFieldDraft (draft, { waitRef, waitTypesMap, fromLocal } = {}) {
+      if (!draft || !this.form?.fc) return
+      const sysRef = await waitRef(() => this.$refs.systemDiskRef)
+      if (sysRef) await waitTypesMap(() => sysRef.typesMap)
+      // 输入子字段（大小/iops/throughput 等）不回填，由组件白名单过滤
+      if (sysRef && typeof sysRef.sanitizeDraftForRestore === 'function') {
+        draft = sysRef.sanitizeDraftForRestore(draft)
+      }
+      if (!draft || typeof draft !== 'object' || !Object.keys(draft).length) return
+      const isLocal = fromLocal != null
+        ? !!fromLocal
+        : this.isCreateFormFieldDraftFromLocal(VM_CREATE_FORM_DRAFT_FIELD.SYSTEM_DISK)
+      const typeVal = draft.systemDiskType || draft[sysRef?.decorator?.type?.[0]]
+      if (!typeVal?.key) {
+        if (sysRef?.tryApplySessionDiskDraft) {
+          sysRef.tryApplySessionDiskDraft({ draft, fromLocal: isLocal })
+        } else if (sysRef?.applyCreateFormFieldDraft) {
+          sysRef.applyCreateFormFieldDraft(draft, { fromLocal: isLocal })
+        }
+        if (typeof sysRef?.ensureSysDiskDefaultSize === 'function') sysRef.ensureSysDiskDefaultSize()
+        return
+      }
+      if (typeVal?.key) {
+        const medium = String(typeVal.key).split('/')[1] || 'ssd'
+        if (medium) this.$set(this.form.fi, 'systemDiskMedium', medium)
+      }
+      if (sysRef?.tryApplySessionDiskDraft) {
+        sysRef.tryApplySessionDiskDraft({ draft, fromLocal: isLocal })
+      } else if (sysRef?.applyCreateFormFieldDraft) {
+        sysRef.applyCreateFormFieldDraft(draft, { fromLocal: isLocal })
+      } else if (sysRef?.applySysDiskDraftToForm) {
+        const toApply = isLocal && sysRef.pickSysDiskBaseDraft
+          ? sysRef.pickSysDiskBaseDraft(draft)
+          : draft
+        sysRef.applySysDiskDraftToForm(toApply)
+      }
+      // 大小永不回填：立刻补默认值（不走 initData，避免草稿 size/长时间窗口）
+      if (typeof sysRef?.ensureSysDiskDefaultSize === 'function') sysRef.ensureSysDiskDefaultSize()
+    },
+    async restoreDataDiskFromFieldDraft (draft, { waitRef, waitTypesMap }) {
+      if (!draft || !this.form?.fc) return
+      const dataRef0 = await waitRef(() => this.$refs.dataDiskRef)
+      // 输入子字段（大小/iops/throughput/挂载路径 等）不回填，由组件白名单过滤
+      if (dataRef0 && typeof dataRef0.sanitizeDraftForRestore === 'function') {
+        draft = dataRef0.sanitizeDraftForRestore(draft)
+      }
+      if (!draft || typeof draft !== 'object' || !Object.keys(draft).length) return
+      // 显式空 keys：用户已删光数据盘，不再回填（也不走其它字段 fallback）
+      if (Array.isArray(draft.__dataDiskKeys) && draft.__dataDiskKeys.length === 0) {
+        if (dataRef0) dataRef0.dataDisks = []
+        return
+      }
+      const keys = Array.isArray(draft.__dataDiskKeys) ? draft.__dataDiskKeys.filter(Boolean) : []
+      const nestedSizes = draft.dataDiskSizes && typeof draft.dataDiskSizes === 'object' ? draft.dataDiskSizes : null
+      const resolvedKeys = keys.length
+        ? keys
+        : (nestedSizes ? Object.keys(nestedSizes) : Object.keys(draft)
+          .map((k) => {
+            const m = k.match(/^dataDiskSizes\[(.+)\]$/)
+            return m && m[1]
+          }).filter(Boolean))
+      if (!resolvedKeys.length) {
+        if (dataRef0 && dataRef0.applyCreateFormFieldDraft) dataRef0.applyCreateFormFieldDraft(draft)
+        return
+      }
+      const dataDiskRef = dataRef0
+      if (!dataDiskRef || !dataDiskRef.add) return
+      await waitTypesMap(() => dataDiskRef.typesMap)
+      await this.$nextTick()
+      const ref = this.$refs.dataDiskRef
+      if (!ref || !ref.add) return
+      ;[...(ref.dataDisks || [])].forEach((d) => {
+        if (d && d.key) ref.decrease(d.key)
+      })
+      await this.$nextTick()
+      const sources = resolvedKeys.map((key) => {
+        const typeVal = draft[`dataDiskTypes[${key}]`] || (draft.dataDiskTypes && draft.dataDiskTypes[key])
+        const sizeVal = draft[`dataDiskSizes[${key}]`] != null
+          ? draft[`dataDiskSizes[${key}]`]
+          : (draft.dataDiskSizes && draft.dataDiskSizes[key])
+        const typeKey = (typeVal && typeVal.key) || ''
+        const parts = String(typeKey).split('/')
+        return {
+          backend: parts[0] || typeKey,
+          medium: parts[1],
+          size: sizeVal != null ? Number(sizeVal) : undefined,
+          schedtag: draft[`dataDiskSchedtags[${key}]`] || (draft.dataDiskSchedtags && draft.dataDiskSchedtags[key]),
+          policy: draft[`dataDiskPolicys[${key}]`] || (draft.dataDiskPolicys && draft.dataDiskPolicys[key]),
+          snapshot: draft[`dataDiskSnapshots[${key}]`] || (draft.dataDiskSnapshots && draft.dataDiskSnapshots[key]),
+          storage: draft[`dataDiskStorages[${key}]`] || (draft.dataDiskStorages && draft.dataDiskStorages[key]),
+          iops: draft[`dataDiskIops[${key}]`] != null ? draft[`dataDiskIops[${key}]`] : (draft.dataDiskIops && draft.dataDiskIops[key]),
+          throughput: draft[`dataDiskThroughputs[${key}]`] != null ? draft[`dataDiskThroughputs[${key}]`] : (draft.dataDiskThroughputs && draft.dataDiskThroughputs[key]),
+          filetype: draft[`dataDiskFiletypes[${key}]`] || (draft.dataDiskFiletypes && draft.dataDiskFiletypes[key]),
+          mountPath: draft[`dataDiskMountPaths[${key}]`] || (draft.dataDiskMountPaths && draft.dataDiskMountPaths[key]),
+          autoReset: draft[`dataDiskAutoReset[${key}]`] != null ? draft[`dataDiskAutoReset[${key}]`] : (draft.dataDiskAutoReset && draft.dataDiskAutoReset[key]),
+          preallocation: draft[`dataDiskPreallocation[${key}]`] || (draft.dataDiskPreallocation && draft.dataDiskPreallocation[key]),
+        }
+      })
+      for (let i = 0; i < sources.length; i++) {
+        const v = sources[i]
+        ref.add({
+          size: v.size,
+          diskType: v.backend,
+          medium: v.medium,
+          schedtag: v.schedtag,
+          policy: v.policy,
+          snapshot: v.snapshot,
+          filetype: v.filetype,
+          mountPath: v.mountPath,
+          preallocation: v.preallocation,
+          autoReset: v.autoReset,
+        })
+        await this.$nextTick()
+      }
+      const reapplyDataDisks = () => {
+        const cur = this.$refs.dataDiskRef
+        if (!cur || !cur.dataDisks || !this.form || !this.form.fc) return
+        const typesMap = cur.typesMap || {}
+        const values = {}
+        cur.dataDisks.forEach((disk, idx) => {
+          const src = sources[idx]
+          if (!src || !disk || !disk.key) return
+          if (src.size != null) {
+            values[`dataDiskSizes[${disk.key}]`] = cur.clampDataDiskDraftSize(src.size, cur.min(idx), cur.max(idx))
+          } else {
+            // 输入类 size 不回填：补默认 min，避免空值
+            const minSize = cur.min(idx)
+            values[`dataDiskSizes[${disk.key}]`] = cur.clampDataDiskDraftSize(minSize, minSize, cur.max(idx))
+          }
+          if (src.backend) {
+            let typeObj = typesMap[src.backend] || typesMap[`${src.backend}/${src.medium}`]
+            if (!typeObj) {
+              const matched = Object.keys(typesMap).find(k => k === src.backend || k.startsWith(`${src.backend}/`))
+              if (matched) typeObj = typesMap[matched]
+            }
+            const diskType = typeObj
+              ? { key: typeObj.key, label: typeObj.label, index: idx }
+              : { key: src.medium ? `${src.backend}/${src.medium}` : src.backend, label: src.backend, index: idx }
+            this.$set(disk, 'diskType', diskType)
+            values[`dataDiskTypes[${disk.key}]`] = diskType
+          }
+          if (src.schedtag) values[`dataDiskSchedtags[${disk.key}]`] = src.schedtag
+          if (src.policy) values[`dataDiskPolicys[${disk.key}]`] = src.policy
+          if (src.snapshot) values[`dataDiskSnapshots[${disk.key}]`] = src.snapshot
+          if (src.storage) values[`dataDiskStorages[${disk.key}]`] = src.storage
+          if (src.iops != null) values[`dataDiskIops[${disk.key}]`] = src.iops
+          if (src.throughput != null) values[`dataDiskThroughputs[${disk.key}]`] = src.throughput
+          if (src.filetype) values[`dataDiskFiletypes[${disk.key}]`] = src.filetype
+          if (src.mountPath) values[`dataDiskMountPaths[${disk.key}]`] = src.mountPath
+          if (src.autoReset != null) values[`dataDiskAutoReset[${disk.key}]`] = src.autoReset
+          if (src.preallocation) values[`dataDiskPreallocation[${disk.key}]`] = src.preallocation
+        })
+        if (Object.keys(values).length) this.setFormFieldsAndSyncFd(values)
+      }
+      await this.$nextTick()
+      reapplyDataDisks()
+      await this.$nextTick()
+      reapplyDataDisks()
+    },
+
+    markCreateFormDraftUserInteracted () {
+      const was = this.createFormDraftUserInteracted
+      // 调用宿主 mixin 原逻辑
+      if (!was) {
+        this.createFormDraftUserInteracted = true
+        this._unbindCreateFormDraftUserInteraction()
+      }
+      this.clearAdvanceDraftRestoring()
+    },
     async capability (v, data) { // 可用区查询
       const params = {
         show_emulated: true,
@@ -489,144 +1093,524 @@ export default {
       }
       return new this.$Manager('cloudregions').get({ id: `${v}/capability`, params })
     },
+    /**
+     * 规范化 extraData.nets，供 NetworkConfig.initData 使用（与工单 params 同形）
+     */
+    normalizeExtraNetsForInit (nets) {
+      if (!Array.isArray(nets)) return []
+      return nets.map(item => {
+        if (!item || typeof item !== 'object') return item
+        const network = typeof item.network === 'object'
+          ? (item.network.id || item.network.key)
+          : (item.network || item.network_id)
+        const vpc = typeof item.vpc === 'object'
+          ? (item.vpc.id || item.vpc.key)
+          : item.vpc
+        return { ...item, network, vpc, network_id: item.network_id || network }
+      }).filter(item => item && item.network)
+    },
+    /**
+     * 仅工单回填（isInitForm）。普通新建的控件草稿由各组件 / restoreAdvance* 自行恢复，不走此路径。
+     */
     async initForm () {
+      if (this._initFormPromise) return this._initFormPromise
+      this._initFormPromise = this._runInitForm()
+      try {
+        await this._initFormPromise
+      } finally {
+        this._initFormPromise = null
+      }
+    },
+    async _runInitForm () {
       const initData = this.initFormData
-      if (this.isInitForm && initData.extraData && this.form?.fc) {
-        if (!this.form.fd.hypervisor) {
-          this.form.fd.hypervisor = initData.hypervisor
+      if (!(this.isInitForm && initData && initData.extraData && this.form && this.form.fc)) {
+        return
+      }
+      if (this._initFormDone) return
+      this._initFormDone = true
+      this._diskBackfillPending = true
+
+      if (initData.hypervisor) {
+        this.form.fd.hypervisor = initData.hypervisor
+        this.form.fc.setFieldsValue({ hypervisor: initData.hypervisor })
+      }
+
+      try {
+        const initPreferZone = resolveInitPreferZone(initData, this.type === 'public')
+        const preferZoneId = Array.isArray(initPreferZone) ? (initPreferZone[0] || '') : initPreferZone
+        if (preferZoneId) {
+          const { data: capabilityData } = await this.capability(preferZoneId, initData)
+          this.form.fi.capability = capabilityData
+        } else if (initData.prefer_region) {
+          const { data: capabilityData } = await this.capability2(initData.prefer_region, initData)
+          this.form.fi.capability = capabilityData
         }
-        try {
-          if (initData.prefer_zone) {
-            const { data: capabilityData } = await this.capability(initData.prefer_zone, initData)
-            this.form.fi.capability = capabilityData
-          } else if (initData.prefer_region) {
-            const { data: capabilityData } = await this.capability2(initData.prefer_region, initData)
-            this.form.fi.capability = capabilityData
+      } catch (error) { }
+
+      const systemDisk = ((initData.disks || []).filter(item => item.disk_type === 'sys')[0]) || null
+
+      if (systemDisk && systemDisk.backend) {
+        const hyper = initData.hypervisor || this.form.fd.hypervisor || (this.form.fd.sku && this.form.fd.sku.provider)
+        const hyperKey = hyper ? String(hyper).toLowerCase() : ''
+        const typeKey = diskSupportTypeMedium(hyperKey)
+          ? `${systemDisk.backend}/${systemDisk.medium || 'ssd'}`
+          : systemDisk.backend
+        const systemDiskType = { key: typeKey, label: '' }
+        const systemDiskSize = systemDisk.size / 1024
+        this.$set(this.form.fd, 'systemDiskType', systemDiskType)
+        this.$set(this.form.fd, 'systemDiskSize', systemDiskSize)
+        this.form.fc.setFieldsValue({ systemDiskType, systemDiskSize })
+        if (systemDisk.medium) this.$set(this.form.fi, 'systemDiskMedium', systemDisk.medium)
+      }
+
+      // 等子组件挂载（公有云 v-if 晚挂载）
+      const waitRef = (getter, timeout = 10000) => new Promise(resolve => {
+        const startAt = Date.now()
+        const tick = () => {
+          const val = typeof getter === 'function' ? getter() : null
+          if (val) {
+            resolve(val)
+            return
           }
-        } catch (error) { }
+          if (Date.now() - startAt >= timeout) {
+            resolve(null)
+            return
+          }
+          setTimeout(tick, 100)
+        }
+        this.$nextTick(tick)
+      })
+
+      if (initData.isolated_devices && initData.isolated_devices.length) {
+        const pciRef = await waitRef(() => this.$refs.pciRef, 3000)
+        if (pciRef && pciRef.initData) pciRef.initData(initData.isolated_devices)
+      }
+
+      // 公有云盘组件依赖 sku 挂载：磁盘回填改由 watch form.fd.sku 触发
+      // IDC/私有云：此处直接回填
+      if (this.type !== 'public') {
+        await this.backfillDisksFromInitData(initData, { waitRef })
+        this._diskBackfillCompleted = true
+      } else if (R.is(Object, this.form.fd.sku) && !this._diskBackfillCompleted) {
+        await this.backfillDisksFromInitData(initData, { waitRef })
+        this._diskBackfillCompleted = true
+      }
+
+      // —— 管理员密码方式回填（本方法仅工单；明文密码可回填）——
+      const loginType = resolveDraftLoginType(initData)
+      if (loginType) {
+        this.$set(this.form.fd, 'loginType', loginType)
+        this.form.fc.setFieldsValue({ loginType })
+      }
+      const loginPassword = (initData.extraData && initData.extraData.loginPassword) || initData.password || ''
+      if (loginType === 'password' && loginPassword) {
+        this.$set(this.form.fd, 'loginPassword', loginPassword)
+        // 密码输入框随 loginType 才挂载，延迟再写一次
         this.$nextTick(() => {
-          // 透传设备
-          if (initData.isolated_devices && initData.isolated_devices.length) {
-            this.$refs.pciRef.initData(initData.isolated_devices)
-          }
-          // 系统盘 高级功能回填
-          if (this.$refs.systemDiskRef && this.$refs.systemDiskRef.$refs.disk) {
-            const systemDisk = (initData.disks || []).filter(item => item.disk_type === 'sys')[0] || {}
-            this.$refs.systemDiskRef.$refs.disk.initData(systemDisk, initData.hypervisor)
-          }
-          this.$nextTick(() => {
-            // 数据盘
-            if (this.$refs.dataDiskRef) {
-              const dataDisks = initData.disks.filter(item => item.disk_type === 'data' || item.disk_type === 'swap')
-              const { medium: dataDiskMedium } = dataDisks[0] || {}
-              this.dataDiskInterval = setInterval(() => {
-                dataDisks.forEach((v, i) => {
-                  const { schedtags = [] } = v
-                  this.$refs.dataDiskRef.add({
-                    diskType: v.backend,
-                    disabled: false,
-                    sizeDisabled: false,
-                    medium: dataDiskMedium,
-                    filetype: v.fs,
-                    mountPath: v.mountpoint,
-                    schedtag: schedtags[0]?.id,
-                    policy: schedtags[0]?.strategy,
-                    snapshot: v.snapshot_id,
-                    preallocation: v.preallocation,
-                    autoReset: v.auto_reset,
-                    ...v,
-                    size: v.size / 1024,
-                  })
-                })
-                clearInterval(this.dataDiskInterval)
-                this.dataDiskInterval = null
-              }, 500)
-            }
-          })
-          // 初始化网络
-          if (this.$refs.networkRef && initData.nets) {
-            let initNetworkType = NETWORK_OPTIONS_MAP.default.key
-            if (initData.nets[0] && initData.nets[0].hasOwnProperty('exit') && !initData.nets[0].exit) {
-              initNetworkType = NETWORK_OPTIONS_MAP.default.key
-            } else if (initData.nets[0] && initData.nets[0].hasOwnProperty('network') && initData.extraData?.nets && initData.extraData?.nets[0] && initData.extraData?.nets[0].hasOwnProperty('network')) {
-              initNetworkType = NETWORK_OPTIONS_MAP.manual.key
-            } else {
-              initNetworkType = NETWORK_OPTIONS_MAP.schedtag.key
-            }
-            this.form.fc.setFieldsValue({
-              networkType: initNetworkType,
-            })
-            this.$refs.networkRef.change({ target: { value: initNetworkType }, name: 'default' })
-            if (initNetworkType === NETWORK_OPTIONS_MAP.manual.key) {
-              this.$nextTick(() => {
-                if (this.$refs.networkRef.$refs.networkConfigRef) {
-                  this.$refs.networkRef.$refs.networkConfigRef.initData(initData.extraData.nets)
-                }
-              })
-            }
-            if (initNetworkType === NETWORK_OPTIONS_MAP.schedtag.key) {
-              this.$nextTick(() => {
-                if (this.$refs.networkRef.$refs.networkSchedtagRef) {
-                  this.$refs.networkRef.$refs.networkSchedtagRef.initData(initData.nets)
-                }
-              })
-            }
-          }
-          // 高级配置
-          if (initData.hostname || initData.eip_charge_type || initData.public_ip_charge_type || initData.prefer_host || initData.schedtags || initData.secgroups || initData.bios || initData.vdi || initData.vga || initData.is_daemon || initData.groups || initData.encrypt_key_new || initData.keypair || initData.user_data || initData.bastion_server) {
-            this.collapseActive = ['1']
-            this.$nextTick(() => {
-              this.form.fc.setFieldsValue({
-                hostName: initData.hostname,
-              })
-              // eip
-              if (this.$refs.eipConfigRef) {
-                this.$refs.eipConfigRef.initData(initData)
-              }
-              // 安全组
-              if (initData.secgroups && initData.secgroups.length) {
-                setTimeout(() => {
-                  this.form.fc.setFieldsValue({
-                    secgroup_type: 'bind',
-                    secgroup: initData.secgroups,
-                  })
-                }, 2000)
-              }
-              // 调度策略
-              if (this.$refs.schedPolicyRef) {
-                if (initData.prefer_host) {
-                  this.$refs.schedPolicyRef.change({ target: { value: 'host' }, name: 'default' })
-                }
-                if (initData.schedtags && initData.schedtags.length) {
-                  this.$refs.schedPolicyRef.change({ target: { value: 'schedtag' }, name: 'default' })
-                  setTimeout(() => {
-                    if (this.$refs.schedPolicyRef.$refs.policySchedtagRef) {
-                      this.$refs.schedPolicyRef.$refs.policySchedtagRef.initData(initData.schedtags)
-                    }
-                  }, 1000)
-                }
-              }
-              // 自定义数据
-              if (initData.user_data) {
-                if (this.$refs.customData) {
-                  this.$refs.customData.handleMirrorDataChange(initData.user_data)
-                }
-              }
-              // 堡垒机
-              if (initData.bastion_server && this.$refs.bastionHostRef) {
-                this.$refs.bastionHostRef.initData(initData.bastion_server)
-              }
-            })
-          }
-          // 初始化标签
-          if (initData.__meta__) {
-            const ret = {}
-            R.forEachObjIndexed((value, key) => {
-              ret[key] = R.is(Array, value) ? value : [value]
-            }, initData.__meta__)
-            this.tagDefaultChecked = ret
-          }
+          this.form.fc.setFieldsValue({ loginPassword })
         })
+        setTimeout(() => {
+          if (this.form && this.form.fc) {
+            this.form.fc.setFieldsValue({ loginPassword })
+            this.$set(this.form.fd, 'loginPassword', loginPassword)
+          }
+        }, 500)
+      }
+
+      // —— 网络 ——
+      // 公有云网络依赖区域/sku，改由 watch form.fd.sku 在磁盘回填后执行
+      if (this.type !== 'public') {
+        await this.backfillNetworksFromInitData(initData, { waitRef })
+      } else if (R.is(Object, this.form.fd.sku) && this._diskBackfillCompleted) {
+        await this.backfillNetworksFromInitData(initData, { waitRef })
+      }
+
+      // —— 高级配置（公网 IP / 自定义数据等）——
+      // 公有云 EIP、自定义数据依赖 hypervisor/sku 才挂载，延后到 sku watch
+      if (this.type !== 'public') {
+        await this.backfillAdvanceConfigFromInitData(initData, { waitRef })
+      } else if (R.is(Object, this.form.fd.sku) && this._diskBackfillCompleted) {
+        await this.backfillAdvanceConfigFromInitData(initData, { waitRef })
+      }
+
+      if (initData.__meta__) {
+        const ret = {}
+        R.forEachObjIndexed((value, key) => {
+          ret[key] = R.is(Array, value) ? value : [value]
+        }, initData.__meta__)
+        this.tagDefaultChecked = ret
+      }
+
+      // 延迟结束保护：公有云磁盘/网络可能更晚回填，勿过早放开
+      if (this.type !== 'public' || this._diskBackfillCompleted) {
+        setTimeout(() => {
+          this._diskBackfillPending = false
+        }, 3500)
+      }
+    },
+    /**
+     * 回填高级配置：公网 IP、自定义数据、主机名、安全组、调度策略、堡垒机等
+     * 有高级字段时：进页自动展开一次（之后跟用户）；内容始终挂载
+     */
+    async backfillAdvanceConfigFromInitData (initData, { waitRef } = {}) {
+      if (!initData || !this.form?.fc) return
+      if (!hasAdvanceConfigInitFields(initData)) return
+      const advanceRef = this.$refs.advanceConfigBlock
+      if (advanceRef && typeof advanceRef.tryAutoOpenOnce === 'function') {
+        advanceRef.tryAutoOpenOnce()
+      }
+
+      const doWaitRef = waitRef || ((getter, timeout = 10000) => new Promise(resolve => {
+        const startAt = Date.now()
+        const tick = () => {
+          const val = typeof getter === 'function' ? getter() : null
+          if (val) {
+            resolve(val)
+            return
+          }
+          if (Date.now() - startAt >= timeout) {
+            resolve(null)
+            return
+          }
+          setTimeout(tick, 100)
+        }
+        this.$nextTick(tick)
+      }))
+
+      await this.$nextTick()
+      await this.$nextTick()
+
+      this.form.fc.setFieldsValue({ hostName: initData.hostname })
+
+      if (initData.eip_charge_type || initData.public_ip_charge_type) {
+        const eipRef = await doWaitRef(() => this.$refs.eipConfigRef, 8000)
+        if (eipRef && eipRef.initData) {
+          eipRef.initData(initData)
+          // EIP 子项（计费/带宽）自身还有延迟，再补一次
+          setTimeout(() => {
+            if (this.$refs.eipConfigRef && this.$refs.eipConfigRef.initData) {
+              this.$refs.eipConfigRef.initData(initData)
+            }
+          }, 2500)
+        }
+      }
+
+      if (initData.network_tags && initData.network_tags.length) {
+        setTimeout(() => {
+          this.form.fc.setFieldsValue({ secgroup_type: 'networkTag', network_tags: initData.network_tags })
+        }, 2000)
+      } else if (initData.secgroups && initData.secgroups.length) {
+        const secgroupIds = initData.secgroups.map((item) => {
+          if (item == null) return null
+          if (typeof item === 'string' || typeof item === 'number') return String(item)
+          return item.id || item.key || item.value || null
+        }).filter(Boolean)
+        if (this.$refs.secgroupConfigRef?.initData) {
+          this.$refs.secgroupConfigRef.initData(secgroupIds)
+        } else {
+          this.form.fc.setFieldsValue({ secgroup_type: 'bind', secgroup: secgroupIds })
+        }
+      }
+
+      if (this.$refs.schedPolicyRef) {
+        if (initData.prefer_host) {
+          if (this.$refs.schedPolicyRef.initPreferHostData) {
+            this.$refs.schedPolicyRef.initPreferHostData(initData.prefer_host)
+          } else {
+            this.$refs.schedPolicyRef.change({ target: { value: 'host' }, name: 'default' })
+            this.form.fc.setFieldsValue({
+              schedPolicyType: 'host',
+              schedPolicyHost: initData.prefer_host,
+            })
+          }
+        }
+        if (initData.schedtags && initData.schedtags.length) {
+          this.$refs.schedPolicyRef.change({ target: { value: 'schedtag' }, name: 'default' })
+          setTimeout(() => {
+            if (this.$refs.schedPolicyRef && this.$refs.schedPolicyRef.$refs.policySchedtagRef) {
+              this.$refs.schedPolicyRef.$refs.policySchedtagRef.initData(initData.schedtags)
+            }
+          }, 1000)
+        }
+      }
+
+      // 工单不回填 file 型自定义数据；仅文本 input
+      if (initData.custom_data_type !== 'file' && (initData.user_data || initData.custom_data_type === 'input')) {
+        const customType = initData.custom_data_type || (initData.user_data ? 'input' : '')
+        const userDataText = customType === 'input'
+          ? (normalizeDraftUserData(initData.user_data) ||
+            normalizeDraftUserData(initData.extraData && initData.extraData.user_data))
+          : undefined
+        await this.$nextTick()
+        const customRef = await doWaitRef(() => this.$refs.customData, 8000)
+        if (customRef) {
+          if (customRef.restoreFromDraft) {
+            customRef.restoreFromDraft(customType, userDataText)
+          } else if (userDataText && customRef.handleMirrorDataChange) {
+            this.$set(this.form.fd, 'custom_data_type', customType)
+            this.form.fc.setFieldsValue({ custom_data_type: customType })
+            customRef.handleMirrorDataChange(userDataText)
+          }
+          if (userDataText) {
+            setTimeout(() => {
+              const ref = this.$refs.customData
+              if (!ref) return
+              if (ref.restoreFromDraft) {
+                ref.restoreFromDraft(customType, userDataText)
+              } else if (ref.handleMirrorDataChange) {
+                ref.handleMirrorDataChange(userDataText)
+              }
+            }, 800)
+          }
+        }
+      }
+
+      if (initData.bastion_server && this.$refs.bastionHostRef) {
+        this.$refs.bastionHostRef.initData(initData.bastion_server)
+      }
+
+      // KVM 高级项：装饰器初值可能因 v-if 晚挂载未生效，再显式回填一次
+      const kvmAdvance = {}
+      if (initData.bios) kvmAdvance.bios = initData.bios
+      if (initData.vdi) kvmAdvance.vdi = initData.vdi
+      if (initData.vga) kvmAdvance.vga = initData.vga
+      if (initData.machine) kvmAdvance.machine = initData.machine
+      if (initData.qemu_version) kvmAdvance.qemu_version = initData.qemu_version
+      if (Object.prototype.hasOwnProperty.call(initData, 'is_daemon')) {
+        kvmAdvance.is_daemon = !!initData.is_daemon
+      }
+      if (Object.keys(kvmAdvance).length) {
+        await this.$nextTick()
+        this.form.fc.setFieldsValue(kvmAdvance)
+        // isKvm 异步到位后再补一次
+        setTimeout(() => {
+          if (this.form?.fc) this.form.fc.setFieldsValue(kvmAdvance)
+        }, 1500)
+      }
+    },
+    /**
+     * 回填指定 IP 子网 / 调度标签网络
+     */
+    async backfillNetworksFromInitData (initData, { waitRef } = {}) {
+      if (!initData || !initData.nets || !this.form?.fc) return
+      const doWaitRef = waitRef || ((getter, timeout = 10000) => new Promise(resolve => {
+        const startAt = Date.now()
+        const tick = () => {
+          const val = typeof getter === 'function' ? getter() : null
+          if (val) {
+            resolve(val)
+            return
+          }
+          if (Date.now() - startAt >= timeout) {
+            resolve(null)
+            return
+          }
+          setTimeout(tick, 100)
+        }
+        this.$nextTick(tick)
+      }))
+      const networkRef = await doWaitRef(() => this.$refs.networkRef, 8000)
+      if (!networkRef) return
+      const initNetworkType = resolveDraftNetworkType(initData)
+      this.form.fc.setFieldsValue({ networkType: initNetworkType })
+      if (this.form.fd) this.$set(this.form.fd, 'networkType', initNetworkType)
+      networkRef.change({ target: { value: initNetworkType }, name: 'default' })
+      await this.$nextTick()
+      if (initNetworkType === NETWORK_OPTIONS_MAP.manual.key) {
+        const mergeNetsWithPortMappings = () => {
+          const netsFromExtra = this.normalizeExtraNetsForInit(initData.extraData && initData.extraData.nets)
+          const netsFromMain = initData.nets || []
+          const baseNets = netsFromExtra.length ? netsFromExtra : this.normalizeExtraNetsForInit(netsFromMain)
+          // 仅旧稿（各网卡都无 port_mappings）才把聚合映射兜底到网卡 0
+          const legacyFallback = resolveDraftPortMappings(initData)
+          return baseNets.map((n, i) => {
+            const fromMain = netsFromMain[i]
+            const own = (Array.isArray(n.port_mappings) && n.port_mappings.length)
+              ? n.port_mappings
+              : (Array.isArray(fromMain?.port_mappings) && fromMain.port_mappings.length ? fromMain.port_mappings : null)
+            const port_mappings = own || (i === 0 && legacyFallback.length ? legacyFallback : null)
+            const next = { ...(n || {}) }
+            if (port_mappings?.length) {
+              next.port_mappings = port_mappings
+            } else {
+              delete next.port_mappings
+            }
+            return next
+          })
+        }
+        const applyManualNets = () => {
+          const ref = this.$refs.networkRef?.$refs?.networkConfigRef
+          const nets = mergeNetsWithPortMappings()
+          if (ref?.initData && nets.length) {
+            ref.initData(nets)
+            // Labels 反填在双 nextTick 后写 fc，再同步到 fd
+            this.$nextTick(() => {
+              this.$nextTick(() => this.syncPortMappingFieldsToFd())
+            })
+          }
+        }
+        applyManualNets()
+        // 区域/sku 刚就绪时子网列表可能仍在飞，再补几次
+        setTimeout(applyManualNets, 500)
+        setTimeout(applyManualNets, 2500)
+      } else if (initNetworkType === NETWORK_OPTIONS_MAP.schedtag.key) {
+        await this.$nextTick()
+        const schedRef = networkRef.$refs && networkRef.$refs.networkSchedtagRef
+        if (schedRef && schedRef.initData) schedRef.initData(initData.nets)
+      }
+    },
+    /**
+     * 回填系统盘/数据盘。公有云需等 sku 挂载且 typesMap 就绪后再写，否则类型/大小会被默认值盖掉。
+     */
+    async backfillDisksFromInitData (initData, { waitRef } = {}) {
+      if (!initData || !this.form?.fc) return
+      if (this._diskBackfilling) return
+      this._diskBackfilling = true
+      this._diskBackfillPending = true
+      try {
+        const doWaitRef = waitRef || ((getter, timeout = 10000) => new Promise(resolve => {
+          const startAt = Date.now()
+          const tick = () => {
+            const val = typeof getter === 'function' ? getter() : null
+            if (val) {
+              resolve(val)
+              return
+            }
+            if (Date.now() - startAt >= timeout) {
+              resolve(null)
+              return
+            }
+            setTimeout(tick, 100)
+          }
+          this.$nextTick(tick)
+        }))
+        const waitTypesMap = (getter, timeout = 15000) => new Promise(resolve => {
+          const startAt = Date.now()
+          const tick = () => {
+            const map = typeof getter === 'function' ? getter() : null
+            if (map && typeof map === 'object' && Object.keys(map).length) {
+              resolve(map)
+              return
+            }
+            if (Date.now() - startAt >= timeout) {
+              resolve(null)
+              return
+            }
+            setTimeout(tick, 200)
+          }
+          this.$nextTick(tick)
+        })
+
+        const systemDisk = ((initData.disks || []).filter(item => item.disk_type === 'sys')[0]) || null
+        const dataDisks = (initData.disks || []).filter(item => item.disk_type === 'data' || item.disk_type === 'swap')
+        const hyperRaw = initData.hypervisor || this.form.fd.hypervisor ||
+          (R.is(Object, this.form.fd.sku) && this.form.fd.sku.provider)
+        const hyper = hyperRaw ? String(hyperRaw).toLowerCase() : ''
+
+        if (systemDisk && systemDisk.backend) {
+          const typeKey = diskSupportTypeMedium(hyper)
+            ? `${systemDisk.backend}/${systemDisk.medium || 'ssd'}`
+            : systemDisk.backend
+          const systemDiskType = { key: typeKey, label: '' }
+          const systemDiskSize = systemDisk.size / 1024
+          this.$set(this.form.fd, 'systemDiskType', systemDiskType)
+          this.$set(this.form.fd, 'systemDiskSize', systemDiskSize)
+          this.form.fc.setFieldsValue({ systemDiskType, systemDiskSize })
+          if (systemDisk.medium) this.$set(this.form.fi, 'systemDiskMedium', systemDisk.medium)
+
+          const sysRef = await doWaitRef(() => this.$refs.systemDiskRef)
+          if (sysRef) {
+            await waitTypesMap(() => sysRef.typesMap)
+          }
+          const diskComp = await doWaitRef(() => this.$refs.systemDiskRef && this.$refs.systemDiskRef.$refs && this.$refs.systemDiskRef.$refs.disk)
+          if (diskComp && diskComp.initData) {
+            diskComp.initData(systemDisk, hyper)
+          }
+          const reapplySys = () => {
+            if (!this.form || !this.form.fc) return
+            this.$set(this.form.fd, 'systemDiskType', systemDiskType)
+            this.$set(this.form.fd, 'systemDiskSize', systemDiskSize)
+            this.form.fc.setFieldsValue({ systemDiskType, systemDiskSize })
+          }
+          setTimeout(reapplySys, 1500)
+          setTimeout(reapplySys, 2800)
+        }
+
+        if (dataDisks.length) {
+          const dataDiskRef = await doWaitRef(() => this.$refs.dataDiskRef)
+          if (dataDiskRef && dataDiskRef.add) {
+            await waitTypesMap(() => dataDiskRef.typesMap)
+            const { medium: dataDiskMedium } = dataDisks[0] || {}
+            if (dataDiskMedium) this.$set(this.form.fi, 'dataDiskMedium', dataDiskMedium)
+            await new Promise(resolve => setTimeout(resolve, 300))
+            const ref = this.$refs.dataDiskRef
+            if (ref && ref.add) {
+              const existing = [...(ref.dataDisks || [])]
+              existing.forEach(d => { if (d && d.key) ref.decrease(d.key) })
+              await this.$nextTick()
+              // 逐块添加并等待装饰器挂载，避免最后一块 size/type 写入丢失
+              for (let i = 0; i < dataDisks.length; i++) {
+                const v = dataDisks[i]
+                const { schedtags = [] } = v
+                ref.add({
+                  size: v.size / 1024,
+                  diskType: v.backend,
+                  disabled: false,
+                  sizeDisabled: false,
+                  medium: dataDiskMedium || v.medium,
+                  filetype: v.fs,
+                  mountPath: v.mountpoint,
+                  schedtag: schedtags[0] && schedtags[0].id,
+                  policy: schedtags[0] && schedtags[0].strategy,
+                  snapshot: v.snapshot_id,
+                  preallocation: v.preallocation,
+                  autoReset: v.auto_reset,
+                })
+                await this.$nextTick()
+                await new Promise(resolve => setTimeout(resolve, 80))
+              }
+              const reapplyDataDisks = () => {
+                const cur = this.$refs.dataDiskRef
+                if (!cur || !cur.dataDisks || !this.form || !this.form.fc) return
+                const typesMap = cur.typesMap || {}
+                const hyperKey = (cur.getHypervisor && cur.getHypervisor()) || hyper
+                const isAliyun = hyperKey === HYPERVISORS_MAP.aliyun.key
+                const values = {}
+                cur.dataDisks.forEach((disk, idx) => {
+                  const src = dataDisks[idx]
+                  if (!src || !disk || !disk.key) return
+                  values[`dataDiskSizes[${disk.key}]`] = src.size / 1024
+                  // 非阿里云多块盘共用第一块类型；阿里云按块恢复
+                  const backend = (!isAliyun && dataDisks[0] && dataDisks[0].backend)
+                    ? dataDisks[0].backend
+                    : src.backend
+                  if (!backend) return
+                  let typeObj = typesMap[backend]
+                  if (!typeObj) {
+                    const matched = Object.keys(typesMap).find(k => k === backend || k.startsWith(`${backend}/`))
+                    if (matched) typeObj = typesMap[matched]
+                  }
+                  const diskType = typeObj
+                    ? { key: typeObj.key, label: typeObj.label, index: idx }
+                    : { key: backend, label: backend, index: idx }
+                  this.$set(disk, 'diskType', diskType)
+                  values[`dataDiskTypes[${disk.key}]`] = diskType
+                })
+                if (Object.keys(values).length) {
+                  this.form.fc.setFieldsValue(values)
+                }
+              }
+              setTimeout(reapplyDataDisks, 500)
+              setTimeout(reapplyDataDisks, 1500)
+              setTimeout(reapplyDataDisks, 3000)
+            }
+          }
+        }
+      } finally {
+        this._diskBackfilling = false
+        setTimeout(() => {
+          this._diskBackfillPending = false
+        }, 3500)
       }
     },
     baywatch (props, watcher) {
@@ -642,10 +1626,69 @@ export default {
         }, fiItems)
       }
     },
+    onWorldMapModeChange (checked) {
+      if (this.type !== 'public') return
+      this.$nextTick(() => {
+        if (!checked && this.fetchInstanceSpecs) {
+          this.fetchInstanceSpecs()
+        }
+      })
+    },
+    refreshAreaSelects () {
+      if (this.type !== 'public' || !this.$refs.areaSelectRef) return
+      // 完整 fetchs；回填场景由 Public @fetchsDone → applyInitPublicAreaFields 接手
+      this.$refs.areaSelectRef.fetchs(['provider', 'cloudregion', 'zone'])
+    },
+    clearPublicLocationFields () {
+      const areaFields = {
+        provider: [],
+        cloudregion: [],
+        zone: [],
+        cloudprovider: undefined,
+        sku: undefined,
+      }
+      this.form.fc.setFieldsValue(areaFields)
+      this._setNewFieldToFd(areaFields, this.form.fc.getFieldsValue())
+      if (Object.prototype.hasOwnProperty.call(this.$data, 'cloudaccountId')) {
+        this.cloudaccountId = ''
+      }
+    },
+    onRegionSelect (payload) {
+      if (this.type !== 'public') return
+      const regions = payload?.nearbyRegions || []
+      if (!regions.length) {
+        this.clearPublicLocationFields()
+        this.$nextTick(() => {
+          this.refreshAreaSelects()
+        })
+        return
+      }
+      if (typeof this.applyMapSelectionToAreaSelects === 'function') {
+        this.applyMapSelectionToAreaSelects(regions)
+      }
+    },
+    onRegionMapParamsChange () {
+      if (this.type !== 'public' || !this.form.fd.enableWorldMap) return
+      this.onRegionSelect({ nearbyRegions: [] })
+    },
+    /** 提交前兜底：把端口映射从 fc 合入 formData / fd，避免 setFieldsValue 未走 onValuesChange */
+    ensurePortMappingOnFormData (formData) {
+      const all = this.form.fc?.getFieldsValue?.() || {}
+      ;['networkContainerPorts', 'networkHostPorts', 'networkPortProtocols', 'containerPorts', 'hostPorts', 'portProtocols'].forEach((k) => {
+        if (all[k] != null) {
+          if (formData) formData[k] = all[k]
+        }
+      })
+      this.syncPortMappingFieldsToFd(formData || all)
+      return formData
+    },
     submit (e) {
       e.preventDefault()
+      // 提交只收集数据，不写回盘字段（避免触发 typesMap/defaultType 清盘）
       this.validateForm()
         .then(async formData => {
+          this.ensurePortMappingOnFormData(formData)
+          this.flushCreateFormFieldDrafts()
           this.submiting = true
           const genCreteData = new GenCreateData(formData, this.form.fi)
           const data = genCreteData.all()
@@ -662,13 +1705,19 @@ export default {
           }
           data.extraData.reason = this.form.fd?.reason
           data.extraData.formType = this.type
-          data.extraData.__resource_type__ = 'server'
+          data.extraData.__resource_type__ = this.isServertemplate ? 'servertemplate' : 'server'
           if (this.isServertemplate) { // 创建主机模板
             this.doCreateServertemplate(data)
-          } else if (this.isOpenWorkflow) { // 提交工单
+          } else if (this.isModifyShopCartOrder || this.isOpenWorkflow || this.isModifyWorkflow) {
+            // 修改购物车订单项 / 主机申请工单（含修改历史工单）
             await this.checkCreateData(data)
             await this.doForecast(genCreteData, data)
             await this.doCreateWorkflow(data)
+            // 成功后记住配置（fromSubmit：受 saveOnSubmitSuccess 开关控制；修改工单 canUse=false 会 no-op）
+          } else if (this.isOpenOrderSetWorkflow) { // 购物车工单
+            await this.checkCreateData(data)
+            await this.doForecast(genCreteData, data)
+            await this.doCreateOrderSetWorkflow(data)
           } else { // 创建主机
             await this.checkCreateData(data)
             await this.doForecast(genCreteData, data)
@@ -692,6 +1741,7 @@ export default {
           ...rest,
         },
       }
+      // 成功后各组件 flush 自己的草稿
       this.servertemplateM.create({ data: templateData })
         .then(() => {
           this.$message.success(i18n.t('compute.text_423'))
@@ -704,15 +1754,22 @@ export default {
     async doCreateWorkflow (data) {
       const { workflow = '', order_set_id = '', order_set_idx = '' } = this.$route.query
       if (order_set_id && workflow) {
+        const idx = Number(order_set_idx)
         const res = await new this.$Manager('resource_order_sets').get({ id: order_set_id })
-        if (res.data && res.data.parameters && res.data.parameters[order_set_idx]) {
-          const parameters = [...res.data.parameters]
-          parameters[order_set_idx] = { ...res.data.parameters[order_set_idx], count: data.__count__, parameter: { ...data, price: this.price } }
-          await new this.$Manager('resource_order_sets').update({ id: order_set_id, data: { parameters } })
-          this.$message.success(this.$t('common.success'))
-          this.$router.push('/workflow')
-          return
+        const existing = res.data?.parameters?.[idx]
+        if (!existing) {
+          this.$message.error(this.$t('common.failed'))
+          throw new Error('resource order set item not found')
         }
+        const parameters = [...res.data.parameters]
+        parameters[idx] = {
+          ...existing,
+          count: data.__count__,
+          parameter: { ...data, price: this.price },
+        }
+        await new this.$Manager('resource_order_sets').update({ id: order_set_id, data: { parameters } })
+        this.$message.success(this.$t('common.success'))
+        this.$router.push('/workflow')
         return
       }
       const variables = {
@@ -724,26 +1781,54 @@ export default {
       }
       this._getProjectDomainInfo(variables)
       if (workflow) {
-        new this.$Manager('historic-process-instances', 'v1')
+        await new this.$Manager('historic-process-instances', 'v1')
           .update({ id: `${workflow}/variables`, data: { variables } })
-          .then(() => {
-            this.$message.success(i18n.t('compute.text_1045', [data.generate_name]))
-            this.$router.push('/workflow')
-          })
-          .catch((error) => {
-            throw error
-          })
-      } else {
-        new this.$Manager('process-instances', 'v1')
-          .create({ data: { variables } })
-          .then(() => {
-            this.$message.success(i18n.t('compute.text_1045', [data.generate_name]))
-            this.$router.push('/workflow')
-          })
-          .catch((error) => {
-            throw error
-          })
+        this.$message.success(i18n.t('compute.text_1045', [data.generate_name]))
+        this.$router.push('/workflow')
+        return
       }
+      await new this.$Manager('process-instances', 'v1')
+        .create({ data: { variables } })
+      this.$message.success(i18n.t('compute.text_1045', [data.generate_name]))
+      this.$router.push('/workflow')
+    },
+    buildShopCartParameter (data) {
+      const { __count__, ...parameter } = deleteInvalid(data)
+      const shopCart = {
+        action: 'create',
+        auto_execute: true,
+        count: __count__,
+        resource: 'servers',
+        user_id: this.$store.getters.userInfo.id,
+        parameter: {
+          ...parameter,
+          price: this.price,
+        },
+      }
+      this._getProjectDomainInfo(shopCart)
+      return shopCart
+    },
+    async doCreateOrderSetWorkflow (data) {
+      const { displayname, name } = this.$store.getters.userInfo
+      const shopCart = this.buildShopCartParameter(data)
+      const orderSetRes = await new this.$Manager('resource_order_sets').create({
+        data: {
+          auto_execute: false,
+          name: this.$t('common.shopcart_workflow_name', [displayname || name, this.$moment().format('YYYY-MM-DD'), uuid()]),
+          parameters: [shopCart],
+        },
+      })
+      const variables = {
+        process_definition_key: WORKFLOW_TYPES.EXECUTE_RESOURCE_ORDER_SET,
+        initiator: this.$store.getters.userInfo.id,
+        ids: orderSetRes.data.id,
+        parameter: '{}',
+        project: shopCart.project,
+        project_domain: shopCart.project_domain,
+      }
+      await new this.$Manager('process-instances', 'v1').create({ data: { variables } })
+      this.$message.success(i18n.t('compute.text_1045', [data.generate_name]))
+      this.$router.push('/workflow')
     },
     async checkCreateData (data) {
       return new this.$Manager('servers').create({ data: { ...data, dry_run: true } })
@@ -770,13 +1855,6 @@ export default {
       delete data.vmem_size
       return this.serverM.create({ data })
         .then(res => {
-          if (R.is(Array, data.disks)) {
-            const imageObj = data.disks.find(val => val.disk_type === 'sys')
-            if (R.is(Object, imageObj)) {
-              const image = imageObj.image_id
-              storage.set(`${this.form.fi.createType}${SELECT_IMAGE_KEY_SUFFIX}`, `${this.form.fd.os}:${image}`)
-            }
-          }
           if (isSuccess(res)) {
             this.$message.success(i18n.t('compute.text_322'))
           }
@@ -793,17 +1871,21 @@ export default {
           if (!err) {
             resolve(values)
           } else {
-            this.collapseActive = ['1'] // 仅仅在报错的时候展开高级配置
             reject(err)
           }
         })
       })
     },
     cpuChange (cpu) {
-      const memOpts = this.form.fi.cpuMem.cpu_mems_mb[cpu]
+      // 不限：只设 CPU，不改内存（用户未动内存应保留原值）
+      if (Number(cpu) === 0) {
+        this.form.fc.setFieldsValue({ vcpu: 0 })
+        return
+      }
+      const memOpts = this.form.fi.cpuMem.cpu_mems_mb[cpu] || this.form.fi.cpuMem.cpu_mems_mb[String(cpu)]
       if (!memOpts || !memOpts.length) { // 没有内存Opts，则内存为0
         let vcpu = cpu
-        if (!this.form.fi.cpuMem.cpus.includes(cpu)) { // CPU的Opts不包括cpu的话
+        if (!this.form.fi.cpuMem.cpus.includes(cpu) && !this.form.fi.cpuMem.cpus.some(c => String(c) === String(cpu))) { // CPU的Opts不包括cpu的话
           if (this.form.fi.cpuMem.cpus && this.form.fi.cpuMem.cpus.length) { // 如果CPU的Opts有值
             vcpu = this.form.fi.cpuMem.cpus[0]
           } else { // 否则为0
@@ -815,18 +1897,28 @@ export default {
           vmem: 0,
         })
         return
-      } else if (this.form.fc.getFieldValue('vcpu') !== cpu) { // 因之前未获取cpu设置为0，这一步设置回来
+      } else if (this.form.fc.getFieldValue('vcpu') !== cpu && String(this.form.fc.getFieldValue('vcpu')) !== String(cpu)) { // 因之前未获取cpu设置为0，这一步设置回来
         this.form.fc.setFieldsValue({
           vcpu: cpu,
         })
       }
       this.form.fi.cpuMem.mems_mb = memOpts
-      let defaultMem = 2048
       const currentMem = this.form.fc.getFieldValue('vmem')
-      if (currentMem && this.form.fi.cpuMem.mems_mb.includes(currentMem)) {
+      if (currentMem != null && currentMem !== '' && Number(currentMem) !== 0 && memOpts.some(m => Number(m) === Number(currentMem))) {
         return
       }
-      if (!this.form.fi.cpuMem.mems_mb.includes(2048)) { // 如果返回值不包括默认内存2G，选择第一项
+      // 内存 options 变化：优先草稿，否则 2G / 第一项（不写草稿）；草稿 0=不限
+      const draftMem = this.canUseCreateFormDraft
+        ? this.readCreateFormFieldDraft(VM_CREATE_FORM_DRAFT_FIELD.VMEM)
+        : null
+      if (draftMem === 0 || draftMem === '0') {
+        this.form.fc.setFieldsValue({ vmem: 0 })
+        return
+      }
+      let defaultMem = 2048
+      if (draftMem != null && draftMem !== '' && memOpts.some(m => Number(m) === Number(draftMem))) {
+        defaultMem = Number(draftMem)
+      } else if (!memOpts.some(m => Number(m) === 2048)) {
         defaultMem = memOpts[0]
       }
       this.form.fc.setFieldsValue({
@@ -858,7 +1950,103 @@ export default {
       if (changeKeys.some(val => val.includes('dataDiskSizes'))) { // 动态赋值默认值的表单需要单独处理
         this.$set(this.form.fd, 'dataDiskSizes', formValue.dataDiskSizes)
       }
+      // 端口映射：嵌套字段需从 getFieldsValue 整树同步到 fd
+      if (changeKeys.some(val => val.includes('networkContainerPorts') || val.includes('networkHostPorts') ||
+        val.includes('networkPortProtocols') ||
+        val.includes('containerPorts') || val.includes('hostPorts') || val.includes('portProtocols'))) {
+        this.syncPortMappingFieldsToFd(formValue)
+      }
     },
+    /** 将端口映射相关表单值同步到 fd（反填 setFieldsValue 不走 onValuesChange） */
+    syncPortMappingFieldsToFd (formValue) {
+      if (!this.form?.fd) return
+      const values = formValue || this.form.fc?.getFieldsValue?.() || {}
+      ;['networkContainerPorts', 'networkHostPorts', 'networkPortProtocols', 'containerPorts', 'hostPorts', 'portProtocols'].forEach((k) => {
+        if (values[k] != null) {
+          this.$set(this.form.fd, k, values[k])
+        }
+      })
+    },
+    /** setFieldsValue 后同步 fd（程序化赋值不走 onValuesChange） */
+    setFormFieldsAndSyncFd (values) {
+      if (!this.form?.fc || !values || typeof values !== 'object') return
+      this.form.fc.setFieldsValue(values)
+      const formValue = this.form.fc.getFieldsValue()
+      this._setNewFieldToFd(values, formValue)
+    },
+    /**
+     * 草稿回填完成后：系统盘与数据盘 fc/fd 对齐并 clamp。
+     * 勿在 submit/addShopCart 调用——写回会触发盘组件 watch 清盘。
+     */
+    reconcileDiskFormStateBeforeSubmit () {
+      if (!this.form?.fc) return
+      const sysRef = this.$refs.systemDiskRef
+      if (sysRef) {
+        const typeKey = sysRef.decorator?.type?.[0] || 'systemDiskType'
+        const sizeKey = sysRef.decorator?.size?.[0] || 'systemDiskSize'
+        let typeVal = this.form.fc.getFieldValue(typeKey) || this.form.fd?.[typeKey] || this.form.fd?.systemDiskType
+        const fcSize = this.form.fc.getFieldValue(sizeKey)
+        const fdSize = this.form.fd?.[sizeKey] ?? this.form.fd?.systemDiskSize
+        typeVal = sysRef.resolveSysDiskTypeFromDraft(typeVal)
+        const typeKeyForClamp = typeVal?.key
+        let sizeVal = fcSize
+        if (sizeVal == null || sizeVal === '') sizeVal = fdSize
+        if (fdSize != null && fcSize != null && Number(fdSize) !== Number(fcSize)) {
+          const clampedFc = sysRef.clampSysDiskDraftSize(fcSize, typeKeyForClamp)
+          const clampedFd = sysRef.clampSysDiskDraftSize(fdSize, typeKeyForClamp)
+          const diskMsg = (typeKeyForClamp && sysRef.typesMap?.[typeKeyForClamp]) || {}
+          const minDefault = Math.max(sysRef.imageMinDisk || 0, diskMsg.sysMin || 10, 0)
+          if (Number(clampedFd) > Number(clampedFc) && Number(clampedFc) <= minDefault) {
+            sizeVal = clampedFd
+          } else {
+            sizeVal = clampedFc
+          }
+        }
+        // 无论 fc/fd 是否一致，最终都按当前镜像/类型下限 clamp（修复 value<min 仅展示抬升的情况）
+        sizeVal = sysRef.clampSysDiskDraftSize(sizeVal, typeKeyForClamp)
+        const values = {}
+        if (typeVal) values[typeKey] = typeVal
+        if (sizeVal != null && sizeVal !== '') values[sizeKey] = sizeVal
+        if (Object.keys(values).length) this.setFormFieldsAndSyncFd(values)
+      }
+      const dataRef = this.$refs.dataDiskRef
+      if (dataRef?.dataDisks?.length) {
+        const flat = {}
+        dataRef.dataDisks.forEach((disk, index) => {
+          if (!disk?.key) return
+          const typeField = dataRef._fp('Types', disk.key)
+          const sizeField = dataRef._fp('Sizes', disk.key)
+          const typeVal = this.form.fc.getFieldValue(typeField) || disk.diskType
+          const sizeVal = this.form.fc.getFieldValue(sizeField)
+          const resolvedType = dataRef.resolveDataDiskTypeFromDraft(typeVal, index)
+          const nextSize = dataRef.clampDataDiskDraftSize(sizeVal, dataRef.min(index), dataRef.max(index))
+          if (resolvedType) flat[typeField] = resolvedType
+          if (nextSize != null) flat[sizeField] = nextSize
+        })
+        if (Object.keys(flat).length) this.setFormFieldsAndSyncFd(flat)
+      }
+    },
+    /**
+     * 系统盘/数据盘字段变更时落盘（setFieldsValue 不会走此路径）
+     */
+
+    /**
+     * 批量绑定 VM_CREATE_FORM_DRAFT_FC_BINDINGS（进页回填 + flush）
+     */
+    bindVmCreateFormFcDrafts () {
+      this._vmCreateFormFcDraftMap = Object.create(null)
+      ;(VM_CREATE_FORM_DRAFT_FC_BINDINGS || []).forEach((item) => {
+        if (!item?.key || !item.formField) return
+        if (item.types && !item.types.includes(this.type)) return
+        this._vmCreateFormFcDraftMap[item.formField] = item.key
+        this.bindFormFcFieldDraft(item.key, { formField: item.formField, kind: item.kind })
+      })
+    },
+    /**
+     * form.fc 字段变更时同步对应控件草稿
+     * @param {object} newField
+     */
+
     networkResourceMapper (list) {
       return list
         .map(val => {
@@ -882,15 +2070,28 @@ export default {
       }
     },
     fetchDomainCallback () {
-      const domain = this.$route.query.domain_id
+      let domain = this.$route.query.domain_id
+      // 工单或草稿恢复：从 effectiveInitFormData 取域（有草稿时 DomainProject ignoreStorage）
+      if ((R.isNil(domain) || R.isEmpty(domain)) && this.isFormBackfill) {
+        domain = this.effectiveInitFormData?.extraData?.domain_id
+      }
       if (!R.isNil(domain) && !R.isEmpty(domain)) {
         this.form.fc.setFieldsValue({
           domain: { key: domain },
         })
+        if (this.type === 'public') {
+          this.$nextTick(() => {
+            this.refreshAreaSelects()
+          })
+        }
       }
     },
     fetchProjectCallback () {
-      const project = this.$route.query.tenant_id
+      let project = this.$route.query.tenant_id
+      // 工单或草稿恢复：从 effectiveInitFormData 取项目
+      if ((R.isNil(project) || R.isEmpty(project)) && this.isFormBackfill) {
+        project = this.effectiveInitFormData?.project_id
+      }
       if (!R.isNil(project) && !R.isEmpty(project)) {
         this.form.fc.setFieldsValue({
           project: { key: project },
@@ -989,40 +2190,42 @@ export default {
       }
     },
     addShopCart () {
+      // 加购只收集数据，不写回盘字段；校验通过后立刻 flush，避免 API 过程中 UI 被清盘后落空草稿
       this.validateForm()
         .then(async formData => {
+          this.ensurePortMappingOnFormData(formData)
+          this.flushCreateFormFieldDrafts()
           this.submiting = true
-          const genCreateData = new GenCreateData(formData, this.form.fi)
-          const data = genCreateData.all()
-          if (this.form.fd.bastion_host_enable) {
-            const bastionServer = this.getBationServerData()
-            data.bastion_server = bastionServer
-          }
-          if (data.custom_data_type) {
-            delete data.custom_data_type
-            const { customData } = this.$refs.customData
-            if (customData.length) {
-              data.user_data = customData
+          try {
+            const genCreateData = new GenCreateData(formData, this.form.fi)
+            const data = genCreateData.all()
+            if (this.form.fd.bastion_host_enable) {
+              const bastionServer = this.getBationServerData()
+              data.bastion_server = bastionServer
             }
+            if (data.custom_data_type) {
+              delete data.custom_data_type
+              const { customData } = this.$refs.customData
+              if (customData.length) {
+                data.user_data = customData
+              }
+            }
+            data.extraData.reason = this.form.fd?.reason
+            data.extraData.formType = this.type
+            data.extraData.__resource_type__ = 'server'
+            await this.checkCreateData(data)
+            await this.doForecast(genCreateData, data)
+            const shopCart = this.buildShopCartParameter(data)
+            this.$message.success(this.$t('common.success'))
+            this.$store.commit('shopcart/ADD_SHOP_CART', shopCart)
+          } catch (error) {
+            throw error
+          } finally {
+            this.submiting = false
           }
-          data.extraData.reason = this.form.fd?.reason
-          data.extraData.formType = this.type
-          data.extraData.__resource_type__ = 'server'
-          const { __count__, ...parameter } = deleteInvalid(data)
-          const shopCart = {
-            action: 'create',
-            auto_execute: true,
-            count: __count__,
-            resource: 'servers',
-            user_id: this.$store.getters.userInfo.id,
-            parameter: {
-              ...parameter,
-              price: this.price,
-            },
-          }
-          this._getProjectDomainInfo(shopCart)
-          this.$message.success(this.$t('common.success'))
-          this.$store.commit('shopcart/ADD_SHOP_CART', shopCart)
+        })
+        .catch(error => {
+          throw error
         })
     },
     handleCancel () {

@@ -73,9 +73,8 @@ import CdnDomainList from '@Network/views/cdn/components/List'
 import WafList from '@Network/views/waf/components/List'
 import FileSystemList from '@Storage/views/file-system/components/List'
 import VmContainerInstanceList from '@Compute/views/vminstance-container/components/List'
-import { getSearchMaps } from '@/constants/globalSearch'
 import DeadlyResourceList from '@Compute/views/deadly-resource/components/List'
-
+import { getSearchMaps } from '@/constants/globalSearch'
 export default {
   name: 'GlobalSearchResult',
   components: {
@@ -213,7 +212,7 @@ export default {
         // 组装成数组
         const paramsList = Object.values(maps).filter(val => {
           // 绕过无权限和隐藏的页面
-          return val.hasPermission && !this.$isScopedPolicyMenuHidden(`sub_hidden_menus.${val.menu_key}`)
+          return !val.globalSearchHidden && val.hasPermission && !this.$isScopedPolicyMenuHidden(`sub_hidden_menus.${val.menu_key}`)
         }).map(val => ({
           ...val,
           params: val.params,

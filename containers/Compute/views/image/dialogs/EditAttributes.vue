@@ -15,14 +15,14 @@
         <a-form-item :label="$t('compute.text_1365')">
           <os-arch v-on:change="osArchChangeHandle" v-decorator="decorators.os_arch" :form="form" />
         </a-form-item>
-        <a-form-item :label="$t('compute.text_267')" v-bind="formItemLayout">
+        <a-form-item :label="$t('compute.text_267')" v-bind="formItemLayout" v-if="!$route.path.includes('app-package')">
           <a-radio-group @change="osTypeChangeHandle" v-decorator="decorators.osType">
             <a-radio-button value="Linux">Linux</a-radio-button>
             <a-radio-button value="Windows">Windows</a-radio-button>
             <a-radio-button value="Other">{{$t('compute.text_151')}}</a-radio-button>
           </a-radio-group>
         </a-form-item>
-        <a-form-item :label="$t('compute.text_657')" v-bind="formItemLayout">
+        <a-form-item :label="$t('compute.text_657')" v-bind="formItemLayout" v-if="!$route.path.includes('app-package')">
           <a-select
             :placeholder="$t('compute.text_658')"
             v-decorator="decorators.osDistribution"
@@ -71,7 +71,7 @@
               v-for="(item, index) in biosOptions"
               :value="item.value"
               :key="index"
-              :disabled="isArm && item.value==='BIOS'">{{item.text}}</a-radio-button>
+              :disabled="(isArm || isRiscv64) && item.value==='BIOS'">{{item.text}}</a-radio-button>
           </a-radio-group>
         </a-form-item>
         <a-form-item :label="$t('compute.vdi_protocol')">
@@ -81,6 +81,17 @@
               :value="item.value"
               :key="index">{{item.text}}</a-radio-button>
           </a-radio-group>
+        </a-form-item>
+        <a-form-item :label="$t('compute.machine')" v-bind="formItemLayout">
+          <a-radio-group v-decorator="decorators.machine_type">
+            <a-radio-button
+              v-for="(item, index) in machineTypeOptions"
+              :value="item.value"
+              :key="index">{{item.text}}</a-radio-button>
+          </a-radio-group>
+        </a-form-item>
+        <a-form-item :label="$t('compute.usb_kbd')" v-bind="formItemLayout">
+          <a-switch v-decorator="decorators.disable_usb_kbd" />
         </a-form-item>
       </a-form>
     </div>
@@ -96,7 +107,7 @@ import * as R from 'ramda'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import OsArch from '@/sections/OsArch'
-import { HOST_CPU_ARCHS } from '@/constants/compute'
+import { HOST_CPU_ARCHS, resolveOsArchKey, isOsArch } from '@/constants/compute'
 
 export default {
   name: 'ImageEditAttributesDialog',
@@ -108,7 +119,7 @@ export default {
     const data = this.params.data[0]
     let os_arch = data.os_arch || HOST_CPU_ARCHS.x86.key
     if (data.properties && data.properties.os_arch) {
-      os_arch = data.properties.os_arch.includes('x86') ? HOST_CPU_ARCHS.x86.key : HOST_CPU_ARCHS.arm.key
+      os_arch = resolveOsArchKey(data.properties.os_arch) || HOST_CPU_ARCHS.x86.key
     }
     let bios = 'BIOS'
     const { properties = {} } = data
@@ -120,9 +131,11 @@ export default {
     } else if (uefi_support !== 'true') {
       bios = 'BIOS'
     }
-    const isArm = (os_arch === HOST_CPU_ARCHS.arm.key)
+    const isArm = isOsArch(os_arch, 'arm')
+    const isRiscv64 = isOsArch(os_arch, 'riscv64')
     return {
       isArm: isArm,
+      isRiscv64: isRiscv64,
       loading: false,
       form: {
         fc: this.$form.createForm(this),
@@ -189,6 +202,19 @@ export default {
           'vdi',
           {
             initialValue: 'vnc',
+          },
+        ],
+        machine_type: [
+          'machine_type',
+          {
+            initialValue: '',
+          },
+        ],
+        disable_usb_kbd: [
+          'disable_usb_kbd',
+          {
+            initialValue: false,
+            valuePropName: 'checked',
           },
         ],
       },
@@ -279,8 +305,13 @@ export default {
       ],
       vdiOptions: [
         { text: this.$t('compute.text_661'), value: '' },
-        { text: 'vnc', value: 'vnc' },
-        { text: 'spice', value: 'spice' },
+        { text: 'VNC', value: 'vnc' },
+        { text: 'SPICE', value: 'spice' },
+      ],
+      machineTypeOptions: [
+        { text: this.$t('compute.text_661'), value: '' },
+        { text: 'PC', value: 'pc' },
+        { text: 'Q35', value: 'q35' },
       ],
       initMinDisk: 0,
     }
@@ -299,7 +330,7 @@ export default {
       this.manager.get({ id: this.params.data[0].id })
         .then((res) => {
           const { name, min_disk: minDisk } = res.data
-          const { os_type: osType, os_distribution: osDistribution, disk_driver: diskDriver, net_driver: netDriver, uefi_support: uefiSupport, bios_support: biosSupport, vdi_protocol: vdiProtocol } = res.data.properties
+          const { os_type: osType, os_distribution: osDistribution, disk_driver: diskDriver, net_driver: netDriver, uefi_support: uefiSupport, bios_support: biosSupport, vdi_protocol: vdiProtocol, machine_type: machineType, disable_usb_kbd: disableUsbKbd } = res.data.properties
           this.initName = name
           this.initMinDisk = minDisk
           this.$nextTick(() => {
@@ -313,6 +344,8 @@ export default {
               netDriver: netDriver || '',
               bios: this.getBios(uefiSupport, biosSupport),
               vdi: vdiProtocol || 'vnc',
+              machine_type: machineType || '',
+              disable_usb_kbd: disableUsbKbd === 'true',
             })
           })
         })
@@ -344,10 +377,13 @@ export default {
       })
     },
     osArchChangeHandle (e) {
-      this.isArm = (e === HOST_CPU_ARCHS.arm.key)
-      this.$nextTick(() => {
-        this.form.fc.setFieldsValue({ bios: 'UEFI' })
-      })
+      this.isArm = isOsArch(e, 'arm')
+      this.isRiscv64 = isOsArch(e, 'riscv64')
+      if (this.isArm || this.isRiscv64) {
+        this.$nextTick(() => {
+          this.form.fc.setFieldsValue({ bios: 'UEFI' })
+        })
+      }
     },
     osTypeChangeHandle (e) {
       const v = e.target.value
@@ -387,7 +423,7 @@ export default {
       this.loading = true
       try {
         const values = await this.form.fc.validateFields()
-        const { name, osType, osDistribution, osOtherDistribution, minDisk, diskDriver, netDriver, os_arch, bios, vdi } = values
+        const { name, osType, osDistribution, osOtherDistribution, minDisk, diskDriver, netDriver, os_arch, bios, vdi, machine_type, disable_usb_kbd } = values
         const params = {
           name,
           // protected: values.protected,
@@ -399,6 +435,8 @@ export default {
             net_driver: netDriver,
             os_arch,
             vdi_protocol: vdi,
+            machine_type,
+            disable_usb_kbd: disable_usb_kbd ? 'true' : 'false',
           },
         }
         if (!this.isHostImage) {

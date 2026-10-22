@@ -2,7 +2,7 @@
   <div class="data-disk">
     <template v-if="dataDisks.length === 0 && (disabled || imageType === 'backup' || imageType === 'snapshot')"><span class="warning-color">{{$t('compute.text_128')}}</span></template>
     <template v-else>
-      <div class="d-flex" v-for="(item, i) in dataDisks" :key="item.key">
+      <div class="data-disk-item" v-for="(item, i) in dataDisks" :key="item.key">
         <disk
           :ref="'disks'"
           :diskKey="item.key"
@@ -15,9 +15,10 @@
           :decorator="genDecorator(item.key)"
           :hypervisor="hypervisor"
           :types-map="typesMap"
-          :elements="elements"
+          :elements="getDiskElements(i)"
           :disabled="getDisabled(item)"
           :size-disabled="item.sizeDisabled"
+          :hide-size="hideSize"
           :simplify="simplify"
           :storageParams="storageParams"
           :storageHostParams="storageHostParams"
@@ -27,12 +28,20 @@
           :defaultIops="item.iops"
           :defaultThroughput="item.throughput"
           :iopsLimit="iopsLimit[item.key]"
+          :throughputLimit="throughputLimit[item.key]"
           :isAutoResetShow="isAutoResetShow"
           :imageType="imageType"
           @snapshotChange="val => snapshotChange(item, val, i)"
           @diskTypeChange="val => diskTypeChange(item, val, i)"
-          @storageHostChange="(val) => $emit('storageHostChange', val)" />
-        <a-button v-if="!getDisabled(item, 'minus') && (dataDisks.length > 1 ? (i !== 0) : true) && isAddDiskShow" shape="circle" icon="minus" size="small" @click="decrease(item.key)" class="mt-2" />
+          @storageHostChange="(val) => $emit('storageHostChange', val)">
+          <a-button
+            v-if="!getDisabled(item, 'minus') && (dataDisks.length > 1 ? (i !== 0) : true) && isAddDiskShow"
+            slot="aside"
+            shape="circle"
+            icon="minus"
+            size="small"
+            @click="decrease(item.key)" />
+        </disk>
       </div>
       <div class="d-flex align-items-center" v-if="diskRemain > 0 && !disabled && isAddDiskShow && imageType !== 'backup' && imageType !== 'snapshot'">
         <a-button type="primary" shape="circle" icon="plus" size="small" @click="add" />
@@ -52,16 +61,28 @@ import { STORAGE_TYPES } from '@/constants/compute'
 import { HYPERVISORS_MAP } from '@/constants'
 import { uuid, findAndUnshift, findAndPush } from '@/utils/utils'
 import { diskSupportTypeMedium, getOriginDiskKey } from '@/utils/common/hypervisor'
+import {
+  getGoogleDiskPerfElements,
+  getGoogleDiskIopsLimit,
+  getGoogleDiskThroughputLimit,
+} from '@/utils/common/googleDiskPerf'
+
+import createFormFieldDraftMixin from '@/mixins/createFormFieldDraft'
+import { pickFields } from '@/utils/createFormDraft'
 
 // 磁盘最小值
 const DISK_MIN_SIZE = 10
-
 export default {
   name: 'dataDisk',
   components: {
     Disk,
   },
+  mixins: [createFormFieldDraftMixin],
   props: {
+    formDraftKey: {
+      type: String,
+      default: '',
+    },
     form: {
       type: Object,
       required: true,
@@ -122,6 +143,11 @@ export default {
     defaultType: {
       type: Object,
     },
+    // 调整配置等场景：SKU 可能晚于磁盘组件就绪，仍需用 zone capability 构建 typesMap
+    allowCapabilityTypesWithoutSku: {
+      type: Boolean,
+      default: false,
+    },
     isStorageShow: {
       type: Boolean,
       default: false,
@@ -153,6 +179,15 @@ export default {
     forceElements: {
       type: Array,
     },
+    // 仅第一块数据盘展示调度标签/指定存储等高级项
+    advancedOnlyFirst: {
+      type: Boolean,
+      default: false,
+    },
+    hideSize: {
+      type: Boolean,
+      default: false,
+    },
     isAddDiskShow: {
       type: Boolean,
       default: true,
@@ -168,10 +203,15 @@ export default {
       type: Boolean,
       default: false,
     },
+    fieldPrefix: {
+      type: String,
+      default: 'dataDisk',
+    },
   },
   data () {
     return {
       dataDisks: [],
+      diskDraftRestoring: false,
     }
   },
   computed: {
@@ -186,6 +226,9 @@ export default {
     },
     isAws () {
       return this.hypervisor === HYPERVISORS_MAP.aws.key
+    },
+    isGoogle () {
+      return this.hypervisor === HYPERVISORS_MAP.google.key
     },
     elements () {
       const ret = []
@@ -220,7 +263,7 @@ export default {
         if (this.currentTypeObj()?.key === 'gp3') {
           ret.push('iops', 'throughput')
         }
-        if (this.currentTypeObj()?.key === 'io1') {
+        if (['io1', 'io2'].includes(this.currentTypeObj()?.key)) {
           ret.push('iops')
         }
       }
@@ -228,25 +271,60 @@ export default {
     },
     iopsLimit () {
       const value = {}
-      if (!this.isAws || this.isServertemplate) return value
+      if (this.isServertemplate) return value
+      if (!this.isAws && !this.isGoogle) return value
       this.dataDisks.map(item => {
         const type = item.diskType?.key
+        const sizes = this.form.fd[this._fp('Sizes')] || {}
+        const size = sizes[item.key] ?? this.form.fd[this._fp('Sizes', item.key)]
+        if (this.isGoogle) {
+          value[item.key] = getGoogleDiskIopsLimit(type, size) || { min: 0, max: 0 }
+          return
+        }
         let ret = { min: 0 }
-        // gp3 iops 不能超过磁盘500倍
+        // gp3 iops 不能超过磁盘500倍，最大80000
         if (type === 'gp3') {
-          ret = { min: 3000, max: 16000 }
-          if (this.form.fd.dataDiskSizes?.[item.key]) {
-            ret.max = this.form.fd.dataDiskSizes?.[item.key] * 500 < ret.max ? this.form.fd.dataDiskSizes?.[item.key] * 500 : ret.max
+          ret = { min: 3000, max: 80000 }
+          if (size) {
+            ret.max = Math.min(size * 500, ret.max)
           }
         }
-        // io1 iops 不能超过磁盘50倍
+        // io1 iops 不能超过磁盘50倍，最大64000
         if (type === 'io1') {
           ret = { min: 100, max: 64000 }
-          if (this.form.fd.dataDiskSizes?.[item.key]) {
-            ret.max = this.form.fd.dataDiskSizes?.[item.key] * 50 < ret.max ? this.form.fd.dataDiskSizes?.[item.key] * 50 : ret.max
+          if (size) {
+            ret.max = Math.min(size * 50, ret.max)
+          }
+        }
+        // io2 iops 不能超过磁盘1000倍，最大256000
+        if (type === 'io2') {
+          ret = { min: 100, max: 256000 }
+          if (size) {
+            ret.max = Math.min(size * 1000, ret.max)
           }
         }
         value[item.key] = ret
+      })
+      return value
+    },
+    throughputLimit () {
+      const value = {}
+      if (this.isServertemplate) return value
+      this.dataDisks.map(item => {
+        const type = item.diskType?.key
+        if (this.isAws && type === 'gp3') {
+          value[item.key] = { min: 125, max: 1000 }
+          return
+        }
+        if (this.isGoogle) {
+          const sizes = this.form.fd[this._fp('Sizes')] || {}
+          const size = sizes[item.key] ?? this.form.fd[this._fp('Sizes', item.key)]
+          const iops = this.form.fd[this._fp('Iops', item.key)] ??
+            _.get(this.form.fd, [this._fp('Iops'), item.key])
+          value[item.key] = getGoogleDiskThroughputLimit(type, size, iops) || { min: 0, max: 0 }
+          return
+        }
+        value[item.key] = { min: 125, max: 1000 }
       })
       return value
     },
@@ -273,7 +351,7 @@ export default {
           }
         }
       } else {
-        if (this.isPublic) {
+        if (this.isPublic && !this.allowCapabilityTypesWithoutSku) {
           currentTypes = []
         }
       }
@@ -373,27 +451,363 @@ export default {
     },
   },
   watch: {
-    typesMap (v, oldV) {
-      if (!R.equals(v, oldV)) {
-        if (this.dataDisks && this.dataDisks.length) {
-          this.dataDisks.forEach((disk, index) => {
-            this.form.fc.setFieldsValue({
-              [`dataDiskSizes[${disk.key}]`]: Math.max((disk.value || 0), this.min(index)),
-            })
-            if (this.isInitForm) return
-            if (!disk.disabled) this.decrease(disk.key)
+    typesMap: {
+      immediate: true,
+      handler (v, oldV) {
+        // opts 就绪：自管草稿回填（不再依赖 mixin mounted）
+        if (v && !R.isEmpty(v) && this.canRestoreFormFieldDraft()) {
+          this.$nextTick(() => {
+            const draft = this.sanitizeDraftForRestore(this.readFormFieldDraft())
+            if (draft && Object.keys(draft).length) {
+              this.applyCreateFormFieldDraft(draft)
+            }
           })
         }
-      }
+        if (oldV !== undefined && !R.equals(v, oldV)) {
+          // 工单/控件草稿回填期间：typesMap 就绪后校正已占位的磁盘类型，禁止清空数据盘
+          if (this.isInitForm || this.diskDraftRestoring) {
+            if (v && !R.isEmpty(v) && this.dataDisks && this.dataDisks.length) {
+              this.dataDisks.forEach((disk, index) => {
+                const curKey = disk.diskType && disk.diskType.key
+                let typeObj = curKey ? v[curKey] : null
+                if (curKey && !typeObj) {
+                  const backend = String(curKey).split('/')[0]
+                  const matched = Object.keys(v).find(k => k === backend || k.startsWith(`${backend}/`))
+                  if (matched) typeObj = v[matched]
+                }
+                // 类型当前不可用：回退首个可用类型，避免留下无效草稿类型
+                if (!typeObj) {
+                  const firstKey = Object.keys(v)[0]
+                  if (!firstKey) return
+                  typeObj = v[firstKey]
+                }
+                disk.diskType = {
+                  key: typeObj.key,
+                  label: typeObj.label,
+                  index: disk.diskType?.index ?? index,
+                }
+                const sizeKey = this._fp('Sizes', disk.key)
+                const curSize = this.form.fc.getFieldValue(sizeKey)
+                const min = this.min(index)
+                const max = this.max(index)
+                const sizeSource = (curSize == null || curSize === '') ? (min || DISK_MIN_SIZE) : curSize
+                const nextSize = this.clampDataDiskDraftSize(sizeSource, min, max)
+                const patch = {
+                  [this._fp('Types', disk.key)]: disk.diskType,
+                  [sizeKey]: nextSize,
+                }
+                this.form.fc.setFieldsValue(patch)
+              })
+              // typesMap 就绪后再写一遍草稿字段（盖住异步默认值），并做合法夹取；size/iops/throughput 为输入字段不回填
+              if (this.diskDraftRestoring) {
+                const draft = this.sanitizeDraftForRestore(this.readFormFieldDraft())
+                if (draft) this.$nextTick(() => this.applyDataDiskDraftFields(draft))
+              }
+            }
+            return
+          }
+          if (this.dataDisks && this.dataDisks.length) {
+            this.dataDisks.forEach((disk, index) => {
+              this.form.fc.setFieldsValue({
+                [this._fp('Sizes', disk.key)]: Math.max((disk.value || 0), this.min(index)),
+              })
+              if (!disk.disabled) this.decrease(disk.key)
+            })
+          }
+        }
+      },
     },
     defaultType (v, oldV) {
       // vmware系统盘改变清空数据盘，忽略调整配置初始化的情况
+      if (this.isInitForm || this.diskDraftRestoring) return
       if (this.getHypervisor() === HYPERVISORS_MAP.esxi.key && oldV && oldV.label) {
         this.dataDisks = []
       }
     },
   },
   methods: {
+    // 由 typesMap watch 自管回填；保留方法供页面编排兼容调用
+    restoreFormFieldDraftFields () {
+      if (!this.canRestoreFormFieldDraft()) return false
+      if (typeof this.isCreateFormFieldTouched === 'function' && this.isCreateFormFieldTouched(this.resolveFormDraftKey())) return false
+      if (!this.typesMap || R.isEmpty(this.typesMap)) return false
+      const draft = this.sanitizeDraftForRestore(this.readFormFieldDraft())
+      if (!draft || !Object.keys(draft).length) return false
+      this.applyCreateFormFieldDraft(draft)
+      return true
+    },
+    /**
+     * 回填白名单：仅保留结构 + 选择型子字段（类型/调度标签/策略/快照/存储/文件系统/自动重置/预分配），
+     * 输入子字段（大小/iops/吞吐/挂载路径）不回填，交由组件默认值
+     */
+    sanitizeDraftForRestore (draft) {
+      if (draft == null || typeof draft !== 'object') return draft
+      if (Array.isArray(this.formDraftRestoreFields) && this.formDraftRestoreFields.length) {
+        return pickFields(draft, this.formDraftRestoreFields)
+      }
+      return this.pickDataDiskSelectionDraft(draft)
+    },
+    pickDataDiskSelectionDraft (draft) {
+      const ret = {}
+      if (Array.isArray(draft.__dataDiskKeys)) ret.__dataDiskKeys = draft.__dataDiskKeys
+      const suffixes = ['Types', 'Schedtags', 'Policys', 'Snapshots', 'Storages', 'Filetypes', 'AutoReset', 'Preallocation']
+      suffixes.forEach((suffix) => {
+        const nested = `${this.fieldPrefix}${suffix}`
+        if (draft[nested] && typeof draft[nested] === 'object') {
+          ret[nested] = { ...draft[nested] }
+        }
+      })
+      const keys = Array.isArray(draft.__dataDiskKeys)
+        ? draft.__dataDiskKeys
+        : Object.keys(draft[`${this.fieldPrefix}Types`] || {})
+      keys.forEach((key) => {
+        suffixes.forEach((suffix) => {
+          const bracketKey = `${this.fieldPrefix}${suffix}[${key}]`
+          if (draft[bracketKey] !== undefined) ret[bracketKey] = draft[bracketKey]
+        })
+      })
+      return ret
+    },
+    /** 工单/草稿回填中：禁止把临时空盘状态写回草稿 */
+    isDataDiskDraftWriteBlocked () {
+      return !!(this.diskDraftRestoring || this.isInitForm || this.form?.fi?.diskDraftRestoring)
+    },
+    getCreateFormFieldDraftSnapshot () {
+      const f = this.form?.fc
+      if (!f) return undefined
+      const pick = {}
+      const keys = (this.dataDisks || []).map(d => d.key)
+      // 显式空结构：删光数据盘后也要能落盘/清草稿，避免 undefined 跳过写入导致旧草稿残留
+      if (!keys.length) {
+        return { __dataDiskKeys: [] }
+      }
+      pick.__dataDiskKeys = keys
+      const diskRefs = (() => {
+        const refs = this.$refs.disks
+        if (Array.isArray(refs)) return refs
+        return refs ? [refs] : []
+      })()
+      keys.forEach((key) => {
+        const diskComp = diskRefs.find(d => d && d.diskKey === key)
+        const includeStorage = !diskComp || diskComp.showStorage
+        const includeSchedtag = !diskComp || diskComp.showSchedtag
+        const includeSnapshot = !diskComp || diskComp.showSnapshot
+        const includeMount = !diskComp || diskComp.showMountpoint
+        const includePreallocation = !diskComp || diskComp.showPreallocation
+        const fieldKeys = [
+          this._fp('Types', key),
+          // Sizes / Iops / Throughputs / MountPaths 为输入字段：不写入草稿
+          includeSchedtag ? this._fp('Schedtags', key) : null,
+          includeSchedtag ? this._fp('Policys', key) : null,
+          includeSnapshot ? this._fp('Snapshots', key) : null,
+          includeStorage ? this._fp('Storages', key) : null,
+          includeMount ? this._fp('Filetypes', key) : null,
+          this._fp('AutoReset', key),
+          includePreallocation ? this._fp('Preallocation', key) : null,
+        ].filter(Boolean)
+        fieldKeys.forEach((fk) => {
+          const v = f.getFieldValue(fk)
+          if (v !== undefined) pick[fk] = v
+        })
+        // diskType 兜底（form 尚未挂装饰器时）
+        const disk = this.dataDisks.find(d => d.key === key)
+        if (pick[this._fp('Types', key)] === undefined && disk?.diskType) {
+          pick[this._fp('Types', key)] = disk.diskType
+        }
+      })
+      // 落盘前校正类型
+      keys.forEach((key, index) => {
+        const typeField = this._fp('Types', key)
+        if (pick[typeField] !== undefined) {
+          pick[typeField] = this.resolveDataDiskTypeFromDraft(pick[typeField], index)
+        }
+      })
+      return pick
+    },
+    flushFormFieldDraftOnSubmit () {
+      if (this.isDataDiskDraftWriteBlocked()) return
+      const data = this.serializeFormFieldDraft()
+      if (data && Array.isArray(data.__dataDiskKeys) && data.__dataDiskKeys.length === 0) {
+        this.clearFormFieldDraft()
+        return
+      }
+      if (data !== undefined) {
+        this.writeFormFieldDraft(data, { fromSubmit: true })
+      }
+    },
+    applyCreateFormFieldDraft (draft, options = {}) {
+      if (!draft || !this.form?.fc) return
+      // 跨 tab（仅 local）：不回填数据盘；同 session 全量回填
+      const fromLocal = options.fromLocal != null
+        ? !!options.fromLocal
+        : this.isFormFieldDraftFromLocal()
+      if (fromLocal) return
+      draft = this.sanitizeDraftForRestore(draft)
+      if (!draft || !Object.keys(draft).length) return
+      this.diskDraftRestoring = true
+      if (this.form.fi) this.$set(this.form.fi, 'diskDraftRestoring', true)
+      const run = () => this.applyDataDiskDraft(draft)
+      this.$nextTick(run)
+      // 盖住 typesMap/子组件就绪即可，勿长时间挡住系统盘默认 size
+      if (this._dataDiskDraftApplyTimer) clearTimeout(this._dataDiskDraftApplyTimer)
+      this._dataDiskDraftApplyTimer = setTimeout(() => {
+        run()
+        this.diskDraftRestoring = false
+        if (this.form?.fi) this.$set(this.form.fi, 'diskDraftRestoring', false)
+      }, 1100)
+    },
+    applyDataDiskDraft (draft) {
+      if (!draft || !this.form?.fc) return
+      const { __dataDiskKeys, ...rest } = draft
+      // 用户删光后的空草稿：清空当前数据盘，勿 fallback 到其它残留字段
+      if (Array.isArray(__dataDiskKeys) && __dataDiskKeys.length === 0) {
+        this.dataDisks = []
+        return
+      }
+      const keys = Array.isArray(__dataDiskKeys) && __dataDiskKeys.length
+        ? __dataDiskKeys
+        : Object.keys(rest.dataDiskSizes || {}).concat(
+          Object.keys(rest).filter(k => k.startsWith('dataDiskSizes[')).map(k => {
+            const m = k.match(/dataDiskSizes\[(.+)\]/)
+            return m && m[1]
+          }).filter(Boolean),
+        )
+      const uniqKeys = [...new Set(keys)].filter(Boolean)
+      if (uniqKeys.length) {
+        this.dataDisks = uniqKeys.map((key, idx) => {
+          let typeVal = rest[this._fp('Types', key)] ||
+            rest.dataDiskTypes?.[key] ||
+            { key: '', label: '', index: idx }
+          typeVal = this.resolveDataDiskTypeFromDraft(typeVal, idx)
+          return {
+            key,
+            diskType: typeVal,
+            iops: rest[this._fp('Iops', key)] ?? rest.dataDiskIops?.[key],
+            throughput: rest[this._fp('Throughputs', key)] ?? rest.dataDiskThroughputs?.[key],
+          }
+        })
+      }
+      this.$nextTick(() => this.applyDataDiskDraftFields(draft))
+    },
+    resolveDataDiskTypeFromDraft (typeVal, index = 0) {
+      const cur = typeVal && typeof typeVal === 'object' ? { ...typeVal, index: typeVal.index ?? index } : { key: '', label: '', index }
+      if (!this.typesMap || R.isEmpty(this.typesMap)) return cur
+      if (cur.key && this.typesMap[cur.key]) {
+        return { key: cur.key, label: this.typesMap[cur.key].label || cur.label, index: cur.index }
+      }
+      if (cur.key) {
+        const backend = String(cur.key).split('/')[0]
+        const matched = Object.keys(this.typesMap).find(k => k === backend || k.startsWith(`${backend}/`))
+        if (matched) {
+          return { key: matched, label: this.typesMap[matched].label, index: cur.index }
+        }
+      }
+      const firstKey = Object.keys(this.typesMap)[0]
+      if (!firstKey) return cur
+      return { key: firstKey, label: this.typesMap[firstKey].label, index: cur.index }
+    },
+    syncDataDiskFieldsToFd (flat) {
+      if (!this.form?.fd || !flat || typeof flat !== 'object') return
+      Object.keys(flat).forEach((key) => {
+        this.$set(this.form.fd, key, flat[key])
+      })
+      const formValue = this.form.fc?.getFieldsValue?.() || {}
+      if (formValue.dataDiskSizes) {
+        this.$set(this.form.fd, 'dataDiskSizes', formValue.dataDiskSizes)
+      }
+      if (formValue.dataDiskTypes) {
+        this.$set(this.form.fd, 'dataDiskTypes', formValue.dataDiskTypes)
+      }
+    },
+    clampDataDiskDraftSize (sizeVal, min, max) {
+      if (sizeVal == null || sizeVal === '') return sizeVal
+      let size = Number(sizeVal)
+      if (Number.isNaN(size)) return sizeVal
+      const lo = min || DISK_MIN_SIZE
+      const hi = max || Infinity
+      if (size < lo) size = lo
+      if (Number.isFinite(hi) && size > hi) size = hi
+      return size
+    },
+    applyDataDiskDraftFields (draft) {
+      if (!draft || !this.form?.fc) return
+      const { __dataDiskKeys, ...rest } = draft
+      const flat = { ...rest }
+      // 嵌套结构展平，供 setFieldsValue
+      ;['dataDiskSizes', 'dataDiskTypes', 'dataDiskSchedtags', 'dataDiskPolicys', 'dataDiskSnapshots', 'dataDiskStorages', 'dataDiskIops', 'dataDiskThroughputs', 'dataDiskFiletypes', 'dataDiskMountPaths', 'dataDiskAutoReset', 'dataDiskPreallocation'].forEach((prefix) => {
+        const obj = rest[prefix]
+        if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+          Object.keys(obj).forEach((key) => {
+            flat[`${prefix}[${key}]`] = obj[key]
+          })
+        }
+      })
+      delete flat.dataDiskSizes
+      delete flat.dataDiskTypes
+      delete flat.dataDiskSchedtags
+      delete flat.dataDiskPolicys
+      delete flat.dataDiskSnapshots
+      delete flat.dataDiskStorages
+      delete flat.dataDiskIops
+      delete flat.dataDiskThroughputs
+      delete flat.dataDiskFiletypes
+      delete flat.dataDiskMountPaths
+      delete flat.dataDiskAutoReset
+      delete flat.dataDiskPreallocation
+      // 对照当前 typesMap / min-max，保证回填合法；大小为输入字段不回填草稿，缺省时补默认 min
+      ;(this.dataDisks || []).forEach((disk, index) => {
+        const typeField = this._fp('Types', disk.key)
+        const sizeField = this._fp('Sizes', disk.key)
+        const resolvedType = this.resolveDataDiskTypeFromDraft(
+          flat[typeField] || disk.diskType,
+          index,
+        )
+        disk.diskType = resolvedType
+        flat[typeField] = resolvedType
+        const rawSize = flat[sizeField] != null ? flat[sizeField] : this.form.fc.getFieldValue(sizeField)
+        const minSize = this.min(index) || DISK_MIN_SIZE
+        const sizeSource = (rawSize == null || rawSize === '') ? minSize : rawSize
+        flat[sizeField] = this.clampDataDiskDraftSize(sizeSource, minSize, this.max(index))
+      })
+      if (Object.keys(flat).length) {
+        this.form.fc.setFieldsValue(flat)
+        this.syncDataDiskFieldsToFd(flat)
+      }
+      // session 草稿（同 tab）完全恢复：打开高级并回填高级项
+      this.$nextTick(() => {
+        const refs = this.$refs.disks
+        const diskRefs = Array.isArray(refs) ? refs : (refs ? [refs] : [])
+        diskRefs.forEach((disk, i) => {
+          const key = this.dataDisks[i]?.key
+          if (!disk || !key) return
+          const hasAdv = !!(
+            flat[this._fp('Schedtags', key)] ||
+            flat[this._fp('Policys', key)] ||
+            flat[this._fp('Snapshots', key)] ||
+            flat[this._fp('Storages', key)] ||
+            flat[this._fp('Iops', key)] ||
+            flat[this._fp('Throughputs', key)] ||
+            flat[this._fp('Filetypes', key)] ||
+            flat[this._fp('MountPaths', key)] ||
+            flat[this._fp('AutoReset', key)] ||
+            flat[this._fp('Preallocation', key)]
+          )
+          if (!hasAdv) return
+          disk.showAdvanced = true
+          if (flat[this._fp('Schedtags', key)] || flat[this._fp('Policys', key)]) disk.showSchedtag = true
+          if (flat[this._fp('Snapshots', key)]) disk.showSnapshot = true
+          if (flat[this._fp('Storages', key)]) disk.showStorage = true
+          if (flat[this._fp('Iops', key)]) disk.showIops = true
+          if (flat[this._fp('Throughputs', key)]) disk.showThroughput = true
+          if (flat[this._fp('Filetypes', key)] || flat[this._fp('MountPaths', key)]) disk.showMountpoint = true
+          if (flat[this._fp('Preallocation', key)]) disk.showPreallocation = true
+        })
+      })
+    },
+
+    _fp (suffix, key) {
+      return key !== undefined ? `${this.fieldPrefix}${suffix}[${key}]` : `${this.fieldPrefix}${suffix}`
+    },
     currentTypeObj (index = 0) {
       // 非阿里云 数据盘仅第一块盘的磁盘类型可以修改
       const diskTypeKey = _.get(this.dataDisks, `[${index}].diskType.key`)
@@ -427,6 +841,17 @@ export default {
       }
       return this.disabled
     },
+    getDiskElements (index) {
+      if (this.advancedOnlyFirst && index > 0) return []
+      const ret = [...this.elements]
+      if (this.isGoogle && !this.isServertemplate) {
+        const typeKey = _.get(this.dataDisks, `[${index}].diskType.key`) || this.currentTypeObj(index)?.key
+        getGoogleDiskPerfElements(typeKey).forEach((el) => {
+          if (!ret.includes(el)) ret.push(el)
+        })
+      }
+      return ret
+    },
     genDecorator (uid) {
       const ret = {}
       R.forEachObjIndexed((item, key) => {
@@ -439,7 +864,7 @@ export default {
       this.dataDisks.splice(index, 1)
       this.$nextTick(() => {
         if (index === 0 && this.dataDisks.length > 0) {
-          const key = `dataDiskTypes[${this.dataDisks[0].key}]`
+          const key = this._fp('Types', this.dataDisks[0].key)
           const defaultKey = Object.keys(this.typesMap)[0]
           if (defaultKey) {
             const dataDiskTypes = {
@@ -453,7 +878,7 @@ export default {
         }
         const formValue = this.form.fc.getFieldsValue()
         if (this.form.fd) { // 如果上层表单有fd时，需要在此同步数据(外层监听不到减少表单的情况)
-          this.form.fd.dataDiskSizes = formValue.dataDiskSizes || {}
+          this.form.fd[this._fp('Sizes')] = formValue[this._fp('Sizes')] || {}
         }
       })
     },
@@ -475,6 +900,13 @@ export default {
         dataDiskTypes = {
           key: typeObj.key || diskType,
           label: typeObj.label || diskType,
+          index: idx,
+        }
+      } else if (diskType) {
+        // typesMap 尚未就绪（公有云等 sku/capability）：先按草稿 backend 占位，就绪后再校正
+        dataDiskTypes = {
+          key: newDiskType || diskType,
+          label: newDiskType || diskType,
           index: idx,
         }
       } else if (!diskType && !_.get(this.dataDisks, '[0].diskType')) { // 表单中数据盘无第一项，需要 set 磁盘类型默认值
@@ -506,16 +938,16 @@ export default {
       this.$nextTick(() => {
         const configs = {}
         const value = {
-          [`dataDiskSizes[${key}]`]: R.is(Number, size) ? size : (min || this.min(idx)),
+          [this._fp('Sizes', key)]: R.is(Number, size) ? size : (min || this.min(idx)),
         }
-        value[`dataDiskTypes[${key}]`] = dataDiskTypes
+        value[this._fp('Types', key)] = dataDiskTypes
         if (schedtag) { // 磁盘调度标签
           configs.showAdvanced = true
           configs.showSchedtag = true
-          value[`dataDiskSchedtags[${key}]`] = schedtag
+          value[this._fp('Schedtags', key)] = schedtag
         }
         if (policy) { // 磁盘调度策略
-          value[`dataDiskPolicys[${key}]`] = policy
+          value[this._fp('Policys', key)] = policy
           configs.showAdvanced = true
           configs.showSchedtag = true
         }
@@ -523,27 +955,27 @@ export default {
           console.error(this.$t('compute.text_132'))
         }
         if (snapshot) { // 磁盘快照
-          value[`dataDiskSnapshots[${key}]`] = snapshot
+          value[this._fp('Snapshots', key)] = snapshot
           configs.showAdvanced = true
           configs.showSnapshot = true
         }
         if (filetype) { // 磁盘文件系统
-          value[`dataDiskFiletypes[${key}]`] = filetype
+          value[this._fp('Filetypes', key)] = filetype
           configs.showAdvanced = true
           configs.showMountpoint = true
         }
         if (mountPath) { // 磁盘挂载路径
-          value[`dataDiskMountPaths[${key}]`] = mountPath
+          value[this._fp('MountPaths', key)] = mountPath
           configs.showAdvanced = true
           configs.showMountpoint = true
         }
         if (autoReset) {
-          value[`dataDiskAutoReset[${key}]`] = autoReset
+          value[this._fp('AutoReset', key)] = autoReset
           configs.showAdvanced = true
           configs.isAutoResetShow = true
         }
         if (this.getHypervisor() === HYPERVISORS_MAP.esxi.key) {
-          value[`dataDiskPreallocation[${key}]`] = preallocation
+          value[this._fp('Preallocation', key)] = preallocation
           configs.showAdvanced = true
           configs.showPreallocation = true
         }
@@ -626,17 +1058,17 @@ export default {
             }
             this.$set(this.dataDisks, 0, dataDiskItem)
             this.form.fc.setFieldsValue({
-              [`dataDiskSizes[${item.key}]`]: Math.max((dataDiskItem.min || 0), this.min(0)),
+              [this._fp('Sizes', item.key)]: Math.max((dataDiskItem.min || 0), this.min(0)),
             })
           }
           // 数据盘更改类型
           if (val.key !== item.diskType?.key) {
-            const { dataDiskSizes = {} } = this.form.fd
-            for (const diskId in dataDiskSizes) {
-              const curDiskType = this.form.fd[`dataDiskTypes[${diskId}]`]
+            const diskSizes = this.form.fd[this._fp('Sizes')] || {}
+            for (const diskId in diskSizes) {
+              const curDiskType = this.form.fd[this._fp('Types', diskId)]
               if (curDiskType) {
                 this.form.fc.setFieldsValue({
-                  [`dataDiskTypes[${diskId}]`]: { ...val, index: curDiskType?.index },
+                  [this._fp('Types', diskId)]: { ...val, index: curDiskType?.index },
                 })
               }
             }
@@ -656,17 +1088,17 @@ export default {
             }
             this.$set(this.dataDisks, index || 0, dataDiskItem)
             this.form.fc.setFieldsValue({
-              [`dataDiskSizes[${item.key}]`]: Math.max((dataDiskItem.min || 0), this.min(index)),
+              [this._fp('Sizes', item.key)]: Math.max((dataDiskItem.min || 0), this.min(index)),
             })
           }
           // 数据盘更改类型
           if (val.key !== item.diskType?.key) {
-            const { dataDiskSizes = {} } = this.form.fd
-            for (const diskId in dataDiskSizes) {
-              const curDiskType = this.form.fd[`dataDiskTypes[${diskId}]`]
+            const diskSizes = this.form.fd[this._fp('Sizes')] || {}
+            for (const diskId in diskSizes) {
+              const curDiskType = this.form.fd[this._fp('Types', diskId)]
               if (curDiskType && diskId === val.key) {
                 this.form.fc.setFieldsValue({
-                  [`dataDiskTypes[${diskId}]`]: { ...val, index: curDiskType?.index },
+                  [this._fp('Types', diskId)]: { ...val, index: curDiskType?.index },
                 })
               }
             }
@@ -677,13 +1109,13 @@ export default {
     },
     snapshotChange (item, val, i) {
       this.form.fc.setFieldsValue({
-        [`dataDiskSizes[${item.key}]`]: val,
+        [this._fp('Sizes', item.key)]: val,
       })
       item.sizeDisabled = true
     },
     setDiskMedium (v) {
       if (this.form.fi) {
-        this.$set(this.form.fi, 'dataDiskMedium', _.get(this.typesMap, `[${v.key}].medium`))
+        this.$set(this.form.fi, `${this.fieldPrefix}Medium`, _.get(this.typesMap, `[${v.key}].medium`))
       }
     },
     getDiskTypeLabel (i, diskTypeLabel) {

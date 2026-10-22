@@ -120,12 +120,11 @@ import _ from 'lodash'
 import { mapGetters } from 'vuex'
 import Metric from '@Monitor/sections/Metric'
 import Filters from '@Monitor/sections/Filters'
-import ScopeRadio from '@/sections/ScopeRadio'
 import { levelMaps, metric_zh } from '@Monitor/constants'
+import ScopeRadio from '@/sections/ScopeRadio'
 import { resolveValueChangeField } from '@/utils/common/ant'
 import NotifyTypes from '@/sections/NotifyTypes'
 import Condition from './Condition'
-
 export default {
   name: 'CommonalertForm',
   components: {
@@ -165,7 +164,7 @@ export default {
       period: '5m',
       comparator: '>=',
       alert_duration: 2,
-      silent_period: '360m',
+      silent_period: '5m',
       reduce: 'avg',
       level: 'normal',
       scope: this.$store.getters.scope,

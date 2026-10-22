@@ -20,8 +20,8 @@
 </template>
 
 <script>
-import { isCE } from '@/utils/utils'
 import { CLOUDACCOUNT_TYPES, ENV_TITLE } from '@Cloudenv/views/cloudaccount/constants'
+import { isCE } from '@/utils/utils'
 import { hasSetupKey, billSupportBrands } from '@/utils/auth'
 import setting from '@/config/setting'
 
@@ -70,7 +70,7 @@ export default {
           }
         }
       }
-      if (hasSetupKey(['bill']) && !hasSetupKey(['onecloud', 'public', 'private', 'vmware', 'storate'])) {
+      if (hasSetupKey(['bill']) && !hasSetupKey(['onecloud', 'public', 'private', 'vmware', 'storage'])) {
         const setUpKeys = this.globalSettingSetupKeys || []
         const billTargetItems = billSupportBrands.filter(key => setUpKeys.includes('bill_' + key))
         if (!billTargetItems.length) {

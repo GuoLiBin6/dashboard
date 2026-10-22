@@ -1,6 +1,6 @@
 // import RDSBackup from '@DB/views/rds-backup'
 import Layout from '@/layouts/RouterView'
-import { hasSetupKey } from '@/utils/auth'
+import { featureMenuHiddenCheck } from '@/utils/auth'
 import i18n from '@/locales'
 import { isScopedPolicyMenuHidden } from '@/utils/scopedPolicy'
 
@@ -23,6 +23,9 @@ export default {
     {
       meta: {
         label: 'RDS',
+        composeGroup: 'middleware-db',
+        composeGroupLabel: i18n.t('db.text_28'),
+        composeOrder: 10,
       },
       submenus: [
         {
@@ -30,13 +33,14 @@ export default {
           component: Layout,
           meta: {
             label: i18n.t('dictionary.dbinstance'),
+            composeOrder: 10,
             permission: 'rds_dbinstances_list',
             t: 'dictionary.dbinstance',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.rds')) {
                 return true
               }
-              return !hasSetupKey(['aliyun', 'huawei', 'google', 'aws', 'qcloud', 'apsara', 'azure', 'hcso', 'hcs', 'ksyun'])
+              return featureMenuHiddenCheck(menu)
             },
           },
           children: [
@@ -55,23 +59,6 @@ export default {
             },
           ],
         },
-        /* {
-          path: '/rdsbackup',
-          component: Layout,
-          meta: {
-            label: i18n.t('dictionary.dbinstancebackups'),
-            permission: 'rds_dbinstancebackups_list',
-            hidden: () => false,
-          },
-          children: [
-            {
-              name: 'RDSBackupIndex',
-              path: '',
-              meta: {},
-              component: RDSBackup,
-            },
-          ],
-        }, */
       ],
     },
     /**
@@ -80,18 +67,21 @@ export default {
     {
       meta: {
         label: 'Redis',
+        composeGroup: 'middleware-db',
+        composeOrder: 20,
       },
       submenus: [
         {
           path: '/redis',
           meta: {
             label: i18n.t('dictionary.elasticcache'),
+            composeOrder: 20,
             permission: 'redis_elasticcaches_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.redis')) {
                 return true
               }
-              return !hasSetupKey(['aliyun', 'huawei', 'qcloud', 'aws', 'azure', 'apsara', 'hcs'])
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,
@@ -116,18 +106,21 @@ export default {
     {
       meta: {
         label: 'MongoDB',
+        composeGroup: 'middleware-db',
+        composeOrder: 30,
       },
       submenus: [
         {
           path: '/mongodb',
           meta: {
             label: i18n.t('dictionary.mongodb'),
+            composeOrder: 30,
             permission: 'mongodbs_list',
-            hidden: () => {
+            hidden: (userInfo, menu) => {
               if (isScopedPolicyMenuHidden('sub_hidden_menus.mongodb')) {
                 return true
               }
-              return !hasSetupKey(['aliyun', 'qcloud'])
+              return featureMenuHiddenCheck(menu)
             },
           },
           component: Layout,

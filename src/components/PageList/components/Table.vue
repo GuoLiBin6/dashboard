@@ -1,16 +1,20 @@
 <template>
-  <component :is="tableWrapper" ref="floating-scroll" :hiddenScrollbar="hiddenScrollbar">
-    <div class="table-container d-flex">
-      <template v-if="showTagConfig && !isTemplate">
-        <tree-project
-          ref="projectTag"
-          v-show="treeToggleOpen"
-          :treeToggleOpen="treeToggleOpen"
-          :tag-config-params="{config,...tagConfigParams}"
-          @select="handleProjectTagSelect"
-          @treeProjectConfig="handleTreeProjectConfig" />
-      </template>
-      <div id="vxe-table" :style="enableVirtualScroll ? 'width:100%' : 'flex: 1 1 auto;'">
+  <div class="table-container d-flex" :class="{ 'with-org-tree': showTagConfig && !isTemplate && treeToggleOpen }">
+    <template v-if="showTagConfig && !isTemplate">
+      <tree-project
+        ref="projectTag"
+        v-show="treeToggleOpen"
+        :treeToggleOpen="treeToggleOpen"
+        :tag-config-params="{config,...tagConfigParams}"
+        @select="handleProjectTagSelect"
+        @treeProjectConfig="handleTreeProjectConfig" />
+    </template>
+    <component
+      :is="tableWrapper"
+      ref="floating-scroll"
+      class="table-main"
+      :hiddenScrollbar="hiddenScrollbar">
+      <div id="vxe-table">
         <vxe-grid
           :class="enableVirtualScroll ? 'page-list-grid-virtual-scroll' : 'page-list-grid'"
           show-header-overflow
@@ -48,8 +52,16 @@
               <template v-slot:right>
                 <div class="table-overview">
                   <span>{{ $t('common.page_list_count', [selected.length, tablePage.total]) }}</span>
-                  <span v-if="!loading && showTableOverviewIndexs" class="ml-3">
-                    {{ $t('common.table.overview') }}：{{ tableOverview }}
+                  <span v-if="!loading && showTableOverviewIndexs" class="ml-3 table-overview-content">
+                    <span>{{ $t('common.table.overview') }}：</span>
+                    <template v-for="(item, idx) in tableOverviewIndexs">
+                      <span :key="idx" class="table-overview-item">
+                        <span v-if="idx > 0" class="table-overview-sep">{{ overviewSeparator }}</span>
+                        <a-tag v-if="item.tag" class="table-overview-tag">{{ item.key }}</a-tag>
+                        <span v-else>{{ item.key }}: </span>
+                        <span>{{ item.value }}</span>
+                      </span>
+                    </template>
                   </span>
                 </div>
               </template>
@@ -59,7 +71,7 @@
         <template v-if="loadMoreShow">
           <div class="text-center load-more-wrapper">
             <div v-if="enableVirtualScroll" class="vxe-pager d-flex align-items-center justify-content-end" style="float:right">
-              <a-select v-model="loadMoreSize" style="min-width:100px;font-size:12px" size="small" @change="handleLoadMoreSizeChange">
+              <a-select :value="loadMoreSize" style="min-width:100px;font-size:12px" size="small" @change="handleLoadMoreSizeChange">
                 <a-select-option v-for="size in loadMorePagings" :value="size" :key="size" style="text-align:center;font-size:12px">{{$t('common.some_items_peer_time', [size])}}</a-select-option>
               </a-select>
               <span class="ml-3">{{$t('common.current_total_items', [tableData.length])}}</span>
@@ -69,9 +81,8 @@
           </div>
         </template>
       </div>
-    </div>
-
-  </component>
+    </component>
+  </div>
 </template>
 
 <script>
@@ -86,10 +97,9 @@ import { hasPermission } from '@/utils/auth'
 import storage from '@/utils/storage'
 import TreeProject from '@/sections/TreeProject'
 import WindowsMixin from '@/mixins/windows'
-import Actions from '../Actions'
 import MultipleSort from './MultipleSort'
 import Deny from './Deny.vue'
-
+import Actions from '../Actions'
 export default {
   name: 'PageListTable',
   components: {
@@ -145,6 +155,10 @@ export default {
     config: Object,
     nextMarker: String,
     pagerType: String,
+    loadMoreSize: {
+      type: Number,
+      default: 20,
+    },
     selectionType: {
       type: String,
       required: true,
@@ -167,7 +181,7 @@ export default {
     treeToggleOpen: Boolean,
     tagConfigParams: {
       type: Object,
-      default: () => {},
+      default: () => ({}),
     },
     // create list传递的resource
     resource: [String, Object, Function],
@@ -197,7 +211,6 @@ export default {
       finalLimit: this.getLimit(),
       storageKey,
       storageConfig: this.id && storage.get(storageKey),
-      loadMoreSize: 20,
       loadMorePagings: [20, 100, 200, 500, 1000],
       vxeGridHeight: 0,
     }
@@ -294,12 +307,11 @@ export default {
         // 确保 max-height 至少有一个合理的最小值，避免为 0 导致表格高度很低
         const minHeight = 400 // 最小高度 400px
         ret['max-height'] = this.vxeGridHeight > minHeight ? this.vxeGridHeight : minHeight
-        ret['scroll-x'] = { gt: 1 }
+        // 不开横向虚拟化：列高不一致时横向滚动会只按可见列算行高，导致行高跳动
+        ret['scroll-x'] = { enabled: false }
         ret['scroll-y'] = { gt: 1 }
-      } else {
-        // 非虚拟滚动模式也需要设置 height，避免 vxe-table 警告
-        ret.height = 'auto'
       }
+      // 非虚拟滚动模式不设置 height，让表格自然高度展示
       return ret
     },
     hiddenScrollbar () {
@@ -314,13 +326,8 @@ export default {
     showTableOverviewIndexs () {
       return this.tableOverviewIndexs?.length > 0
     },
-    tableOverview () {
-      if (this.showTableOverviewIndexs) {
-        return this.tableOverviewIndexs.map(item => {
-          return `${item.key}: ${item.value}`
-        }).join('、')
-      }
-      return []
+    overviewSeparator () {
+      return this.tableOverviewIndexs?.some(item => item.tag) ? '；' : '、'
     },
     isResDeny () {
       return !hasPermission({ key: `${this.resource}_list`, permissionData: this.permission })
@@ -782,6 +789,9 @@ export default {
       this.$emit('project-tag-filter-change', filter)
     },
     handleTreeProjectConfig () {
+      // 组织架构只读侧栏（默认）不开放层级配置
+      const mode = this.tagConfigParams && this.tagConfigParams.treeMode
+      if (!mode || mode === 'organization') return
       this.createDialog('TreeConfigDialog', {
         title: this.$t('common.text00011'),
         resource: this.resource,
@@ -803,6 +813,21 @@ export default {
 </script>
 
 <style lang="less" scoped>
+.table-container {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  &.with-org-tree {
+    // 侧栏与表格切割同一行宽度，避免撑出页面横向滚动条
+    overflow: hidden;
+  }
+}
+.table-main {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+}
 .page-list-grid {
   min-width: 100%;
   ::v-deep {
@@ -835,6 +860,25 @@ export default {
   // top: 50%;
   // transform: translateY(-50%);
   z-index: 10;
+  font-size: 12px;
+}
+.table-overview-content {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.table-overview-item {
+  display: inline-flex;
+  align-items: center;
+}
+.table-overview-sep {
+  margin: 0 4px;
+}
+.table-overview-tag {
+  margin-right: 4px;
+  line-height: 18px;
+  height: 20px;
+  padding: 0 6px;
   font-size: 12px;
 }
 .load-more-wrapper {

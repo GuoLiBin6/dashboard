@@ -16,13 +16,12 @@
 </template>
 
 <script>
+import { Decorator } from '@Compute/utils/createServer'
+import { SERVER_TYPE } from '@Compute/constants'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import { getInitialValue } from '@/utils/common/ant'
-import { Decorator } from '@Compute/utils/createServer'
-import { SERVER_TYPE } from '@Compute/constants'
 import BastionHost from '../create/components/BastionHost'
-
 export default {
   name: 'VmAddToBastionDialog',
   components: {
@@ -60,13 +59,15 @@ export default {
         const values = await this.form.fc.validateFields()
         values.accounts = [values.privileged_accounts].concat(values.accounts)
         delete values.privileged_accounts
-        await new this.$Manager('bastion_servers').create({
-          data: {
-            ...values,
-            server_id: this.params.data[0].id,
-            generate_name: this.params.data[0].name,
-          },
-        })
+        for (const item of this.params.data) {
+          await new this.$Manager('bastion_servers').create({
+            data: {
+              ...values,
+              server_id: item.id,
+              generate_name: item.name,
+            },
+          })
+        }
         this.params.refresh()
         this.cancelDialog()
       } finally {

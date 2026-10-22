@@ -29,7 +29,7 @@
         <a-form-item :label="form.fc.getFieldValue('type') === 'webhook' ? 'URL' : 'Webhook'">
           <a-input v-decorator="decorators.address" />
           <div slot="extra" v-show="form.fc.getFieldValue('type') !== 'webhook'">
-            {{ $t('iam.get_params_help') }} ，{{ $t('iam.help') }} <help-link :href="getWebhookDocsUrl(form.fd.type)">{{ $t('common_386') }}</help-link>
+            {{ $t('iam.get_params_help') }} ，{{ $t('iam.help') }} <help-link :href="DOCS_MAP.webhook(form.fd.type)">{{ $t('common_386') }}</help-link>
           </div>
         </a-form-item>
         <template v-if="form.fc.getFieldValue('type') === 'webhook'">
@@ -61,9 +61,8 @@ import WindowsMixin from '@/mixins/windows'
 import DomainProject from '@/sections/DomainProject'
 import NameRepeated from '@/sections/NameRepeated/index'
 import { isRequired } from '@/utils/validate'
+import { DOCS_MAP, showDocsLink } from '@/constants/docs'
 import { ROBOT_TYPES } from '../constants'
-import { getWebhookDocsUrl } from '../utils/docs'
-
 export default {
   name: 'CreateRobotDialog',
   components: {
@@ -77,6 +76,8 @@ export default {
     const initType = type || 'dingtalk'
 
     return {
+      DOCS_MAP,
+      showDocsLink,
       typesOpts: ROBOT_TYPES,
       loading: false,
       form: {
@@ -192,7 +193,6 @@ export default {
     },
   },
   methods: {
-    getWebhookDocsUrl,
     validateForm () {
       return new Promise((resolve, reject) => {
         this.form.fc.validateFields((err, values) => {

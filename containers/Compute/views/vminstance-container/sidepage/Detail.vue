@@ -16,9 +16,12 @@ import 'codemirror/theme/material.css'
 import {
   ALL_STORAGE,
   SERVER_TYPE,
-  GPU_DEV_TYPE_OPTION_MAP,
 } from '@Compute/constants/index'
 import PasswordFetcher from '@Compute/sections/PasswordFetcher'
+import { formatCpuNumaPin } from '@Compute/views/vminstance/utils'
+import { formatServerSecgroupText, getNetworkTags, renderNetworkTagNodes } from '@Compute/utils/secgroupDisplay'
+import { getPortMappingDetailColumn } from '@Compute/utils/portMappingDisplay'
+import { getIsolatedDeviceDetailColumns } from '@Compute/views/gpu/utils/columns'
 import {
   getUserTagColumn,
 } from '@/utils/common/detailColumn'
@@ -36,7 +39,6 @@ import WindowsMixin from '@/mixins/windows'
 import { findPlatform } from '@/utils/common/hypervisor'
 import { HYPERVISORS_MAP } from '@/constants'
 import { sizestr } from '@/utils/utils'
-
 export default {
   name: 'VmContainerInstanceDetail',
   mixins: [WindowsMixin],
@@ -104,34 +106,6 @@ export default {
             },
           },
         },
-        {
-          field: 'port_mapping',
-          title: this.$t('compute.repo.port_mapping'),
-          slots: {
-            default: ({ row }) => {
-              const colors = ['pink', 'red', 'orange', 'green', 'cyan', 'blue', 'purple']
-              let port_mappings = []
-              if (row.nics) {
-                row.nics.forEach(item => {
-                  if (item.port_mappings) {
-                    port_mappings = port_mappings.concat(item.port_mappings)
-                  }
-                })
-              }
-              if (port_mappings.length > 0) {
-                return port_mappings.map((item, idx) => {
-                  const color = colors[idx % 7]
-                  return <p>
-                    <a-tag color={color}>
-                      {this.$t('compute.repo.container_port')}: {item.port} = {this.$t('compute.repo.host_port')}: {item.host_port} {item.protocol.toUpperCase()}
-                    </a-tag>
-                  </p>
-                })
-              }
-              return '-'
-            },
-          },
-        },
         getBrandTableColumn(),
         getBillingTypeTableColumn(),
         {
@@ -146,6 +120,7 @@ export default {
         },
       ],
       containerTotal: 0,
+      guestIsolatedDevices: [],
     }
   },
   computed: {
@@ -159,7 +134,14 @@ export default {
       const disksInfo = this.data.disks_info
       if (!disksInfo) return {}
       const dataDisk = {}
+      const sysDisk = {}
+      const sysDisks = disksInfo.filter(v => v.disk_type === 'sys')
       const dataDisks = disksInfo.filter(v => v.disk_type === 'data')
+
+      if (sysDisks && sysDisks.length > 0) {
+        const sysKey = sysDisks[0].storage_type
+        sysDisk[sysKey] = this._dealSize(sysDisks)
+      }
 
       if (dataDisks && dataDisks.length > 0) {
         for (const k in ALL_STORAGE) {
@@ -172,6 +154,7 @@ export default {
       }
 
       return {
+        sysDisk: this._diskStringify(sysDisk),
         dataDisk: this._diskStringify(dataDisk),
       }
     },
@@ -216,7 +199,11 @@ export default {
               title: this.$t('compute.text_105'),
               slots: {
                 default: ({ row }) => {
-                  if (!row.secgroups) return '-'
+                  const networkTags = getNetworkTags(row)
+                  if (networkTags.length) {
+                    return renderNetworkTagNodes(networkTags)
+                  }
+                  if (!row.secgroups?.length) return '-'
                   return row.secgroups.map((item) => {
                     return <list-body-cell-wrap copy hideField={true} field='name' row={item} message={item.name}>
                       <side-page-trigger permission='secgroups_get' name='SecGroupSidePage' id={item.id} vm={this}>{item.name}</side-page-trigger>
@@ -224,6 +211,7 @@ export default {
                   })
                 },
               },
+              formatter: ({ row }) => formatServerSecgroupText(row) || '-',
               hidden: () => this.$isScopedPolicyMenuHidden('server_hidden_columns.secgroups'),
             },
             getCopyWithContentTableColumn({
@@ -258,6 +246,22 @@ export default {
               hidden: () => this.$isScopedPolicyMenuHidden('server_hidden_columns.vmem_size'),
             },
             {
+              field: 'cpu_numa_pin',
+              title: this.$t('compute.text_609'),
+              formatter: ({ row }) => {
+                return formatCpuNumaPin(row)
+              },
+            },
+            {
+              field: 'sysDisk',
+              title: this.$t('compute.text_49'),
+              formatter: ({ row }) => {
+                if (!this.diskInfos.sysDisk) return '-'
+                return <a onClick={() => this.$emit('tab-change', 'disk-list')}>{this.diskInfos.sysDisk}</a>
+              },
+              hidden: () => this.$isScopedPolicyMenuHidden('server_hidden_columns.disk'),
+            },
+            {
               field: 'dataDisk',
               title: this.$t('compute.text_50'),
               formatter: ({ row }) => {
@@ -268,44 +272,20 @@ export default {
             },
             {
               field: 'isolated_devices',
-              title: this.$t('compute.text_113'),
+              title: this.$t('compute.isolated_device.category.pci'),
               formatter: ({ row }) => {
-                if (!row.isolated_devices && !row.gpu_count) return '-'
-                const gpuArr = row.isolated_devices || []
-                const obj = {}
-                const devTypeMap = {}
-                const ids = {}
-                gpuArr.forEach(val => {
-                  if (val.dev_type !== 'USB') {
-                    if (!obj[val.model]) {
-                      obj[val.model] = 1
-                    } else {
-                      obj[val.model] += 1
-                    }
-                    ids[val.model] = val.id
-                    devTypeMap[val.model] = val.dev_type
-                  }
-                })
-                if (Object.keys(obj).length === 0) {
+                if (!row.isolated_devices?.length && !row.gpu_count) return '-'
+                const devices = this.getIsolatedDevicesForDisplay(row).filter(val => val.dev_type !== 'USB')
+                if (!devices.length) {
                   if (row.gpu_count && row.gpu_model) {
                     return this.$t('compute.text_370', [row.gpu_count, row.gpu_model])
-                  } else {
-                    return '-'
                   }
+                  return '-'
                 }
-                return Object.keys(obj).map(k => {
-                  const gpuLabel = `${GPU_DEV_TYPE_OPTION_MAP[devTypeMap[k]]?.label || devTypeMap[k]}-${k}`
-                  return <side-page-trigger permission='isolated_devices_get' name='GpuSidePage' id={ids[k]} vm={this}>{this.$t('compute.text_370', [obj[k], gpuLabel])}</side-page-trigger>
-                })
+                return this.renderIsolatedDeviceRows(devices)
               },
             },
-            {
-              field: 'monitor_url',
-              title: this.$t('compute.monitor_url.prompt'),
-              formatter: ({ row }) => {
-                return row.monitor_url
-              },
-            },
+            getPortMappingDetailColumn(),
           ],
         },
         {
@@ -330,10 +310,60 @@ export default {
       return infos
     },
   },
+  watch: {
+    'data.id': {
+      handler () {
+        this.fetchGuestIsolatedDevices()
+      },
+      immediate: true,
+    },
+    'data.isolated_devices': {
+      handler () {
+        this.fetchGuestIsolatedDevices()
+      },
+    },
+  },
   created () {
     this.fetchContainers()
   },
   methods: {
+    getIsolatedDevicesForDisplay (row) {
+      if (this.guestIsolatedDevices.length) return this.guestIsolatedDevices
+      return row.isolated_devices || []
+    },
+    renderIsolatedDeviceRows (devices) {
+      const deviceList = Array.isArray(devices) ? devices.slice() : []
+      return [
+        this.$createElement('div', [
+          this.$createElement('vxe-grid', {
+            class: 'mb-2',
+            props: {
+              data: deviceList,
+              columns: getIsolatedDeviceDetailColumns(this, deviceList),
+              resizable: true,
+            },
+          }),
+        ]),
+      ]
+    },
+    async fetchGuestIsolatedDevices () {
+      if (!this.data?.id || !this.data.isolated_devices?.length) {
+        this.guestIsolatedDevices = []
+        return
+      }
+      try {
+        const res = await new this.$Manager('guestisolateddevices').list({
+          params: {
+            limit: 0,
+            guest_id: this.data.id,
+            scope: this.$store.getters.scope,
+          },
+        })
+        this.guestIsolatedDevices = res.data.data || []
+      } catch (e) {
+        this.guestIsolatedDevices = []
+      }
+    },
     async fetchContainers () {
       try {
         const containerManager = new this.$Manager('containers')

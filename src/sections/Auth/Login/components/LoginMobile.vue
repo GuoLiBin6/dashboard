@@ -210,6 +210,54 @@ export default {
     this.clearTimer()
   },
   methods: {
+    makeCaptchaTransparent (arrayBuffer) {
+      return new Promise((resolve, reject) => {
+        try {
+          const blob = new Blob([arrayBuffer], { type: 'image/png' })
+          const url = URL.createObjectURL(blob)
+          const img = new Image()
+          img.onload = () => {
+            try {
+              const canvas = document.createElement('canvas')
+              canvas.width = img.width
+              canvas.height = img.height
+              const ctx = canvas.getContext('2d')
+              ctx.drawImage(img, 0, 0)
+              const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+              const data = imageData.data
+              // 将接近白色的像素处理为透明
+              for (let i = 0; i < data.length; i += 4) {
+                const r = data[i]
+                const g = data[i + 1]
+                const b = data[i + 2]
+                // 可以根据需要微调阈值
+                if (r > 245 && g > 245 && b > 245) {
+                  data[i + 3] = 0
+                }
+              }
+              ctx.putImageData(imageData, 0, 0)
+              const result = canvas.toDataURL('image/png')
+              resolve(result)
+            } catch (e) {
+              // 处理失败时退回原始图片
+              const reader = new FileReader()
+              reader.onloadend = () => resolve(reader.result)
+              reader.onerror = () => reject(reader.error)
+              reader.readAsDataURL(blob)
+            } finally {
+              URL.revokeObjectURL(url)
+            }
+          }
+          img.onerror = (err) => {
+            URL.revokeObjectURL(url)
+            reject(err)
+          }
+          img.src = url
+        } catch (err) {
+          reject(err)
+        }
+      })
+    },
     clearTimer () {
       clearInterval(this.timer)
       this.timer = null
@@ -225,7 +273,7 @@ export default {
             epochstr: +new Date(),
           },
         })
-        this.captchaImg = `data:;base64,${Buffer.from(response.data, 'binary').toString('base64')}`
+        this.captchaImg = await this.makeCaptchaTransparent(response.data)
         this.fd.captcha = ''
         this.initCaptchaTimer && this.initCaptchaTimer()
       } catch (error) {
@@ -321,6 +369,7 @@ export default {
         await this.$store.dispatch('auth/login', data)
         await this.$emit('after-login')
         await this.$store.dispatch('auth/onAfterLogin')
+        this.$bus.$emit('after-login', { mobile: fd.mobile })
       } catch (error) {
         // 登录失败，如果domain已存在则清除domain，主要是应对历史账号存储的domain被更改的情况。（异常情况）
         if (this.fd.domain) {

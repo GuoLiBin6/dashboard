@@ -84,6 +84,27 @@ export default {
                 return ret
               },
             },
+            // 保存镜像
+            {
+              label: this.$t('compute.repo.image.save_image'),
+              permission: 'containers_perform_commit',
+              action: (obj) => {
+                this.createDialog('ContainerCommitImageDialog', {
+                  data: [obj],
+                  columns: this.columns,
+                  onManager: this.onManager,
+                  refresh: this.refresh,
+                })
+              },
+              meta: (obj) => {
+                const ret = { validate: true, tooltip: null }
+                if (obj.status !== 'running') {
+                  ret.tooltip = this.$t('compute.repo.image.commit_status_tip')
+                  ret.validate = false
+                }
+                return ret
+              },
+            },
           ]
         },
       },
@@ -100,7 +121,11 @@ export default {
           container_id: obj.id,
         },
       })
-      return Promise.resolve(data)
+      return Promise.resolve({
+        ...data,
+        // instance_name 用后端 connect_params 完整值（如 guest/container），勿用短名覆盖
+        extra_param_str: '&resource=containers',
+      })
     },
   },
 }

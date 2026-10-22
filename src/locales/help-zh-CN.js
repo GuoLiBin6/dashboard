@@ -50,6 +50,7 @@ export default {
       <div>把用户同步到该系统中的项目时，优先使用CAS中的同名的角色，如果系统中没有对应的角色则会使用默认角色。</div>
     `,
     ipSupplement: '请确保本次提交IP与实际IP一致，一经提交成功无法修改',
+    ipSupplementTip: '未检测到当前主机的网卡信息，请同步虚拟机状态或同步云账号后再试',
     monitorDashboardOverviewTips: '资源概览统计有周期，统计结果会有延迟',
     disable_user_on_import: '启用表示用户状态为启用，则本次带入用户均可使用本系统, 禁用反之，你可以在导入成功后在用户列表重新设置',
     defaultServerNetwork: '将从启用自动调度的IP子网中为虚拟机分配IP地址',
@@ -70,6 +71,7 @@ export default {
     secgroupSystemGuestCnt: '安全组绑定作为系统资源的虚拟机数量',
     v2vTransferType: '迁移成功后自动新建1台同配置KVM虚拟机，IP会迁移至新实例上，原实例会保留',
     billCostConversionRateTip: '资源价格系数是针对该产品的官网价',
+    alertDataTimeRange: '告警状态查询近1小时的数据',
   },
   notify: {
     TooManyRequests: '发送验证码频率太高，请稍后再试',
@@ -84,6 +86,8 @@ export default {
     InvalidIdpStatus: '无效的认证源状态',
     InvalidIdpStatusDetail: '请检查用户归属认证源是否被禁用或状态无效',
     DuplicateNameError: '名称重复',
+    OutOfResource: '资源不足',
+    OutOfQuotaError: '配额不足',
 
     ServerError: '服务器端错误',
     ClientError: '客户端错误',

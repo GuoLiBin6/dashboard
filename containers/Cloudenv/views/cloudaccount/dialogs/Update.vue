@@ -22,7 +22,7 @@
           </a-form-item>
           <a-form-item :label="$t('cloudenv.text_300')" v-if="isAzure">
             <a-input v-decorator="decorators.directory_id" :placeholder="$t('cloudenv.text_243')" />
-            <div slot="extra">
+            <div slot="extra" v-if="showDocsLink()">
               <help-link :href="doc">{{$t('cloudenv.text_301')}}</help-link>
             </div>
           </a-form-item>
@@ -96,11 +96,12 @@ import * as R from 'ramda'
 import UploadJsonFile from '@Cloudenv/views/cloudaccount/components/UploadJsonFile'
 import UploadPemFile from '@Cloudenv/views/cloudaccount/components/UploadPemFile'
 import TestButton from '@/sections/TestButton'
-import { HYPERVISORS_MAP, EXTRA_HYPERVISORS } from '@/constants'
+import { HYPERVISORS_MAP, EXTRA_HYPERVISORS, isUcloudLikeHypervisor } from '@/constants'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
 import regexp from '@/utils/regexp'
-import { keySecretFields, getCloudaccountDocs } from '../constants'
+import { DOCS_MAP, showDocsLink } from '@/constants/docs'
+import { keySecretFields } from '../constants'
 
 export default {
   name: 'CloudaccountUpdateDialog',
@@ -114,6 +115,7 @@ export default {
     const initName = options.name || ''
     const field = keySecretFields[provider] || {}
     return {
+      showDocsLink,
       loading: false,
       form: {
         fc: this.$form.createForm(this),
@@ -246,7 +248,7 @@ export default {
       return keySecretFields[this.provider]
     },
     doc () {
-      return getCloudaccountDocs(this.$store.getters.scope)[this.provider]
+      return DOCS_MAP.cloudaccount()[this.provider]
     },
     isQcloud () {
       return this.provider === HYPERVISORS_MAP.qcloud.key
@@ -258,7 +260,7 @@ export default {
       return this.provider === HYPERVISORS_MAP.openstack.key
     },
     isUcloud () {
-      return this.provider === HYPERVISORS_MAP.ucloud.key
+      return isUcloudLikeHypervisor(this.provider)
     },
     isGoogle () {
       return this.provider === HYPERVISORS_MAP.google.key

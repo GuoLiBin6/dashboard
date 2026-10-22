@@ -29,23 +29,23 @@
 
 <script>
 import * as R from 'ramda'
-import { hasPermission } from '@/utils/auth'
-import SidePageMixin from '@/mixins/sidePage'
-import WindowsMixin from '@/mixins/windows'
-import Actions from '@/components/PageList/Actions'
 import NetworkList from '@Compute/views/physicalmachine/sidepage/Network'
 import ServerRecovery from '@Compute/views/server-recovery/components/List'
 import GpuList from '@Compute/views/gpu/components/List'
 import BmcLog from '@Compute/views/physicalmachine/sidepage/BMCLog'
-import SingleActionsMixin from '../mixins/singleActions'
-import ColumnsMixin from '../mixins/columns'
+import { hasPermission } from '@/utils/auth'
+import SidePageMixin from '@/mixins/sidePage'
+import WindowsMixin from '@/mixins/windows'
+import Actions from '@/components/PageList/Actions'
 import HostDetail from './Detail'
 import Dashboard from './Dashboard'
 import StorageList from './Storage'
 import Monitor from './Monitor'
 import VminstanceList from './VminstanceList'
 import Dmesg from './Dmesg'
-
+import HostAlertHistory from './AlertList'
+import SingleActionsMixin from '../mixins/singleActions'
+import ColumnsMixin from '../mixins/columns'
 export default {
   name: 'HostSidePage',
   components: {
@@ -60,6 +60,8 @@ export default {
     Monitor,
     BmcLog,
     Dmesg,
+    HostAlertHistory,
+    'host-alert-history': HostAlertHistory,
   },
   mixins: [SidePageMixin, WindowsMixin, ColumnsMixin, SingleActionsMixin],
   computed: {
@@ -77,6 +79,7 @@ export default {
         { label: this.$t('compute.text_113'), key: 'gpu-list' },
         { label: this.$t('compute.text_114'), key: 'server-recovery' },
         { label: this.$t('compute.text_608'), key: 'monitor' },
+        { label: this.$t('dictionary.alertrecord'), key: 'host-alert-history' },
         { label: this.$t('table.title.task'), key: 'task-drawer' },
         { label: this.$t('compute.text_240'), key: 'event-drawer' },
         { label: this.$t('compute.dmesg_log'), key: 'dmesg' },
@@ -127,6 +130,8 @@ export default {
       switch (this.params.windowData.currentTab) {
         case 'event-drawer':
           return 'EventListForHostSidePage'
+        case 'host-alert-history':
+          return 'AlertResourceListForHostSidePage'
         case 'vminstance-list':
           return 'VminstanceListForHostSidePage'
         case 'storage-list':

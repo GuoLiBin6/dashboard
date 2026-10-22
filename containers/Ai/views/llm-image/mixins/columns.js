@@ -1,3 +1,4 @@
+import { parseLlmImageRoute } from '@Ai/utils/llmRouteContext'
 import {
   getNameDescriptionTableColumn,
   getProjectTableColumn,
@@ -7,11 +8,21 @@ import {
 import {
   getImageNameTableColumn,
   getImageLabelTableColumn,
+  getImageSourceTableColumn,
+  getContainerImageTableColumn,
+  getAppNameTableColumn,
 } from '../utils/columns'
 
 export default {
   created () {
-    this.columns = [
+    const imageCtx = parseLlmImageRoute(this.$route.path)
+    let llmTypeTitle = this.$t('aice.llm_type.llm')
+    if (imageCtx.isDesktopImageRoute) {
+      llmTypeTitle = this.$t('aice.llm_type')
+    } else if (imageCtx.isAgentImageRoute) {
+      llmTypeTitle = this.$t('aice.llm_type.app')
+    }
+    const columns = [
       getNameDescriptionTableColumn({
         onManager: this.onManager,
         hideField: true,
@@ -20,30 +31,36 @@ export default {
             <side-page-trigger onTrigger={() => this.handleOpenSidepage(row)}>{row.name}</side-page-trigger>
           )
         },
+        formRules: [
+          { required: true, message: this.$t('compute.text_210') },
+          { validator: this.$validate('imageName') },
+        ],
       }),
+      getImageSourceTableColumn(),
+      getContainerImageTableColumn({ vm: this }),
       getImageNameTableColumn(),
       getImageLabelTableColumn(),
       {
-        field: 'credential_id',
-        title: this.$t('aice.llm_image.credential'),
-        slots: {
-          default: ({ row }, h) => {
-            if (row.credential_id) {
-              return [
-                <a-icon type="check-circle" style={{ color: '#1890ff' }} />,
-              ]
-            } else {
-              return '-'
-            }
-          },
+        field: 'llm_type',
+        title: llmTypeTitle,
+        width: 100,
+        formatter: ({ row }) => {
+          const key = row.llm_type ? `aice.llm_type.${row.llm_type.replace(/-/g, '_')}` : ''
+          return key ? this.$t(key) : (row.llm_type || '-')
         },
       },
+    ]
+    if (imageCtx.isDesktopImageRoute) {
+      columns.push(getAppNameTableColumn())
+    }
+    columns.push(
       getProjectTableColumn(),
       getPublicScopeTableColumn({
         vm: this,
         resource: 'llm_images',
       }),
       getTimeTableColumn(),
-    ]
+    )
+    this.columns = columns
   },
 }

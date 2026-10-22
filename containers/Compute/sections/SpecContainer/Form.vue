@@ -6,9 +6,10 @@
         :placeholder="$t('common.tips.input', [$t('common.name')])" />
     </a-form-item>
     <a-form-item :label="$t('compute.repo.image.source')">
-      <a-radio-group default-value="custom" @change="handleSourceChange">
+      <a-radio-group :value="source" @change="handleSourceChange">
         <a-radio-button value="custom">{{ $t('compute.repo.image.custom') }}</a-radio-button>
         <a-radio-button value="registry">{{ $t('compute.repo.image.registry') }}</a-radio-button>
+        <a-radio-button value="container_image">{{ $t('compute.repo.image.container_image') }}</a-radio-button>
       </a-radio-group>
     </a-form-item>
     <a-form-item v-if="source === 'custom'" :label="$t('compute.repo.container_image')">
@@ -16,8 +17,36 @@
         v-decorator="decorators.image"
         :placeholder="$t('common.tips.input', [$t('compute.repo.container_image')])" />
     </a-form-item>
+    <a-form-item v-else-if="source === 'registry'" :label="$t('compute.repo.container_image')">
+      <mirror-registry v-decorator="decorators.registryImage" @credential-change="handleCredentialChange" />
+      <a-input v-show="false" v-decorator="decorators.imageCredentialId" />
+    </a-form-item>
     <a-form-item v-else :label="$t('compute.repo.container_image')">
-      <mirror-registry v-decorator="decorators.registryImage" />
+      <a-select
+        v-decorator="decorators.containerImageId"
+        showSearch
+        :filterOption="filterOption"
+        :loading="containerImageLoading"
+        :placeholder="$t('common.tips.select', [$t('compute.repo.image.container_image')])"
+        @change="handleContainerImageChange"
+        allowClear>
+        <a-select-option
+          v-for="img in containerImages"
+          :key="img.value"
+          :value="img.value"
+          :label="img.label">
+          <div>{{ img.label }}</div>
+          <div style="font-size: 12px; color: #999;">{{ img.ref }}</div>
+        </a-select-option>
+      </a-select>
+      <div v-if="!containerImageLoading && containerImages.length === 0" class="mt-2">
+        <a-alert type="info" show-icon>
+          <template slot="message">
+            {{ $t('compute.repo.image.container_image.empty_tip') }}
+            <router-link to="/container_image">{{ $t('compute.repo.image.container_image.manage') }}</router-link>
+          </template>
+        </a-alert>
+      </div>
     </a-form-item>
     <a-form-item label="CPU" v-show="false">
       <a-input
@@ -38,13 +67,16 @@
         @blur="e => formatInput(e, 'memory')" />
     </a-form-item>
     <a-form-item :label="$t('compute.repo.command')">
-      <a-input v-decorator="decorators.command" :placeholder="$t('compute.repo.command.placeholder')" />
+      <a-input v-decorator="decorators.command" :disabled="imageHasCommand" :placeholder="$t('compute.repo.command.placeholder')" />
+      <div v-if="imageHasCommand" class="ant-form-explain">{{ $t('compute.repo.image.container_image.locked_tip') }}</div>
     </a-form-item>
     <a-form-item :label="$t('compute.repo.command.params')">
-      <a-input v-decorator="decorators.arg" :placeholder="$t('compute.repo.command.params.placeholder')" />
+      <a-input v-decorator="decorators.arg" :disabled="imageHasArgs" :placeholder="$t('compute.repo.command.params.placeholder')" />
+      <div v-if="imageHasArgs" class="ant-form-explain">{{ $t('compute.repo.image.container_image.locked_tip') }}</div>
     </a-form-item>
     <a-form-item :label="$t('compute.repo.data_volume')">
       <labels
+        ref="volumeMountRef"
         :decorators="decorators.volumeMount"
         :title="$t('compute.repo.storage_statement')"
         :keyLabel="$t('compute.repo.storage_statement')"
@@ -56,7 +88,61 @@
         @label-change="labelChangeHandle" />
     </a-form-item>
     <a-form-item :label="$t('compute.repo.env_variables')">
-      <labels :decorators="decorators.env" :title="$t('compute.repo.variables')" :keyLabel="$t('compute.repo.variables')" />
+      <labels ref="envRef" :decorators="decorators.env" :title="$t('compute.repo.variables')" :keyLabel="$t('compute.repo.variables')" :readonly-keys="lockedEnvKeys" />
+      <div v-if="lockedEnvKeys.length" class="ant-form-explain">{{ $t('compute.repo.image.container_image.env_locked_tip') }}</div>
+    </a-form-item>
+    <a-form-item label="">
+      <a-checkbox v-decorator="decorators.enableLxcfs">{{$t('compute.repo.enable_lxcfs')}}</a-checkbox>
+    </a-form-item>
+    <a-form-item label="">
+      <a-checkbox v-decorator="decorators.enableSysDiskOverlay" @change="handleOverlayChange">{{$t('compute.repo.enable_sys_disk_overlay')}}</a-checkbox>
+    </a-form-item>
+    <a-form-item v-if="overlayEnabled" :label="$t('compute.repo.overlay_disk')">
+      <data-disk
+        ref="overlayDiskRef"
+        :form="form"
+        type="idc"
+        :hypervisor="form.fd.hypervisor"
+        :capabilityData="form.fi.capability || {}"
+        :decorator="decorators.overlayDisk"
+        :defaultType="form.fd.systemDiskType"
+        :isVminstanceContainer="true"
+        :isAddDiskShow="false"
+        fieldPrefix="overlayDisk" />
+    </a-form-item>
+    <a-form-item v-if="overlayEnabled" label="">
+      <a-checkbox v-decorator="decorators.rootfsPersistent">
+        {{$t('compute.repo.rootfs_persistent')}}
+        <a-tooltip :title="$t('compute.repo.rootfs_persistent.tips')">
+          <a-icon type="question-circle-o" />
+        </a-tooltip>
+      </a-checkbox>
+    </a-form-item>
+    <a-form-item :label="$t('compute.repo.capabilities.add')">
+      <a-select
+        v-decorator="decorators.capAdd"
+        mode="multiple"
+        :placeholder="$t('compute.repo.capabilities.add.placeholder')"
+        optionLabelProp="label"
+        allowClear>
+        <a-select-option v-for="cap in capabilityOptions" :key="cap.value" :value="cap.value" :label="cap.label">
+          <span>{{ cap.label }}</span>
+          <span style="color: rgba(0,0,0,.45); margin-left: 8px; font-size: 12px;">{{ cap.description }}</span>
+        </a-select-option>
+      </a-select>
+    </a-form-item>
+    <a-form-item :label="$t('compute.repo.capabilities.drop')">
+      <a-select
+        v-decorator="decorators.capDrop"
+        mode="multiple"
+        :placeholder="$t('compute.repo.capabilities.drop.placeholder')"
+        optionLabelProp="label"
+        allowClear>
+        <a-select-option v-for="cap in capabilityOptions" :key="cap.value" :value="cap.value" :label="cap.label">
+          <span>{{ cap.label }}</span>
+          <span style="color: rgba(0,0,0,.45); margin-left: 8px; font-size: 12px;">{{ cap.description }}</span>
+        </a-select-option>
+      </a-select>
     </a-form-item>
     <a-form-item label="">
       <a-checkbox v-decorator="decorators.privileged">{{$t('compute.repo.privileged_mode')}}</a-checkbox>
@@ -68,12 +154,15 @@
 import * as R from 'ramda'
 import Labels from '@Compute/sections/Labels'
 import MirrorRegistry from '@Compute/sections/MirrorRegistry'
+import DataDisk from '@Compute/sections/DataDisk'
+import { CAPABILITY_OPTIONS } from '@Compute/views/vminstance-container/constants'
 
 export default {
   name: 'SpecContainerForm',
   components: {
     Labels,
     MirrorRegistry,
+    DataDisk,
   },
   props: {
     decorators: {
@@ -87,11 +176,24 @@ export default {
       validator: val => val.fc,
     },
     paneKey: String,
+    initItem: {
+      type: Object,
+      default: null,
+    },
   },
   data () {
     return {
-      source: 'custom', // custom or registry
+      source: 'custom', // custom | registry | container_image
       labelList: [],
+      overlayEnabled: false,
+      capabilityOptions: CAPABILITY_OPTIONS,
+      initApplied: false,
+      containerImageLoading: false,
+      containerImages: [],
+      // 当前选中的容器镜像（含 command/args/envs）
+      selectedImage: null,
+      // 由容器镜像提供的环境变量 key，这些行不可修改、不可删除
+      lockedEnvKeys: [],
     }
   },
   computed: {
@@ -124,8 +226,156 @@ export default {
       }
       return checkedValues
     },
+    imageHasCommand () {
+      return !!(this.selectedImage && (this.selectedImage.command || []).filter(Boolean).length)
+    },
+    imageHasArgs () {
+      return !!(this.selectedImage && (this.selectedImage.args || []).filter(Boolean).length)
+    },
+  },
+  watch: {
+    initItem: {
+      deep: true,
+      handler (val) {
+        if (val && !this.initApplied) {
+          this.$nextTick(() => this.applyInitData(val))
+        }
+      },
+    },
+    source (val) {
+      if (val === 'container_image' && this.containerImages.length === 0 && !this.containerImageLoading) {
+        this.fetchContainerImages()
+      }
+    },
+  },
+  mounted () {
+    if (this.initItem) {
+      this.$nextTick(() => this.applyInitData(this.initItem))
+    }
   },
   methods: {
+    filterOption (input, option) {
+      const label = option.componentOptions?.propsData?.label || ''
+      return label.toLowerCase().indexOf((input || '').toLowerCase()) >= 0
+    },
+    async fetchContainerImages () {
+      try {
+        this.containerImageLoading = true
+        const manager = new this.$Manager('container_images', 'v1')
+        const result = await manager.list({
+          params: {
+            details: true,
+            limit: 100,
+            scope: this.$store.getters.scope,
+          },
+        })
+        const dataArr = result.data.data || []
+        this.containerImages = dataArr.map(item => ({
+          label: item.name || `${item.image_name}:${item.image_label}`,
+          value: item.id,
+          ref: `${item.image_name}:${item.image_label}`,
+          command: item.command || [],
+          args: item.args || [],
+          envs: item.envs || [],
+        }))
+      } catch (error) {
+        throw error
+      } finally {
+        this.containerImageLoading = false
+      }
+    },
+    findContainerImage (imageId) {
+      return this.containerImages.find(img => img.value === imageId) || null
+    },
+    /** env 行的 decorator 定义（create 表单里是已求值的对象，Update 弹窗里是函数） */
+    envDecorators () {
+      const env = this.decorators && this.decorators.env
+      if (!env) return null
+      return typeof env === 'function' ? env(0) : env
+    },
+    /** 读取当前表单里已填写的环境变量行 */
+    readEnvRows () {
+      const envRef = this.$refs.envRef
+      const fc = this.form && this.form.fc
+      const d = this.envDecorators
+      if (!envRef || !fc || !d) return []
+      const rows = []
+      ;(envRef.labelList || []).forEach((row) => {
+        const keyField = d.key(row.key) && d.key(row.key)[0]
+        const valueField = d.value(row.key) && d.value(row.key)[0]
+        const key = keyField ? fc.getFieldValue(keyField) : undefined
+        if (key == null || key === '') return
+        rows.push({ key, value: valueField ? fc.getFieldValue(valueField) : undefined })
+      })
+      return rows
+    },
+    /** 镜像环境变量中可在表单里展示的行（value_from 类型的值无法用表单表达，交由后端合并） */
+    imageEnvRows (image) {
+      return ((image && image.envs) || [])
+        .filter(env => env.key && !env.value_from)
+        .map(env => ({ key: env.key, value: env.value }))
+    },
+    /** 合并环境变量：以已有行为基础，镜像同名 key 覆盖其值，新 key 追加（与后端语义一致） */
+    mergeImageEnvs (baseRows, imageEnvs) {
+      const out = []
+      const indexByKey = {}
+      ;(baseRows || []).forEach((row) => {
+        const key = (row.key || '').trim()
+        if (!key) return
+        indexByKey[key] = out.length
+        out.push({ key, value: row.value })
+      })
+      ;(imageEnvs || []).forEach((env) => {
+        const key = (env.key || '').trim()
+        if (!key) return
+        if (indexByKey[key] !== undefined) {
+          out[indexByKey[key]] = { key: out[indexByKey[key]].key, value: env.value }
+          return
+        }
+        indexByKey[key] = out.length
+        out.push({ key, value: env.value })
+      })
+      return out
+    },
+    /**
+     * 应用容器镜像的默认启动参数与环境变量
+     * @param {Object} image 容器镜像对象
+     * @param {Object} options
+     *   refillCommand: 回填 command/args（默认 true）
+     *   refreshEnvs: 重新渲染 env 行（默认 true）
+     *   keepExistingEnvs: 保留并合并表单里已填写的 env 行（默认 false）
+     */
+    applyImageDefaults (image, options = {}) {
+      const { refillCommand = true, refreshEnvs = true, keepExistingEnvs = false } = options
+      this.selectedImage = image || null
+      const envs = (image && image.envs) || []
+      this.lockedEnvKeys = envs.map(env => env.key).filter(Boolean)
+      const fc = this.form && this.form.fc
+      if (image && refillCommand && fc) {
+        const values = {}
+        const commandField = this.decorators.command && this.decorators.command[0]
+        const argField = this.decorators.arg && this.decorators.arg[0]
+        const command = (image.command || []).filter(Boolean)
+        const args = (image.args || []).filter(Boolean)
+        if (command.length && commandField) values[commandField] = command.join(' ')
+        if (args.length && argField) values[argField] = args.join(' ')
+        if (Object.keys(values).length) fc.setFieldsValue(values)
+      }
+      if (!refreshEnvs) return
+      const envRef = this.$refs.envRef
+      if (!envRef) return
+      const base = keepExistingEnvs ? this.readEnvRows() : []
+      const rows = this.mergeImageEnvs(base, this.imageEnvRows(image))
+      envRef.reset()
+      if (rows.length) {
+        this.$nextTick(() => {
+          envRef.initData(rows)
+        })
+      }
+    },
+    handleContainerImageChange (value) {
+      this.applyImageDefaults(this.findContainerImage(value), { keepExistingEnvs: true })
+    },
     formatInput (e, field) {
       if (this.form && this.form.fc) {
         const val = Number(e.target.value)
@@ -139,9 +389,113 @@ export default {
     },
     handleSourceChange (e) {
       this.source = e.target.value
+      // 离开容器镜像来源时，清空锁定状态
+      this.selectedImage = null
+      this.lockedEnvKeys = []
+      if (this.form && this.form.fc) {
+        const values = {}
+        if (this.decorators.image) values[this.decorators.image[0]] = undefined
+        if (this.decorators.registryImage) values[this.decorators.registryImage[0]] = undefined
+        if (this.decorators.imageCredentialId) values[this.decorators.imageCredentialId[0]] = undefined
+        if (this.decorators.containerImageId) values[this.decorators.containerImageId[0]] = undefined
+        this.form.fc.setFieldsValue(values)
+      }
+    },
+    handleOverlayChange (e) {
+      this.overlayEnabled = e.target.checked
+      if (this.overlayEnabled) {
+        this.$nextTick(() => {
+          if (this.$refs.overlayDiskRef) {
+            this.$refs.overlayDiskRef.add()
+          }
+        })
+      }
+    },
+    handleCredentialChange (credentialId) {
+      if (this.form && this.form.fc && this.decorators.imageCredentialId) {
+        this.form.fc.setFieldsValue({
+          [this.decorators.imageCredentialId[0]]: credentialId,
+        })
+      }
     },
     labelChangeHandle (val) {
       this.labelList = val
+    },
+    applyInitData (item = {}) {
+      if (!item || this.initApplied) return
+      if (item.container_image_id) {
+        this.source = 'container_image'
+        // 回显时不重置 envs（容器自身的变量要保留），只同步锁定状态
+        this.fetchContainerImages().then(() => {
+          this.applyImageDefaults(this.findContainerImage(item.container_image_id), {
+            refillCommand: false,
+            refreshEnvs: false,
+          })
+        }).catch(() => {})
+      } else if (item.image_credential_id) {
+        this.source = 'registry'
+      }
+      if (item.rootfs) {
+        this.overlayEnabled = true
+      }
+      const fc = this.form && this.form.fc
+      if (!fc || !this.decorators) return
+      const field = (decorator) => (decorator && decorator[0]) || ''
+      const values = {}
+      const nameField = field(this.decorators.name)
+      const imageField = field(this.decorators.image)
+      const registryField = field(this.decorators.registryImage)
+      const credentialField = field(this.decorators.imageCredentialId)
+      const containerImageIdField = field(this.decorators.containerImageId)
+      const commandField = field(this.decorators.command)
+      const argField = field(this.decorators.arg)
+      const privilegedField = field(this.decorators.privileged)
+      const lxcfsField = field(this.decorators.enableLxcfs)
+      const capAddField = field(this.decorators.capAdd)
+      const capDropField = field(this.decorators.capDrop)
+      const overlayField = field(this.decorators.enableSysDiskOverlay)
+      const rootfsPersistentField = field(this.decorators.rootfsPersistent)
+      if (nameField) values[nameField] = item.name || ''
+      if (item.container_image_id) {
+        if (containerImageIdField) values[containerImageIdField] = item.container_image_id
+      } else if (item.image_credential_id) {
+        if (registryField) values[registryField] = item.image || ''
+        if (credentialField) values[credentialField] = item.image_credential_id
+      } else if (imageField) {
+        values[imageField] = item.image || ''
+      }
+      if (commandField) values[commandField] = (item.command || []).filter(Boolean).join(' ')
+      if (argField) values[argField] = (item.args || []).filter(Boolean).join(' ')
+      if (privilegedField) values[privilegedField] = !!item.privileged
+      if (lxcfsField) values[lxcfsField] = item.enable_lxcfs !== false
+      if (capAddField) values[capAddField] = item.capabilities?.add || []
+      if (capDropField) values[capDropField] = item.capabilities?.drop || []
+      if (overlayField) values[overlayField] = !!item.rootfs
+      if (rootfsPersistentField) values[rootfsPersistentField] = !!item.rootfs?.persistent
+      // 延迟一拍，确保 v-decorator 已注册；再重试一次防止被 tabs 延迟渲染吞掉
+      const doSet = () => {
+        fc.setFieldsValue(values)
+      }
+      this.$nextTick(() => {
+        doSet()
+        this.initApplied = true
+        setTimeout(() => {
+          doSet()
+          if (item.envs?.length && this.$refs.envRef) {
+            this.$refs.envRef.initData(item.envs.map(env => ({ key: env.key, value: env.value })))
+          }
+          if (item.volume_mounts?.length && this.$refs.volumeMountRef) {
+            this.$refs.volumeMountRef.initData(item.volume_mounts.map(vm => ({
+              key: `${vm.disk?.index ?? ''}`,
+              value: vm.mount_path,
+            })))
+          }
+        }, 300)
+      })
+    },
+    initContainerData (item = {}) {
+      this.initApplied = false
+      this.applyInitData(item)
     },
   },
 }

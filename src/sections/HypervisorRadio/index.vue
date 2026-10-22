@@ -18,9 +18,11 @@
 <script>
 import * as R from 'ramda'
 import { HYPERVISORS_GROUP, HYPERVISORS_MAP } from '@/constants'
+import createFormFieldDraftMixin from '@/mixins/createFormFieldDraft'
 
 export default {
   name: 'ProviderRadio',
+  mixins: [createFormFieldDraftMixin],
   props: {
     decorator: {
       type: Array,
@@ -44,6 +46,18 @@ export default {
         return {}
       },
     },
+    formDraftKey: {
+      type: String,
+      default: '',
+    },
+    /** selection：radio/单选 select/switch 类，local + session 双写、可跨 tab 回填 */
+    formDraftKind: {
+      type: String,
+      default: 'selection',
+    },
+  },
+  inject: {
+    form: { default: undefined },
   },
   computed: {
     hypervisorOpts () {
@@ -62,15 +76,61 @@ export default {
       return !this.hypervisorOpts?.length
     },
   },
+  watch: {
+    hypervisorOpts: {
+      immediate: true,
+      handler (opts, oldOpts) {
+        this.$nextTick(() => this.tryRestoreHypervisorDraft(opts))
+      },
+    },
+  },
   methods: {
     changeHandle (e) {
+      // 回填触发的 change 不记 touched
+      if (!this._hypervisorDraftRestoring) {
+        this.markFormFieldDraftTouched()
+      }
       this.$emit('change', e.target.value)
     },
     getLabel (item) {
+      if (!item) return ''
       if (item.key === HYPERVISORS_MAP.kvm.key) {
         return this.type === 'private' ? HYPERVISORS_MAP.cloudpods.label : HYPERVISORS_MAP.kvm.label
       }
       return item.label
+    },
+    tryRestoreHypervisorDraft (opts) {
+      if (!Array.isArray(opts) || !opts.length) return
+      // 用户已手改：不再用草稿/首项覆盖
+      if (this.isFormFieldDraftTouched()) return
+      const hit = this.matchFormFieldDraftInOptions(opts)
+      let next = hit?.key
+      if (next && this.disabledHypervisorMap?.[next]) next = undefined
+      // options 变化：草稿命中则回填，否则第一项（不写草稿）
+      if (!next) {
+        const first = opts.find(item => item?.key && !this.disabledHypervisorMap?.[item.key])
+        next = first?.key
+      }
+      if (!next) return
+      const fieldName = Array.isArray(this.decorator) ? this.decorator[0] : 'hypervisor'
+      const current = this.form?.fc?.getFieldValue?.(fieldName)
+      if (current === next) return
+      this._hypervisorDraftRestoring = true
+      try {
+        if (this.form?.fc) {
+          this.form.fc.setFieldsValue({ [fieldName]: next })
+        }
+        this.$emit('change', next)
+      } finally {
+        this.$nextTick(() => {
+          this._hypervisorDraftRestoring = false
+        })
+      }
+    },
+    serializeFormFieldDraft () {
+      const fieldName = Array.isArray(this.decorator) ? this.decorator[0] : 'hypervisor'
+      const value = this.form?.fc?.getFieldValue?.(fieldName)
+      return value || undefined
     },
   },
 }

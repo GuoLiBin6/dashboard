@@ -72,6 +72,7 @@
       :exportUseIdKey="exportUseIdKey"
       :hiddenExportKeys="hiddenExportKeys"
       :hiddenPin="hiddenPin"
+      :hidden-list-config="hiddenListConfig"
       :data="finalData"
       :pagerType="pagerType"
       @refresh="refresh"
@@ -115,6 +116,7 @@
         :resource="resource"
         :next-marker="nextMarker"
         :pager-type="pagerType"
+        :load-more-size="loadMoreSize"
         :selection-type="selectionType"
         :inBaseSidePage="inBaseSidePage"
         :isSidepageOpen="isSidepageOpen"
@@ -157,6 +159,8 @@
 <script>
 import * as R from 'ramda'
 import { mapGetters } from 'vuex'
+import { isCE } from '@/utils/utils'
+import { hasPermission } from '@/utils/auth'
 import PageListHeader from './components/Header'
 import PageListTable from './components/Table'
 import PageListTable_fixed from './components/Table_fixed'
@@ -310,6 +314,7 @@ export default {
     },
     tagConfigParams: {
       type: Object,
+      default: () => ({}),
     },
     editConfig: Object,
     tableOverviewIndexs: {
@@ -357,6 +362,10 @@ export default {
       },
     },
     hiddenPin: {
+      type: Boolean,
+      default: false,
+    },
+    hiddenListConfig: {
       type: Boolean,
       default: false,
     },
@@ -458,10 +467,18 @@ export default {
     pagerType () {
       return this.list.pagerType
     },
-    showTagConfigCheck () {
-      return this.showTagConfig && this.projectTags.enableOrganization
+    loadMoreSize () {
+      return this.list.loadMoreSize
     },
-    ...mapGetters(['isSidepageOpen', 'projectTags']),
+    showTagConfigCheck () {
+      // 仅商业版 + 开启组织架构 + 有组织权限时展示侧栏
+      return this.showTagConfig &&
+        this.projectTags.enableOrganization &&
+        !isCE() &&
+        !this.isSysCE &&
+        hasPermission({ key: 'organizations_list' })
+    },
+    ...mapGetters(['isSidepageOpen', 'projectTags', 'isSysCE']),
   },
   beforeDestroy () {
     this.list.clearWaitJob()

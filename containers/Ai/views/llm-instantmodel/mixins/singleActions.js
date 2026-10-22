@@ -31,7 +31,7 @@ export default {
         actions: obj => {
           return [
             getSetPublicAction(this, {
-              name: this.$t('aice.mounted_apps'),
+              name: this.$t('aice.llm_instantmodel.menu'),
               scope: 'project',
               resource: 'llm_instant_models',
             }, {
@@ -71,7 +71,7 @@ export default {
                   return ret
                 },
               ],
-              resourceName: this.$t('aice.mounted_apps'),
+              resourceName: this.$t('aice.llm_instantmodel.menu'),
             }),
             // 同步状态
             {
@@ -84,6 +84,28 @@ export default {
                     action: 'syncstatus',
                   },
                 })
+              },
+            },
+            // 继续导入（失败后断点续传）
+            {
+              label: this.$t('aice.perform_resume_import'),
+              permission: 'llm_instant_models_perform_resume_import',
+              action: (obj) => {
+                this.onManager('performAction', {
+                  steadyStatus: ['queued', 'packaging', 'saving', 'active'],
+                  id: obj.id,
+                  managerArgs: {
+                    action: 'resume-import',
+                  },
+                })
+              },
+              meta: (obj) => {
+                const ret = { validate: true, tooltip: null }
+                if (obj.status !== 'killed') {
+                  ret.validate = false
+                  ret.tooltip = this.$t('aice.perform_resume_import.tooltip')
+                }
+                return ret
               },
             },
             // 更改项目
@@ -108,7 +130,7 @@ export default {
                   data: [obj],
                   columns: this.columns,
                   title: this.$t('table.action.delete'),
-                  name: this.$t('aice.mounted_apps'),
+                  name: this.$t('aice.llm_instantmodel.menu'),
                   onManager: this.onManager,
                 })
               },

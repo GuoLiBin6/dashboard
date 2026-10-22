@@ -4,7 +4,8 @@
     :columns="templateListColumns || columns"
     :showSearchbox="showSearchbox"
     :showGroupActions="showGroupActions"
-    :show-single-actions="!isTemplate"
+    :show-single-actions="showGpuSingleActions"
+    :hide-rowselect="isProjectMode"
     :show-page="!isTemplate"
     :group-actions="getFinalGroupActions(groupActions)"
     :single-actions="getFinalSingleActions(singleActions)"
@@ -13,13 +14,15 @@
 
 <script>
 import * as R from 'ramda'
-import { GPU_DEV_TYPE_OPTION_MAP } from '@Compute/constants'
+import { mapGetters } from 'vuex'
+// import { isUpdatableGpuType } from '@Compute/constants'
 import { getNameFilter, getRegionFilter, getDescriptionFilter } from '@/utils/common/tableFilter'
 import expectStatus from '@/constants/expectStatus'
 import WindowsMixin from '@/mixins/windows'
 import ListMixin from '@/mixins/list'
 import GlobalSearchMixin from '@/mixins/globalSearch'
 import ResTemplateListMixin from '@/mixins/resTemplateList'
+import { getServerGpuBinds } from '../utils/index'
 import SingleActionsMixin from '../mixins/singleActions'
 import ColumnsMixin from '../mixins/columns'
 
@@ -31,6 +34,8 @@ export default {
     getParams: {
       type: [Function, Object],
     },
+    gpuResource: String,
+    data: Object, // guest data
     resId: String,
     probeHostDevices: Boolean,
     hiddenActionKeys: Array,
@@ -49,7 +54,7 @@ export default {
       list: this.$list.createList(this, {
         ctx: this,
         id: this.id,
-        resource: 'isolated_devices',
+        resource: this.gpuResource || 'isolated_devices',
         getParams: this.getParam,
         filter,
         isTemplate: this.isTemplate,
@@ -78,13 +83,33 @@ export default {
               key: 'model',
             },
           },
+          vendor: {
+            label: this.$t('compute.isolated_devices.vendor.title'),
+            dropdown: true,
+            multiple: true,
+            items: [
+              { label: 'NVIDIA', key: 'NVIDIA' },
+              { label: 'AMD', key: 'AMD' },
+              { label: 'HYGON', key: 'HYGON' },
+              { label: 'VASTAITECH', key: 'VASTAITECH' },
+            ],
+          },
           vendor_device_id: {
-            label: 'PCI ID',
+            label: this.$t('compute.isolated_devices.vendor_device_id.title'),
             dropdown: true,
             multiple: true,
             distinctField: {
               type: 'field',
               key: 'vendor_device_id',
+            },
+          },
+          addr: {
+            label: 'PCI ADDR',
+            dropdown: true,
+            multiple: true,
+            distinctField: {
+              type: 'field',
+              key: 'addr',
             },
           },
           device_path: {
@@ -139,7 +164,13 @@ export default {
           },
         },
         steadyStatus: {
-          guest_status: [...Object.values(expectStatus.server).flat(), '', undefined],
+          guest_status: (row) => {
+            const { guest_status } = row
+            if (guest_status === undefined || guest_status === null || guest_status === '') return false
+            const statuses = Array.isArray(guest_status) ? guest_status : [guest_status]
+            const validStatuses = Object.values(expectStatus.server).flat()
+            return statuses.some(status => !validStatuses.includes(status) && !/fail/.test(status))
+          },
         },
       }),
       groupActions: [
@@ -151,7 +182,10 @@ export default {
               data: this.list.selectedItems,
               columns: this.columns,
               title: this.$t('compute.text_485', [this.$t('dictionary.server')]),
+              name: this.$t('compute.text_113'),
               refresh: this.refresh,
+              devices: this.list.selectedItems,
+              binds: getServerGpuBinds(this.list.selectedItems, this.gpuResource || 'isolated_devices'),
             })
           },
           meta: () => {
@@ -162,8 +196,6 @@ export default {
                 tooltip: this.$t('compute.text_486'),
               }
             }
-            const validateGuestStatus = item.every(item => item.guest_id && (item.guest_status === 'ready' || item.guest_status === 'running'))
-            const validateGuestId = item.every(item => item.guest_id)
             const someNicDevice = item.some(v => v.dev_type === 'NIC')
             if (someNicDevice) {
               return {
@@ -171,21 +203,54 @@ export default {
                 tooltip: this.$t('compute.sriov_device_nic_notsupport'),
               }
             }
-            if (!validateGuestId) {
+            if (this.gpuResource) {
+              const status = this.data?.status
+              const noValidateGuestStatus = item.some(v => v.host_type !== 'container') && status !== 'ready' && status !== 'running' && status !== 'unknown'
+              const noValidateContainerStatus = item.some(v => v.host_type === 'container') && status !== 'ready' && status !== 'unknown'
+              if (noValidateGuestStatus) {
+                return {
+                  validate: false,
+                  tooltip: this.$t('compute.text_489', [this.$t('dictionary.server')]),
+                }
+              }
+              if (noValidateContainerStatus) {
+                return {
+                  validate: false,
+                  tooltip: this.$t('compute.text_489_1', [this.$t('compute.text_113')]),
+                }
+              }
+              return { validate: true }
+            }
+            const isGuestStatusInvalid = (statuses) => {
+              const list = Array.isArray(statuses) ? statuses : [statuses]
+              return list.some(s => s !== 'ready' && s !== 'running' && s !== 'unknown')
+            }
+            const isContainerStatusInvalid = (statuses) => {
+              const list = Array.isArray(statuses) ? statuses : [statuses]
+              return list.some(s => s !== 'ready' && s !== 'unknown')
+            }
+            const noValidateGuestStatus = item.some(v => v.host_type !== 'container' && isGuestStatusInvalid(v.guest_status))
+            const noValidateContainerStatus = item.some(v => v.host_type === 'container' && isContainerStatusInvalid(v.guest_status))
+            const validateGuest = item.every(v => Array.isArray(v.guest) ? v.guest.length > 0 : !!v.guest)
+            if (!validateGuest) {
               return {
                 validate: false,
                 tooltip: this.$t('compute.text_487', [this.$t('dictionary.server')]),
               }
             }
-            if (!validateGuestStatus) {
+            if (noValidateGuestStatus) {
               return {
                 validate: false,
                 tooltip: this.$t('compute.text_489', [this.$t('dictionary.server')]),
               }
             }
-            return {
-              validate: true,
+            if (noValidateContainerStatus) {
+              return {
+                validate: false,
+                tooltip: this.$t('compute.text_489_1', [this.$t('compute.text_113')]),
+              }
             }
+            return { validate: true }
           },
         },
         {
@@ -248,14 +313,12 @@ export default {
               ret.tooltip = this.$t('gpu.device_type.gpu.tooltip')
               return ret
             }
-            const isGpuHpcOrVga = this.list.selectedItems.every(o => {
-              return o.dev_type === GPU_DEV_TYPE_OPTION_MAP['GPU-HPC'].value || o.dev_type === GPU_DEV_TYPE_OPTION_MAP['GPU-VGA'].value
-            })
-            if (!isGpuHpcOrVga) {
-              ret.validate = false
-              ret.tooltip = this.$t('gpu.device_type.tooltip.check_hpc_vga_gpu')
-              return ret
-            }
+            // const isGpuHpcOrVga = this.list.selectedItems.every(o => isUpdatableGpuType(o))
+            // if (!isGpuHpcOrVga) {
+            //   ret.validate = false
+            //   ret.tooltip = this.$t('gpu.device_type.tooltip.check_hpc_vga_gpu')
+            //   return ret
+            // }
             return ret
           },
         },
@@ -271,12 +334,16 @@ export default {
     }
   },
   computed: {
+    ...mapGetters(['isProjectMode']),
     exportDataOptions () {
       return {
         downloadType: 'local',
         items: this.columns,
         title: this.$t('compute.text_113'),
       }
+    },
+    showGpuSingleActions () {
+      return !this.isTemplate && !this.isProjectMode
     },
   },
   created () {
@@ -332,12 +399,14 @@ export default {
       }
     },
     getFinalGroupActions () {
+      if (this.isProjectMode) return []
       if (this.hiddenActionKeys?.length > 0) {
         return this.groupActions.filter(o => !this.hiddenActionKeys.includes(o.key))
       }
       return this.groupActions
     },
     getFinalSingleActions () {
+      if (this.isProjectMode) return []
       if (this.hiddenActionKeys?.length > 0) {
         return this.singleActions.filter(o => !this.hiddenActionKeys.includes(o.key))
       }

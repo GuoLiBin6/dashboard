@@ -10,7 +10,7 @@
     :tabs="detailTabs"
     :loaded="loaded"
     @tab-change="handleTabChange">
-    <template v-slot:actions>
+    <template v-slot:actions v-if="!isProjectMode">
       <actions :options="singleActions" :row="detailData" button-type="link" button-size="small" />
     </template>
     <component
@@ -19,19 +19,20 @@
       :id="listId"
       :data="detailData"
       :on-manager="onManager"
+      :gpu-columns="columns"
       :getParams="getParams" />
   </base-side-page>
 </template>
 
 <script>
+import { mapGetters } from 'vuex'
 import SidePageMixin from '@/mixins/sidePage'
 import WindowsMixin from '@/mixins/windows'
 import Actions from '@/components/PageList/Actions'
 import AssociatedInstances from './AssociatedInstances'
+import GpuDetail from './Detail'
 import SingleActionsMixin from '../mixins/singleActions'
 import ColumnsMixin from '../mixins/columns'
-import GpuDetail from './Detail'
-
 export default {
   name: 'GpuSidePage',
   components: {
@@ -42,6 +43,7 @@ export default {
   mixins: [SidePageMixin, WindowsMixin, ColumnsMixin, SingleActionsMixin],
   data () {
     return {
+      columns: [],
       detailTabs: [
         { label: this.$t('compute.text_238'), key: 'gpu-detail' },
         { label: this.$t('compute.associated_instances'), key: 'associated-instances' },
@@ -50,6 +52,7 @@ export default {
     }
   },
   computed: {
+    ...mapGetters(['isProjectMode']),
     getParams () {
       if (this.params.windowData.currentTab === 'servers-list') {
         return {

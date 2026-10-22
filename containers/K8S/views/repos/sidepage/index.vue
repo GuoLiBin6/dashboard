@@ -1,7 +1,7 @@
 <template>
   <base-side-page
     @cancel="cancelSidePage"
-    :title="$t('k8s.text_158')"
+    :title="$t('dictionary.container_registry')"
     icon="res-k8s-repos"
     :res-name="detailData.name"
     :current-tab="params.windowData.currentTab"
@@ -30,11 +30,10 @@
 import SidePageMixin from '@/mixins/sidePage'
 import WindowsMixin from '@/mixins/windows'
 import Actions from '@/components/PageList/Actions'
-import SingleActionsMixin from '../mixins/singleActions'
-import ColumnsMixin from '../mixins/columns'
 import Detail from './Detail'
 import ContainerRegistry from './ContainerRegistry'
-
+import SingleActionsMixin from '../mixins/singleActions'
+import ColumnsMixin from '../mixins/columns'
 export default {
   name: 'K8sReposSidePage',
   components: {

@@ -7,14 +7,47 @@ import {
 } from '@/utils/common/tableColumn'
 import {
   getReserveResourceColumn,
+  getSharingModeColumn,
+  getMemorySizeColumn,
+  getVirtualNumColumn,
+  getMemoryAllocatedColumn,
+  getAllocatedCountColumn,
 } from '../utils/columns'
+
+function getGuestList (row) {
+  const { guest, guest_status } = row
+  if (!guest || (Array.isArray(guest) && !guest.length)) return []
+  const names = Array.isArray(guest) ? guest : [guest]
+  const statuses = Array.isArray(guest_status) ? guest_status : names.map(() => guest_status)
+  const seen = new Set()
+  const list = []
+  names.forEach((name, index) => {
+    if (!name || seen.has(name)) return
+    seen.add(name)
+    list.push({
+      name,
+      status: statuses[index],
+    })
+  })
+  return list
+}
+
+function getVendorIconType (row) {
+  if (row.vendor) {
+    return row.vendor.toLowerCase()
+  }
+  const vendorId = row.vendor_device_id?.split(':')[0]
+  const DEVICE_MAP = {
+    '10de': 'nvidia',
+    1002: 'amd',
+    '1d94': 'hygon',
+    '1ec6': 'vastaitech',
+  }
+  return DEVICE_MAP[vendorId]
+}
 
 export default {
   created () {
-    const DEVICE_MAP = {
-      '10de': 'nvidia',
-      1002: 'amd',
-    }
     this.columns = [
       getNameDescriptionTableColumn({
         onManager: this.onManager,
@@ -32,35 +65,33 @@ export default {
         showOverflow: 'ellipsis',
       },
       {
+        field: 'vendor',
+        title: i18n.t('compute.isolated_devices.vendor.title'),
+        width: 100,
+        showOverflow: 'ellipsis',
+        formatter: ({ row }) => row.vendor || '-',
+      },
+      {
         field: 'model',
         title: i18n.t('compute.text_482'),
         minWidth: 120,
         showOverflow: 'ellipsis',
         slots: {
           default: ({ row }, h) => {
-            const device = row.vendor_device_id.split(':')[0]
-            if (!device) {
-              return row.model
-            }
+            const iconType = getVendorIconType(row)
             return [
               <div class='d-flex'>
                 <span class='text-truncate'>{ row.model }</span>
-                <icon class="ml-1" style="line-height: 24px" type={ DEVICE_MAP[device] } />
+                { iconType ? <icon class="ml-1" style="line-height: 24px" type={ iconType } /> : null }
               </div>,
             ]
           },
         },
-        formatter: ({ row }) => {
-          const device = row.vendor_device_id.split(':')[0]
-          if (!device) {
-            return row.model
-          }
-          return row.model
-        },
+        formatter: ({ row }) => row.model,
       },
       {
         field: 'vendor_device_id',
-        title: 'PCI ID',
+        title: i18n.t('compute.isolated_devices.vendor_device_id.title'),
         width: 120,
         showOverflow: 'ellipsis',
         slots: {
@@ -84,6 +115,15 @@ export default {
         },
         formatter: ({ row }) => {
           return row.vendor_device_id
+        },
+      },
+      {
+        field: 'addr',
+        title: 'PCI ADDR',
+        width: 100,
+        showOverflow: 'ellipsis',
+        formatter: function ({ row }) {
+          return row.addr || '-'
         },
       },
       {
@@ -124,23 +164,34 @@ export default {
       {
         field: 'guest',
         title: this.$t('compute.associated_instances'),
-        minWidth: 100,
+        minWidth: 180,
         showOverflow: 'ellipsis',
         slots: {
           default: ({ row }, h) => {
-            if (this.isPreLoad && !row.guest) return [<data-loading />]
+            const guests = getGuestList(row)
+            if (this.isPreLoad && !guests.length) return [<data-loading />]
+            if (!guests.length) return '-'
             return [
-              <div class='text-truncate'>
-                <list-body-cell-wrap copy={true} row={row} field="guest" onManager={this.onManager} hideField={ true }>
-                  <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row, 'associated-instances') }>{ row.guest }</side-page-trigger>
-                </list-body-cell-wrap>
-                {row.guest_status ? <status status={ row.guest_status } statusModule='server'/> : ''}
+              <div>
+                {guests.map((guest, index) => (
+                  <div class="d-flex align-items-center" key={index}>
+                    <side-page-trigger onTrigger={ () => this.handleOpenSidepage(row, 'associated-instances') }>
+                      { guest.name }
+                    </side-page-trigger>
+                    {guest.status ? (
+                      <div class="ml-2">
+                        <status status={ guest.status } statusModule='server' />
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
               </div>,
             ]
           },
         },
         formatter: ({ row }) => {
-          return row.guest || '-'
+          const guests = getGuestList(row)
+          return guests.length ? guests.map(guest => guest.name).join(', ') : '-'
         },
       },
       getCopyWithContentTableColumn({
@@ -153,6 +204,17 @@ export default {
         },
       }),
       getReserveResourceColumn(),
+      getSharingModeColumn(),
+      getMemorySizeColumn(),
+      {
+        ...getMemoryAllocatedColumn(),
+        hidden: () => !this.gpuResource,
+      },
+      getVirtualNumColumn(),
+      {
+        ...getAllocatedCountColumn(),
+        hidden: () => !this.gpuResource,
+      },
       getPublicScopeTableColumn({ resource: 'isolated_devices', vm: this, title: this.$t('compute.text_113') }),
       getRegionTableColumn({ vm: this }),
     ]
