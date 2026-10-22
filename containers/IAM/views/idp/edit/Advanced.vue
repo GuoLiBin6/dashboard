@@ -1,5 +1,5 @@
 <template>
-  <a-form-model ref="formRef" :model="fd" :rules="rules">
+  <div>
     <template v-if="isCommon">
       <a-form-model-item :label="$t('common_516')" :extra="$t('common_504', [templateLabel])" prop="user_id_attribute">
         <a-input v-model:value="fd.user_id_attribute" />
@@ -10,7 +10,7 @@
     </template>
     <a-form-model-item :label="$t('common_501')" prop="auto_create_user">
       <a-switch v-model:checked="fd.auto_create_user">{{$t('common_499')}}</a-switch>
-      <template slot="extra">{{$t('common_513')}}<br />{{$t('common_514')}}</template>
+      <template #extra>{{$t('common_513')}}<br />{{$t('common_514')}}</template>
     </a-form-model-item>
     <template v-if="fd.auto_create_user">
       <a-form-model-item :label="$t('common_503', [$t('dictionary.domain')])" :extra="$t('system.text_229', [$t('dictionary.domain')])" prop="target_domain">
@@ -25,9 +25,9 @@
           :select-props="{
             placeholder: $t('common_656')
           }" />
-          <span v-else>
-            {{projectDomain}}
-          </span>
+        <span v-else>
+          {{projectDomain}}
+        </span>
       </a-form-model-item>
       <a-collapse accordion v-if="showCollapse">
         <a-collapse-panel key="1" :header="$t('system.text_214')">
@@ -54,18 +54,19 @@
                         <a-input v-model:value="fd.project_attribute" :placeholder="$t('common_507', [templateLabel,$t('dictionary.project'),templateLabel.toLocaleLowerCase()])" />
                       </div>
                       <a-tooltip placement="right">
-                        <span slot="title">{{$t('common_517', [templateLabel])}}</span>
+                        <template #title>{{$t('common_517', [templateLabel])}}</template>
                         <icon type="question" />
                       </a-tooltip>
-                      <a-button type="link" @click="showProjectInput = !showProjectInput">{{$t('common_518', [templateLabel, this.$t('dictionary.project')]) }}</a-button>
+                      <a-button type="link" @click="showProjectInput = !showProjectInput">{{$t('common_518', [templateLabel, $t('dictionary.project')]) }}</a-button>
                     </div>
-                    <div slot="extra">
+                    <template #extra>
                       <a-checkbox v-model:checked="fd.auto_create_project">{{$t('common_519')}}</a-checkbox>
-                      <br />{{$t('common_520')}}</div>
+                      <br />{{$t('common_520')}}
+                    </template>
                   </a-form-model-item>
                 </template>
                 <template v-else>
-                  <a-button type="link" @click="showProjectInput = true">{{$t('common_521', [templateLabel, this.$t('dictionary.project')]) }}</a-button>
+                  <a-button type="link" @click="showProjectInput = true">{{$t('common_521', [templateLabel, $t('dictionary.project')]) }}</a-button>
                 </template>
               </a-col>
             </a-row>
@@ -93,15 +94,15 @@
                         <a-input v-model:value="fd.role_attribute" :placeholder="$t('common_509', [templateLabel,$t('dictionary.role'),templateLabel.toLocaleLowerCase()])" />
                       </div>
                       <a-tooltip placement="right">
-                        <span slot="title">{{$t('common_522', [templateLabel])}}</span>
+                        <template #title>{{$t('common_522', [templateLabel])}}</template>
                         <icon type="question" />
                       </a-tooltip>
-                      <a-button type="link" @click="showRoleInput = !showRoleInput">{{$t('common_518', [templateLabel, this.$t('dictionary.role')])}}</a-button>
+                      <a-button type="link" @click="showRoleInput = !showRoleInput">{{$t('common_518', [templateLabel, $t('dictionary.role')])}}</a-button>
                     </div>
                   </a-form-model-item>
                 </template>
                 <template v-else>
-                  <a-button type="link" @click="showRoleInput = true">{{$t('common_521', [templateLabel, this.$t('dictionary.role')])}}</a-button>
+                  <a-button type="link" @click="showRoleInput = true">{{$t('common_521', [templateLabel, $t('dictionary.role')])}}</a-button>
                 </template>
               </a-col>
             </a-row>
@@ -120,7 +121,7 @@
         </a-collapse-panel>
       </a-collapse>
     </template>
-  </a-form-model>
+  </div>
 </template>
 
 <script>
@@ -137,7 +138,6 @@ export default {
     },
     offsetWrapperCol: {
       type: Object,
-      required: true,
     },
     isCommon: {
       type: Boolean,
@@ -154,14 +154,6 @@ export default {
       showProjectInput: false,
       showRoleInput: false,
       project: {},
-      rules: {
-        user_id_attribute: [
-          { required: true, message: this.$t('common_607') },
-        ],
-        user_name_attribute: [
-          { required: true, message: this.$t('common_608') },
-        ],
-      },
     }
   },
   computed: {
@@ -224,8 +216,16 @@ export default {
     },
   },
   methods: {
-    async validateForm () {
-      await this.$refs.formRef.validate()
+    getRules () {
+      if (!this.isCommon) return {}
+      return {
+        user_id_attribute: [
+          { required: true, message: this.$t('common_607') },
+        ],
+        user_name_attribute: [
+          { required: true, message: this.$t('common_608') },
+        ],
+      }
     },
     roleMapper (list) {
       if (list && list.length > 0) {

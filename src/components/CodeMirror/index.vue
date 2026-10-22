@@ -1,33 +1,37 @@
 <template>
-  <div class="vue-codemirror" :class="{ merge }">
-    <div ref="mergeview" v-if="merge" />
-    <textarea ref="textarea" :name="name" :placeholder="placeholder" v-else />
+  <div
+    class="vue-codemirror"
+    :class="{ merge, 'vue-codemirror--scroll': isScroll }"
+    :style="hostStyle">
+    <div ref="host" class="vue-codemirror__host" />
   </div>
 </template>
 
 <script>
-// lib
 import _CodeMirror from 'codemirror'
 import 'codemirror/lib/codemirror.css'
 import 'codemirror/theme/material.css'
 import 'codemirror/mode/yaml/yaml.js'
-import 'codemirror/addon/scroll/annotatescrollbar.js'
-import 'codemirror/addon/search/matchesonscrollbar.js'
-import 'codemirror/addon/search/match-highlighter.js'
-import 'codemirror/addon/search/jump-to-line.js'
-
+import 'codemirror/mode/javascript/javascript.js'
+import 'codemirror/mode/xml/xml.js'
+import 'codemirror/mode/shell/shell.js'
+import 'codemirror/mode/htmlmixed/htmlmixed.js'
+import 'codemirror/addon/selection/active-line.js'
 import 'codemirror/addon/dialog/dialog.js'
 import 'codemirror/addon/dialog/dialog.css'
 import 'codemirror/addon/search/searchcursor.js'
 import 'codemirror/addon/search/search.js'
 
 const CodeMirror = window.CodeMirror || _CodeMirror
-// export
+
 export default {
   name: 'CodeMirror',
+  compatConfig: { MODE: 3 },
+  inheritAttrs: false,
   props: {
     code: String,
     value: String,
+    modelValue: String,
     marker: Function,
     unseenLines: Array,
     name: {
@@ -58,137 +62,164 @@ export default {
       type: Array,
       default: () => ([]),
     },
+    /** 编辑器高度，如 300px / 1000px */
+    viewHeight: {
+      type: String,
+      default: '',
+    },
+    /** 超出高度时可滚动（配合 viewHeight） */
+    isScroll: {
+      type: Boolean,
+      default: false,
+    },
   },
-  data () {
-    return {
-      content: '',
-      codemirror: null,
-      cminstance: null,
-    }
+  emits: ['input', 'change', 'update:modelValue', 'update:value', 'ready'],
+  computed: {
+    resolvedValue () {
+      if (this.code != null && this.code !== '') return this.normalizeText(this.code)
+      if (this.modelValue !== undefined) return this.normalizeText(this.modelValue)
+      return this.normalizeText(this.value)
+    },
+    hostStyle () {
+      const h = this.viewHeight || ''
+      if (!h) return undefined
+      return {
+        '--oc-cm-height': h,
+      }
+    },
+    /** 兼容旧代码通过 ref 访问实例 */
+    cminstance () {
+      return this._cm
+    },
+    codemirror () {
+      return this._cm
+    },
   },
   watch: {
-    options: {
-      deep: true,
-      handler (options) {
-        for (const key in options) {
-          this.cminstance.setOption(key, options[key])
-        }
-      },
-    },
-    merge () {
-      this.$nextTick(this.switchMerge)
-    },
     code (newVal) {
-      this.handerCodeChange(newVal)
+      this.syncFromProp(newVal)
     },
     value (newVal) {
-      this.handerCodeChange(newVal)
+      // v-model / v-model:value 并存时以 modelValue 为准
+      if (this.modelValue !== undefined) return
+      this.syncFromProp(newVal)
+    },
+    modelValue (newVal) {
+      this.syncFromProp(newVal)
+    },
+    viewHeight () {
+      this.$nextTick(() => this.refresh())
     },
   },
   mounted () {
-    this.initialize()
+    this._cm = null
+    this._syncing = false
+    this.$nextTick(() => this.initialize())
   },
   beforeUnmount () {
     this.destroy()
   },
   methods: {
-    initialize () {
-      const cmOptions = Object.assign({}, this.globalOptions, this.options, { search: { bottom: 0 } })
-      if (this.merge) {
-        this.codemirror = CodeMirror.MergeView(this.$refs.mergeview, cmOptions)
-        this.cminstance = this.codemirror.edit
-      } else {
-        this.codemirror = CodeMirror.fromTextArea(this.$refs.textarea, cmOptions)
-        this.cminstance = this.codemirror
-        this.cminstance.setValue(this.code || this.value || this.content)
+    normalizeText (val) {
+      if (val == null) return ''
+      if (typeof val === 'string') return val
+      try {
+        return JSON.stringify(val, null, 2)
+      } catch (e) {
+        return String(val)
       }
-      this.cminstance.on('change', cm => {
-        this.content = cm.getValue()
-        if (this.$emit) {
-          this.$emit('input', this.content)
-          this.$emit('change', this.content)
-        }
+    },
+    emitContent (content) {
+      this.$emit('input', content)
+      this.$emit('update:modelValue', content)
+      this.$emit('update:value', content)
+      this.$emit('change', content)
+    },
+    initialize () {
+      const host = this.$refs.host
+      if (!host || this._cm) return
+
+      const cmOptions = {
+        ...this.globalOptions,
+        ...this.options,
+        value: this.resolvedValue || '',
+      }
+
+      if (this.merge && CodeMirror.MergeView) {
+        this._cm = CodeMirror.MergeView(host, cmOptions).edit
+      } else {
+        this._cm = CodeMirror(host, cmOptions)
+      }
+
+      this._syncing = false
+      this._cm.on('change', (cm) => {
+        if (this._syncing) return
+        this.emitContent(cm.getValue())
       })
-      // 所有有效事件（驼峰命名）+ 去重
-      const tmpEvents = {}
-      const allEvents = [
-        'scroll',
-        'changes',
-        'beforeChange',
-        'cursorActivity',
-        'keyHandled',
-        'inputRead',
-        'electricInput',
-        'beforeSelectionChange',
-        'viewportChange',
-        'swapDoc',
-        'gutterClick',
-        'gutterContextMenu',
-        'focus',
-        'blur',
-        'refresh',
-        'optionChange',
-        'scrollCursorIntoView',
-        'update',
-      ]
-      allEvents.concat(this.events)
-        .concat(this.globalEvents)
-        .filter(e => (!tmpEvents[e] && (tmpEvents[e] = true)))
-        .forEach(event => {
-          // 循环事件，并兼容 run-time 事件命名
-          this.cminstance.on(event, (...args) => {
-            // console.log('当有事件触发了', event, args)
-            this.$emit(event, ...args)
-            const lowerCaseEvent = event.replace(/([A-Z])/g, '-$1').toLowerCase()
-            if (lowerCaseEvent !== event) {
-              this.$emit(lowerCaseEvent, ...args)
-            }
-          })
+
+      const forward = [].concat(this.events || [], this.globalEvents || [])
+      forward.forEach((event) => {
+        if (!event) return
+        this._cm.on(event, (...args) => {
+          this.$emit(event, ...args)
         })
-      this.$emit('ready', this.codemirror)
-      this.unseenLineMarkers()
-      // prevents funky dynamic rendering
-      this.refresh()
+      })
+
+      this.$emit('ready', this._cm)
+      this.$nextTick(() => this.refresh())
     },
     refresh () {
-      this.$nextTick(() => {
-        this.cminstance.refresh()
-      })
+      if (!this._cm || !this._cm.display) return
+      try { this._cm.refresh() } catch (e) { /* ignore */ }
     },
     destroy () {
-      // garbage cleanup
-      const element = this.cminstance.doc.cm.getWrapperElement()
-      element && element.remove && element.remove()
+      if (!this._cm) return
+      try {
+        const wrapper = this._cm.getWrapperElement && this._cm.getWrapperElement()
+        if (wrapper && wrapper.remove) wrapper.remove()
+      } catch (e) { /* ignore */ }
+      this._cm = null
     },
-    handerCodeChange (newVal) {
-      const cmValue = this.cminstance.getValue()
-      if (newVal !== cmValue) {
-        const scrollInfo = this.cminstance.getScrollInfo()
-        this.cminstance.setValue(newVal)
-        this.content = newVal
-        this.cminstance.scrollTo(scrollInfo.left, scrollInfo.top)
+    syncFromProp (newVal) {
+      const cm = this._cm
+      if (!cm || this._syncing) return
+      // 编辑中以编辑器为准，避免 setValue 打断输入
+      if (cm.hasFocus && cm.hasFocus()) return
+      const text = this.normalizeText(newVal)
+      let cur = ''
+      try {
+        cur = cm.getValue()
+      } catch (e) {
+        return
       }
-      this.unseenLineMarkers()
-    },
-    unseenLineMarkers () {
-      if (this.unseenLines !== undefined && this.marker !== undefined) {
-        this.unseenLines.forEach(line => {
-          const info = this.cminstance.lineInfo(line)
-          this.cminstance.setGutterMarker(line, 'breakpoints', info.gutterMarkers ? null : this.marker())
-        })
-      }
-    },
-    switchMerge () {
-      // Save current values
-      const history = this.cminstance.doc.history
-      const cleanGeneration = this.cminstance.doc.cleanGeneration
-      this.options.value = this.cminstance.getValue()
-      this.destroy()
-      this.initialize()
-      // Restore values
-      this.cminstance.doc.history = history
-      this.cminstance.doc.cleanGeneration = cleanGeneration
+      if (text === cur) return
+      this._syncing = true
+      try {
+        cm.setValue(text)
+      } catch (e) { /* ignore */ }
+      this._syncing = false
     },
   },
 }
 </script>
+
+<style>
+.vue-codemirror {
+  --oc-cm-height: 320px;
+}
+.vue-codemirror__host,
+.vue-codemirror .CodeMirror {
+  height: var(--oc-cm-height);
+  border: 1px solid #d9d9d9;
+  font-size: 13px;
+}
+.vue-codemirror--scroll .CodeMirror {
+  height: auto;
+  min-height: 120px;
+}
+.vue-codemirror--scroll .CodeMirror-scroll {
+  max-height: var(--oc-cm-height);
+  overflow-y: auto !important;
+  overflow-x: auto !important;
+}
+</style>

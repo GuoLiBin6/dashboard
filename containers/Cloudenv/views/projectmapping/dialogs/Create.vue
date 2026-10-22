@@ -19,9 +19,10 @@
         <!-- 规则 -->
         <a-form-model-item :label="$t('cloudenv.text_582')" :rules="rules.rules" prop="rules">
           <div v-for="(item,index) in formData.rules" :key="index" class="d-flex align-items-center">
-            <a-card class="mb-3" style="flex: 1 1 auto">
+            <!-- oc-layout-form：抛开外层 form label 宽，按卡片内最长 label 重算 -->
+            <a-card class="mb-3 oc-layout-form" style="flex: 1 1 auto">
               <!-- 条件 -->
-              <a-form-model-item :label="$t('cloudenv.text_22')" v-bind="layout" :rules="rules.condition" :prop="['rules', index, 'condition']">
+              <a-form-model-item :label="$t('cloudenv.text_22')" :rules="rules.condition" :prop="['rules', index, 'condition']">
                 <a-select v-model:value="item.condition" @change="() => onConditionChange(index)">
                   <a-select-option
                     v-for="opt in resourceAndTagOptions"
@@ -34,31 +35,33 @@
               </a-form-model-item>
               <!-- 标签key -->
               <template v-if="item.condition === 'and_copy'">
-                <a-form-model-item :label="$t('cloudenv.tag_key')" v-bind="layout" :rules="rules.tag_key" :prop="['rules', index, 'tag_key']">
+                <a-form-model-item :label="$t('cloudenv.tag_key')" :rules="rules.tag_key" :prop="['rules', index, 'tag_key']">
                   <a-input v-model:value="item.tag_key" />
                 </a-form-model-item>
               </template>
               <template v-else>
                 <!-- 标签 -->
-                <a-form-model-item :label="$t('cloudenv.text_16')" v-bind="layout" :rules="rules.tags" :prop="['rules', index, 'tags']">
+                <a-form-model-item :label="$t('cloudenv.text_16')" :rules="rules.tags" :prop="['rules', index, 'tags']">
                   <tag v-if="tagShow" :defaultChecked="item.tags" @change="(val) => handleTagChange(val, index)" />
                 </a-form-model-item>
-                <a-form-model-item :label="$t('cloudenv.belong_type')" v-bind="layout" :rules="rules.belong_type" :prop="['rules', index, 'belong_type']">
-                  <a-form-model-item class="mb-0" :extra="item.belong_type === 'project_id' ? $t('cloudenv.text_592') : $t('cloudenv.belong_project_name_tip')">
-                    <a-radio-group v-model:value="item.belong_type" class="mb-2" @change="validateBt(index)">
-                      <a-radio-button value="project_id">{{ $t('cloudenv.target_project') }}</a-radio-button>
-                      <a-radio-button value="project">{{ $t('cloudenv.target_name') }}</a-radio-button>
-                    </a-radio-group>
-                    <base-select
-                      v-if="item.belong_type === 'project_id'"
-                      resource="projects"
-                      remote
-                      :params="{...projectParams, $t: index}"
-                      v-model="item.project_id"
-                      :select-props="{placeholder: $t('common.tips.select', [$t('dictionary.project')])}"
-                      @change="validateBt(index)" />
-                    <a-input v-else type="text" v-model:value="item.project" :placeholder="$t('common.tips.input', [$t('dictionary.project')])" @change="validateBt(index)" />
-                  </a-form-model-item>
+                <a-form-model-item
+                  :label="$t('cloudenv.belong_type')"
+                  :rules="rules.belong_type"
+                  :prop="['rules', index, 'belong_type']"
+                  :extra="item.belong_type === 'project_id' ? $t('cloudenv.text_592') : $t('cloudenv.belong_project_name_tip')">
+                  <a-radio-group v-model:value="item.belong_type" class="mb-2" @change="validateBt(index)">
+                    <a-radio-button value="project_id">{{ $t('cloudenv.target_project') }}</a-radio-button>
+                    <a-radio-button value="project">{{ $t('cloudenv.target_name') }}</a-radio-button>
+                  </a-radio-group>
+                  <base-select
+                    v-if="item.belong_type === 'project_id'"
+                    resource="projects"
+                    remote
+                    :params="{...projectParams, $t: index}"
+                    v-model="item.project_id"
+                    :select-props="{placeholder: $t('common.tips.select', [$t('dictionary.project')])}"
+                    @change="validateBt(index)" />
+                  <a-input v-else type="text" v-model:value="item.project" :placeholder="$t('common.tips.input', [$t('dictionary.project')])" @change="validateBt(index)" />
                 </a-form-model-item>
               </template>
             </a-card>

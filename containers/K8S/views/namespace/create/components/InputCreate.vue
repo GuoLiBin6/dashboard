@@ -18,7 +18,7 @@
       <a-form-model-item
         :label="$t('k8s.text_287')"
         prop="yaml">
-        <code-mirror v-model:value="form.yaml" :options="cmOptions" />
+        <code-mirror v-model="form.yaml" :options="cmOptions" />
       </a-form-model-item>
       <a-form-model-item :wrapper-col="{ span: 20, offset: 3 }">
         <a-button class="mr-2" type="primary" @click="handleConfirm" :loading="loading">{{$t('k8s.text_288')}}</a-button>

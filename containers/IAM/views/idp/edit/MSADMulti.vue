@@ -1,5 +1,5 @@
 <template>
-  <a-form-model ref="formRef" :model="fd" :rules="rules">
+  <div>
     <a-form-model-item :label="$t('system.text_217')" :extra="$t('system.text_218')" prop="url">
       <a-input v-model:value="fd.url" />
     </a-form-model-item>
@@ -15,7 +15,7 @@
     <a-form-model-item :label="`${$t('dictionary.domain')}DN`" :extra="$t('system.text_222')" prop="domain_tree_dn">
       <a-input v-model:value="fd.domain_tree_dn" />
     </a-form-model-item>
-  </a-form-model>
+  </div>
 </template>
 
 <script>
@@ -24,16 +24,15 @@ export default {
   props: {
     offsetWrapperCol: {
       type: Object,
-      required: true,
     },
     fd: {
       type: Object,
       required: true,
     },
   },
-  data () {
-    return {
-      rules: {
+  methods: {
+    getRules () {
+      return {
         url: [
           { required: true, message: this.$t('system.text_236') },
         ],
@@ -49,12 +48,7 @@ export default {
         domain_tree_dn: [
           { required: false, message: this.$t('common_529', [this.$t('dictionary.domain')]) },
         ],
-      },
-    }
-  },
-  methods: {
-    async validateForm () {
-      await this.$refs.formRef.validate()
+      }
     },
   },
 }

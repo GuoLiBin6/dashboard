@@ -34,15 +34,9 @@
             :select-props="{ mode: 'default' }" />
         </a-form-model-item>
         <a-form-model-item :label="$t('iam.role_policy_valid_time_range')">
-          <oc-date-time-picker
-            v-model:value="form.valid_since"
-            :disabled-date="dateDisabledStart"
-            format="YYYY-MM-DD HH:mm"
-            value-format="YYYY-MM-DD HH:mm:ss" />
-          <span class="ml-2 mr-2">~</span>
-          <oc-date-time-picker
-            v-model:value="form.valid_until"
-            :disabled-date="dateDisabledEnd"
+          <oc-date-time-range-picker
+            v-model:value="validRange"
+            :allow-past="false"
             format="YYYY-MM-DD HH:mm"
             value-format="YYYY-MM-DD HH:mm:ss" />
         </a-form-model-item>
@@ -102,6 +96,15 @@ export default {
     }
   },
   computed: {
+    validRange: {
+      get () {
+        return [this.form.valid_since, this.form.valid_until]
+      },
+      set (val) {
+        this.form.valid_since = val?.[0] || undefined
+        this.form.valid_until = val?.[1] || undefined
+      },
+    },
     scopeParams () {
       const scopeParams = {}
       if (!this.data) return scopeParams
@@ -198,23 +201,6 @@ export default {
       if (typeof value === 'string') return value
       if (typeof value.format === 'function') return value.format('YYYY-MM-DD HH:mm:ss')
       return this.$moment(value).format('YYYY-MM-DD HH:mm:ss')
-    },
-    toTs (value) {
-      if (!value) return null
-      if (typeof value.valueOf === 'function') return value.valueOf()
-      return this.$moment(value).valueOf()
-    },
-    dateDisabledStart (current) {
-      if (!current) return false
-      const endTs = this.toTs(this.form.valid_until)
-      if (endTs && current.valueOf() > endTs) return true
-      return current.valueOf() < this.$moment().startOf('day').valueOf()
-    },
-    dateDisabledEnd (current) {
-      if (!current) return false
-      const startTs = this.toTs(this.form.valid_since)
-      if (startTs && current.valueOf() < startTs) return true
-      return current.valueOf() < this.$moment().startOf('day').valueOf()
     },
   },
 }

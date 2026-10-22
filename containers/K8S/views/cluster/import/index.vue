@@ -30,7 +30,7 @@
       <a-form-model-item
         :label="$t('k8s.text_181')"
         prop="kubeconfig">
-        <code-mirror v-model:value="form.kubeconfig" :options="cmOptions" />
+        <code-mirror v-model="form.kubeconfig" :options="cmOptions" />
       </a-form-model-item>
       <a-form-model-item :wrapper-col="offsetWrapperCol">
         <a-button class="mr-2" type="primary" @click="doImport" :loading="loading">{{$t('k8s.text_143')}}</a-button>

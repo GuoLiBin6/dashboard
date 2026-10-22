@@ -54,6 +54,19 @@ import { POLICY_WHITE_LIST } from '@/constants/policy'
 import ScopeSelect from './ScopeSelect'
 import { genPolicyGroups } from '../../utils'
 import { DEFAULT_ACTIONS_KEY } from '../../constants'
+
+const DEFAULT_YAML_POLICY = 'policy:\n  "*": allow'
+
+function normalizeYamlPolicy (policy) {
+  if (policy == null || policy === '') return DEFAULT_YAML_POLICY
+  if (typeof policy === 'string') return policy
+  try {
+    return yaml.safeDump(policy)
+  } catch (e) {
+    return DEFAULT_YAML_POLICY
+  }
+}
+
 // 权限级别
 const policyLevel = {
   deny: 0,
@@ -194,7 +207,9 @@ export default {
     const initialNameValue = (this.policy && this.policy.name) || ''
     const initialDomainValue = (this.policy && this.policy.domain_id) || this.$store.getters.userInfo.projectDomainId
     const initialScopeValue = (this.policy && this.policy.scope) || SCOPES_MAP.project.key
-    const initialYamlPolicyValue = (this.editType === 'yaml' && this.policy && this.policy.policy) || 'policy:\n  "*": allow'
+    const initialYamlPolicyValue = normalizeYamlPolicy(
+      this.editType === 'yaml' ? (this.policy && this.policy.policy) : null,
+    )
     const initialCheckboxPolicyValue = (this.policy && this.policy.policy) || {}
     const initialDescriptionValue = (this.policy && this.policy.description) || ''
     return {
@@ -258,8 +273,10 @@ export default {
         const name = (val && val.name) || ''
         const domain = (val && val.domain_id) || ''
         const scope = (val && val.scope) || SCOPES_MAP.project.key
-        const description = (val && val.policy.description) || ''
-        this.yamlPolicy = (this.editType === 'yaml' && val.policy) || ''
+        const description = (val && val.description) || ''
+        if (this.editType === 'yaml') {
+          this.yamlPolicy = normalizeYamlPolicy(val.policy)
+        }
         this.model.name = name
         this.model.scope = scope
         this.model.domain = domain
@@ -275,6 +292,9 @@ export default {
         })
       } else {
         this.showPolicyCheckbox = false
+        if (this.policy && this.policy.policy != null) {
+          this.yamlPolicy = normalizeYamlPolicy(this.policy.policy)
+        }
       }
     },
   },

@@ -61,16 +61,14 @@
             <ldap-advanced
               :is-common="isCommon"
               :fd="form.fd"
-              :template-data="templateData"
-              :offset-wrapper-col="offsetWrapperCol" />
+              :template-data="templateData" />
           </template>
         </template>
         <component
           v-if="currentTemplateComponent"
           ref="templateRef"
           :is="currentTemplateComponent"
-          :fd="form.fd"
-          :offset-wrapper-col="offsetWrapperCol" />
+          :fd="form.fd" />
         <template v-if="!isUpdate">
           <a-form-model-item v-if="isLdap" :label="$t('system.text_223')" :extra="$t('system.text_224')" prop="disable_user_on_import">
             <a-radio-group v-model:value="form.fd.disable_user_on_import">
@@ -83,8 +81,7 @@
             ref="advancedRef"
             :is-common="isCommon"
             :fd="form.fd"
-            :template-data="templateData"
-            :offset-wrapper-col="offsetWrapperCol" />
+            :template-data="templateData" />
         </template>
       </a-form-model>
     </page-body>
@@ -139,14 +136,6 @@ export default {
           template: templateInitialValue,
           driver: driverInitialValue,
           disable_user_on_import: false,
-        },
-      },
-      offsetWrapperCol: {
-        wrapperCol: {
-          offset: 5,
-          xxl: {
-            offset: 4,
-          },
         },
       },
       detailData: {},
@@ -204,15 +193,55 @@ export default {
       return (key && TEMPLATE_COMPONENTS[key]) || null
     },
     rules () {
-      const rules = {
-        name: [
+      const rules = {}
+      if (!this.isUpdate) {
+        rules.name = [
           { required: true, message: this.$t('system.text_168') },
-        ],
-      }
-      if (this.isAdmin && this.isShowDomain) {
-        rules.project_domain = [
-          { required: true, message: this.$t('common_523', [this.$t('dictionary.domain')]) },
         ]
+        if (this.isAdmin && this.isShowDomain) {
+          rules.project_domain = [
+            { required: true, message: this.$t('common_523', [this.$t('dictionary.domain')]) },
+          ]
+        }
+        if (!this.isLdap && this.isCommon) {
+          Object.assign(rules, {
+            user_id_attribute: [
+              { required: true, message: this.$t('common_607') },
+            ],
+            user_name_attribute: [
+              { required: true, message: this.$t('common_608') },
+            ],
+          })
+        }
+      }
+      const template = this.form.fd.template
+      if (template === 'msad_one_domain' || template === 'openldap_one_domain' || template === 'msad_multi_domain') {
+        Object.assign(rules, {
+          url: [
+            { required: true, message: this.$t('system.text_236') },
+          ],
+          suffix: [
+            { required: true, message: this.$t('system.text_237') },
+          ],
+          user: [
+            { required: true, message: this.$t('scope.text_331') },
+          ],
+          password: [
+            { required: true, message: this.$t('scope.text_333') },
+          ],
+        })
+        if (template === 'msad_multi_domain') {
+          rules.domain_tree_dn = [
+            { required: false, message: this.$t('common_529', [this.$t('dictionary.domain')]) },
+          ]
+        } else {
+          rules.user_tree_dn = [
+            { required: false, message: this.$t('system.text_240') },
+          ]
+          rules.group_tree_dn = [
+            { required: false, message: this.$t('system.text_241') },
+          ]
+        }
       }
       return rules
     },
@@ -348,18 +377,7 @@ export default {
       })
     },
     async getValues () {
-      const validators = []
-      if (!this.isUpdate && this.$refs.formRef) {
-        validators.push(this.$refs.formRef.validate())
-      }
-      const { templateRef, advancedRef } = this.$refs
-      if (templateRef?.validateForm) {
-        validators.push(templateRef.validateForm())
-      }
-      if (advancedRef?.validateForm) {
-        validators.push(advancedRef.validateForm())
-      }
-      await Promise.all(validators)
+      await this.$refs.formRef.validate()
       return { ...this.form.fd }
     },
     async handleSubmit () {

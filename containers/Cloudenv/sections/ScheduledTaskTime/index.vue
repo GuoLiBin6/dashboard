@@ -45,18 +45,22 @@
         <oc-time-picker v-model:value="hourMinute" format="HH:mm" />
       </a-form-model-item>
       <a-form-model-item :label="$t('cloudenv.text_438')" :help="$t('cloudenv.range_picker_help')">
-        <oc-range-picker
+        <date-range-picker
           v-model:value="startEndTime"
-          :disabled-date="disabledDate"
-          format="YYYY-MM-DD" />
+          :disabled-date="disabledDate" />
       </a-form-model-item>
     </template>
   </div>
 </template>
 
 <script>
+import DateRangePicker from '@/components/DateRangePicker'
+
 export default {
   name: 'ScheduledTaskTime',
+  components: {
+    DateRangePicker,
+  },
   props: {
     /** 直接传 form model（推荐） */
     model: {
@@ -160,26 +164,28 @@ export default {
     transformParams (params, values) {
       if (values.cycleTimer.cycle_type === 'one') {
         params.scheduled_type = 'timing'
-        params.timer = values.timer
+        params.timer = {
+          ...values.timer,
+          execTime: this.$moment(values.timer.execTime),
+        }
       } else {
         params.scheduled_type = 'cycle'
         params.cycle_timer = { ...values.cycleTimer }
       }
-      // 触发时间
+      // 触发时间（OcTimePicker 可能回传 dayjs，统一转 moment）
       if (values.hourMinute) {
-        // 转换为utc hour
         const time = this.$moment(values.hourMinute)
-        params.cycle_timer.hour = time.subtract(time.utcOffset(), 'minutes').hour()
-        params.cycle_timer.minute = values.hourMinute.minutes()
+        params.cycle_timer.hour = time.clone().subtract(time.utcOffset(), 'minutes').hour()
+        params.cycle_timer.minute = time.minute()
       }
       // 有效时间
       if (values.startEndTime && values.startEndTime.length > 0) {
-        params.cycle_timer.startTime = values.startEndTime[0].set({
+        params.cycle_timer.startTime = this.$moment(values.startEndTime[0]).set({
           hour: 0,
           minute: 0,
           second: 0,
         })
-        params.cycle_timer.endTime = values.startEndTime[1].set({
+        params.cycle_timer.endTime = this.$moment(values.startEndTime[1]).set({
           hour: 23,
           minute: 59,
           second: 59,
