@@ -1,5 +1,9 @@
 <template>
-  <notification-base-list :extra-list-params="ExtraListParams" :extra-columns="ExtraColumns" :extra-filter-options="ExtraFilterOptions" :id="id" />
+  <notification-base-list
+    :id="id"
+    :extra-list-params="extraListParams"
+    :extra-columns="extraColumns"
+    :extra-filter-options="extraFilterOptions" />
 </template>
 
 <script>
@@ -19,8 +23,8 @@ export default {
   },
   data () {
     return {
-      ExtraListParams: { contact_type: 'webconsole' },
-      ExtraColumns: [
+      extraListParams: { contact_type: 'webconsole' },
+      extraColumns: [
         {
           title: this.$t('system.notify.topic.type'),
           field: 'topic_type',
@@ -39,8 +43,8 @@ export default {
           title: this.$t('system.text_308'),
           field: 'content',
           slots: {
-            default: ({ row }) => {
-              return [this.$createElement('a-button', {
+            default: ({ row }, h) => {
+              return [h('a-button', {
                 props: { type: 'link' },
                 style: { paddingLeft: 0 },
                 on: { click: () => this.handleContentView(row) },
@@ -49,7 +53,7 @@ export default {
           },
         },
       ],
-      ExtraFilterOptions: {
+      extraFilterOptions: {
         // topic_type: {
         //   label: this.$t('system.text_48'),
         //   filter: true,

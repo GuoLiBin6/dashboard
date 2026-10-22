@@ -37,7 +37,7 @@
                     @click.stop
                     @update:checked="toggleCheckAll" />
                 </template>
-                <template v-else-if="cell.col.type === 'radio' || cell.col.type === 'expand' || cell.col.type === 'seq'" />
+                <template v-else-if="cell.col.type === 'radio' || cell.col.type === 'seq' || isExpandIconOnly(cell.col)" />
                 <template v-else-if="cell.col.slots && cell.col.slots.header">
                   <v-node-render :render-fn="() => renderHeader(cell.col)" />
                 </template>
@@ -95,7 +95,19 @@
                       @update:checked="() => onRadio(rowItem.row)" />
                   </template>
                   <template v-else-if="col.type === 'expand'">
+                    <div v-if="!isExpandIconOnly(col)" class="table-lite-grid__expand-with-content">
+                      <span
+                        class="table-lite-grid__expand-btn"
+                        :class="{ 'is-open': isExpanded(rowItem.row) }"
+                        @click.stop="toggleExpand(rowItem.row)">
+                        ▸
+                      </span>
+                      <div class="table-lite-grid__expand-content">
+                        <v-node-render :render-fn="() => renderBodyCell(col, rowItem.row, rowIndex)" />
+                      </div>
+                    </div>
                     <span
+                      v-else
                       class="table-lite-grid__expand-btn"
                       :class="{ 'is-open': isExpanded(rowItem.row) }"
                       @click.stop="toggleExpand(rowItem.row)">
@@ -593,6 +605,10 @@ export default {
     colKey (col) {
       return col.type || col.field || col.title || String(col)
     },
+    /** 仅箭头的 expand（expandConfig 注入）；带 field/title/default 的是业务展开列 */
+    isExpandIconOnly (col) {
+      return !!(col && col.type === 'expand' && !(col.field || col.title || (col.slots && col.slots.default)))
+    },
     rowKeyOf (row, index) {
       ensureRowXID(row)
       const k = this.effectiveRowKey
@@ -602,7 +618,13 @@ export default {
     },
     resolveColMinWidth (col) {
       if (col.type === 'checkbox' || col.type === 'radio') return SELECT_COL_WIDTH
-      if (col.type === 'expand') return EXPAND_COL_WIDTH
+      if (col.type === 'expand') {
+        if (this.isExpandIconOnly(col)) return EXPAND_COL_WIDTH
+        const key = this.colKey(col)
+        if (this.colWidths[key] != null) return this.colWidths[key]
+        const w = Number(col.width) || Number(col.minWidth) || 100
+        return Math.max(w, COL_MIN_WIDTH)
+      }
       if (col.type === 'seq') return Number(col.width) || SEQ_COL_WIDTH
       const key = this.colKey(col)
       if (this.colWidths[key] != null) return this.colWidths[key]
@@ -611,7 +633,8 @@ export default {
     },
     // 铺满模式下不参与剩余宽度分摊的列（勾选等）
     isFillFixedCol (col) {
-      return ['checkbox', 'radio', 'expand', 'seq'].includes(col.type)
+      if (col.type === 'expand') return this.isExpandIconOnly(col)
+      return ['checkbox', 'radio', 'seq'].includes(col.type)
     },
     /** 列固定方向：left | right | ''（仅尊重列上的 fixed，不再默认固定勾选列） */
     getColFixed (col) {
@@ -685,6 +708,9 @@ export default {
       }
       return style
     },
+    isSelectLikeCol (col) {
+      return col.type === 'checkbox' || col.type === 'radio' || col.type === 'seq' || this.isExpandIconOnly(col)
+    },
     thClass (col) {
       const side = this.getColFixed(col)
       const key = this.colKey(col)
@@ -692,7 +718,7 @@ export default {
         'table-lite-grid__th',
         col.sortable ? 'is-sortable' : '',
         this.canResize(col) ? 'is-resizable' : '',
-        ['checkbox', 'radio', 'expand', 'seq'].includes(col.type) ? 'is-select' : '',
+        this.isSelectLikeCol(col) ? 'is-select' : '',
         side === 'left' ? 'is-fixed-left' : '',
         side === 'right' ? 'is-fixed-right' : '',
         side === 'left' && key === this.lastLeftFixedKey ? 'is-fixed-left-last' : '',
@@ -704,8 +730,8 @@ export default {
       const key = this.colKey(col)
       const classes = [
         'table-lite-grid__td',
-        this.useEllipsis && !['checkbox', 'radio', 'expand', 'seq'].includes(col.type) ? 'is-ellipsis' : '',
-        ['checkbox', 'radio', 'expand', 'seq'].includes(col.type) ? 'is-select' : '',
+        this.useEllipsis && !this.isSelectLikeCol(col) && col.type !== 'expand' ? 'is-ellipsis' : '',
+        this.isSelectLikeCol(col) ? 'is-select' : '',
         side === 'left' ? 'is-fixed-left' : '',
         side === 'right' ? 'is-fixed-right' : '',
         side === 'left' && key === this.lastLeftFixedKey ? 'is-fixed-left-last' : '',
@@ -746,7 +772,7 @@ export default {
     },
     canResize (col) {
       if (!this.effectiveResizable) return false
-      if (['checkbox', 'radio', 'expand', 'seq'].includes(col.type)) return false
+      if (col.type === 'checkbox' || col.type === 'radio' || col.type === 'seq' || this.isExpandIconOnly(col)) return false
       if (col.resizable === false) return false
       // 无 field 的占位列不拖宽；分组父列不拖
       if (!col.field) return false
@@ -1517,10 +1543,21 @@ export default {
   justify-content: center;
   cursor: pointer;
   user-select: none;
+  flex-shrink: 0;
   transition: transform 0.15s;
   &.is-open {
     transform: rotate(90deg);
   }
+}
+.table-lite-grid__expand-with-content {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.table-lite-grid__expand-content {
+  flex: 1;
+  min-width: 0;
 }
 .table-lite-grid__tree-cell {
   display: flex;

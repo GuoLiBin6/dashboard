@@ -80,15 +80,12 @@
       </a-row>
     </a-form-model-item>
     <container-title :title="$t('monitor.commonalert.alarm_notify')" />
-    <a-form-model-item :label="$t('monitor.commonalerts.form.column.silent')" class="mb-0" prop="silent_period">
-      <a-form-model-item class="mr-1">
-        <base-select v-model:value="form.fd.silent_period" @change="v => syncFd('silent_period', v)" :options="silentOpts" style="display: inline-flex;" />
-        <a-tooltip style="padding-left: 5px;" placement="top"><icon type="question-circle" />
-        <template slot="title">
-          <span>{{ $t('monitor.commonalerts.form.column.silent.tips') }}</span>
-        </template>
-        </a-tooltip>
-      </a-form-model-item>
+    <a-form-model-item prop="silent_period">
+      <template #label>
+        {{ $t('monitor.commonalerts.form.column.silent') }}
+        <help-tooltip class="ml-1" :text="$t('monitor.commonalerts.form.column.silent.tips')" />
+      </template>
+      <base-select v-model:value="form.fd.silent_period" @change="v => syncFd('silent_period', v)" :options="silentOpts" style="display: inline-flex;" />
     </a-form-model-item>
     <a-form-model-item :label="$t('monitor.commonalerts.disable_notify_recovery')" prop="disable_notify_recovery">
       <a-switch v-model:checked="form.fd.disable_notify_recovery" @change="v => syncFd('disable_notify_recovery', v)" :checked-children="$t('common.true')" :un-checked-children="$t('common.false')" />
@@ -177,6 +174,7 @@ import ScopeRadio from '@/sections/ScopeRadio'
 import NotifyTypes from '@/sections/NotifyTypes'
 import workflowMixin from '@/mixins/workflow'
 import { WORKFLOW_TYPES } from '@/constants/workflow'
+import { expandBracketFd } from '@/utils/bracketModel'
 import Condition from './Condition'
 export default {
   name: 'CommonalertForm',
@@ -768,13 +766,13 @@ export default {
         this.$nextTick(() => {
           const conditionList = conditionRef.conditionList
           const key = conditionList[idx].key
-          conditionRef.dualWriteFields({
+          conditionRef.writeFields({
             [`metric_key[${key}]`]: item.measurement,
             [`reduce[${key}]`]: item.reduce,
             [`comparator[${key}]`]: item.comparator,
           })
           conditionRef.metricKeyChange(item.measurement, { key })
-          conditionRef.dualWriteFields({
+          conditionRef.writeFields({
             [`metric_value[${key}]`]: item.field,
           })
           conditionRef.metricValueChange(item.field, { key })
@@ -793,13 +791,13 @@ export default {
               } else {
                 thresholdArray = [1, 2]
               }
-              conditionRef.dualWriteFields({
+              conditionRef.writeFields({
                 [`threshold[${key}]`]: thresholdArray,
                 [`threshold_start[${key}]`]: thresholdArray[0],
                 [`threshold_end[${key}]`]: thresholdArray[1],
               })
             } else {
-              conditionRef.dualWriteFields({
+              conditionRef.writeFields({
                 [`threshold[${key}]`]: item.threshold,
               })
             }
@@ -932,7 +930,7 @@ export default {
       }
     },
     toParams () {
-      const fd = { ...this.form.fd }
+      const fd = expandBracketFd(this.form.fd)
       let fromValue
       if (fd.from) {
         fromValue = fd.from
@@ -956,40 +954,38 @@ export default {
           database: this.metricKeyItem.database || _.get(this.alertData, 'common_alert_metric_details[0].db', 'telegraf'),
         }
         const tags = []
-        if (fd.metric_key[key]) model.measurement = fd.metric_key[key]
-        if (fd.reduce[key]) params.reduce = fd.reduce[key]
-        if (fd.comparator[key]) {
+        if (fd.metric_key?.[key]) model.measurement = fd.metric_key[key]
+        if (fd.reduce?.[key]) params.reduce = fd.reduce[key]
+        if (fd.comparator?.[key]) {
           params.comparator = fd.comparator[key]
           if (params.comparator === 'nodata') {
             params.condition_type = 'nodata_query'
           } else if (params.comparator === 'within_range' || params.comparator === 'outside_range') {
-            params.threshold_range = [fd.threshold_start[key] || fd.threshold[key], fd.threshold_end[key] || fd.threshold[key]]
+            params.threshold_range = [fd.threshold_start?.[key] || fd.threshold?.[key], fd.threshold_end?.[key] || fd.threshold?.[key]]
           } else {
             // 非范围类型：threshold 是单个值
-            if (fd.threshold && fd.threshold[key]) {
+            if (fd.threshold?.[key] !== undefined && fd.threshold?.[key] !== null && fd.threshold?.[key] !== '') {
               params.threshold = fd.threshold[key]
             }
           }
-        } else {
-          if (fd.threshold && fd.threshold[key]) {
-            params.threshold = fd.threshold[key]
-          }
+        } else if (fd.threshold?.[key] !== undefined && fd.threshold?.[key] !== null && fd.threshold?.[key] !== '') {
+          params.threshold = fd.threshold[key]
         }
-        if (fd.metric_value[key]) model.select = [[{ type: 'field', params: [fd.metric_value[key]] }]]
+        if (fd.metric_value?.[key]) model.select = [[{ type: 'field', params: [fd.metric_value[key]] }]]
         if (R.is(Object, fd.tagValues)) {
           R.forEachObjIndexed((value, key) => {
             if (value) {
               let val = value
-              if ((fd.tagOperators[key] === '=~' || fd.tagOperators[key] === '!~') && val && val.length) {
+              if ((fd.tagOperators?.[key] === '=~' || fd.tagOperators?.[key] === '!~') && val && val.length) {
                 const arr = Array.isArray(val) ? val : [val]
                 val = `/${arr.map(v => `^${v}$`).join('|')}/`
               }
               const tag = {
-                key: fd.tagKeys[key],
+                key: fd.tagKeys?.[key],
                 value: val,
-                operator: fd.tagOperators[key],
+                operator: fd.tagOperators?.[key],
               }
-              if (fd.tagConditions && fd.tagConditions[key]) {
+              if (fd.tagConditions?.[key]) {
                 tag.condition = fd.tagConditions[key]
               }
               tags.push(tag)

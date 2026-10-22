@@ -1,9 +1,13 @@
 <template>
   <a-card :title="title" size="small" class="monitor-form" :class="{ 'hideBody': !panelShow }">
-    <div slot="extra">
-      <a-icon type="delete" v-if="showDelete" @click="remove" class="mr-2 remove-icon" />
-      <a-icon :type="panelShow ? 'up' : 'down'" @click="toggle" />
-    </div>
+    <template #extra>
+      <icon type="delete" v-if="showDelete" @click.stop="remove" class="mr-2 remove-icon" style="cursor: pointer;" />
+      <icon
+        type="pull-down"
+        class="panel-toggle-icon"
+        :style="{ transform: panelShow ? 'none' : 'rotate(-90deg)' }"
+        @click="toggle" />
+    </template>
     <div v-show="panelShow">
       <a-form-model
         :model="form.fd">
@@ -19,7 +23,7 @@
             @metricChange="getMetricInfo"
             @metricClear="resetChart" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('monitor.monitor_filters')">
+        <a-form-model-item :label="$t('monitor.monitor_filters')" class="monitor-form__filters">
           <filters
             :form="form"
             :model="form.fd"
@@ -34,6 +38,7 @@
       </a-form-model>
       <a-form-model
         ref="shellFormRef"
+        class="monitor-form__shell"
         :model="form.fd"
         :rules="shellRules">
         <a-form-model-item :label="$t('monitor.monitor_group')" prop="group_by">
@@ -492,6 +497,7 @@ export default {
     },
     toggle () {
       this.panelShow = !this.panelShow
+      this.$emit('panelShowChange', this.panelShow)
     },
     async toParams (ignoreEmit) {
       const fd = { ...this.form.fd }
@@ -590,36 +596,58 @@ export default {
   }
   .remove-icon {
     transition: color 0.1s ease-in;
+    cursor: pointer;
     &:hover {
       color: @error-color;
     }
   }
-  // 让 label 和 wrapper 基于父元素宽度，而不是固定的 span
-  :deep(.ant-form-item) {
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: flex-start;
+  .panel-toggle-icon {
+    font-size: 12px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
   }
-  ::v-deep .ant-form-item-label,
-  :deep(.ant-form-item-label > label) {
-    width: 150px !important;
-    flex: 0 0 150px !important;
+  // antdv4：label 相对右侧第一行输入框（32px）上下居中
+  :deep(.ant-form > .ant-form-item > .ant-form-item-row) {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: flex-start !important;
+  }
+  :deep(.ant-form > .ant-form-item > .ant-form-item-row > .ant-form-item-label) {
+    width: 108px !important;
+    flex: 0 0 108px !important;
+    max-width: 108px !important;
     padding-right: 8px;
+    padding-top: 0 !important;
+    align-self: flex-start !important;
+    display: flex !important;
+    align-items: center !important;
+    height: 32px !important;
+    max-height: 32px !important;
   }
-  // // 覆盖 Ant Design 的栅格类
-  :deep(.ant-col) {
-    width: auto !important;
-    max-width: none !important;
+  :deep(.ant-form > .ant-form-item > .ant-form-item-row > .ant-form-item-label > label) {
+    height: 32px !important;
+    line-height: 32px !important;
+    margin: 0 !important;
+    white-space: normal;
   }
-  :deep(.ant-form-item-control-wrapper) {
-    flex: 1 1 auto;
+  :deep(.ant-form > .ant-form-item > .ant-form-item-row > .ant-form-item-control) {
+    flex: 1 1 auto !important;
     width: auto !important;
     min-width: 0;
-    max-width: 100%;
+    max-width: none !important;
   }
-  :deep(.ant-form-item-control) {
-    width: 100%;
+  :deep(.ant-form > .ant-form-item) {
+    margin-bottom: 16px !important;
+  }
+  :deep(.ant-form > .ant-form-item:last-child) {
+    margin-bottom: 0 !important;
+  }
+  // 资源范围与下方聚合维度之间留空隙（跨两个 form）
+  :deep(.ant-form > .ant-form-item.monitor-form__filters) {
+    margin-bottom: 16px !important;
+  }
+  .monitor-form__shell {
+    margin-top: 8px;
   }
 }
-
 </style>

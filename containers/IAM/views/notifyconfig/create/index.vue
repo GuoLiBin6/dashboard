@@ -2,39 +2,42 @@
   <div>
     <page-header :title="$t('system.text_130', [$t('system.notify_channels')])" />
     <page-body>
-      <a-form-model
-        ref="formRef"
-        class="mt-3"
-        :model="form"
-        :rules="rules"
-        hideRequiredMark>
-        <scope-radio
+      <!-- 公共表单 + 渠道子表单共用同一 label 宽，避免两段 form 各自量宽错位 -->
+      <div class="oc-layout-form mt-3">
+        <a-form-model
+          ref="formRef"
+          class="oc-layout-form-off"
           :model="form"
-          :hidden-scope="['project']"
-          :label="$t('common_547', [])"
-          @change="scopeChange" />
-        <a-form-model-item :label="$t('common.name')" prop="name">
-          <a-input v-model:value="form.name" :placeholder="$t('validator.resourceName')" />
-          <name-repeated
-              v-slot:extra
-              res="notifyconfigs"
-              version="v1"
-              :name="form.name" />
-        </a-form-model-item>
-        <a-form-model-item :label="$t('system.text_48')" prop="type">
-          <a-radio-group v-model:value="form.type">
-            <a-radio-button
-              v-for="item in typesOpts"
-              :value="item.key"
-              :key="item.key"
-              :disabled="existTypes.includes(item.key)">{{ item.label }}</a-radio-button>
-          </a-radio-group>
-        </a-form-model-item>
-      </a-form-model>
-      <component
-        ref="typeRef"
-        :is="form.type"
-        :docUrl="DOCS_MAP.mailConfig(form.type)" />
+          :rules="rules"
+          hideRequiredMark>
+          <scope-radio
+            :model="form"
+            :hidden-scope="['project']"
+            :label="$t('common_547', [])"
+            @change="scopeChange" />
+          <a-form-model-item :label="$t('common.name')" prop="name">
+            <a-input v-model:value="form.name" :placeholder="$t('validator.resourceName')" />
+            <name-repeated
+                v-slot:extra
+                res="notifyconfigs"
+                version="v1"
+                :name="form.name" />
+          </a-form-model-item>
+          <a-form-model-item :label="$t('system.text_48')" prop="type">
+            <a-radio-group v-model:value="form.type">
+              <a-radio-button
+                v-for="item in typesOpts"
+                :value="item.key"
+                :key="item.key"
+                :disabled="existTypes.includes(item.key)">{{ item.label }}</a-radio-button>
+            </a-radio-group>
+          </a-form-model-item>
+        </a-form-model>
+        <component
+          ref="typeRef"
+          :is="form.type"
+          :docUrl="DOCS_MAP.mailConfig(form.type)" />
+      </div>
     </page-body>
     <page-footer>
       <div slot="right">

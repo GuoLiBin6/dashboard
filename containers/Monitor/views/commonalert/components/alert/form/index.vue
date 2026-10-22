@@ -34,15 +34,12 @@
     <a-form-model-item :label="$t('monitor.condition')" class="mb-0">
       <condition ref="conditionRef" :model="form.fd" :disabled="disabled" @comparatorChange="emitComparator"  @thresholdChange="emitThreshold" :unit="metricInfo.measurement === 'cloudaccount_balance' ? '' : conditionUnit" />
     </a-form-model-item>
-    <a-form-model-item :label="$t('monitor.commonalerts.form.column.silent')" class="mb-0" prop="silent_period">
-      <a-form-model-item class="mr-1">
-        <base-select v-model:value="form.fd.silent_period" @change="v => syncFd('silent_period', v)" :options="silentOpts" style="display: inline-flex;" />
-        <a-tooltip style="padding-left: 5px;" placement="top"><icon type="question-circle" />
-        <template slot="title">
-          <span>{{ $t('monitor.commonalerts.form.column.silent.tips') }}</span>
-        </template>
-        </a-tooltip>
-      </a-form-model-item>
+    <a-form-model-item prop="silent_period">
+      <template #label>
+        {{ $t('monitor.commonalerts.form.column.silent') }}
+        <help-tooltip class="ml-1" :text="$t('monitor.commonalerts.form.column.silent.tips')" />
+      </template>
+      <base-select v-model:value="form.fd.silent_period" @change="v => syncFd('silent_period', v)" :options="silentOpts" style="display: inline-flex;" />
     </a-form-model-item>
     <a-form-model-item :label="$t('monitor.level')" prop="level">
       <a-radio-group :value="form.fd.level" @change="e => syncFd('level', e.target.value)">

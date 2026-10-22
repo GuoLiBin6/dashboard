@@ -3,7 +3,7 @@
     :list="list"
     :columns="columns"
     :export-data-options="exportDataOptions"
-    :extraExportParams="ExtraListParams"
+    :extraExportParams="extraListParams"
     default-search-key="topic" />
 </template>
 
@@ -20,20 +20,20 @@ export default {
   mixins: [WindowsMixin],
   props: {
     id: String,
-    ExtraListParams: {
+    extraListParams: {
       type: Object,
     },
-    ExtraColumns: {
+    extraColumns: {
       type: Array,
       required: false,
       default: () => ([]),
     },
-    ExtraFilterOptions: {
+    extraFilterOptions: {
       type: Object,
       required: false,
       default: () => ({}),
     },
-    ExtraExportDataOptions: {
+    extraExportDataOptions: {
       type: Array,
       required: false,
       default: () => ([]),
@@ -69,7 +69,7 @@ export default {
               return `priority.contains("${val}")`
             },
           },
-          ...this.ExtraFilterOptions,
+          ...this.extraFilterOptions,
         },
       }),
       exportDataOptions: {
@@ -77,7 +77,7 @@ export default {
           { label: this.$t('system.text_307'), key: 'title' },
           { label: this.$t('system.text_315'), key: 'priority' },
           { label: this.$t('system.text_316'), key: 'received_at' },
-          ...this.ExtraExportDataOptions,
+          ...this.extraExportDataOptions,
         ],
       },
       columns: [
@@ -96,26 +96,39 @@ export default {
         {
           title: this.$t('system.text_317'),
           field: 'receive_details',
-          type: 'expand',
+          width: 80,
           slots: {
-            default: ({ row }) => {
-              return row.receive_details && row.receive_details.length
-            },
-            content: ({ row }) => {
+            default: ({ row }, h) => {
+              const details = row.receive_details || []
+              const n = details.length
+              if (!n) return this.$t('common_701', [0])
               return [
-                <table-lite-grid
-                  size="mini"
-                  data={ row.receive_details || [] }
-                  columns={[
-                    getCopyWithContentTableColumn({ title: this.$t('system.text_6'), field: 'receiver_name' }),
-                    getTimeTableColumn({ title: this.$t('system.text_316'), field: 'sendAt' }),
-                    getStatusTableColumn({ statusModule: 'notification', sortable: false }),
-                  ]} />,
+                h('list-body-cell-popover', {
+                  props: {
+                    text: this.$t('common_701', [n]),
+                  },
+                }, [
+                  h('table-lite-grid', {
+                    props: {
+                      size: 'mini',
+                      data: details,
+                      columns: [
+                        getCopyWithContentTableColumn({ title: this.$t('system.text_6'), field: 'receiver_name' }),
+                        getTimeTableColumn({ title: this.$t('system.text_316'), field: 'sendAt' }),
+                        getStatusTableColumn({ statusModule: 'notification', sortable: false }),
+                      ],
+                    },
+                  }),
+                ]),
               ]
             },
           },
+          formatter: ({ row }) => {
+            const n = (row.receive_details && row.receive_details.length) || 0
+            return this.$t('common_701', [n])
+          },
         },
-        ...this.ExtraColumns,
+        ...this.extraColumns,
       ],
     }
   },
@@ -125,7 +138,7 @@ export default {
   methods: {
     getParam () {
       const ret = {
-        ...this.ExtraListParams,
+        ...this.extraListParams,
         details: true,
       }
       return ret

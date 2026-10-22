@@ -1,5 +1,9 @@
 <template>
-  <notification-base-list :ExtraListParams="ExtraListParams" :extra-columns="ExtraColumns" :ExtraExportDataOptions="ExtraExportDataOptions" :id="id" />
+  <notification-base-list
+    :id="id"
+    :extra-list-params="extraListParams"
+    :extra-columns="extraColumns"
+    :extra-export-data-options="extraExportDataOptions" />
 </template>
 
 <script>
@@ -16,11 +20,11 @@ export default {
   },
   data () {
     return {
-      ExtraListParams: {
+      extraListParams: {
         contact_type: 'webconsole',
         topic_type: 'security',
       },
-      ExtraColumns: [
+      extraColumns: [
         getTimeTableColumn({
           field: 'received_at',
           title: this.$t('system.text_590'),
@@ -30,7 +34,7 @@ export default {
           field: 'content',
         },
       ],
-      ExtraExportDataOptions: [
+      extraExportDataOptions: [
         { label: this.$t('system.text_308'), key: 'content' },
       ],
     }

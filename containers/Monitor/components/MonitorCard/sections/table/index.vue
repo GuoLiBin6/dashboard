@@ -2,8 +2,8 @@
   <a-skeleton active :loading="loading">
     <div class="table" v-show="showTable">
         <div v-if="!isTemplate" class="d-flex justify-content-end">
-          <a-button @click="exportData" class="icons-list" style="width: 40px;">
-            <icon type="download" />
+          <a-button @click="exportData" class="icons-list">
+            <template #icon><icon type="download" /></template>
           </a-button>
         </div>
         <table-lite-grid
@@ -178,7 +178,14 @@ export default {
 </script>
 
 <style scoped>
-.icons-list >>> .anticon {
+.icons-list {
+  width: 32px;
+  padding-inline: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.icons-list :deep(.oc-icon) {
   font-size: 16px;
 }
 </style>

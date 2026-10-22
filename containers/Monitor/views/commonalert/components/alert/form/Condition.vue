@@ -33,12 +33,12 @@ import * as R from 'ramda'
 import { preiodMaps } from '@Monitor/constants'
 import { buildAlertConditionFieldMap } from '@Monitor/sections/fields'
 import { resolveFieldMeta } from '@/utils/common/ant'
-import thresholdInput from './thresholdInput'
+import ThresholdInput from './ThresholdInput.vue'
 
 export default {
   name: 'AlertCondition',
   components: {
-    thresholdInput,
+    ThresholdInput,
   },
   props: {
     fieldMap: {

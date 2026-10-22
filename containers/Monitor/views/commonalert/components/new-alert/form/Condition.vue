@@ -34,27 +34,39 @@
           <base-select :value="fieldVal(resolvedFieldMap.comparator(item.key))" @change="v => { fieldSet(resolvedFieldMap.comparator(item.key), v); onComparatorChange(v, item) }" :options="comparatorOpts" minWidth="70px" :disabled="disabled" />
         </a-form-item>
       </a-col>
-      <template v-if="showThresholdMap[item.key]">
+      <template v-if="shouldShowThreshold(item.key)">
         <template v-if="isRangeType(item.key)">
-          <a-col :span="8">
+          <a-col :span="5">
             <div class="d-flex" style="gap: 8px; align-items: flex-start;">
               <div style="flex: 1;">
                 <a-form-item style="margin-bottom: 0;">
-                  <threshold-input :value="fieldVal(resolvedFieldMap.threshold_start(item.key))" @change="v => { fieldSet(resolvedFieldMap.threshold_start(item.key), v); handleRangeValueChange(item.key, 'end') }" :unit="unitMap[item.key]" :disabled="disabled" />
+                  <threshold-input
+                    :value="fieldVal(resolvedFieldMap.threshold_start(item.key))"
+                    :unit="unitMap[item.key]"
+                    :disabled="disabled"
+                    @change="v => { fieldSet(resolvedFieldMap.threshold_start(item.key), v); handleRangeValueChange(item.key, 'end') }" />
                 </a-form-item>
               </div>
               <span style="flex-shrink: 0; padding: 0 4px; display: flex; align-items: center; height: 32px; line-height: 32px; margin-top: 4px;">~</span>
               <div style="flex: 1;">
                 <a-form-item style="margin-bottom: 0;">
-                  <threshold-input :value="fieldVal(resolvedFieldMap.threshold_end(item.key))" @change="v => { fieldSet(resolvedFieldMap.threshold_end(item.key), v); handleRangeValueChange(item.key, 'start') }" :unit="unitMap[item.key]" :disabled="disabled" />
+                  <threshold-input
+                    :value="fieldVal(resolvedFieldMap.threshold_end(item.key))"
+                    :unit="unitMap[item.key]"
+                    :disabled="disabled"
+                    @change="v => { fieldSet(resolvedFieldMap.threshold_end(item.key), v); handleRangeValueChange(item.key, 'start') }" />
                 </a-form-item>
               </div>
             </div>
           </a-col>
         </template>
-        <a-col v-else :span="8">
+        <a-col v-else :span="5">
           <a-form-item>
-            <threshold-input :value="fieldVal(resolvedFieldMap.threshold(item.key))" @change="v => fieldSet(resolvedFieldMap.threshold(item.key), v)" :unit="unitMap[item.key]" :disabled="disabled" />
+            <threshold-input
+              :value="fieldVal(resolvedFieldMap.threshold(item.key))"
+              :unit="unitMap[item.key]"
+              :disabled="disabled"
+              @change="v => fieldSet(resolvedFieldMap.threshold(item.key), v)" />
           </a-form-item>
         </a-col>
       </template>
@@ -75,11 +87,11 @@ import { metric_zh } from '@Monitor/constants'
 import { uuid } from '@/utils/utils'
 import { buildConditionFieldMap } from '@Monitor/sections/fields'
 import { resolveFieldMeta } from '@/utils/common/ant'
-import thresholdInput from './thresholdInput'
+import ThresholdInput from './ThresholdInput.vue'
 export default {
   name: 'AlertCondition',
   components: {
-    thresholdInput,
+    ThresholdInput,
   },
   props: {
     fieldMap: {
@@ -271,6 +283,10 @@ export default {
         this.fieldSet({ name: name }, values[name])
       })
     },
+    /** 兼容旧调用名 */
+    dualWriteFields (values) {
+      this.writeFields(values)
+    },
     registerAllConditionFields () {
       this.conditionList.forEach(item => {
         this.registerConditionFields(item.key)
@@ -279,35 +295,37 @@ export default {
     registerConditionFields (itemKey) {
       ;['metric_key', 'metric_value', 'reduce', 'comparator', 'threshold', 'threshold_start', 'threshold_end'].forEach(f => {
         const fn = this.resolvedFieldMap[f]
-        if (typeof fn === 'function') {
-          const fieldDef = fn(itemKey)
-          if (this.fdModel && Array.isArray(fieldDef)) {
-            const [, opts = {}] = fieldDef
-            if (opts.initialValue !== undefined) {
-              const nested = this.parseBracketName(fieldDef[0])
-              if (nested) {
-                const root = this.fdModel[nested.root]
-                if (!root || root[nested.key] === undefined) {
-                  this.fieldSet(fieldDef, opts.initialValue)
-                }
-              } else if (this.fdModel[fieldDef[0]] === undefined) {
-                this.fieldSet(fieldDef, opts.initialValue)
-              }
-            }
+        if (typeof fn !== 'function' || !this.fdModel) return
+        const fieldDef = fn(itemKey)
+        const meta = resolveFieldMeta(fieldDef)
+        if (!meta || meta.initialValue === undefined) return
+        const nested = this.parseBracketName(meta.name)
+        if (nested) {
+          const root = this.fdModel[nested.root]
+          if (!root || root[nested.key] === undefined) {
+            this.fieldSet(fieldDef, meta.initialValue)
           }
+        } else if (this.fdModel[meta.name] === undefined) {
+          this.fieldSet(fieldDef, meta.initialValue)
         }
       })
     },
     add (params = {}) {
       const key = uuid()
       this.conditionList.push({ key })
-      this.showThresholdMap[key] = params.comparator !== 'nodata'
+      this.showThresholdMap = {
+        ...this.showThresholdMap,
+        [key]: params.comparator !== 'nodata',
+      }
       this.$nextTick(() => this.registerConditionFields(key))
     },
     del (item) {
       const index = this.conditionList.findIndex(val => val.key === item.key)
       this.conditionList.splice(index, 1)
       delete this.metricMap[item.key]
+      const next = { ...this.showThresholdMap }
+      delete next[item.key]
+      this.showThresholdMap = next
     },
     reset (execAdd = true) {
       this.conditionList.forEach(item => {
@@ -327,11 +345,17 @@ export default {
 
       execAdd && this.add()
     },
+    shouldShowThreshold (key) {
+      const comparator = this.fieldVal(this.resolvedFieldMap.comparator(key))
+      // 未选比较符时也默认展示阈值；仅 nodata 隐藏
+      if (comparator === 'nodata' || this.showThresholdMap[key] === false) return false
+      return true
+    },
     onComparatorChange (v, item) {
       if (v === 'nodata') {
-        this.showThresholdMap[item.key] = false
+        this.showThresholdMap = { ...this.showThresholdMap, [item.key]: false }
       } else {
-        this.showThresholdMap[item.key] = true
+        this.showThresholdMap = { ...this.showThresholdMap, [item.key]: true }
         const thresholdKey = `threshold[${item.key}]`
         const currentThreshold = this.fieldVal({ name: thresholdKey })
         const isRange = v === 'within_range' || v === 'outside_range'
@@ -359,7 +383,7 @@ export default {
       }
     },
     isRangeType (key) {
-      const comparator = this.fieldVal([`comparator[${key}]`, {}])
+      const comparator = this.fieldVal(this.resolvedFieldMap.comparator(key))
       return comparator === 'within_range' || comparator === 'outside_range'
     },
     metricValueLabelFormat (item) {
@@ -382,8 +406,8 @@ export default {
         const metricValueItem = metricOpts.find((opt) => { return opt.key === val })
         const metricKeyItem = this.metricKeyItemMap[item.key]
 
-        this.unitMap[item.key] = metricValueItem?.description?.unit
-        this.metricMap[item.key] = { metricKey, mertric: val, mertricItem: metricValueItem, metricKeyItem }
+        this.unitMap = { ...this.unitMap, [item.key]: metricValueItem?.description?.unit }
+        this.metricMap = { ...this.metricMap, [item.key]: { metricKey, mertric: val, mertricItem: metricValueItem, metricKeyItem } }
         this.$emit('metricChange', this.metricMap)
       }
     },

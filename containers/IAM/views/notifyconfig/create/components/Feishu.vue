@@ -1,6 +1,7 @@
 <template>
   <a-form-model
     ref="formRef"
+    class="oc-layout-form-off"
     :model="form"
     :rules="rules"
     hideRequiredMark>
