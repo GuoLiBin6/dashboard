@@ -1726,8 +1726,11 @@ export default {
           }
         })
         .catch(error => {
-          // 表单校验失败（含 outOfDate）不向上抛，避免 unhandledrejection 卡住提交
-          if (error?.errorFields || error?.outOfDate) return
+          // 表单校验失败（含 outOfDate / 分区 errorFields）不向上抛，避免 unhandledrejection
+          if (error?.errorFields || error?.outOfDate) {
+            this.revealFormValidateErrors(error)
+            return
+          }
           throw error
         })
         .finally(() => {
@@ -1954,8 +1957,28 @@ export default {
           await this.$nextTick()
           return await run()
         }
+        this.revealFormValidateErrors(error)
         throw error
       }
+    },
+    /**
+     * 分区校验失败：展开高级配置、滚到首个错误项（堡垒机等在折叠区内时否则看不见）
+     */
+    revealFormValidateErrors (error) {
+      if (!error) return
+      const fields = Array.isArray(error.errorFields) ? error.errorFields : []
+      const names = fields.map((f) => {
+        const n = f?.name
+        return Array.isArray(n) ? n.join('.') : String(n || '')
+      }).filter(Boolean)
+      const needAdvance = names.some((n) => /bastion|eip_|schedPolicy|custom_data|encrypt|hostName|instancegroup|pci/i.test(n))
+      if (needAdvance) this.$refs.advanceConfigBlock?.forceOpen?.()
+      this.$nextTick(() => {
+        const el = this.$el?.querySelector?.('.ant-form-item-has-error, .ant-form-item-explain-error')
+        if (el && typeof el.scrollIntoView === 'function') {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        }
+      })
     },
     cpuChange (cpu) {
       // end-state：Cpu/Mem 只写 form.fd（组件 :model="form.fd"）
@@ -2279,7 +2302,10 @@ export default {
           }
         })
         .catch(error => {
-          if (error?.errorFields || error?.outOfDate) return
+          if (error?.errorFields || error?.outOfDate) {
+            this.revealFormValidateErrors(error)
+            return
+          }
           throw error
         })
     },

@@ -602,7 +602,7 @@ export const isValidateResourceLock = (value = {}, callback) => {
 }
 
 /**
- * 检测 v-model-form（兼容 antdv2 FormModel.validate(cb) 与 antdv4 Form.validateFields()）
+ * 检测 v-model-form（antdv4 Form.validate / validateFields 仅支持 Promise）
  * @param {*} form this.$refs.form
  * @returns Promise
  */
@@ -610,27 +610,13 @@ export const validateModelForm = (form) => {
   if (!form) {
     return Promise.reject(new Error('form ref is empty'))
   }
-  // antdv4：validate / validateFields 返回 Promise，且不再支持 callback
-  if (typeof form.validateFields === 'function') {
-    const ret = form.validateFields()
-    if (ret && typeof ret.then === 'function') {
-      return ret.then(() => true)
-    }
+  const run = typeof form.validateFields === 'function'
+    ? () => form.validateFields()
+    : (typeof form.validate === 'function' ? () => form.validate() : null)
+  if (!run) {
+    return Promise.reject(new Error('form.validate is not a function'))
   }
-  if (typeof form.validate === 'function') {
-    const ret = form.validate()
-    if (ret && typeof ret.then === 'function') {
-      return ret.then(() => true)
-    }
-    // 旧版 FormModel：validate(callback)
-    return new Promise((resolve, reject) => {
-      form.validate((valid, err) => {
-        if (valid) resolve(valid)
-        else reject(err)
-      })
-    })
-  }
-  return Promise.reject(new Error('form.validate is not a function'))
+  return Promise.resolve(run()).then(() => true)
 }
 
 export default validateForm

@@ -10,16 +10,16 @@
         </a-form-model-item>
         <a-form-model-item v-if="form.backends.length" class="mb-0" :label="$t('network.text_140')" prop="backends" :rules="rules.backends">
           <div v-for="(backend, idx) in form.backends" :key="idx" class="d-flex">
-            <a-form-model-item style="flex: 0 0 30%" :prop="`backends[${idx}].name`" :rules="rules.lname">
+            <a-form-model-item style="flex: 0 0 30%" :prop="['backends', idx, 'name']" :rules="rules.lname">
               <a-input v-model:value="backend.name" :placeholder="$t('common.name')" />
             </a-form-model-item>
-            <a-form-model-item class="ml-2" style="flex: 0 0 30%" :prop="`backends[${idx}].address`" :rules="rules.address">
+            <a-form-model-item class="ml-2" style="flex: 0 0 30%" :prop="['backends', idx, 'address']" :rules="rules.address">
               <a-input v-model:value="backend.address" :placeholder="$t('network.ip_or_domain')" />
             </a-form-model-item>
-            <a-form-model-item class="ml-2" style="width:100%;flex: 0 0 15%" :prop="`backends[${idx}].port`" :rules="rules.port">
+            <a-form-model-item class="ml-2" style="width:100%;flex: 0 0 15%" :prop="['backends', idx, 'port']" :rules="rules.port">
               <a-input v-model:value="backend.port" :placeholder="$t('network.text_165')" />
             </a-form-model-item>
-            <a-form-model-item class="ml-2" style="width:100%;flex: 0 0 15%" :prop="`backends[${idx}].weight`" :rules="rules.weight">
+            <a-form-model-item class="ml-2" style="width:100%;flex: 0 0 15%" :prop="['backends', idx, 'weight']" :rules="rules.weight">
               <a-input-number style="width:100%" v-model:value="backend.weight" :min="1" :max="100" :placeholder="$t('network.text_166')" />
             </a-form-model-item>
             <a-form-model-item class="ml-2">

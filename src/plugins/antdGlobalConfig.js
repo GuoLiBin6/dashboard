@@ -212,14 +212,26 @@ div.ant-form-item-explain {
 ensureFormExtraFontStyle()
 
 /**
- * antdv4 getNamePath 不会拆分 'a.b.c'（整段当一个 key）。
- * Vue2 FormModel 的 prop="networkIps.xxx" / "rows.0.ip" 需转成 ['networkIps','xxx'] 才能读到 model。
+ * antdv4 getNamePath 不会拆分 'a.b.c' / 'a[b]'（整段当一个 key）。
+ * Vue2 FormModel 的 prop="networkIps.xxx" / "dataDiskTypes[uuid]" / "backends[0].name"
+ * 需转成路径数组才能读到嵌套 model。
  */
 function toFormNamePath (name) {
   if (name === undefined || name === null || name === '') return name
   if (Array.isArray(name)) return name
-  if (typeof name === 'string' && name.includes('.')) {
-    return name.split('.').map((seg) => (/^\d+$/.test(seg) ? Number(seg) : seg))
+  if (typeof name !== 'string') return name
+  // 纯 bracket / 点 / 混合：backends[0].name / a[b].c.d / a.b / a[b][c]
+  if (name.includes('[') || name.includes('.')) {
+    const path = []
+    const re = /([^[.\]]+)|\[([^[\]]+)\]/g
+    let match
+    while ((match = re.exec(name)) !== null) {
+      const seg = match[1] !== undefined ? match[1] : match[2]
+      if (seg === undefined || seg === '') continue
+      path.push(/^\d+$/.test(seg) ? Number(seg) : seg)
+    }
+    if (path.length > 1) return path
+    if (path.length === 1) return path[0]
   }
   return name
 }
@@ -285,6 +297,8 @@ function createFormModelItem (RawFormItem) {
     props: {
       prop: { type: [String, Number, Array], default: undefined },
       name: { type: [String, Number, Array], default: undefined },
+      // 必须声明：否则 rules 只在 attrs，部分场景传不到 Form.Item.props.rules，校验被跳过
+      rules: { type: [Array, Object], default: undefined },
       required: { type: Boolean, default: undefined },
       colon: { type: Boolean, default: undefined },
       validateFirst: { type: Boolean, default: undefined },
@@ -304,6 +318,7 @@ function createFormModelItem (RawFormItem) {
         )
 
         if (name !== undefined && name !== null) pass.name = name
+        if (props.rules !== undefined) pass.rules = props.rules
         if (props.required !== undefined) pass.required = props.required
 
         // 默认真；可显式 :validate-first="false" 关闭

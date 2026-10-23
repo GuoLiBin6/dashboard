@@ -2,7 +2,11 @@
   <div class="disk-wrapper">
     <div class="disk-wrapper__top">
       <div class="disk-wrapper__selects">
-        <a-form-item :validate-status="storageStatusMap.type" class="mb-0 disk-wrapper__type">
+        <a-form-item
+          class="mb-0 disk-wrapper__type"
+          :name="fieldName(diskFieldMap.type)"
+          :rules="fieldRules(diskFieldMap.type)"
+          :validate-status="storageStatusMap.type || undefined">
           <a-tag class="disk-type-tag" v-if="diskTypeLabel && !disabled">{{ diskTypeLabel }}</a-tag>
           <a-select
             v-else
@@ -13,7 +17,11 @@
             @change="onTypeChange"
             :disabled="disabled || imageType === 'snapshot'" />
         </a-form-item>
-        <a-form-item v-show="!hideSize" class="mb-0 disk-wrapper__size">
+        <a-form-item
+          v-show="!hideSize"
+          class="mb-0 disk-wrapper__size"
+          :name="fieldName(diskFieldMap.size)"
+          :rules="fieldRules(diskFieldMap.size)">
           <!-- antdv4 Tooltip 需挂在原生节点上，自定义组件/ disabled 控件否则无 hover -->
           <a-tooltip :title="tooltip" placement="top">
             <span class="disk-wrapper__size-tip">
@@ -139,7 +147,10 @@
           v-if="showSnapshot && !showMountpoint && has('snapshot') && !disabled && imageType !== 'backup' && imageType !== 'snapshot'"
           class="disk-wrapper__field">
           <div class="disk-wrapper__field-label">{{ $t('compute.text_133') }}</div>
-          <a-form-item class="mb-0">
+          <a-form-item
+            class="mb-0"
+            :name="fieldName(diskFieldMap.snapshot)"
+            :rules="fieldRules(diskFieldMap.snapshot)">
             <base-select
               :value="diskFieldVal(diskFieldMap.snapshot)"
               @change="v => diskFieldSet(diskFieldMap.snapshot, v)"
@@ -157,7 +168,9 @@
           <disk-mountpoint
             :model="model"
             :filetype-field="diskFieldMap.filetype[0]"
-            :mount-path-field="diskFieldMap.mountPath[0]" />
+            :mount-path-field="diskFieldMap.mountPath[0]"
+            :filetype-rules="fieldRules(diskFieldMap.filetype)"
+            :mount-path-rules="fieldRules(diskFieldMap.mountPath)" />
         </div>
         <div
           v-if="showSchedtag && has('schedtag') && !showStorage && !isStorageShow && imageType !== 'backup' && imageType !== 'snapshot'"
@@ -167,6 +180,8 @@
             :model="model || (form && form.fd)"
             :schedtag-field="diskFieldMap.schedtag[0]"
             :policy-field="diskFieldMap.policy[0]"
+            :schedtag-rules="fieldRules(diskFieldMap.schedtag)"
+            :policy-rules="fieldRules(diskFieldMap.policy)"
             :schedtag-params="schedtagParams"
             :policyReactInSchedtag="false" />
         </div>
@@ -177,6 +192,7 @@
           <storage
             :diskKey="diskKey"
             :storage-field="diskFieldMap.storage[0]"
+            :storage-rules="fieldRules(diskFieldMap.storage)"
             :storageParams="storageParams"
             :model="model"
             :storageHostParams="storageHostParams"
@@ -186,7 +202,10 @@
           v-if="showPreallocation && isVMware && imageType !== 'backup' && imageType !== 'snapshot'"
           class="disk-wrapper__field">
           <div class="disk-wrapper__field-label">{{ $t('compute.assign_preallocation') }}</div>
-          <a-form-item class="mb-0">
+          <a-form-item
+            class="mb-0"
+            :name="fieldName(diskFieldMap.preallocation)"
+            :rules="fieldRules(diskFieldMap.preallocation)">
             <base-select
               :value="diskFieldVal(diskFieldMap.preallocation)"
               @change="v => diskFieldSet(diskFieldMap.preallocation, v)"
@@ -198,7 +217,10 @@
           v-if="showIops && has('iops') && !disabled && isIopsShow"
           class="disk-wrapper__field">
           <div class="disk-wrapper__field-label">{{ $t('compute.set_iops') }}</div>
-          <a-form-item class="mb-0">
+          <a-form-item
+            class="mb-0"
+            :name="fieldName(diskFieldMap.iops)"
+            :rules="fieldRules(diskFieldMap.iops)">
             <a-tooltip :title="iopsTooltip" placement="top">
               <a-input-number
                 :value="diskFieldVal(diskFieldMap.iops)"
@@ -214,7 +236,10 @@
           v-if="showThroughput && has('throughput') && !disabled && isThroughputShow"
           class="disk-wrapper__field">
           <div class="disk-wrapper__field-label">{{ $t('compute.set_throughput') }}</div>
-          <a-form-item class="mb-0">
+          <a-form-item
+            class="mb-0"
+            :name="fieldName(diskFieldMap.throughput)"
+            :rules="fieldRules(diskFieldMap.throughput)">
             <a-tooltip :title="throughputTooltip" placement="top">
               <a-input-number
                 :value="diskFieldVal(diskFieldMap.throughput)"
@@ -515,30 +540,7 @@ export default {
       this.diskWriteFields(values)
     },
     async validate () {
-      await this.runFieldMapRules(this.diskFieldMap.type, this.diskFieldVal(this.diskFieldMap.type))
-      await this.runFieldMapRules(this.diskFieldMap.size, this.diskFieldVal(this.diskFieldMap.size))
-      if (this.showSchedtag) {
-        await this.runFieldMapRules(this.diskFieldMap.schedtag, this.diskFieldVal(this.diskFieldMap.schedtag))
-        await this.runFieldMapRules(this.diskFieldMap.policy, this.diskFieldVal(this.diskFieldMap.policy))
-      }
-      if (this.showStorage) {
-        await this.runFieldMapRules(this.diskFieldMap.storage, this.diskFieldVal(this.diskFieldMap.storage))
-      }
-      if (this.showSnapshot) {
-        await this.runFieldMapRules(this.diskFieldMap.snapshot, this.diskFieldVal(this.diskFieldMap.snapshot))
-      }
-      if (this.showMountpoint) {
-        await this.runFieldMapRules(this.diskFieldMap.filetype, this.diskFieldVal(this.diskFieldMap.filetype))
-        if (this.diskFieldVal(this.diskFieldMap.filetype) !== 'swap') {
-          await this.runFieldMapRules(this.diskFieldMap.mountPath, this.diskFieldVal(this.diskFieldMap.mountPath))
-        }
-      }
-      if (this.showIops) {
-        await this.runFieldMapRules(this.diskFieldMap.iops, this.diskFieldVal(this.diskFieldMap.iops))
-      }
-      if (this.showThroughput) {
-        await this.runFieldMapRules(this.diskFieldMap.throughput, this.diskFieldVal(this.diskFieldMap.throughput))
-      }
+      // type/size/高级项 rules 已挂 Form.Item，由父 formRef.validate 展示
       return true
     },
     normalizeDiskSizeGb (gb) {

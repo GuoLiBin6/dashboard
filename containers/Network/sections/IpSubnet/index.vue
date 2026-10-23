@@ -5,7 +5,8 @@
         <component
           :is="itemTag"
           class="mb-0 mr-1"
-          :prop="vpcField">
+          :prop="vpcField"
+          :rules="fieldItemRules(resolvedFields.vpc, $t('compute.text_194'))">
           <base-select
             ref="vpcSelect"
             class="w-100"
@@ -27,7 +28,8 @@
         <component
           :is="itemTag"
           class="mb-0 mr-1"
-          :prop="networkField">
+          :prop="networkField"
+          :rules="fieldItemRules(resolvedFields.network, $t('compute.text_195'))">
           <base-select
             ref="networkSelect"
             class="w-100"
@@ -50,7 +52,7 @@
         <a-button v-if="!ipShow" type="link" class="mr-1 mt-1" @click="triggerShowIp">{{$t('compute.text_198')}}</a-button>
         <a-row v-else>
           <a-col :span="21">
-            <component :is="itemTag" class="mb-0" :prop="ipAddrField">
+            <component :is="itemTag" class="mb-0" :prop="ipAddrField" :rules="fieldItemRules(resolvedFields.ip_addr)">
               <a-input
                 :placeholder="$t('compute.text_197')"
                 :value="fieldVal(resolvedFields.ip_addr)"
@@ -217,35 +219,17 @@ export default {
       if (!resolveFieldMeta(fieldTuple)) return
       this.$set(this.model, resolveFieldMeta(fieldTuple)?.name, value)
     },
-    runFieldRule (rule, value) {
-      return new Promise((resolve, reject) => {
-        if (rule.required) {
-          const empty = value === undefined || value === null || value === '' ||
-            (Array.isArray(value) && !value.length)
-          if (empty) {
-            reject(new Error(rule.message || 'required'))
-            return
-          }
-        }
-        if (typeof rule.validator === 'function') {
-          rule.validator(rule, value, (err) => {
-            if (err) reject(err instanceof Error ? err : new Error(String(err)))
-            else resolve()
-          })
-          return
-        }
-        resolve()
-      })
-    },
-    async validate () {
-      for (const key of ['vpc', 'network', 'ip_addr']) {
-        const fieldDef = this.resolvedFields[key]
-        if (!resolveFieldMeta(fieldDef)) continue
-        const rules = resolveFieldMeta(fieldDef)?.rules || []
-        for (const rule of rules) {
-          await this.runFieldRule(rule, this.fieldVal(fieldDef))
-        }
+    /** meta.rules；isRequired 且 meta 无 rules 时补 required */
+    fieldItemRules (fieldDef, requiredMsg) {
+      const rules = resolveFieldMeta(fieldDef)?.rules || []
+      if (rules.length) return rules
+      if (this.isRequired && requiredMsg) {
+        return [{ required: true, message: requiredMsg }]
       }
+      return rules
+    },
+    /** Form.Item 已绑 name+rules，由父 formRef.validate 展示红字 */
+    async validate () {
       return true
     },
     initModelFields () {

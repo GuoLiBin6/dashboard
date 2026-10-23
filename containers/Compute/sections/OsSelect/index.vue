@@ -1,6 +1,9 @@
 <template>
   <div class="image-select">
-    <a-form-model-item class="mb-2" :prop="fieldProp('imageType')">
+    <a-form-model-item
+      class="mb-2"
+      :name="fieldName(imageOsFieldMap.imageType)"
+      :rules="fieldRules(imageOsFieldMap.imageType)">
       <a-radio-group
         :value="fieldVal(imageOsFieldMap.imageType)"
         @change="change">
@@ -41,6 +44,7 @@ import { IMAGES_TYPE_MAP } from '@/constants/compute'
 import { HYPERVISORS_MAP } from '@/constants'
 import storage from '@/utils/storage'
 import createFormFieldDraftMixin from '@/mixins/createFormFieldDraft'
+import fieldMapValidateMixin from '@Compute/mixins/fieldMapValidateMixin'
 import { getBracketValue, setBracketValue } from '@/utils/bracketModel'
 import { resolveFieldMeta } from '@/utils/common/ant'
 import ImageSelect from './ImageSelect'
@@ -51,7 +55,7 @@ export default {
   components: {
     ImageSelect,
   },
-  mixins: [createFormFieldDraftMixin],
+  mixins: [createFormFieldDraftMixin, fieldMapValidateMixin],
   props: {
     formDraftKey: {
       type: String,
@@ -282,9 +286,6 @@ export default {
     this.lockDraftImageTypeFromStorage()
   },
   methods: {
-    fieldProp (key) {
-      return IMAGE_OS_FIELDS[key] || this.imageOsFieldMap[key]?.[0]
-    },
     fieldVal (fieldTuple) {
       const meta = resolveFieldMeta(fieldTuple)
       if (!meta) return undefined

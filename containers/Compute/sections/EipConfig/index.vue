@@ -10,13 +10,18 @@
         </a-radio-group>
       </a-row>
       <a-row class="mt-4" v-if="isBind">
-        <base-select
-          remote
-          v-model:value="model.eip"
-          resource="eips"
-          :params="params"
-          :showSync="true"
-          :select-props="{ allowClear: true, placeholder: $t('compute.text_145') }" />
+        <a-form-model-item
+          class="mb-0"
+          prop="eip"
+          :rules="[{ required: true, message: $t('compute.text_145') }]">
+          <base-select
+            remote
+            v-model:value="model.eip"
+            resource="eips"
+            :params="params"
+            :showSync="true"
+            :select-props="{ allowClear: true, placeholder: $t('compute.text_145') }" />
+        </a-form-model-item>
       </a-row>
     </a-form-model-item>
     <a-form-model-item :label="$t('compute.text_1359')" prop="eip_bgp_type" v-if="isNew && showBgpTypes">
@@ -361,46 +366,8 @@ export default {
     format (val) {
       return +val || 1
     },
-    runFieldRule (rule, value) {
-      return new Promise((resolve, reject) => {
-        if (rule.required) {
-          const empty = value === undefined || value === null || value === '' ||
-            (Array.isArray(value) && !value.length)
-          if (empty) {
-            reject(new Error(rule.message || 'required'))
-            return
-          }
-        }
-        if (typeof rule.validator === 'function') {
-          let settled = false
-          const finish = (err) => {
-            if (settled) return
-            settled = true
-            if (err) reject(err instanceof Error ? err : new Error(String(err)))
-            else resolve()
-          }
-          let ret
-          try {
-            ret = rule.validator(rule, value, finish)
-          } catch (e) {
-            finish(e)
-            return
-          }
-          if (ret && typeof ret.then === 'function') {
-            ret.then(() => finish()).catch(finish)
-          }
-          return
-        }
-        resolve()
-      })
-    },
+    /** isBind 时 eip Form.Item 已绑 name+rules，由父 formRef.validate 展示红字 */
     async validate () {
-      if (this.isBind) {
-        await this.runFieldRule(
-          { required: true, message: i18n.t('compute.text_145') },
-          this.model.eip,
-        )
-      }
       return true
     },
   },

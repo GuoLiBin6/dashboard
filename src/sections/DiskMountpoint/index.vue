@@ -1,14 +1,20 @@
 <template>
   <div class="d-flex">
     <a-form-item
-      class="mb-0 mr-1">
+      class="mb-0 mr-1"
+      :name="filetypeNamePath"
+      :rules="filetypeRules">
       <base-select
         :options="filetypeOpts"
         :value="filetypeVal"
         @change="onFiletypeChange"
         :select-props="{ allowClear: true, placeholder: $t('common_149') }" />
     </a-form-item>
-    <a-form-item class="mb-0" v-if="filetypeVal !== 'swap'">
+    <a-form-item
+      class="mb-0"
+      v-if="filetypeVal !== 'swap'"
+      :name="mountPathNamePath"
+      :rules="mountPathRules">
       <a-input
         :value="mountPathVal"
         @update:value="onMountPathChange"
@@ -28,6 +34,13 @@ function parseBracketName (name) {
   return { root: name, key: null }
 }
 
+function toNamePath (name) {
+  if (!name) return undefined
+  const parsed = parseBracketName(name)
+  if (!parsed) return name
+  return parsed.key ? [parsed.root, parsed.key] : parsed.root
+}
+
 export default {
   name: 'DiskMountpoint',
   props: {
@@ -38,6 +51,14 @@ export default {
     mountPathField: {
       type: String,
       required: true,
+    },
+    filetypeRules: {
+      type: Array,
+      default: () => [],
+    },
+    mountPathRules: {
+      type: Array,
+      default: () => [],
     },
     form: {
       type: Object,
@@ -61,6 +82,12 @@ export default {
     }
   },
   computed: {
+    filetypeNamePath () {
+      return toNamePath(this.filetypeField)
+    },
+    mountPathNamePath () {
+      return toNamePath(this.mountPathField)
+    },
     filetypeVal () {
       const v = this.modelGet(this.filetypeField)
       return v !== undefined ? v : this.filetypeLocal

@@ -12,7 +12,11 @@
       </a-tooltip>
     </a-form-model-item>
     <template v-if="inDialog || bastionHostEnable">
-      <a-form-model-item class="mt-2" :label="inDialog ? $t('compute.bastionHost.bastion_host') : $t('compute.bastionHost.add_bastion_host')" prop="bastion_host_id">
+      <a-form-model-item
+        class="mt-2"
+        name="bastion_host_id"
+        :label="inDialog ? $t('compute.bastionHost.bastion_host') : $t('compute.bastionHost.add_bastion_host')"
+        :rules="bastionRules.bastion_host_id">
         <base-select
           :value="fieldGet('bastion_host_id')"
           :options="bastionHosts"
@@ -23,7 +27,11 @@
           }"
           @change="onBastionHostIdChange" />
       </a-form-model-item>
-      <a-form-model-item class="mt-2" :label="$t('compute.bastion_host_org')" prop="bastion_org_id">
+      <a-form-model-item
+        class="mt-2"
+        name="bastion_org_id"
+        :label="$t('compute.bastion_host_org')"
+        :rules="bastionRules.bastion_org_id">
         <base-select
           :value="fieldGet('bastion_org_id')"
           :options="orgs"
@@ -34,7 +42,11 @@
           }"
           @change="onBastionOrgChange" />
       </a-form-model-item>
-      <a-form-model-item class="mt-2" :label="$t('compute.bastionHost.node')" prop="nodes">
+      <a-form-model-item
+        class="mt-2"
+        name="nodes"
+        :label="$t('compute.bastionHost.node')"
+        :rules="bastionRules.nodes">
         <base-select
           :value="fieldGet('nodes')"
           @change="v => fieldPut('nodes', v)"
@@ -47,13 +59,17 @@
             loading: nodeLoading
           }" />
       </a-form-model-item>
-      <a-form-model-item class="mt-2" :label="$t('compute.bastionHost.port')" prop="port">
+      <a-form-model-item class="mt-2" name="port" :label="$t('compute.bastionHost.port')">
         <a-input-number
           :value="fieldGet('port')"
           @change="v => fieldPut('port', v)"
           :placeholder="$t('compute.bastionHost.port.placeholder')" />
       </a-form-model-item>
-      <a-form-model-item class="mt-2" :label="$t('compute.bastionHost.privileged_account')" prop="privileged_accounts">
+      <a-form-model-item
+        class="mt-2"
+        name="privileged_accounts"
+        :label="$t('compute.bastionHost.privileged_account')"
+        :rules="bastionRules.privileged_accounts">
         <base-select
           :value="fieldGet('privileged_accounts')"
           :options="privilegedAccounts"
@@ -65,7 +81,11 @@
           }"
           @change="onPrivilegedAccountsChange" />
       </a-form-model-item>
-      <a-form-model-item class="mt-2" :label="$t('compute.bastionHost.account')" prop="accounts">
+      <a-form-model-item
+        class="mt-2"
+        name="accounts"
+        :label="$t('compute.bastionHost.account')"
+        :rules="bastionRules.accounts">
         <base-select
           :value="fieldGet('accounts')"
           @change="v => fieldPut('accounts', v)"
@@ -78,7 +98,7 @@
             loading: accountLoading
             }" />
       </a-form-model-item>
-      <a-form-model-item class="mt-2" :label="$t('compute.bastionHost.domain')" prop="bastion_domain_id">
+      <a-form-model-item class="mt-2" name="bastion_domain_id" :label="$t('compute.bastionHost.domain')">
         <base-select
           :value="fieldGet('bastion_domain_id')"
           :options="domains"
@@ -150,6 +170,15 @@ export default {
     },
     switchDisabled () {
       return !this.bastionHosts.length
+    },
+    bastionRules () {
+      return {
+        bastion_host_id: [{ required: true, message: this.$t('compute.bastionHost.bastion_host.placeholder') }],
+        bastion_org_id: [{ required: true, message: this.$t('compute.bastionHost.bastion_org.placeholder') }],
+        nodes: [{ required: true, message: this.$t('compute.bastionHost.node.placeholder'), type: 'array', min: 1 }],
+        privileged_accounts: [{ required: true, message: this.$t('compute.bastionHost.privileged_account.placeholder') }],
+        accounts: [{ required: true, message: this.$t('compute.bastionHost.account.placeholder'), type: 'array', min: 1 }],
+      }
     },
   },
   watch: {
@@ -785,51 +814,8 @@ export default {
         if (draft) this.writeBastionSelectionFields(draft)
       }
     },
-    runFieldRule (rule, value) {
-      return new Promise((resolve, reject) => {
-        if (rule.required) {
-          const empty = value === undefined || value === null || value === '' ||
-            (Array.isArray(value) && !value.length)
-          if (empty) {
-            reject(new Error(rule.message || 'required'))
-            return
-          }
-        }
-        if (typeof rule.validator === 'function') {
-          let settled = false
-          const finish = (err) => {
-            if (settled) return
-            settled = true
-            if (err) reject(err instanceof Error ? err : new Error(String(err)))
-            else resolve()
-          }
-          let ret
-          try {
-            ret = rule.validator(rule, value, finish)
-          } catch (e) {
-            finish(e)
-            return
-          }
-          if (ret && typeof ret.then === 'function') {
-            ret.then(() => finish()).catch(finish)
-          }
-          return
-        }
-        resolve()
-      })
-    },
     async validate () {
-      if (!this.inDialog && !this.bastionHostEnable) return true
-      const required = [
-        ['bastion_host_id', this.$t('compute.bastionHost.bastion_host.placeholder')],
-        ['bastion_org_id', this.$t('compute.bastionHost.bastion_org.placeholder')],
-        ['nodes', this.$t('compute.bastionHost.node.placeholder')],
-        ['privileged_accounts', this.$t('compute.bastionHost.privileged_account.placeholder')],
-        ['accounts', this.$t('compute.bastionHost.account.placeholder')],
-      ]
-      for (const [name, message] of required) {
-        await this.runFieldRule({ required: true, message }, this.fieldGet(name))
-      }
+      // 开启时字段已挂 Form.Item rules；关闭时 v-if 卸载不参与校验
       return true
     },
   },

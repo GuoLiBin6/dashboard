@@ -8,7 +8,9 @@
         <a-tag class="network-nic-tag">{{ isBonding ? 'bond' : $t('compute.text_193')}}{{i + count}}</a-tag>
         <a-form-item
           v-show="showVpc"
-          class="mb-0 network-vpc-item">
+          class="mb-0 network-vpc-item"
+          :name="['vpcs', item.key]"
+          :rules="i === 0 ? [{ required: true, message: $t('compute.text_194') }] : []">
           <oc-select
             v-if="i === 0"
             :value="fieldVal(networkFieldMap.vpcs(item.key))"
@@ -27,7 +29,9 @@
         </a-form-item>
         <a-form-item
           :style="isDialog ? { flex: 1 } : ''"
-          class="mb-0 network-item">
+          class="mb-0 network-item"
+          :name="['networks', item.key]"
+          :rules="[{ required: true, message: $t('compute.text_217') }]">
           <base-select
             class="w-100"
             :value="fieldVal(networkFieldMap.networks(item.key))"
@@ -64,11 +68,11 @@
       <div v-if="showAdvanced" class="network-advanced-panel">
         <div class="network-advanced-panel__toggles">
           <template v-if="canShowIpConfig(item)">
-            <a-tooltip :title="ipBtnTooltip || undefined">
+            <a-tooltip :title="ipConfigDisabledTip(item) || ipBtnTooltip || undefined">
               <span class="network-advanced-panel__toggle">
                 <a-checkbox
                   :checked="item.ipShow"
-                  :disabled="ipsDisabled"
+                  :disabled="ipsDisabled || isIpConfigDisabled(item)"
                   @change="() => triggerShowIp(item)">
                   {{ $t('compute.text_198') }}
                 </a-checkbox>
@@ -129,6 +133,7 @@
             <span class="network-advanced-panel__toggle">
               <a-checkbox
                 :checked="item.ipv6Show"
+                :disabled="isIpv6AddressDisabled(item)"
                 @change="() => triggerShowIpv6(item)">
                 {{ $t('compute.ipv6_config') }}
               </a-checkbox>
@@ -148,16 +153,17 @@
         <div v-if="hasExpandedBasicFields(item)" class="network-advanced-panel__fields">
           <div v-if="canShowIpConfig(item) && item.ipShow" class="network-advanced-panel__field">
             <div class="network-advanced-panel__field-label">IP</div>
-            <a-form-item class="mb-0">
+            <a-form-item class="mb-0" :name="['networkIps', item.key]" :rules="ipFieldRules(item, i)">
               <ip-select
                 :value="fieldVal(networkFieldMap.ips(item.key, item.network))"
                 :network="item.network"
+                :disabled="ipsDisabled || isIpConfigDisabled(item)"
                 @change="e => { fieldSet(networkFieldMap.ips(item.key, item.network), e); ipChange(e, i) }" />
             </a-form-item>
           </div>
           <div v-if="showMacConfig && item.macShow" class="network-advanced-panel__field">
             <div class="network-advanced-panel__field-label">{{ $t('compute.text_385') }}</div>
-            <a-form-item class="mb-0">
+            <a-form-item class="mb-0" :name="['networkMacs', item.key]" :rules="macFieldRules">
               <a-input
                 class="network-advanced-panel__control"
                 :placeholder="$t('compute.text_806')"
@@ -167,7 +173,7 @@
           </div>
           <div v-if="showDeviceConfig && item.deviceShow" class="network-advanced-panel__field">
             <div class="network-advanced-panel__field-label">{{ $t('compute.text_113') }}</div>
-            <a-form-item class="mb-0">
+            <a-form-item class="mb-0" :name="['networkDevices', item.key]" :rules="[{ required: true, message: $t('compute.sriov_device_tips') }]">
               <oc-select
                 class="network-advanced-panel__control"
                 :value="fieldVal(networkFieldMap.devices(item.key))"
@@ -178,7 +184,7 @@
           </div>
           <div v-if="showSecgroupConfig && item.secgroupShow" class="network-advanced-panel__field network-advanced-panel__field--wide">
             <div class="network-advanced-panel__field-label">{{ $t('compute.text_105') }}</div>
-            <a-form-item class="mb-0">
+            <a-form-item class="mb-0" :name="['networkSecgroups', item.key]" :rules="[{ required: true, type: 'array', min: 1, message: $t('compute.secgroup_tips') }]">
               <base-select
                 :value="fieldVal(networkFieldMap.secgroups(item.key))"
                 @change="v => fieldSet(networkFieldMap.secgroups(item.key), v)"
@@ -189,12 +195,13 @@
           </div>
           <div v-if="canShowIpv6Address(item) && item.ipv6Show" class="network-advanced-panel__field network-advanced-panel__field--ipv6">
             <div class="network-advanced-panel__field-label">{{ $t('compute.ipv6_config') }}</div>
-            <a-form-item class="mb-0 network-ipv6-address-item">
+            <a-form-item class="mb-0 network-ipv6-address-item" :name="['networkIpsAddress6', item.key]" :rules="ipv6FieldRules(item, i)">
               <div class="network-ipv6-address">
                 <span class="network-ipv6-prefix">{{ getIpv6Prefix(item.network?.guest_ip6_start) }}</span>
                 <a-form-item class="mb-0 network-ipv6-input-item">
                   <a-input
                     class="network-advanced-panel__control"
+                    :disabled="isIpv6AddressDisabled(item)"
                     :placeholder="$t('compute.complete_ipv6_address')"
                     :value="fieldVal(networkFieldMap.ips6(item.key, item.network))"
                     @change="e => { fieldSet(networkFieldMap.ips6(item.key, item.network), e.target.value); ipv6Change(e, i) }" />
@@ -373,6 +380,12 @@ export default {
         vpc: this.networkList[0].vpc.id,
       }
     },
+    macFieldRules () {
+      return [
+        { required: true, message: this.$t('compute.text_806') },
+        { validator: validateForm('mac') },
+      ]
+    },
     ipBtnTooltip () {
       return this.ipsDisabled ? this.$t('common_718') : null
     },
@@ -418,6 +431,19 @@ export default {
     fieldSet (fieldTuple, value) {
       this.nicFieldSet(fieldTuple, value)
     },
+    ipFieldRules (item, i) {
+      return [
+        { required: true, message: this.$t('compute.text_218') },
+        { validator: validateForm('IPv4') },
+        { validator: checkIpInSegment(i, item.network || {}) },
+      ]
+    },
+    ipv6FieldRules (item, i) {
+      return [
+        { required: true, message: this.$t('compute.complete_ipv6_address') },
+        { validator: checkIpV6(i, item.network || {}) },
+      ]
+    },
     readField (name) {
       if (!name) return undefined
       const parsed = parseNicFieldName(name)
@@ -440,42 +466,11 @@ export default {
       this.$emit('advancedChange', this.showAdvanced)
     },
     async validate () {
+      // vpc/networks/高级项 rules 已挂 Form.Item；端口映射仍走子组件
       for (let i = 0; i < this.networkList.length; i++) {
         const item = this.networkList[i]
-        const key = item.key
-        if (this.showVpc) {
-          const vpc = this.nicField('vpcs', key)
-          if (!vpc) throw new Error(this.$t('compute.text_194'))
-        }
-        const networkId = this.nicField('networks', key)
-        if (!networkId) throw new Error(this.$t('compute.text_217'))
-        const networkData = item.network || {}
-        if (item.ipShow) {
-          const ip = this.nicField('networkIps', key)
-          await this.runFieldRule({ required: true, message: this.$t('compute.text_218') }, ip)
-          await this.runFieldRule({ validator: validateForm('IPv4') }, ip)
-          await this.runFieldRule({ validator: checkIpInSegment(i, networkData) }, ip)
-        }
-        if (item.macShow) {
-          const mac = this.nicField('networkMacs', key)
-          await this.runFieldRule({ required: true, message: this.$t('compute.text_806') }, mac)
-          await this.runFieldRule({ validator: validateForm('mac') }, mac)
-        }
-        if (item.ipv6Show) {
-          const ipv6 = this.nicField('networkIpsAddress6', key)
-          await this.runFieldRule({ required: true, message: this.$t('compute.complete_ipv6_address') }, ipv6)
-          await this.runFieldRule({ validator: checkIpV6(i, networkData) }, ipv6)
-        }
-        if (item.deviceShow) {
-          const device = this.nicField('networkDevices', key)
-          await this.runFieldRule({ required: true, message: this.$t('compute.sriov_device_tips') }, device)
-        }
-        if (item.secgroupShow) {
-          const secgroups = this.nicField('networkSecgroups', key)
-          await this.runFieldRule({ required: true, message: this.$t('compute.secgroup_tips') }, secgroups)
-        }
         if (this.showPortMapping && item.portMappingShow) {
-          const ref = this.$refs[`portMappingRef_${key}`]
+          const ref = this.$refs[`portMappingRef_${item.key}`]
           const labelRef = Array.isArray(ref) ? ref[0] : ref
           if (labelRef?.validate) await labelRef.validate()
         }
@@ -674,13 +669,37 @@ export default {
       })
     },
     canShowIpConfig (item) {
-      return this.isSupportIPv4(item) && !(this.isSupportIPv6(item) && item.ipv6Mode === 'only' && item.requireIpv6)
+      return this.isSupportIPv4(item)
     },
     canShowIpv6Require (item) {
       return this.isSupportIPv6(item) && this.isSupportIPv4(item)
     },
     canShowIpv6Address (item) {
-      return (this.isSupportIPv6(item) && item.requireIpv6) || (!this.isSupportIPv4(item) && this.isSupportIPv6(item))
+      return this.isSupportIPv6(item)
+    },
+    // 仅 IPv6 时禁用指定 IP（含子项），不再隐藏
+    isIpConfigDisabled (item) {
+      return this.isSupportIPv6(item) && item.ipv6Mode === 'only' && !!item.requireIpv6
+    },
+    // 双栈未勾选「需要 IPv6」时禁用指定 IPv6（含子项），不再隐藏
+    isIpv6AddressDisabled (item) {
+      return this.isSupportIPv4(item) && this.isSupportIPv6(item) && !item.requireIpv6
+    },
+    ipConfigDisabledTip (item) {
+      if (this.isIpConfigDisabled(item)) return this.$t('compute.server_create.require_ipv6_only')
+      return null
+    },
+    clearIpConfig (item) {
+      if (!item.ipShow) return
+      item.ipShow = false
+      this.fieldSet(this.networkFieldMap.ips(item.key, item.network), undefined)
+      this.$emit('optionalChange', { flag: 'ip', key: item.key, show: false })
+    },
+    clearIpv6Address (item) {
+      if (!item.ipv6Show) return
+      item.ipv6Show = false
+      this.fieldSet(this.networkFieldMap.ips6(item.key, item.network), undefined)
+      this.$emit('optionalChange', { flag: 'ipv6', key: item.key, show: false })
     },
     hasExpandedBasicFields (item) {
       return !!(
@@ -692,15 +711,20 @@ export default {
       )
     },
     triggerShowIp (item) {
+      if (this.isIpConfigDisabled(item) || this.ipsDisabled) return
       item.ipShow = !item.ipShow
       this.$emit('optionalChange', { flag: 'ip', key: item.key, show: item.ipShow })
     },
     triggerShowIpv6 (item) {
+      if (this.isIpv6AddressDisabled(item)) return
       item.ipv6Show = !item.ipv6Show
       this.$emit('optionalChange', { flag: 'ipv6', key: item.key, show: item.ipv6Show })
     },
     triggerIpv6Mode (item, e) {
       item.ipv6Mode = e.key
+      if (e.key === 'only' && item.requireIpv6) {
+        this.clearIpConfig(item)
+      }
       this.$nextTick(() => {
         this.setNicField('networkIPv6Modes', item.key, e.key)
       })
@@ -708,8 +732,9 @@ export default {
     triggerRequireIpv6 (item, e) {
       item.requireIpv6 = e.target.checked
       if (!item.requireIpv6) {
-        item.ipv6Show = false
-        this.$emit('optionalChange', { flag: 'ipv6', key: item.key, show: false })
+        this.clearIpv6Address(item)
+      } else if (item.ipv6Mode === 'only') {
+        this.clearIpConfig(item)
       }
     },
     triggerShowMac (item) {
@@ -948,6 +973,7 @@ export default {
       column-gap: 8px;
       row-gap: 8px;
     }
+
   }
 
   .network-config-aside {

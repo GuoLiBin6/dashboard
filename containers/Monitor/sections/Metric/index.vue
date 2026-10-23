@@ -1,40 +1,55 @@
 <template>
   <div class="metric-fields" :class="{ 'metric-fields--no-type': !showResType }">
     <div v-if="showResType" class="metric-fields__item">
-      <base-select
-        class="metric-select"
-        minWidth="0"
-        :value="metric_res_type"
-        :options="metricTypeOpts"
-        filterable
-        :disabled="disabled"
-        :select-props="{ placeholder: $t('monitor.text_111'), loading }"
-        @change="metricTypeChange" />
+      <a-form-item
+        class="mb-0"
+        :name="fieldItemName(resolvedFieldMap.metric_res_type)"
+        :rules="fieldItemRules(resolvedFieldMap.metric_res_type)">
+        <base-select
+          class="metric-select"
+          minWidth="0"
+          :value="metric_res_type"
+          :options="metricTypeOpts"
+          filterable
+          :disabled="disabled"
+          :select-props="{ placeholder: $t('monitor.text_111'), loading }"
+          @change="metricTypeChange" />
+      </a-form-item>
     </div>
     <div class="metric-fields__item">
-      <base-select
-        class="metric-select"
-        minWidth="0"
-        :value="metric_key"
-        :options="metricKeyOpts"
-        filterable
-        :disabled="disabled"
-        v-model:item="metricKeyItem"
-        :select-props="{ placeholder: $t('monitor.text_112'), loading }"
-        @change="metricKeyChange" />
+      <a-form-item
+        class="mb-0"
+        :name="fieldItemName(resolvedFieldMap.metric_key)"
+        :rules="fieldItemRules(resolvedFieldMap.metric_key)">
+        <base-select
+          class="metric-select"
+          minWidth="0"
+          :value="metric_key"
+          :options="metricKeyOpts"
+          filterable
+          :disabled="disabled"
+          v-model:item="metricKeyItem"
+          :select-props="{ placeholder: $t('monitor.text_112'), loading }"
+          @change="metricKeyChange" />
+      </a-form-item>
     </div>
     <div class="metric-fields__item">
-      <base-select
-        class="metric-select"
-        minWidth="0"
-        filterable
-        :value="metricValue"
-        v-model:item="metricValueItem"
-        :options="metricOpts"
-        :labelFormat="metricValueLabelFormat"
-        :disabled="disabled"
-        @change="metricValueChange"
-        :select-props="{ placeholder: $t('monitor.text_113'), allowClear: true, loading }" />
+      <a-form-item
+        class="mb-0"
+        :name="fieldItemName(resolvedFieldMap.metric_value)"
+        :rules="fieldItemRules(resolvedFieldMap.metric_value)">
+        <base-select
+          class="metric-select"
+          minWidth="0"
+          filterable
+          :value="metricValue"
+          v-model:item="metricValueItem"
+          :options="metricOpts"
+          :labelFormat="metricValueLabelFormat"
+          :disabled="disabled"
+          @change="metricValueChange"
+          :select-props="{ placeholder: $t('monitor.text_113'), allowClear: true, loading }" />
+      </a-form-item>
     </div>
     <div v-if="extra" class="metric-fields__extra">{{ extra }}</div>
   </div>
@@ -204,39 +219,14 @@ export default {
       if (!resolveFieldMeta(fieldTuple)) return
       this.$set(this.model, resolveFieldMeta(fieldTuple)?.name, value)
     },
-    runFieldRule (rule, value) {
-      return new Promise((resolve, reject) => {
-        if (rule.required) {
-          const empty = value === undefined || value === null || value === '' ||
-            (Array.isArray(value) && !value.length)
-          if (empty) {
-            reject(new Error(rule.message || 'required'))
-            return
-          }
-        }
-        if (typeof rule.validator === 'function') {
-          rule.validator(rule, value, (err) => {
-            if (err) reject(err instanceof Error ? err : new Error(String(err)))
-            else resolve()
-          })
-          return
-        }
-        resolve()
-      })
+    fieldItemName (fieldDef) {
+      return resolveFieldMeta(fieldDef)?.name
     },
-    async runFieldMapRules (fieldTuple, value) {
-      const meta = resolveFieldMeta(fieldTuple)
-      if (!meta) return
-      const rules = meta.rules || []
-      for (const rule of rules) {
-        await this.runFieldRule(rule, value)
-      }
+    fieldItemRules (fieldDef) {
+      return resolveFieldMeta(fieldDef)?.rules || []
     },
+    /** Form.Item 已绑 name+rules，由父 formRef.validate 展示红字 */
     async validate () {
-      for (const key of ['metric_res_type', 'metric_key', 'metric_value']) {
-        const fieldDef = this.resolvedFieldMap[key]
-        if (fieldDef) await this.runFieldMapRules(fieldDef, this.fieldVal(fieldDef))
-      }
       return true
     },
     initModelFields () {
@@ -310,6 +300,14 @@ export default {
     flex: 1 1 0;
     min-width: 0;
     margin-bottom: 0 !important;
+
+    :deep(.ant-form-item),
+    :deep(.ant-form-item-control),
+    :deep(.ant-form-item-control-input),
+    :deep(.ant-form-item-control-input-content) {
+      min-width: 0;
+      width: 100%;
+    }
   }
 
   &__extra {

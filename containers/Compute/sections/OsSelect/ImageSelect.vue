@@ -2,7 +2,10 @@
   <div class="os-image-select-wrapper">
     <a-row :gutter="8">
       <a-col :span="8" v-if="showCloudaccount">
-        <a-form-model-item class="mb-0" :prop="fieldProp('prefer_manager')">
+        <a-form-model-item
+          class="mb-0"
+          :name="fieldName(imageOsFieldMap.prefer_manager)"
+          :rules="fieldRules(imageOsFieldMap.prefer_manager)">
           <base-select
             :value="fieldVal(imageOsFieldMap.prefer_manager)"
             resource="cloudproviders"
@@ -14,7 +17,10 @@
         </a-form-model-item>
       </a-col>
       <a-col :span="showCloudaccount ? 5 : 6">
-        <a-form-model-item class="mb-0" :prop="fieldProp('os')">
+        <a-form-model-item
+          class="mb-0"
+          :name="fieldName(imageOsFieldMap.os)"
+          :rules="fieldRules(imageOsFieldMap.os)">
           <a-select
             :value="fieldVal(imageOsFieldMap.os)"
             :loading="loading"
@@ -30,7 +36,10 @@
         </a-form-model-item>
       </a-col>
       <a-col :span="showCloudaccount ? 11 : 18">
-        <a-form-model-item class="mb-0" :prop="fieldProp('image')">
+        <a-form-model-item
+          class="mb-0"
+          :name="fieldName(imageOsFieldMap.image)"
+          :rules="fieldRules(imageOsFieldMap.image)">
           <image-select-template
             :value="fieldVal(imageOsFieldMap.image)"
             :imageOpts="imageOptions"
@@ -55,8 +64,9 @@ import storage from '@/utils/storage'
 import { uuid } from '@/utils/utils'
 import { getBracketValue, setBracketValue } from '@/utils/bracketModel'
 import { resolveFieldMeta } from '@/utils/common/ant'
+import fieldMapValidateMixin from '@Compute/mixins/fieldMapValidateMixin'
 import ImageSelectTemplate from './ImageSelectTemplate'
-import { IMAGE_OS_FIELDS, resolveImageOsFieldMap, resolveImageOsFieldMapForKey } from './fields'
+import { resolveImageOsFieldMap, resolveImageOsFieldMapForKey } from './fields'
 
 const initData = undefined
 
@@ -65,7 +75,7 @@ export default {
   components: {
     ImageSelectTemplate,
   },
-  mixins: [],
+  mixins: [fieldMapValidateMixin],
   props: {
     imageType: {
       type: String,
@@ -358,9 +368,6 @@ export default {
     }
   },
   methods: {
-    fieldProp (key) {
-      return IMAGE_OS_FIELDS[key] || this.imageOsFieldMap[key]?.[0]
-    },
     fieldVal (fieldTuple) {
       const meta = resolveFieldMeta(fieldTuple)
       if (!meta) return undefined
@@ -369,8 +376,9 @@ export default {
       return v !== undefined ? v : opts.initialValue
     },
     fieldSet (fieldTuple, value) {
-      if (!resolveFieldMeta(fieldTuple)) return
-      setBracketValue(this, this.model, resolveFieldMeta(fieldTuple)?.name, value)
+      const meta = resolveFieldMeta(fieldTuple)
+      if (!meta) return
+      setBracketValue(this, this.model, meta.name, value)
     },
     initModelFields () {
       ;['os', 'image', 'prefer_manager'].forEach((key) => {
@@ -383,53 +391,8 @@ export default {
         }
       })
     },
-    runFieldRule (rule, value) {
-      return new Promise((resolve, reject) => {
-        if (rule.required) {
-          const empty = value === undefined || value === null || value === '' ||
-            (Array.isArray(value) && !value.length)
-          if (empty) {
-            reject(new Error(rule.message || 'required'))
-            return
-          }
-        }
-        if (typeof rule.validator === 'function') {
-          let settled = false
-          const finish = (err) => {
-            if (settled) return
-            settled = true
-            if (err) reject(err instanceof Error ? err : new Error(String(err)))
-            else resolve()
-          }
-          let ret
-          try {
-            ret = rule.validator(rule, value, finish)
-          } catch (e) {
-            finish(e)
-            return
-          }
-          if (ret && typeof ret.then === 'function') {
-            ret.then(() => finish()).catch(finish)
-          }
-          return
-        }
-        resolve()
-      })
-    },
-    async runFieldMapRules (fieldTuple, value) {
-      const meta = resolveFieldMeta(fieldTuple)
-      if (!meta) return
-      const rules = meta.rules || []
-      for (const rule of rules) {
-        await this.runFieldRule(rule, value)
-      }
-    },
     async validate () {
-      if (this.showCloudaccount && this.imageOsFieldMap.prefer_manager) {
-        await this.runFieldMapRules(this.imageOsFieldMap.prefer_manager, this.fieldVal(this.imageOsFieldMap.prefer_manager))
-      }
-      await this.runFieldMapRules(this.imageOsFieldMap.os, this.fieldVal(this.imageOsFieldMap.os))
-      await this.runFieldMapRules(this.imageOsFieldMap.image, this.fieldVal(this.imageOsFieldMap.image))
+      // rules 已挂 Form.Item，由父 formRef.validate 展示
       return true
     },
     /** 读 os/image 等 */

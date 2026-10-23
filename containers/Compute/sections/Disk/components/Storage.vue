@@ -1,5 +1,9 @@
 <template>
-  <a-form-item style="flex: 1;" class="mb-0 mr-1 network-item">
+  <a-form-item
+    style="flex: 1;"
+    class="mb-0 mr-1 network-item"
+    :name="fieldName(diskFieldMap.storage)"
+    :rules="fieldRules(diskFieldMap.storage)">
     <base-select
       class="w-100"
       :value="storageFieldVal"
@@ -40,6 +44,10 @@ export default {
       type: String,
       default: '',
     },
+    storageRules: {
+      type: Array,
+      default: () => [],
+    },
     storageParams: {
       type: Object,
       required: true,
@@ -70,7 +78,7 @@ export default {
   computed: {
     diskFieldMap () {
       if (this.storageField) {
-        return { storage: { name: this.storageField } }
+        return { storage: [this.storageField, { rules: this.storageRules }] }
       }
       if (this.diskKey === 'system') return resolveSystemDiskFieldMap()
       return buildDataDiskFieldMap(this.diskKey)

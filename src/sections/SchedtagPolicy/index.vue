@@ -1,7 +1,9 @@
 <template>
   <div class="d-flex">
     <a-form-item
-      class="mb-0 mr-1 w-50">
+      class="mb-0 mr-1 w-50"
+      :name="schedtagNamePath"
+      :rules="schedtagRules">
       <template v-if="showDocsLink()" #extra>{{ $t('common.schedtag.extra') }}，<help-link  :href="docUrl">{{ $t('common.view.doc') }}</help-link></template>
       <base-select
         class="w-100"
@@ -13,7 +15,10 @@
         @change="schedtagChange"
         :select-props="{ allowClear: true, placeholder: $t('common_255') }" />
     </a-form-item>
-    <a-form-item class="mb-0 w-50">
+    <a-form-item
+      class="mb-0 w-50"
+      :name="policyNamePath"
+      :rules="policyRules">
       <base-select
         class="w-100"
         :value="fieldVal(fieldMap.policy)"
@@ -36,6 +41,13 @@ function parseBracketName (name) {
   return { root: name, key: null }
 }
 
+function toNamePath (name) {
+  if (!name) return undefined
+  const parsed = parseBracketName(name)
+  if (!parsed) return name
+  return parsed.key ? [parsed.root, parsed.key] : parsed.root
+}
+
 export default {
   name: 'SchedtagPolicy',
   props: {
@@ -52,6 +64,14 @@ export default {
     policyField: {
       type: String,
       default: '',
+    },
+    schedtagRules: {
+      type: Array,
+      default: () => [],
+    },
+    policyRules: {
+      type: Array,
+      default: () => [],
     },
     schedtagRoot: {
       type: String,
@@ -101,6 +121,14 @@ export default {
         }
       }
       return { schedtag: ['', {}], policy: ['', {}] }
+    },
+    schedtagNamePath () {
+      const meta = resolveFieldMeta(this.fieldMap.schedtag)
+      return toNamePath(meta?.name)
+    },
+    policyNamePath () {
+      const meta = resolveFieldMeta(this.fieldMap.policy)
+      return toNamePath(meta?.name)
     },
   },
   created () {

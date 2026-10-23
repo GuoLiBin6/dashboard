@@ -259,14 +259,18 @@ export default {
       this.form.cloudprovider_id = undefined
     },
     'form.email' (val) {
-      this.$nextTick(() => {
-        this.$refs.formRef?.validateField('email', (errors) => {
-          if (!errors || errors.length === 0) {
-            this.isCanSendNotify = !!val
-          } else {
-            this.isCanSendNotify = false
-          }
-        })
+      this.$nextTick(async () => {
+        const form = this.$refs.formRef
+        if (!form || typeof form.validateFields !== 'function') {
+          this.isCanSendNotify = false
+          return
+        }
+        try {
+          await form.validateFields(['email'])
+          this.isCanSendNotify = !!val
+        } catch (e) {
+          this.isCanSendNotify = false
+        }
       })
     },
   },

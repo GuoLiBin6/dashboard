@@ -339,20 +339,7 @@ export default {
       if (!fields.length) {
         return Promise.reject(new Error(this.$t('common.tips.input', [this.$t('aice.aiproxy.provider_key')])))
       }
-      return new Promise((resolve, reject) => {
-        let pending = fields.length
-        let failed = false
-        fields.forEach(field => {
-          this.$refs.form.validateField(field, (msg) => {
-            if (msg) failed = true
-            pending -= 1
-            if (pending === 0) {
-              if (failed) reject(new Error(msg || 'validation failed'))
-              else resolve()
-            }
-          })
-        })
-      })
+      return this.$refs.form.validateFields(fields)
     },
     async probeConnectivity ({ preserveSelection = false } = {}) {
       await this.validateConnectivityFields()

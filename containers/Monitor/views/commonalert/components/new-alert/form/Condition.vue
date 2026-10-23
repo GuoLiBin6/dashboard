@@ -2,7 +2,9 @@
   <div>
     <a-row v-for="(item) in conditionList" :key="item.key" :gutter="2">
       <a-col :span="4">
-        <a-form-item>
+        <a-form-item
+          :name="fieldItemName(resolvedFieldMap.metric_key(item.key))"
+          :rules="fieldItemRules(resolvedFieldMap.metric_key(item.key))">
           <base-select
             :value="fieldVal(resolvedFieldMap.metric_key(item.key))"
             :options="metricKeyOpts"
@@ -13,7 +15,9 @@
         </a-form-item>
       </a-col>
       <a-col :span="4">
-        <a-form-item>
+        <a-form-item
+          :name="fieldItemName(resolvedFieldMap.metric_value(item.key))"
+          :rules="fieldItemRules(resolvedFieldMap.metric_value(item.key))">
           <base-select
             filterable
             :value="fieldVal(resolvedFieldMap.metric_value(item.key))"
@@ -25,12 +29,16 @@
         </a-form-item>
       </a-col>
       <a-col :span="4">
-        <a-form-item>
+        <a-form-item
+          :name="fieldItemName(resolvedFieldMap.reduce(item.key))"
+          :rules="fieldItemRules(resolvedFieldMap.reduce(item.key))">
           <base-select :value="fieldVal(resolvedFieldMap.reduce(item.key))" @change="v => fieldSet(resolvedFieldMap.reduce(item.key), v)" :options="reduceOpts" :disabled="disabled" minWidth="70px" />
         </a-form-item>
       </a-col>
       <a-col :span="3">
-        <a-form-item>
+        <a-form-item
+          :name="fieldItemName(resolvedFieldMap.comparator(item.key))"
+          :rules="fieldItemRules(resolvedFieldMap.comparator(item.key))">
           <base-select :value="fieldVal(resolvedFieldMap.comparator(item.key))" @change="v => { fieldSet(resolvedFieldMap.comparator(item.key), v); onComparatorChange(v, item) }" :options="comparatorOpts" minWidth="70px" :disabled="disabled" />
         </a-form-item>
       </a-col>
@@ -39,7 +47,10 @@
           <a-col :span="5">
             <div class="d-flex" style="gap: 8px; align-items: flex-start;">
               <div style="flex: 1;">
-                <a-form-item style="margin-bottom: 0;">
+                <a-form-item
+                  style="margin-bottom: 0;"
+                  :name="fieldItemName(resolvedFieldMap.threshold_start(item.key))"
+                  :rules="fieldItemRules(resolvedFieldMap.threshold_start(item.key))">
                   <threshold-input
                     :value="fieldVal(resolvedFieldMap.threshold_start(item.key))"
                     :unit="unitMap[item.key]"
@@ -49,7 +60,10 @@
               </div>
               <span style="flex-shrink: 0; padding: 0 4px; display: flex; align-items: center; height: 32px; line-height: 32px; margin-top: 4px;">~</span>
               <div style="flex: 1;">
-                <a-form-item style="margin-bottom: 0;">
+                <a-form-item
+                  style="margin-bottom: 0;"
+                  :name="fieldItemName(resolvedFieldMap.threshold_end(item.key))"
+                  :rules="fieldItemRules(resolvedFieldMap.threshold_end(item.key))">
                   <threshold-input
                     :value="fieldVal(resolvedFieldMap.threshold_end(item.key))"
                     :unit="unitMap[item.key]"
@@ -61,7 +75,9 @@
           </a-col>
         </template>
         <a-col v-else :span="5">
-          <a-form-item>
+          <a-form-item
+            :name="fieldItemName(resolvedFieldMap.threshold(item.key))"
+            :rules="fieldItemRules(resolvedFieldMap.threshold(item.key))">
             <threshold-input
               :value="fieldVal(resolvedFieldMap.threshold(item.key))"
               :unit="unitMap[item.key]"
@@ -227,53 +243,14 @@ export default {
         this.$set(target, name, value)
       }
     },
-    runFieldRule (rule, value) {
-      return new Promise((resolve, reject) => {
-        if (rule.required) {
-          const empty = value === undefined || value === null || value === '' ||
-            (Array.isArray(value) && !value.length)
-          if (empty) {
-            reject(new Error(rule.message || 'required'))
-            return
-          }
-        }
-        if (typeof rule.validator === 'function') {
-          rule.validator(rule, value, (err) => {
-            if (err) reject(err instanceof Error ? err : new Error(String(err)))
-            else resolve()
-          })
-          return
-        }
-        resolve()
-      })
+    fieldItemName (fieldDef) {
+      return resolveFieldMeta(fieldDef)?.name
     },
-    async runFieldMapRules (fieldTuple, value) {
-      const meta = resolveFieldMeta(fieldTuple)
-      if (!meta) return
-      const rules = meta.rules || []
-      for (const rule of rules) {
-        await this.runFieldRule(rule, value)
-      }
+    fieldItemRules (fieldDef) {
+      return resolveFieldMeta(fieldDef)?.rules || []
     },
+    /** Form.Item 已绑 name+rules，由父 formRef.validate 展示红字 */
     async validate () {
-      if (!this.fdModel) return true
-      for (const item of this.conditionList) {
-        const keys = ['metric_key', 'metric_value', 'reduce', 'comparator']
-        if (this.showThresholdMap[item.key] !== false) {
-          const comparator = this.fieldVal(this.resolvedFieldMap.comparator(item.key))
-          if (comparator === 'within_range' || comparator === 'outside_range') {
-            keys.push('threshold_start', 'threshold_end')
-          } else {
-            keys.push('threshold')
-          }
-        }
-        for (const f of keys) {
-          const fn = this.resolvedFieldMap[f]
-          if (typeof fn !== 'function') continue
-          const fieldDef = fn(item.key)
-          await this.runFieldMapRules(fieldDef, this.fieldVal(fieldDef))
-        }
-      }
       return true
     },
     /** 批量写入 flat bracket keys → model 嵌套 */

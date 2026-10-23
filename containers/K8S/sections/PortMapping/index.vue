@@ -30,16 +30,11 @@
 <script>
 import { mapGetters } from 'vuex'
 import { uuid } from '@/utils/utils'
-import { getBracketValue, setBracketValue } from '@/utils/bracketModel'
+import { setBracketValue } from '@/utils/bracketModel'
 import Port from './Port'
 import LbCluster from './LbCluster'
 import LbNetwork from './LbNetwork'
-import {
-  SERVICE_TYPE_FIELD,
-  PORT_FIELD_FACTORIES,
-  PORT_FIELD_INITIAL,
-  portFieldRules,
-} from './fields'
+import { SERVICE_TYPE_FIELD } from './fields'
 export default {
   name: 'K8SPortMapping',
   components: {
@@ -139,41 +134,8 @@ export default {
       })
       this.writeFields(value)
     },
-    runFieldRule (rule, value) {
-      return new Promise((resolve, reject) => {
-        if (rule.required) {
-          const empty = value === undefined || value === null || value === '' ||
-            (Array.isArray(value) && !value.length)
-          if (empty) {
-            reject(new Error(rule.message || 'required'))
-            return
-          }
-        }
-        if (typeof rule.validator === 'function') {
-          rule.validator(rule, value, (err) => {
-            if (err) reject(err instanceof Error ? err : new Error(String(err)))
-            else resolve()
-          })
-          return
-        }
-        resolve()
-      })
-    },
-    async runRules (rules, value) {
-      for (const rule of rules || []) {
-        await this.runFieldRule(rule, value)
-      }
-    },
+    /** Port Form.Item 已绑 name+rules，由父 formRef.validate 展示红字 */
     async validate () {
-      if (this.serviceType === 'none') return true
-      for (const item of this.portList) {
-        for (const key of Object.keys(PORT_FIELD_FACTORIES)) {
-          if (key === 'nodePort' && this.serviceType !== 'nodePort') continue
-          const name = PORT_FIELD_FACTORIES[key](item.key)
-          const value = getBracketValue(this.model, name)
-          await this.runRules(portFieldRules(key), value !== undefined ? value : PORT_FIELD_INITIAL[key])
-        }
-      }
       return true
     },
   },

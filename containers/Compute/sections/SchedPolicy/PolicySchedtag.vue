@@ -8,6 +8,8 @@
         schedtag-root="policySchedtagSchedtags"
         policy-root="policySchedtagPolicys"
         :schedtag-params="{ ...schedtagParams, $t: `schedtag-${i}` }"
+        :schedtag-rules="[{ required: true, message: $t('compute.text_123') }]"
+        :policy-rules="[{ required: true, message: $t('common_256') }]"
         :policyReactInSchedtag="false"
         @change="onItemFieldChange" />
       <a-button shape="circle" icon="minus" size="small" @click="decrease(item.key, i)" class="mt-2" />
@@ -171,13 +173,8 @@ export default {
       })
       this.$emit('change')
     },
+    /** SchedtagPolicy Form.Item 已绑 rules，由父 formRef.validate 展示红字 */
     async validate () {
-      for (const item of this.schedtagPolicyList) {
-        const schedtag = this.mapGet(SCHEDTAG_ROOT, item.key)
-        if (!schedtag) throw new Error(this.$t('compute.text_123'))
-        const policy = this.mapGet(POLICY_ROOT, item.key)
-        if (!policy) throw new Error(this.$t('common_256'))
-      }
       return true
     },
   },

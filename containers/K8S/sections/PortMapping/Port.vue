@@ -1,6 +1,6 @@
 <template>
   <div class="d-flex">
-    <a-form-item>
+    <a-form-item :name="fieldName('port')" :rules="portFieldRules('port')">
       <a-input :value="fieldVal('port')" @update:value="v => fieldSet('port', v)" type="number" style="width: 200px;">
         <template slot="addonBefore">
           <span>{{$t('k8s.service_port')}}</span>
@@ -10,7 +10,7 @@
         </template>
       </a-input>
     </a-form-item>
-    <a-form-item>
+    <a-form-item :name="fieldName('targetPort')" :rules="portFieldRules('targetPort')">
       <a-input :value="fieldVal('targetPort')" @update:value="v => fieldSet('targetPort', v)" type="number" style="width: 200px;">
         <template slot="addonBefore">
           <span>{{$t('k8s.target_port')}}</span>
@@ -20,7 +20,7 @@
         </template>
       </a-input>
     </a-form-item>
-    <a-form-item v-if="isNodePort">
+    <a-form-item v-if="isNodePort" :name="fieldName('nodePort')" :rules="portFieldRules('nodePort')">
       <a-input :min="30000" :max="32767" :value="fieldVal('nodePort')" @update:value="v => fieldSet('nodePort', v)" type="number" style="width: 200px;">
         <template slot="addonBefore">
           <span>{{$t('k8s.node_port')}}</span>
@@ -30,7 +30,7 @@
         </template>
       </a-input>
     </a-form-item>
-    <a-form-item>
+    <a-form-item :name="fieldName('protocol')" :rules="portFieldRules('protocol')">
       <a-input-group compact>
         <div class="d-flex">
           <a-input class="oc-addonBefore ant-input-group-addon" style="width: 60px;" :defaultValue="$t('k8s.text_90')" readonly />
@@ -46,7 +46,7 @@
 
 <script>
 import { getBracketValue, setBracketValue } from '@/utils/bracketModel'
-import { PORT_FIELD_FACTORIES, PORT_FIELD_INITIAL } from './fields'
+import { PORT_FIELD_FACTORIES, PORT_FIELD_INITIAL, portFieldRules } from './fields'
 
 export default {
   name: 'K8SPortMappingPort',
@@ -86,6 +86,7 @@ export default {
     })
   },
   methods: {
+    portFieldRules,
     fieldName (field) {
       return PORT_FIELD_FACTORIES[field](this.portKey)
     },

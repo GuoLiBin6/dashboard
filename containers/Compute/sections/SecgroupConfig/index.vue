@@ -1,46 +1,49 @@
 <template>
-  <div>
-    <a-form-model-item class="mb-0" :prop="typeField">
-      <a-radio-group :value="model[typeField]" :disabled="disabled" @change="e => { $set(model, typeField, e.target.value); handleTypeChange(e) }">
+  <div class="secgroup-config">
+    <a-form-model-item no-style :prop="typeField">
+      <a-radio-group :value="model[typeField]" :disabled="disabled" @change="e => { model[typeField] = e.target.value; handleTypeChange(e) }">
         <a-radio-button
           v-for="item of types"
           :key="item.key"
           :value="item.key">{{ item.label }}</a-radio-button>
       </a-radio-group>
     </a-form-model-item>
-    <a-form-model-item class="mb-0" v-if="isBind" :prop="secgroupField">
-      <template #extra>{{$t('compute.text_188', [_max])}}<help-link :href="href">{{$t('compute.text_189')}}</help-link></template>
-      <base-select
-        remote
-        class="w-50 pr-1"
-        :value="model[secgroupField]"
-        @change="v => $set(model, secgroupField, v)"
-        resource="secgroups"
-        :params="params"
-        :extra-opts="secgroupExtraOpts"
-        :showSync="true"
-        :select-props="{ allowClear: true, placeholder: $t('compute.text_190'), mode: 'multiple' }"
-        @update:initLoaded="onSecgroupInitLoaded" />
-    </a-form-model-item>
-    <a-form-model-item
-      class="mb-0"
-      v-if="isNetworkTag"
-      :prop="networkTagsField"
-      :validate-status="networkTagError ? 'error' : ''"
-      :help="networkTagError || undefined">
-      <template #extra>{{ $t('validator.secgroupNetworkTag') }}</template>
-      <a-select
-        ref="networkTagsSelect"
-        :value="model[networkTagsField]"
-        @change="v => { $set(model, networkTagsField, v); handleNetworkTagsChange(v) }"
-        mode="tags"
-        allow-clear
-        :show-arrow="false"
-        dropdown-class-name="secgroup-network-tags-dropdown"
-        class="w-50 pr-1"
-        :placeholder="$t('compute.network_tag_placeholder')"
-        :token-separators="[',']" />
-    </a-form-model-item>
+    <div v-if="isBind" class="secgroup-config__panel">
+      <a-form-model-item no-style :prop="secgroupField">
+        <base-select
+          remote
+          class="w-50 pr-1"
+          :value="model[secgroupField]"
+          @change="v => { model[secgroupField] = v }"
+          resource="secgroups"
+          :params="params"
+          :extra-opts="secgroupExtraOpts"
+          :showSync="true"
+          :select-props="{ allowClear: true, placeholder: $t('compute.text_190'), mode: 'multiple' }"
+          @update:initLoaded="onSecgroupInitLoaded" />
+      </a-form-model-item>
+      <div class="secgroup-config__extra">{{$t('compute.text_188', [_max])}}<help-link :href="href">{{$t('compute.text_189')}}</help-link></div>
+    </div>
+    <div v-if="isNetworkTag" class="secgroup-config__panel">
+      <a-form-model-item
+        no-style
+        :prop="networkTagsField"
+        :validate-status="networkTagError ? 'error' : ''"
+        :help="networkTagError || undefined">
+        <a-select
+          ref="networkTagsSelect"
+          :value="model[networkTagsField]"
+          @change="v => { model[networkTagsField] = v; handleNetworkTagsChange(v) }"
+          mode="tags"
+          allow-clear
+          :show-arrow="false"
+          dropdown-class-name="secgroup-network-tags-dropdown"
+          class="w-50 pr-1"
+          :placeholder="$t('compute.network_tag_placeholder')"
+          :token-separators="[',']" />
+      </a-form-model-item>
+      <div class="secgroup-config__extra">{{ $t('validator.secgroupNetworkTag') }}</div>
+    </div>
   </div>
 </template>
 
@@ -510,6 +513,18 @@ export default {
   },
 }
 </script>
+
+<style lang="less" scoped>
+.secgroup-config__panel {
+  margin-top: 8px;
+}
+.secgroup-config__extra {
+  margin-top: 4px;
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 14px;
+  line-height: 1.5;
+}
+</style>
 
 <style lang="less">
 .secgroup-network-tags-dropdown {

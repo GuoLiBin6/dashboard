@@ -17,17 +17,30 @@
         class="pci-group-row">
         <component :is="itemTag" class="pci-group">
           <div class="pci-select-row">
-            <component :is="itemTag" class="pci-select-item pci-select-item--fixed mb-0">
+            <component
+              :is="itemTag"
+              class="pci-select-item pci-select-item--fixed mb-0"
+              :name="['pciDevType', String(k)]"
+              :rules="[{ required: true, message: $t('compute.text_147') }]">
               <fixed-label-filter :label="$t('compute.pci.dev_type_sharing_mode')">
                 <base-select :value="readPciRowField('pciDevType', k)" @change="(val) => { setPciMapField('pciDevType', k, val); onChangeDevType(val, k) }" :options="getRealPciDevTypeOptions(realPciDevTypeOptions, index)" isDefaultSelect />
               </fixed-label-filter>
             </component>
-            <component :is="itemTag" v-if="isCurGpuDevType(k)" class="pci-select-item pci-select-item--fixed mb-0">
+            <component
+              :is="itemTag"
+              v-if="isCurGpuDevType(k)"
+              class="pci-select-item pci-select-item--fixed mb-0"
+              :name="['pciGpuType', String(k)]"
+              :rules="[{ required: true, message: $t('compute.text_147') }]">
               <fixed-label-filter :label="$t('compute.pci.gpu_mode')">
                 <base-select :value="readPciRowField('pciGpuType', k)" @change="(val) => { setPciMapField('pciGpuType', k, val); onChangeGpuType(val, k) }" :options="getGpuTypeOptions(k)" />
               </fixed-label-filter>
             </component>
-            <component :is="itemTag" class="pci-select-item pci-select-item--model mb-0">
+            <component
+              :is="itemTag"
+              class="pci-select-item pci-select-item--model mb-0"
+              :name="['pciModel', String(k)]"
+              :rules="[{ required: true, message: $t('compute.text_147') }]">
               <fixed-label-filter :label="$t('compute.pci.vendor_model')">
                 <base-select :value="readPciRowField('pciModel', k)" @change="(val) => { setPciMapField('pciModel', k, val); onChangeModel(val, k) }" :options="getRealPciOptions(realPciOptions, index)"
                   :selectProps="{ placeholder: $t('compute.text_147') }" />
@@ -37,7 +50,11 @@
           <a-row :gutter="[8,0]">
             <a-col :span="20">
               <div class="pci-count-memory-row">
-                <component :is="itemTag" class="mb-0">
+                <component
+                  :is="itemTag"
+                  class="mb-0"
+                  :name="['pciCount', String(k)]"
+                  :rules="[{ required: true, message: $t('compute.text_147') }]">
                   <fixed-label-filter :label="$t('compute.text_294')">
                     <a-radio-group class="p-0" :value="readPciRowField('pciCount', k)" @change="(e) => { setPciMapField('pciCount', k, e.target.value); onChangeCount(e, k) }">
                       <a-radio-button
@@ -48,7 +65,12 @@
                     </a-radio-group>
                   </fixed-label-filter>
                 </component>
-                <component :is="itemTag" v-if="isHamiSharingMode(k)" class="mb-0 pci-memory-item">
+                <component
+                  :is="itemTag"
+                  v-if="isHamiSharingMode(k)"
+                  class="mb-0 pci-memory-item"
+                  :name="['memory_request', String(k)]"
+                  :rules="[{ required: true, message: $t('compute.pci.memory_request.required') }]">
                   <fixed-label-filter :label="$t('compute.pci.memory_request')">
                     <a-tooltip :title="getMemoryRangeTooltip(k)" class="p-0" placement="top">
                       <disk-size-input
@@ -481,19 +503,8 @@ export default {
       }
       return options
     },
+    /** Form.Item 已绑 name+rules，由父 formRef.validate 展示红字 */
     async validate () {
-      if (!this.pciEnable) return true
-      for (const k of this.pciKeys) {
-        if (!this.readPciRowField('pciDevType', k)) {
-          throw new Error(this.$t('compute.text_147'))
-        }
-        if (!this.readPciRowField('pciModel', k)) {
-          throw new Error(this.$t('compute.text_147'))
-        }
-        if (this.isHamiSharingMode(k) && !this.readPciRowField('memory_request', k)) {
-          throw new Error(this.$t('compute.pci.memory_request.required'))
-        }
-      }
       return true
     },
   },

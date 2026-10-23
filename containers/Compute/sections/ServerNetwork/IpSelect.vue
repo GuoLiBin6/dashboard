@@ -7,9 +7,10 @@
     :select-props="{
       allowClear: true,
       loading: loading,
+      disabled: disabled,
       placeholder: $t('common.tips.select', ['IP']),
     }" />
-  <a-input v-else :value="value" @change="ipChange" />
+  <a-input v-else :value="value" :disabled="disabled" @change="ipChange" />
 </template>
 
 <script>
@@ -23,6 +24,10 @@ export default {
     network: {
       type: Object,
       default: () => ({}),
+    },
+    disabled: {
+      type: Boolean,
+      default: false,
     },
   },
   data () {

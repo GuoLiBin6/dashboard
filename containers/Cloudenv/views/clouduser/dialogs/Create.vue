@@ -158,17 +158,20 @@ export default {
     this.fetchConfigEmail()
   },
   methods: {
-    updateCanSendNotify () {
+    async updateCanSendNotify () {
       if (this.form.email && this.isEnableMail) {
-        this.$nextTick(() => {
-          this.$refs.formRef.validateField('email', (err) => {
-            if (!err) {
-              this.isCanSendNotify = true
-            } else {
-              this.isCanSendNotify = false
-            }
-          })
-        })
+        await this.$nextTick()
+        const form = this.$refs.formRef
+        if (!form || typeof form.validateFields !== 'function') {
+          this.isCanSendNotify = false
+          return
+        }
+        try {
+          await form.validateFields(['email'])
+          this.isCanSendNotify = true
+        } catch (e) {
+          this.isCanSendNotify = false
+        }
       } else {
         this.isCanSendNotify = false
       }

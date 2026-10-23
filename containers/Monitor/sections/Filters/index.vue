@@ -2,61 +2,81 @@
   <div class="explorer-filters">
     <div v-for="(item, i) in filters" :key="item.key" class="explorer-filters__row">
       <div v-if="i !== 0" class="explorer-filters__condition">
-        <base-select
-          minWidth="0"
-          :filterable="false"
-          optionLabelProp="label"
-          idKey="key"
-          nameKey="label"
-          :value="getFilterValue(resolvedFieldMap.tagCondition(item.key)[0])"
-          :options="conditionOpts"
-          :disabled="disabled"
-          @change="val => onFilterFieldChange(resolvedFieldMap.tagCondition(item.key), val, () => handleFilterFieldChange())"
-          :select-props="{ placeholder: $t('common.select') }" />
+        <a-form-item
+          class="mb-0"
+          :name="fieldItemName(resolvedFieldMap.tagCondition(item.key))"
+          :rules="fieldItemRules(resolvedFieldMap.tagCondition(item.key))">
+          <base-select
+            minWidth="0"
+            :filterable="false"
+            optionLabelProp="label"
+            idKey="key"
+            nameKey="label"
+            :value="getFilterValue(resolvedFieldMap.tagCondition(item.key)[0])"
+            :options="conditionOpts"
+            :disabled="disabled"
+            @change="val => onFilterFieldChange(resolvedFieldMap.tagCondition(item.key), val, () => handleFilterFieldChange())"
+            :select-props="{ placeholder: $t('common.select') }" />
+        </a-form-item>
       </div>
       <div class="explorer-filters__key">
-        <base-select
-          class="w-100"
-          minWidth="0"
-          optionLabelProp="label"
-          idKey="key"
-          nameKey="label"
-          :value="getFilterValue(resolvedFieldMap.tagKey(item.key)[0])"
-          :options="tagKeyOpts"
-          filterable
-          :disabled="disabled"
-          @change="val => { onFilterFieldChange(resolvedFieldMap.tagKey(item.key), val); tagKeyChange(val, i, item) }"
-          :select-props="{ placeholder: $t('monitor.text_109'), allowClear: true, loading }" />
+        <a-form-item
+          class="mb-0"
+          :name="fieldItemName(resolvedFieldMap.tagKey(item.key))"
+          :rules="fieldItemRules(resolvedFieldMap.tagKey(item.key))">
+          <base-select
+            class="w-100"
+            minWidth="0"
+            optionLabelProp="label"
+            idKey="key"
+            nameKey="label"
+            :value="getFilterValue(resolvedFieldMap.tagKey(item.key)[0])"
+            :options="tagKeyOpts"
+            filterable
+            :disabled="disabled"
+            @change="val => { onFilterFieldChange(resolvedFieldMap.tagKey(item.key), val); tagKeyChange(val, i, item) }"
+            :select-props="{ placeholder: $t('monitor.text_109'), allowClear: true, loading }" />
+        </a-form-item>
       </div>
       <div class="explorer-filters__operator">
-        <base-select
-          minWidth="0"
-          :filterable="false"
-          optionLabelProp="label"
-          idKey="key"
-          nameKey="label"
-          :value="getFilterValue(resolvedFieldMap.tagOperator(item.key)[0])"
-          :options="tagOperatorOpts"
-          :disabled="disabled"
-          @change="val => onFilterFieldChange(resolvedFieldMap.tagOperator(item.key), val, () => handleFilterFieldChange())"
-          :select-props="{ placeholder: $t('common.select') }" />
+        <a-form-item
+          class="mb-0"
+          :name="fieldItemName(resolvedFieldMap.tagOperator(item.key))"
+          :rules="fieldItemRules(resolvedFieldMap.tagOperator(item.key))">
+          <base-select
+            minWidth="0"
+            :filterable="false"
+            optionLabelProp="label"
+            idKey="key"
+            nameKey="label"
+            :value="getFilterValue(resolvedFieldMap.tagOperator(item.key)[0])"
+            :options="tagOperatorOpts"
+            :disabled="disabled"
+            @change="val => onFilterFieldChange(resolvedFieldMap.tagOperator(item.key), val, () => handleFilterFieldChange())"
+            :select-props="{ placeholder: $t('common.select') }" />
+        </a-form-item>
       </div>
       <div class="explorer-filters__value">
-        <base-select
-          class="w-100"
-          minWidth="0"
-          optionLabelProp="label"
-          idKey="key"
-          nameKey="label"
-          :value="getFilterValue(resolvedFieldMap.tagValue(item.key)[0])"
-          :options="item.tagValueOpts"
-          filterable
-          needBlur
-          :disabled="disabled"
-          :select-props="{ mode: 'multiple', placeholder: $t('monitor.text_110'), allowClear: true, loading }"
-          @change="val => { onFilterFieldChange(resolvedFieldMap.tagValue(item.key), val); tagValuesChange(val, i, item) }"
-          @dropdownChange="val => tagValuesDropdownChange(val, i, item)"
-          @blur="val => { onFilterFieldChange(resolvedFieldMap.tagValue(item.key), val); tagValuesChange(val, i, item) }" />
+        <a-form-item
+          class="mb-0"
+          :name="fieldItemName(resolvedFieldMap.tagValue(item.key))"
+          :rules="fieldItemRules(resolvedFieldMap.tagValue(item.key))">
+          <base-select
+            class="w-100"
+            minWidth="0"
+            optionLabelProp="label"
+            idKey="key"
+            nameKey="label"
+            :value="getFilterValue(resolvedFieldMap.tagValue(item.key)[0])"
+            :options="item.tagValueOpts"
+            filterable
+            needBlur
+            :disabled="disabled"
+            :select-props="{ mode: 'multiple', placeholder: $t('monitor.text_110'), allowClear: true, loading }"
+            @change="val => { onFilterFieldChange(resolvedFieldMap.tagValue(item.key), val); tagValuesChange(val, i, item) }"
+            @dropdownChange="val => tagValuesDropdownChange(val, i, item)"
+            @blur="val => { onFilterFieldChange(resolvedFieldMap.tagValue(item.key), val); tagValuesChange(val, i, item) }" />
+        </a-form-item>
       </div>
       <div v-if="!disabled && i !== 0" class="explorer-filters__remove">
         <a-button shape="circle" size="small" @click="remove(i)">
@@ -228,46 +248,14 @@ export default {
         this.$set(target, name, value)
       }
     },
-    runFieldRule (rule, value) {
-      return new Promise((resolve, reject) => {
-        if (rule.required) {
-          const empty = value === undefined || value === null || value === '' ||
-            (Array.isArray(value) && !value.length)
-          if (empty) {
-            reject(new Error(rule.message || 'required'))
-            return
-          }
-        }
-        if (typeof rule.validator === 'function') {
-          rule.validator(rule, value, (err) => {
-            if (err) reject(err instanceof Error ? err : new Error(String(err)))
-            else resolve()
-          })
-          return
-        }
-        resolve()
-      })
+    fieldItemName (fieldDef) {
+      return resolveFieldMeta(fieldDef)?.name
     },
-    async runFieldMapRules (fieldTuple, value) {
-      const meta = resolveFieldMeta(fieldTuple)
-      if (!meta) return
-      const rules = meta.rules || []
-      for (const rule of rules) {
-        await this.runFieldRule(rule, value)
-      }
+    fieldItemRules (fieldDef) {
+      return resolveFieldMeta(fieldDef)?.rules || []
     },
+    /** Form.Item 已绑 name+rules，由父 formRef.validate 展示红字 */
     async validate () {
-      for (const item of this.filters) {
-        const tuples = [
-          this.resolvedFieldMap.tagCondition(item.key),
-          this.resolvedFieldMap.tagKey(item.key),
-          this.resolvedFieldMap.tagOperator(item.key),
-          this.resolvedFieldMap.tagValue(item.key),
-        ]
-        for (const fieldDef of tuples) {
-          await this.runFieldMapRules(fieldDef, this.fieldVal(fieldDef))
-        }
-      }
       return true
     },
     registerExplorerFilterFields () {
@@ -464,6 +452,14 @@ export default {
     flex: 0 0 24px;
     width: 24px;
     min-width: 24px;
+  }
+
+  :deep(.ant-form-item),
+  :deep(.ant-form-item-control),
+  :deep(.ant-form-item-control-input),
+  :deep(.ant-form-item-control-input-content) {
+    min-width: 0;
+    width: 100%;
   }
 
   :deep(.ant-select),

@@ -46,6 +46,10 @@
         <loader :loading="skuLoading || !canSkuShow" />
       </template>
     </table-lite-grid>
+    <!-- 锚点：sku 由表格写入 model，Form.Item 仅注册校验与红字 -->
+    <a-form-item class="mb-0" :name="skuFieldName" :rules="skuRules">
+      <span class="sku-form-anchor" aria-hidden="true" />
+    </a-form-item>
     <div class="sku-pagebar">
       <div class="sku-pagebar__tip">
         <template v-if="selectedTip">{{$t('compute.text_171', [ selectedTip ])}}</template>
@@ -77,7 +81,7 @@ import storage from '@/utils/storage'
 import RegionalAvailabilityPopover from '@/sections/RegionalAvailabilityPopover'
 import ListPager from '@/components/PageList/components/ListPager.vue'
 import createFormFieldDraftMixin from '@/mixins/createFormFieldDraft'
-import { getBracketValue, setBracketValue } from '@/utils/bracketModel'
+import { setBracketValue } from '@/utils/bracketModel'
 const SKU_HIDDEN_COLUMNS_KEY = '__oc_sku_hidden_columns'
 const DEFAULT_HIDDEN_COLUMNS = ['cpu_model', 'nic_bandwidth', 'disk_performance']
 const SKU_FILTERABLE_FIELDS = ['cpu_arch', 'name', 'cpu_model', 'nic_bandwidth', 'disk_performance']
@@ -281,6 +285,19 @@ export default {
   computed: {
     skuFieldName () {
       return this.field || 'sku'
+    },
+    skuRules () {
+      return [{
+        required: true,
+        validator: (rule, value, callback) => {
+          const id = value && typeof value === 'object' ? value.id : value
+          if (!id) {
+            callback(new Error(i18n.t('compute.text_216')))
+            return
+          }
+          callback()
+        },
+      }]
     },
     isSameSku () {
       return this.dataList.length === 1 || this.dataList.map(item => item.instance_type).filter(item => item).length === 1
@@ -758,45 +775,8 @@ export default {
         this.restoreTableSort()
       })
     },
-    runFieldRule (rule, value) {
-      return new Promise((resolve, reject) => {
-        if (rule.required) {
-          const empty = value === undefined || value === null || value === '' ||
-            (Array.isArray(value) && !value.length)
-          if (empty) {
-            reject(new Error(rule.message || 'required'))
-            return
-          }
-        }
-        if (typeof rule.validator === 'function') {
-          let settled = false
-          const finish = (err) => {
-            if (settled) return
-            settled = true
-            if (err) reject(err instanceof Error ? err : new Error(String(err)))
-            else resolve()
-          }
-          let ret
-          try {
-            ret = rule.validator(rule, value, finish)
-          } catch (e) {
-            finish(e)
-            return
-          }
-          if (ret && typeof ret.then === 'function') {
-            ret.then(() => finish()).catch(finish)
-          }
-          return
-        }
-        resolve()
-      })
-    },
+    /** Form.Item 已绑 name+rules，由父 formRef.validate 展示红字 */
     async validate () {
-      const value = getBracketValue(this.model, this.skuFieldName)
-      const id = value && typeof value === 'object' ? value.id : value
-      if (!id) {
-        throw new Error(i18n.t('compute.text_216'))
-      }
       return true
     },
     /**

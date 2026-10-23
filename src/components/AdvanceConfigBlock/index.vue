@@ -107,6 +107,12 @@ export default {
     open () {
       return this.tryAutoOpenOnce()
     },
+    /** 校验失败等场景：强制展开（无视用户曾折叠） */
+    forceOpen () {
+      if (!this.collapsible) return true
+      this.applyExpanded(true)
+      return true
+    },
     close () {
       if (!this.collapsible) return
       if (this.userInteracted) return

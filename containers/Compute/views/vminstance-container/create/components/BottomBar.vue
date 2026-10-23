@@ -360,6 +360,7 @@ export default {
       if (this.fi.createType === SERVER_TYPE.public && (R.isNil(f.sku.region_ext_id) || R.isEmpty(f.sku.region_ext_id))) return
       if (!R.is(Number, f.count)) return
       if (R.isNil(f.systemDiskSize)) return
+      if (R.isNil(f.systemDiskType) || R.isEmpty(f.systemDiskType) || !f.systemDiskType.key) return
 
       const pf = new PriceFetcher()
       pf.initialForm(this.$store.getters.scope, f.sku, f.duration, f.billType, this.isPublic, this.cloudaccountId)

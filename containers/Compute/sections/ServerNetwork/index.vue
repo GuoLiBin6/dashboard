@@ -338,7 +338,11 @@ export default {
     },
     async validate () {
       const networkType = this.model.networkType || this.fieldVal(this.networkFieldMap.networkType)
-      if (!networkType) throw new Error(this.$t('compute.text_195'))
+      if (!networkType) {
+        const err = new Error(this.$t('compute.text_195'))
+        err.errorFields = [{ name: 'networkType', errors: [err.message] }]
+        return Promise.reject(err)
+      }
       if (networkType === NETWORK_OPTIONS_MAP.manual.key) {
         const ref = this.$refs.networkConfigRef
         if (ref?.validate) await ref.validate()

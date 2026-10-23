@@ -1,27 +1,37 @@
 <template>
   <a-row>
     <a-col :span="6">
-      <a-form-item>
+      <a-form-item
+        :name="fieldItemName(resolvedFieldMap.period)"
+        :rules="fieldItemRules(resolvedFieldMap.period)">
         <base-select :value="fieldVal(resolvedFieldMap.period)" @change="v => fieldSet(resolvedFieldMap.period, v)" :options="preiodOpts" minWidth="90px" />
       </a-form-item>
     </a-col>
     <a-col :span="6">
-      <a-form-item>
+      <a-form-item
+        :name="fieldItemName(resolvedFieldMap.alert_duration)"
+        :rules="fieldItemRules(resolvedFieldMap.alert_duration)">
         <base-select :value="fieldVal(resolvedFieldMap.alert_duration)" @change="v => fieldSet(resolvedFieldMap.alert_duration, v)" :options="durationOpts" minWidth="120px" />
       </a-form-item>
     </a-col>
     <a-col :span="4">
-      <a-form-item>
+      <a-form-item
+        :name="fieldItemName(resolvedFieldMap.reduce)"
+        :rules="fieldItemRules(resolvedFieldMap.reduce)">
         <base-select :value="fieldVal(resolvedFieldMap.reduce)" @change="v => fieldSet(resolvedFieldMap.reduce, v)" :options="reduceOpts" :disabled="disabled" minWidth="70px" />
       </a-form-item>
     </a-col>
     <a-col :span="3">
-      <a-form-item>
+      <a-form-item
+        :name="fieldItemName(resolvedFieldMap.comparator)"
+        :rules="fieldItemRules(resolvedFieldMap.comparator)">
         <base-select :value="fieldVal(resolvedFieldMap.comparator)" @change="onComparatorChange" :options="comparatorOpts" minWidth="70px" :disabled="disabled" />
       </a-form-item>
     </a-col>
     <a-col :span="5" v-show="showThreshold">
-      <a-form-item>
+      <a-form-item
+        :name="fieldItemName(resolvedFieldMap.threshold)"
+        :rules="showThreshold ? fieldItemRules(resolvedFieldMap.threshold) : []">
         <threshold-input :value="fieldVal(resolvedFieldMap.threshold)" @change="thresholdChange" :unit="unit" :disabled="disabled" />
       </a-form-item>
     </a-col>
@@ -127,41 +137,14 @@ export default {
       if (!resolveFieldMeta(fieldTuple)) return
       this.$set(this.model, resolveFieldMeta(fieldTuple)?.name, value)
     },
-    runFieldRule (rule, value) {
-      return new Promise((resolve, reject) => {
-        if (rule.required) {
-          const empty = value === undefined || value === null || value === '' ||
-            (Array.isArray(value) && !value.length)
-          if (empty) {
-            reject(new Error(rule.message || 'required'))
-            return
-          }
-        }
-        if (typeof rule.validator === 'function') {
-          rule.validator(rule, value, (err) => {
-            if (err) reject(err instanceof Error ? err : new Error(String(err)))
-            else resolve()
-          })
-          return
-        }
-        resolve()
-      })
+    fieldItemName (fieldDef) {
+      return resolveFieldMeta(fieldDef)?.name
     },
-    async runFieldMapRules (fieldTuple, value) {
-      const meta = resolveFieldMeta(fieldTuple)
-      if (!meta) return
-      const rules = meta.rules || []
-      for (const rule of rules) {
-        await this.runFieldRule(rule, value)
-      }
+    fieldItemRules (fieldDef) {
+      return resolveFieldMeta(fieldDef)?.rules || []
     },
+    /** Form.Item 已绑 name+rules，由父 formRef.validate 展示红字 */
     async validate () {
-      for (const key of ['period', 'alert_duration', 'reduce', 'comparator', 'threshold']) {
-        const fieldDef = this.resolvedFieldMap[key]
-        if (!fieldDef) continue
-        if (key === 'threshold' && !this.showThreshold) continue
-        await this.runFieldMapRules(fieldDef, this.fieldVal(fieldDef))
-      }
       return true
     },
     thresholdChange (v) {

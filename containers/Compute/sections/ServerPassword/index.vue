@@ -8,7 +8,11 @@
         </a-radio-button>
       </a-radio-group>
     </a-form-model-item>
-    <a-form-model-item v-if="(loginTypeMap && loginTypeMap.keypair) && vmLoginType === loginTypeMap.keypair.key" class="mb-0" :prop="loginKeypairField">
+    <a-form-model-item
+      v-if="(loginTypeMap && loginTypeMap.keypair) && vmLoginType === loginTypeMap.keypair.key"
+      class="mb-0"
+      :prop="loginKeypairField"
+      :rules="[{ required: true, message: $t('compute.text_203') }]">
       <template #extra>
         {{$t('compute.text_201')}}<help-link :href="href">{{$t('compute.text_202')}}</help-link>
       </template>
@@ -22,7 +26,11 @@
         :select-props="{ allowClear: true, placeholder: $t('compute.text_203') }"
         @update:initLoaded="onKeypairInitLoaded" />
     </a-form-model-item>
-    <a-form-model-item v-if="(loginTypeMap && loginTypeMap.password) && vmLoginType === loginTypeMap.password.key" class="mb-0" :prop="loginPasswordField">
+    <a-form-model-item
+      v-if="(loginTypeMap && loginTypeMap.password) && vmLoginType === loginTypeMap.password.key"
+      class="mb-0"
+      :prop="loginPasswordField"
+      :rules="[{ required: true, message: $t('compute.text_204') }, { validator: passwordValidator }]">
       <a-input-password
         class="w-50"
         v-model:value="passwordModel"
@@ -35,7 +43,6 @@
 import * as R from 'ramda'
 import { LOGIN_TYPES_MAP } from '@Compute/constants'
 import { passwordValidator } from '@/utils/validate'
-import i18n from '@/locales'
 
 import createFormFieldDraftMixin from '@/mixins/createFormFieldDraft'
 
@@ -150,6 +157,7 @@ export default {
     this.vmLoginType = this.model[this.loginTypeField] || this.vmLoginType
   },
   methods: {
+    passwordValidator,
     writeLoginFields (vals) {
       if (!vals || typeof vals !== 'object') return
       Object.keys(vals).forEach((key) => {
@@ -238,47 +246,8 @@ export default {
         this.vmLoginType = vmLoginType
       }
     },
-    runFieldRule (rule, value) {
-      return new Promise((resolve, reject) => {
-        if (rule.required) {
-          const empty = value === undefined || value === null || value === '' ||
-            (Array.isArray(value) && !value.length)
-          if (empty) {
-            reject(new Error(rule.message || 'required'))
-            return
-          }
-        }
-        if (typeof rule.validator === 'function') {
-          let settled = false
-          const finish = (err) => {
-            if (settled) return
-            settled = true
-            if (err) reject(err instanceof Error ? err : new Error(String(err)))
-            else resolve()
-          }
-          let ret
-          try {
-            ret = rule.validator(rule, value, finish)
-          } catch (e) {
-            finish(e)
-            return
-          }
-          if (ret && typeof ret.then === 'function') {
-            ret.then(() => finish()).catch(finish)
-          }
-          return
-        }
-        resolve()
-      })
-    },
+    /** keypair/password Form.Item 已绑 rules，由父 formRef.validate 展示红字 */
     async validate () {
-      if (this.loginTypeMap?.keypair && this.vmLoginType === this.loginTypeMap.keypair.key) {
-        await this.runFieldRule({ required: true, message: i18n.t('compute.text_203') }, this.model[this.loginKeypairField])
-      }
-      if (this.loginTypeMap?.password && this.vmLoginType === this.loginTypeMap.password.key) {
-        await this.runFieldRule({ required: true, message: i18n.t('compute.text_204') }, this.model[this.loginPasswordField])
-        await this.runFieldRule({ validator: passwordValidator }, this.model[this.loginPasswordField])
-      }
       return true
     },
   },
