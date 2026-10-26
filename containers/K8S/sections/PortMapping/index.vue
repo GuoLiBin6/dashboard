@@ -8,21 +8,27 @@
         <a-radio-button value="nodePort">{{$t('k8s.node_port')}}</a-radio-button>
       </a-radio-group>
     </a-form-item>
-    <lb-cluster
+    <div
       v-if="!resolvedImportCluster && serviceType === 'external' && isAdminMode"
-      :form="form"
-      :model="model" />
-    <lb-network
+      class="mt-3">
+      <lb-cluster
+        :form="form"
+        :model="model" />
+    </div>
+    <div
       v-if="!resolvedImportCluster && serviceType === 'external'"
-      :vpc-id="vpcId"
-      :form="form"
-      :model="model" />
+      class="mt-3">
+      <lb-network
+        :vpc-id="vpcId"
+        :form="form"
+        :model="model" />
+    </div>
     <div class="mt-3" v-if="serviceType !== 'none'">
-      <div class="d-flex" v-for="(item, i) in portList" :key="item.key">
+      <div class="d-flex mb-3" v-for="(item, i) in portList" :key="item.key">
         <port :port-key="item.key" :protocolDisabled="getProtocolDisabled(i)" :serviceType="serviceType" :form="form" :model="model" @protocolChange="protocolChange" />
         <a-button v-if="portList.length > 1" type="danger" shape="circle" icon="delete" @click="del(item)" class="mt-1 ml-2" />
       </div>
-      <a-button type="primary" icon="plus" @click="add">{{$t('k8s.text_94')}}</a-button>
+      <a-button type="primary" icon="plus" class="mt-1" @click="add">{{$t('k8s.text_94')}}</a-button>
     </div>
   </div>
 </template>
@@ -141,3 +147,12 @@ export default {
   },
 }
 </script>
+
+<style lang="less" scoped>
+.port-mapping {
+  /* 避免 ant-form-item mb-0 把下方区块顶死 */
+  :deep(.ant-form-item) {
+    margin-bottom: 0;
+  }
+}
+</style>

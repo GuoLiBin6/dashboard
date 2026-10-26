@@ -67,19 +67,11 @@ export default {
     },
     labelCol: {
       type: Object,
-      default: () => {
-        return {
-          span: 24,
-        }
-      },
+      default: undefined,
     },
     wrapperCol: {
       type: Object,
-      default: () => {
-        return {
-          span: 24,
-        }
-      },
+      default: undefined,
     },
     defaultActiveFirstOption: {
       type: Boolean,
@@ -405,19 +397,36 @@ export default {
       const sn = this.firstName(name)
       if (this[`Render${sn}`]) {
         const Render = this[`Render${sn}`]()
+        // 子项勿空 label / 勿挂 extra（空 label→follow-label 缩进；extra 放外层），校验仍走 prop
         return h('a-col', { props: { span: this.colSpan } }, [
-          h('a-form-model-item', { props: { wrapperCol: { span: 24 }, prop: name }, class: 'mb-0' }, [
-            Render,
-            h('div', { slot: 'extra', key: name }, name === 'network' ? this.$slots.helplink : null),
-          ]),
+          h('a-form-model-item', {
+            class: 'mb-0',
+            props: { prop: name, required: false },
+          }, [Render]),
         ])
       }
       return null
     })
-    return h('a-form-model-item', {
-      props: { required: this.isRequired, labelCol: this.labelCol, wrapperCol: this.wrapperCol, label: this.label },
-    }, [
-      h('a-row', { props: { gutter: 8 }, class: 'align-items-center' }, RenderCols),
-    ])
+    const outerProps = {
+      required: this.isRequired,
+      label: this.label,
+    }
+    if (this.labelCol) outerProps.labelCol = this.labelCol
+    if (this.wrapperCol) outerProps.wrapperCol = this.wrapperCol
+    // helplink → 外层 extra（与 AreaSelects 一致），避免嵌套 form-item 错位/把网络列挤没
+    const resolveHelplink = () => {
+      const link = this.$slots.helplink
+      if (!link) return null
+      return typeof link === 'function' ? link() : link
+    }
+    const outerSlots = {
+      default: () => [
+        h('a-row', { props: { gutter: 8 }, class: 'align-items-start' }, RenderCols),
+      ],
+    }
+    if (this.$slots.helplink) {
+      outerSlots.extra = resolveHelplink
+    }
+    return h('a-form-model-item', { props: outerProps }, outerSlots)
   },
 }

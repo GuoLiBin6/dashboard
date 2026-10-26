@@ -10,25 +10,31 @@
       v-for="(row, index) in innerRows"
       :key="rowKeys[index]"
       class="llm-gpu-devices-editor__row">
-      <base-select
-        :value="row.sharing_mode"
-        :options="sharingModeOptions"
-        :select-props="sharingModeSelectProps"
-        class="llm-gpu-devices-editor__sharing"
-        @change="val => onSharingModeChange(index, val)" />
-      <base-select
-        v-if="showVendorField"
-        :value="row.vendor"
-        :options="vendorOptionsForRow(row)"
-        :select-props="vendorSelectProps"
-        class="llm-gpu-devices-editor__vendor"
-        @change="val => onVendorChange(index, val)" />
-      <base-select
-        :value="modelSelectValue(row)"
-        :options="modelOptionsForRow(row)"
-        :select-props="modelSelectProps"
-        class="llm-gpu-devices-editor__model"
-        @change="val => onModelChange(index, val)" />
+      <!-- BaseSelect inheritAttrs:false，class 不会落到根节点；用包裹层控宽，并关掉默认 minWidth:200px -->
+      <div class="llm-gpu-devices-editor__sharing">
+        <base-select
+          :value="row.sharing_mode"
+          :options="sharingModeOptions"
+          :select-props="sharingModeSelectProps"
+          min-width="0"
+          @change="val => onSharingModeChange(index, val)" />
+      </div>
+      <div v-if="showVendorField" class="llm-gpu-devices-editor__vendor">
+        <base-select
+          :value="row.vendor"
+          :options="vendorOptionsForRow(row)"
+          :select-props="vendorSelectProps"
+          min-width="0"
+          @change="val => onVendorChange(index, val)" />
+      </div>
+      <div class="llm-gpu-devices-editor__model">
+        <base-select
+          :value="modelSelectValue(row)"
+          :options="modelOptionsForRow(row)"
+          :select-props="modelSelectProps"
+          min-width="0"
+          @change="val => onModelChange(index, val)" />
+      </div>
       <a-input-number
         :value="row.count"
         :min="1"
@@ -304,7 +310,10 @@ export default {
       const normalized = this.allowEmpty && (!Array.isArray(rows) || rows.length === 0)
         ? []
         : this.resolveRows(rows.length ? rows : (this.allowEmpty ? [] : [this.emptyRow()]))
+      // Vue2: input；Vue3 v-model:value → update:value；v-model → update:modelValue
       this.$emit('input', normalized)
+      this.$emit('update:value', normalized)
+      this.$emit('update:modelValue', normalized)
       this.$emit('change', normalized)
     },
     onSharingModeChange (index, sharingMode) {
@@ -411,28 +420,45 @@ export default {
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 8px;
+  width: 100%;
+  min-width: 0;
+}
+.llm-gpu-devices-editor__sharing,
+.llm-gpu-devices-editor__vendor,
+.llm-gpu-devices-editor__model {
+  min-width: 0;
+  :deep(.base-select-wrap) {
+    width: 100% !important;
+  }
+  :deep(.base-select) {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
 }
 .llm-gpu-devices-editor__sharing {
+  flex: 0 0 140px;
   width: 140px;
-  flex-shrink: 0;
 }
 .llm-gpu-devices-editor__vendor {
+  flex: 0 0 120px;
   width: 120px;
-  flex-shrink: 0;
 }
 .llm-gpu-devices-editor__model {
-  flex: 1;
+  flex: 1 1 0;
   min-width: 160px;
 }
 .llm-gpu-devices-editor__count {
+  flex: 0 0 88px;
   width: 88px;
 }
 .llm-gpu-devices-editor__memory {
+  flex: 0 0 120px;
   width: 120px;
 }
 .llm-gpu-devices-editor__unit {
   color: rgba(0, 0, 0, 0.45);
   white-space: nowrap;
+  flex-shrink: 0;
 }
 .llm-gpu-devices-editor__help {
   margin-bottom: 4px;

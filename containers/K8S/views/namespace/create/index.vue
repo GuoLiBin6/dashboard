@@ -6,7 +6,15 @@
       <a-tab-pane :tab="$t('k8s.text_232')" key="InputCreate" />
       <a-tab-pane :tab="$t('k8s.text_233')" key="UploadCreate" />
     </a-tabs> -->
-    <component :is="activedTab" />
+    <page-body needMarginBottom>
+      <component :is="activedTab" ref="FormCreateRef" />
+    </page-body>
+    <page-footer>
+      <template #right>
+        <a-button class="mr-3" type="primary" @click="confirm" :loading="loading">{{$t('k8s.create')}}</a-button>
+        <a-button @click="cancel">{{$t('k8s.text_213')}}</a-button>
+      </template>
+    </page-footer>
   </div>
 </template>
 
@@ -27,6 +35,22 @@ export default {
       loading: false,
       activedTab: 'FormCreate',
     }
+  },
+  methods: {
+    async confirm () {
+      try {
+        this.loading = true
+        await this.$refs.FormCreateRef.doCreate()
+        this.loading = false
+        this.cancel()
+      } catch (error) {
+        this.loading = false
+        throw error
+      }
+    },
+    cancel () {
+      this.$router.push('/k8s-namespace')
+    },
   },
 }
 </script>

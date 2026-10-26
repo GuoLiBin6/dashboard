@@ -1,7 +1,6 @@
 <template>
   <div>
-    <a-form-item
-      class="mb-0 mr-1">
+    <a-form-item class="mb-0">
       <base-select
         class="w-100"
         filterable
@@ -11,18 +10,16 @@
         v-model:item="selectNet"
         resource="networks"
         :selectProps="{ placeholder: $t('k8s.lb.select_network') }" />
-      <a-button type="link" class="mr-1 mt-1" @click="triggerConfigIp">{{$t('compute.text_198')}}</a-button>
+      <a-button type="link" class="mt-2 px-0" @click="triggerConfigIp">{{$t('compute.text_198')}}</a-button>
     </a-form-item>
-    <template v-if="configIp">
-      <a-form-item class="mb-0">
-        <a-input
-          style="width: 300px"
-          :value="fieldVal('loadBalancerAddress')"
-          @update:value="v => fieldSet('loadBalancerAddress', v)"
-          @change="ipChange"
-          :placeholder="$t('k8s.lb.input_address')" />
-      </a-form-item>
-    </template>
+    <a-form-item v-if="configIp" class="mb-0 mt-2">
+      <a-input
+        style="width: 300px"
+        :value="fieldVal('loadBalancerAddress')"
+        @update:value="v => fieldSet('loadBalancerAddress', v)"
+        @change="ipChange"
+        :placeholder="$t('k8s.lb.input_address')" />
+    </a-form-item>
   </div>
 </template>
 

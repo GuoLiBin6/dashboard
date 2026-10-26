@@ -38,21 +38,88 @@
     width: 100px;
     min-height: 200px;
     border-left: 2px solid #2D3A4D;
-    // Icon 现为 svg.oc-icon，不再是 i
-    i,
-    .oc-icon {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 40px;
+    // 无 node-box 包裹的兜底（直接子级图标）
+    .text-center > i,
+    .text-center > .oc-icon {
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+      font-size: 38px;
       color: #696D76;
       border: 2px solid #E7E9EA;
       border-radius: 6px;
       width: 56px !important;
       height: 56px !important;
+      padding: 7px !important;
       margin-top: -18px;
       box-sizing: border-box;
       flex-shrink: 0;
+      overflow: visible;
+    }
+    // 有展开按钮的节点：边框在 .node-box；主图标缩小居中形成边距；展开图标钉在右下角
+    .node-box {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 56px;
+      height: 56px;
+      margin: -18px auto 0;
+      border: 2px solid #E7E9EA;
+      border-radius: 6px;
+      box-sizing: border-box;
+      background: #fff;
+      flex-shrink: 0;
+      overflow: visible;
+      > i,
+      > .oc-icon {
+        display: block !important;
+        width: 38px !important;
+        height: 38px !important;
+        max-width: 38px !important;
+        max-height: 38px !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        font-size: 38px !important;
+        color: #696D76;
+        background: transparent !important;
+        box-sizing: border-box !important;
+      }
+      .expand-icon {
+        position: absolute !important;
+        left: auto !important;
+        right: 2px !important;
+        top: auto !important;
+        bottom: 2px !important;
+        width: 14px !important;
+        height: 14px !important;
+        line-height: 0;
+        z-index: 2;
+        cursor: pointer;
+        color: #999;
+        border: none !important;
+        i,
+        .oc-icon,
+        svg {
+          display: block !important;
+          width: 14px !important;
+          height: 14px !important;
+          min-width: 0 !important;
+          min-height: 0 !important;
+          max-width: 14px !important;
+          max-height: 14px !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          border: none !important;
+          border-radius: 0 !important;
+          font-size: 14px !important;
+          color: #999 !important;
+          background: transparent !important;
+          box-sizing: border-box !important;
+        }
+      }
     }
     .line {
       height: 0px;
@@ -140,11 +207,11 @@
     .desc {
       margin: 0;
     }
-    i,
-    .oc-icon {
-      display: flex;
-      justify-content: center;
-      align-items: center;
+    i:not(.expand-icon),
+    .oc-icon:not(.expand-icon) {
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
       font-size: 40px;
       color: #696D76;
       border: 2px solid #E7E9EA;
@@ -154,6 +221,7 @@
       background-color: #fff;
       box-sizing: border-box;
       flex-shrink: 0;
+      overflow: visible;
     }
     &.res-ipsubnet {
       transform: translateY(-182%);

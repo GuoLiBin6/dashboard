@@ -30,7 +30,7 @@
       <a-col :span="4" style="text-align: right;">
         <a-button
           shape="circle"
-          icon="reload"
+          icon="refresh"
           :loading="refreshing"
           :title="$t('common.refresh')"
           @click="refresh" />

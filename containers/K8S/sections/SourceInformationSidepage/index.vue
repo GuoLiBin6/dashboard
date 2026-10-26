@@ -1,12 +1,14 @@
 <template>
   <div class="K8S-source-information-sidepage mb-5 mt-2">
-    <code-mirror v-model="text" :options="cmOptions" />
-    <a-button
-      class="mt-2 mr-2"
-      v-clipboard:copy="text"
-      v-clipboard:success="_ => $message.success($t('k8s.text_31'))"
-      v-clipboard:error="_ => $message.error($t('k8s.text_32'))"><icon type="copy" />{{$t('k8s.text_33')}}</a-button>
-    <a-button type="primary" @click="update">{{$t('k8s.text_95')}}</a-button>
+    <code-mirror v-model="text" :options="cmOptions" view-height="500px" />
+    <div class="mt-2">
+      <a-button
+        class="mr-2"
+        v-clipboard:copy="text"
+        v-clipboard:success="_ => $message.success($t('k8s.text_31'))"
+        v-clipboard:error="_ => $message.error($t('k8s.text_32'))"><icon type="copy" />{{$t('k8s.text_33')}}</a-button>
+      <a-button type="primary" @click="update">{{$t('k8s.text_95')}}</a-button>
+    </div>
   </div>
 </template>
 
@@ -71,8 +73,6 @@ export default {
 
 <style lang="less" scoped>
 .K8S-source-information-sidepage {
-  :deep(.CodeMirror) {
-    height: 500px;
-  }
+  position: relative;
 }
 </style>

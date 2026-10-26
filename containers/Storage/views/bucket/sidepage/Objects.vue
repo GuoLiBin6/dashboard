@@ -36,6 +36,8 @@ import WindowsMixin from '@/mixins/windows'
 import ListMixin from '@/mixins/list'
 import { sizestrWithUnit } from '@/utils/utils'
 import i18n from '@/locales'
+import Icon from '@/components/Icon'
+import Copy from '@/components/Copy'
 
 const validDirName = (rule, value, callback) => {
   if (!value) {
@@ -89,30 +91,33 @@ export default {
           showOverflow: 'ellipsis',
           slots: {
             default: ({ row }) => {
+              const h = this.$createElement
               const { key } = row
+              if (key == null || key === '') return '-'
+              // Vue3：h('icon')/'copy' 不会解析全局组件，须直接传入组件
               if (this.nextFetchListLoading && this.prefix === key) {
-                return [this.$createElement('icon', { attrs: { type: 'loading' } })]
+                return [h(Icon, { type: 'loading', spin: true })]
               }
               const rkey = key.replace(this.prefix, '')
               if (this.isDir(key)) {
                 return [
                   h('div', { class: 'd-flex align-items-center' }, [
-                    h('icon', { attrs: { type: 'folder', theme: 'filled' }, style: 'color: rgb(245,200, 61)' }),
+                    h(Icon, { type: 'folder-open', style: { color: 'rgb(245,200, 61)', marginRight: '4px', flexShrink: 0 } }),
                     h('a', {
-                      class: 'text-truncate',
-                      style: 'margin-right: 3px',
-                      attrs: { title: rkey },
-                      on: { click: () => this.nextPage(key) },
+                      class: 'text-truncate link-color',
+                      style: { marginRight: '3px' },
+                      title: rkey,
+                      onClick: () => this.nextPage(key),
                     }, rkey),
-                    h('copy', { props: { message: rkey } }),
+                    h(Copy, { message: rkey }),
                   ]),
                 ]
               }
               return [
                 h('div', { class: 'd-flex align-items-center' }, [
-                  h('icon', { attrs: { theme: 'filled', type: 'file' } }),
-                  h('span', { class: 'text-truncate', attrs: { title: rkey } }, rkey),
-                  h('copy', { props: { message: rkey } }),
+                  h(Icon, { type: 'file', style: { marginRight: '4px', flexShrink: 0 } }),
+                  h('span', { class: 'text-truncate', title: rkey }, rkey),
+                  h(Copy, { message: rkey }),
                 ]),
               ]
             },
@@ -436,9 +441,13 @@ export default {
       // 表示根目录，根目录不需要prefix
       this.prefix = key
       this.nextFetchListLoading = true
-      await this.list.changeFilter({})
-      await this.list.fetchData()
-      this.nextFetchListLoading = false
+      try {
+        // changeFilter 内部已 fetchData；再 await fetchData 会 bump _fetchGen，
+        // 导致前一次结果被丢弃、后一次易被同参 cancel，列表清空后不渲染
+        await this.list.resetRefresh()
+      } finally {
+        this.nextFetchListLoading = false
+      }
     },
     getParams () {
       const _ = {}

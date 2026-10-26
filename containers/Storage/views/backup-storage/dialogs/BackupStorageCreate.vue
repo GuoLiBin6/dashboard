@@ -76,17 +76,21 @@ export default {
   },
   mixins: [WindowsMixin, DialogMixin],
   data () {
-    const hostCheckValid = (rule, value, _callback) => {
-      let isValid = true
-      if (!value || value === '') isValid = false
-      const parts = value.split(',')
-      if (parts.some(part => {
-        const trimmedPart = part.trim()
-        return !REGEXP.IPv4.regexp.test(trimmedPart) && !REGEXP.IPv6.regexp.test(trimmedPart)
-      })) {
-        isValid = false
+    // antdv4：返回 Promise；空值勿先 split
+    const hostCheckValid = (rule, value) => {
+      if (value == null || value === '') {
+        return Promise.reject(new Error(this.$t('storage.nfs_host.validate.prompt')))
       }
-      return isValid ? _callback() : _callback(new Error(this.$t('storage.host.input.place_holder')))
+      const parts = String(value).split(',')
+      const invalid = parts.some((part) => {
+        const trimmedPart = part.trim()
+        if (!trimmedPart) return true
+        return !REGEXP.IPv4.regexp.test(trimmedPart) && !REGEXP.IPv6.regexp.test(trimmedPart)
+      })
+      if (invalid) {
+        return Promise.reject(new Error(this.$t('storage.nfs_host_check_valid')))
+      }
+      return Promise.resolve()
     }
     return {
       loading: false,
@@ -120,7 +124,8 @@ export default {
           { validator: this.$validate('blockStorageName') },
         ],
         nfs_host: [
-          { required: true, validator: hostCheckValid, trigger: 'blur' },
+          { required: true, message: this.$t('storage.nfs_host.validate.prompt'), trigger: 'blur' },
+          { validator: hostCheckValid, trigger: 'blur' },
         ],
         nfs_shared_dir: [
           { required: true, message: this.$t('storage.nfs_shared_dir.validate.prompt'), trigger: 'blur' },

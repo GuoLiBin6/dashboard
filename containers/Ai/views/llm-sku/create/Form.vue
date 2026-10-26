@@ -16,10 +16,9 @@
         <a-label v-if="isEditMode">{{ modelName }}</a-label>
       </a-form-model-item>
       <a-form-model-item :label="$t('aice.llm_type')" prop="llm_type">
+        <!-- 与创建实例/网络类型一致：默认 outline 空心 radio-button -->
         <a-radio-group
           v-if="!isEditMode && (!isCatalogMode || catalogTypeSelectable)"
-          class="llm-type-picker"
-          button-style="solid"
           v-model:value="form.fd.llm_type"
           @change="onLlmTypeChange">
           <a-radio-button v-for="opt in llmTypeOptions" :key="opt.id" :value="opt.id">
@@ -1822,19 +1821,6 @@ export default {
   gap: 8px;
 }
 .openclaw-channel-tabs { margin-top: 8px; }
-.llm-type-picker {
-  display: flex;
-  flex-wrap: wrap;
-}
-.llm-type-picker :deep(.ant-radio-button-wrapper) {
-  height: 36px;
-  line-height: 34px;
-  border-radius: 4px;
-  margin-right: 8px;
-  margin-bottom: 8px;
-}
-.llm-type-picker :deep(.ant-radio-button-wrapper:first-child) { border-radius: 4px; }
-.llm-type-picker :deep(.ant-radio-button-wrapper:last-child) { border-radius: 4px; }
 .host-path-item {
   display: flex;
   align-items: stretch;

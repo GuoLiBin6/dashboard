@@ -1,5 +1,14 @@
 import * as R from 'ramda'
-import { h } from 'vue'
+import { h, normalizeClass, normalizeStyle } from 'vue'
+
+/** 将 width/height 转为可用的 CSS 尺寸（纯数字视为 px） */
+function toCssSize (val) {
+  if (val == null || val === '') return undefined
+  if (typeof val === 'number' && !Number.isNaN(val)) return `${val}px`
+  const s = String(val).trim()
+  if (/^\d+(\.\d+)?$/.test(s)) return `${s}px`
+  return s
+}
 
 // 仅保留 ?raw（可变色内联 SVG），去掉 url 双份 eager，减小首屏体积
 // glob 会扫描 assets 下全部 svg（含 navbar-global-search 等新增图标）
@@ -98,23 +107,38 @@ const Iconfont = {
       content = children
     }
 
-    const { class: cls, spin: _spinAttr, ...restAttrs } = ($attrs || {})
+    const { class: cls, spin: _spinAttr, style: styleAttr, ...restAttrs } = ($attrs || {})
     // 兼容 attrs.spin / 布尔属性；props.spin 优先
     // type=loading 默认转圈（原 a-icon loading 行为）；sync/refresh 等需显式 spin
     const isLoadingType = finalType === 'loading' || (R.is(Object, finalType) && (finalType.icon === 'loading' || finalType.defaultIcon === 'loading'))
     const shouldSpin = !!(spin || isLoadingType || _spinAttr === true || _spinAttr === '' || _spinAttr === 'true' || _spinAttr === 'spin')
-    const mergedClass = ['oc-icon', preserveColor ? 'oc-icon--colorful' : '', shouldSpin ? 'oc-icon-spin' : '', cls].filter(Boolean).join(' ')
+    // class 可能是 string/array/object，必须 normalize，否则会变成 "[object Object]" 导致业务 class 丢失
+    const mergedClass = normalizeClass(['oc-icon', preserveColor ? 'oc-icon--colorful' : '', shouldSpin ? 'oc-icon-spin' : '', cls])
 
     const width = restAttrs.width || '1em'
     const height = restAttrs.height || '1em'
+    // 显式传入 width/height 时写入 style（可压过外部 !important 以外的规则）；
+    // 拓扑等场景有 56px !important，再在 mounted 里 setProperty(..., 'important')
+    const explicitW = restAttrs.width != null && restAttrs.width !== ''
+    const explicitH = restAttrs.height != null && restAttrs.height !== ''
+    const sizeStyle = {}
+    if (explicitW) sizeStyle.width = toCssSize(restAttrs.width)
+    if (explicitH) sizeStyle.height = toCssSize(restAttrs.height)
+    const mergedStyle = normalizeStyle([styleAttr, sizeStyle])
 
-    // Vue2 compat(MODE:2)：@click 等在 $listeners，不在 $attrs；需手动挂到原生 svg
+    // Vue2 compat：$listeners；Vue3：事件已在 $attrs(onXxx)。两者都挂到原生 svg
     const listenerProps = {}
     const listeners = $listeners || {}
     Object.keys(listeners).forEach((event) => {
       const handler = listeners[event]
       if (!handler) return
       listenerProps[`on${event.charAt(0).toUpperCase()}${event.slice(1)}`] = handler
+    })
+    // 显式保留常见鼠标事件（inheritAttrs:false 时确保 hover tooltip 能触发）
+    ;['onClick', 'onMouseenter', 'onMouseleave', 'onMouseover', 'onMouseout', 'onMousemove'].forEach((key) => {
+      if (restAttrs[key] != null && listenerProps[key] == null) {
+        listenerProps[key] = restAttrs[key]
+      }
     })
 
     // 外层统一用 svg 包裹：sprite 时通过 fill/currentColor 生效；多色图标不写 fill，保留原色
@@ -124,11 +148,22 @@ const Iconfont = {
       ...restAttrs,
       ...listenerProps,
       class: mergedClass,
+      style: mergedStyle,
       ...(fill ? { fill } : null),
       width,
       height,
       ...(content && content.__ocViewBox ? { viewBox: content.__ocViewBox } : null),
       ...(content && typeof content.__ocInnerHtml === 'string' ? { innerHTML: content.__ocInnerHtml } : null),
+      // 显式尺寸：用行内 !important 压过拓扑等处的 width/height !important
+      ...(explicitW || explicitH
+        ? {
+          ref: (el) => {
+            if (!el || !el.style) return
+            if (explicitW) el.style.setProperty('width', toCssSize(restAttrs.width), 'important')
+            if (explicitH) el.style.setProperty('height', toCssSize(restAttrs.height), 'important')
+          },
+        }
+        : null),
     }
     return h('svg', svgProps, useChild)
   },

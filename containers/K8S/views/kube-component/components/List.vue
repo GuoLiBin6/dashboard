@@ -23,6 +23,7 @@
 import ClusterSelect from '@K8S/sections/ClusterSelect'
 import k8sCreateMixin from '@K8S/mixins/create'
 import WindowsMixin from '@/mixins/windows'
+import { componentMap } from '../constants/componentMap'
 import monitorIcon from '../assets/images/monitor.png'
 import fluentbitIcon from '../assets/images/fluentbit.png'
 import cephcsiIcon from '../assets/images/cephcsi.svg'
@@ -199,15 +200,15 @@ export default {
           id: this.cluster,
           spec: 'components-status',
         })
-        this.list.responseData = {
-          data: [],
-        }
-        for (const key in data) {
-          data[key].name = key
-          // if (key === 'cephCSI') this.list.responseData.data.push(data[key])
-          this.list.responseData.data.push(data[key])
-          this.responseData = this.list.responseData.data
-        }
+        // 仅展示前端可创建/更新的组件（monitor / fluentbit / cephCSI），过滤接口多余字段
+        const rows = Object.keys(componentMap)
+          .filter((key) => data[key] && typeof data[key] === 'object')
+          .map((key) => ({
+            ...data[key],
+            name: key,
+          }))
+        this.list.responseData = { data: rows }
+        this.responseData = rows
         this.list.fetchData()
         this.getStableStatus(data)
       }

@@ -4,22 +4,29 @@
     :single-actions="singleActions"
     :card-fields="cardFields">
     <template #group-actions-append>
-      <div class="d-flex align-items-center ml-3">
+      <!-- base-select 默认 width/minWidth 100%/200px，会挤扁或盖住 label；定宽 + minWidth 跟容器 -->
+      <div class="d-flex align-items-center ml-3 chart-filters">
         <span class="chart-form-label">{{$t('helm.text_9')}}</span>
-        <base-select
-          v-model="type"
-          :options="typeOpts"
-          isDefaultSelect
-          :select-props="{ placeholder: $t('helm.text_10') }" />
-        <span class="chart-form-labe ml-3">{{$t('helm.text_11')}}</span>
-        <base-select
-          version="v1"
-          v-model="repo"
-          resource="repos"
-          idKey="name"
-          :params="repoParams"
-          isDefaultSelect
-          :select-props="{ placeholder: $t('helm.text_10') }" />
+        <div class="chart-form-select">
+          <base-select
+            v-model:value="type"
+            :options="typeOpts"
+            isDefaultSelect
+            min-width="100%"
+            :select-props="{ placeholder: $t('helm.text_10') }" />
+        </div>
+        <span class="chart-form-label ml-3">{{$t('helm.text_11')}}</span>
+        <div class="chart-form-select chart-form-select--repo">
+          <base-select
+            version="v1"
+            v-model:value="repo"
+            resource="repos"
+            idKey="name"
+            :params="repoParams"
+            isDefaultSelect
+            min-width="100%"
+            :select-props="{ placeholder: $t('helm.text_10') }" />
+        </div>
       </div>
     </template>
     <!-- <template #tool-actions-between>
@@ -50,8 +57,10 @@ export default {
       }),
       cardFields: {
         url: row => {
-          if (row.icon.startsWith('http://') || row.icon.startsWith('https://')) return row.icon
-          return this.repoUrl + '/' + row.icon
+          const icon = row && row.icon
+          if (!icon) return ''
+          if (typeof icon === 'string' && (icon.startsWith('http://') || icon.startsWith('https://'))) return icon
+          return (this.repoUrl ? `${this.repoUrl}/` : '') + icon
         },
         title: 'name',
         desc: 'chart.description',
@@ -127,29 +136,40 @@ export default {
     },
   },
   watch: {
+    type () {
+      // 切换类型后仓库列表会变；清掉旧 repo，等仓库 isDefaultSelect 再拉 charts
+      this.repo = undefined
+      this.list.data = {}
+      const params = R.clone(this.list.getParams || {})
+      delete params.repo
+      this.list.getParams = params
+    },
     repo (val) {
       this.repoChange(val)
     },
   },
   methods: {
     repoChange (val) {
+      if (!val) {
+        const params = R.clone(this.list.getParams || {})
+        delete params.repo
+        this.list.getParams = params
+        this.list.data = {}
+        return
+      }
       new Manager('repos', 'v1').get({
         id: val,
       }).then(res => {
-        this.repoUrl = res.data.url
+        this.repoUrl = res.data && res.data.url
+      }).catch(() => {
+        this.repoUrl = undefined
       })
-      if (val) {
-        this.list.getParams = { ...this.list.getParams, repo: val }
-      } else {
-        const params = R.clone(this.list.getParams)
-        delete params.repo
-        this.list.getParams = params
-      }
+      this.list.getParams = { ...this.list.getParams, repo: val }
       this.fetchData()
     },
     fetchData () {
       this.list.data = {}
-      if (!this.list.getParams.repo) return
+      if (!this.list.getParams || !this.list.getParams.repo) return
       this.list.fetchData()
     },
     search (val) {
@@ -172,7 +192,20 @@ export default {
 </script>
 
 <style lang="less" scoped>
+.chart-filters {
+  flex-shrink: 0;
+  min-width: 0;
+}
 .chart-form-label {
   color: rgba(0, 0, 0, 0.85);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.chart-form-select {
+  width: 160px;
+  flex-shrink: 0;
+  &--repo {
+    width: 200px;
+  }
 }
 </style>

@@ -7,11 +7,10 @@
           <a-input v-model:value="form.name" :placeholder="$t('common.tips.input', [$t('common.name')])" :disabled="type === 'edit'" />
         </a-form-model-item>
         <a-form-model-item :label="$t('aice.llm_type')" prop="llm_type">
+          <!-- 与创建实例/模板一致：默认 outline 空心 radio-button -->
           <a-radio-group
             v-if="type !== 'edit'"
-            v-model:value="form.llm_type"
-            class="llm-type-picker"
-            button-style="solid">
+            v-model:value="form.llm_type">
             <a-radio-button v-for="opt in llmTypeOptions" :key="opt.id" :value="opt.id">
               {{ opt.name }}
             </a-radio-button>

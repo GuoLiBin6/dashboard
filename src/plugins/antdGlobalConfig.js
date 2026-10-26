@@ -1,5 +1,5 @@
 // 全局配置 ant-design-vue
-import { h, defineComponent, mergeProps, shallowRef, watch, triggerRef } from 'vue'
+import { h, defineComponent, mergeProps, shallowRef, watch, triggerRef, ref } from 'vue'
 import { Spin, Form, Button, Input, InputNumber, Alert, Radio, Select, Switch } from 'ant-design-vue'
 import InfoCircleFilled from '@ant-design/icons-vue/es/icons/InfoCircleFilled'
 import Icon from '@/components/Icon'
@@ -279,6 +279,56 @@ function hasMeaningfulFormLabel (labelAttr, labelSlot) {
 
 function labelTextEndsWithColon (text) {
   return /[:：]\s*$/.test(String(text || '').replace(/\u00a0/g, ' ').trimEnd())
+}
+
+/**
+ * a-form-model 兼容：antdv4 Form 无 validateField（单数字段），旧代码大量调用。
+ * 委托 validateFields；其余实例方法透传。
+ */
+function createFormModel (RawForm) {
+  return defineComponent({
+    name: 'AFormModel',
+    inheritAttrs: false,
+    setup (_, { attrs, slots, expose }) {
+      const innerRef = ref(null)
+      const call = (method, ...args) => {
+        const inst = innerRef.value
+        if (!inst || typeof inst[method] !== 'function') return undefined
+        return inst[method](...args)
+      }
+      expose({
+        validate: (...a) => call('validate', ...a),
+        validateFields: (...a) => call('validateFields', ...a),
+        /** Vue2 FormModel.validateField(name, callback?) → antdv4 validateFields */
+        validateField (name, callback) {
+          const names = name == null ? undefined : (Array.isArray(name) ? name : [name])
+          const p = call('validateFields', names)
+          if (!p || typeof p.then !== 'function') {
+            if (typeof callback === 'function') callback()
+            return p
+          }
+          return p.then(
+            (res) => {
+              if (typeof callback === 'function') callback()
+              return res
+            },
+            (err) => {
+              if (typeof callback === 'function') callback(err)
+              return Promise.reject(err)
+            },
+          )
+        },
+        clearValidate: (...a) => call('clearValidate', ...a),
+        resetFields: (...a) => call('resetFields', ...a),
+        scrollToField: (...a) => call('scrollToField', ...a),
+        getFieldsValue: (...a) => call('getFieldsValue', ...a),
+        getFieldValue: (...a) => call('getFieldValue', ...a),
+        setFieldsValue: (...a) => call('setFieldsValue', ...a),
+        setFields: (...a) => call('setFields', ...a),
+      })
+      return () => h(RawForm, mergeProps(attrs, { ref: innerRef }), slots)
+    },
+  })
 }
 
 /**
@@ -713,16 +763,21 @@ function createLegacySwitch (RawSwitch) {
     inheritAttrs: false,
     props: {
       checked: { type: [Boolean, Number, String], default: undefined },
+      // 迁移兼容：旧写法 v-model:value / :value，映射到 antdv4 checked
+      value: { type: [Boolean, Number, String], default: undefined },
       checkedChildren: { default: undefined },
       unCheckedChildren: { default: undefined },
     },
-    emits: ['change', 'update:checked', 'click'],
+    emits: ['change', 'update:checked', 'update:value', 'click'],
     setup (props, { attrs, slots, emit }) {
       return () => {
         const {
           onChange,
           onClick,
           'onUpdate:checked': onUpdateChecked,
+          'onUpdate:value': onUpdateValue,
+          value: attrValue,
+          checked: attrChecked,
           checkedChildren: attrCheckedChildren,
           unCheckedChildren: attrUnCheckedChildren,
           'checked-children': kebabChecked,
@@ -734,15 +789,30 @@ function createLegacySwitch (RawSwitch) {
           (slots.checkedChildren ? undefined : i18n.t('common.text00062'))
         const unCheckedChildren = props.unCheckedChildren ?? attrUnCheckedChildren ?? kebabUnChecked ??
           (slots.unCheckedChildren ? undefined : i18n.t('common.text00063'))
+        const checked = props.checked !== undefined
+          ? props.checked
+          : (attrChecked !== undefined
+            ? attrChecked
+            : (props.value !== undefined ? props.value : attrValue))
+        const syncChecked = (v) => {
+          emit('update:checked', v)
+          emit('update:value', v)
+          if (typeof onUpdateChecked === 'function') onUpdateChecked(v)
+          if (typeof onUpdateValue === 'function') onUpdateValue(v)
+        }
         const pass = {
-          checked: props.checked,
+          checked,
           onChange: (...args) => {
+            const v = args[0]
+            // antdv4 change 首参即为 checked；同步 value 兼容旧 v-model:value
+            if (typeof v === 'boolean' || typeof v === 'number' || typeof v === 'string') {
+              syncChecked(v)
+            }
             emit('change', ...args)
             if (typeof onChange === 'function') onChange(...args)
           },
           'onUpdate:checked': (v) => {
-            emit('update:checked', v)
-            if (typeof onUpdateChecked === 'function') onUpdateChecked(v)
+            syncChecked(v)
           },
           onClick: (...args) => {
             emit('click', ...args)
@@ -806,14 +876,14 @@ function registerAntdCompat (app) {
   setFormLabelAlignLeft(app.component('AForm'))
 
   // 兼容旧写法 a-form-model / a-form-model-item（antdv4 已移除 FormModel）
-  if (!app.component('AFormModel')) {
-    app.component('AFormModel', Form)
-  }
-  // 始终覆盖：prop → name；空 label 不展示 * / ：
+  // 始终覆盖：补 validateField；prop → name；空 label 不展示 * / ：
+  const FormModelCompat = createFormModel(Form)
+  app.component('AFormModel', FormModelCompat)
   const FormItemCompat = createFormModelItem(Form.Item)
   app.component('AFormItem', FormItemCompat)
   app.component('AFormModelItem', FormItemCompat)
-  setFormLabelAlignLeft(app.component('AFormModel'))
+  setFormLabelAlignLeft(Form)
+  setFormLabelAlignLeft(FormModelCompat)
 
   // 始终包装原始 ant Button，避免 HMR / 重复 install 套娃
   app.component('AButton', createLegacyButton(Button))

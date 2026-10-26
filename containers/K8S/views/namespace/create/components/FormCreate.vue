@@ -17,10 +17,6 @@
         @input="setCluster"
         style="width: 140px;" />
     </a-form-model-item>
-    <a-form-model-item :wrapper-col="{ span: 20, offset: 3 }">
-      <a-button class="mr-2" type="primary" @click="handleConfirm" :loading="loading">{{$t('k8s.create')}}</a-button>
-      <a-button @click="cancel">{{$t('k8s.text_162')}}</a-button>
-    </a-form-model-item>
   </a-form-model>
 </template>
 
@@ -36,7 +32,6 @@ export default {
   mixins: [k8sCreateMixin],
   data () {
     return {
-      loading: false,
       form: {
         name: '',
         cluster: undefined,
@@ -60,24 +55,10 @@ export default {
     this.resourceM = null
   },
   methods: {
-    doCreate (data) {
-      return this.resourceM.create({ data })
-    },
-    async handleConfirm () {
-      this.loading = true
-      try {
-        await this.$refs.formRef.validate()
-        await this.doCreate({ ...this.form })
-        this.loading = false
-        this.$message.success(this.$t('k8s.text_184'))
-        this.$router.push('/k8s-namespace')
-      } catch (error) {
-        this.loading = false
-        throw error
-      }
-    },
-    cancel () {
-      this.$router.push('/k8s-namespace')
+    async doCreate () {
+      await this.$refs.formRef.validate()
+      await this.resourceM.create({ data: { ...this.form } })
+      this.$message.success(this.$t('k8s.text_184'))
     },
   },
 }

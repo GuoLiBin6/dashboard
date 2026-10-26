@@ -14,10 +14,8 @@
           </template>
         </a-form-model-item>
         <a-form-model-item :label="llmTypeLabel" prop="llm_type">
-          <a-radio-group
-            class="llm-type-picker"
-            button-style="solid"
-            v-model:value="form.fd.llm_type">
+          <!-- 与网络类型一致：默认 outline 空心 radio-button，连成一组 -->
+          <a-radio-group v-model:value="form.fd.llm_type">
             <a-radio-button v-for="opt in llmTypeOptions" :key="opt.id" :value="opt.id">
               {{ opt.name }}
             </a-radio-button>
@@ -46,92 +44,56 @@
             :selectProps="{ mode: 'multiple', placeholder: $t('common.tips.select', [$t('aice.devices')]), allowClear: true }" />
         </a-form-model-item>
         <a-form-model-item v-if="supportDevicesAndHostPaths" :label="$t('aice.host_paths')" :extra="$t('aice.llm_override_sku_extra')">
-          <div v-for="hp in hostPathRows" :key="hp.key" style="display: flex; align-items: stretch; gap: 10px; margin-bottom: 12px;">
-            <div style="flex: 1; border: 1px solid #e8e8e8; border-radius: 4px; padding: 12px;">
-              <a-row :gutter="8">
-                <a-col :span="8">
-                  <a-form-model-item>
-                    <fixed-label-filter :label="$t('aice.host_paths.type')">
-                      <a-select v-model:value="hp.type" :placeholder="$t('common.tips.select', [$t('aice.host_paths.type')])">
-                        <a-select-option value="directory">directory</a-select-option>
-                        <a-select-option value="file">file</a-select-option>
-                      </a-select>
-                    </fixed-label-filter>
-                  </a-form-model-item>
-                </a-col>
-                <a-col :span="16">
-                  <a-form-model-item>
-                    <fixed-label-filter :label="$t('aice.host_paths.path')">
-                      <a-input v-model:value="hp.path" :placeholder="$t('aice.host_paths.path.placeholder')" />
-                    </fixed-label-filter>
-                  </a-form-model-item>
-                </a-col>
-              </a-row>
+          <div v-for="hp in hostPathRows" :key="hp.key" class="host-path-item">
+            <div class="host-path-item__body">
+              <div class="host-path-fields">
+                <fixed-label-filter class="host-path-fields__type" :label="$t('aice.host_paths.type')">
+                  <a-select v-model:value="hp.type" :placeholder="$t('common.tips.select', [$t('aice.host_paths.type')])">
+                    <a-select-option value="directory">directory</a-select-option>
+                    <a-select-option value="file">file</a-select-option>
+                  </a-select>
+                </fixed-label-filter>
+                <fixed-label-filter class="host-path-fields__path" :label="$t('aice.host_paths.path')">
+                  <a-input v-model:value="hp.path" :placeholder="$t('aice.host_paths.path.placeholder')" />
+                </fixed-label-filter>
+              </div>
 
-              <a-row :gutter="8">
-                <a-col :span="24">
-                  <a-form-model-item>
-                    <a-checkbox v-model:checked="hp.auto_create">{{ $t('aice.host_paths.auto_create') }}</a-checkbox>
-                  </a-form-model-item>
-                </a-col>
-              </a-row>
-              <a-row :gutter="8" v-if="hp.auto_create">
-                <a-col :span="8">
-                  <a-form-model-item>
-                    <fixed-label-filter :label="$t('aice.host_paths.auto_create_config.uid')">
-                      <a-input v-model:value="hp.auto_create_config.uid" :placeholder="$t('aice.host_paths.auto_create_config.uid.placeholder')" />
-                    </fixed-label-filter>
-                  </a-form-model-item>
-                </a-col>
-                <a-col :span="8">
-                  <a-form-model-item>
-                    <fixed-label-filter :label="$t('aice.host_paths.auto_create_config.gid')">
-                      <a-input v-model:value="hp.auto_create_config.gid" :placeholder="$t('aice.host_paths.auto_create_config.gid.placeholder')" />
-                    </fixed-label-filter>
-                  </a-form-model-item>
-                </a-col>
-                <a-col :span="8">
-                  <a-form-model-item>
-                    <fixed-label-filter :label="$t('aice.host_paths.permissions')">
-                      <a-input v-model:value="hp.auto_create_config.permissions" :placeholder="$t('aice.host_paths.permissions.placeholder')" />
-                    </fixed-label-filter>
-                  </a-form-model-item>
-                </a-col>
-              </a-row>
+              <div class="host-path-check">
+                <a-checkbox v-model:checked="hp.auto_create">{{ $t('aice.host_paths.auto_create') }}</a-checkbox>
+              </div>
+              <div v-if="hp.auto_create" class="host-path-fields">
+                <fixed-label-filter class="host-path-fields__third" :label="$t('aice.host_paths.auto_create_config.uid')">
+                  <a-input v-model:value="hp.auto_create_config.uid" :placeholder="$t('aice.host_paths.auto_create_config.uid.placeholder')" />
+                </fixed-label-filter>
+                <fixed-label-filter class="host-path-fields__third" :label="$t('aice.host_paths.auto_create_config.gid')">
+                  <a-input v-model:value="hp.auto_create_config.gid" :placeholder="$t('aice.host_paths.auto_create_config.gid.placeholder')" />
+                </fixed-label-filter>
+                <fixed-label-filter class="host-path-fields__third" :label="$t('aice.host_paths.permissions')">
+                  <a-input v-model:value="hp.auto_create_config.permissions" :placeholder="$t('aice.host_paths.permissions.placeholder')" />
+                </fixed-label-filter>
+              </div>
 
-              <div style="margin: 8px 0; font-weight: 500;">{{ $t('aice.host_paths.containers') }}</div>
+              <div class="host-path-item__section-title">{{ $t('aice.host_paths.containers') }}</div>
               <div v-for="c in hp.containerRows" :key="c.key">
-                <a-row :gutter="8">
-                  <a-col :span="12">
-                    <a-form-model-item>
-                      <fixed-label-filter :label="$t('aice.host_paths.mount_path')">
-                        <a-input v-model:value="c.mount_path" :placeholder="$t('aice.host_paths.mount_path.placeholder')" />
-                      </fixed-label-filter>
-                    </a-form-model-item>
-                  </a-col>
-                  <a-col :span="12">
-                    <a-form-model-item>
-                      <fixed-label-filter :label="$t('aice.host_paths.propagation')">
-                        <a-select v-model:value="c.propagation" :placeholder="$t('common.tips.select', [$t('aice.host_paths.propagation')])" optionLabelProp="label" :dropdownMatchSelectWidth="false">
-                          <a-select-option value="private" label="private">private - {{ $t('aice.host_paths.propagation.private') }}</a-select-option>
-                          <a-select-option value="rslave" label="rslave">rslave - {{ $t('aice.host_paths.propagation.rslave') }}</a-select-option>
-                          <a-select-option value="rshared" label="rshared">rshared - {{ $t('aice.host_paths.propagation.rshared') }}</a-select-option>
-                        </a-select>
-                      </fixed-label-filter>
-                    </a-form-model-item>
-                  </a-col>
-                </a-row>
-                <a-row :gutter="8">
-                  <a-col :span="4">
-                    <a-form-model-item>
-                      <a-checkbox v-model:checked="c.read_only">{{ $t('aice.host_paths.read_only') }}</a-checkbox>
-                    </a-form-model-item>
-                  </a-col>
-                </a-row>
+                <div class="host-path-fields">
+                  <fixed-label-filter class="host-path-fields__half" :label="$t('aice.host_paths.mount_path')">
+                    <a-input v-model:value="c.mount_path" :placeholder="$t('aice.host_paths.mount_path.placeholder')" />
+                  </fixed-label-filter>
+                  <fixed-label-filter class="host-path-fields__half" :label="$t('aice.host_paths.propagation')">
+                    <a-select v-model:value="c.propagation" :placeholder="$t('common.tips.select', [$t('aice.host_paths.propagation')])" optionLabelProp="label" :dropdownMatchSelectWidth="false">
+                      <a-select-option value="private" label="private">private - {{ $t('aice.host_paths.propagation.private') }}</a-select-option>
+                      <a-select-option value="rslave" label="rslave">rslave - {{ $t('aice.host_paths.propagation.rslave') }}</a-select-option>
+                      <a-select-option value="rshared" label="rshared">rshared - {{ $t('aice.host_paths.propagation.rshared') }}</a-select-option>
+                    </a-select>
+                  </fixed-label-filter>
+                </div>
+                <div class="host-path-check host-path-check--last">
+                  <a-checkbox v-model:checked="c.read_only">{{ $t('aice.host_paths.read_only') }}</a-checkbox>
+                </div>
               </div>
             </div>
 
-            <div style="width: 34px; display: flex; align-items: center; justify-content: center;">
+            <div class="host-path-item__action">
               <a-button shape="circle" icon="minus" size="small" @click="delHostPath(hp)" />
             </div>
           </div>
@@ -1493,18 +1455,54 @@ export default {
 </script>
 
 <style scoped>
-.llm-type-picker :deep(.ant-radio-button-wrapper) {
-  height: 36px;
-  line-height: 34px;
+.host-path-item {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  margin-bottom: 12px;
+  min-width: 0;
+  max-width: 100%;
+}
+.host-path-item__body {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #e8e8e8;
   border-radius: 4px;
-  margin-right: 8px;
+  padding: 12px;
+}
+.host-path-item__action {
+  width: 34px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.host-path-item__section-title {
+  margin: 8px 0;
+  font-weight: 500;
+}
+.host-path-fields {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  width: 100%;
   margin-bottom: 8px;
 }
-.llm-type-picker :deep(.ant-radio-button-wrapper:first-child) {
-  border-radius: 4px;
+.host-path-fields__type {
+  flex: 0 0 220px;
+  max-width: 36%;
 }
-.llm-type-picker :deep(.ant-radio-button-wrapper:last-child) {
-  border-radius: 4px;
+.host-path-fields__path,
+.host-path-fields__half,
+.host-path-fields__third {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.host-path-check {
+  margin-bottom: 8px;
+}
+.host-path-check--last {
+  margin-bottom: 0;
 }
 .openclaw-channel-tabs { margin-top: 8px; }
 .openclaw-provider-tabs { margin-top: 8px; }

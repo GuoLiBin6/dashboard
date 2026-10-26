@@ -301,6 +301,10 @@ export default {
     },
   },
   created () {
+    if (!this.model || typeof this.model !== 'object') {
+      console.warn('[AreaSelects] prop `model` is required, e.g. :model="form.fd"')
+      return
+    }
     this.names.forEach(name => {
       if (this.model[name] === undefined) {
         this.model[name] = this.emptyFieldValue(name)
@@ -311,9 +315,10 @@ export default {
   methods: {
 
     getModelField (name) {
-      return this.model[name]
+      return this.model?.[name]
     },
     getModelFields (names) {
+      if (!this.model) return {}
       if (Array.isArray(names) && names.length) {
         const picked = {}
         names.forEach((name) => { picked[name] = this.model[name] })
@@ -322,12 +327,13 @@ export default {
       return { ...this.model }
     },
     setModelFields (vals) {
-      if (!vals || typeof vals !== 'object') return
+      if (!this.model || !vals || typeof vals !== 'object') return
       Object.keys(vals).forEach((key) => {
         this.model[key] = vals[key]
       })
     },
     resetModelFields (names) {
+      if (!this.model) return
       const list = (names && names.length) ? names : this.names
       list.forEach((name) => {
         this.model[name] = this.emptyFieldValue(name)
@@ -335,9 +341,10 @@ export default {
     },
 
     validateModelFields () {
-      return Promise.resolve({ ...this.model })
+      return Promise.resolve({ ...(this.model || {}) })
     },
     areaSelectValue (name) {
+      if (!this.model) return this.isMultiple(name) ? [] : undefined
       const v = this.model[name]
       if (v !== undefined) return v
       return this.isMultiple(name) ? [] : undefined

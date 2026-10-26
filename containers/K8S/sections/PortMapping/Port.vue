@@ -1,45 +1,48 @@
 <template>
-  <div class="d-flex">
-    <a-form-item :name="fieldName('port')" :rules="portFieldRules('port')">
+  <div class="d-flex align-items-start port-mapping-port">
+    <a-form-item class="mb-0 mr-2" :name="fieldName('port')" :rules="portFieldRules('port')">
       <a-input :value="fieldVal('port')" @update:value="v => fieldSet('port', v)" type="number" style="width: 200px;">
-        <template slot="addonBefore">
+        <template #addonBefore>
           <span>{{$t('k8s.service_port')}}</span>
           <a-tooltip :title="$t('k8s.service_port.desc')">
-            <icon type="info-circle" />
+            <icon type="info-circle" class="ml-1" />
           </a-tooltip>
         </template>
       </a-input>
     </a-form-item>
-    <a-form-item :name="fieldName('targetPort')" :rules="portFieldRules('targetPort')">
+    <a-form-item class="mb-0 mr-2" :name="fieldName('targetPort')" :rules="portFieldRules('targetPort')">
       <a-input :value="fieldVal('targetPort')" @update:value="v => fieldSet('targetPort', v)" type="number" style="width: 200px;">
-        <template slot="addonBefore">
+        <template #addonBefore>
           <span>{{$t('k8s.target_port')}}</span>
           <a-tooltip :title="$t('k8s.target_port.desc')">
-            <icon type="info-circle" />
+            <icon type="info-circle" class="ml-1" />
           </a-tooltip>
         </template>
       </a-input>
     </a-form-item>
-    <a-form-item v-if="isNodePort" :name="fieldName('nodePort')" :rules="portFieldRules('nodePort')">
+    <a-form-item v-if="isNodePort" class="mb-0 mr-2" :name="fieldName('nodePort')" :rules="portFieldRules('nodePort')">
       <a-input :min="30000" :max="32767" :value="fieldVal('nodePort')" @update:value="v => fieldSet('nodePort', v)" type="number" style="width: 200px;">
-        <template slot="addonBefore">
+        <template #addonBefore>
           <span>{{$t('k8s.node_port')}}</span>
           <a-tooltip :title="$t('k8s.node_port.desc')">
-            <icon type="info-circle" />
+            <icon type="info-circle" class="ml-1" />
           </a-tooltip>
         </template>
       </a-input>
     </a-form-item>
-    <a-form-item :name="fieldName('protocol')" :rules="portFieldRules('protocol')">
-      <a-input-group compact>
-        <div class="d-flex">
-          <a-input class="oc-addonBefore ant-input-group-addon" style="width: 60px;" :defaultValue="$t('k8s.text_90')" readonly />
-          <a-select style="width: 100px;" :value="fieldVal('protocol')" @change="onProtocolChange" :disabled="protocolDisabled">
-            <a-select-option value="TCP">TCP</a-select-option>
-            <a-select-option value="UDP">UDP</a-select-option>
-          </a-select>
-        </div>
-      </a-input-group>
+    <a-form-item class="mb-0" :name="fieldName('protocol')" :rules="portFieldRules('protocol')">
+      <!-- antdv4：勿用 a-input 冒充 addon，高度会与 select 错位 -->
+      <div class="protocol-compact">
+        <span class="protocol-compact__label">{{ $t('k8s.text_90') }}</span>
+        <a-select
+          class="protocol-compact__select"
+          :value="fieldVal('protocol')"
+          @change="onProtocolChange"
+          :disabled="protocolDisabled">
+          <a-select-option value="TCP">TCP</a-select-option>
+          <a-select-option value="UDP">UDP</a-select-option>
+        </a-select>
+      </div>
     </a-form-item>
   </div>
 </template>
@@ -106,3 +109,35 @@ export default {
   },
 }
 </script>
+
+<style lang="less" scoped>
+.protocol-compact {
+  display: inline-flex;
+  align-items: stretch;
+  height: 32px;
+  vertical-align: top;
+  &__label {
+    display: inline-flex;
+    align-items: center;
+    padding: 0 11px;
+    color: rgba(0, 0, 0, 0.65);
+    background: #fafafa;
+    border: 1px solid #d9d9d9;
+    border-right: 0;
+    border-radius: 6px 0 0 6px;
+    white-space: nowrap;
+    line-height: 1;
+  }
+  &__select {
+    width: 100px;
+    :deep(.ant-select-selector) {
+      height: 32px !important;
+      border-radius: 0 6px 6px 0 !important;
+    }
+    :deep(.ant-select-selection-item),
+    :deep(.ant-select-selection-placeholder) {
+      line-height: 30px !important;
+    }
+  }
+}
+</style>

@@ -2,10 +2,16 @@ import * as R from 'ramda'
 import _ from 'lodash'
 import { HYPERVISORS_MAP, EXTRA_HYPERVISORS, BRAND_MAP } from '@/constants'
 import { changeToArr } from '@/utils/utils'
-import store from '@/store'
 import i18n from '@/locales'
 import setting from '@/config/setting'
-import { hasSetupKey } from '@/utils/auth'
+import { getStore } from '@/store/accessor'
+import { hasSetupKey } from '@/utils/setupKeys'
+
+// 勿顶层 import @/store、@/utils/auth：会与 typeClouds 循环初始化触发 TDZ
+const store = {
+  get state () { return getStore()?.state },
+  get getters () { return getStore()?.getters || {} },
+}
 
 export class TypeClouds {
   hypervisorMap = {}

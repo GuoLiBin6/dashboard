@@ -277,19 +277,18 @@ export default {
     },
     defaultNetworkType: {
       handler (val) {
-        if (val) {
-          switch (val) {
-            case NETWORK_OPTIONS_MAP.default.key:
-              this.networkComponent = ''
-              break
-            case NETWORK_OPTIONS_MAP.manual.key:
-              this.networkComponent = 'config'
-              break
-            case NETWORK_OPTIONS_MAP.schedtag.key:
-              this.networkComponent = 'schedtag'
-              break
-          }
+        if (!val) return
+        // 写入 model.networkType，否则 radio 无选中（此前只改了 networkComponent）
+        let type = val
+        if (!this.networkMaps?.[type]) {
+          type = Object.keys(this.networkMaps || {})[0]
         }
+        if (!type) return
+        if (!this.model?.networkType) {
+          this.change({ target: { value: type } })
+          return
+        }
+        this.syncNetworkComponentFromForm()
       },
       immediate: true,
     },

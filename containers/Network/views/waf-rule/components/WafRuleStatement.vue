@@ -1,16 +1,19 @@
 <template>
   <a-card class="mb-3" style="flex: 1 1 auto">
-    <!-- 类型 -->
-    <a-form-item :label="$t('network.text_249')">
-      <a-select v-if="isEdit" v-model:value="data.type">
-        <a-select-option v-for="item in wafRuleTypeOptions" :value="item.value" :key="item.value">
-          {{item.label}}
-        </a-select-option>
-      </a-select>
-      <box-show v-else :value="ruleTypeValue" />
-    </a-form-item>
-    <!-- 条件 -->
-    <component :is="type" :type="type" :statement="data" :wafBrand="wafBrand" :isEdit="isEdit" />
+    <!-- 独立 oc-layout-form：按本卡片内最长 label 自动量宽，不跟外层弹窗表单混算 -->
+    <div class="oc-layout-form">
+      <!-- 类型 -->
+      <a-form-item :label="$t('network.text_249')">
+        <a-select v-if="isEdit" v-model:value="data.type">
+          <a-select-option v-for="item in wafRuleTypeOptions" :value="item.value" :key="item.value">
+            {{item.label}}
+          </a-select-option>
+        </a-select>
+        <box-show v-else :value="ruleTypeValue" />
+      </a-form-item>
+      <!-- 条件 -->
+      <component :is="type" :type="type" :statement="data" :wafBrand="wafBrand" :isEdit="isEdit" />
+    </div>
   </a-card>
 </template>
 

@@ -58,26 +58,25 @@ export default {
   mixins: [WindowsMixin, DialogMixin],
   data () {
     const row = this.params.data[0]
-    const hostCheckValid = (rule, value, _callback) => {
-      const pattern = /^(?=(\b|\D))(((\d{1,2})|(1\d{1,2})|(2[0-4]\d)|(25[0-5]))\.){3}((\d{1,2})|(1\d{1,2})|(2[0-4]\d)|(25[0-5]))(?=(\b|\D))$/
-      const ips = value.split(',')
-      if (!value || value === '') {
-        return _callback(new Error(this.$t('storage.nfs_host_check_reqiure')))
+    const hostCheckValid = (rule, value) => {
+      if (value == null || value === '') {
+        return Promise.reject(new Error(this.$t('storage.nfs_host_check_reqiure')))
       }
-      ips.forEach((item) => {
-        const [ip, dir] = item.split(':')
+      const pattern = /^(?=(\b|\D))(((\d{1,2})|(1\d{1,2})|(2[0-4]\d)|(25[0-5]))\.){3}((\d{1,2})|(1\d{1,2})|(2[0-4]\d)|(25[0-5]))(?=(\b|\D))$/
+      const ips = String(value).split(',')
+      for (let i = 0; i < ips.length; i++) {
+        const [ip, dir] = ips[i].split(':')
         if (!pattern.test(ip)) {
-          return _callback(new Error(this.$t('storage.nfs_host_check_valid')))
-        } else {
-          if (dir) {
-            const reg = /^\/.+/
-            if (!reg.test(dir)) {
-              return _callback(new Error(this.$t('storage.nfs_host_check_valid')))
-            }
+          return Promise.reject(new Error(this.$t('storage.nfs_host_check_valid')))
+        }
+        if (dir) {
+          const reg = /^\/.+/
+          if (!reg.test(dir)) {
+            return Promise.reject(new Error(this.$t('storage.nfs_host_check_valid')))
           }
         }
-      })
-      _callback()
+      }
+      return Promise.resolve()
     }
     return {
       loading: false,

@@ -10,19 +10,22 @@
         @cell-click="handleSkuChange"
         @radio-change="handleSkuChange"
         ref="tableRef">
-        <div slot="empty" style="height: 100px">
-          <page-list-empty :loading="loading" />
-        </div>
+        <template #empty>
+          <div style="height: 100px">
+            <page-list-empty :loading="loading" />
+          </div>
+        </template>
       </table-lite-grid>
-    </a-form-item>
-    <a-form-item class="mt-1" :validate-status="formatSku ? 'success' : 'error'" v-bind="tailFormItemLayout">
-      <p slot="help">
+      <!-- 勿再用空 label + tailFormItemLayout offset，会与 oc-layout-form follow-label 叠出缩进 -->
+      <div
+        class="mt-2"
+        :style="{ color: formatSku ? '#52c41a' : '#ff4d4f' }">
         {{
           formatSku
-          ? $t('db.text_121', [formatSku])
-          : $t('db.text_339')
+            ? $t('db.text_121', [formatSku])
+            : $t('db.text_339')
         }}
-      </p>
+      </div>
     </a-form-item>
   </div>
 </template>
@@ -38,7 +41,6 @@ export default {
   name: 'rdsSkuList',
   inject: {
     form: { default: null },
-    tailFormItemLayout: { default: null },
     scopeParams: { default: null },
     getCreateFormDraftPreferred: { default: undefined },
   },

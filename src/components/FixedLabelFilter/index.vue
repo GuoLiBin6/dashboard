@@ -1,7 +1,7 @@
 <template>
-  <div :class="['profix-wrapper', 'd-flex', className]">
-    <div class="profix-label">{{ label }}</div>
-    <div class="profix-content">
+  <div :class="['profilter-wrapper', 'd-flex', className]">
+    <div class="profilter-label">{{ label }}</div>
+    <div class="profilter-content">
       <slot />
     </div>
   </div>
@@ -23,10 +23,12 @@ export default {
 </script>
 
 <style lang="less" scoped>
-.profix-wrapper {
+.profilter-wrapper {
   align-items: stretch;
+  min-width: 0;
 
-  .profix-label {
+  .profilter-label {
+    flex: 0 0 auto;
     border-left: 1px solid #d9d9d9;
     border-top: 1px solid #d9d9d9;
     border-bottom: 1px solid #d9d9d9;
@@ -39,11 +41,26 @@ export default {
     box-sizing: border-box;
   }
 
-  .profix-content {
-    flex: 0 1 auto;
+  .profilter-content {
+    flex: 1 1 auto;
     min-width: 0;
     display: flex;
     align-items: center;
+  }
+
+  /* 控件铺满剩余宽度，避免父级列/flex 中间留白 */
+  :deep(.ant-select),
+  :deep(.ant-input),
+  :deep(.ant-input-affix-wrapper),
+  :deep(.ant-input-number),
+  :deep(.ant-picker),
+  :deep(.ant-cascader),
+  :deep(.base-select),
+  :deep(.base-select-wrap),
+  :deep(.oc-select) {
+    flex: 1 1 auto;
+    min-width: 0;
+    width: 100%;
   }
 
   /* 与标签衔接处改为直角，右侧保持圆角 */

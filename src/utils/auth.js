@@ -10,6 +10,7 @@ import { aesDecryptWithCustomKey } from '@/utils/crypto'
 import { HYPERVISORS, HYPERVISORS_MAP, EXTRA_HYPERVISORS } from '@/constants/index'
 import { GROUP_VALIDATION_GROUPS } from '@/constants/feature'
 import { getStore } from '@/store/accessor'
+import { hasSetupKey } from '@/utils/setupKeys'
 
 // 勿顶层 import @/store：store/modules/* → auth/http → store 会 TDZ。
 // 仅通过 accessor 在运行时取实例（模块顶层不要访问 store）。
@@ -18,8 +19,10 @@ const store = {
   get getters () { return getStore().getters },
 }
 
-// 不从 hypervisor 引 typeClouds：hypervisor 依赖本文件 hasSetupKey，会形成循环初始化 TDZ
+// 不从 hypervisor 引 typeClouds：hypervisor 依赖 setupKeys，会形成循环初始化 TDZ
 const hypervisorEnvSource = Object.assign({}, HYPERVISORS_MAP, EXTRA_HYPERVISORS)
+
+export { hasSetupKey }
 
 // 注意：store/modules/auth 在模块初始化时会调用 getTokenFromCookie。
 // auth.js ↔ store 存在循环依赖，此处若引用本文件尚未初始化的 const，会触发 TDZ。
@@ -363,33 +366,6 @@ const GlobalSetupKeys = class {
 
 const setupKeys = new GlobalSetupKeys()
 export { setupKeys }
-
-export function hasSetupKey (envs) {
-  const { globalSetting = {} } = store.state
-  if (!globalSetting || !globalSetting.value || !globalSetting.value.setupKeys || globalSetting.value.setupKeys.length === 0) return true
-  const _envs = R.type(envs) === 'String' ? [envs] : envs
-  if (!_envs.length) return true
-  const { setupKeys } = globalSetting.value
-  let f = false
-  for (let i = 0; i < _envs.length; i++) {
-    const env = _envs[i]
-    // 开启组验证的组只校验成员，不单独校验组 key；其他情况直接校验 env
-    if (Features.default.groups.includes(env) && GROUP_VALIDATION_GROUPS.includes(env)) {
-      const childs = Features.default.items.filter(item => item.meta?.group === env)
-      for (let j = 0; j < childs.length; j++) {
-        if (setupKeys.indexOf(childs[j].key) > -1) {
-          f = true
-          break
-        }
-      }
-      if (f) break
-    } else if (setupKeys.indexOf(env) > -1) {
-      f = true
-      break
-    }
-  }
-  return f
-}
 
 /** 侧栏 hidden：参数无效或未在全量 featureMenus 登记则 true；已登记时若不在「按 setupKeys 过滤后」任一项中则 true，否则 false */
 export function featureMenuHiddenCheck (menu) {

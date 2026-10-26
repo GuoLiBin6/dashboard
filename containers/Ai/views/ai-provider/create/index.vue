@@ -12,7 +12,7 @@
         <template v-if="isBuiltin">
           <a-form-model-item :label="$t('aice.aiproxy.provider_key')" prop="provider_key">
             <aiproxy-provider-key-auto-complete
-              v-model="form.provider_key"
+              v-model:value="form.provider_key"
               :placeholder="$t('common.tips.input', [$t('aice.aiproxy.provider_key')])" />
           </a-form-model-item>
           <template v-if="showBuiltinProviderConfig">

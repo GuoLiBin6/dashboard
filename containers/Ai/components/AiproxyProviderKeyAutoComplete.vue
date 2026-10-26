@@ -1,20 +1,15 @@
 <template>
   <a-auto-complete
     :value="inputValue"
+    :options="autoCompleteOptions"
     :placeholder="placeholder"
-    option-label-prop="label"
+    :filter-option="false"
     @change="onChange"
     @search="onSearch"
     @select="onSelect"
     @blur="onBlur">
-    <template slot="dataSource">
-      <a-select-option
-        v-for="key in providerKeys"
-        :key="key"
-        :value="key"
-        :label="providerKeyLabel(key)">
-        <aiproxy-provider-label :provider-key="key" :icon-size="16" />
-      </a-select-option>
+    <template #option="{ value: optValue }">
+      <aiproxy-provider-label :provider-key="optValue" :icon-size="16" />
     </template>
   </a-auto-complete>
 </template>
@@ -40,6 +35,7 @@ export default {
       default: '',
     },
   },
+  emits: ['input', 'update:value', 'update:modelValue', 'change'],
   data () {
     return {
       providerKeys: filterAiproxyProviderKeys(''),
@@ -51,6 +47,12 @@ export default {
     inputValue () {
       if (this.searchActive) return this.searchText
       return getAiproxyProviderKeyDisplayName(this, this.value)
+    },
+    autoCompleteOptions () {
+      return this.providerKeys.map(key => ({
+        value: key,
+        label: this.providerKeyLabel(key),
+      }))
     },
   },
   watch: {
@@ -109,6 +111,8 @@ export default {
     emitValue (key) {
       const normalized = String(key || '').trim()
       this.$emit('input', normalized)
+      this.$emit('update:value', normalized)
+      this.$emit('update:modelValue', normalized)
       this.$emit('change', normalized)
     },
   },
@@ -116,7 +120,7 @@ export default {
 </script>
 
 <style lang="less" scoped>
-::v-deep .aiproxy-provider-label__text {
+:deep(.aiproxy-provider-label__text) {
   white-space: normal;
 }
 </style>

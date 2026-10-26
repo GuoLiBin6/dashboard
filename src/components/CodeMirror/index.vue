@@ -207,7 +207,10 @@ export default {
 .vue-codemirror {
   --oc-cm-height: 320px;
 }
-.vue-codemirror__host,
+/* host 高度跟内部编辑器走，避免业务侧 :deep 加大 .CodeMirror 后溢出盖住下方按钮 */
+.vue-codemirror__host {
+  min-height: var(--oc-cm-height);
+}
 .vue-codemirror .CodeMirror {
   height: var(--oc-cm-height);
   border: 1px solid #d9d9d9;

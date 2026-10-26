@@ -1,8 +1,13 @@
 <template>
-  <div>
+  <!-- oc-layout-form-off：内层 vertical 子表单勿吃外层 label 宽；空 label 勿用 ''（会触发 follow-label 缩进） -->
+  <div class="oc-layout-form-off role-rule-form-item">
     <a-form-model ref="formRef" :model="formModel" :rules="rules" layout="vertical">
-      <div class="d-flex" v-for="(item, i) in resourceList" :key="item.key">
-        <a-form-model-item class="mr-2" :label="i > 0 ? '' : $t('k8s.text_64')" :prop="`resource_${item.key}`">
+      <div class="d-flex align-items-start role-rule-row" v-for="(item, i) in resourceList" :key="item.key">
+        <a-form-model-item
+          class="mr-2 mb-0"
+          :label="i === 0 ? $t('k8s.text_64') : undefined"
+          :required="i === 0 ? undefined : false"
+          :prop="`resource_${item.key}`">
           <base-select
             style="width: 300px"
             v-model:value="formModel[`resource_${item.key}`]"
@@ -11,13 +16,24 @@
             @update:item="val => syncItem(val, item)"
             :select-props="{ placeholder: $t('k8s.text_380') }" />
         </a-form-model-item>
-        <a-form-model-item :labelCol="{ span: 24 }" style="min-width: 200px;" :label="i > 0 ? '' : $t('k8s.text_381')" class="verbs-item" :prop="`verbs_${item.key}`">
+        <a-form-model-item
+          class="verbs-item mb-0"
+          style="min-width: 200px;"
+          :label="i === 0 ? $t('k8s.text_381') : undefined"
+          :required="i === 0 ? undefined : false"
+          :prop="`verbs_${item.key}`">
           <div v-if="!item.verbs.length" class="no-verbs-tip">{{$t('k8s.text_382')}}</div>
           <a-checkbox-group v-else v-model:value="formModel[`verbs_${item.key}`]" name="checkboxgroup" :options="item.verbs" />
         </a-form-model-item>
-        <a-button shape="circle" icon="minus" size="small" @click="decrease(i)" :class="i === 0 ? 'mt-4_5': ''" />
+        <a-button
+          shape="circle"
+          icon="minus"
+          size="small"
+          class="role-rule-row__remove"
+          :class="{ 'role-rule-row__remove--first': i === 0 }"
+          @click="decrease(i)" />
       </div>
-      <div class="d-flex align-items-center">
+      <div class="d-flex align-items-center mt-2">
         <a-button type="primary" shape="circle" icon="plus" size="small" @click="add" />
         <a-button type="link" @click="add">{{$t('k8s.text_383')}}</a-button>
       </div>
@@ -158,20 +174,26 @@ export default {
 <style lang="less" scoped>
 @import '../../../../src/styles/less/theme';
 
-.mt-4_5 {
-  margin-top: 1.8rem;
-}
-.verbs-item {
-  /deep/ .ant-form-item-control-wrapper {
-    span.ant-form-item-children {
-      display: inline-block;
-      .no-verbs-tip {
-        font-size: 12px;
-        color: @text-color-secondary;
-        margin-top: 0.5rem;
-      }
+.role-rule-row {
+  & + & {
+    margin-top: 8px;
+  }
+  &__remove {
+    margin-top: 6px;
+    flex-shrink: 0;
+    &--first {
+      /* 与首行 vertical label 下的控件对齐 */
+      margin-top: 36px;
     }
   }
 }
-
+.verbs-item {
+  :deep(.ant-form-item-control) {
+    .no-verbs-tip {
+      font-size: 12px;
+      color: @text-color-secondary;
+      line-height: 32px;
+    }
+  }
+}
 </style>

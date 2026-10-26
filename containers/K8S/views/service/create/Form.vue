@@ -10,24 +10,26 @@
       <a-form-model-item :label="$t('k8s.text_23')" prop="namespace">
         <namespace-select v-model:value="form.fd.namespace" @input="onNamespaceInput" :cluster="cluster" v-model:namespaceObj="namespaceObj" />
       </a-form-model-item>
-      <a-form-model-item :label="$t('k8s.text_339')" class="mb-0" prop="selector">
+      <a-form-model-item :label="$t('k8s.text_339')" prop="selector">
         <a-radio-group v-model:value="form.fd.selectorType">
           <a-radio-button value="deployments">{{$t('k8s.text_4')}}</a-radio-button>
           <a-radio-button value="statefulsets">{{$t('k8s.text_5')}}</a-radio-button>
           <a-radio-button value="daemonsets">{{$t('k8s.text_6')}}</a-radio-button>
         </a-radio-group>
-        <a-form-model-item prop="selector">
-          <base-select
-            v-model:value="form.fd.selector"
-            :resource="form.fd.selectorType"
-            version="v1"
-            idKey="name"
-            v-model:item="selectedObj"
-            :need-params="true"
-            :isDefaultSelect="true"
-            :params="resParams"
-            :select-props="{ placeholder: $t('k8s.text_77') }" />
-        </a-form-model-item>
+        <div class="mt-3">
+          <a-form-model-item prop="selector" class="mb-0">
+            <base-select
+              v-model:value="form.fd.selector"
+              :resource="form.fd.selectorType"
+              version="v1"
+              idKey="name"
+              v-model:item="selectedObj"
+              :need-params="true"
+              :isDefaultSelect="true"
+              :params="resParams"
+              :select-props="{ placeholder: $t('k8s.text_77') }" />
+          </a-form-model-item>
+        </div>
       </a-form-model-item>
       <a-form-model-item :label="$t('k8s.text_13')">
         <port-mapping

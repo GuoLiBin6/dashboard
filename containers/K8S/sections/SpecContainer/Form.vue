@@ -37,7 +37,7 @@
       <a-input v-show="false" :value="fieldVal('image')" @update:value="v => fieldSet('image', v)" />
       <div v-if="!containerImageLoading && containerImages.length === 0" class="mt-2">
         <a-alert type="info" show-icon>
-          <template slot="message">
+          <template #message>
             {{ $t('k8s.repo.image.container_image.empty_tip') }}
             <router-link to="/container_image">{{ $t('k8s.repo.image.container_image.manage') }}</router-link>
           </template>

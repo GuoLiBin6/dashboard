@@ -91,14 +91,14 @@
           <a-input-number v-model:value="form.fd.highestTierAllowed" :min="1" style="width: 200px" />
         </a-form-model-item>
         <a-form-model-item :label="$t('k8s.vc_task')">
-          <task-editor :tasks="tasks" :nested-layout="nestedLayout" />
+          <task-editor :tasks="tasks" />
         </a-form-model-item>
       </template>
       <a-form-model-item v-if="showScenarioMinAvailable" :label="$t('k8s.vc_min_available')" prop="minAvailable" :extra="minAvailableExtra">
         <a-input-number v-model:value="form.fd.minAvailable" :min="1" :max="minAvailableMax" style="width: 200px" />
       </a-form-model-item>
       <a-form-model-item v-if="scenario !== 'custom'" :label="$t('k8s.vc_task')">
-        <task-editor :tasks="tasks" :nested-layout="nestedLayout" />
+        <task-editor :tasks="tasks" />
       </a-form-model-item>
     </a-form-model>
   </div>
@@ -139,10 +139,6 @@ export default {
           networkTopologyMode: 'hard',
           highestTierAllowed: 1,
         },
-      },
-      nestedLayout: {
-        labelCol: { span: 5 },
-        wrapperCol: { span: 19 },
       },
       scenario: 'topology',
       gangMode: 'all',

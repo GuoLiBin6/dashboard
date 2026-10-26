@@ -1,12 +1,12 @@
 <template>
   <base-dialog @cancel="cancelDialog">
-    <div slot="header">{{params.title}}</div>
-    <div slot="body">
+    <template #header>{{ params.title }}</template>
+    <template #body>
       <a-form-model
         ref="formRef"
         :model="form"
         :rules="rules">
-        <a-form-model-item prop="source">
+        <a-form-model-item name="source" prop="source">
           <template #label>
             {{$t('storage.access.group.rule.source')}}&nbsp;
             <a-tooltip :title="$t('storage.access.group.rule.source.tooltip')">
@@ -15,23 +15,23 @@
           </template>
           <div class="input-with-checkbox">
             <a-input :disabled="IPCheckboxDisabled" v-model:value="form.source" />
-            <a-checkbox class="right-checkbox" @change="sourceChanged" :checked="isIPChecked">{{$t('compute.text_997')}}</a-checkbox>
+            <a-checkbox class="right-checkbox" :checked="isIPChecked" @change="sourceChanged">{{$t('compute.text_997')}}</a-checkbox>
           </div>
         </a-form-model-item>
-        <a-form-model-item :label="$t('storage.access.group.rule.rw.access_type')" prop="rw_access_type">
+        <a-form-model-item :label="$t('storage.access.group.rule.rw.access_type')" name="rw_access_type" prop="rw_access_type">
           <a-radio-group v-model:value="form.rw_access_type">
             <a-radio value="RW">{{$t('storage.access.group.rule.rw.access_type.rw')}}</a-radio>
             <a-radio value="R">{{$t('storage.access.group.rule.rw.access_type.r')}}</a-radio>
           </a-radio-group>
         </a-form-model-item>
-        <a-form-model-item :label="$t('storage.access.group.rule.user.access_type')" prop="user_access_type">
+        <a-form-model-item :label="$t('storage.access.group.rule.user.access_type')" name="user_access_type" prop="user_access_type">
           <a-radio-group v-model:value="form.user_access_type">
             <a-radio value="no_root_squash">{{$t('storage.access.group.rule.user.access_type.no_root_squash')}}</a-radio>
             <a-radio value="root_squash">{{$t('storage.access.group.rule.user.access_type.root_squash')}}</a-radio>
             <a-radio value="all_squash">{{$t('storage.access.group.rule.user.access_type.all_squash')}}</a-radio>
           </a-radio-group>
         </a-form-model-item>
-        <a-form-model-item prop="priority">
+        <a-form-model-item name="priority" prop="priority">
           <template #label>
             {{$t('compute.text_1001')}}
             <a-tooltip :title="$t('compute.text_1002')">
@@ -41,11 +41,11 @@
           <a-input-number :min="1" :max="100" v-model:value="form.priority" />
         </a-form-model-item>
       </a-form-model>
-    </div>
-    <div slot="footer">
+    </template>
+    <template #footer>
       <a-button type="primary" @click="handleConfirm" :loading="loading">{{ $t('dialog.ok') }}</a-button>
       <a-button @click="cancelDialog">{{ $t('dialog.cancel') }}</a-button>
-    </div>
+    </template>
   </base-dialog>
 </template>
 
@@ -63,11 +63,12 @@ export default {
     },
   },
   data () {
-    const selectItem = this.params.data[0]
+    const selectItem = this.params.data[0] || {}
+    const isAnyIp = selectItem.cidr === '0.0.0.0/0' || selectItem.source === '0.0.0.0/0'
     return {
       loading: false,
       form: {
-        source: selectItem.source || '',
+        source: selectItem.source || (isAnyIp ? '0.0.0.0/0' : ''),
         rw_access_type: selectItem.rw_access_type || 'RW',
         user_access_type: selectItem.user_access_type || 'no_root_squash',
         priority: selectItem.priority || 1,
@@ -75,7 +76,8 @@ export default {
       rules: {
         source: [
           { required: true, message: this.$t('compute.text_996') },
-          { validator: this.$validate('source') },
+          // 原 $validate('source') 无对应规则，会导致任意值（含 0.0.0.0/0）校验失败
+          { validator: this.$validate('cidr') },
         ],
         rw_access_type: [
           { required: true },
@@ -84,23 +86,23 @@ export default {
           { required: true },
         ],
       },
-      IPCheckboxDisabled: selectItem.cidr === '0.0.0.0/0',
-      isIPChecked: selectItem.cidr === '0.0.0.0/0',
+      IPCheckboxDisabled: isAnyIp,
+      isIPChecked: isAnyIp,
     }
   },
   methods: {
     sourceChanged (e) {
-      this.IPCheckboxDisabled = !this.IPCheckboxDisabled
-      this.isIPChecked = !this.isIPChecked
-      if (e.target.checked) {
-        this.$nextTick(() => {
-          this.form.source = '0.0.0.0/0'
-        })
+      const checked = !!e?.target?.checked
+      this.isIPChecked = checked
+      this.IPCheckboxDisabled = checked
+      if (checked) {
+        this.form.source = '0.0.0.0/0'
       } else {
-        this.$nextTick(() => {
-          this.form.source = undefined
-        })
+        this.form.source = ''
       }
+      this.$nextTick(() => {
+        this.$refs.formRef?.clearValidate?.(['source'])
+      })
     },
     saveEdit (data) {
       if (this.params.data[0].id) {
@@ -123,12 +125,14 @@ export default {
       try {
         await this.$refs.formRef.validate()
         await this.saveEdit({ ...this.form })
-        this.loading = false
         this.params.refresh && this.params.refresh()
         this.cancelDialog()
       } catch (e) {
-        this.loading = false
+        // validate 失败会 reject { errorFields }，勿再 throw 以免 unhandledrejection
+        if (e && e.errorFields) return
         throw e
+      } finally {
+        this.loading = false
       }
     },
   },

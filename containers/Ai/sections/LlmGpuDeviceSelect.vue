@@ -40,6 +40,8 @@ export default {
   methods: {
     onEditorChange (rows) {
       this.$emit('input', rows)
+      this.$emit('update:value', rows)
+      this.$emit('update:modelValue', rows)
       this.$emit('change', rows)
     },
   },

@@ -99,21 +99,21 @@ export default {
   },
   computed: {
     flatOptions () {
-      return this.options.filter(opt => !this.getHidden(opt))
+      return this.options.filter(opt => opt && !this.getHidden(opt))
     },
     groupOptions () {
-      return this.options.filter(opt => !this.getSubmenusHidden(opt.submenus))
+      return this.options.filter(opt => opt && !this.getSubmenusHidden(opt.submenus))
     },
   },
   methods: {
     getVisibleSubs (opt) {
-      return (opt.submenus || []).filter(sub => !this.getHidden(sub))
+      return (opt.submenus || []).filter(sub => sub && !this.getHidden(sub))
     },
     genOptions () {
       if (!R.is(Function, this.item.actions)) {
         throw new Error('actions must be a function')
       }
-      const options = this.item.actions(this.row)
+      const options = (this.item.actions(this.row) || []).filter(Boolean)
       this.isSubmenus = options.length > 0 && options.every(item => Object.prototype.hasOwnProperty.call(item, 'submenus'))
       this.options = options
     },

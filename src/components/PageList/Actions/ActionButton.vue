@@ -35,10 +35,53 @@ export default {
   },
   computed: {
     label () {
-      return this.item.label
+      return this.item?.label
     },
-    meta () {
-      const raw = R.is(Function, this.item.meta) ? this.item.meta(this.row) : null
+    // 勿用 meta 作 computed 名，列表 patch / compat 下 this.meta 可能异常
+    actionMeta () {
+      return this.normalizeMeta(this.item?.meta)
+    },
+    extraMeta () {
+      return this.normalizeMeta(this.item?.extraMeta)
+    },
+    disabled () {
+      if (!this.item) return true
+      const actionMeta = this.actionMeta
+      const isValidate = actionMeta.validate
+      const isExtraValidate = this.extraMeta?.validate
+      let isPermission = true
+      // singleAction判断
+      if (this.item.permission && this.row) {
+        isPermission = hasPermission({ key: this.item.permission, resourceData: this.row })
+      }
+      // groupActions判断
+      if (this.item.permission && !this.row && this.rows && this.rows.length && actionMeta.buttonType !== 'primary') {
+        isPermission = this.rows.every(item => {
+          return hasPermission({ key: this.item.permission, resourceData: item })
+        })
+      }
+      if (this.item.permission && !this.row && ((!this.rows || !this.rows.length) || actionMeta.buttonType === 'primary')) {
+        isPermission = hasPermission({ key: this.item.permission, resourceData: null })
+      }
+      return !isValidate || !isPermission || !isExtraValidate
+    },
+    tooltip () {
+      return this.actionMeta.tooltip || this.extraMeta.tooltip
+    },
+    // 有有效提示内容才包 Tooltip（空串/false 不算）
+    hasTooltip () {
+      const t = this.tooltip
+      return !(t == null || t === false || t === '')
+    },
+  },
+  methods: {
+    normalizeMeta (metaField) {
+      let raw = null
+      try {
+        raw = R.is(Function, metaField) ? metaField(this.row) : null
+      } catch (e) {
+        return { validate: true }
+      }
       if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
         return { validate: true }
       }
@@ -52,54 +95,13 @@ export default {
         ...rest,
       }
     },
-    extraMeta () {
-      const raw = R.is(Function, this.item.extraMeta) ? this.item.extraMeta(this.row) : null
-      if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
-        return { validate: true }
-      }
-      if (raw.$ && typeof raw.$ === 'object') {
-        return { validate: true }
-      }
-      const { validate = true, ...rest } = raw
-      return {
-        validate,
-        ...rest,
-      }
-    },
-    disabled () {
-      const isValidate = this.meta.validate
-      const isExtraValidate = this.extraMeta?.validate
-      let isPermission = true
-      // singleAction判断
-      if (this.item.permission && this.row) {
-        isPermission = hasPermission({ key: this.item.permission, resourceData: this.row })
-      }
-      // groupActions判断
-      if (this.item.permission && !this.row && this.rows && this.rows.length && this.meta.buttonType !== 'primary') {
-        isPermission = this.rows.every(item => {
-          return hasPermission({ key: this.item.permission, resourceData: item })
-        })
-      }
-      if (this.item.permission && !this.row && ((!this.rows || !this.rows.length) || this.meta.buttonType === 'primary')) {
-        isPermission = hasPermission({ key: this.item.permission, resourceData: null })
-      }
-      return !isValidate || !isPermission || !isExtraValidate
-    },
-    tooltip () {
-      return this.meta.tooltip || this.extraMeta.tooltip
-    },
-    // 有有效提示内容才包 Tooltip（空串/false 不算）
-    hasTooltip () {
-      const t = this.tooltip
-      return !(t == null || t === false || t === '')
-    },
-  },
-  methods: {
     handleClick (e) {
       e.stopPropagation()
-      if (this.disabled) return
+      if (this.disabled || !this.item) return
       this.$emit('hidden-popover', e)
-      this.item.action(this.row)
+      if (R.is(Function, this.item.action)) {
+        this.item.action(this.row)
+      }
       // this.$emit('clear-selected')
     },
     handlePopoverClick (e) {
@@ -112,18 +114,20 @@ export default {
     },
   },
   render (h) {
+    if (!this.item) return null
+    const actionMeta = this.actionMeta || { validate: true }
+    const btnType = actionMeta.buttonType || this.buttonType
     // antdv4：在 a-menu-item/a-dropdown 等场景需要稳定的单一根节点，避免 Fragment 导致内部取 parentNode 报错
     const baseBtnProps = {
       style: this.buttonStyle,
       block: this.buttonBlock,
       size: this.buttonSize,
-      type: this.meta.buttonType || this.buttonType,
+      type: btnType,
       disabled: this.disabled,
     }
 
     let action
     if (this.popoverTrigger) {
-      const btnType = this.meta.buttonType || this.buttonType
       action = h('a-button', {
         ...baseBtnProps,
         class: {
@@ -180,7 +184,7 @@ export default {
           style: this.buttonStyle,
           block: this.buttonBlock,
           size: this.buttonSize,
-          type: this.meta.buttonType || this.buttonType,
+          type: btnType,
           disabled: this.disabled,
           onClick: this.handleClick,
         },

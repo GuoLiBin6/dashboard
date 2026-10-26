@@ -2,7 +2,7 @@
   <div class="data-view">
     <div class="data-view-item mt-3" v-for="item in dataList" :key="item.title">
       <div class="data-view-item_title mb-1">{{ item.title }}</div>
-      <code-mirror v-model="item.content" :options="cmOptions" />
+      <code-mirror v-model="item.content" :options="cmOptions" view-height="600px" />
     </div>
     <a-button class="mt-4" type="primary" v-if="dataList && dataList.length" @click="update" :loading="loading">{{$t('k8s.text_45')}}</a-button>
   </div>
@@ -80,8 +80,6 @@ export default {
 
 <style lang="less" scoped>
 .data-view {
-  &:deep(.CodeMirror) {
-    height: 600px !important;
-  }
+  position: relative;
 }
 </style>

@@ -53,9 +53,9 @@
             {{$t('compute.text_196')}}<help-link href="/network">{{$t('compute.perform_create')}}</help-link>
           </template>
         </a-form-item>
-        <!-- 贴着子网内容，不靠右拉开 -->
+        <!-- 贴着子网内容，不靠右拉开；无可配置高级项时不展示入口（避免空面板） -->
         <div class="network-config-aside">
-          <a-button type="link" size="small" @click="toggleAdvanced">
+          <a-button v-if="hasAdvancedOptions(item)" type="link" size="small" @click="toggleAdvanced">
             {{ showAdvanced ? $t('compute.hide_advanced') : $t('compute.advanced') }}
           </a-button>
           <span v-if="i !== 0" class="network-row-remove-wrap">
@@ -65,7 +65,7 @@
       </div>
 
       <!-- 与磁盘高级区一致：展开后 checkbox 开关，勾选后再出表单项 -->
-      <div v-if="showAdvanced" class="network-advanced-panel">
+      <div v-if="showAdvanced && hasAdvancedOptions(item)" class="network-advanced-panel">
         <div class="network-advanced-panel__toggles">
           <template v-if="canShowIpConfig(item)">
             <a-tooltip :title="ipConfigDisabledTip(item) || ipBtnTooltip || undefined">
@@ -677,6 +677,18 @@ export default {
     canShowIpv6Address (item) {
       return this.isSupportIPv6(item)
     },
+    /** 与 Disk.hasAdvanced 一致：当前网卡没有任何可配高级项时隐藏入口 */
+    hasAdvancedOptions (item) {
+      return !!(
+        this.canShowIpConfig(item) ||
+        this.showMacConfig ||
+        this.showDeviceConfig ||
+        this.showSecgroupConfig ||
+        this.canShowIpv6Require(item) ||
+        this.canShowIpv6Address(item) ||
+        this.showPortMapping
+      )
+    },
     // 仅 IPv6 时禁用指定 IP（含子项），不再隐藏
     isIpConfigDisabled (item) {
       return this.isSupportIPv6(item) && item.ipv6Mode === 'only' && !!item.requireIpv6
@@ -841,8 +853,8 @@ export default {
       })
     },
     beforeDefaultSelectCallBack (data = []) {
-      // BaseSelect 默认只取 list[0]，故仅当首项可用时允许默认选
-      return this.isNetworkAvailable(data[0])
+      // BaseSelect 仍取 list[0]；有任一可用子网即放行，最终选中由 resolveNetworkFromFetchedList 校正
+      return (data || []).some(n => this.isNetworkAvailable(n))
     },
     isNetworkAvailable (net) {
       if (!net || typeof net !== 'object') return false
@@ -853,13 +865,13 @@ export default {
       return list.find(i => i.id === id || i.key === id || String(i.id) === String(id)) || null
     },
     /**
-     * 草稿/工单回填（canDefaultSelect=false）：数据驱动，opts/resList 每次变化都重算并写回。
-     * 1) _draftNetworkId 在列表且可用 → 始终优先
-     * 2) 草稿在列表但不可用 / 不在列表 / 无草稿 → 可用第一项
-     * 3) 都没有可用项 → 清空无效 id，不写不存在的网络
+     * 默认选中 + 草稿/工单回填：opts/resList 变化时保证落到可用子网。
+     * 1) _draftNetworkId 在列表且可用 → 优先
+     * 2) 当前已选且仍可用 → 保留（避免覆盖用户手选）
+     * 3) 否则 → 列表内第一个可用项
+     * 4) 都没有可用项 → 清空无效 id
      */
     resolveNetworkFromFetchedList (list, item) {
-      if (this.canDefaultSelect) return
       if (!item || !Array.isArray(list) || !list.length) return
       // 供 VPC 稳定后再用同一份 opts 重跑回填（params clear 后可能不再 emit）
       item._lastNetworkResList = list
@@ -872,8 +884,13 @@ export default {
       const preferHit = preferId ? this.findNetworkInList(list, preferId) : null
       if (preferHit && this.isNetworkAvailable(preferHit)) {
         target = preferHit
-      } else {
-        // 未命中 / 不可用 / 无草稿：绝不回填无效 id，改选列表内可用第一项
+      } else if (curId) {
+        const curHit = this.findNetworkInList(list, curId)
+        if (curHit && this.isNetworkAvailable(curHit)) {
+          target = curHit
+        }
+      }
+      if (!target) {
         target = list.find(n => this.isNetworkAvailable(n)) || null
       }
 
@@ -886,7 +903,10 @@ export default {
         return
       }
 
-      // opts 每次变化都写回，不因 curId===target 而跳过
+      if ((curId === target.id || String(curId) === String(target.id)) && item.network?.id === target.id) {
+        return
+      }
+
       item.network = target
       this.$nextTick(() => {
         if (!this.model) return

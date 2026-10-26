@@ -2,7 +2,8 @@
   <div class="usage-filter-box mb-2 mt-2">
     <div class="d-flex align-items-center mb-2">
       <a-button class="flex-shrink-0" :disabled="loading" @click="onRefreshClick">
-        <a-icon type="sync" :spin="loading" />
+        <!-- a-icon 已移除，改用项目 Icon（type=sync） -->
+        <icon type="sync" :spin="loading" />
       </a-button>
       <date-time
         ref="dateTime"

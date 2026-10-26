@@ -1,5 +1,5 @@
 <template>
-  <a-form-item>
+  <a-form-item class="mb-0">
     <base-select
       filterable
       :params="params"
@@ -43,7 +43,7 @@ export default {
   },
   methods: {
     syncToForm (v) {
-      this.$set(this.model, this.fieldName, v)
+      this.model[this.fieldName] = v
     },
     onChange (v) {
       this.innerValue = v

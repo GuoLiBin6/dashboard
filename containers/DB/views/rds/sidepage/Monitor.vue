@@ -13,7 +13,6 @@
 </template>
 
 <script>
-import _ from 'lodash'
 import * as R from 'ramda'
 import { RDS_MONITOR_ALL_OPTS } from '@DB/constants'
 import DashboardCards from '@Monitor/components/MonitorCard/DashboardCards'
@@ -72,11 +71,6 @@ export default {
         }
       })
     },
-  },
-  created () {
-    this.fetchData()
-    this.fetchDataDebounce = _.debounce(this.fetchData, 500)
-    this.baywatch(['time', 'timeGroup', 'data.id', 'customTime', 'groupFunc'], this.fetchDataDebounce)
   },
   methods: {
     genQueryData (val) {

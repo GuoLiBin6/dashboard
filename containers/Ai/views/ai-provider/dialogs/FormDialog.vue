@@ -16,7 +16,7 @@
           <a-form-model-item :label="$t('aice.aiproxy.provider_key')" prop="provider_key">
             <aiproxy-provider-key-auto-complete
               v-if="params.type !== 'edit'"
-              v-model="form.provider_key"
+              v-model:value="form.provider_key"
               :placeholder="$t('common.tips.input', [$t('aice.aiproxy.provider_key')])" />
             <aiproxy-provider-label
               v-else
