@@ -69,6 +69,11 @@ export default {
       type: Boolean,
       default: true,
     },
+    // 兼容旧调用：分析页等仍传 monthToEnd
+    monthToEnd: {
+      type: Boolean,
+      default: undefined,
+    },
     // 是否默认选中一个
     hasDefaultTime: {
       type: Boolean,
@@ -149,6 +154,11 @@ export default {
       customTimeLabel: '',
     }
   },
+  computed: {
+    resolvedTimeToEnd () {
+      return this.monthToEnd !== undefined ? this.monthToEnd : this.timeToEnd
+    },
+  },
   watch: {
     customDate () {
       this.handleDateModeChange()
@@ -227,7 +237,7 @@ export default {
         start = this.customDate.start
         end = this.customDate.end
       }
-      if (['week', 'month', 'quarter', 'year'].includes(dateMode) && this.timeToEnd) {
+      if (['week', 'month', 'quarter', 'year'].includes(dateMode) && this.resolvedTimeToEnd) {
         end = this.$moment().endOf(dateMode)
       }
       this.time.date = [start, end]

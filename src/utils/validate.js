@@ -440,10 +440,10 @@ export function runRuleValidator (rule, value, opts = {}) {
 }
 
 /**
- * @description 校验密码
+ * @description 校验密码（antdv4：返回 Promise，勿用 callback）
  */
-export const passwordValidator = (rule, value, _callback) => {
-  value = value.trim()
+export const passwordValidator = (rule, value) => {
+  value = (value || '').trim()
   const ALL_DIGITS = /\d+/g
   const ALL_LETTERS = /[a-z]/g
   const ALL_UPPERS = /[A-Z]/g
@@ -456,21 +456,13 @@ export const passwordValidator = (rule, value, _callback) => {
     }
   })
   const sensitives = ['Huawei@', 'huawei@', 'Admin@', 'admin@', 'Root@', 'root@', 'ABC@', 'abc@', 'ABCD@', 'abcd@', 'Huawei123@', 'huawei123@', 'Admin123@', 'admin123@', 'Root123@', 'root123@', 'Huawei#', 'huawei#', 'Admin#', 'admin#', 'Root#', 'root#', 'ABC#', 'abc#', 'ABCD#', 'abcd#', 'Huawei123#', 'huawei123#', 'Admin123#', 'admin123#', 'Root123#', 'root123#，Huawei!', 'huawei!', 'Admin!', 'admin!', 'Root!', 'root!', 'ABC!', 'abc!', 'ABCD!', 'abcd!', 'Huawei123!', 'huawei123!', 'Admin123!', 'admin123!', 'Root123!', 'root123!', 'ABC123!', 'abc123!', 'Huawei@123', 'huawei@123', 'Admin@123', 'admin@123', 'Root@123', 'root@123', 'ABC@123', 'abc@123', '123@Huawei', '123@Root', '123@abc', 'Huawei123', 'huawei123', 'Admin123', 'admin123', 'Root123', 'root123', 'abc123', 'Huawei_123', 'huawei_123', 'Admin_123', 'admin_123', 'Root_123', 'root_123', 'ABC_123', 'abc_123', '123abc', '123abcd', '1234abc', '1234abcd', 'abcd123', 'abc1234', 'abcd1234', 'abcd@1234', 'abcd1234!', 'abcd_1234', 'a123456', '123.com', '123@com', '123_com', 'Huawei!@#', 'huawei!@#', 'Admin!@#', 'admin!@#', 'Root!@#', 'root!@#', 'Huawei!@', 'huawei!@', 'Admin!@', 'admin!@', 'Root!@', 'root!@', 'Huaweiroot', 'HuaweiRoot', 'huaweiroot', 'huaweiRoot', 'Huaweiadmin', 'HuaweiAdmin', 'huaweiadmin', 'huaweiAdmin', 'Adminroot', 'AdminRoot', 'adminRoot', 'adminroot', 'Rootadmin', 'RootAdmin', 'rootAdmin', 'rootadmin', 'Rootroot', 'RootRoot', 'rootroot', 'Administrator', 'Password', 'Password123', 'Password@123', 'Password_123', 'Password123!', 'DDM@123', 'ddM@123', 'dDm@123']
-  const sensitiveValidator = () => {
-    if (sensitives.indexOf(value) > -1) {
-      _callback(new Error(i18n.t('validator.passwordValidator', [value])))
-      return false
-    }
-    return true
+  if (sensitives.indexOf(value) > -1) {
+    return Promise.reject(new Error(i18n.t('validator.passwordValidator', [value])))
   }
   if (ALL_DIGITS.test(value) && ALL_LETTERS.test(value) && ALL_UPPERS.test(value) && spec && value.charAt(0) !== '/' && value.length >= 12 && value.length <= 30) {
-    if (sensitiveValidator()) {
-      _callback()
-    }
-  } else {
-    // callback(new Error('8~30个字符，密码中有一个数字、大写字母、小写字母、特殊符号 ~`!@#$%^&*()-_=+[]{}|:\':\\",./<>?中至少一个'))
-    _callback(new Error(i18n.t('validator.sshPassword')))
+    return Promise.resolve()
   }
+  return Promise.reject(new Error(i18n.t('validator.sshPassword')))
 }
 
 /**

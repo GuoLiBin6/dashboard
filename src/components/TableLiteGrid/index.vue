@@ -177,7 +177,7 @@
         :current="pagerConfig.currentPage || 1"
         :page-size="pagerConfig.pageSize || 10"
         :total="pagerConfig.total || 0"
-        :show-size-changer="!!pagerConfig.pageSizes"
+        :show-size-changer="pagerConfig.pageSizes !== false"
         :page-size-options="pagerSizeOptions"
         show-quick-jumper
         :show-total="showPagerTotal"

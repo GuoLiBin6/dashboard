@@ -40,11 +40,11 @@
             :title="confirmText"
             class="text-truncate"
             type="primary"
-            native-type="submit"
-            html-type="submit"
+            html-type="button"
             style="width: 120px;"
             :loading="loading"
-            :disabled="disabled || !!errors.length">{{ confirmText }}</a-button>
+            :disabled="disabled"
+            @click.stop="handleConfirm">{{ confirmText }}</a-button>
         </div>
         <side-errors :error-title="$t('compute.text_290')" :errors="errors" @update:errors="changeErrors" />
       </template>
@@ -66,6 +66,7 @@ export default {
   components: {
     SideErrors,
   },
+  emits: ['confirm', 'update:errors', 'getOriginPrice'],
   props: {
     loading: {
       type: Boolean,
@@ -293,11 +294,14 @@ export default {
         this.getPriceList()
       }
     })
-    this.$bus.$on('VMCreateDisabled', (val) => {
-      this.disabled = val
-    })
+    // 价格清单不响应 VMCreateDisabled（真实存储容量与报价无关）
+    this.disabled = false
   },
   methods: {
+    handleConfirm () {
+      if (this.loading || this.disabled) return
+      this.$emit('confirm')
+    },
     changeErrors (errors) {
       this.$emit('update:errors', {})
     },

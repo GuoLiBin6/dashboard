@@ -2,28 +2,22 @@ import i18n from '@/locales'
 import validateForm, { isRequired } from '@/utils/validate'
 import { diskValidator } from '@Compute/utils/createServer'
 
-const validateValidPath = (rule, value, callback) => {
-  if (!value) {
-    callback()
-    return
-  }
+const validateValidPath = (rule, value) => {
+  if (!value) return Promise.resolve()
   if (value.startsWith('/')) {
     if (value === '/') {
-      callback(new Error(i18n.t('compute.repo.mount_point.check_content')))
-    } else {
-      callback()
+      return Promise.reject(new Error(i18n.t('compute.repo.mount_point.check_content')))
     }
-  } else {
-    callback(new Error(i18n.t('compute.repo.mount_point.check_start')))
+    return Promise.resolve()
   }
+  return Promise.reject(new Error(i18n.t('compute.repo.mount_point.check_start')))
 }
 
-const validateMountNames = (rule, value, callback) => {
+const validateMountNames = (rule, value) => {
   if (value === undefined) {
-    callback(new Error(i18n.t('common.tips.select', [i18n.t('compute.repo.storage_statement')])))
-    return
+    return Promise.reject(new Error(i18n.t('common.tips.select', [i18n.t('compute.repo.storage_statement')])))
   }
-  callback()
+  return Promise.resolve()
 }
 
 export function containerFieldFactories () {

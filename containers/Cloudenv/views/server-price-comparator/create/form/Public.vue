@@ -5,7 +5,6 @@
       class="mt-3"
       :model="form.fd"
       :rules="rules"
-      @submit="submit"
       hideRequiredMark>
       <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-show="false">
         <domain-project
@@ -82,7 +81,8 @@
         :dataDiskSizes="dataDiskSizes"
         :isOpenWorkflow="isOpenWorkflow"
         :isServertemplate="isServertemplate"
-        :hasMeterService="hasMeterService" />
+        :hasMeterService="hasMeterService"
+        @confirm="submit" />
     </a-form-model>
   </div>
 </template>

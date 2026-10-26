@@ -282,8 +282,60 @@ function labelTextEndsWithColon (text) {
 }
 
 /**
+ * antdv4 Form：自定义 validator 须返回 Promise；旧 callback 写法会 warning。
+ * Form / Form.Item 入口统一包一层，兼容两套写法。
+ */
+function ensurePromiseRuleValidators (rules) {
+  if (rules == null) return rules
+  const list = Array.isArray(rules) ? rules : [rules]
+  return list.map((rule) => {
+    if (!rule || typeof rule.validator !== 'function') return rule
+    const origin = rule.validator
+    return {
+      ...rule,
+      validator (r, value) {
+        return new Promise((resolve, reject) => {
+          let settled = false
+          const finish = (err) => {
+            if (settled) return
+            settled = true
+            if (err) reject(err instanceof Error ? err : new Error(String(err)))
+            else resolve()
+          }
+          let ret
+          try {
+            ret = origin(r, value, finish)
+          } catch (e) {
+            finish(e)
+            return
+          }
+          if (ret != null && typeof ret.then === 'function') {
+            Promise.resolve(ret).then(() => finish()).catch(finish)
+            return
+          }
+          // 无 Promise：同步 callback 已调 finish；未调则视为通过，避免挂死提交
+          if (!settled) finish()
+        })
+      },
+    }
+  })
+}
+
+/** Form :rules 为 { field: Rule|Rule[] } */
+function ensurePromiseFormRules (rules) {
+  if (rules == null || typeof rules !== 'object') return rules
+  if (Array.isArray(rules)) return ensurePromiseRuleValidators(rules)
+  const out = {}
+  Object.keys(rules).forEach((key) => {
+    out[key] = ensurePromiseRuleValidators(rules[key])
+  })
+  return out
+}
+
+/**
  * a-form-model 兼容：antdv4 Form 无 validateField（单数字段），旧代码大量调用。
  * 委托 validateFields；其余实例方法透传。
+ * 同时把 :rules 里的 callback 校验器包成 Promise。
  */
 function createFormModel (RawForm) {
   return defineComponent({
@@ -326,7 +378,13 @@ function createFormModel (RawForm) {
         setFieldsValue: (...a) => call('setFieldsValue', ...a),
         setFields: (...a) => call('setFields', ...a),
       })
-      return () => h(RawForm, mergeProps(attrs, { ref: innerRef }), slots)
+      return () => {
+        const pass = { ...attrs }
+        if (pass.rules != null) {
+          pass.rules = ensurePromiseFormRules(pass.rules)
+        }
+        return h(RawForm, mergeProps(pass, { ref: innerRef }), slots)
+      }
     },
   })
 }
@@ -368,7 +426,11 @@ function createFormModelItem (RawFormItem) {
         )
 
         if (name !== undefined && name !== null) pass.name = name
-        if (props.rules !== undefined) pass.rules = props.rules
+        const rawRules = props.rules !== undefined ? props.rules : mergedAttrs.rules
+        if (rawRules !== undefined) {
+          pass.rules = ensurePromiseRuleValidators(rawRules)
+          delete mergedAttrs.rules
+        }
         if (props.required !== undefined) pass.required = props.required
 
         // 默认真；可显式 :validate-first="false" 关闭
@@ -637,6 +699,18 @@ function normalizeLabelInValueForSelect (value) {
 }
 
 function createLegacySelect (RawSelect) {
+  // 仅声明需要特殊处理的事件；其余（如 dropdownVisibleChange）走 attrs 透传到 RawSelect，
+  // 若写入 emits 却未转发，父级 @dropdownVisibleChange 会被吞掉（分析页 distinct 不发）。
+  const FALLTHROUGH_EVENTS = [
+    'search',
+    'select',
+    'deselect',
+    'clear',
+    'blur',
+    'focus',
+    'dropdownVisibleChange',
+    'popupScroll',
+  ]
   const LegacySelect = defineComponent({
     name: 'ASelect',
     inheritAttrs: false,
@@ -644,7 +718,7 @@ function createLegacySelect (RawSelect) {
       value: { default: undefined },
       labelInValue: { type: Boolean, default: undefined },
     },
-    emits: ['change', 'update:value', 'search', 'select', 'deselect', 'clear', 'blur', 'focus', 'dropdownVisibleChange', 'popupScroll'],
+    emits: ['change', 'update:value', ...FALLTHROUGH_EVENTS],
     setup (props, { attrs, slots, emit, expose }) {
       const innerRef = shallowRef(null)
       expose({
@@ -666,6 +740,17 @@ function createLegacySelect (RawSelect) {
         if (labelInValue && value !== undefined) {
           value = normalizeLabelInValueForSelect(value)
         }
+        // Vue3：已声明 emits 的监听不在 attrs，需手动从 RawSelect 回调再 emit
+        const fallthroughHandlers = {}
+        FALLTHROUGH_EVENTS.forEach((name) => {
+          const attrKey = `on${name.charAt(0).toUpperCase()}${name.slice(1)}`
+          const fromAttrs = restAttrs[attrKey]
+          delete restAttrs[attrKey]
+          fallthroughHandlers[attrKey] = (...args) => {
+            emit(name, ...args)
+            if (typeof fromAttrs === 'function') fromAttrs(...args)
+          }
+        })
         return h(RawSelect, mergeProps(restAttrs, {
           ref: innerRef,
           value,
@@ -678,6 +763,7 @@ function createLegacySelect (RawSelect) {
             emit('update:value', v)
             if (typeof onUpdateValue === 'function') onUpdateValue(v)
           },
+          ...fallthroughHandlers,
         }), slots)
       }
     },
@@ -871,13 +957,10 @@ function registerAntdCompat (app) {
       }),
   })
 
-  // a-form / AForm：默认 labelAlign=left
-  setFormLabelAlignLeft(Form)
-  setFormLabelAlignLeft(app.component('AForm'))
-
   // 兼容旧写法 a-form-model / a-form-model-item（antdv4 已移除 FormModel）
-  // 始终覆盖：补 validateField；prop → name；空 label 不展示 * / ：
+  // 始终覆盖：补 validateField；prop → name；空 label 不展示 * / ：；rules 包成 Promise
   const FormModelCompat = createFormModel(Form)
+  app.component('AForm', FormModelCompat)
   app.component('AFormModel', FormModelCompat)
   const FormItemCompat = createFormModelItem(Form.Item)
   app.component('AFormItem', FormItemCompat)

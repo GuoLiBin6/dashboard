@@ -8,13 +8,14 @@
       :open="false"
       :inputReadOnly="true"
       @openChange="showPanel" />
-    <!-- 挂到 body，避免被 dialog overflow 裁切 -->
-    <teleport to="body">
+    <!-- teleport：独立使用挂 body 防裁切；嵌在 Popconfirm 内时关掉，避免点选被当成「点外面」关掉外层 -->
+    <teleport to="body" :disabled="!teleport">
       <div
         v-if="visible"
         ref="panel"
         class="oc-date-range__dropdown"
         :style="dropdownStyle"
+        @mousedown.stop
         @click.stop>
         <div class="oc-date-range__inputs">
           <input :value="textLeft" type="text" readonly class="oc-date-range__text" />
@@ -129,6 +130,16 @@ export default {
     value: Array,
     panelVisible: Boolean,
     disabledDate: Function,
+    // true：选完两端即关面板（独立使用）；false：保持打开，由外层「确定」关闭（如费用 CustomDate）
+    closeOnSelect: {
+      type: Boolean,
+      default: true,
+    },
+    // false：不挂 body（嵌在 Popconfirm 等容器内时用，点击不会误关外层）
+    teleport: {
+      type: Boolean,
+      default: true,
+    },
   },
   data () {
     const start = toDayjs(this.value && this.value[0]) || dayjs()
@@ -289,6 +300,17 @@ export default {
       })
     },
     showPanel () {
+      // 打开前用 value 同步选中态与面板月份，避免与外部已确认值不一致
+      this.changeIndex = 0
+      this.hoverValue = null
+      this.selected = [toDayjs(this.value && this.value[0]), toDayjs(this.value && this.value[1])]
+      const start = this.selected[0] || dayjs()
+      const end = this.selected[1] || start
+      this.leftMonth = startOfMonth(start)
+      this.rightMonth = startOfMonth(end)
+      if (!this.rightMonth.isAfter(this.leftMonth, 'month')) {
+        this.rightMonth = this.leftMonth.add(1, 'month')
+      }
       this.visible = true
       this.$nextTick(() => {
         this.updateDropdownPosition()
@@ -388,13 +410,16 @@ export default {
       this.selected = [a, b]
       this.changeIndex = 0
       this.hoverValue = null
+      // 同步回写，避免关面板时 value 尚未更新导致第二端丢失
       this.$emit('calendarChange', [a, b])
-      this.$nextTick(() => {
-        this.$emit('change', [a, b])
-        this.$emit('update:value', [a, b])
-        // 保持面板打开，由外层「确定」关闭；与费用筛选交互一致可直接关掉
-        this.visible = false
-      })
+      this.$emit('change', [a, b])
+      this.$emit('update:value', [a, b])
+      if (this.closeOnSelect) {
+        this.$nextTick(() => {
+          this.visible = false
+        })
+      }
+      // closeOnSelect=false 时保持打开，由外层「确定」关闭（避免 teleport 点击关掉 popconfirm）
     },
   },
 }

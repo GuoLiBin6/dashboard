@@ -18,6 +18,7 @@
                 ref="dateSelect"
                 v-model="formData.date_range"
                 :panelVisible="visible"
+                :teleport="false"
                 :disabledDate="disabledDate"
                 @calendarChange="onCalendarChange"
                 @openChange="onPickerOpenChange" />
@@ -26,7 +27,12 @@
         </a-form-model>
         <a-form-model hideRequiredMark v-else ref="ruleForm" :model="formData" :rules="rules" v-bind="layout">
           <a-form-model-item :label="$t('common.date_range')" prop="month_range">
-            <month-range-picker ref="monthSelect" v-model="formData.month_range" :panelVisible="visible" />
+            <month-range-picker
+              ref="monthSelect"
+              v-model="formData.month_range"
+              :panelVisible="visible"
+              @openChange="onPickerOpenChange"
+              @change="onMonthRangeChange" />
           </a-form-model-item>
         </a-form-model>
         <a-button
@@ -101,6 +107,8 @@ export default {
       visible: false,
       monthSelectVisble: false,
       pickerOpen: false,
+      // 日历/月份选完两端会自动关面板；短时内禁止把外层确认弹层一并关掉
+      suppressPopClose: false,
       layout: {
         labelCol: { span: 5 },
         wrapperCol: { span: 19 },
@@ -124,8 +132,15 @@ export default {
         this.monthChangeIndex = 0
       }
       if (val) {
-        this.syncDateRangeFromSource()
+        this.syncFormFromCustomDate()
       }
+    },
+    customDate: {
+      deep: true,
+      handler () {
+        // 弹层关闭时跟已确认值保持一致，避免按钮文案与面板脱节
+        if (!this.visible) this.syncFormFromCustomDate()
+      },
     },
     visible (val) {
       if (!val && !this.isAdvancedView) {
@@ -136,6 +151,8 @@ export default {
         this.pickerOpen = false
       }
       if (val) {
+        // 打开时用已确认的 customDate 回填，避免上次未点确定的临时选择残留
+        this.syncFormFromCustomDate()
         this.$nextTick(() => {
           const that = this
           const tags = document.getElementsByClassName('ant-popover-inner-content')
@@ -150,16 +167,20 @@ export default {
     },
   },
   methods: {
-    syncDateRangeFromSource () {
-      const monthStart = this.formData.month_range && this.formData.month_range[0]
-      const monthEnd = this.formData.month_range && this.formData.month_range[1]
-      if (monthStart && monthEnd) {
-        this.formData.date_range = [toDayjs(monthStart), toDayjs(monthEnd)]
-        return
-      }
+    /** 用父级已确认的 customDate 同步表单（月范围 + 日范围） */
+    syncFormFromCustomDate () {
       const start = this.customDate && this.customDate.start
       const end = this.customDate && this.customDate.end
-      this.formData.date_range = [toDayjs(start) || dayjs(), toDayjs(end) || dayjs()]
+      this.formData.month_range = start && end
+        ? [moment(start), moment(end)]
+        : [null, null]
+      this.formData.date_range = [
+        toDayjs(start) || dayjs(),
+        toDayjs(end) || dayjs(),
+      ]
+    },
+    syncDateRangeFromSource () {
+      this.syncFormFromCustomDate()
     },
     onCalendarChange (dates) {
       if (!dates) {
@@ -168,15 +189,36 @@ export default {
       }
       const next = [dates[0] ? toDayjs(dates[0]) : null, dates[1] ? toDayjs(dates[1]) : null]
       this.formData.date_range = next
+      // 选完两端后内层日历会关；标记一下，避免同一次点击把外层「确定」弹层也关掉
+      if (next[0] && next[1]) this.armSuppressPopClose()
+    },
+    onMonthRangeChange (val) {
+      if (val && val[0] && val[1]) this.armSuppressPopClose()
+    },
+    armSuppressPopClose () {
+      this.suppressPopClose = true
+      clearTimeout(this._suppressPopCloseTimer)
+      this._suppressPopCloseTimer = setTimeout(() => {
+        this.suppressPopClose = false
+        this._suppressPopCloseTimer = null
+      }, 300)
     },
     onPickerOpenChange (open) {
       this.pickerOpen = !!open
+      // 选完两端内层自动收起时，再挡一拍外层误关
+      if (!open && this.formData.date_range && this.formData.date_range[0] && this.formData.date_range[1]) {
+        this.armSuppressPopClose()
+      }
     },
     isPickerDropdownOpen () {
-      return !!(this.$refs.dateSelect && this.$refs.dateSelect.visible)
+      const dateOpen = !!(this.$refs.dateSelect && this.$refs.dateSelect.visible)
+      const monthOpen = !!(this.$refs.monthSelect && this.$refs.monthSelect.visible)
+      return dateOpen || monthOpen
     },
     onPopOpenChange (open) {
-      if (!open && (this.pickerOpen || this.isPickerDropdownOpen())) {
+      // 1) 内层面板仍开着 2) 刚选完两端内层自动关闭的同一拍 —— 都不要关外层确认弹层
+      if (!open && (this.pickerOpen || this.isPickerDropdownOpen() || this.suppressPopClose)) {
+        this.visible = true
         return
       }
       this.visible = open
@@ -220,6 +262,8 @@ export default {
       this.isAdvancedView = !this.isAdvancedView
     },
     cancel () {
+      // 取消时丢弃未确认改动，恢复到按钮上展示的已确认区间
+      this.syncFormFromCustomDate()
       this.pickerOpen = false
       this.visible = false
       setTimeout(() => {

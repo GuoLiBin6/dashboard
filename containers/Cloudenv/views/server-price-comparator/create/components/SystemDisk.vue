@@ -99,9 +99,10 @@ export default {
       type: Object,
     },
     storageHostParams: Object,
+    // 价格清单只做报价估算，不因真实块存储容量禁用「加入清单」
     ignoreStorageStatus: {
       type: Boolean,
-      default: false,
+      default: true,
     },
   },
   computed: {

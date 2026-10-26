@@ -78,13 +78,13 @@ export function checkIpV6 (i, networkData) {
 
 /** 宿主机端口：可空；填写时需为 [min, max] 整数（默认 20000-25000） */
 export function validateHostPortRange (min = 20000, max = 25000) {
-  return (rule, value, callback) => {
-    if (value === undefined || value === null || value === '') return callback()
+  return (rule, value) => {
+    if (value === undefined || value === null || value === '') return Promise.resolve()
     const port = Number(value)
     if (!Number.isInteger(port) || port < min || port > max) {
-      return callback(new Error(i18n.t('compute.port_mappings.invalid_host_port', [min, max])))
+      return Promise.reject(new Error(i18n.t('compute.port_mappings.invalid_host_port', [min, max])))
     }
-    return callback()
+    return Promise.resolve()
   }
 }
 

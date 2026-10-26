@@ -138,12 +138,14 @@ export default function lazyRegistryPlugin (root: string): Plugin {
         return
       }
       regenerate()
+      // 同时失效注册表 + 变更文件本身，避免弹窗仍用旧模块
       const mods = [
         server.moduleGraph.getModuleById(RESOLVED_DIALOG),
         server.moduleGraph.getModuleById(RESOLVED_SIDEPAGE),
+        ...server.moduleGraph.getModulesByFile(file),
       ].filter(Boolean)
       if (mods.length) {
-        return mods as any
+        return [...new Set(mods)] as any
       }
     },
   }

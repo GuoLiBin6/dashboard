@@ -5,7 +5,6 @@
       class="mt-3"
       :model="form.fd"
       :rules="rules"
-      @submit="submit"
       hideRequiredMark>
       <a-form-model-item :label="$t('compute.text_297', [$t('dictionary.project')])" v-show="false">
         <domain-project
@@ -74,7 +73,8 @@
         v-model:errors="errors"
         :isServertemplate="isServertemplate"
         :hasMeterService="hasMeterService"
-        @getOriginPrice="getOriginPrice" />
+        @getOriginPrice="getOriginPrice"
+        @confirm="submit" />
     </a-form-model>
   </div>
 </template>

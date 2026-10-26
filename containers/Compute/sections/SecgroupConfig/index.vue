@@ -393,28 +393,29 @@ export default {
       // BaseSelect params 变化会 clearSelect，列表就绪后再写回
       this.writePendingSecgroups()
     },
-    validateSecgroups (rule, value, callback) {
+    validateSecgroups (rule, value) {
       const max = this._max
       const maxError = this.$t('compute.text_191', [max])
       const minError = this.$t('compute.text_192')
-      if (value.length > max) {
-        return callback(maxError)
+      const list = value || []
+      if (list.length > max) {
+        return Promise.reject(new Error(maxError))
       }
-      if (value.length < 1) {
-        return callback(minError)
+      if (list.length < 1) {
+        return Promise.reject(new Error(minError))
       }
-      return callback()
+      return Promise.resolve()
     },
-    validateNetworkTags (rule, value, callback) {
+    validateNetworkTags (rule, value) {
       if (!value || !value.length) {
-        return callback(this.$t('compute.network_tag_required'))
+        return Promise.reject(new Error(this.$t('compute.network_tag_required')))
       }
       const tags = this.normalizeNetworkTags(value)
       const invalidTag = tags.find(tag => validate(tag, 'secgroupNetworkTag') !== true)
       if (invalidTag) {
-        return callback(this.$t('validator.secgroupNetworkTag'))
+        return Promise.reject(new Error(this.$t('validator.secgroupNetworkTag')))
       }
-      return callback()
+      return Promise.resolve()
     },
     normalizeNetworkTags (value) {
       return (value || []).map(tag => (tag || '').trim()).filter(Boolean)

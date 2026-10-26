@@ -289,13 +289,13 @@ export default {
     skuRules () {
       return [{
         required: true,
-        validator: (rule, value, callback) => {
+        // antdv4：返回 Promise，勿用 callback（会 warning）
+        validator: (rule, value) => {
           const id = value && typeof value === 'object' ? value.id : value
           if (!id) {
-            callback(new Error(i18n.t('compute.text_216')))
-            return
+            return Promise.reject(new Error(i18n.t('compute.text_216')))
           }
-          callback()
+          return Promise.resolve()
         },
       }]
     },

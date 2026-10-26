@@ -301,17 +301,18 @@ export default {
       }
     },
     submit (e) {
-      e.preventDefault()
-      this.validateForm()
-        .then(async formData => {
-          this.submiting = true
-          const genCreteData = new GenCreateData(formData, this.form.fi)
-          this.doAddToList(genCreteData)
-        })
-        .catch(error => {
-          this.submiting = false
-          throw error
-        })
+      e?.preventDefault?.()
+      const formData = this.validateForm()
+      if (!formData) return
+      this.submiting = true
+      try {
+        const genCreteData = new GenCreateData(formData, this.form.fi)
+        this.doAddToList(genCreteData)
+      } catch (err) {
+        this.submiting = false
+        console.error('[pricecomparator] doAddToList failed', err)
+        this.$message.error(err?.message || i18n.t('common.failed'))
+      }
     },
     doAddToList (genCreateData) {
       const {
@@ -329,19 +330,20 @@ export default {
           return '-'
         }
         let currency = currencyUnitMap.CNY.sign
-        if (sku.currency && currencyUnitMap[sku.currency]) {
+        if (sku && sku.currency && currencyUnitMap[sku.currency]) {
           currency = currencyUnitMap[sku.currency].sign
         }
         return `${currency}${parseFloat(originPrice).toFixed(2)}`
       }
       const getBrand = (v) => {
+        if (!v) return '-'
         const vs = {
           kvm: 'OneCloud',
           esxi: 'VMware',
           zstack: 'ZStack',
           openstack: 'OpenStack',
         }
-        return vs[v.toLowerCase()] || v
+        return vs[String(v).toLowerCase()] || v
       }
       const getDuration = (v) => {
         if (billType === 'quantity') return '1h'
@@ -372,34 +374,36 @@ export default {
       this.$message.success(i18n.t('common.success'))
       this.$router.push('/pricecomparator')
     },
-    async validateForm () {
-      const formRef = this.$refs.formRef
-      if (formRef?.validate) {
-        await formRef.validate()
+    /**
+     * 价格清单创建页字段少且有隐藏域，不走 Form.validate（易与隐藏项/双校验打架导致静默失败）。
+     * 直接校验可见必填项并给出提示。
+     */
+    validateForm () {
+      const fd = this.form.fd || {}
+      if (!fd.count && fd.count !== 0) {
+        this.$message.error(i18n.t('compute.text_211'))
+        return null
       }
-      // end-state sections：字段走组件 validate，不依赖 fc.validateFields
-      if (typeof this.$refs.domainProjectRef?.validate === 'function') {
-        await this.$refs.domainProjectRef.validate()
+      if (!fd.hypervisor) {
+        this.$message.error(i18n.t('compute.text_215'))
+        return null
       }
-      if (typeof this.$refs.cloudregionZoneRef?.validate === 'function') {
-        await this.$refs.cloudregionZoneRef.validate()
+      const skuId = fd.sku && (fd.sku.id || fd.sku.name)
+      if (!skuId) {
+        this.$message.error(i18n.t('compute.text_216'))
+        return null
       }
-      if (typeof this.$refs.areaSelectRef?.validate === 'function') {
-        await this.$refs.areaSelectRef.validate()
+      const diskType = fd.systemDiskType
+      const diskTypeKey = diskType && (diskType.key || diskType.value)
+      if (!diskTypeKey) {
+        this.$message.error(i18n.t('compute.text_121'))
+        return null
       }
-      if (typeof this.$refs.hypervisorRadioRef?.validate === 'function') {
-        await this.$refs.hypervisorRadioRef.validate()
+      if (fd.systemDiskSize == null || fd.systemDiskSize === '') {
+        this.$message.error(i18n.t('compute.text_122'))
+        return null
       }
-      if (typeof this.$refs.skuRef?.validate === 'function') {
-        await this.$refs.skuRef.validate()
-      }
-      if (typeof this.$refs.systemDiskRef?.validate === 'function') {
-        await this.$refs.systemDiskRef.validate()
-      }
-      if (typeof this.$refs.dataDiskRef?.validate === 'function') {
-        await this.$refs.dataDiskRef.validate()
-      }
-      return { ...this.form.fd }
+      return { ...fd }
     },
     cpuChange (cpu) {
       // end-state：Cpu/Mem 只写 form.fd
