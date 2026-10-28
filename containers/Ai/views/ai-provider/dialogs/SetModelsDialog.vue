@@ -14,7 +14,7 @@
         </a-form-model-item>
         <a-form-model-item v-if="connectivityTested" :label="$t('aice.aiproxy.model_key')" required>
           <a-input
-            v-model="modelSearch"
+            v-model:value="modelSearch"
             allow-clear
             :placeholder="$t('common.search')"
             class="mb-2" />

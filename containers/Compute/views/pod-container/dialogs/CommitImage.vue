@@ -6,7 +6,7 @@
       <a-form-model ref="form" :model="form" :rules="rules">
         <a-form-model-item :label="$t('dictionary.container_registry')" prop="registry_id">
           <a-select
-            v-model="form.registry_id"
+            v-model:value="form.registry_id"
             showSearch
             :filterOption="filterOption"
             :loading="registryLoading"
@@ -24,10 +24,10 @@
         </a-form-model-item>
 
         <a-form-model-item :label="$t('compute.repo.image.name')" prop="image_name">
-          <a-input v-model="form.image_name" :addonBefore="registryPrefixAddon" :placeholder="$t('common.tips.input', [$t('compute.repo.image.name')])" />
+          <a-input v-model:value="form.image_name" :addonBefore="registryPrefixAddon" :placeholder="$t('common.tips.input', [$t('compute.repo.image.name')])" />
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.repo.image.tag')">
-          <a-input v-model="form.tag" :placeholder="$t('compute.repo.image.tag_tip')" />
+          <a-input v-model:value="form.tag" :placeholder="$t('compute.repo.image.tag_tip')" />
           <div v-if="previewRepository" style="font-size: 12px; color: #999; margin-top: 4px;">{{ previewRepository }}</div>
         </a-form-model-item>
       </a-form-model>

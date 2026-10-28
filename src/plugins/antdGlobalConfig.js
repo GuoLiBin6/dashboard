@@ -1,5 +1,5 @@
 // 全局配置 ant-design-vue
-import { h, defineComponent, mergeProps, shallowRef, watch, triggerRef, ref } from 'vue'
+import { h, defineComponent, mergeProps, shallowRef, watch, triggerRef, ref, getCurrentInstance } from 'vue'
 import { Spin, Form, Button, Input, InputNumber, Alert, Radio, Select, Switch } from 'ant-design-vue'
 import InfoCircleFilled from '@ant-design/icons-vue/es/icons/InfoCircleFilled'
 import Icon from '@/components/Icon'
@@ -343,13 +343,34 @@ function createFormModel (RawForm) {
     inheritAttrs: false,
     setup (_, { attrs, slots, expose }) {
       const innerRef = ref(null)
+      const instance = getCurrentInstance()
       const call = (method, ...args) => {
         const inst = innerRef.value
         if (!inst || typeof inst[method] !== 'function') return undefined
         return inst[method](...args)
       }
       expose({
-        validate: (...a) => call('validate', ...a),
+        /** Vue2 的 validate(callback) / validate(rules, callback)；antdv4 只支持 Promise，这里兼容回调 */
+        validate (rules, callback) {
+          let cb = null
+          let names = rules
+          if (typeof rules === 'function') {
+            cb = rules
+            names = undefined
+          } else if (typeof callback === 'function') {
+            cb = callback
+          }
+          const p = call('validate', names)
+          if (typeof cb === 'function') {
+            // Vue2 传了 callback 时不会 reject，这里同样吞掉错误，避免 unhandled rejection
+            const done = (ok, payload) => cb(ok, payload)
+            return Promise.resolve(p).then(
+              (res) => { done(true, res); return res },
+              (err) => { done(false, err); return err },
+            )
+          }
+          return p
+        },
         validateFields: (...a) => call('validateFields', ...a),
         /** Vue2 FormModel.validateField(name, callback?) → antdv4 validateFields */
         validateField (name, callback) {
@@ -379,7 +400,10 @@ function createFormModel (RawForm) {
         setFields: (...a) => call('setFields', ...a),
       })
       return () => {
-        const pass = { ...attrs }
+        // Vue3：部分 onXxx（如 onFinish）不在 attrs 里，需从 vnode.props 合并，否则登录等 @finish 无效
+        const vnodeProps = (instance && instance.vnode && instance.vnode.props) || {}
+        const pass = { ...vnodeProps, ...attrs }
+        delete pass.ref
         if (pass.rules != null) {
           pass.rules = ensurePromiseFormRules(pass.rules)
         }
@@ -970,6 +994,8 @@ function registerAntdCompat (app) {
 
   // 始终包装原始 ant Button，避免 HMR / 重复 install 套娃
   app.component('AButton', createLegacyButton(Button))
+  // antdv4 已移除 a-icon；旧代码 <a-icon> 映射到项目自定义 Icon，避免图标/可点击按钮整块消失
+  if (!app.component('AIcon')) app.component('AIcon', Icon)
   ensureAlertInfoThemeStyle()
   ensurePrimaryButtonThemeStyle()
   ensureFormExtraFontStyle()

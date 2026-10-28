@@ -15,14 +15,17 @@
           :data-source="routingTableData"
           :pagination="false"
           class="mb-4">
-          <template v-slot:name="text, row">
-            <a @click="handleOpenAiRoutingSidepage(row.id)">{{ text || row.id }}</a>
-          </template>
-          <template v-slot:model_key="text">
-            <span>{{ text || '-' }}</span>
-          </template>
-          <template v-slot:priority="text">
-            <span>{{ formatRoutingPriority(text) }}</span>
+          <!-- antdv4：具名列已移除，统一 bodyCell -->
+          <template #bodyCell="{ column, text, record }">
+            <template v-if="column.dataIndex === 'name'">
+              <a @click="handleOpenAiRoutingSidepage(record.id)">{{ text || record.id }}</a>
+            </template>
+            <template v-else-if="column.dataIndex === 'model_key'">
+              <span>{{ text || '-' }}</span>
+            </template>
+            <template v-else-if="column.dataIndex === 'priority'">
+              <span>{{ formatRoutingPriority(text) }}</span>
+            </template>
           </template>
         </a-table>
         <a-empty
@@ -39,13 +42,16 @@
             :data-source="routingModelsList"
             :pagination="false"
             class="mb-4">
-            <template v-slot:provider="text, row">
-              <a v-if="text" @click="handleOpenAiProviderSidepage(text)">{{ providerName(row) }}</a>
-              <span v-else>-</span>
-            </template>
-            <template v-slot:model="text, row">
-              <a v-if="text" @click="handleOpenAiModelSidepage(text, row.ai_provider_id)">{{ modelName(row) }}</a>
-              <span v-else>-</span>
+            <!-- antdv4：具名列已移除，统一 bodyCell -->
+            <template #bodyCell="{ column, text, record }">
+              <template v-if="column.dataIndex === 'ai_provider_id'">
+                <a v-if="text" @click="handleOpenAiProviderSidepage(text)">{{ providerName(record) }}</a>
+                <span v-else>-</span>
+              </template>
+              <template v-else-if="column.dataIndex === 'ai_model_id'">
+                <a v-if="text" @click="handleOpenAiModelSidepage(text, record.ai_provider_id)">{{ modelName(record) }}</a>
+                <span v-else>-</span>
+              </template>
             </template>
           </a-table>
           <a-empty

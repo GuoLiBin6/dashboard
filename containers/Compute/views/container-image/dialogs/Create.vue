@@ -4,7 +4,7 @@
     <div slot="body">
       <a-form-model ref="form" :model="form" :rules="rules">
         <a-form-model-item :label="$t('common.name')" prop="name">
-          <a-input v-model="form.name" :placeholder="$t('common.tips.input', [$t('common.name')])" :disabled="type === 'edit'" />
+          <a-input v-model:value="form.name" :placeholder="$t('common.tips.input', [$t('common.name')])" :disabled="type === 'edit'" />
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.repo.image.source')">
           <a-radio-group :value="source" @change="onSourceChange">
@@ -16,7 +16,7 @@
         <template v-if="source === 'registry'">
           <a-form-model-item :label="$t('dictionary.container_registry')" prop="registry_id">
             <a-select
-              v-model="form.registry_id"
+              v-model:value="form.registry_id"
               showSearch
               :filterOption="filterOption"
               :loading="registryLoading"
@@ -38,19 +38,19 @@
             <a-alert type="info" show-icon class="mb-2" :message="$t('compute.repo.image.container_image.custom_registry_tip')" />
             <a-form-model-item :label="$t('compute.repo.image.name')" prop="image_name">
               <a-input
-                v-model="form.image_name"
+                v-model:value="form.image_name"
                 :addonBefore="registryPrefixAddon"
                 :placeholder="$t('common.tips.input', [$t('compute.repo.image.name')])" />
             </a-form-model-item>
             <a-form-model-item :label="$t('compute.repo.image.tag')" prop="image_label">
-              <a-input v-model="form.image_label" :placeholder="$t('common.tips.input', [$t('compute.repo.image.tag')])" />
+              <a-input v-model:value="form.image_label" :placeholder="$t('common.tips.input', [$t('compute.repo.image.tag')])" />
               <div v-if="previewFinalImage" style="font-size: 12px; color: #999; margin-top: 4px;">{{ previewFinalImage }}</div>
             </a-form-model-item>
           </template>
           <template v-else-if="form.registry_id">
             <a-form-model-item :label="$t('compute.repo.image.name')" prop="image_name">
               <a-select
-                v-model="form.image_name"
+                v-model:value="form.image_name"
                 showSearch
                 :filterOption="filterOption"
                 :loading="imageLoading"
@@ -66,7 +66,7 @@
             </a-form-model-item>
             <a-form-model-item :label="$t('compute.repo.image.tag')" prop="image_label">
               <a-select
-                v-model="form.image_label"
+                v-model:value="form.image_label"
                 showSearch
                 :filterOption="filterOption"
                 :loading="tagLoading"
@@ -85,10 +85,10 @@
 
         <template v-else>
           <a-form-model-item :label="$t('compute.repo.image.name')" prop="image_name">
-            <a-input v-model="form.image_name" :placeholder="$t('common.tips.input', [$t('compute.repo.image.name')])" />
+            <a-input v-model:value="form.image_name" :placeholder="$t('common.tips.input', [$t('compute.repo.image.name')])" />
           </a-form-model-item>
           <a-form-model-item :label="$t('compute.repo.image.tag')" prop="image_label">
-            <a-input v-model="form.image_label" :placeholder="$t('common.tips.input', [$t('compute.repo.image.tag')])" />
+            <a-input v-model:value="form.image_label" :placeholder="$t('common.tips.input', [$t('compute.repo.image.tag')])" />
           </a-form-model-item>
         </template>
 
@@ -106,19 +106,19 @@
 
         <a-form-model-item :label="$t('compute.repo.command')" :extra="$t('compute.repo.image.container_image.command_tip')">
           <a-input
-            v-model="form.command"
+            v-model:value="form.command"
             :placeholder="$t('common.tips.input', [$t('compute.repo.command')])" />
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.repo.command.params')" :extra="$t('compute.repo.image.container_image.args_tip')">
           <a-input
-            v-model="form.args"
+            v-model:value="form.args"
             :placeholder="$t('common.tips.input', [$t('compute.repo.command.params')])" />
         </a-form-model-item>
         <a-form-model-item :label="$t('compute.repo.env_variables')" :extra="$t('compute.repo.image.container_image.env_tip')">
           <div v-for="(item, idx) in envList" :key="item.id" class="d-flex align-items-center mb-2">
-            <a-input v-model="item.key" :placeholder="$t('compute.repo.key')" />
+            <a-input v-model:value="item.key" :placeholder="$t('compute.repo.key')" />
             <span class="mx-2">=</span>
-            <a-input v-model="item.value" :placeholder="$t('compute.repo.value')" />
+            <a-input v-model:value="item.value" :placeholder="$t('compute.repo.value')" />
             <a-button class="ml-2" shape="circle" size="small" icon="minus" @click="removeEnv(idx)" />
           </div>
           <a-button type="link" @click="addEnv">{{ $t('compute.repo.add', [$t('compute.repo.variables')]) }}</a-button>

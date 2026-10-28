@@ -137,7 +137,7 @@
 
     <div class="chat-input-area">
       <a-textarea
-        v-model="inputMessage"
+        v-model:value="inputMessage"
         :placeholder="chatTestInputPlaceholder"
         :auto-size="{ minRows: 2, maxRows: 6 }"
         @keydown.ctrl.enter="handleSend"

@@ -47,24 +47,27 @@
         :data-source="accessRows"
         :pagination="false"
         class="mb-1">
-        <template v-slot:llm_id="text, row">
-          <a v-if="text" @click="handleOpenLlmInstanceSidepage(text)">{{ llmInstanceName(row) }}</a>
-          <span v-else>-</span>
-        </template>
-        <template v-slot:model="text">
-          <span>{{ text || '-' }}</span>
-          <copy v-if="text" class="ml-1" :message="text" />
-        </template>
-        <template v-slot:provider="text, row">
-          <a v-if="text" @click="handleOpenAiProviderSidepage(text)">{{ row.ai_provider_name || text }}</a>
-          <span v-else>-</span>
-        </template>
-        <template v-slot:sync_status="text">
-          {{ formatSyncStatus(text) }}
-        </template>
-        <template v-slot:endpoint="text">
-          <span>{{ text }}</span>
-          <copy v-if="text" class="ml-1" :message="text" />
+        <!-- antdv4：具名列已移除，统一 bodyCell -->
+        <template #bodyCell="{ column, text, record }">
+          <template v-if="column.dataIndex === 'llm_id'">
+            <a v-if="text" @click="handleOpenLlmInstanceSidepage(text)">{{ llmInstanceName(record) }}</a>
+            <span v-else>-</span>
+          </template>
+          <template v-else-if="column.dataIndex === 'client_model_alias'">
+            <span>{{ text || '-' }}</span>
+            <copy v-if="text" class="ml-1" :message="text" />
+          </template>
+          <template v-else-if="column.dataIndex === 'ai_provider_id'">
+            <a v-if="text" @click="handleOpenAiProviderSidepage(text)">{{ record.ai_provider_name || text }}</a>
+            <span v-else>-</span>
+          </template>
+          <template v-else-if="column.dataIndex === 'sync_status'">
+            {{ formatSyncStatus(text) }}
+          </template>
+          <template v-else-if="column.dataIndex === 'endpoint'">
+            <span>{{ text }}</span>
+            <copy v-if="text" class="ml-1" :message="text" />
+          </template>
         </template>
       </a-table>
       <p class="text-color-help mb-3">{{ $t('aice.llm_deployment.aiproxy_client_model_alias_hint') }}</p>

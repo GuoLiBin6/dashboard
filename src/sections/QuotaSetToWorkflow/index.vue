@@ -1,21 +1,21 @@
 <template>
   <a-table bordered :dataSource="quotaOptions" :columns="quotaOptionsColumns" :pagination="false">
-    <template #remaining="{ text }" v-if="l3PermissionEnable">
-      {{ text }}
-    </template>
-    <template #val="{ text, record }">
-      <a-tooltip>
-        <template #title>
-          {{ `${$t('common_235')}：${record.min || 0} ~ ${record.max === Infinity ? $t('common_216') : record.max}` }}
-        </template>
-        <a-input-number
-          class="input-number"
-          :controls="false"
-          v-model:value="quota[record.key]"
-          :min="record.min"
-          :max="record.max"
-          @change="changeHandle(quota, record.key)" />
-      </a-tooltip>
+    <template #bodyCell="{ column, record }">
+      <!-- antdv4：原来的具名列（#val）已失效，统一走 bodyCell -->
+      <template v-if="column.dataIndex === 'val'">
+        <a-tooltip>
+          <template #title>
+            {{ `${$t('common_235')}：${record.min || 0} ~ ${record.max === Infinity ? $t('common_216') : record.max}` }}
+          </template>
+          <a-input-number
+            class="input-number"
+            :controls="false"
+            v-model:value="quota[record.key]"
+            :min="record.min"
+            :max="record.max"
+            @change="changeHandle(quota, record.key)" />
+        </a-tooltip>
+      </template>
     </template>
   </a-table>
 </template>

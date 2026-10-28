@@ -90,7 +90,7 @@
       </template>
       <!-- 确定按钮 -->
       <a-form-item>
-        <a-button type="primary" html-type="submit" :loading="submiting" block>{{ $t('auth.login.submit') }}</a-button>
+        <a-button type="primary" html-type="button" :loading="submiting" block @click="onSubmitClick">{{ $t('auth.login.submit') }}</a-button>
       </a-form-item>
       <!-- 额外操作 -->
       <a-form-item class="mb-0 login-extra-actions">
@@ -380,7 +380,19 @@ export default {
       }
       this.submiting = false
     },
-    // 点击登录事件（由 a-form @finish 触发，此时已通过校验）
+    async onSubmitClick () {
+      if (this.submiting) return
+      try {
+        const form = this.$refs.form
+        if (form && typeof form.validate === 'function') {
+          await form.validate()
+        }
+        await this.handleLogin()
+      } catch (errorInfo) {
+        this.handleLoginFailed(errorInfo)
+      }
+    },
+    // 点击登录（按钮 click / a-form @finish）
     async handleLogin () {
       this.submiting = true
       try {

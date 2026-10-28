@@ -36,12 +36,19 @@ const PRESERVE_COLOR_TYPES = new Set(['k8s'])
 
 function resolveIconName (finalType) {
   if (!finalType) return null
+  const pick = (name) => {
+    if (!name) return null
+    if (iconTypeList.includes(name)) return name
+    // 兼容原 antd icon 命名：question-circle-o / xxx-outlined / xxx-filled / xxx-two-tone
+    const stripped = String(name).replace(/-(o|outlined|filled|fill|twotone|two-tone)$/i, '')
+    return iconTypeList.includes(stripped) ? stripped : name
+  }
   if (R.is(Object, finalType)) {
     const iconName = finalType.icon
     const defaultIconName = finalType.defaultIcon
-    return iconTypeList.includes(iconName) ? iconName : defaultIconName
+    return iconTypeList.includes(iconName) ? iconName : pick(defaultIconName)
   }
-  return finalType
+  return pick(finalType)
 }
 
 function shouldPreserveColor (preserveColorProp, finalType) {
@@ -92,7 +99,7 @@ const Iconfont = {
           ? h('use', { 'xlink:href': `#${spriteId}` })
           : (rawSvg ? (preserveColor ? inlineRawSvg(rawSvg, spriteId) : patchRawSvgToInline(rawSvg, fill)) : null)
       } else {
-        const iconName = finalType
+        const iconName = resolveIconName(finalType) || finalType
         const spriteId = `oc-${iconName}`
         const rawSvg = iconRawMap[iconName]
         const hasSprite = !preserveColor && typeof document !== 'undefined' && document.getElementById(spriteId)
