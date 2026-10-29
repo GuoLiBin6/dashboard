@@ -65,7 +65,7 @@ import { getRequestT } from '@/utils/utils'
 import { getSignature } from '@/utils/crypto'
 import { timeOpts } from '@/constants/monitor'
 import MonitorTimeMixin from '@/mixins/monitorTime'
-import { addMissingSeries } from '@Monitor/utils'
+import { addMissingSeries, MONITOR_TIME_LAST_MONTH, parseMonitorTimeRange } from '@Monitor/utils'
 
 export default {
   name: 'ExplorerIndex',
@@ -119,19 +119,11 @@ export default {
           params.from = this.customTime.from
           params.to = this.customTime.to
         }
-      } else if (this.time === 'last_month') {
-        // 计算当前时间到上个月第一天0点的小时数
-        const now = this.$moment()
-        const lastMonthStart = this.$moment().subtract(1, 'month').startOf('month') // 上个月第一天0点
-        const lastMonthEnd = this.$moment().subtract(1, 'month').endOf('month') // 上个月最后一天23:59:59
-
-        // from: 当前时间距离上个月1号0点多少个小时（取整）
-        const fromHours = Math.floor(now.diff(lastMonthStart, 'hours', true))
-        // to: 当前时间距离上个月最后一天23:59:59多少个小时（取整）
-        const toHours = Math.floor(now.diff(lastMonthEnd, 'hours', true))
-
-        params.from = `${fromHours}h`
-        params.to = `${toHours}h`
+      } else if (this.time === MONITOR_TIME_LAST_MONTH) {
+        // 「上个月」为前端伪值，换算成相对当前时间的小时数
+        const { from, to } = parseMonitorTimeRange(this.time, this.$moment)
+        params.from = from
+        params.to = to
       } else {
         params.from = this.time
       }

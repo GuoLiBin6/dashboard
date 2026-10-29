@@ -20,6 +20,7 @@ import _ from 'lodash'
 import { getSignature } from '@/utils/crypto'
 import { timeOpts } from '@/constants/monitor'
 import { MONITOR_MAX_POINTERS } from '@Monitor/constants'
+import { getMonitorTimeHours, parseMonitorTimeRange } from '@Monitor/utils'
 import AlertForm from './form'
 
 export default {
@@ -96,7 +97,8 @@ export default {
           params.to = this.customTime.to
         }
       } else {
-        params.from = this.time
+        // 「上个月」会换算成相对当前时间的小时数
+        Object.assign(params, parseMonitorTimeRange(this.time, this.$moment))
       }
       return params
     },
@@ -107,7 +109,7 @@ export default {
       if (this.time === 'custom') {
         diffHour = this.customTime.from.replace(noNumberReg, '') - this.customTime.to.replace(noNumberReg, '')
       } else {
-        diffHour = this.time.replace(noNumberReg, '')
+        diffHour = getMonitorTimeHours(this.time, this.$moment)
       }
       const diff = diffHour * 60 // 变分钟
       tg = `${diff / MONITOR_MAX_POINTERS}m`
@@ -285,7 +287,7 @@ export default {
             data.to = this.customTime.to
           }
         } else {
-          data.from = this.time
+          Object.assign(data, parseMonitorTimeRange(this.time, this.$moment))
         }
         if (!data.metric_query || !data.from || !_.get(data.metric_query, '[0].model.measurement') || !_.get(data.metric_query, '[0].model.select')) return
         this.chartLoading = true

@@ -76,6 +76,7 @@ import MonitorForms from '@Monitor/sections/ExplorerForm'
 import MonitorLine from '@Monitor/sections/MonitorLine'
 // import { MONITOR_MAX_POINTERS } from '@Monitor/constants'
 import MonitorHeader from '@/sections/Monitor/Header'
+import { parseMonitorTimeRange } from '@Monitor/utils'
 import { getRequestT, uuid } from '@/utils/utils'
 import { getSignature } from '@/utils/crypto'
 import MonitorTimeMixin from '@/mixins/monitorTime'
@@ -132,7 +133,8 @@ export default {
           params.to = this.customTime.to
         }
       } else {
-        params.from = this.time
+        // 「上个月」会换算成相对当前时间的小时数
+        Object.assign(params, parseMonitorTimeRange(this.time, this.$moment))
       }
       return params
     },

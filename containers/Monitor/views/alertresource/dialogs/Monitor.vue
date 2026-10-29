@@ -40,6 +40,7 @@ import { getSignature } from '@/utils/crypto'
 import { timeOpts } from '@/constants/monitor'
 import MonitorLine from '@Monitor/sections/MonitorLine'
 import { MONITOR_MAX_POINTERS, metric_zh } from '@Monitor/constants'
+import { getMonitorTimeHours, parseMonitorTimeRange } from '@Monitor/utils'
 import CustomDate from '@/sections/CustomDate'
 import MonitorHeader from '@/sections/Monitor/Header'
 
@@ -126,7 +127,8 @@ export default {
           params.to = this.customTime.to
         }
       } else {
-        params.from = this.time
+        // 「上个月」会换算成相对当前时间的小时数
+        Object.assign(params, parseMonitorTimeRange(this.time, this.$moment))
       }
       return params
     },
@@ -155,7 +157,7 @@ export default {
       if (this.time === 'custom') {
         diffHour = this.customTime.from.replace(noNumberReg, '') - this.customTime.to.replace(noNumberReg, '')
       } else {
-        diffHour = this.time.replace(noNumberReg, '')
+        diffHour = getMonitorTimeHours(this.time, this.$moment)
       }
       const diff = diffHour * 60 // 变分钟
       this.timeGroup = `${diff / MONITOR_MAX_POINTERS}m`

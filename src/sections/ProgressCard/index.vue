@@ -3,11 +3,15 @@
     <div class="text-center">
       <a-progress :type="type" v-bind="progressProps" :percent="percent" :status="status" :format="format" />
       <div class="content mt-4" v-if="progress.msg">
-        <div>
+        <div v-if="progress.msg.current != null">
           <span class="label">{{ progress.msg.currentLabel || $t('common_233') }}：</span>
           <span class="text">{{ progress.msg.current }}</span>
         </div>
-        <div>
+        <div v-if="progress.msg.running != null">
+          <span class="label">{{ progress.msg.runningLabel }}：</span>
+          <span class="text">{{ progress.msg.running }}</span>
+        </div>
+        <div v-if="progress.msg.total != null">
           <span class="label">{{ progress.msg.totalLabel || $t('common_234') }}：</span>
           <span class="value">{{ progress.msg.total }}</span>
         </div>
