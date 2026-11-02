@@ -23,6 +23,7 @@
             <img class="license-qr" src="@/assets/contact.png" alt="support" />
           </div>
         </div>
+        <switch-edition />
       </div>
     </a-card>
   </div>
@@ -30,9 +31,13 @@
 
 <script>
 import setting from '@/config/setting'
+import SwitchEdition from '@/sections/SwitchEdition'
 
 export default {
   name: 'Licenses',
+  components: {
+    SwitchEdition,
+  },
   data () {
     return {
       email: 'info@yunion.cn',
