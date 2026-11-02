@@ -204,43 +204,28 @@ export default {
       },
       getOsArch({ field: 'cpu_architecture' }),
       {
-        field: 'cpu_usage',
+        field: 'cpu_usage_percent',
         title: this.$t('compute.text_563'),
         minWidth: 120,
         showOverflow: false,
         sortable: true,
-        // sortBy: 'order_by_cpu_commit',
         slots: {
           default: ({ row }, h) => {
             const hFn = h || this.$createElement
-            const { cpu_count = 0, cpu_used = 0 } = getHostSpecInfo(row)
-            const title = `${this.$t('common_407')}: ${Math.round(cpu_used)}\n${this.$t('common_234')}: ${Math.round(cpu_count)}`
-            return [hFn('UsedPercent', {
-              props: {
-                used: cpu_used,
-                total: cpu_count,
-                title,
-                usedFormatter: (val) => val > 0 ? (Math.max(Math.round(val), 1)) : Math.round(val),
-                totalFormatter: (val) => val > 0 ? (Math.max(Math.round(val), 1)) : Math.round(val),
-              },
-            })]
-          },
-          header: ({ column }, h) => {
-            const hFn = h || this.$createElement
+            const cpu_count = row.cpu_count || 0
+            const percent = Number(row.cpu_usage_percent) || 0
             return [
-              hFn('span', {}, [
-                hFn('span', {}, column.title),
-                hFn('a-tooltip', { class: 'ml-1', props: { title: this.$t('compute.order_by_used_percent') } }, [
-                  hFn('icon', { props: { type: 'question-circle' }, style: { color: '#aaa' } }),
-                ]),
+              hFn('div', {}, [
+                hFn('div', { style: { fontSize: '12px', lineHeight: '16px' } }, `${this.$t('common_234')}: ${cpu_count}`),
+                hFn('UsedPercent', { props: { used: percent, total: 100, hiddenUsed: true, hiddenTotal: true } }),
               ]),
             ]
           },
         },
         formatter: ({ row }) => {
-          const { cpu_count = 0, cpu_used = 0 } = getHostSpecInfo(row)
-          const title = `${this.$t('common_407')}: ${Math.round(cpu_used)}, ${this.$t('common_234')}: ${Math.round(cpu_count)}`
-          return title
+          const cpu_count = row.cpu_count || 0
+          const percent = Math.round(Number(row.cpu_usage_percent) || 0)
+          return `${this.$t('common_234')}: ${cpu_count}, ${percent}%`
         },
       },
       {
