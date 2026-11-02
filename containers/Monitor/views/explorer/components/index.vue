@@ -79,7 +79,7 @@ import get from 'lodash/get'
 import echarts from 'echarts'
 import MonitorForms from '@Monitor/sections/ExplorerForm'
 import MonitorLine from '@Monitor/sections/MonitorLine'
-import { addMissingSeries } from '@Monitor/utils'
+import { addMissingSeries, MONITOR_TIME_LAST_MONTH, parseMonitorTimeRange } from '@Monitor/utils'
 import { buildChartTypesMessage, DEFAULT_CHART_TYPES, parseChartTypesFromPanel } from '@Monitor/utils/chartTypes'
 import DialogMixin from '@/mixins/dialog'
 import WindowsMixin from '@/mixins/windows'
@@ -141,14 +141,11 @@ export default {
           params.from = this.customTime.from
           params.to = this.customTime.to
         }
-      } else if (this.time === 'last_month') {
-        const now = this.$moment()
-        const lastMonthStart = this.$moment().subtract(1, 'month').startOf('month')
-        const lastMonthEnd = this.$moment().subtract(1, 'month').endOf('month')
-        const fromHours = Math.floor(now.diff(lastMonthStart, 'hours', true))
-        const toHours = Math.floor(now.diff(lastMonthEnd, 'hours', true))
-        params.from = `${fromHours}h`
-        params.to = `${toHours}h`
+      } else if (this.time === MONITOR_TIME_LAST_MONTH) {
+        // 「上个月」为前端伪值，换算成相对当前时间的小时数
+        const { from, to } = parseMonitorTimeRange(this.time, this.$moment)
+        params.from = from
+        params.to = to
       } else {
         params.from = this.time
       }
