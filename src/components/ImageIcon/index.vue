@@ -25,6 +25,7 @@ import rocky from './assets/rocky.png'
 import anolis from './assets/anolis.png'
 import opencloudos from './assets/opencloudos.png'
 import almalinux from './assets/almalinux.png'
+import openruyi from './assets/openruyi.svg'
 
 export default {
   name: 'ImageIcon',
@@ -160,6 +161,9 @@ export default {
             break
           case 'tencentos':
             curImg = tencent
+            break
+          case 'openruyi':
+            curImg = openruyi
             break
           default:
             break
