@@ -12,8 +12,8 @@
         <template v-if="isKvm">
           <a-form-model-item :label="$t('compute.text_1155')" prop="bios">
             <a-radio-group v-model:value="form.bios">
-              <a-tooltip :title="$t('compute.text_1362')" v-if="isArm">
-                <a-radio-button value="BIOS" :disabled="isArm">BIOS</a-radio-button>
+              <a-tooltip :title="$t('compute.text_1362')" v-if="isArmOrRiscv64">
+                <a-radio-button value="BIOS" :disabled="isArmOrRiscv64">BIOS</a-radio-button>
               </a-tooltip>
               <a-radio-button v-else value="BIOS">BIOS</a-radio-button>
               <a-radio-button value="UEFI">UEFI</a-radio-button>
@@ -60,7 +60,7 @@ export default {
   mixins: [DialogMixin, WindowsMixin],
   data () {
     const data = this.params.data[0] || {}
-    const isArm = data.os_arch === 'arm' || data.os_arch === 'aarch64'
+    const isArm = data.os_arch === 'arm' || data.os_arch === 'aarch64' || data.os_arch === 'riscv64'
     const vdi = data.vdi || 'vnc'
     return {
       loading: false,
@@ -92,8 +92,9 @@ export default {
     isKvm () {
       return this.params.data.length >= 1 && this.params.data[0].hypervisor === 'kvm'
     },
-    isArm () {
-      return this.params.data.length >= 1 && (this.params.data[0].os_arch === 'arm' || this.params.data[0].os_arch === 'aarch64')
+    isArmOrRiscv64 () {
+      const osArch = this.params.data.length >= 1 ? this.params.data[0].os_arch : ''
+      return osArch === 'arm' || osArch === 'aarch64' || osArch === 'riscv64'
     },
     canAdminUpdate () {
       return hasPermission({ key: 'server_update', resourceData: this.params.data[0] }) && this.$store.getters.isAdminMode
@@ -107,7 +108,7 @@ export default {
       return options
     },
     machineOptions () {
-      if (this.isArm) {
+      if (this.isArmOrRiscv64) {
         return [{ text: 'VIRT', value: 'virt' }]
       }
       return [

@@ -19,7 +19,7 @@
 
               :options="form.fi.cpuMem.cpus || []"
               :disable-options="disableCpus"
-              :disabled="runningArm"
+              :disabled="runningArmOrRiscv64"
               :extra="cpuExtra"
               :max="form.fd.vcpu < 32 ? 32 : 128"
               :form="form"
@@ -30,7 +30,7 @@
               @change="cpuChange" />
           </a-form-model-item>
           <a-form-model-item :label="$t('compute.text_369')" class="mb-0">
-            <mem-radio :model="form.fd" :options="form.fi.cpuMem.mems_mb || []" :disable-options="disableMems" :disabled="runningArm" :extra="cpuExtra" />
+            <mem-radio :model="form.fd" :options="form.fi.cpuMem.mems_mb || []" :disable-options="disableMems" :disabled="runningArmOrRiscv64" :extra="cpuExtra" />
           </a-form-model-item>
           <a-form-model-item :label="$t('compute.text_1041')" v-if="isOpenWorkflow" prop="reason">
             <a-input v-model:value="form.fd.reason" :placeholder="$t('compute.text_1105')" />
@@ -161,11 +161,11 @@ export default {
     isSomeRunning () {
       return this.params.data.some(val => val.status === 'running')
     },
-    isSomeArm () {
-      return isOsArch(this.selectedItem.os_arch, 'arm')
+    isSomeArmOrRiscv64 () {
+      return isOsArch(this.selectedItem.os_arch, 'arm') || isOsArch(this.selectedItem.os_arch, 'riscv64')
     },
-    runningArm () {
-      return this.isSomeArm && this.isSomeRunning
+    runningArmOrRiscv64 () {
+      return this.isSomeArmOrRiscv64 && this.isSomeRunning
     },
     hypervisor () {
       return this.selectedItem.hypervisor
@@ -219,13 +219,13 @@ export default {
       return this.isOpenWorkflow ? this.$t('compute.text_288') : this.$t('compute.text_907')
     },
     cpuExtra () {
-      if (this.runningArm) {
+      if (this.runningArmOrRiscv64) {
         return this.$t('compute.text_1366')
       }
       return null
     },
     memExtra () {
-      if (this.runningArm) {
+      if (this.runningArmOrRiscv64) {
         return this.$t('compute.text_1367')
       }
       return null

@@ -273,7 +273,7 @@
             :model="form.fd"
             :form="form"
             :uefi="uefi"
-            :isArm="isArm"
+            :isArm="isArm || isRiscv64"
             :showDefault="true"
             :form-draft-key="vmDraftFields.bios" />
         </a-form-model-item>
@@ -298,7 +298,7 @@
           <machine
             ref="machineRef"
             :form="form"
-            :isArm="isArm"
+            :isArm="isArm || isRiscv64"
             :showDefault="true"
             :form-draft-key="vmDraftFields.machine" />
         </a-form-model-item>
@@ -920,8 +920,11 @@ export default {
     uefi (val) {
       this.setBios(val)
     },
-    isArm (val, oldV) {
-      this.setBios(val)
+    isArm (val) {
+      this.setBios(val || this.isRiscv64)
+    },
+    isRiscv64 (val) {
+      this.setBios(val || this.isArm)
     },
     isShowAgent (val) {
       this.$nextTick(() => {
@@ -1089,6 +1092,8 @@ export default {
             canUseOsArch = HOST_CPU_ARCHS.x86.key
           } else if (os_arch.indexOf('aarch') !== -1) {
             canUseOsArch = HOST_CPU_ARCHS.arm.key
+          } else if (os_arch.indexOf('riscv') !== -1) {
+            canUseOsArch = HOST_CPU_ARCHS.riscv64.key
           }
           if (!canUseOsArch) return
           this.form.fd.os_arch = canUseOsArch

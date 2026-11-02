@@ -782,6 +782,8 @@ export default {
             canUseOsArch = HOST_CPU_ARCHS.x86.key
           } else if (os_arch.indexOf('aarch') !== -1) {
             canUseOsArch = HOST_CPU_ARCHS.arm.key
+          } else if (os_arch.indexOf('riscv') !== -1) {
+            canUseOsArch = HOST_CPU_ARCHS.riscv64.key
           }
           if (!canUseOsArch) return
           this.form.fd.os_arch = canUseOsArch
