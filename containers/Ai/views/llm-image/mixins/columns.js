@@ -8,6 +8,8 @@ import {
 import {
   getImageNameTableColumn,
   getImageLabelTableColumn,
+  getImageSourceTableColumn,
+  getContainerImageTableColumn,
   getAppNameTableColumn,
 } from '../utils/columns'
 
@@ -35,6 +37,8 @@ export default {
           { validator: this.$validate('imageName') },
         ],
       }),
+      getImageSourceTableColumn(),
+      getContainerImageTableColumn({ vm: this }),
       getImageNameTableColumn(),
       getImageLabelTableColumn(),
       {
