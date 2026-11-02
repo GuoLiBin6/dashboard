@@ -44,7 +44,11 @@ export default {
     return (profile.value && profile.value.theme) || state.setting.theme
   },
   // 全站深色模式（独立于侧栏 theme，仅本地偏好）
-  darkMode: state => !!state.setting.darkMode,
+  // 深色模式为商业版能力：开源版 / CE 版一律不生效，即使本地存有商业版的偏好
+  darkMode: (state) => {
+    if (!process.env.VUE_APP_IS_PRIVATE || state.app.isSysCE) return false
+    return !!state.setting.darkMode
+  },
   // 开源版仅默认蓝色；商业版才读 profile / 本地多主题色
   themeColor: (state) => {
     const isOpenSource = !process.env.VUE_APP_IS_PRIVATE || state.app.isSysCE

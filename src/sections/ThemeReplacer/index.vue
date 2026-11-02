@@ -16,11 +16,12 @@
 
 <script>
 import { mapGetters } from 'vuex'
+import { isCE } from '@/utils/utils'
 import lightIcon from './assets/light-theme-icon.svg'
 import darkSidebarIcon from './assets/dark-theme-icon.svg'
 import darkModeIcon from './assets/dark-mode-theme-icon.svg'
 
-// 三种整体风格：浅色 / 深色侧栏 / 全暗（自动开启深色模式）
+// 三种整体风格：浅色 / 深色侧栏 / 全暗（自动开启深色模式，仅商业版）
 const STYLE_LIGHT = 'light'
 const STYLE_DARK_SIDEBAR = 'dark-sidebar'
 const STYLE_DARK_MODE = 'dark-mode'
@@ -29,12 +30,19 @@ export default {
   name: 'ThemeReplacer',
   computed: {
     ...mapGetters(['theme', 'darkMode']),
+    // 深色模式为商业版能力，开源版 / CE 版不展示该风格
+    isCommercialTheme () {
+      return !isCE() && !this.$store.getters.isSysCE
+    },
     styleList () {
-      return [
+      const list = [
         { value: STYLE_LIGHT, icon: lightIcon, title: this.$t('common_273') },
         { value: STYLE_DARK_SIDEBAR, icon: darkSidebarIcon, title: this.$t('common_272') },
-        { value: STYLE_DARK_MODE, icon: darkModeIcon, title: this.$t('common.theme.style.dark_mode') },
       ]
+      if (this.isCommercialTheme) {
+        list.push({ value: STYLE_DARK_MODE, icon: darkModeIcon, title: this.$t('common.theme.style.dark_mode') })
+      }
+      return list
     },
     // 深色模式优先：开启后无论侧栏设置都展示第三种
     currentStyle () {
@@ -45,6 +53,8 @@ export default {
   methods: {
     async changeStyle (value) {
       if (this.currentStyle === value) return
+      // 深色模式仅商业版可选，其它版本忽略
+      if (value === STYLE_DARK_MODE && !this.isCommercialTheme) return
       const dark = value === STYLE_DARK_MODE
       // 第三种风格必须配深色侧栏，第一/二种则退出深色模式
       const theme = value === STYLE_LIGHT ? 'light' : 'dark'

@@ -20,9 +20,11 @@ export default {
       state.theme = theme
     },
     SET_DARK_MODE (state, darkMode) {
-      storage.set('__oc_dark_mode__', !!darkMode)
-      state.darkMode = !!darkMode
-      applyDarkModeClass(!!darkMode)
+      // 深色模式为商业版能力：开源版不写入该偏好，避免泄漏到其它端
+      const enabled = !!process.env.VUE_APP_IS_PRIVATE && !!darkMode
+      storage.set('__oc_dark_mode__', enabled)
+      state.darkMode = enabled
+      applyDarkModeClass(enabled)
     },
     SET_THEME_COLOR (state, themeColor) {
       storage.set('__oc_theme_color__', themeColor)

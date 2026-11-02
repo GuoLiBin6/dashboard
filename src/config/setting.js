@@ -25,8 +25,8 @@ export default {
   themeDarkBgHue: storage.get('__oc_theme_dark_bg_hue__') || '',
   themeDarkBgLevel: storage.get('__oc_theme_dark_bg_level__'),
   theme: storage.get('__oc_theme__') || process.env.THEME || 'dark',
-  // 全站深色模式（与 theme 的侧栏明暗相互独立）
-  darkMode: !!storage.get('__oc_dark_mode__'),
+  // 全站深色模式（与 theme 的侧栏明暗相互独立）；仅商业版可用，开源版不读取本地设置
+  darkMode: !!process.env.VUE_APP_IS_PRIVATE && !!storage.get('__oc_dark_mode__'),
   // 是否开启全局圆角样式；关闭时保持现有样式
   globalRounded: true,
   brand: process.env.BRAND || defaultBrand,
