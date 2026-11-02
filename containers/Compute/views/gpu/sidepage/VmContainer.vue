@@ -203,6 +203,7 @@ export default {
               list: this.list,
               name: this.$t('compute.vminstance-container'),
               onManager: this.onManager,
+              hideAdvancedOptions: true,
             })
           },
           meta: (obj) => {
