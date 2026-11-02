@@ -58,7 +58,7 @@
                   <fixed-label-filter :label="$t('compute.text_294')">
                     <a-radio-group class="p-0" :value="readPciRowField('pciCount', k)" @change="(e) => { setPciMapField('pciCount', k, e.target.value); onChangeCount(e, k) }">
                       <a-radio-button
-                        v-for="item in pciCountOptions"
+                        v-for="item in getPciCountOptions(k)"
                         :value="item.key"
                         :disabled="item.disabled"
                         :key="item.key">{{ item.label }}</a-radio-button>
@@ -70,9 +70,16 @@
                   v-if="isHamiSharingMode(k)"
                   class="mb-0 pci-memory-item"
                   :name="['memory_request', String(k)]"
-                  :rules="[{ required: true, message: $t('compute.pci.memory_request.required') }]">
+                  :rules="getMemoryRequestRules(k)">
                   <fixed-label-filter :label="$t('compute.pci.memory_request')">
-                    <a-tooltip :title="getMemoryRangeTooltip(k)" class="p-0" placement="top">
+                    <base-select
+                      v-if="isMthreadsHami(k)"
+                      :value="readPciRowField('memory_request', k)"
+                      :options="getMthreadsMemoryOptions(k)"
+                      :filterable="false"
+                      :select-props="{ placeholder: $t('compute.pci.memory_request.mthreads_sgpu_placeholder'), allowClear: false }"
+                      @change="(val) => { setPciMapField('memory_request', k, val); onChangeMemoryRequest(val, k) }" />
+                    <a-tooltip v-else :title="getMemoryRangeTooltip(k)" class="p-0" placement="top">
                       <disk-size-input
                         :value="readPciRowField('memory_request', k)"
                         @change="(val) => { setPciMapField('memory_request', k, val); onChangeMemoryRequest(val, k) }"
@@ -85,6 +92,12 @@
                         @unitChange="(unit) => onMemoryUnitChange(k, unit)" />
                     </a-tooltip>
                   </fixed-label-filter>
+                  <div v-if="isMthreadsHami(k)" class="text-color-help pci-memory-hint">
+                    {{ $t('compute.pci.memory_request.mthreads_sgpu_hint') }}
+                  </div>
+                  <div v-if="isMthreadsHami(k)" class="text-color-help pci-memory-hint">
+                    {{ $t('compute.pci.mthreads_sgpu_single_card') }}
+                  </div>
                 </component>
               </div>
             </a-col>
@@ -99,8 +112,12 @@
           @click="remove(k)" />
       </div>
       <div class="d-flex align-items-center mb-2">
-        <a-button type="primary" shape="circle" icon="plus" size="small" @click="add" />
-        <a-button type="link" @click="add">{{ $t('compute.pci.add_transparent_device') }}</a-button>
+        <a-tooltip :title="mthreadsHamiLocksMultiCard ? $t('compute.pci.mthreads_sgpu_single_card') : ''">
+          <span>
+            <a-button type="primary" shape="circle" icon="plus" size="small" :disabled="mthreadsHamiLocksMultiCard" @click="add" />
+          </span>
+        </a-tooltip>
+        <a-button type="link" :disabled="mthreadsHamiLocksMultiCard" @click="add">{{ $t('compute.pci.add_transparent_device') }}</a-button>
       </div>
     </template>
   </div>
@@ -115,6 +132,9 @@ import {
   matchPciDevice,
   getGpuTypeSelectOptions,
   resolveGpuTypeBySharingMode,
+  isMthreadsVendor,
+  mthreadsSgpuMemoryOptions,
+  normalizeMthreadsSgpuMemory,
 } from '@Compute/constants'
 import DiskSizeInput from '@/sections/DiskSizeInput'
 import createFormFieldDraftMixin from '@/mixins/createFormFieldDraft'
@@ -179,6 +199,10 @@ export default {
         })
       }
       return GPU_COUNT_OPTIONS
+    },
+    mthreadsHamiLocksMultiCard () {
+      const models = this.form?.fd?.pciModel || {}
+      return Object.keys(models).some(key => this.isMthreadsHami(key))
     },
     realPciDevTypeOptions () {
       const seen = new Set()
@@ -356,10 +380,51 @@ export default {
       const option = this.getPciOptionByKey(pciKey)
       return getGpuTypeSelectOptions(option?.sharing_mode)
     },
-    getMemorySizeMb (key) {
+    getSelectedPci (key) {
       const modelKey = this.fdPciVal('pciModel', key)
-      const curPci = this.pciOptions.find(o => o.key === modelKey) || this.getRealPciOptions(this.realPciOptions, key)[0]
-      return curPci?.memory_size_mb
+      return this.pciOptions.find(o => o.key === modelKey) || this.getRealPciOptions(this.realPciOptions, key)[0]
+    },
+    getMemorySizeMb (key) {
+      return this.getSelectedPci(key)?.memory_size_mb
+    },
+    isMthreadsHami (key) {
+      return this.isHamiSharingMode(key) && isMthreadsVendor(this.getSelectedPci(key)?.vendor)
+    },
+    getMthreadsMemoryOptions (key) {
+      return mthreadsSgpuMemoryOptions(this.getMemorySizeMb(key))
+    },
+    getPciCountOptions (key) {
+      return this.pciCountOptions.map(item => {
+        if (!this.isMthreadsHami(key)) return item
+        return { ...item, disabled: item.disabled || item.key > 1 }
+      })
+    },
+    clampMthreadsHamiCount (key) {
+      if (!this.isMthreadsHami(key)) return
+      const field = `pciCount[${key}]`
+      if (Number(this.fdPciVal('pciCount', key)) > 1) {
+        this.pciWriteFields({ [field]: 1 })
+      }
+    },
+    // 摩尔线程 sGPU 内存只能取固定档位，其余厂商沿用 disk-size-input 的区间校验
+    getMemoryRequestRules (key) {
+      const rules = [{ required: true, message: this.$t('compute.pci.memory_request.required') }]
+      if (!this.isMthreadsHami(key)) return rules
+      rules.push({
+        validator: (rule, value, callback) => {
+          if (value === undefined || value === null || value === '') {
+            callback()
+            return
+          }
+          const allowed = this.getMthreadsMemoryOptions(key).some(item => item.key === Number(value))
+          if (!allowed) {
+            callback(new Error(this.$t('compute.pci.memory_request.mthreads_sgpu_bucket')))
+            return
+          }
+          callback()
+        },
+      })
+      return rules
     },
     getMemoryRangeTooltip (key) {
       const maxMb = this.getMemorySizeMb(key)
@@ -419,6 +484,8 @@ export default {
               this.pciWriteFields({ [`pciModel[${key}]`]: undefined })
             }
           }
+          this.reconcileMemoryRequest(key)
+          this.clampMthreadsHamiCount(key)
         })
       })
     },
@@ -441,7 +508,10 @@ export default {
       this.pciWriteFields(fields)
       if (!this.isHamiSharingMode(key)) {
         this.setPciMapField('memory_request', String(key), undefined)
+      } else {
+        this.reconcileMemoryRequest(key)
       }
+      this.clampMthreadsHamiCount(key)
       this.reset()
     },
     onChangeGpuType (val, key) {
@@ -450,23 +520,36 @@ export default {
     },
     onChangeModel (val, key) {
       this.pciWriteFields({ [`pciModel[${key}]`]: val })
-      const curPci = this.pciOptions.find(o => o.key === val)
-      const max = curPci?.memory_size_mb
+      this.reconcileMemoryRequest(key)
+      this.clampMthreadsHamiCount(key)
+    },
+    reconcileMemoryRequest (key) {
+      if (!this.isHamiSharingMode(key)) return
       const current = this.fdPciVal('memory_request', key)
-      if (max && current > max) {
-        this.pciWriteFields({ [`memory_request[${key}]`]: max })
+      const max = this.getMemorySizeMb(key)
+      let next = current
+      if (this.isMthreadsHami(key)) {
+        next = normalizeMthreadsSgpuMemory(current, max)
+      } else if (max && current > max) {
+        next = max
       }
+      if (next === current) return
+      this.setPciMapField('memory_request', String(key), next)
     },
     onChangeCount (e, key) {
       this.pciWriteFields({ [`pciCount[${key}]`]: e.target.value })
     },
     onChangeMemoryRequest (val, key) {
-      this.pciWriteFields({ [`memory_request[${key}]`]: val })
+      const next = this.isMthreadsHami(key)
+        ? normalizeMthreadsSgpuMemory(val, this.getMemorySizeMb(key))
+        : val
+      this.setPciMapField('memory_request', String(key), next)
     },
     syncPciFormKeys (keys) {
       this.pciKeys = [...keys]
     },
     add () {
+      if (this.mthreadsHamiLocksMultiCard) return
       const nextKey = ++id
       const nextKeys = this.pciKeys.concat(nextKey)
       this.syncPciFormKeys(nextKeys)
@@ -546,6 +629,11 @@ export default {
 }
 .pci-memory-item {
   margin-bottom: 0 !important;
+}
+.pci-memory-hint {
+  max-width: 420px;
+  margin-top: 4px;
+  line-height: 1.4;
 }
 .pci-select-item {
   margin-bottom: 0 !important;
