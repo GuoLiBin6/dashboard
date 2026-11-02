@@ -90,7 +90,8 @@ export default {
             },
             subtextStyle: {
               fontSize: 18,
-              color: 'rgb(100, 100, 100)',
+              // 暗色磁贴底上深灰合计值看不清，跟随明暗模式
+              color: this.$store.getters.darkMode ? 'rgba(255, 255, 255, 0.66)' : 'rgb(100, 100, 100)',
             },
             top: '30%',
             left: 'center',

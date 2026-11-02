@@ -17,7 +17,16 @@ export default {
   themeColor: storage.get('__oc_theme_color__') || process.env.THEME_COLOR || '#1890FF',
   // 全局圆角壳背景色（商业版可配）；默认 none → 灰色，不套主题色
   themeBgColor: storage.get('__oc_theme_bg_color__') || 'none',
+  // 背景色两层选择：色系（hue）+ 渐变深度（level）
+  // 浅色：hue 为 null 表示尚未迁移（回落到旧 themeBgColor），'none' 表示无背景
+  themeBgHue: storage.get('__oc_theme_bg_hue__'),
+  themeBgLevel: storage.get('__oc_theme_bg_level__'),
+  // 深色：hue 为空表示跟随主题色
+  themeDarkBgHue: storage.get('__oc_theme_dark_bg_hue__') || '',
+  themeDarkBgLevel: storage.get('__oc_theme_dark_bg_level__'),
   theme: storage.get('__oc_theme__') || process.env.THEME || 'dark',
+  // 全站深色模式（与 theme 的侧栏明暗相互独立）
+  darkMode: !!storage.get('__oc_dark_mode__'),
   // 是否开启全局圆角样式；关闭时保持现有样式
   globalRounded: true,
   brand: process.env.BRAND || defaultBrand,

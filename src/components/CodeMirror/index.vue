@@ -75,6 +75,10 @@ export default {
   },
   emits: ['input', 'change', 'update:modelValue', 'update:value', 'ready'],
   computed: {
+    // 主题由 CodeMirror 内部按 class 上色（canvas 无关，但也是硬编码浅色），暗色下换成内置暗色主题
+    darkMode () {
+      return !!(this.$store && this.$store.getters.darkMode)
+    },
     resolvedValue () {
       if (this.code != null && this.code !== '') return this.normalizeText(this.code)
       if (this.modelValue !== undefined) return this.normalizeText(this.modelValue)
@@ -110,6 +114,11 @@ export default {
     viewHeight () {
       this.$nextTick(() => this.refresh())
     },
+    darkMode () {
+      if (!this._cm) return
+      this._cm.setOption('theme', this.darkMode ? 'oc-dark' : this.options.theme)
+      this.$nextTick(() => this.refresh())
+    },
   },
   mounted () {
     this._cm = null
@@ -142,6 +151,8 @@ export default {
       const cmOptions = {
         ...this.globalOptions,
         ...this.options,
+        // 调用方写死的亮色主题（如 3024-day）在暗色下会变成一块白底，统一换成暗色主题
+        theme: this.darkMode ? 'oc-dark' : this.options.theme,
         value: this.resolvedValue || '',
       }
 
@@ -213,8 +224,68 @@ export default {
 }
 .vue-codemirror .CodeMirror {
   height: var(--oc-cm-height);
-  border: 1px solid #d9d9d9;
+  border: 1px solid var(--oc-color-border, #d9d9d9);
   font-size: 13px;
+}
+/* 暗色主题（theme: 'oc-dark'）：配色对齐 dark.less 的容器/浮层色，避免整块白底 */
+.vue-codemirror .cm-s-oc-dark.CodeMirror {
+  background: #14161a;
+  color: rgba(255, 255, 255, 0.82);
+}
+.vue-codemirror .cm-s-oc-dark .CodeMirror-gutters {
+  background: #1a1c21;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+.vue-codemirror .cm-s-oc-dark .CodeMirror-linenumber {
+  color: rgba(255, 255, 255, 0.32);
+}
+.vue-codemirror .cm-s-oc-dark .CodeMirror-cursor {
+  border-left-color: rgba(255, 255, 255, 0.7);
+}
+.vue-codemirror .cm-s-oc-dark div.CodeMirror-selected {
+  background: rgba(63, 125, 255, 0.22);
+}
+.vue-codemirror .cm-s-oc-dark .CodeMirror-line::selection,
+.vue-codemirror .cm-s-oc-dark .CodeMirror-line > span::selection,
+.vue-codemirror .cm-s-oc-dark .CodeMirror-line > span > span::selection {
+  background: rgba(63, 125, 255, 0.25);
+}
+.vue-codemirror .cm-s-oc-dark .CodeMirror-activeline-background {
+  background: rgba(255, 255, 255, 0.04);
+}
+.vue-codemirror .cm-s-oc-dark .CodeMirror-matchingbracket {
+  color: #7ec699 !important;
+}
+.vue-codemirror .cm-s-oc-dark .CodeMirror-lint-mark-error {
+  border-bottom: 1px dotted #ff7875;
+}
+/* 语法高亮：JSON / YAML / 脚本通用几类 token */
+.vue-codemirror .cm-s-oc-dark span.cm-string,
+.vue-codemirror .cm-s-oc-dark span.cm-string-2 {
+  color: #9ecbff;
+}
+.vue-codemirror .cm-s-oc-dark span.cm-number,
+.vue-codemirror .cm-s-oc-dark span.cm-atom {
+  color: #f0b37e;
+}
+.vue-codemirror .cm-s-oc-dark span.cm-property,
+.vue-codemirror .cm-s-oc-dark span.cm-attribute {
+  color: #a5d6ff;
+}
+.vue-codemirror .cm-s-oc-dark span.cm-keyword,
+.vue-codemirror .cm-s-oc-dark span.cm-def,
+.vue-codemirror .cm-s-oc-dark span.cm-variable-2 {
+  color: #c792ea;
+}
+.vue-codemirror .cm-s-oc-dark span.cm-comment {
+  color: rgba(255, 255, 255, 0.35);
+}
+.vue-codemirror .cm-s-oc-dark span.cm-tag {
+  color: #7ec699;
+}
+.vue-codemirror .cm-s-oc-dark span.cm-bracket,
+.vue-codemirror .cm-s-oc-dark span.cm-operator {
+  color: rgba(255, 255, 255, 0.55);
 }
 .vue-codemirror--scroll .CodeMirror {
   height: auto;

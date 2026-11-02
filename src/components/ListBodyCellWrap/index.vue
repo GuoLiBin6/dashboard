@@ -266,7 +266,8 @@ export default {
     width: 16px;
     height: 16px;
     border-radius: 4px;
-    color: rgba(0, 0, 0, 0.45);
+    // 暗色模式由 --oc-icon-secondary 提亮，避免半透明黑在暗底上不可见
+    color: var(--oc-icon-secondary, rgba(0, 0, 0, 0.45));
     line-height: 1;
     :deep(svg),
     :deep(.oc-icon) {

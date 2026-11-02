@@ -146,8 +146,8 @@ export default {
     gap: 12px;
     align-items: stretch;
     padding: 12px;
-    background: #f5f7fa;
-    border: 1px solid #e8ebf0;
+    background: var(--oc-monitor-group-bg, #f5f7fa);
+    border: 1px solid var(--oc-monitor-card-border, #e8ebf0);
     border-radius: 8px;
 
     &:last-of-type {
@@ -169,7 +169,7 @@ export default {
       display: flex;
       flex-direction: column;
       margin: 0;
-      border-color: #e8e8e8;
+      border-color: var(--oc-monitor-card-border, #e8e8e8);
       box-shadow: none;
 
       > .ant-card-head {
@@ -236,7 +236,7 @@ export default {
       display: flex;
       flex-direction: column;
       margin: 0;
-      border-color: #e8e8e8;
+      border-color: var(--oc-monitor-card-border, #e8e8e8);
       box-shadow: none;
 
       > .ant-card-head {

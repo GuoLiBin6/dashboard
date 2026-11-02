@@ -37,10 +37,11 @@
   &-title {
     display: flex;
     align-items: center;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+    // 明暗模式的取色走 CSS 变量（暗色在 styles/less/dark.less 中定义），fallback 保持亮色现状
+    border-bottom: 1px solid var(--oc-detail-divider, rgba(0, 0, 0, 0.12));
     padding-bottom: 8px;
     margin-bottom: 14px;
-    color: #1f1f1f;
+    color: var(--oc-detail-strong, #1f1f1f);
     font-size: 16px;
     font-weight: var(--oc-font-weight-strong, 600);
     -webkit-font-smoothing: antialiased;
@@ -62,7 +63,8 @@
       position: absolute;
       left: 0;
       top: 0;
-      color: #303133 !important;
+      // 标签列用次级文字色：亮色 #303133，暗色见 dark.less 的 --oc-detail-label
+      color: var(--oc-detail-label, #303133) !important;
       font-size: 14px;
       line-height: 22px;
       font-weight: var(--oc-font-weight-base, 400);
@@ -73,7 +75,7 @@
 
     &-value {
       margin-left: 140px;
-      color: #1f1f1f;
+      color: var(--oc-detail-strong, #1f1f1f);
       font-size: 14px;
       line-height: 22px;
       font-weight: var(--oc-font-weight-base, 400);
@@ -85,7 +87,7 @@
 
       // 仅加深「纯文本」单元格，不碰 slot 内可点击/主题色内容
       > .list-body-cell-wrap > span.text-truncate {
-        color: #1f1f1f;
+        color: var(--oc-detail-strong, #1f1f1f);
       }
 
       // 可点击链接/编辑入口用主题色（宿主机 #VM、超售比编辑、透传跳转等 plain <a>）

@@ -255,7 +255,7 @@ export default {
   margin-bottom: 6px;
   font-size: 12px;
   line-height: 1.4;
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--oc-color-text-help, rgba(0, 0, 0, 0.45));
 }
 .monitor-custom-date__footer {
   display: flex;

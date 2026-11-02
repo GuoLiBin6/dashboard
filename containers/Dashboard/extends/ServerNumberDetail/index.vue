@@ -85,7 +85,7 @@ export default {
     }
   },
   computed: {
-    ...mapGetters(['scope', 'isAdminMode', 'isDomainMode']),
+    ...mapGetters(['scope', 'isAdminMode', 'isDomainMode', 'darkMode']),
     allServers () {
       const arr = this.data.map(item => item.count)
       return R.sum(arr)
@@ -102,6 +102,11 @@ export default {
       })
     },
     chartOptions () {
+      // echarts 画在 canvas 上，取不到 CSS 变量：图例 rich 文本与中心合计是写死的深灰，
+      // 暗色磁贴底上几乎看不见，这里按暗色模式换一套浅色
+      const dark = this.darkMode
+      const legendNameColor = dark ? 'rgba(255, 255, 255, 0.66)' : 'rgb(100, 100, 100)'
+      const legendAmountColor = dark ? 'rgba(255, 255, 255, 0.45)' : 'rgb(150, 150, 150)'
       return {
         title: [
           {
@@ -109,11 +114,11 @@ export default {
             subtext: `${this.allServers}`,
             textStyle: {
               fontSize: 12,
-              color: '#ccc',
+              color: dark ? 'rgba(255, 255, 255, 0.66)' : '#ccc',
             },
             subtextStyle: {
               fontSize: 18,
-              color: 'rgb(100, 100, 100)',
+              color: dark ? 'rgba(255, 255, 255, 0.88)' : 'rgb(100, 100, 100)',
             },
             top: '42%',
             left: '24.5%',
@@ -145,7 +150,7 @@ export default {
                 verticalAlign: 'right',
                 align: 'left',
                 fontSize: 12,
-                color: 'rgb(100, 100, 100)',
+                color: legendNameColor,
                 height: 20,
               },
               percent: {
@@ -158,7 +163,7 @@ export default {
               formatted_amount: {
                 align: 'left',
                 fontSize: 12,
-                color: 'rgb(150, 150, 150)',
+                color: legendAmountColor,
                 padidng: 0,
               },
             },

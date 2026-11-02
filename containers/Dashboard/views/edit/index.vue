@@ -305,7 +305,8 @@ export default {
               '-webkit-user-select:none',
               'outline:1px dashed darkmagenta',
               'box-shadow:0 4px 12px rgba(0,0,0,.12)',
-              'background:#fff',
+              // 幽灵磁贴底色跟随明暗模式，暗色下不能再用白底
+              `background:${this.$store.getters.darkMode ? '#262931' : '#fff'}`,
             ].join(';')
             document.body.appendChild(this.copy)
             this.movingGridDeltaY = rect.y

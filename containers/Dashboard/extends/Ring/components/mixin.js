@@ -1,4 +1,4 @@
-import { chartColors } from '@/constants'
+import { getChartColors } from '@/constants'
 
 export default {
   props: {
@@ -13,32 +13,37 @@ export default {
     },
     type: String,
   },
-  data () {
-    return {
-      ringColors: [
+  computed: {
+    // 明暗两套色板索引一致，环图配色随模式切换，语义不变
+    chartColors () {
+      return getChartColors(this.$store && this.$store.getters.darkMode)
+    },
+    ringColors () {
+      const colors = this.chartColors
+      return [
         {
           key: 'blue',
-          percent60: chartColors[0],
-          percent80: chartColors[0],
-          percent100: chartColors[0],
+          percent60: colors[0],
+          percent80: colors[0],
+          percent100: colors[0],
           label: this.$t('dashboard.color.scheme.blue'),
         },
         {
           key: 'default',
-          percent60: chartColors[3],
-          percent80: chartColors[1],
-          percent100: chartColors[2],
+          percent60: colors[3],
+          percent80: colors[1],
+          percent100: colors[2],
           label: this.$t('dashboard.color.scheme.default'),
         },
         {
           key: 'reverse',
-          percent60: chartColors[2],
-          percent80: chartColors[1],
-          percent100: chartColors[3],
+          percent60: colors[2],
+          percent80: colors[1],
+          percent100: colors[3],
           label: this.$t('dashboard.color.scheme.reverse'),
         },
-      ],
-    }
+      ]
+    },
   },
   methods: {
     setDefaultName (usage) {

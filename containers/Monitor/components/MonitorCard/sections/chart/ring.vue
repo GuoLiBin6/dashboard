@@ -37,6 +37,9 @@ export default {
     exportName: String,
   }, commonChartProps()),
   computed: {
+    darkMode () {
+      return !!(this.$store && this.$store.getters.darkMode)
+    },
     extraToolbox () {
       const ret = {
         pdf: {
@@ -67,13 +70,14 @@ export default {
           left: 'center',
           top: '35%',
           textStyle: {
-            color: '#999999',
+            // 暗色下中心标题/总量原来是 #999999 / #333，落在暗底上几乎看不到
+            color: this.darkMode ? 'rgba(255, 255, 255, 0.66)' : '#999999',
             fontSize: 16,
             align: 'center',
           },
           subtextStyle: {
             fontSize: 20,
-            color: ['#333'],
+            color: [this.darkMode ? 'rgba(255, 255, 255, 0.88)' : '#333'],
             align: 'center',
           },
         },

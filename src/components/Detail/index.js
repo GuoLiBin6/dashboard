@@ -693,7 +693,7 @@ export default {
               field: 'description',
               ...this.descProps,
             },
-            style: { color: '#1f1f1f' },
+            style: { color: 'var(--oc-detail-strong, #1f1f1f)' },
           }),
         ]),
       ]

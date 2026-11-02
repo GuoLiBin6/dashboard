@@ -108,7 +108,7 @@ import { load } from '@Dashboard/utils/cache'
 import { getRequestT, sizestrWithUnit } from '@/utils/utils'
 import { hasPermission } from '@/utils/auth'
 import { numerify } from '@/filters'
-import { chartColors } from '@/constants'
+import { getChartColors } from '@/constants'
 import { rollupFormData } from '@/utils/common/ant'
 import mixin from './mixin'
 
@@ -345,6 +345,8 @@ export default {
       return `${numerify(this.percent, 0.0)} %`
     },
     percentColor () {
+      // 环图主色跟随明暗色板（索引语义一致）
+      const chartColors = this.chartColors || getChartColors(this.$store.getters.darkMode)
       switch (this.colorConfig) {
         case 'default':
           if (this.percent < 60) {

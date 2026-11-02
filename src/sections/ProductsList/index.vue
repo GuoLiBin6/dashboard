@@ -125,7 +125,7 @@ export default {
       }
       &:hover,
       &.ant-popover-open {
-        background-color: @primary-1;
+        background-color: color-mix(in srgb, var(--ant-color-primary, @primary-color) 8%, #fff);
         > a {
           color: var(--ant-color-primary, @primary-color) !important;
         }

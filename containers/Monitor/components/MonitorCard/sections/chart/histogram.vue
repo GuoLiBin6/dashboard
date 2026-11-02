@@ -18,6 +18,9 @@ export default {
   name: 'OverviewHistogram',
   props: commonChartProps(),
   computed: {
+    darkMode () {
+      return !!(this.$store && this.$store.getters.darkMode)
+    },
     chartExtend () {
       /* 数据展示样式 */
       const commonSeries = {
@@ -35,7 +38,7 @@ export default {
             formatter: this.labelFormatter,
             rich: {
               left: {
-                color: '#000000',
+                color: this.darkMode ? 'rgba(255, 255, 255, 0.88)' : '#000000',
                 align: 'left',
               },
               right: {

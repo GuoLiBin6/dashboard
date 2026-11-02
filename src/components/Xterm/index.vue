@@ -11,6 +11,17 @@ import * as fit from 'xterm/lib/addons/fit/fit'
 import 'xterm/src/xterm.css'
 import io from 'socket.io-client'
 
+// xterm 默认前景是纯白 #fff，而页面正文是 rgba(255,255,255,.88)（黑底上等效
+// #e0e0e0）。终端底色本来就是黑，明暗模式下都保留，但正文统一压到 #e0e0e0，
+// 避免终端比页面其他文字更刺眼；ANSI 色相不动，只调默认前景 / 光标 / 选中态。
+const TERM_THEME = {
+  foreground: '#e0e0e0',
+  background: '#000000',
+  cursor: '#e0e0e0',
+  cursorAccent: '#000000',
+  selection: 'rgba(255, 255, 255, 0.25)',
+}
+
 export default {
   name: 'Xterm',
   props: {
@@ -84,6 +95,8 @@ export default {
         cols: 80,
         rows: 24,
         ScrollBar: true,
+        // 明暗模式统一用同一套前景（见 TERM_THEME）
+        theme: TERM_THEME,
       })
       const terminalDom = this._createDom()
       this.term.open(terminalDom)

@@ -1,5 +1,6 @@
 <template>
   <div class="setting-wrap" @click.stop>
+    <!-- 整体风格设计：浅色 / 深色侧栏 / 全暗（选全暗自动开启深色模式） -->
     <div class="setting-item">
       <h3 class="setting-title">{{$t('common_196')}}</h3>
       <theme-replacer />
@@ -9,8 +10,12 @@
       <theme-color-replacer />
     </div>
     <div class="setting-item" v-if="showThemeBg">
-      <h3 class="setting-title">{{$t('common.theme.background')}}</h3>
-      <theme-bg-color-replacer />
+      <h3 class="setting-title">{{$t('common.theme.background_hue')}}</h3>
+      <theme-bg-color-replacer part="hue" />
+    </div>
+    <div class="setting-item" v-if="showThemeBg">
+      <h3 class="setting-title">{{$t('common.theme.background_depth')}}</h3>
+      <theme-bg-color-replacer part="depth" />
     </div>
   </div>
 </template>

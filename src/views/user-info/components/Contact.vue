@@ -35,7 +35,7 @@
                 @click="contactHandle(obj.verified, obj.contact_type)"
                 :key="obj.contact_type"
                 :type="obj.contact_type"
-                :style="{ color: color[obj.verified] }" :title="getTitle(obj, obj.contact_type)" />
+                :style="{ color: contactColor[obj.verified] }" :title="getTitle(obj, obj.contact_type)" />
             </template>
           </div>
         </div>
@@ -69,10 +69,6 @@ export default {
   data () {
     return {
       isNotifyEnabled: false,
-      color: {
-        true: '#52c41a',
-        false: 'rgba(0, 0, 0, 0.25)',
-      },
       updateDialog: {
         loading: false,
         visible: false,
@@ -86,7 +82,13 @@ export default {
     }
   },
   computed: {
-    ...mapGetters(['userInfo', 'profile', 'isAdminMode']),
+    ...mapGetters(['userInfo', 'profile', 'isAdminMode', 'darkMode']),
+    contactColor () {
+      return {
+        true: '#52c41a',
+        false: this.darkMode ? 'rgba(255, 255, 255, 0.35)' : 'rgba(0, 0, 0, 0.25)',
+      }
+    },
     imobile () {
       if (this.contacts && this.contacts.international_mobile) {
         const c = this.contacts.international_mobile

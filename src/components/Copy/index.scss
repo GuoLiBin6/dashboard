@@ -7,7 +7,8 @@
   width: 20px;
   height: 20px;
   border-radius: 4px;
-  color: rgba(0, 0, 0, 0.45);
+  // 暗色模式由 --oc-icon-secondary 提亮
+  color: var(--oc-icon-secondary, rgba(0, 0, 0, 0.45));
   cursor: pointer;
   line-height: 1;
   vertical-align: middle;

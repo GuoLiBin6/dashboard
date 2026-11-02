@@ -50,8 +50,81 @@ import * as R from 'ramda'
 import echarts from 'echarts/lib/echarts'
 import debounce from 'lodash/debounce'
 import { addListener, removeListener } from 'resize-detector'
+import { isDarkMode } from '@/utils/theme/darkMode'
+import { chartColors, chartColorsDark } from '@/constants'
 const INIT_TRIGGERS = ['theme', 'initOptions', 'autoresize']
 const REWATCH_TRIGGERS = ['manualUpdate', 'watchShallow']
+
+// 亮色板 → 暗色板（同索引同色相）：图表里常见 `color: chartColors`，
+// 暗色下按色值换到对应暗色，业务自定义的颜色保持不变
+const DARK_COLOR_MAP = {}
+chartColors.forEach((color, index) => {
+  const dark = chartColorsDark[index]
+  if (color && dark) DARK_COLOR_MAP[String(color).toUpperCase()] = dark
+})
+
+function patchPalette (palette) {
+  if (!Array.isArray(palette)) return palette
+  return palette.map(color => DARK_COLOR_MAP[String(color).toUpperCase()] || color)
+}
+
+// echarts 画在 canvas 上，吃不到 dark.less 的变量：轴、图例、标题默认都是深灰字，
+// 暗色模式下会「有一张图但看不到字」。这里只在业务没显式配色时补一层浅色默认值。
+const DARK_TEXT = 'rgba(255, 255, 255, 0.88)'
+const DARK_TEXT_SECONDARY = 'rgba(255, 255, 255, 0.66)'
+const DARK_SPLIT_LINE = 'rgba(255, 255, 255, 0.14)'
+
+function patchAxis (axis) {
+  if (!axis || typeof axis !== 'object') return axis
+  const axisLabel = { color: DARK_TEXT_SECONDARY, ...(axis.axisLabel || {}) }
+  const axisLine = { ...(axis.axisLine || {}) }
+  axisLine.lineStyle = { color: DARK_SPLIT_LINE, ...(axisLine.lineStyle || {}) }
+  const splitLine = { ...(axis.splitLine || {}) }
+  splitLine.lineStyle = { color: DARK_SPLIT_LINE, ...(splitLine.lineStyle || {}) }
+  return {
+    ...axis,
+    axisLabel,
+    axisLine,
+    splitLine,
+    nameTextStyle: { color: DARK_TEXT_SECONDARY, ...(axis.nameTextStyle || {}) },
+  }
+}
+
+function applyDarkDefaults (options) {
+  const opt = { ...options }
+  if (opt.color) {
+    opt.color = patchPalette(opt.color)
+  }
+  ;['xAxis', 'yAxis'].forEach(key => {
+    if (!opt[key]) return
+    opt[key] = Array.isArray(opt[key]) ? opt[key].map(patchAxis) : patchAxis(opt[key])
+  })
+  opt.textStyle = { color: DARK_TEXT_SECONDARY, ...(opt.textStyle || {}) }
+  if (opt.legend) {
+    const patchLegend = l => (l && typeof l === 'object')
+      ? { ...l, textStyle: { color: DARK_TEXT_SECONDARY, ...(l.textStyle || {}) } }
+      : l
+    opt.legend = Array.isArray(opt.legend) ? opt.legend.map(patchLegend) : patchLegend(opt.legend)
+  }
+  if (opt.title) {
+    const patchTitle = t => {
+      if (!t || typeof t !== 'object') return t
+      return {
+        ...t,
+        textStyle: { color: DARK_TEXT, ...(t.textStyle || {}) },
+        subtextStyle: { color: DARK_TEXT_SECONDARY, ...(t.subtextStyle || {}) },
+      }
+    }
+    opt.title = Array.isArray(opt.title) ? opt.title.map(patchTitle) : patchTitle(opt.title)
+  }
+  if (Array.isArray(opt.series)) {
+    opt.series = opt.series.map(s => {
+      if (!s || typeof s !== 'object' || !s.label || typeof s.label !== 'object') return s
+      return { ...s, label: { color: DARK_TEXT_SECONDARY, ...s.label } }
+    })
+  }
+  return opt
+}
 
 export default {
   name: 'EChart',
@@ -117,6 +190,12 @@ export default {
   },
   created () {
     this.initOptionsWatcher()
+    // 明暗切换后 canvas 不会自动重绘，销毁重建一次，让上面的暗色默认值生效
+    if (this.$store) {
+      this.$watch(() => this.$store.getters.darkMode, () => {
+        this.refresh()
+      })
+    }
     INIT_TRIGGERS.forEach(prop => {
       this.$watch(
         prop,
@@ -232,6 +311,10 @@ export default {
       return this.$el.offsetWidth * this.$el.offsetHeight
     },
     formatOptions (options) {
+      options = options || {}
+      if (isDarkMode()) {
+        options = applyDarkDefaults(options)
+      }
       if (this.domId && !this.ignoreAutoLabelStyle) {
         const { xAxis = {} } = options
         if (R.is(Object, xAxis)) {

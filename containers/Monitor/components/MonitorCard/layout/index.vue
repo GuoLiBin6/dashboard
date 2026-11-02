@@ -34,7 +34,7 @@ export default {
 }
 .monitor-overview-card {
   box-sizing: border-box;
-  border: 1px solid #F1F1F1;
+  border: 1px solid var(--oc-monitor-card-border, #F1F1F1);
   border-radius: 6px;
   padding: 12px 16px;
   margin-left: 6px;

@@ -1300,6 +1300,20 @@ export function getColorByCache () {
   return colorArr
 }
 
+/**
+ * 暗色模式图表色板。
+ * 与 getColorByCache() 的索引一一对应（浅蓝/橙/粉/绿/紫/…），只把明度和饱和度
+ * 调到暗底上更舒服的水平 —— 语义色保持一致，所以「同一块数据」在明暗下还是同一个颜色。
+ * 可用 VUE_APP_CHART_COLORS_DARK 覆盖（逗号分隔，顺序同上）。
+ *
+ * 注意：canvas 类图表（echarts / liquidfill）吃不到 CSS 变量，只能靠这套 JS 色板。
+ */
+export function getDarkColorByCache () {
+  const colorStr = process.env.VUE_APP_CHART_COLORS_DARK
+  if (colorStr) return colorStr.split(',')
+  return ['#5AA9E6', '#E2A66B', '#E08A90', '#6FC98A', '#8E90E8', '#8A79D6', '#6D8FA8', '#DCCB6B', '#5FC4E8', '#5FA3A6', '#F0455C', '#4E9BD6']
+}
+
 export const getWorkflowParamter = (variables = {}, defaultValue = {}) => {
   const keys = Object.keys(variables)
   const paramKey = variables.parameter ? 'parameter' : 'paramter'

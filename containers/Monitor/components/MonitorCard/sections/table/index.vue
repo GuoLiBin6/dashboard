@@ -18,7 +18,7 @@
             <loader :loading="loading" :noDataText="$t('common.notData')" />
           </template>
         </table-lite-grid>
-        <div v-if="showTotal" class="mt-1" style="color: #606266; font-size: 12px;">
+        <div v-if="showTotal" class="mt-1" style="color: var(--oc-monitor-total-color, #606266); font-size: 12px;">
           <span>{{ total }}</span>
         </div>
     </div>

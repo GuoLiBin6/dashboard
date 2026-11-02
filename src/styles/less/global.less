@@ -337,6 +337,11 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+// 弹窗底与页面底接近时靠投影拉开层级（暗色下另有更重的映射，见 dark.less）
+.ant-modal-content {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14), 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+
 // 底栏让位改由 PageFooter 根节点 .page-footer-space 在文档流内占位（74px），
 // 不再依赖 :has(.page-footer) 给 .app-page-content 垫 padding（flex + height:100% 下不可靠）
 
@@ -1919,9 +1924,9 @@ body .w-e-modal * {
   }
 }
 
-/* 设置进度条的底色 */
+/* 设置进度条的底色（暗色模式由 --oc-progress-trail 覆盖） */
 .custom-progress-bar .ant-progress-inner {
-  background-color: #d9d9d9;
+  background-color: var(--oc-progress-trail, #d9d9d9);
 }
 
 .codemirror-h-100 {

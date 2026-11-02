@@ -19,6 +19,28 @@ import 'uplot/dist/uPlot.min.css'
 import DataEmpty from '@/components/DataEmpty'
 import { escapeHTML } from '@/utils/utils'
 
+// uPlot 的默认轴/网格是黑色系，暗色下补一层浅色（业务显式传的值优先）
+const DARK_AXIS_STROKE = 'rgba(255, 255, 255, 0.45)'
+const DARK_GRID_STROKE = 'rgba(255, 255, 255, 0.12)'
+
+function patchDarkAxis (axis) {
+  if (!axis || typeof axis !== 'object') return axis
+  return {
+    ...axis,
+    stroke: axis.stroke || DARK_AXIS_STROKE,
+    grid: { stroke: DARK_GRID_STROKE, ...(axis.grid || {}) },
+    ticks: { stroke: DARK_GRID_STROKE, ...(axis.ticks || {}) },
+  }
+}
+
+function patchDarkOptions (options) {
+  const opt = { ...options }
+  if (Array.isArray(opt.axes)) {
+    opt.axes = opt.axes.map(patchDarkAxis)
+  }
+  return opt
+}
+
 export default {
   name: 'Uchart',
   components: {
@@ -53,6 +75,10 @@ export default {
     }
   },
   computed: {
+    // uPlot 画在 canvas 上，吃不到 dark.less：默认轴/网格是黑色，暗底下整张图看不到字
+    darkMode () {
+      return !!(this.$store && this.$store.getters.darkMode)
+    },
     tooltipPlacement () {
       return this.options?.tooltip?.placement || 'follow'
     },
@@ -76,6 +102,10 @@ export default {
   watch: {
     data () {
       this.updateChartData(this.data)
+    },
+    darkMode () {
+      // 轴色画在 canvas 上，切换主题只能重建
+      this.updateChartData()
     },
     'options.series' () {
       this.updateChartSeries(this.options.series)
@@ -139,8 +169,9 @@ export default {
       const { data, options } = this.$props
       const that = this
       const width = this.$refs.chart.clientWidth || undefined
+      const baseOptions = this.darkMode ? patchDarkOptions(options) : options
       this.chart = new UPlot({
-        ...options,
+        ...baseOptions,
         width,
         cursor: {
           move: function (self, x, y) {

@@ -36,7 +36,7 @@
       <div class="info-btn d-flex justify-content-center pl-2 pr-2" @click.stop="handleWrapClick">
         <span @click.stop="handleButtonClick" style="font-size: 12px">{{buttonText}}</span>
         <span class="ml-2" @click.stop="handleKeyClick">
-          <icon size="12" class="keypair-icon" type="keypairs" fill="#555" />
+          <icon size="12" class="keypair-icon" type="keypairs" />
         </span>
       </div>
     </div>
@@ -155,6 +155,14 @@ export default {
 @import '@/styles/less/theme';
 .info-btn:hover{
   color: @primary-color;
+}
+// 用 color 而非模板 fill：fill 会写进 path，暗色下 CSS 覆盖不了
+.keypair-icon {
+  color: var(--oc-icon-strong, #555);
+  transition: color 0.15s;
+  &:hover {
+    color: @primary-color;
+  }
 }
 .info-wrapper {
   font-size: 14px;

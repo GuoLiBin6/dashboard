@@ -1,0 +1,1668 @@
+// 深色模式（dark mode）
+// 由 App.vue / store 在 <html> 上切换 .oc-dark-mode，同时把 vxe 的
+// data-vxe-ui-theme 切到 dark（见 utils/theme/darkMode.js）。
+//
+// 配色目标：暗而不糊 —— 底、容器、浮层三级分离，文字分三档对比度，不用纯黑纯白。
+//   页面底 #343b4c / 容器 #1a1c21 / 抬升面带 #22242b / 浮层 #262931
+//   边框 #2e3138 / 输入框 #3a3e47
+//   正文 rgba(255,255,255,.88) / 次要 .66 / 弱 .45
+
+html.oc-dark-mode {
+  --oc-dark-bg: #343b4c;
+  --oc-dark-container: #1a1c21;
+  --oc-dark-raised: #22242b;
+  --oc-dark-elevated: #262931;
+  --oc-dark-border: #282a30;
+  --oc-dark-border-strong: #35383f;
+  // 勾选框常态描边：比输入框边框更亮，保证在暗底上看得见
+  --oc-dark-check: rgba(255, 255, 255, 0.42);
+  --oc-dark-text: rgba(255, 255, 255, 0.88);
+  --oc-dark-text-strong: rgba(255, 255, 255, 0.78);
+  --oc-dark-header-text: rgba(255, 255, 255, 0.72);
+  --oc-dark-text-secondary: rgba(255, 255, 255, 0.66);
+  --oc-dark-text-tertiary: rgba(255, 255, 255, 0.45);
+  // 禁用态文字：明显弱于辅助文字，避免看起来仍可点击
+  --oc-dark-text-disabled: rgba(255, 255, 255, 0.3);
+  // 禁用态底色：暗灰面，需要能和容器底区分出「一块控件」
+  --oc-dark-fill-disabled: rgba(255, 255, 255, 0.15);
+  --oc-dark-hover: rgba(255, 255, 255, 0.06);
+  --oc-dark-selected: color-mix(in srgb, var(--ant-color-primary, #1890ff) 16%, transparent);
+  // 表格整行选中/勾选：一行面积大，同样的比例会比小控件（下拉项）亮得多，单独压一档
+  --oc-dark-selected-row: color-mix(in srgb, var(--ant-color-primary, #1890ff) 8%, transparent);
+  --oc-dark-selected-row-hover: color-mix(in srgb, var(--ant-color-primary, #1890ff) 12%, transparent);
+  // 进度条/比例条轨道底色：暗色下不能再用浅灰 #d9d9d9，否则整条发白
+  --oc-progress-trail: rgba(255, 255, 255, 0.12);
+  // 行内辅助图标（锁、复制、密钥、标签）：浅色写死半透明黑/深灰，暗底上等于不可见
+  --oc-icon-secondary: rgba(255, 255, 255, 0.66);
+  // 需要更突出的行内图标（如密钥）
+  --oc-icon-strong: rgba(255, 255, 255, 0.78);
+  // 侧栏强调色：基础样式与白色混了 32%，暗底上会明显发浅，这里直接用主题色
+  --oc-sidebar-accent-color: var(--ant-color-primary, #1890ff);
+
+  // 项目全局文本变量（theme.less 中定义）
+  --oc-color-text-heading: var(--oc-dark-text);
+  --oc-color-text: var(--oc-dark-text);
+  --oc-color-text-secondary: var(--oc-dark-text-secondary);
+  --oc-color-text-help: var(--oc-dark-text-tertiary);
+  --ant-color-text: var(--oc-dark-text);
+  --ant-color-text-heading: var(--oc-dark-text);
+  --ant-color-text-secondary: var(--oc-dark-text-secondary);
+  --ant-color-text-description: var(--oc-dark-text-secondary);
+  --ant-color-text-tertiary: var(--oc-dark-text-secondary);
+  --ant-color-text-quaternary: var(--oc-dark-text-tertiary);
+  --oc-navbar-fg: var(--oc-dark-text-secondary);
+  // 容器 / 边框变量（部分新组件用 var(--oc-color-*)，未定义时 fallback 到浅色 #fff/#e8e8e8）
+  --oc-color-bg-container: var(--oc-dark-elevated);
+  --oc-color-border: var(--oc-dark-border-strong);
+  --oc-color-border-secondary: var(--oc-dark-border);
+  // 资源详情页（components/Detail/style.scss）：亮色写死 #1f1f1f / #303133，
+  // 暗底上「标签几乎不可见、正文发闷」，这里按文字层级重新给值
+  --oc-detail-label: var(--oc-dark-text-secondary);
+  --oc-detail-strong: var(--oc-dark-text);
+  --oc-detail-divider: rgba(255, 255, 255, 0.14);
+  // 监控（Monitor）面板：卡片描边、标题分隔线、合计文字写死浅色值，统一走变量
+  // 描边比通用边框亮一档：监控页卡片层层嵌套，用 #282a30 会糊成一片看不出结构
+  --oc-monitor-card-border: rgba(255, 255, 255, 0.16);
+  --oc-monitor-divider: rgba(255, 255, 255, 0.1);
+  --oc-monitor-total-color: var(--oc-dark-text-secondary);
+  --oc-monitor-group-bg: var(--oc-dark-raised);
+  // 功能选择（FeatureSelector，/guide）：边框与文字全写死浅色，暗色下走变量
+  --oc-feature-module-border: var(--oc-dark-border-strong);
+  --oc-feature-item-border: var(--oc-dark-border-strong);
+  --oc-feature-item-text: var(--oc-dark-text);
+  --oc-feature-item-disabled-text: var(--oc-dark-text-disabled);
+  --oc-feature-item-disabled-bg: rgba(255, 255, 255, 0.06);
+  --oc-feature-item-disabled-border: var(--oc-dark-border);
+
+  color-scheme: dark;
+
+  body {
+    color: var(--oc-dark-text);
+    background-color: var(--oc-dark-bg);
+  }
+
+  #app {
+    color: var(--oc-dark-text);
+    background-color: var(--oc-dark-bg);
+  }
+
+  // global.less 里 .app-container / 文本色工具类写死了浅色主题的深灰，
+  // 暗底上会「灰到看不见」，这里统一提亮
+  .app-container,
+  .text-color,
+  .heading-color {
+    color: var(--oc-dark-text);
+  }
+  .text-color-secondary {
+    color: var(--oc-dark-text-secondary);
+  }
+  .text-color-help,
+  .text-weak {
+    color: var(--oc-dark-text-tertiary);
+  }
+  // 表格「标签」列图标：无标签时走 text-color-help（0.45），暗底上偏弱
+  .tag-table-column-trigger .oc-icon {
+    color: var(--oc-icon-secondary);
+  }
+  .bill-kind-tabs-title {
+    color: var(--oc-dark-text);
+  }
+
+  // bootstrap 工具类（带 !important，必须同等强度覆盖）
+  .bg-white,
+  .bg-body {
+    background-color: var(--oc-dark-container) !important;
+  }
+  .text-secondary {
+    color: var(--oc-dark-text-secondary) !important;
+  }
+  .text-black-50 {
+    color: var(--oc-dark-text-secondary) !important;
+  }
+
+  // 文本层级
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--oc-dark-text);
+  }
+
+  // ---------- 角标（Badge）----------
+  // antd 的 badgeTextColor 直接取 colorBgContainer（浅色下是白底 → 白字），
+  // 暗色容器是深色，数字就变成了「深色字 + 红底」，这里统一改成白字
+  .ant-badge-count,
+  .ant-badge-count .ant-scroll-number-only-unit,
+  .ant-scroll-number,
+  .ant-badge-multiple-words {
+    color: #fff !important;
+  }
+
+  // ---------- 导航栏 ----------
+  // 组件内 scoped 各自写死了浅色底/文字（--oc-navbar-fg: #4b5563、hover #f3f4f6 等），
+  // 这里用 html.oc-dark-mode 前缀 + !important 统一接管，避免逐组件对抗
+  .navbar-wrap {
+    // 必须重新声明：scoped .navbar-wrap 内写死的变量特异性更高
+    --oc-navbar-fg: var(--oc-dark-text-strong);
+    background: var(--oc-dark-container);
+    box-shadow: 0 1px 0 var(--oc-dark-border), 0 1px 3px rgba(0, 0, 0, 0.4);
+  }
+  // 注意：不要给 .navbar-item（外层整块）加 hover 底色 —— 它内部就是
+  // .navbar-item-trigger 那颗胶囊，两个一起上色会叠成「双重背景」。
+  .navbar-item-trigger:hover,
+  .navbar-item-icon:hover,
+  .global-map-btn:hover,
+  .navbar-wrap .trigger:hover {
+    background: var(--oc-dark-hover) !important;
+  }
+  .header-title {
+    color: var(--oc-dark-text);
+  }
+  // 视图切换下拉（自定义浮层，不走 antd token）
+  .view-dropdown-overlay {
+    background: var(--oc-dark-elevated);
+    border: 1px solid var(--oc-dark-border);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), 0 3px 6px -4px rgba(0, 0, 0, 0.5);
+  }
+  .view-list-wrap {
+    .item-link:hover {
+      background: var(--oc-dark-hover) !important;
+    }
+    .item-section-title {
+      color: var(--oc-dark-text-tertiary);
+    }
+  }
+  // 全局搜索：收起态入口
+  .global-search-trigger {
+    color: var(--oc-dark-text-strong) !important;
+    &:hover {
+      background: var(--oc-dark-hover) !important;
+    }
+  }
+  // 消息 / 工单 面板
+  .notify-header,
+  .work-order-header {
+    color: var(--oc-dark-text-strong);
+    border-bottom-color: var(--oc-dark-border);
+  }
+  .notify-list .notify-item + .notify-item {
+    border-top-color: var(--oc-dark-border);
+  }
+  .notify-list .item-header,
+  .no-data {
+    color: var(--oc-dark-text-tertiary);
+  }
+  .work-section-title {
+    color: var(--oc-dark-text-secondary);
+  }
+  // 面板 item hover：与白底混合会变浅灰，改成与暗浮层混合
+  .work-order-wrap .work-list > li:hover {
+    background-color: var(--oc-dark-hover) !important;
+    color: var(--ant-color-primary, #1890ff);
+  }
+  // ---------- a-alert / 提示条 ----------
+  // antd darkAlgorithm 的状态底色只在暗容器上叠约 10% 色相，几乎看不出来；
+  // 但混得太重又会整块发亮、很突兀。这里取「13% 色相 + 容器底色」的底，
+  // 配 40% 色相的细边 —— 能识别成一块提示，又不抢正文视觉。
+  .ant-alert:not(.alertresource-error) {
+    --oc-alert-color: var(--ant-color-primary, #1890ff);
+    color: var(--oc-dark-text);
+    background-color: color-mix(in srgb, var(--oc-alert-color) 16%, var(--oc-dark-container)) !important;
+    border: 1px solid color-mix(in srgb, var(--oc-alert-color) 40%, transparent) !important;
+
+    .ant-alert-message,
+    .ant-alert-description {
+      color: var(--oc-dark-text);
+    }
+    .ant-alert-icon {
+      color: var(--oc-alert-color);
+    }
+    .ant-alert-close-icon,
+    .ant-alert-close-icon .anticon {
+      color: var(--oc-dark-text-secondary);
+      &:hover {
+        color: var(--oc-dark-text);
+      }
+    }
+  }
+  .ant-alert-info {
+    --oc-alert-color: var(--ant-color-primary, #1890ff);
+  }
+  .ant-alert-success {
+    --oc-alert-color: #52c41a;
+  }
+  .ant-alert-warning {
+    --oc-alert-color: #faad14;
+  }
+  .ant-alert-error {
+    --oc-alert-color: #ff4d4f;
+  }
+
+  // 报警资源浮动卡片（白底 + 白箭头）
+  .alertresource-error {
+    background: var(--oc-dark-elevated) !important;
+    color: var(--oc-dark-text-strong) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+    .ant-alert-message {
+      color: var(--oc-dark-text-strong);
+    }
+    &::after {
+      background: var(--oc-dark-elevated) !important;
+      box-shadow: none !important;
+    }
+  }
+
+  // ---------- 导航栏：用户面板 ----------
+  .account-info-wrapper {
+    background: var(--oc-dark-elevated) !important;
+    outline-color: var(--oc-dark-border) !important;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), 0 3px 6px -4px rgba(0, 0, 0, 0.5), 0 9px 28px 8px rgba(0, 0, 0, 0.4) !important;
+  }
+  .account-info-wrapper-header {
+    .account-name {
+      color: var(--oc-dark-text);
+    }
+    .user-name {
+      color: var(--oc-dark-text-secondary);
+    }
+  }
+  .saml-row {
+    color: var(--oc-dark-text-strong);
+    .saml-row-icon {
+      color: var(--oc-dark-text-secondary);
+    }
+  }
+  .menu-wrapper,
+  .account-info-footer {
+    border-top-color: var(--oc-dark-border);
+  }
+  // 注意：必须限定在用户面板内 —— 侧边栏二级菜单项也叫 .menu-item，
+  // 之前写成全局 .menu-item:hover 会把菜单 hover 文字刷成近白色
+  .account-info-wrapper .menu-item,
+  .menu-wrapper .menu-item {
+    color: var(--oc-dark-text-strong);
+    &:hover {
+      background: var(--oc-dark-hover) !important;
+      color: var(--oc-dark-text) !important;
+    }
+    &:active {
+      transform: none;
+    }
+  }
+  // 仅用户面板内的图标；侧边栏菜单图标另有规则
+  .account-info-wrapper .menu-item-icon,
+  .account-info-wrapper .menu-item:hover .menu-item-icon {
+    color: var(--oc-dark-text-secondary);
+  }
+  .logout {
+    color: var(--oc-dark-text-strong) !important;
+    border-color: var(--oc-dark-border-strong) !important;
+    background: transparent !important;
+    &:hover {
+      color: var(--oc-dark-text) !important;
+      border-color: var(--oc-dark-check) !important;
+      background: var(--oc-dark-hover) !important;
+    }
+  }
+  .lang-menu-item {
+    color: var(--oc-dark-text-strong);
+    &:hover {
+      background: var(--oc-dark-hover) !important;
+    }
+    &.active {
+      color: var(--oc-dark-text);
+    }
+  }
+
+  // ---------- 圆角页壳 / 页面内容 ----------
+  #app.app-global-rounded {
+    background-color: var(--oc-dark-bg);
+
+    .navbar-wrap {
+      background: var(--oc-dark-container);
+    }
+
+    // 页面容器比底色亮一级，形成「底 → 容器」两层
+    .app-page {
+      background-color: var(--oc-dark-container);
+      border: 1px solid var(--oc-dark-border);
+    }
+
+    .app-page-scroll {
+      scrollbar-color: transparent var(--oc-dark-container);
+
+      &::-webkit-scrollbar-track {
+        background: var(--oc-dark-container);
+      }
+      &.is-scrolling {
+        scrollbar-color: rgba(255, 255, 255, 0.24) var(--oc-dark-container);
+
+        &::-webkit-scrollbar-thumb {
+          background-color: rgba(255, 255, 255, 0.24);
+          border-color: var(--oc-dark-container);
+        }
+        &::-webkit-scrollbar-thumb:hover {
+          background-color: rgba(255, 255, 255, 0.38);
+        }
+      }
+    }
+
+    // 登录/认证全屏页
+    .auth-layout,
+    .auth-login-normal,
+    .auth-login-fullscreen {
+      background-color: var(--oc-dark-container);
+    }
+
+    .cloudshell-header {
+      background-color: var(--oc-dark-raised) !important;
+      border-radius: 6px 6px 0 0;
+    }
+  }
+
+  // ---------- 侧栏（一级栏 / 抽屉）----------
+  // 侧栏选了「浅色」时，深色模式下统一压暗，避免大块浅灰贴在暗色页旁边
+  #sidebar-wrap.ant-drawer .ant-drawer-content-wrapper,
+  #sidebar-wrap.ant-drawer .ant-drawer-content,
+  #sidebar-wrap.ant-drawer .ant-drawer-body,
+  .sidebar-wrap-drawer.ant-drawer .ant-drawer-content-wrapper,
+  .sidebar-wrap-drawer.ant-drawer .ant-drawer-content,
+  .sidebar-wrap-drawer.ant-drawer .ant-drawer-body {
+    background: var(--oc-dark-container) !important;
+  }
+
+  // 二级侧栏（L2 菜单）右侧的「展开/收起」把手：
+  // 组件用 border-left 画了个三角形贴片，写死 #EBEBEB / hover #DEDEDE，暗色下是块白。
+  // 该样式在 layout 里是 scoped（带 [data-v-x]），特异性高于这里，故加 !important。
+  .level-2-menu-collapse {
+    .level-2-menu-collapse-bg {
+      border-left-color: rgba(255, 255, 255, 0.16) !important;
+    }
+    .level-2-menu-collapse-icon {
+      color: var(--oc-dark-text-tertiary) !important;
+    }
+    &:hover {
+      .level-2-menu-collapse-bg {
+        border-left-color: rgba(255, 255, 255, 0.26) !important;
+      }
+      .level-2-menu-collapse-icon {
+        color: var(--oc-dark-text) !important;
+      }
+    }
+  }
+
+  // EE 一级栏（ProductsList）
+  .products-list-root,
+  .products-list-wrap {
+    background-color: var(--oc-dark-container);
+
+    &.light-theme {
+      background-color: var(--oc-dark-container);
+      border-right-color: var(--oc-dark-border);
+
+      .l1-menu-item {
+        > a {
+          color: var(--oc-dark-text-secondary);
+        }
+        &:hover,
+        &.ant-popover-open {
+          background-color: var(--oc-dark-hover);
+          > a {
+            color: var(--ant-color-primary, #1890ff) !important;
+          }
+        }
+        &.active > a {
+          color: var(--ant-color-primary, #1890ff);
+        }
+        .l1-menu-item-right-icon {
+          color: var(--oc-dark-text-tertiary);
+        }
+      }
+      .l1-menu-type {
+        border-top-color: var(--oc-dark-border);
+        border-bottom-color: var(--oc-dark-border);
+        background-color: var(--oc-dark-raised);
+        > a {
+          color: var(--oc-dark-text-secondary);
+        }
+      }
+      .l1-menu-star {
+        > a {
+          color: var(--oc-dark-text-secondary);
+        }
+        &:hover {
+          background-color: var(--oc-dark-hover);
+        }
+      }
+    }
+
+    // 深色一级栏：hover / 选中不再用写死的白色文字与蓝色底，统一走主题色
+    .l1-menu-item {
+      &:hover,
+      &.ant-popover-open {
+        background-color: var(--oc-dark-hover) !important;
+        > a {
+          color: var(--ant-color-primary, #1890ff) !important;
+        }
+      }
+      &.active {
+        background-color: var(--oc-dark-selected) !important;
+        > a {
+          color: var(--ant-color-primary, #1890ff) !important;
+        }
+      }
+    }
+  }
+
+  // EE「产品与服务」浮层（800px）
+  .products-sub-root,
+  .products-sub-wrap .products-header,
+  .products-sub-wrap .recent-module {
+    background: var(--oc-dark-elevated) !important;
+  }
+  .products-sub-wrap .products-header {
+    .module-title,
+    .recent-title {
+      color: var(--oc-dark-text-secondary);
+    }
+    .search-wrap {
+      // 搜索图标是功能性指示，tertiary(.45) 在 elevated 面上偏暗，提到 secondary(.66)
+      .search-icon,
+      .ant-input-prefix,
+      .ant-input-affix-wrapper .ant-input-prefix {
+        color: var(--oc-dark-text-secondary) !important;
+      }
+      // 输入内容组件里写死 color: #606266 !important（scoped 后特异性 0,8,0，
+      // dark.less 里的普通选择器压不住），已改为 var(--oc-dark-text, #606266)；
+      // 这里只补 placeholder / 清除图标
+      .ant-input::placeholder,
+      input::placeholder {
+        color: var(--oc-dark-text-tertiary) !important;
+      }
+      .ant-input-clear-icon {
+        color: var(--oc-dark-text-tertiary) !important;
+      }
+      // search.svg 的 path 自带 fill-opacity="0.45"（浅色下等价于 rgba(0,0,0,.45)），
+      // 换色后是「颜色 alpha × 0.45」双重透明，实际只剩 ~0.2，看起来像没生效。
+      // 暗色下让颜色自己承担透明度，图案恢复不透明。
+      .search-icon path,
+      .search-icon rect {
+        fill-opacity: 1 !important;
+        stroke-opacity: 1 !important;
+      }
+    }
+    // 组件 scoped 里写死 rgba(0,0,0,.45) 文字 + #f5f5f5 hover 底，不加 !important 压不住
+    .close {
+      color: var(--oc-dark-text-tertiary) !important;
+      &:hover {
+        color: var(--oc-dark-text) !important;
+        background: var(--oc-dark-hover) !important;
+      }
+      .anticon {
+        color: inherit !important;
+      }
+    }
+  }
+  // 面板正文：组件内写死 rgba(0,0,0,.65) 标题与 #ebebeb 的分割线 / hover 底色。
+  // 这些样式在组件里是 scoped（编译后带 [data-v-x]，嵌套后特异性远高于本节），
+  // 不加 !important 压不住 —— 表现为「标题看不见 + 一条条发白的分割线」。
+  .products-sub-wrap {
+    .module-title,
+    .module-item-title,
+    .recent-title {
+      color: var(--oc-dark-text-secondary) !important;
+    }
+    .line {
+      // 面板本身就是 elevated 面，用 --oc-dark-border 会几乎看不见
+      border-top-color: var(--oc-dark-border-strong) !important;
+    }
+    .result-wrap .search-text {
+      background: var(--oc-dark-raised) !important;
+      color: var(--ant-color-primary, #1890ff);
+    }
+    .module-item-link,
+    .recent-item {
+      color: var(--oc-dark-text-secondary) !important;
+      &:hover {
+        background: var(--oc-dark-hover) !important;
+        color: var(--ant-color-primary, #1890ff) !important;
+      }
+    }
+  }
+  // 功能搜索框：组件写死 border: 1px solid #d9d9d9，暗底上是一圈亮边
+  .products-sub-wrap .products-header .search-wrap .ant-input-affix-wrapper {
+    border-color: var(--oc-dark-check) !important;
+    background-color: transparent !important;
+  }
+
+  // EE 级联菜单（MenuCascadeLayer 的二级 / 三级浮层）：
+  // 暗色侧栏下默认就是 #191919，暗色模式统一提到 elevated，和右键菜单等浮层一致
+  .menu-l2-popover,
+  .menu-l3-popover {
+    background-color: var(--oc-dark-elevated) !important;
+
+    .cascade-l2-list,
+    .cascade-l3-panel-inner {
+      background-color: var(--oc-dark-elevated) !important;
+    }
+  }
+  // 侧栏选「浅色」时会挂 .light-theme，写死白底 + 浅色文字，暗色下要整套换掉
+  .menu-l2-popover.light-theme,
+  .menu-l3-popover.light-theme {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+
+    // 组件里是 .popover .cascade-menu-item .cascade-menu-link 且带 !important，
+    // 这里保持同样的嵌套深度才压得住
+    .cascade-menu-item {
+      .cascade-menu-link {
+        color: var(--oc-dark-text-secondary) !important;
+      }
+      .cascade-menu-arrow {
+        color: var(--oc-dark-text-tertiary) !important;
+      }
+      &.active,
+      &:hover {
+        .cascade-menu-link {
+          color: var(--ant-color-primary, #1890ff) !important;
+          background-color: var(--oc-dark-hover) !important;
+        }
+      }
+    }
+    .cascade-l3-group-title {
+      color: var(--oc-dark-text-tertiary) !important;
+    }
+    .cascade-l3-link {
+      color: var(--oc-dark-text-secondary) !important;
+      &:hover {
+        color: var(--ant-color-primary, #1890ff) !important;
+        background-color: var(--oc-dark-hover) !important;
+      }
+    }
+  }
+
+  // ---------- 二级菜单 ----------
+  // 深色模式统一暗色底（即使侧栏选了浅色主题，避免大块浅灰贴在暗色页旁边）
+  .level-2-wrap {
+    background-color: var(--oc-dark-container);
+    box-shadow: none;
+
+    &.light-theme {
+      background-color: var(--oc-dark-container);
+
+      .menu-group {
+        color: var(--oc-dark-text-tertiary);
+      }
+      .level-2-menu .title {
+        color: var(--oc-dark-text);
+      }
+      .level-3-item {
+        .level-3-group-title {
+          color: var(--oc-dark-text-tertiary);
+        }
+        .menu-item {
+          color: var(--oc-dark-text-secondary);
+          &:hover {
+            color: var(--ant-color-primary, #1890ff);
+            background-color: var(--oc-dark-hover);
+          }
+          &.active {
+            color: var(--ant-color-primary, #1890ff);
+            background-color: var(--oc-dark-selected);
+          }
+        }
+      }
+      &.menu-refined {
+        .level-2-menu .title {
+          color: var(--oc-dark-text);
+        }
+        .level-3-item {
+          .group-menu {
+            border-bottom-color: var(--oc-dark-border);
+          }
+          .level-3-group-title {
+            color: var(--oc-dark-text-tertiary);
+          }
+          .menu-item {
+            color: var(--oc-dark-text-secondary);
+          }
+        }
+      }
+    }
+  }
+
+  // 二级菜单项：暗色下 hover / 选中统一用主题色文字，不再跳成纯白
+  .level-2-wrap .menu-item {
+    &:hover,
+    &.active {
+      color: var(--ant-color-primary, #1890ff) !important;
+    }
+  }
+  .l2-menu-item {
+    &:hover,
+    &.active {
+      color: var(--ant-color-primary, #1890ff) !important;
+    }
+  }
+
+  // ---------- 自定义容器兜底（业务页常见硬编码白底）----------
+  // sidepage 保持与页面同色（--oc-dark-container），只靠「左边框 + 投影」区分层次，
+  // 避免整块面提亮后与页面里的表格/卡片层级反转。
+  .side-page-wrap {
+    background-color: var(--oc-dark-container);
+    // 边线取 20% 白：与页面同色的前提下，这是唯一可见的分界；再配双层投影的「近实远虚」
+    border-left: 1px solid var(--oc-sidepage-edge, rgba(255, 255, 255, 0.2));
+    box-shadow: -10px 0 28px rgba(0, 0, 0, 0.55), -2px 0 8px rgba(0, 0, 0, 0.4);
+  }
+  .side-page-header {
+    background-color: var(--oc-dark-container);
+    // 亮色是 #f0f0f0 细线；暗色下用低强度白，才看得出「页头 / 内容」分界
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+  }
+
+  // 页面底栏 PageFooter 用了 .bg-white
+  .page-footer {
+    color: var(--oc-dark-text);
+    // 组件内写死浅灰投影 rgba(237,237,237,.5)：暗底上一条发白的亮带。
+    // 改为「顶部一条细分隔线 + 向上暗投影」，保留层次但不泛白
+    box-shadow:
+      0 -1px 0 rgba(255, 255, 255, 0.08),
+      0 -10px 24px rgba(0, 0, 0, 0.45) !important;
+  }
+
+  // ---------- 创建页：磁盘 / 网卡分组卡片、标签虚线框、高级配置折叠条 ----------
+  // 这几块组件里都写死了浅色面板（#fafafa 底 + #f0f0f0 边框 / #ddd 虚线），
+  // 浅色下是「浅灰卡片」，暗底上直接变成一条条发白的面，把控件衬得像浅色主题。
+  .disk-wrapper,
+  .network-config-row {
+    background: var(--oc-dark-raised) !important;
+    border-color: var(--oc-dark-border-strong) !important;
+  }
+  // 卡片内「高级」展开区的分隔线
+  .disk-wrapper__advanced,
+  .network-advanced-panel {
+    border-top-color: var(--oc-dark-border) !important;
+  }
+  // 卡片内写死 rgba(0,0,0,.45/.65) 的说明文字与复选框标签，暗底上等于不可见
+  .disk-wrapper__meta,
+  .disk-wrapper__field-label,
+  .network-advanced-panel__field-label,
+  .disk-wrapper__toggle,
+  .network-advanced-panel__toggle,
+  .disk-wrapper__toggle .ant-checkbox + span,
+  .network-advanced-panel__toggle .ant-checkbox + span,
+  .disk-wrapper__toggle .ant-checkbox-wrapper,
+  .network-advanced-panel__toggle .ant-checkbox-wrapper {
+    color: var(--oc-dark-text-tertiary) !important;
+  }
+  // 标签区域的 2px 虚线 #ddd 在暗底上是一圈白框；只在创建页收窄，避免影响
+  // TagSelect / SetTag 里同名的 .tag-list（那些是无边框的 ul）
+  .server-create-index .tag-list {
+    border-color: rgba(255, 255, 255, 0.18) !important;
+  }
+  // 「高级配置」折叠条：整条 #fafafa 底
+  .advance-config-block.ant-collapse {
+    background: var(--oc-dark-raised) !important;
+  }
+
+  // 磁盘类型 / 网卡序号 / VPC / 调度标签：组件里用 color-mix(主题色 10%, #fff) 做
+  // 「浅主题色底」，混白在暗底上是一块发亮的近白圆角条（实测 rgb(232,249,249)），
+  // 和周围的暗面板严重脱节，上面的主题色文字也失去对比。
+  // 暗色下把「混白」换成「混透明」：同一主题色得到半透明面，文字仍是主题色。
+  .disk-type-tag.ant-tag,
+  .network-nic-tag.ant-tag,
+  .network-vpc-tag.ant-tag {
+    background: color-mix(in srgb, var(--ant-color-primary, #1890ff) 16%, transparent) !important;
+    border-color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 40%, transparent) !important;
+    color: var(--ant-color-primary, #1890ff) !important;
+  }
+
+  .table-lite-grid__scroll {
+    background: var(--oc-dark-container);
+  }
+  .table-lite-grid.is-bordered .table-lite-grid__scroll {
+    border-color: var(--oc-dark-border);
+  }
+  .table-lite-grid__table {
+    // 组件内写死的 #f0f0f0 行线 / #e8e8e8 列线在暗底上很扎眼，统一压到表格边框色
+    thead th {
+      background: var(--oc-dark-raised);
+      color: var(--oc-dark-header-text);
+      border-bottom-color: var(--oc-dark-border) !important;
+    }
+    thead th,
+    tbody td,
+    tfoot td {
+      // 行线压到容器边框色；列线独立提亮，否则整张表糊成一片
+      border-right-color: rgba(255, 255, 255, 0.2) !important;
+      border-bottom-color: var(--oc-dark-border) !important;
+    }
+    tbody td,
+    tfoot td {
+      background: var(--oc-dark-container);
+      color: var(--oc-dark-text-secondary);
+    }
+    // 表头标题：深色底 + 600 字重，纯白会发刺
+    .table-lite-grid__th-title,
+    .page-list-lite__th-title {
+      color: var(--oc-dark-header-text) !important;
+    }
+    // 覆盖组件内写死的浅灰 hover / 白底选中（原 #f5f7fa、#fff 混合）
+    tbody tr:hover > td,
+    tbody tr:hover > td.is-fixed-left,
+    tbody tr:hover > td.is-fixed-right {
+      background: var(--oc-dark-raised) !important;
+    }
+    tbody tr.is-checked > td,
+    tbody tr.is-current > td,
+    tbody tr.is-checked > td.is-fixed-left,
+    tbody tr.is-checked > td.is-fixed-right,
+    tbody tr.is-current > td.is-fixed-left,
+    tbody tr.is-current > td.is-fixed-right {
+      background: var(--oc-dark-selected-row) !important;
+    }
+    tbody tr.is-checked:hover > td,
+    tbody tr.is-current:hover > td {
+      background: var(--oc-dark-selected-row-hover) !important;
+    }
+  }
+  // vxe 表格的行选中（row--current）：vars 之外再兜一层，防止个别版本直接用类名写死底色
+  .vxe-table .vxe-body--row.row--current,
+  .vxe-table .vxe-body--row.row--current > .vxe-body--column {
+    background-color: var(--oc-dark-selected-row) !important;
+  }
+  .vxe-table .vxe-body--row.row--current.vxe-body--row--hover,
+  .vxe-table .vxe-body--row.row--current.vxe-body--row--hover > .vxe-body--column {
+    background-color: var(--oc-dark-selected-row-hover) !important;
+  }
+  // antd 表格的行选中（少量侧页在用）
+  .ant-table-wrapper .ant-table-tbody > tr.ant-table-row-selected > td {
+    background-color: var(--oc-dark-selected-row) !important;
+  }
+  .ant-table-wrapper .ant-table-tbody > tr.ant-table-row-selected:hover > td {
+    background-color: var(--oc-dark-selected-row-hover) !important;
+  }
+
+  // 列宽拖拽：常态提示线 #d9d9d9 过亮，拖动线 #1890ff 也压一档
+  .table-lite-grid__resizer::after {
+    background: var(--oc-dark-border-strong) !important;
+  }
+  .table-lite-grid__resize-line {
+    border-left-color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 60%, transparent);
+  }
+  // 勾选框的暗色适配在下方「勾选框（全局）」统一处理
+
+  // ---------- 表头排序图标 ----------
+  // 组件内写死 #c0c4cc，hover 又是 rgba(0,0,0,.7)，暗底上 hover 等于消失。
+  // MultipleSort 的样式是 scoped 且嵌套较深，这里用同等/更高特异性压过去。
+  .table-lite-grid .sort-wrapper .sort-box,
+  .vxe-table .sort-wrapper .sort-box {
+    .sort-up-box .sort-up,
+    .sort-down-box .sort-down {
+      background: rgba(255, 255, 255, 0.45);
+    }
+    .sort-up-box .active-sort,
+    .sort-down-box .active-sort {
+      background: var(--ant-color-primary, #1890ff) !important;
+    }
+    .sort-up-wrapper:hover .sort-up-box .sort-up,
+    .sort-down-wrapper:hover .sort-down-box .sort-down {
+      background: var(--oc-dark-text);
+    }
+  }
+  .table-lite-grid .sort-wrapper .split,
+  .vxe-table .sort-wrapper .split {
+    background: rgba(255, 255, 255, 0.28);
+  }
+  // Lite grid 内置排序图标用 currentColor，跟随表头文字色即可，不额外覆盖
+
+  // ---------- 表格 / 列表 loading 遮罩 ----------
+  // 组件内是 rgba(255,255,255,.55)，暗色下等于整块泛白
+  .table-lite-grid__loading-mask,
+  .ant-spin-nested-loading .ant-spin-blur::after {
+    background: rgba(26, 28, 33, 0.6) !important;
+  }
+  .table-lite-grid__loading-inner,
+  .table-lite-grid__loading-text {
+    color: var(--oc-dark-text-secondary) !important;
+  }
+
+  // ---------- 列表分页（ListPager）----------
+  // 组件内写死 #606266；暗色下统一到「共 N 条」那行统计文案的亮度（.66），
+  // 分页属于辅助信息，不该比表头正文更抢眼。
+  .page-list-pager,
+  .page-list-pager .pager-page-count,
+  .page-list-pager .pager-stats,
+  .page-list-pager .page-list-pager__extra,
+  .page-list-pager .page-list-pager__extra .table-overview {
+    color: var(--oc-dark-text-secondary);
+  }
+  .page-list-pager .pager-icon-btn {
+    color: var(--oc-dark-text-secondary) !important;
+    .oc-icon {
+      color: inherit;
+    }
+  }
+  .page-list-pager .pager-icon-btn:not(:disabled):hover {
+    color: var(--oc-dark-text) !important;
+  }
+  .page-list-pager .pager-icon-btn:disabled {
+    color: var(--oc-dark-text-tertiary) !important;
+    opacity: 0.6;
+  }
+  .page-list-pager .pager-jump-input,
+  .page-list-pager .pager-jump-input.ant-input {
+    color: var(--oc-dark-text-secondary);
+  }
+  .page-list-pager .pager-size-select .ant-select-selection-item,
+  .page-list-pager .pager-size-select .ant-select-selection-placeholder,
+  .page-list-pager .pager-size-select .ant-select-selection-search-input {
+    color: var(--oc-dark-text-secondary) !important;
+  }
+  // 每页条数下拉（挂载在 body，非 scoped）
+  .page-list-pager-size-dropdown {
+    .ant-select-item-option:not(.ant-select-item-option-disabled),
+    .ant-select-item-option-content,
+    .ant-select-item-option-active:not(.ant-select-item-option-disabled),
+    .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+      color: var(--oc-dark-text-secondary);
+    }
+  }
+
+  // 表格「主信息」文字：各业务列的首行用 --oc-color-text-heading（全局 .88），
+  // 与同列正文 .66 落差过大显得刺眼，这里通过变量继承在单元格内压到 .78。
+  .table-lite-grid__table tbody td,
+  .vxe-table .vxe-body--row {
+    --oc-color-text-heading: var(--oc-dark-text-strong);
+    --oc-color-text: var(--oc-dark-text-strong);
+  }
+
+  // antd Table（少量弹窗/侧页在用）：控件边框提亮后别把表格分割线一起带亮
+  .ant-table-wrapper .ant-table,
+  .ant-table-wrapper .ant-table-container,
+  .ant-table-wrapper .ant-table-thead > tr > th,
+  .ant-table-wrapper .ant-table-tbody > tr > td {
+    border-color: var(--oc-dark-border);
+  }
+  .ant-table-wrapper .ant-table-thead > tr > th {
+    background: var(--oc-dark-raised);
+    color: var(--oc-dark-header-text);
+  }
+
+  // ---------- 列表通用页头（PageHeader：标题 / Tabs / 资源状态统计）----------
+  // 组件内用 less 变量写死了浅色文本（标题 #303133、tab #606266、统计数字 #181a1d），
+  // 暗底上会「越重要越看不见」，这里统一按文字层级接管。
+  .page-header {
+    &::before {
+      box-shadow: inset 0 -1px 0 0 var(--oc-dark-border);
+      opacity: 1;
+    }
+  }
+  .page-header .page-header__title {
+    color: var(--oc-dark-text);
+  }
+  .page-header .mini-title {
+    color: var(--oc-dark-text-secondary);
+  }
+  .page-header-tabs {
+    .ant-tabs-nav .ant-tabs-tab {
+      color: var(--oc-dark-text-secondary);
+      &:hover {
+        color: var(--oc-dark-text);
+      }
+    }
+    .ant-tabs-nav .ant-tabs-tab-active,
+    .ant-tabs-nav .ant-tabs-tab-active .ant-tabs-tab-btn {
+      color: var(--ant-color-primary, #1890ff) !important;
+      text-shadow: none;
+    }
+    .ant-tabs-ink-bar {
+      background: var(--ant-color-primary, #1890ff);
+    }
+    .ant-tabs-nav {
+      &::before {
+        border-bottom-color: var(--oc-dark-border);
+      }
+    }
+  }
+
+  // 资源状态 tab：hover 原为 #f5f5f5，暗底上会「发白」；但用通用 hover（6%）又太弱，
+  // 这里单独给到 12%，保证「这块可点」能看出来
+  .res-status-tab .res-status-item:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+  }
+  // 标题/数字：原 #606266 / #181a1d 在暗底上几乎不可读
+  .res-status-tab .res-status-item {
+    .title {
+      color: var(--oc-dark-text-secondary);
+    }
+    .num {
+      color: var(--oc-dark-text);
+    }
+    // 中性状态（关机 / 禁用 / 其它）：原 #d9d9d9 在暗底上过亮，压到半透明白
+    &.ready,
+    &.offline,
+    &.disabled,
+    &.info,
+    &.other {
+      --accent: rgba(255, 255, 255, 0.55);
+    }
+  }
+
+  // 列表操作行右侧的「共 N 条 / 已选 M 项」：原本 rgba(0,0,0,.65)
+  .page-list-header-actions__stats {
+    color: var(--oc-dark-text-secondary);
+  }
+
+  .search-box-wrap {
+    background-color: var(--oc-dark-container);
+    border-color: var(--oc-dark-check);
+  }
+  // 搜索框内的「字段: 值」筛选标签（组件写死 #f5f5f5 底 + 半透明黑字）
+  // 底色需要比容器亮一档，否则标签会「陷进」输入框里看不出是块
+  .search-box-wrap .tag {
+    background: rgba(255, 255, 255, 0.14) !important;
+    color: var(--oc-dark-text);
+  }
+  .search-box-wrap .tag-value-sep {
+    color: var(--oc-dark-text-tertiary);
+  }
+  .search-box-wrap .search-box-tag-close {
+    color: var(--oc-dark-text-tertiary);
+    &:hover {
+      color: var(--oc-dark-text);
+    }
+  }
+  .search-box-wrap .dropdown-search-input-wrap {
+    border-bottom-color: var(--oc-dark-border);
+  }
+  .search-box-wrap .dropdown-search-suffix-icon {
+    color: var(--oc-dark-text-tertiary);
+  }
+  // 标签编辑浮层（挂在 body 上，需用 overlayClassName 限定）：白底 + 白箭头，
+  // 内部搜索行、单选/复选文案、底部「确定 / 取消」也都写死了浅色
+  .search-box-tag-popover-wrap {
+    .ant-popover-inner {
+      background: var(--oc-dark-elevated);
+    }
+    .ant-popover-arrow::before {
+      background: var(--oc-dark-elevated) !important;
+    }
+    .dropdown-search-input-wrap {
+      border-bottom-color: var(--oc-dark-border);
+    }
+    .dropdown-search-suffix-icon {
+      color: var(--oc-dark-text-tertiary);
+    }
+    .ant-radio-wrapper,
+    .ant-checkbox-wrapper {
+      color: var(--oc-dark-text);
+    }
+    .actions {
+      border-top-color: var(--oc-dark-border);
+      > span {
+        color: var(--oc-dark-text-secondary);
+        &:first-child {
+          border-right-color: var(--oc-dark-border);
+        }
+        &:hover {
+          background-color: var(--oc-dark-hover);
+          color: var(--ant-color-primary, #1890ff);
+        }
+        // 「确定」不可点：原来是 #f5f5f5 底（暗色下就是一块白）
+        &.disabled {
+          background-color: var(--oc-dark-fill-disabled);
+          color: var(--oc-dark-text-disabled);
+        }
+      }
+    }
+  }
+
+  // ---------- 组织架构树（TreeProject）----------
+  // a-tree 自身背景取 colorBgContainer(#1a1c21)，而外层卡片写死 #fff，
+  // 于是出现「白卡片里套一块黑树」。统一到容器色，仅保留边框分层。
+  .tree-wrapper {
+    background: var(--oc-dark-container);
+    border-color: var(--oc-dark-border);
+  }
+  .tree-wrapper .tree-toolbar {
+    border-bottom-color: var(--oc-dark-border);
+  }
+  .tree-wrapper .ant-tree {
+    background: transparent;
+    color: var(--oc-dark-text);
+  }
+  .tree-wrapper .ant-tree .ant-tree-node-content-wrapper {
+    color: var(--oc-dark-text-secondary);
+    &:hover {
+      background: var(--oc-dark-hover) !important;
+    }
+    &.ant-tree-node-selected {
+      background: var(--oc-dark-selected) !important;
+      color: var(--ant-color-primary, #1890ff);
+    }
+  }
+  // 展开箭头 / 组织节点图标在模板里写死了 color:#999（内联样式，需 !important）
+  .tree-wrapper .ant-tree .oc-icon,
+  .tree-wrapper .ant-tree .anticon {
+    color: var(--oc-icon-secondary) !important;
+  }
+  .tree-wrapper .ant-tree-node-selected .oc-icon,
+  .tree-wrapper .ant-tree-node-selected .anticon {
+    color: var(--ant-color-primary, #1890ff) !important;
+  }
+  .tree-wrapper .tag-title-budge {
+    color: var(--oc-dark-text-tertiary);
+  }
+  .tree-wrapper .loading {
+    background: rgba(26, 28, 33, 0.6);
+  }
+
+  // 搜索建议下拉（AutoCompleter / SearchBox Tag）
+  .auto-completer-wrap {
+    background-color: var(--oc-dark-elevated);
+    border-color: var(--oc-dark-border);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5), 0 3px 6px -4px rgba(0, 0, 0, 0.5);
+  }
+  .auto-completer-arrow {
+    background: var(--oc-dark-elevated);
+    border-color: var(--oc-dark-border);
+  }
+  .auto-completer-items {
+    background-color: var(--oc-dark-elevated);
+
+    > li {
+      > span {
+        color: var(--oc-dark-text);
+        &.empty {
+          color: var(--oc-dark-text-tertiary);
+        }
+      }
+      &:hover {
+        background-color: var(--oc-dark-hover);
+      }
+      &.actions:hover {
+        background-color: transparent;
+      }
+    }
+    .loading:hover,
+    .no-data:hover {
+      background-color: transparent;
+    }
+  }
+  .auto-completer-wrap .completer-tip {
+    color: var(--oc-dark-text-tertiary);
+  }
+  .auto-completer-wrap .actions {
+    border-top-color: var(--oc-dark-border);
+    > span {
+      color: var(--oc-dark-text-secondary);
+      &:first-child {
+        border-right-color: var(--oc-dark-border);
+      }
+      // 组件内是 scoped 样式（带 [data-v-xxx]），特异性高于这里，必须 !important 才能压住
+      &:hover {
+        color: var(--ant-color-primary, #1890ff);
+        background-color: var(--oc-dark-hover) !important;
+      }
+      // 「确定」不可点：AutoCompleter 写死 #fafafa（暗色下就是一块白）
+      &.disabled {
+        background-color: transparent !important;
+        color: var(--oc-dark-text-disabled) !important;
+      }
+      &.disabled:hover {
+        background-color: transparent !important;
+      }
+    }
+  }
+
+  // ---------- vxe-table ----------
+  // 基础暗色变量来自 vxe 自带 [data-vxe-ui-theme=dark]，这里只对齐项目色板
+  // （选择器带上 data-vxe-ui-theme 以稳定压过 vxe 自身的变量定义）
+  &[data-vxe-ui-theme='dark'] {
+    --vxe-ui-layout-background-color: var(--oc-dark-container);
+    --vxe-ui-font-color: var(--oc-dark-text-secondary);
+    --vxe-ui-font-lighten-color: var(--oc-dark-text-tertiary);
+    // 输入类 / 普通按钮外框：原 #2e3138 在暗底上太暗，与勾选框统一到 42% 白
+    --vxe-ui-input-border-color: var(--oc-dark-check);
+    --vxe-ui-input-placeholder-color: var(--oc-dark-text-tertiary);
+    // loading 遮罩：默认 rgba(255,255,255,.1)，暗色下会整块泛白
+    --vxe-ui-loading-background-color: rgba(26, 28, 33, 0.6);
+    // 行分割线 / 列分割线 / 外框统一取容器边框色（不再比外框亮）
+    --vxe-ui-table-border-color: var(--oc-dark-border);
+    --vxe-ui-table-header-font-color: var(--oc-dark-header-text);
+    --vxe-ui-table-header-background-color: var(--oc-dark-raised);
+    // 列宽拖拽提示线：默认 #d9dddf 在暗底上过亮
+    --vxe-ui-table-resizable-line-color: var(--oc-dark-border-strong);
+    --vxe-ui-table-resizable-drag-line-color: color-mix(in srgb, var(--ant-color-primary, #1890ff) 70%, transparent);
+    --vxe-ui-table-row-hover-background-color: var(--oc-dark-raised);
+    --vxe-ui-table-row-hover-striped-background-color: var(--oc-dark-raised);
+    --vxe-ui-table-row-striped-background-color: #16181c;
+    --vxe-ui-table-column-hover-background-color: var(--oc-dark-raised);
+    // 点击/勾选行：跟随主题色淡染，避免默认棕黄或亮白
+    // 整行面积大，比例要比小控件低一档，否则暗色下整块发亮
+    --vxe-ui-table-row-current-background-color: var(--oc-dark-selected-row);
+    --vxe-ui-table-row-hover-current-background-color: var(--oc-dark-selected-row-hover);
+    --vxe-ui-table-row-checkbox-checked-background-color: var(--oc-dark-selected-row);
+    --vxe-ui-table-row-hover-checkbox-checked-background-color: var(--oc-dark-selected-row-hover);
+    --vxe-ui-table-row-radio-checked-background-color: var(--oc-dark-selected-row);
+    --vxe-ui-table-row-hover-radio-checked-background-color: var(--oc-dark-selected-row-hover);
+  }
+
+  .vxe-table {
+    color: var(--oc-dark-text-secondary);
+  }
+  // 表头标题柔化：暗底 + 600 字重下纯白偏刺眼
+  .vxe-table .vxe-header--column {
+    color: var(--oc-dark-header-text) !important;
+  }
+  .vxe-table .vxe-body--row {
+    background-color: transparent;
+  }
+  .vxe-table .vxe-table--empty-content,
+  .vxe-table .vxe-table--empty-placeholder {
+    color: var(--oc-dark-text-tertiary);
+    background-color: var(--oc-dark-container);
+  }
+  // ---------- 勾选框（全局：antd / vxe，含表格、表单、下拉、弹窗）----------
+  // antd 默认未勾选描边是 #424242，在暗底上几乎看不见
+  .ant-checkbox:not(.ant-checkbox-checked) .ant-checkbox-inner {
+    background-color: rgba(255, 255, 255, 0.04);
+    border-color: var(--oc-dark-check);
+  }
+  // 注意：hover 规则必须排除禁用态 —— 禁用 checkbox 的外层仍然带 .ant-checkbox-wrapper
+  // （只多一个 -disabled 修饰类），只写 .ant-checkbox-wrapper:hover 会让禁用框在 hover
+  // 时也变成主题色。
+  .ant-checkbox-wrapper:not(.ant-checkbox-wrapper-disabled):hover .ant-checkbox:not(.ant-checkbox-checked) .ant-checkbox-inner,
+  .ant-checkbox:not(.ant-checkbox-disabled):hover .ant-checkbox-inner {
+    border-color: var(--ant-color-primary, #1890ff);
+  }
+  // 半选：外框跟随常态描边，中间短横保持主色
+  .ant-checkbox-indeterminate .ant-checkbox-inner {
+    background-color: rgba(255, 255, 255, 0.04);
+    border-color: var(--oc-dark-check);
+  }
+  .ant-checkbox-indeterminate .ant-checkbox-inner::after {
+    background-color: var(--ant-color-primary, #1890ff);
+  }
+  // 禁用态：退回低对比，避免比可用态还抢眼
+  // 但描边不能直接用 --oc-dark-border（#282a30）—— 它和容器底几乎同色，
+  // 禁用勾选框会整个「消失」，看不出这里有个控件。取可用态描边（42% 白）的一半，
+  // 仍是明确的方块轮廓，同时明显弱于可用态。
+  // 同时把 wrapper 的禁用态一并纳入：部分场景（表单整体禁用、a-checkbox-group 禁用）
+  // 只有外层带 .ant-checkbox-wrapper-disabled，这条特异性要压得住上面的 hover 规则。
+  .ant-checkbox-wrapper-disabled .ant-checkbox:not(.ant-checkbox-checked) .ant-checkbox-inner,
+  .ant-checkbox-disabled:not(.ant-checkbox-checked) .ant-checkbox-inner,
+  // hover 兜底：即使有更高特异性的 hover 规则进来，禁用态也保持弱白描边，不跟手变主题色
+  .ant-checkbox-wrapper-disabled:hover .ant-checkbox:not(.ant-checkbox-checked) .ant-checkbox-inner,
+  .ant-checkbox-disabled:hover .ant-checkbox-inner {
+    background-color: rgba(255, 255, 255, 0.02);
+    border-color: rgba(255, 255, 255, 0.22) !important;
+  }
+  // vxe 面板内的勾选（自定义列 / 筛选 / 导出）是图标字体，颜色取输入框边框，同样偏暗
+  .vxe-table-custom--checkbox-option .vxe-checkbox--icon,
+  .vxe-table-export--panel-column-option .vxe-checkbox--icon,
+  .vxe-table--filter-option .vxe-checkbox--icon {
+    color: var(--oc-dark-check);
+  }
+  .is--checked,
+  .is--indeterminate {
+    &.vxe-table-custom--checkbox-option .vxe-checkbox--icon,
+    &.vxe-table-export--panel-column-option .vxe-checkbox--icon,
+    &.vxe-table--filter-option .vxe-checkbox--icon {
+      color: var(--ant-color-primary, #1890ff);
+    }
+  }
+
+  // ---------- 表单控件外框（全局：输入框 / 选择框 / 日期 / 数字 / 普通按钮）----------
+  // antd darkAlgorithm 默认 colorBorder 偏暗，在暗底上几乎看不出控件边界；
+  // token 已在 App.vue 里提到 42% 白，这里再兜一层（覆盖个别组件内写死的边框）
+  .ant-input:not([disabled]),
+  .ant-input-affix-wrapper:not(.ant-input-affix-wrapper-disabled),
+  .ant-input-number:not(.ant-input-number-disabled),
+  .ant-picker:not(.ant-picker-disabled),
+  .ant-select:not(.ant-select-disabled):not(.ant-select-customize-input) .ant-select-selector,
+  .ant-btn-default:not(:disabled) {
+    border-color: var(--oc-dark-check);
+  }
+  // 组合输入框左侧（global.less 里写死了 #d9d9d9）
+  .oc-addonBefore.ant-input:not([disabled]) {
+    border-color: var(--oc-dark-check) !important;
+  }
+
+  // ---------- 禁用态复位（不参与上面的提亮）----------
+  // 提亮 colorBorder 会连带把禁用控件的边框一起点亮，看起来像可用。
+  // 这里把禁用态统一压回暗弱：边框取容器边框色、文字 .3、底色微亮。
+  // 注意：不加 pointer-events: none / 不隐藏内容，原有 tooltip 提示照常显示。
+  // 实心按钮（default / primary / dashed 等）才有「底色 + 边框」，
+  // 禁用时给暗灰面 + 弱边框；link / text / ghost 不参与（见下方复位）。
+  .ant-btn[disabled]:not(.ant-btn-link):not(.ant-btn-text):not(.ant-btn-background-ghost),
+  .ant-btn-disabled:not(.ant-btn-link):not(.ant-btn-text):not(.ant-btn-background-ghost),
+  .ant-btn[disabled]:not(.ant-btn-link):not(.ant-btn-text):not(.ant-btn-background-ghost):hover,
+  .ant-btn[disabled]:not(.ant-btn-link):not(.ant-btn-text):not(.ant-btn-background-ghost):focus,
+  .ant-btn[disabled]:not(.ant-btn-link):not(.ant-btn-text):not(.ant-btn-background-ghost):active {
+    color: var(--oc-dark-text-disabled) !important;
+    border-color: var(--oc-dark-border) !important;
+    background-color: var(--oc-dark-fill-disabled) !important;
+    box-shadow: none !important;
+  }
+  // link / text / 幽灵按钮、下拉菜单内的按钮：原本就是透明底 + hover 背景，
+  // 禁用后保持透明，只压暗文字与描边，不再叠加一层底色
+  .ant-btn-link[disabled],
+  .ant-btn-link.ant-btn-disabled,
+  .ant-btn-text[disabled],
+  .ant-btn-text.ant-btn-disabled,
+  .ant-btn-background-ghost[disabled],
+  .ant-btn-background-ghost.ant-btn-disabled,
+  .ant-dropdown-menu .ant-btn[disabled],
+  .ant-dropdown-menu .ant-btn.ant-btn-disabled,
+  .ant-menu .ant-btn[disabled],
+  .ant-menu .ant-btn.ant-btn-disabled {
+    color: var(--oc-dark-text-disabled) !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+  }
+  .ant-btn-link[disabled],
+  .ant-btn-link.ant-btn-disabled,
+  .ant-btn-text[disabled],
+  .ant-btn-text.ant-btn-disabled,
+  .ant-dropdown-menu .ant-btn[disabled],
+  .ant-dropdown-menu .ant-btn.ant-btn-disabled,
+  .ant-menu .ant-btn[disabled],
+  .ant-menu .ant-btn.ant-btn-disabled {
+    border-color: transparent !important;
+  }
+  .ant-btn-background-ghost[disabled],
+  .ant-btn-background-ghost.ant-btn-disabled {
+    border-color: var(--oc-dark-border) !important;
+  }
+  // 菜单项 hover 底色保持原样（不因内部禁用按钮而额外变亮）
+  .ant-dropdown-menu-item:hover .ant-btn[disabled],
+  .ant-dropdown-menu-item:hover .ant-btn.ant-btn-disabled {
+    background-color: transparent !important;
+  }
+
+  .ant-input[disabled],
+  .ant-input-disabled,
+  .ant-input-affix-wrapper-disabled,
+  .ant-input-number-disabled,
+  .ant-picker-disabled,
+  .ant-select-disabled .ant-select-selector,
+  .ant-cascader-picker-disabled,
+  .ant-tree-select-disabled .ant-select-selector {
+    color: var(--oc-dark-text-disabled) !important;
+    border-color: var(--oc-dark-border) !important;
+    background-color: var(--oc-dark-fill-disabled) !important;
+  }
+  .ant-input-affix-wrapper-disabled > .ant-input[disabled] {
+    background-color: transparent !important;
+    border-color: transparent !important;
+  }
+
+  .ant-radio-button-wrapper-disabled,
+  .ant-radio-button-wrapper-disabled:hover,
+  .ant-radio-button-wrapper-disabled:first-child,
+  .ant-radio-button-wrapper-disabled:focus {
+    color: var(--oc-dark-text-disabled) !important;
+    border-color: var(--oc-dark-border) !important;
+    background-color: var(--oc-dark-fill-disabled) !important;
+  }
+  .ant-radio-disabled .ant-radio-inner,
+  .ant-radio-wrapper-disabled .ant-radio-inner {
+    border-color: var(--oc-dark-border) !important;
+    background-color: var(--oc-dark-fill-disabled) !important;
+  }
+  .ant-radio-wrapper-disabled,
+  .ant-radio-wrapper-disabled > span {
+    color: var(--oc-dark-text-disabled) !important;
+  }
+
+  .ant-switch-disabled,
+  .ant-switch[disabled] {
+    opacity: 1;
+    background-color: rgba(255, 255, 255, 0.12) !important;
+  }
+
+  // vxe 禁用输入 / 选择：边框不跟随上面的提亮
+  .vxe-input.is--disabled,
+  .vxe-select.is--disabled > .vxe-input,
+  .vxe-input--wrapper.is--disabled .vxe-input--inner,
+  .vxe-input-number.is--disabled,
+  .vxe-date-picker.is--disabled {
+    border-color: var(--oc-dark-border) !important;
+  }
+
+  // vxe 表格内复选框（方框样式由 global.less 重绘）：常态描边提亮（选中/hover 保持）
+  .vxe-table--render-default .vxe-cell--checkbox {
+    .vxe-checkbox--icon::before {
+      background-color: rgba(255, 255, 255, 0.04);
+      border-color: var(--oc-dark-check);
+    }
+    &.is--indeterminate .vxe-checkbox--icon::before {
+      background-color: transparent !important;
+      border-color: var(--oc-dark-check) !important;
+    }
+    &.is--disabled .vxe-checkbox--icon::before {
+      background-color: rgba(255, 255, 255, 0.06) !important;
+      border-color: var(--oc-dark-border) !important;
+    }
+    &.is--disabled.is--checked .vxe-checkbox--icon::before {
+      background-color: rgba(255, 255, 255, 0.2) !important;
+    }
+  }
+
+  // ---------- 仪表盘 / 监控面板 ----------
+  // 页面骨架（views/dashboard/index.vue 里写死 #fff / #f5f5f5 / #eee）
+  .dashboard-page,
+  .dashboard-page-header {
+    background: transparent;
+  }
+  .dashboard_box {
+    border-color: var(--oc-dark-border) !important;
+    background: var(--oc-dark-container) !important;
+  }
+  // 磁贴外框（Content.vue 里 scoped，普通选择器压不住）
+  .dashboard-content-inner > .item {
+    border-color: var(--oc-dark-border) !important;
+    &:hover {
+      box-shadow: 0 0 8px 3px rgba(0, 0, 0, 0.35) !important;
+    }
+  }
+  // 顶部面板标签（Header.vue scoped）
+  #dashboard-header {
+    .item {
+      color: var(--oc-dark-text-secondary) !important;
+      &.active,
+      &:hover {
+        color: var(--ant-color-primary, #1890ff) !important;
+      }
+    }
+    .drag-icon {
+      color: var(--oc-dark-text-tertiary) !important;
+    }
+    .action-btn {
+      color: var(--oc-dark-text-secondary) !important;
+      &:hover {
+        color: var(--ant-color-primary, #1890ff) !important;
+      }
+    }
+  }
+  // 磁贴卡片本体：.dashboard-card-wrap 的底色写死在 styles/index.less（全局），
+  // 这里只覆盖 bg，不加 !important —— 标题磁贴会用行内 background 自选颜色
+  .dashboard-card-wrap {
+    background-color: var(--oc-dark-elevated);
+  }
+  .dashboard-card-header {
+    color: var(--oc-dark-text);
+  }
+  .dashboard-card-help {
+    color: var(--oc-dark-text-tertiary);
+  }
+  // 数字磁贴（NumberCard，scoped 写死 #000 / #4F4B53）
+  .number-card-number {
+    color: var(--oc-dark-text) !important;
+  }
+  .number-card-unit {
+    color: var(--oc-dark-text-secondary) !important;
+  }
+  // 账单统计-数字图（BillNumber，scoped 写死 color: black），暗底上整块看不见
+  .fee-text {
+    color: var(--oc-dark-text) !important;
+  }
+  // 账单统计-饼图右侧列表（BillPie -> PieList，scoped 写死 #000 / #939eab / #dce0e6）
+  .bill-controls-platform .list-item {
+    border-bottom-color: var(--oc-dark-border) !important;
+    .name {
+      color: var(--oc-dark-text) !important;
+    }
+    .value {
+      color: var(--oc-dark-text-secondary) !important;
+    }
+  }
+  // 空状态（DataEmpty / a-empty）：图标与文案写死 rgba(0,0,0,.25)，暗底上等于没有。
+  // 组件内是 :deep() 深层选择器（带 [data-v]），不加 !important 压不住
+  .data-empty,
+  .empty-tip,
+  .empty-description,
+  .ant-empty-description,
+  .ant-empty-normal {
+    color: var(--oc-dark-text-tertiary) !important;
+  }
+  .ant-empty .ant-empty-image {
+    color: var(--oc-dark-text-tertiary);
+  }
+  // 表格空态插图（PageList/Loader、Deny 用的 antd 风格 empty.svg）：
+  // 灰阶图写死 #FAFAFA / #D9D9D9，暗底上是一块亮斑；反相后整体压暗，
+  // 再提亮一档让填充与描边恢复层次，避免糊成一坨深灰
+  .empty-image img {
+    filter: invert(0.84) brightness(1.45);
+  }
+  // v-charts 的空数据 / loading 遮罩是 rgba(255,255,255,.9)，暗色下整块发白
+  .v-charts-data-empty,
+  .v-charts-component-loading {
+    background-color: rgba(26, 28, 33, 0.9) !important;
+    color: var(--oc-dark-text-tertiary) !important;
+  }
+  // ---------- 监控（Monitor）----------
+  // uPlot 空数据遮罩写死 #fff，且文案/图标已被提亮成浅色，落在白底上等于空白
+  .empty-tip {
+    background: transparent !important;
+  }
+  // 监控概览汇总卡（overview）：浅灰底 + 浅灰边 + 黑色字，暗底下是一块亮卡
+  .overview-summary-card {
+    background: var(--oc-dark-raised) !important;
+    border-color: var(--oc-dark-border) !important;
+    &:hover {
+      background: var(--oc-dark-elevated) !important;
+      border-color: var(--oc-dark-border-strong) !important;
+    }
+    .overview-summary-card__head {
+      border-bottom-color: var(--oc-dark-border) !important;
+    }
+    .overview-summary-card__icon,
+    .overview-summary-card__title,
+    .overview-summary-card__total-unit {
+      color: var(--oc-dark-text-secondary) !important;
+    }
+    .overview-summary-card__total-num,
+    .overview-summary-card__count {
+      color: var(--oc-dark-text) !important;
+    }
+    .overview-summary-card__row.is-clickable:hover {
+      background: var(--oc-dark-hover) !important;
+    }
+    .overview-summary-card__percent {
+      background: var(--oc-dark-selected) !important;
+      border-color: rgba(24, 144, 255, 0.45) !important;
+    }
+  }
+  // 查询结果空态：白底 + 浅灰虚线框
+  .monitor-query-group__chart-empty {
+    background: transparent !important;
+    border-color: var(--oc-dark-border-strong) !important;
+    color: var(--oc-dark-text-tertiary) !important;
+  }
+  // 监控卡片副标题（#ccc）在暗底上几乎不可见
+  .monitor-overview-card .subtitle,
+  .monitor-overview-chart .subtitle {
+    color: var(--oc-dark-text-tertiary) !important;
+  }
+  // 环形图磁贴右侧「已使用 / 未使用 / 总量」列表（Ring，scoped）
+  .dashboard-card-wrap {
+    .flex-number {
+      color: var(--oc-dark-text) !important;
+    }
+    .label-unit {
+      color: var(--oc-dark-text-secondary) !important;
+    }
+    .bottomborder-box {
+      border-bottom-color: var(--oc-dark-border) !important;
+    }
+  }
+  // a-progress 圆环中心百分比是行内 style="color:#000"，只有 !important 能压
+  .percent-tips {
+    color: var(--oc-dark-text) !important;
+  }
+  // 进度条轨道：antd 默认 #f5f5f5，在暗底上是一整条亮线（Top5 比例条 / 环形图外圈）
+  .dashboard-card-wrap .ant-progress-line .ant-progress-inner {
+    background-color: var(--oc-progress-trail);
+  }
+  .dashboard-card-wrap .ant-progress-circle-trail {
+    stroke: var(--oc-progress-trail);
+  }
+  // 图标选择器（3D 配图）：边框/选中框亮灰在暗底上很扎眼
+  .icon-box .icon-content {
+    border-color: var(--oc-dark-border-strong) !important;
+  }
+  // 用户信息磁贴（UserInfo，scoped 写死一串灰黑）
+  .dashboard-card-wrap {
+    .selected-user-content {
+      color: var(--oc-dark-text) !important;
+      border-bottom-color: var(--oc-dark-border) !important;
+    }
+    .user-info-text {
+      color: var(--oc-dark-text) !important;
+    }
+    .info-content {
+      border-bottom-color: var(--oc-dark-border) !important;
+    }
+    .info-title {
+      color: var(--oc-dark-text-secondary) !important;
+    }
+    .info-text {
+      color: var(--oc-dark-text-tertiary) !important;
+    }
+  }
+  // 磁贴配置抽屉底部按钮区（BaseDrawer 写死 #eee）
+  .base-drawer-footer {
+    border-top-color: var(--oc-dark-border);
+  }
+  // 功能选择页（/guide）自定义的黑 / 灰单色图标：暗色下整体转白
+  // 带品牌色的图标改用 -dark 资源（保留品牌色、仅把黑/灰改白），不走滤镜
+  .feature-icon--mono {
+    filter: brightness(0) invert(1);
+  }
+
+  // 用户信息页（/user）：标题、字段名/值、分隔线、hover 态全写死浅色
+  .user-info-page__name,
+  .user-info-card__title,
+  .user-info-value {
+    color: var(--oc-dark-text) !important;
+  }
+  .user-info-label,
+  .user-info-help {
+    color: var(--oc-dark-text-tertiary) !important;
+  }
+  .user-info-field {
+    border-bottom-color: var(--oc-dark-border-strong) !important;
+  }
+  .user-info-card {
+    // 卡片与页面底色同为 container，靠一圈亮边 + 投影分层
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.45) !important;
+
+    .ant-card-head {
+      border-bottom-color: var(--oc-dark-border-strong) !important;
+    }
+  }
+  .user-info-card__action,
+  .idp-item__action {
+    &:hover,
+    &:focus {
+      background-color: var(--oc-dark-hover) !important;
+    }
+  }
+  .idp-item img {
+    outline-color: rgba(255, 255, 255, 0.14) !important;
+  }
+  // 编辑页：画布底 + 左侧磁贴库（scoped 写死 #fff / #f3f3f3 / #eee）
+  .edit-content-inner {
+    background-color: var(--oc-dark-container) !important;
+  }
+  .edit-topbar,
+  .extend-gallery {
+    box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.35) !important;
+  }
+  .extend-gallery-wrap {
+    background-color: var(--oc-dark-elevated) !important;
+  }
+  .extend-gallery-title,
+  .extend-gallery-tips {
+    border-bottom-color: var(--oc-dark-border) !important;
+  }
+  .extend-list > ul li {
+    background-color: var(--oc-dark-elevated) !important;
+    border-bottom-color: var(--oc-dark-border) !important;
+  }
+
+  // ---------- 项目自绘浮层 ----------
+  .ant-tooltip-inner {
+    color: var(--oc-dark-text);
+    background-color: var(--oc-dark-elevated);
+    border-color: var(--oc-dark-border-strong);
+  }
+
+  .ant-modal {
+    // 头/尾分割线用的是自绘 1px 伪元素；原先取 --oc-dark-border(#282a30)，
+    // 与弹窗底(#262931)几乎同色，所以「线还在但看不见」，这里按可见分隔线提亮。
+    .ant-modal-header::after,
+    .ant-modal-footer::before {
+      background: rgba(255, 255, 255, 0.14);
+    }
+  }
+  // 弹窗要和页面「分出层级」：页面底是深色，黑色投影落在近黑底上几乎看不见。
+  // 只动投影和描边，不改底色（底色跟随 antd colorBgElevated，避免被主题色染色）。
+  .ant-modal-content {
+    // 内圈亮描边模拟「被光照亮的棱」，外圈深投影 + 白色弱光晕把浮层从暗底托起来
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.14),
+      0 0 0 1px rgba(0, 0, 0, 0.6),
+      0 24px 64px rgba(0, 0, 0, 0.78),
+      0 10px 24px rgba(0, 0, 0, 0.6),
+      0 0 40px rgba(255, 255, 255, 0.06) !important;
+  }
+  .ant-modal-mask {
+    background-color: rgba(0, 0, 0, 0.62);
+  }
+
+  .role-policy-popover {
+    .role-policy-popover-table {
+      color: var(--oc-dark-text);
+      th, td {
+        border-color: var(--oc-dark-border);
+      }
+      th {
+        background: var(--oc-dark-raised);
+      }
+      tbody tr:hover td {
+        background: var(--oc-dark-hover);
+      }
+    }
+  }
+
+  .chart-tooltip-wrapper {
+    background: rgba(38, 41, 49, 0.94);
+    border-color: var(--oc-dark-border-strong);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  }
+
+  // 深色下这些「浅灰文字」会灰得看不清，统一提亮
+  .ant-badge-status-text,
+  .bill-kind-tabs-subtitle,
+  .ant-upload-drag-icon .oc-icon {
+    color: var(--oc-dark-text-secondary);
+  }
+
+  // wangeditor（富文本）暗色
+  --w-e-textarea-bg-color: var(--oc-dark-container);
+  --w-e-textarea-color: var(--oc-dark-text);
+  --w-e-textarea-border-color: var(--oc-dark-border-strong);
+  --w-e-textarea-slight-border-color: var(--oc-dark-border);
+  --w-e-textarea-slight-color: #595959;
+  --w-e-textarea-slight-bg-color: var(--oc-dark-raised);
+  --w-e-textarea-selected-border-color: var(--ant-color-primary, #1890ff);
+  --w-e-toolbar-color: var(--oc-dark-text-secondary);
+  --w-e-toolbar-bg-color: var(--oc-dark-container);
+  --w-e-toolbar-active-color: var(--oc-dark-text);
+  --w-e-toolbar-active-bg-color: var(--oc-dark-raised);
+  --w-e-toolbar-disabled-color: #595959;
+  --w-e-toolbar-border-color: var(--oc-dark-border);
+  --w-e-modal-button-bg-color: var(--oc-dark-container);
+  --w-e-modal-button-border-color: var(--oc-dark-border-strong);
+}

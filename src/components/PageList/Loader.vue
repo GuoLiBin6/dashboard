@@ -34,5 +34,10 @@ export default {
 }
 .empty-image {
   height: 40px;
+  margin-bottom: 10px;
+  img {
+    display: block;
+    height: 40px;
+  }
 }
 </style>

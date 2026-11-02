@@ -389,15 +389,34 @@ const LicenseItems = [
   // },
 ]
 
+// 暗色模式下需要单独一份图标的 key：这些图标带品牌色，同时又有黑/灰文字，
+// 暗底上文字会看不见。对应的 <key>-dark.svg 只把黑/灰部分改成白色，品牌色保持不变。
+// 需要新增时，在 assets/images/{features,providers}/ 下放同名 -dark.svg 即可。
+const DarkIconKeys = [
+  'aws',
+  'bingocloud',
+  'cloudflare',
+  'oceanbase',
+  'proxmox',
+  'report',
+  'xsky',
+]
+
 function fullfillLicenseItems () {
   LicenseItems.map(item => {
     const key = item.origin_key || item.key
     if (item.meta.is_account) {
       item.label = i18n.getOemDictionaryI18n(key.toLowerCase(), i18n.getI18n([`scopeCloudProvidersMap.${key}`, `scopeProviders.${key}`, `license.provider.${key}`], key))
       item.icon = new URL(`../assets/images/providers/${key}.svg`, import.meta.url).href
+      if (DarkIconKeys.includes(key)) {
+        item.iconDark = new URL(`../assets/images/providers/${key}-dark.svg`, import.meta.url).href
+      }
     } else {
       item.label = i18n.getOemDictionaryI18n(key.toLowerCase(), i18n.getI18n(`license.feature.${key}`, key))
       item.icon = new URL(`../assets/images/features/${key}.svg`, import.meta.url).href
+      if (DarkIconKeys.includes(key)) {
+        item.iconDark = new URL(`../assets/images/features/${key}-dark.svg`, import.meta.url).href
+      }
     }
     item.value = item.key
   })

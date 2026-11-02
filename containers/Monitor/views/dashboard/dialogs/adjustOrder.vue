@@ -106,14 +106,14 @@ export default {
     line-height: 32px;
     text-align: center;
     cursor: move;
-    color: rgba(0, 0, 0, 0.65);
+    color: var(--oc-color-text-secondary, rgba(0, 0, 0, 0.65));
   }
   &:hover {
-    background: #e8eaec;
+    background: var(--oc-dark-hover, #e8eaec);
   }
 }
 .chosen {
   opacity: 0.5;
-  background: #c8ebfb;
+  background: var(--oc-dark-selected, #c8ebfb);
 }
 </style>

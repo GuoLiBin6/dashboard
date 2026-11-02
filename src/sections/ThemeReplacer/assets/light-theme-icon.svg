@@ -1,40 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg width="52px" height="45px" viewBox="0 0 52 45" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-    <!-- Generator: Sketch 50.2 (55047) - http://www.bohemiancoding.com/sketch -->
-    <title>Group 5</title>
-    <desc>Created with Sketch.</desc>
-    <defs>
-        <filter x="-9.4%" y="-6.2%" width="118.8%" height="122.5%" filterUnits="objectBoundingBox" id="filter-1">
-            <feOffset dx="0" dy="1" in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
-            <feGaussianBlur stdDeviation="1" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
-            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.15 0" type="matrix" in="shadowBlurOuter1" result="shadowMatrixOuter1"></feColorMatrix>
-            <feMerge>
-                <feMergeNode in="shadowMatrixOuter1"></feMergeNode>
-                <feMergeNode in="SourceGraphic"></feMergeNode>
-            </feMerge>
-        </filter>
-        <rect id="path-2" x="0" y="0" width="48" height="40" rx="4"></rect>
-        <filter x="-4.2%" y="-2.5%" width="108.3%" height="110.0%" filterUnits="objectBoundingBox" id="filter-4">
-            <feOffset dx="0" dy="1" in="SourceAlpha" result="shadowOffsetOuter1"></feOffset>
-            <feGaussianBlur stdDeviation="0.5" in="shadowOffsetOuter1" result="shadowBlurOuter1"></feGaussianBlur>
-            <feColorMatrix values="0 0 0 0 0   0 0 0 0 0   0 0 0 0 0  0 0 0 0.1 0" type="matrix" in="shadowBlurOuter1"></feColorMatrix>
-        </filter>
-    </defs>
-    <g id="配置面板" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-        <g id="setting-copy-2" transform="translate(-1254.000000, -136.000000)">
-            <g id="Group-8" transform="translate(1167.000000, 0.000000)">
-                <g id="Group-5" filter="url(#filter-1)" transform="translate(89.000000, 137.000000)">
-                    <mask id="mask-3" fill="white">
-                        <use xlink:href="#path-2"></use>
-                    </mask>
-                    <g id="Rectangle-18">
-                        <use fill="black" fill-opacity="1" filter="url(#filter-4)" xlink:href="#path-2"></use>
-                        <use fill="#F0F2F5" fill-rule="evenodd" xlink:href="#path-2"></use>
-                    </g>
-                    <rect id="Rectangle-18" fill="#FFFFFF" mask="url(#mask-3)" x="0" y="0" width="16" height="44"></rect>
-                    <rect id="Rectangle-11" fill="#FFFFFF" mask="url(#mask-3)" x="-1" y="0" width="49" height="10"></rect>
-                </g>
-            </g>
-        </g>
-    </g>
+<!-- 整体风格缩略图：整体背景色 + 三块（顶部通栏 navbar / 左侧栏 / 内容区） -->
+<svg width="48px" height="40px" viewBox="0 0 48 40" version="1.1" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0.5" y="0.5" width="47" height="39" rx="4" fill="#F2F4F7" stroke="#E1E5EC" stroke-width="1"></rect>
+    <rect x="2" y="2" width="44" height="7" rx="1.5" fill="#FFFFFF"></rect>
+    <rect x="2" y="11" width="8.5" height="27" rx="1.5" fill="#FFFFFF"></rect>
+    <rect x="12.5" y="11" width="33.5" height="27" rx="1.5" fill="#FFFFFF"></rect>
 </svg>

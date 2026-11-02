@@ -48,7 +48,7 @@
         </template>
       </template>
       <span @click.stop="fetchLoginInfo" v-if="!disabled">
-        <icon class="keypair-icon" type="keypairs" fill="#555" />
+        <icon class="keypair-icon" type="keypairs" />
       </span>
     </a-popover>
     <a-tooltip placement="top" v-if="promptText && disabled">
@@ -268,17 +268,16 @@ export default {
   .keypair-icon {
     cursor: pointer;
     font-size: 18px;
-    svg {
-      &:hover {
-        fill: @primary-color;
-      }
+    // 用 color 而非 fill：模板传 fill 会被写进 path，CSS 无法覆盖
+    color: var(--oc-icon-strong, #555);
+    transition: color 0.15s;
+    &:hover {
+      color: @primary-color;
     }
   }
   .keypair-icon-disabled {
     font-size: 18px;
-    svg {
-      fill: @disabled-color;
-    }
+    color: @disabled-color;
   }
 }
 </style>

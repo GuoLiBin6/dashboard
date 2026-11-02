@@ -313,7 +313,7 @@ export default {
   &__extra {
     flex: 1 0 100%;
     margin-top: 4px;
-    color: rgba(0, 0, 0, 0.45);
+    color: var(--oc-color-text-help, rgba(0, 0, 0, 0.45));
     font-size: 12px;
   }
 }

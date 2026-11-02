@@ -513,13 +513,14 @@ export default {
       }
       .l2-menu-item {
         color: @sidebar-light-text-color;
+        // 原写法用 @primary-5 / @primary-1（写死的默认蓝），换主题色时不跟随；改为直接取主题色
         &:hover {
-          background-color: @primary-1;
-          color: @sidebar-light-hover-text-color;
+          background-color: color-mix(in srgb, var(--ant-color-primary, @primary-color) 8%, #fff);
+          color: var(--ant-color-primary, @primary-color);
         }
         &.active {
-          background-color: @primary-1 !important;
-          color: @sidebar-light-active-text-color;
+          background-color: color-mix(in srgb, var(--ant-color-primary, @primary-color) 12%, #fff) !important;
+          color: var(--ant-color-primary, @primary-color);
         }
       }
     }

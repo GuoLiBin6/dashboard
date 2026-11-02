@@ -1,6 +1,6 @@
 import * as R from 'ramda'
 import i18n from '@/locales'
-import { arrayToObj, getColorByCache } from '@/utils/utils'
+import { arrayToObj, getColorByCache, getDarkColorByCache } from '@/utils/utils'
 
 function getProviderName (key) {
   return i18n.getI18n([`scopeCloudProvidersMap.${key}`, `scopeProviders.${key}`, `license.provider.${key}`])
@@ -206,6 +206,17 @@ export const ENABLE_USER_CUSTOM_DICTIONARY = [
 ]
 
 export const chartColors = getColorByCache()
+
+// 暗色模式图表色板（索引与 chartColors 对齐，色相不变、明度适配暗底）
+export const chartColorsDark = getDarkColorByCache()
+
+/**
+ * 按当前明暗模式取图表色板。
+ * 用法：computed 里 getChartColors(this.$store.getters.darkMode)
+ */
+export function getChartColors (dark) {
+  return dark ? chartColorsDark : chartColors
+}
 
 export const contactMap = {
   webconsole: {

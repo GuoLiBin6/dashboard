@@ -22,7 +22,12 @@
                   class="item d-flex p-2 mr-3 align-items-center"
                   :class="{ checked: item.checked, disabled: item.disabled }"
                   @click="handleItemClick(item)">
-                  <img v-if="item.icon" :src="item.icon" :style="item.logoStyle ? item.logoStyle : 'width: 24px'" />
+                  <img
+                    v-if="item.icon"
+                    class="feature-icon"
+                    :class="item.iconClass"
+                    :src="darkMode && item.iconDark ? item.iconDark : item.icon"
+                    :style="item.logoStyle ? item.logoStyle : 'width: 24px'" />
                   <span v-if="!item.hiddenName" class="flex-fill">{{ item.label }}</span>
                 </div>
               </a-tooltip>
@@ -44,6 +49,28 @@ import { fillBillSupportFeatures } from '@/utils/auth'
 import { isSAAS } from '@/utils/utils'
 
 const languageList = ['zh-CN', 'ja-JP', 'en']
+// 自定义的黑 / 灰单色图标（含 KVM 这类纯黑 logo），暗色下整体转白。
+// 品牌 logo 不在此列：带品牌色的由 feature 常量里的 -dark 资源处理，纯彩色的保持原样。
+// 注意：key 与 origin_key（对应 svg 文件名）可能不同，两个都要列。
+const monochromeIconKeys = [
+  'ai',
+  'appstore',
+  'app_store',
+  'auth',
+  'bastionhost',
+  'bastion_host',
+  'bill_private',
+  'monitor',
+  'pod',
+  'suggestion',
+  'onestack',
+]
+
+function resolveIconClass (item) {
+  const keys = [item.key, item.origin_key].filter(Boolean)
+  if (keys.some(key => monochromeIconKeys.includes(key))) return 'feature-icon--mono'
+  return ''
+}
 
 const languageItems = [
   {
@@ -134,6 +161,9 @@ export default {
     }
   },
   computed: {
+    darkMode () {
+      return this.$store.getters.darkMode
+    },
     ...mapState({
       licenseCompute: state => state.app.license.compute,
     }),
@@ -175,6 +205,7 @@ export default {
             const base = this.options.find(o => o.key === raw.key) || { ...raw }
             const item = { ...base }
             item.checked = this._itemChecked(item)
+            item.iconClass = resolveIconClass(item)
             Object.assign(item, this._itemDisabled(selectedOptions, item))
             return item
           })
@@ -298,7 +329,7 @@ export default {
 @import '@/styles/less/theme';
 
 .module {
-  border-color: #e8e8e8;
+  border-color: var(--oc-feature-module-border, #e8e8e8);
   margin-bottom: 10px;
   margin-top: 10px;
   border-style: double;
@@ -328,11 +359,11 @@ export default {
       display: block;
       font-size: 14px;
       margin-bottom: 10px;
-      border: 1px solid #eee;
+      border: 1px solid var(--oc-feature-item-border, #eee);
       text-align: center;
       border-radius: 6px;
       box-sizing: border-box;
-      color: rgba(0, 0, 0, 0.85);
+      color: var(--oc-feature-item-text, rgba(0, 0, 0, 0.85));
 
       &.checked {
         border-color: var(--antd-wave-shadow-color, @primary-color);
@@ -344,20 +375,20 @@ export default {
       }
 
       &.disabled {
-        color: rgba(0, 0, 0, .25);
-        background-color: #f5f5f5;
-        border-color: #d9d9d9;
+        color: var(--oc-feature-item-disabled-text, rgba(0, 0, 0, .25));
+        background-color: var(--oc-feature-item-disabled-bg, #f5f5f5);
+        border-color: var(--oc-feature-item-disabled-border, #d9d9d9);
         text-shadow: none;
         box-shadow: none;
         cursor: not-allowed;
 
         &:hover {
-          border-color: #d9d9d9;
-          color: rgba(0, 0, 0, .25);
+          border-color: var(--oc-feature-item-disabled-border, #d9d9d9);
+          color: var(--oc-feature-item-disabled-text, rgba(0, 0, 0, .25));
         }
 
         span {
-          color: rgba(0, 0, 0, .25);
+          color: var(--oc-feature-item-disabled-text, rgba(0, 0, 0, .25));
         }
       }
     }

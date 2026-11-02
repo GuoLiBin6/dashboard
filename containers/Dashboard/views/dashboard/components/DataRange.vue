@@ -56,6 +56,10 @@ export default {
     }
   },
   computed: {
+    // 编辑态的外框底色/描边由行内样式控制，需跟随明暗模式
+    dark () {
+      return !!(this.$store && this.$store.getters.darkMode)
+    },
     scopeOpts () {
       if (this.$store.getters.scope === 'system') {
         return [
@@ -101,6 +105,15 @@ export default {
     },
     textStyle () {
       if (this.edit) {
+        // 亮色：白底 + 浅灰描边；暗色：与输入框同色系（透明底 + 提亮的描边）
+        if (this.dark) {
+          return {
+            border: '1px solid var(--oc-dark-check)',
+            'border-left': 'none',
+            'background-color': 'transparent',
+            padding: '0 15px',
+          }
+        }
         return {
           border: '1px solid #d9d9d9',
           'border-left': 'none',

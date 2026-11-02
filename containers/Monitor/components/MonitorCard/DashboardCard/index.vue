@@ -2,7 +2,7 @@
   <overview-card-layout :card_style="`${card_style || ''} ${showMonitor ? '' : ''}`">
     <template #header>
       <div v-if="!readOnly">
-        <a-row type="flex" style="padding: 12px;border-bottom: 1px solid #e8e8e8">
+        <a-row type="flex" style="padding: 12px;border-bottom: 1px solid var(--oc-monitor-divider, #e8e8e8)">
           <a-col class="d-flex" style="flex: 1 1 auto">
             <!-- 折叠 -->
             <a v-if="!isTemplate" class="font-weight-bold h-100 d-block" style="margin-right: 6px;" @click="toggleShowMonitor">

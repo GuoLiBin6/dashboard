@@ -34,6 +34,63 @@ const iconTypeList = Object.keys(iconRawMap)
 // 蓝底白图案等多色 SVG：默认保留原色，避免 currentColor 把细节糊成一团
 const PRESERVE_COLOR_TYPES = new Set(['k8s'])
 
+/**
+ * 3D 立体配图（控制面板数字卡片、图标选择器等）：
+ * 亮色版本是「白 + 浅蓝」的浅色系，直接放到暗底上会整体发亮、缺少层次。
+ * 这里按同一色相把明度整体压到暗色系 —— 蓝色的主色语义不变，只是换成暗色版，
+ * 任何引用这几个图标的地方（卡片、图标选择器、配置面板）都统一生效。
+ */
+const DARK_TINT_ICONS = new Set(['icon_cpu', 'icon_ram', 'icon_tenant', 'icon_baremetal'])
+const DARK_ICON_COLOR_MAP = {
+  '#FFFFFF': '#5B6579',
+  '#FEFEFF': '#5B6579',
+  '#FEFEFE': '#565F72',
+  '#F9FAFF': '#525B6E',
+  '#FFF5EE': '#5E5A64',
+  '#F0F4FF': '#4F5768',
+  '#E5EFFF': '#4D586E',
+  '#DCEEFF': '#44597A',
+  '#CCE1FD': '#456089',
+  '#C8E2FF': '#46618B',
+  '#D0EAFE': '#435B80',
+  '#CFE4FF': '#445C82',
+  '#D5E2F8': '#4B5670',
+  '#D5DFF5': '#4F5B76',
+  '#C3DBF5': '#47618C',
+  '#B6D6F9': '#4A6B95',
+  '#ACC9F0': '#4F6E9C',
+  '#ABC4F1': '#516DA0',
+  '#ECDEF8': '#544A70',
+  '#ACB8ED': '#5C5F9B',
+  '#C1C9F4': '#585D93',
+  '#D8D8D8': '#525A68',
+  '#D1D1D1': '#586272',
+  '#ABABAB': '#68727F',
+  '#FDDABF': '#654A34',
+  '#F1AB76': '#A87244',
+  '#4C9EFF': '#58A2F2',
+  '#4996E6': '#5292D9',
+  '#358AE6': '#4B92E0',
+  '#77A9E4': '#6F9BD4',
+  '#81ADE1': '#759ED2',
+  '#70A3D1': '#6B96C0',
+  '#6B9AD1': '#6790C3',
+  '#6C8CD0': '#6A7FBE',
+  '#3D7BBC': '#5892CE',
+  '#00C6FB': '#45BEF0',
+  '#005BEA': '#3577D8',
+}
+const darkIconRawCache = {}
+
+function getIconRaw (name, dark) {
+  const raw = iconRawMap[name]
+  if (!raw || !dark || !DARK_TINT_ICONS.has(name)) return raw
+  if (!darkIconRawCache[name]) {
+    darkIconRawCache[name] = raw.replace(/#[0-9A-Fa-f]{6}/g, (color) => DARK_ICON_COLOR_MAP[color.toUpperCase()] || color)
+  }
+  return darkIconRawCache[name]
+}
+
 function resolveIconName (finalType) {
   if (!finalType) return null
   const pick = (name) => {
@@ -78,6 +135,12 @@ const Iconfont = {
       default: false,
     },
   },
+  computed: {
+    // 读 store 让图标在明暗切换时跟着重渲染（3D 配图需要换一套配色）
+    darkMode () {
+      return !!(this.$store && this.$store.getters.darkMode)
+    },
+  },
   render () {
     const { $slots, $attrs, $listeners, type, spin, preserveColor: preserveColorProp } = this
     const children = $slots.default ? $slots.default() : null
@@ -92,7 +155,7 @@ const Iconfont = {
       if (R.is(Object, finalType)) {
         const spriteName = resolveIconName(finalType)
         const spriteId = `oc-${spriteName}`
-        const rawSvg = iconRawMap[spriteName]
+        const rawSvg = getIconRaw(spriteName, this.darkMode)
         const hasSprite = !preserveColor && typeof document !== 'undefined' && document.getElementById(spriteId)
 
         content = hasSprite
@@ -101,7 +164,7 @@ const Iconfont = {
       } else {
         const iconName = resolveIconName(finalType) || finalType
         const spriteId = `oc-${iconName}`
-        const rawSvg = iconRawMap[iconName]
+        const rawSvg = getIconRaw(iconName, this.darkMode)
         const hasSprite = !preserveColor && typeof document !== 'undefined' && document.getElementById(spriteId)
 
         content = hasSprite

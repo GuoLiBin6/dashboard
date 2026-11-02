@@ -344,7 +344,8 @@ export default {
   display: inline-block;
   margin-right: 8px;
   margin-left: 4px;
-  color: rgba(0, 0, 0, 0.85);
+  // 写死黑色在暗色下等于看不见，走主题文字色
+  color: var(--oc-color-text, rgba(0, 0, 0, 0.85));
   white-space: nowrap;
 }
 </style>

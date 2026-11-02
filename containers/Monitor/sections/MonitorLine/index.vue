@@ -52,7 +52,7 @@
         @cell-click="cellClick"
         @sort-change="sortChange" />
       <div class="mt-1" :class="{ 'mt-3': showHeatmap && !(tableData && tableData.length && showTable && innerShowTableLegend) }" v-if="innerShowTableLegend || showHeatmap">
-        <span v-if="!pager || (pager && pager.total < 11)" style="color:#606266;font-size:12px;">{{ total }}</span>
+        <span v-if="!pager || (pager && pager.total < 11)" style="color: var(--oc-monitor-total-color, #606266); font-size:12px;">{{ total }}</span>
         <list-pager
           v-else
           :current-page="curPager.page"
@@ -1118,7 +1118,7 @@ export default {
   .monitor-chart-divider {
     height: 1px;
     margin: 16px 0;
-    background-color: #f0f0f0;
+    background-color: var(--oc-monitor-divider, #f0f0f0);
   }
   .alert-handler-wrapper {
     width: 50px;

@@ -2,6 +2,10 @@
 const COLOR_PERCENT_RED = '#f5222d'
 const COLOR_PERCENT_YELLOW = '#faad14'
 const COLOR_PERCENT_GREEN = '#52c41a'
+// 暗色模式：状态色相不变，明度提亮一档，避免深色环在暗底上发闷/看不清
+const COLOR_PERCENT_RED_DARK = '#ff5b64'
+const COLOR_PERCENT_YELLOW_DARK = '#f7b64e'
+const COLOR_PERCENT_GREEN_DARK = '#5ecb57'
 const COLORS_SCHEME_REVERSE_FIELDS = ['disks.count', 'eip.floating_ip', 'servers'] // 需要使用反转方案的指标，使用结尾匹配模式
 const COLORS_SCHEME = {
   DEFAULT: {
@@ -15,8 +19,27 @@ const COLORS_SCHEME = {
     PERCENT_100: COLOR_PERCENT_GREEN,
   },
 }
+const COLORS_SCHEME_DARK = {
+  DEFAULT: {
+    PERCENT_60: COLOR_PERCENT_GREEN_DARK,
+    PERCENT_80: COLOR_PERCENT_YELLOW_DARK,
+    PERCENT_100: COLOR_PERCENT_RED_DARK,
+  },
+  REVERSE: {
+    PERCENT_60: COLOR_PERCENT_RED_DARK,
+    PERCENT_80: COLOR_PERCENT_YELLOW_DARK,
+    PERCENT_100: COLOR_PERCENT_GREEN_DARK,
+  },
+}
+
+// 按明暗模式取配色方案（索引/语义一致）
+function getColorsScheme (dark) {
+  return dark ? COLORS_SCHEME_DARK : COLORS_SCHEME
+}
 
 export default {
   COLORS_SCHEME_REVERSE_FIELDS,
   COLORS_SCHEME,
+  COLORS_SCHEME_DARK,
+  getColorsScheme,
 }

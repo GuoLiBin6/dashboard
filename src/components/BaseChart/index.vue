@@ -1,5 +1,5 @@
 <template>
-  <component :is="chartType" style="height: 100%;" :data="chartData" v-bind="chartConfigC" :loading="loading" :settings="chartSettings" :extend="chartExtend" :events="chartEvents" ref="chart">
+  <component :is="chartType" :key="chartKey" style="height: 100%;" :data="chartData" v-bind="chartConfigC" :loading="loading" :settings="chartSettings" :extend="chartExtend" :events="chartEvents" ref="chart">
     <div class="monitor-list-line-loader d-flex flex-column justify-content-center" v-if="!loading && noData">
       <data-empty :description="emptyContent" />
     </div>
@@ -16,8 +16,48 @@ import 'echarts/lib/component/title'
 import 'echarts/lib/component/grid'
 import 'echarts/lib/component/legend'
 import i18n from '@/locales'
-import { chartColors } from '@/constants'
+import { chartColors, getChartColors } from '@/constants'
 import { getPdf } from '@/utils/echart'
+
+// v-charts 走 canvas，吃不到 dark.less：轴 / 图例 / 标题默认是深灰字，暗底上等于看不到
+const DARK_TEXT = 'rgba(255, 255, 255, 0.88)'
+const DARK_TEXT_SECONDARY = 'rgba(255, 255, 255, 0.66)'
+const DARK_SPLIT_LINE = 'rgba(255, 255, 255, 0.14)'
+
+function patchAxis (axis) {
+  if (!axis || typeof axis !== 'object') return axis
+  const axisLine = { ...(axis.axisLine || {}) }
+  axisLine.lineStyle = { color: DARK_SPLIT_LINE, ...(axisLine.lineStyle || {}) }
+  const splitLine = { ...(axis.splitLine || {}) }
+  splitLine.lineStyle = { color: DARK_SPLIT_LINE, ...(splitLine.lineStyle || {}) }
+  return {
+    ...axis,
+    axisLabel: { color: DARK_TEXT_SECONDARY, ...(axis.axisLabel || {}) },
+    axisLine,
+    splitLine,
+    nameTextStyle: { color: DARK_TEXT_SECONDARY, ...(axis.nameTextStyle || {}) },
+  }
+}
+
+function applyDarkDefaults (config) {
+  ;['xAxis', 'yAxis'].forEach((key) => {
+    if (!config[key]) return
+    config[key] = Array.isArray(config[key]) ? config[key].map(patchAxis) : patchAxis(config[key])
+  })
+  config.textStyle = { color: DARK_TEXT_SECONDARY, ...(config.textStyle || {}) }
+  if (config.legend) {
+    config.legend.textStyle = { color: DARK_TEXT_SECONDARY, ...(config.legend.textStyle || {}) }
+    if (config.legend.pageTextStyle) {
+      config.legend.pageTextStyle = { color: DARK_TEXT_SECONDARY, ...config.legend.pageTextStyle }
+    }
+  }
+  if (config.title) {
+    config.title.textStyle = { color: DARK_TEXT, ...(config.title.textStyle || {}) }
+    config.title.subtextStyle = { color: DARK_TEXT_SECONDARY, ...(config.title.subtextStyle || {}) }
+  }
+  return config
+}
+
 export default {
   name: 'BaseChart',
   props: {
@@ -77,6 +117,13 @@ export default {
     }
   },
   computed: {
+    // 切主题时换 key 强制重建，canvas 才会用上新的配色
+    darkMode () {
+      return !!(this.$store && this.$store.getters.darkMode)
+    },
+    chartKey () {
+      return this.darkMode ? 'dark' : 'light'
+    },
     noData () {
       if (this.noDataCheck) {
         return this.noDataCheck()
@@ -88,7 +135,8 @@ export default {
     },
     chartConfigC () {
       const config = {
-        colors: this.colors,
+        // 暗色下用同索引换色后的色板；业务显式传 colors 时仍以业务为准
+        colors: this.darkMode && this.colors === chartColors ? getChartColors(true) : this.colors,
         ...this.chartConfig,
       }
       if (this.extraToolbox) {
@@ -132,6 +180,9 @@ export default {
             console.error(err)
           }
         }
+      }
+      if (this.darkMode) {
+        applyDarkDefaults(config)
       }
       if (this.domId && !this.ignoreAutuLabelStyle) {
         const { xAxis = [] } = config

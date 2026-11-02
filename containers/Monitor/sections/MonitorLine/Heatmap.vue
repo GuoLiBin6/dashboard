@@ -32,11 +32,18 @@ import { getChartTooltipLabel } from '@Monitor/utils'
 import EChart from '@/components/EChart'
 import { uuid } from '@/utils/utils'
 
-// 无数据占位：隔行不同灰白交错
+// 无数据占位：隔行不同灰白交错（暗色用低透明度白，避免整块发亮）
 const EMPTY_CELL = -1
 const EMPTY_WHITE = '#ffffff' // 255,255,255
 const EMPTY_GRAY = '#f4f6fa' // 244,246,250
 const EMPTY_DARK_GRAY = '#f0f1f8' // 240,241,248
+const EMPTY_WHITE_DARK = 'rgba(255, 255, 255, 0.02)'
+const EMPTY_GRAY_DARK = 'rgba(255, 255, 255, 0.06)'
+const EMPTY_DARK_GRAY_DARK = 'rgba(255, 255, 255, 0.04)'
+// 暗色下格子描边用容器底色，代替亮色下的白边
+const CELL_BORDER_COLOR_DARK = 'rgba(26, 28, 33, 0.9)'
+const DARK_TITLE_COLOR = 'rgba(255, 255, 255, 0.66)'
+const DARK_AXIS_COLOR = 'rgba(255, 255, 255, 0.45)'
 
 /**
  * 图例 5 档（每 20%）；每档再拆 4 级色（约每 5%）。
@@ -169,6 +176,10 @@ export default {
     }
   },
   computed: {
+    // canvas 图表读不到 CSS 变量，按主题切换配色
+    darkMode () {
+      return !!(this.$store && this.$store.getters.darkMode)
+    },
     groupByFields () {
       return (this.groupBy || []).map(item => _.get(item, 'params[0]')).filter(Boolean)
     },
@@ -320,10 +331,13 @@ export default {
         })
         this.timeList.forEach((t, x) => {
           if (valueKeys[`${x}_${y}`]) return
-          // 隔行配色：偶数行 灰+深灰；奇数行 浅白+灰
+          // 隔行配色：偶数行 灰+深灰；奇数行 浅白+灰（暗色对应低透明度白）
+          const emptyWhite = this.darkMode ? EMPTY_WHITE_DARK : EMPTY_WHITE
+          const emptyGray = this.darkMode ? EMPTY_GRAY_DARK : EMPTY_GRAY
+          const emptyDarkGray = this.darkMode ? EMPTY_DARK_GRAY_DARK : EMPTY_DARK_GRAY
           const emptyColor = y % 2 === 0
-            ? (x % 2 === 0 ? EMPTY_GRAY : EMPTY_DARK_GRAY)
-            : (x % 2 === 0 ? EMPTY_WHITE : EMPTY_GRAY)
+            ? (x % 2 === 0 ? emptyGray : emptyDarkGray)
+            : (x % 2 === 0 ? emptyWhite : emptyGray)
           emptyData.push({
             value: [x, y, EMPTY_CELL],
             itemStyle: { color: emptyColor },
@@ -338,13 +352,15 @@ export default {
     chartOptions () {
       const showXLabelMap = this.showXLabelMap
       const { emptyData, bandData } = this.heatData
+      const dark = this.darkMode
+      const cellBorderColor = dark ? CELL_BORDER_COLOR_DARK : '#fff'
       return {
         title: {
           text: this.yAxisTitle || this.$t('common.name'),
           left: 8,
           top: 4,
           textStyle: {
-            color: '#666',
+            color: dark ? DARK_TITLE_COLOR : '#666',
             fontSize: 12,
             fontWeight: 'normal',
           },
@@ -381,7 +397,7 @@ export default {
           axisTick: { show: false },
           axisLine: { show: false },
           axisLabel: {
-            color: '#999',
+            color: dark ? DARK_AXIS_COLOR : '#999',
             rotate: 0,
             lineHeight: 14,
             // 与折线图相同策略：只展示整点抽样 label（格子仍全量）
@@ -396,7 +412,7 @@ export default {
           axisTick: { show: false },
           axisLine: { show: false },
           axisLabel: {
-            color: '#666',
+            color: dark ? DARK_TITLE_COLOR : '#666',
             formatter: (value) => truncateAxisLabel(value, Y_LABEL_MAX_WIDTH),
           },
         },
@@ -407,7 +423,7 @@ export default {
             data: emptyData,
             silent: true,
             itemStyle: {
-              borderColor: '#fff',
+              borderColor: cellBorderColor,
               borderWidth: 0.5,
             },
             label: { show: false },
@@ -419,7 +435,7 @@ export default {
             type: 'heatmap',
             data: this.bandSelected[index] ? bandData[index] : [],
             itemStyle: {
-              borderColor: '#fff',
+              borderColor: cellBorderColor,
               borderWidth: 0.5,
             },
             label: { show: false },
@@ -462,7 +478,7 @@ export default {
   align-items: center;
   cursor: pointer;
   font-size: 11px;
-  color: #666;
+  color: var(--oc-color-text-secondary, #666);
   user-select: none;
   line-height: 1;
   margin-left: 8px;

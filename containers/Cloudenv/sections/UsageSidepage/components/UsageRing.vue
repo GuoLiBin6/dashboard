@@ -70,22 +70,24 @@ export default {
     },
     percentColor () {
       const isReverse = COLORS.COLORS_SCHEME_REVERSE_FIELDS.find(v => this.field.endsWith(v))
+      // 明暗各一套方案（色相/语义一致，暗色下提亮），环形图在暗底上不显闷
+      const scheme = COLORS.getColorsScheme(this.$store && this.$store.getters.darkMode)
 
       if (isReverse) {
         if (this.percent < 60) {
-          return COLORS.COLORS_SCHEME.REVERSE.PERCENT_60
+          return scheme.REVERSE.PERCENT_60
         } else if (this.percent < 80) {
-          return COLORS.COLORS_SCHEME.REVERSE.PERCENT_80
+          return scheme.REVERSE.PERCENT_80
         } else {
-          return COLORS.COLORS_SCHEME.REVERSE.PERCENT_100
+          return scheme.REVERSE.PERCENT_100
         }
       } else {
         if (this.percent < 60) {
-          return COLORS.COLORS_SCHEME.DEFAULT.PERCENT_60
+          return scheme.DEFAULT.PERCENT_60
         } else if (this.percent < 80) {
-          return COLORS.COLORS_SCHEME.DEFAULT.PERCENT_80
+          return scheme.DEFAULT.PERCENT_80
         } else {
-          return COLORS.COLORS_SCHEME.DEFAULT.PERCENT_100
+          return scheme.DEFAULT.PERCENT_100
         }
       }
     },

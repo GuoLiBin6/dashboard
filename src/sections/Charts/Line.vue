@@ -55,7 +55,18 @@ export default {
       }, this.rows)
       return { series, xAxisData, legendData }
     },
+    darkMode () {
+      return !!(this.$store && this.$store.getters.darkMode)
+    },
     chartOptions () {
+      // canvas 图表读不到 CSS 变量，暗色下按主题给一套配色
+      const dark = this.darkMode
+      const tooltipBg = dark ? 'rgba(38, 41, 49, 0.94)' : 'rgba(255,255,255,1)'
+      const tooltipText = dark ? 'rgba(255, 255, 255, 0.88)' : '#7588E4'
+      const axisPointerColor = dark ? 'rgba(255, 255, 255, 0.2)' : '#ddd'
+      const splitLineColor = dark ? 'rgba(255, 255, 255, 0.12)' : '#D4DFF5'
+      const axisLineColor = dark ? 'rgba(255, 255, 255, 0.18)' : '#999'
+      const axisLabelColor = dark ? 'rgba(255, 255, 255, 0.66)' : undefined
       const options = {
         grid: {
           left: 10,
@@ -73,13 +84,13 @@ export default {
           trigger: 'axis',
           axisPointer: {
             lineStyle: {
-              color: '#ddd',
+              color: axisPointerColor,
             },
           },
-          backgroundColor: 'rgba(255,255,255,1)',
+          backgroundColor: tooltipBg,
           padding: [5, 10],
           textStyle: {
-            color: '#7588E4',
+            color: tooltipText,
           },
           extraCssText: 'box-shadow: 0 0 5px rgba(0,0,0,0.3)',
         },
@@ -90,7 +101,7 @@ export default {
             show: true,
             interval: 'auto',
             lineStyle: {
-              color: ['#D4DFF5'],
+              color: [splitLineColor],
             },
           },
           axisTick: {
@@ -98,10 +109,11 @@ export default {
           },
           axisLine: {
             lineStyle: {
-              color: '#999',
+              color: axisLineColor,
             },
           },
           axisLabel: {
+            color: axisLabelColor,
             showMaxLabel: false,
             margin: 10,
             align: 'left',
@@ -114,7 +126,7 @@ export default {
           type: 'value',
           splitLine: {
             lineStyle: {
-              color: ['#D4DFF5'],
+              color: [splitLineColor],
             },
           },
           axisTick: {
@@ -122,10 +134,11 @@ export default {
           },
           axisLine: {
             lineStyle: {
-              color: '#999',
+              color: axisLineColor,
             },
           },
           axisLabel: {
+            color: axisLabelColor,
             margin: 10,
             textStyle: {
               fontSize: 12,

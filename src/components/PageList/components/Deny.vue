@@ -26,7 +26,12 @@ export default {
   margin: 32px 0;
   color: rgba(0, 0, 0, .25);
 }
-.image {
+.empty-image {
   height: 40px;
+  margin-bottom: 10px;
+  img {
+    display: block;
+    height: 40px;
+  }
 }
 </style>

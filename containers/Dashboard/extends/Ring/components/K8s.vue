@@ -92,7 +92,7 @@ import { load } from '@Dashboard/utils/cache'
 import K8sConfig from '@Dashboard/sections/K8sConfig'
 import { getRequestT } from '@/utils/utils'
 import { numerify } from '@/filters'
-import { chartColors } from '@/constants'
+import { getChartColors } from '@/constants'
 import { hasPermission } from '@/utils/auth'
 import { rollupFormData } from '@/utils/common/ant'
 import mixin from './mixin'
@@ -296,6 +296,8 @@ export default {
       return (this.params && this.params.color) || 'blue'
     },
     percentColor () {
+      // 环图主色跟随明暗色板（索引语义一致）
+      const chartColors = this.chartColors || getChartColors(this.$store.getters.darkMode)
       switch (this.colorConfig) {
         case 'default':
           if (this.percent < 60) {

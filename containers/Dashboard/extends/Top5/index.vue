@@ -23,7 +23,7 @@
                     <div class="flex-fill text-truncate" :title="item.name">{{ item.name }}</div>
                     <div class="flex-grow-0 flex-shrink-0 text-color-help ml-2">{{ getLabel(item.value) }}</div>
                   </div>
-                  <a-progress :percent="getPercent(item.value)" :showInfo="false" status="normal" :strokeWidth="4" stroke-color="#ADE4B6" />
+                  <a-progress :percent="getPercent(item.value)" :showInfo="false" status="normal" :strokeWidth="4" :stroke-color="barColor" />
                 </div>
               </template>
             </div>
@@ -96,6 +96,7 @@
 import * as R from 'ramda'
 import { mapGetters } from 'vuex'
 import BaseDrawer from '@Dashboard/components/BaseDrawer'
+import { getChartColors } from '@/constants'
 import { load } from '@Dashboard/utils/cache'
 import { getMetricDocs } from '@Dashboard/constants'
 import { findPlatform, typeClouds } from '@/utils/common/hypervisor'
@@ -194,7 +195,11 @@ export default {
     }
   },
   computed: {
-    ...mapGetters(['scope', 'capability', 'isAdminMode', 'isDomainMode', 'isProjectMode', 'userInfo', 'permission']),
+    ...mapGetters(['scope', 'capability', 'isAdminMode', 'isDomainMode', 'isProjectMode', 'userInfo', 'permission', 'darkMode']),
+    // TOP5 比例条原本写死浅绿 #ADE4B6，跟着图表色板走（暗色下自动换暗色版绿）
+    barColor () {
+      return getChartColors(this.darkMode)[3]
+    },
     brandEnvs () {
       const brand = this.fd.brand
       return brand.map(key => findPlatform(key))
