@@ -40,6 +40,7 @@ import SidePageMixin from '@/mixins/sidePage'
 import WindowsMixin from '@/mixins/windows'
 import Actions from '@/components/PageList/Actions'
 import { findPlatform } from '@/utils/common/hypervisor'
+import CancelSyncMixin from '@Cloudenv/views/cloudaccountsynctasks/mixins/cancelSync'
 import HostList from './Host'
 import CloudaccountDetail from './Detail'
 import ScheduledtasksList from './Schedule'
@@ -60,7 +61,7 @@ export default {
     SamluserList,
     ScheduledtasksList,
   },
-  mixins: [SidePageMixin, WindowsMixin, ColumnsMixin, SingleActionsMixin],
+  mixins: [SidePageMixin, WindowsMixin, ColumnsMixin, SingleActionsMixin, CancelSyncMixin],
   computed: {
     // 仅详情页需要父级 columns；透传给子 List 会覆盖其自身列（Vue3 fallthrough merge），
     // 导致 side-page-trigger 闭包里的 this 没有 handleOpenSidepage

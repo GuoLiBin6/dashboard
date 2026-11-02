@@ -746,6 +746,9 @@ export const RESOURCES_MAP = {
   billtasks: {
     i18n: 'dictionary.billtask',
   },
+  cloudaccountsynctasks: {
+    i18n: 'cloudenv.account_sync_tasks',
+  },
   backupstorages: {
     i18n: 'dictionary.backupstorage',
   },
