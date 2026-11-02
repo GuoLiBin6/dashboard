@@ -19,15 +19,17 @@
             v-model:value="form.url"
             :placeholder="$t('common.tips.input', [$t('k8s.repo.url')])" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('k8s.text_54')">
+        <a-form-model-item :label="$t('k8s.text_54')" prop="username">
           <a-input
             v-model:value="form.username"
-            :placeholder="$t('common.tips.input', [$t('k8s.text_54')])" />
+            :placeholder="$t('common.tips.input', [$t('k8s.text_54')])"
+            @change="handleCredentialChange" />
         </a-form-model-item>
-        <a-form-model-item :label="$t('k8s.text_56')">
+        <a-form-model-item :label="$t('k8s.text_56')" prop="password">
           <a-input-password
             v-model:value="form.password"
-            :placeholder="$t('common.tips.input', [$t('k8s.text_56')])" />
+            :placeholder="$t('common.tips.input', [$t('k8s.text_56')])"
+            @change="handleCredentialChange" />
         </a-form-model-item>
       </a-form-model>
     </div>
@@ -66,6 +68,12 @@ export default {
         url: [
           { required: true, message: this.$t('common.tips.input', [this.$t('k8s.repo.url')]) },
         ],
+        username: [
+          { validator: this.validateUsernamePasswordPair },
+        ],
+        password: [
+          { validator: this.validateUsernamePasswordPair },
+        ],
       },
     }
   },
@@ -75,6 +83,23 @@ export default {
     },
   },
   methods: {
+    // 账密成对校验：改一侧时联动校验另一侧
+    handleCredentialChange () {
+      this.$nextTick(() => {
+        this.$refs.formRef.validateFields(['username', 'password']).catch(() => {})
+      })
+    },
+    validateUsernamePasswordPair (rule, value, callback) {
+      const username = (this.form.username || '').trim()
+      const password = this.form.password || ''
+      const hasUsername = !!username
+      const hasPassword = !!password
+      if ((hasUsername && !hasPassword) || (!hasUsername && hasPassword)) {
+        const missing = hasUsername ? this.$t('k8s.text_56') : this.$t('k8s.text_54')
+        return callback(new Error(this.$t('common.tips.input', [missing])))
+      }
+      return callback()
+    },
     async handleConfirm () {
       this.loading = true
       try {
