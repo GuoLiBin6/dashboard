@@ -213,6 +213,13 @@ export default {
             },
           },
         },
+        {
+          field: 'is_import',
+          title: this.$t('compute.baremetal.is_import'),
+          formatter: ({ cellValue, row }) => {
+            return cellValue ? this.$t('compute.baremetal.is_import_yes') : this.$t('compute.baremetal.is_import_no')
+          },
+        },
       ],
       extraInfo: [
         {
