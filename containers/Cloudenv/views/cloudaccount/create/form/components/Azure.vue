@@ -44,8 +44,8 @@
       </a-form-model-item>
       <auto-sync :form="form.fd" :cloneData="cloneData" />
       <read-only :cloneData="cloneData" />
-      <skip-duplicate-account-check :cloneData="cloneData" />
       <share-mode :form="form.fd" :cloneData="cloneData" />
+      <skip-duplicate-account-check :cloneData="cloneData" />
     </a-form-model>
   </div>
 </template>
