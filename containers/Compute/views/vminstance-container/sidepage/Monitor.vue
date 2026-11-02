@@ -6,6 +6,8 @@
 
 <script>
 import DashboardCards from '@Monitor/components/MonitorCard/DashboardCards'
+import { buildPanelName } from '@Monitor/utils'
+import { MONITOR_TEMPLATE_VMINSTANCE_CONTAINER, resolveMonitorTemplatePanels } from '@Monitor/utils/monitorTemplate'
 import WindowsMixin from '@/mixins/windows'
 import { POD_MONITOR } from '../constants'
 
@@ -28,14 +30,20 @@ export default {
   data () {
     return {
       currentMonitorType: 'basic',
-      monitorConstants: POD_MONITOR,
     }
   },
   computed: {
+    // 策略定义中配置的容器主机监控模板，对全部容器主机生效
+    monitorConstants () {
+      const panels = resolveMonitorTemplatePanels(this.$store.getters.scopedPolicy, {
+        category: MONITOR_TEMPLATE_VMINSTANCE_CONTAINER,
+      })
+      return panels.length ? panels : POD_MONITOR
+    },
     localPanels () {
       return this.monitorConstants.map(item => {
         return {
-          panel_name: `${item.label}${item.metric ? `(${item.metric})` : `(${item.fromItem}.${item.seleteItem})`}`,
+          panel_name: buildPanelName(item.label, item.metric, item.fromItem, item.seleteItem),
           constants: item,
           queryData: this.genQueryData(item),
         }
@@ -44,6 +52,7 @@ export default {
   },
   created () {
     this.$bus.$on('VmMonitorTypeChange', this.onVmMonitorTypeChange)
+    this.fetchMonitorTemplates()
   },
   beforeUnmount () {
     this.$bus.$off('VmMonitorTypeChange', this.onVmMonitorTypeChange)
@@ -54,7 +63,12 @@ export default {
         this.$refs.dashboardCards?.initMonitorConfig?.()
       })
     },
-
+    fetchMonitorTemplates () {
+      // 监控模板在策略定义中配置，绑定的范围内全部容器主机生效
+      return this.$store.dispatch('scopedPolicy/get', {
+        category: [MONITOR_TEMPLATE_VMINSTANCE_CONTAINER],
+      })
+    },
     genQueryData (val) {
       const opt = val
       if (!val.extraTags) {

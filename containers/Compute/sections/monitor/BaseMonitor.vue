@@ -14,6 +14,7 @@
 <script>
 import _ from 'lodash'
 import DashboardCards from '@Monitor/components/MonitorCard/DashboardCards'
+import { buildPanelName } from '@Monitor/utils'
 import { MonitorHelper } from '@/utils/monitor'
 import WindowsMixin from '@/mixins/windows'
 export default {
@@ -103,7 +104,7 @@ export default {
     localPanels () {
       return this.constants.map(item => {
         return {
-          panel_name: `${item.label}${item.metric ? `(${item.metric})` : `(${item.fromItem}.${item.seleteItem})`}`,
+          panel_name: buildPanelName(item.label, item.metric, item.fromItem, item.seleteItem),
           constants: item,
           queryData: this.helper.genServerQueryData(this.serverId, item, '', '', this.idKey, '', true, this.extraTags),
         }
