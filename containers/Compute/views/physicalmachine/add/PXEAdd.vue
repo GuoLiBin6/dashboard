@@ -29,6 +29,7 @@
       <a-form-model-item :label="$t('common.text00012')" class="mb-0" prop="__meta__">
         <tag v-model:value="fd.__meta__" />
       </a-form-model-item>
+      <ipmi-advanced :fd="fd" />
     </template>
     <template v-if="isFile">
       <file-select
@@ -42,6 +43,7 @@ import Tag from '@/sections/Tag'
 import ModeSelect from '../components/ModeSelect'
 import FileSelect from '../components/FileSelect'
 import NetSelect from '../components/NetSelect'
+import IpmiAdvanced from './IpmiAdvanced'
 export default {
   name: 'PhysicalmachinePXEAdd',
   components: {
@@ -49,6 +51,7 @@ export default {
     FileSelect,
     NetSelect,
     Tag,
+    IpmiAdvanced,
   },
   props: {
     fd: {
