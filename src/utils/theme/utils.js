@@ -47,6 +47,32 @@ function parseHexToRgb (hex) {
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
 }
 
+/**
+ * 相对亮度（0~1，WCAG）：用于判断「用户自选的文字色」在当前底色上还看不看得见。
+ * 非法值按 parseHexToRgb 的兜底（主题蓝）处理。
+ */
+export function hexLuminance (hex) {
+  const [r, g, b] = parseHexToRgb(hex).map((v) => {
+    const c = v / 255
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+  })
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
+/** 暗底可读阈值：深色模式下的 slogan 等自选色低于该亮度即视为「看不见」 */
+export const DARK_TEXT_MIN_LUMINANCE = 0.35
+
+/**
+ * 深色模式下保证自选文字色可读：
+ * 过暗（如默认 #000000）换成主题正文色，其余原样返回；浅色模式不干预。
+ * 返回 undefined 表示调用方「没有配置颜色」，交由 CSS 决定。
+ */
+export function resolveReadableOnDark (hex, dark, fallback = 'var(--oc-dark-text)') {
+  if (!hex) return undefined
+  if (!dark) return hex
+  return hexLuminance(hex) < DARK_TEXT_MIN_LUMINANCE ? fallback : hex
+}
+
 function rgbToHsl ([r, g, b]) {
   const nr = r / 255
   const ng = g / 255

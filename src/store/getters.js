@@ -14,8 +14,9 @@ import {
 const isBgColorDisabled = state => !process.env.VUE_APP_IS_PRIVATE || state.app.isSysCE
 
 export default {
-  logo: (state, getters) => getters['app/logo'],
-  loginLogo: (state, getters) => getters['app/loginLogo'],
+  // 暗色模式下优先用 dark_xxx 版本，未配置则回落浅色版本
+  logo: (state, getters) => (getters.darkMode && getters['app/darkLogo']) || getters['app/logo'],
+  loginLogo: (state, getters) => (getters.darkMode && getters['app/darkLoginLogo']) || getters['app/loginLogo'],
   copyright: (state, getters) => getters['app/copyright'],
   hasBillingAccount: (state, getters) => getters['app/hasBillingAccount'],
   billingAccountCheckLoaded: (state, getters) => getters['app/billingAccountCheckLoaded'],

@@ -357,15 +357,178 @@ html.oc-dark-mode {
     }
   }
 
+  // ---------- 登录页（Auth 布局 + Login）----------
+  // 布局壳：header / content / footer 组件里写死 #fff
+  // CE 用 .auth-layout，EE 用 .auth-login-normal / .auth-login-fullscreen
+  .auth-layout,
+  .auth-login-normal,
+  .auth-login-fullscreen {
+    background-color: var(--oc-dark-bg) !important;
+  }
+  :is(.auth-layout, .auth-login-normal, .auth-login-fullscreen) {
+    .header,
+    .content,
+    .footer {
+      background-color: var(--oc-dark-container) !important;
+    }
+    .header {
+      border-bottom-color: var(--oc-dark-border) !important;
+    }
+    // 全屏布局的 footer 写死 border-top: 1px solid #e1e1e1，暗底上是一条发亮的分割线
+    .footer {
+      border-top-color: var(--oc-dark-border) !important;
+    }
+    // 内容区水印图是「低透明度深灰」图形，暗底上看不见，去掉避免脏色块
+    .content .container-wrap {
+      background-image: none;
+    }
+    .auth-lang-trigger {
+      color: var(--oc-dark-text-secondary);
+
+      &:hover {
+        color: var(--oc-dark-text);
+        background: var(--oc-dark-hover);
+      }
+    }
+  }
+
+  // 登录表单输入框底色：组件里写死 #fff（EE 全屏 .loginChallenge 用 !important 强制白底），
+  // 这里用变量接管，组件内已改为 var(--oc-auth-input-bg, #fff)。
+  .login-ce-container,
+  .login-normal-container,
+  .login-fullscreen-container {
+    --oc-auth-input-bg: var(--oc-dark-raised);
+    --oc-auth-input-text: var(--oc-dark-text);
+  }
+
+  // 登录主体（CE .login-ce-container / EE .login-normal-container、.login-fullscreen-container）
+  .login-ce-container,
+  .login-normal-container,
+  .login-fullscreen-container {
+    .login-index-left {
+      background-color: var(--oc-dark-container) !important;
+    }
+
+    // 未自定义 slogan 颜色时（无内联色）用暗色正文色；自定义色由 JS 兜底
+    .login-index-left h1,
+    .login-index-left h2,
+    .login-index-left h4,
+    .login-index-left h5 {
+      color: var(--oc-dark-text);
+    }
+
+    .login-index-right {
+      box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.55) !important;
+    }
+
+    .login-mode {
+      color: var(--oc-dark-text-secondary) !important;
+    }
+
+    .fast-login-title {
+      color: var(--oc-dark-text-tertiary);
+
+      > span {
+        background-color: var(--oc-dark-border-strong);
+      }
+    }
+
+    // ---- 账号选择（LoginChooser）组件里写死浅色字/浅灰分割线 ----
+    .history-wrap {
+      .item + .item {
+        border-top-color: rgba(255, 255, 255, 0.08);
+      }
+
+      &.default .item:hover,
+      &.is-editing .item {
+        background: var(--oc-dark-hover);
+      }
+    }
+    .l1info {
+      color: var(--oc-dark-text);
+    }
+    .l2info,
+    .scope {
+      color: var(--oc-dark-text-tertiary);
+    }
+    .sso {
+      color: var(--ant-color-primary, #1890ff);
+    }
+    .actions {
+      border-top-color: rgba(255, 255, 255, 0.08);
+    }
+    .action-link {
+      color: var(--oc-dark-text-secondary);
+
+      &:hover {
+        color: var(--oc-dark-text);
+        background: var(--oc-dark-hover);
+      }
+      &.primary {
+        color: var(--ant-color-primary, #1890ff);
+
+        &:hover {
+          color: var(--ant-color-primary, #1890ff) !important;
+          background: var(--oc-dark-hover) !important;
+        }
+      }
+    }
+
+    // ---- 登录表单（LoginChallenge）----
+    .selected-user-content {
+      border-color: var(--oc-dark-border-strong);
+      color: var(--oc-dark-text);
+
+      &:hover {
+        background: var(--oc-dark-hover);
+      }
+    }
+    .login-domain-title,
+    .fast-login-title {
+      color: var(--oc-dark-text-tertiary);
+    }
+    .login-chooser-link {
+      color: var(--oc-dark-text-secondary);
+
+      &:hover {
+        color: var(--oc-dark-text) !important;
+        background: var(--oc-dark-hover) !important;
+      }
+    }
+    // 输入框前缀/后缀图标在模板里写死 rgba(0,0,0,.35)
+    .ant-input-prefix .oc-icon,
+    .ant-input-prefix svg,
+    .ant-input-suffix .oc-icon {
+      color: var(--oc-dark-text-tertiary) !important;
+    }
+    .ant-input-affix-wrapper .ant-input-password-icon:hover {
+      color: var(--oc-dark-text-secondary) !important;
+    }
+  }
+
+  // 全屏登录：左右两块同色会糊成一片，右侧抬一级；表单标题写死 #111827
+  .login-fullscreen-container .login-index-right {
+    background-color: var(--oc-dark-raised) !important;
+  }
+  .login-fullscreen-container .login-content-wrap > h4 {
+    color: var(--oc-dark-text) !important;
+  }
+
   // ---------- 侧栏（一级栏 / 抽屉）----------
-  // 侧栏选了「浅色」时，深色模式下统一压暗，避免大块浅灰贴在暗色页旁边
+  // CE 单栏深色侧栏：压暗抽屉壳，避免侧栏选「浅色」时贴一块浅灰
   #sidebar-wrap.ant-drawer .ant-drawer-content-wrapper,
   #sidebar-wrap.ant-drawer .ant-drawer-content,
-  #sidebar-wrap.ant-drawer .ant-drawer-body,
+  #sidebar-wrap.ant-drawer .ant-drawer-body {
+    background: var(--oc-dark-container) !important;
+  }
+  // EE 双栏：抽屉宽度是 200 + 800，外壳必须保持透明（与亮色一致），
+  // 否则右侧 800px 的「产品与服务」面板区会被一起涂上底色，
+  // 看起来就像面板一直开着、hover 才出现的显隐失效。
+  // 深色底只由左侧一级栏自身（.products-list-root）承担。
   .sidebar-wrap-drawer.ant-drawer .ant-drawer-content-wrapper,
   .sidebar-wrap-drawer.ant-drawer .ant-drawer-content,
   .sidebar-wrap-drawer.ant-drawer .ant-drawer-body {
-    background: var(--oc-dark-container) !important;
+    background: transparent !important;
   }
 
   // 二级侧栏（L2 菜单）右侧的「展开/收起」把手：
@@ -573,6 +736,192 @@ html.oc-dark-mode {
       &:hover {
         color: var(--ant-color-primary, #1890ff) !important;
         background-color: var(--oc-dark-hover) !important;
+      }
+    }
+  }
+
+  // ---------- EE 企业信息（companyinfo）----------
+  // 表单卡片 / 预览框写死白底 #fff、底衬 #f3f4f6、边框 #e5e7eb，
+  // 暗色下是两块大白板，而里面的输入框已经是暗色，观感完全错乱。
+  // 这里接管「页面外壳」，预览里的示意图另见下方「右侧预览」一段。
+  .companyinfo-form {
+    background: var(--oc-dark-container) !important;
+    border-color: var(--oc-dark-border) !important;
+  }
+  .companyinfo-page .preview-frame {
+    background: var(--oc-dark-container) !important;
+    border-color: var(--oc-dark-border) !important;
+  }
+  .companyinfo-page .preview-frame__head {
+    background: var(--oc-dark-raised) !important;
+    border-bottom-color: var(--oc-dark-border) !important;
+  }
+  .companyinfo-page .preview-frame__title {
+    color: var(--oc-dark-text) !important;
+  }
+  // 图片上传位：写死 #fafafa 底 + #d9d9d9 虚线，暗底上是一圈白框
+  .companyinfo-form .image-add,
+  .companyinfo-form .image-show {
+    border-color: rgba(255, 255, 255, 0.22) !important;
+  }
+  .companyinfo-form .image-add {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+  }
+  // Logo 展示位（登录页 Logo / 系统内 Logo / URL 图标）：
+  // 组件里写死 #fafafa，占位图还内联 backgroundColor:#fff，暗底上就是一块白板。
+  // 改成透明后 PNG 的透明区域直接落到页面底色上（#fff 内联样式也能被 !important 压掉）。
+  .companyinfo-form .image-show {
+    background-color: transparent !important;
+  }
+  // 颜色胶囊：写死 #fff 底 + #d9d9d9 边框 + #595959 字色
+  .companyinfo-form .oc-color-chip {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: var(--oc-dark-check) !important;
+  }
+  .companyinfo-form .oc-color-chip__hex {
+    color: var(--oc-dark-text-secondary) !important;
+  }
+
+  // ---------- EE 企业信息（companyinfo）右侧预览 ----------
+  // 预览框里的示意图就是「被预览的内容」（登录页 / 控制台 / 品牌 / 监控大屏），
+  // 深色模式下也要一起变暗，否则暗色外壳里嵌一块白板。
+  // 这些组件是 scoped 且写死浅色（#fff / #e5e7eb / #f3f4f6），用 !important 压。
+  .companyinfo-page {
+    // 预览区不跟随「主题背景色」：--oc-dark-bg 会被 JS 内联改写成用户选的色系
+    // （挑了偏绿 / 偏紫的深色时，示意图会被整体染色），这里统一用中性暗色。
+    --oc-preview-bg: #17191f;
+
+    // 品牌预览的浅灰衬底
+    .preview-frame__stage.is-fit.is-light {
+      background: var(--oc-preview-bg) !important;
+    }
+
+    // ---- 登录页预览（showcase 插画版保持原浅蓝底，不参与）----
+    .login-preview:not(.is-showcase) {
+      background: var(--oc-dark-container) !important;
+
+      .lp-header,
+      .lp-footer,
+      .lp-right {
+        background: var(--oc-dark-raised) !important;
+      }
+      .lp-header {
+        border-bottom-color: var(--oc-dark-border) !important;
+      }
+      .lp-footer {
+        border-top-color: var(--oc-dark-border) !important;
+        color: var(--oc-dark-text-tertiary) !important;
+      }
+      .lp-left {
+        background-color: var(--oc-dark-container) !important;
+      }
+      .lp-name {
+        color: var(--oc-dark-text) !important;
+        border-left-color: var(--oc-dark-border-strong) !important;
+      }
+      .lp-lang {
+        background: rgba(255, 255, 255, 0.1) !important;
+      }
+      .lp-block {
+        background: rgba(255, 255, 255, 0.14) !important;
+      }
+      .lp-form-title {
+        background: rgba(255, 255, 255, 0.24) !important;
+      }
+      .is-normal .lp-right {
+        box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.55) !important;
+      }
+    }
+
+    // ---- 控制台预览 ----
+    .console-preview {
+      background: var(--oc-preview-bg) !important;
+
+      .cp-chrome {
+        background: rgba(255, 255, 255, 0.08) !important;
+      }
+      .cp-tab {
+        background: var(--oc-dark-raised) !important;
+      }
+      .cp-tab-title {
+        color: var(--oc-dark-text-secondary) !important;
+      }
+      .cp-navbar,
+      .cp-sidebar {
+        background: var(--oc-dark-container) !important;
+        border-color: var(--oc-dark-border) !important;
+      }
+      .cp-product {
+        color: var(--oc-dark-text) !important;
+      }
+      .cp-block {
+        background: rgba(255, 255, 255, 0.14) !important;
+      }
+      .cp-dot,
+      .cp-avatar {
+        background: rgba(255, 255, 255, 0.24) !important;
+      }
+    }
+
+    // ---- 品牌 / MFA 预览 ----
+    .brand-preview {
+      background: var(--oc-preview-bg) !important;
+
+      .bp-section {
+        background: var(--oc-dark-raised) !important;
+        border-color: var(--oc-dark-border) !important;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+      }
+      .bp-label,
+      .bp-muted {
+        color: var(--oc-dark-text-tertiary) !important;
+      }
+      .bp-table {
+        border-color: var(--oc-dark-border) !important;
+      }
+      .bp-thead {
+        background: rgba(255, 255, 255, 0.04) !important;
+        color: var(--oc-dark-text-secondary) !important;
+        border-bottom-color: var(--oc-dark-border) !important;
+      }
+      .bp-trow {
+        background: transparent !important;
+        color: var(--oc-dark-text) !important;
+      }
+      .bp-mfa-card {
+        background: var(--oc-dark-container) !important;
+        border-color: var(--oc-dark-border) !important;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45) !important;
+      }
+      .bp-mfa-issuer,
+      .bp-mfa-user {
+        color: var(--oc-dark-text) !important;
+      }
+      .bp-mfa-code {
+        color: var(--ant-color-primary, #1890ff) !important;
+      }
+      .bp-mfa-timer {
+        background: conic-gradient(var(--ant-color-primary, #1890ff) 0 72%, rgba(255, 255, 255, 0.16) 0 100%) !important;
+      }
+    }
+
+    // ---- 监控大屏：自定义 URL 占位（其余是截图图片，不用处理）----
+    .overview-preview .op-custom {
+      background: var(--oc-preview-bg) !important;
+
+      .op-urlbar {
+        background: var(--oc-dark-container) !important;
+        border-bottom-color: var(--oc-dark-border) !important;
+      }
+      .op-url {
+        color: var(--oc-dark-text-secondary) !important;
+      }
+      .op-lock,
+      .op-hero {
+        background: rgba(255, 255, 255, 0.18) !important;
+      }
+      .op-custom-hint {
+        color: var(--oc-dark-text-tertiary) !important;
       }
     }
   }

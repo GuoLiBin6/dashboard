@@ -2,8 +2,8 @@
   <div class="login-ce-container login-index-wrap flex-fill d-flex h-100 align-items-center" v-loading.fullscreen="!regionsLoading">
     <div class="login-index-left d-flex flex-fill align-items-center pl-4 pr-4 pt-4" :style="{backgroundImage: loginBg}">
       <div>
-        <h2 :style="{ color: getI18nColorVal(companyInfo, 'login_page_slogan'), lineHeight: loginSlogan.includes('<br') ? '1.5em' : '1em' }" v-html="loginSlogan" />
-        <h4 :style="{ color: getI18nColorVal(companyInfo, 'login_page_sub_slogan') }">{{ getI18nVal(companyInfo, 'login_page_sub_slogan') || $t('login.desc2') }}</h4>
+        <h2 :style="loginSloganStyle" v-html="loginSlogan" />
+        <h4 :style="subSloganStyle">{{ getI18nVal(companyInfo, 'login_page_sub_slogan') || $t('login.desc2') }}</h4>
       </div>
     </div>
     <div class="login-index-right d-flex flex-column shadow-lg bg-white rounded">
@@ -42,6 +42,7 @@ import * as R from 'ramda'
 import { mapGetters, mapState } from 'vuex'
 import { getLoginDomain } from '@/utils/common/cookie'
 import { getI18nVal, getI18nColorVal } from '@/utils/i18n'
+import { resolveReadableOnDark } from '@/utils/theme/utils'
 import { sanitizeHtml } from '@/utils/sanitizeHtml'
 import { getLoginModeInStorage } from '@/utils/auth'
 import { omitLoginUserQuery } from '@/utils/utils'
@@ -72,7 +73,7 @@ export default {
     }
   },
   computed: {
-    ...mapGetters(['auth', 'userInfo', 'loginLogo']),
+    ...mapGetters(['auth', 'userInfo', 'loginLogo', 'darkMode']),
     ...mapState({
       regions: state => state.auth.regions,
       loggedUsers: state => state.auth.loggedUsers,
@@ -109,13 +110,27 @@ export default {
       return this.loginDomain.length > 0
     },
     loginBg () {
-      const bg_img = this.companyInfo.login_page_backgroup_image
+      // 暗色模式优先用 dark_login_page_backgroup_image，未配置则回落浅色版本
+      const darkImg = this.darkMode ? this.companyInfo.dark_login_page_backgroup_image : ''
+      const bg_img = darkImg || this.companyInfo.login_page_backgroup_image
       if (!bg_img) return `url(${this.defaultBg})`
       return `url(data:image/png;base64,${bg_img})`
     },
     loginSlogan () {
       // slogan 来自 OEM 品牌配置，经 DOMPurify 消毒后再 v-html 渲染
       return sanitizeHtml(getI18nVal(this.companyInfo, 'login_page_slogan') || this.$t('login.desc1'))
+    },
+    // 深色模式下：未配置颜色交给 CSS（暗色正文色），配置了但过暗则换成正文色兜底
+    loginSloganStyle () {
+      return {
+        color: resolveReadableOnDark(getI18nColorVal(this.companyInfo, 'login_page_slogan'), this.darkMode),
+        lineHeight: this.loginSlogan.includes('<br') ? '1.5em' : '1em',
+      }
+    },
+    subSloganStyle () {
+      return {
+        color: resolveReadableOnDark(getI18nColorVal(this.companyInfo, 'login_page_sub_slogan'), this.darkMode),
+      }
     },
   },
   watch: {

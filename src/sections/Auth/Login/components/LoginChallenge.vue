@@ -600,15 +600,15 @@ export default {
   }
 }
 
-/* 去掉浏览器自动填充的浅蓝/淡黄底色 */
+/* 去掉浏览器自动填充的浅蓝/淡黄底色；底色/文字走变量，暗色模式下由 dark.less 改写 */
 :deep(input.ant-input:-webkit-autofill),
 :deep(input.ant-input:-webkit-autofill:hover),
 :deep(input.ant-input:-webkit-autofill:focus),
 :deep(input.ant-input:-webkit-autofill:active) {
-  -webkit-box-shadow: 0 0 0 1000px #fff inset !important;
-  box-shadow: 0 0 0 1000px #fff inset !important;
-  -webkit-text-fill-color: rgba(0, 0, 0, 0.88) !important;
-  caret-color: rgba(0, 0, 0, 0.88);
+  -webkit-box-shadow: 0 0 0 1000px var(--oc-auth-input-bg, #fff) inset !important;
+  box-shadow: 0 0 0 1000px var(--oc-auth-input-bg, #fff) inset !important;
+  -webkit-text-fill-color: var(--oc-auth-input-text, rgba(0, 0, 0, 0.88)) !important;
+  caret-color: var(--oc-auth-input-text, rgba(0, 0, 0, 0.88));
   transition: background-color 99999s ease-out 0s;
 }
 </style>
