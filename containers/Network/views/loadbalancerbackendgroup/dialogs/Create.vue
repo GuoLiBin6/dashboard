@@ -105,13 +105,13 @@ export default {
   },
   computed: {
     isCloudflare () {
-      return this.params.lbData.provider === 'Cloudflare'
+      return this.params.lbData?.provider === 'Cloudflare'
     },
     healthCheckParams () {
       return {
         scope: this.$store.getters.scope,
         limit: 20,
-        provider: this.params.lbData.provider,
+        provider: this.params.lbData?.provider,
       }
     },
   },
