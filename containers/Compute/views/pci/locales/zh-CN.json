@@ -1,6 +1,6 @@
 {
-  "compute.pci.passthrough_device": "透传设备",
-  "compute.pci.passthrough_device_type": "透传设备类型",
+  "compute.pci.passthrough_device": "GPU设备",
+  "compute.pci.passthrough_device_type": "GPU设备类型",
   "compute.pci.dev_type": "设备类型",
   "compute.pci.dev_type.placeholder": "请输入设备类型，如GPU、NPU、USB等",
   "compute.pci.model": "设备型号",
@@ -15,9 +15,9 @@
   "compute.pci.device_id.reg_error_msg": "请输入4位包含小写字母或数字组合",
   "compute.pci.host": "宿主机",
   "compute.pci.host.placeholder": "请选择宿主机",
-  "compute.pci.host.extra": "选择宿主机后，相应宿主机会自动上报相应透传设备，未选择设备需重启host服务生效！",
+  "compute.pci.host.extra": "选择宿主机后，相应宿主机会自动上报相应GPU设备，未选择设备需重启host服务生效！",
   "compute.pci.document": "文档",
   "compute.pci.hot_pluggable": "热插拔",
-  "compute.pci.hot_pluggable.tips": "透传设备是否支持热插拔由设备本身决定，验证后再选择是否启用热插拔",
+  "compute.pci.hot_pluggable.tips": "GPU设备是否支持热插拔由设备本身决定，验证后再选择是否启用热插拔",
   "compute.pci.disable_auto_detect": "自动探测"
 }
