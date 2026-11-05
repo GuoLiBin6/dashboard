@@ -211,21 +211,6 @@ function loadScopeBillingColumns () {
 
 const scopeBillingColumns = loadScopeBillingColumns()
 
-/**
- * 计费列桥接：优先加载 GPU scope/utils/billingTableColumns.js
- * dashboard 无此文件时 keys 为空，回退下方默认实现
- */
-function loadScopeBillingColumns () {
-  try {
-    const ctx = require.context('../../../scope', true, /[/\\]utils[/\\]billingTableColumns\.js$/)
-    const key = (ctx.keys() || []).find(k => /billingTableColumns\.js$/.test(k))
-    if (key) return ctx(key)
-  } catch (e) { /* ignore */ }
-  return null
-}
-
-const scopeBillingColumns = loadScopeBillingColumns()
-
 export const getProjectTableColumn = ({ vm = {}, field = 'tenant', title = i18n.t('res.project'), projectsItem = 'tenant', sortable = true, hidden = false, minWidth = 100, domainField } = {}) => {
   return {
     field,
