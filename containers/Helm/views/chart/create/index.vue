@@ -12,7 +12,7 @@
             :img="chartDetail.chart.metadata.icon"
             :page-title="chartDetail.name"
             :description="chartDetail.chart.metadata.description">
-            <div class="mt-1" style="font-size: 12px; color: #555; font-weight: 500;">{{ isVm ? $t('helm.text_26') : $t('helm.text_27') }}</div>
+            <div class="mt-1" style="font-size: 12px; color: var(--oc-card-tile-text-secondary, #555); font-weight: 500;">{{ isVm ? $t('helm.text_26') : $t('helm.text_27') }}</div>
           </page-card-detail>
           <a-form-model
             ref="shellFormRef"

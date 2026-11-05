@@ -29,13 +29,14 @@ export default {
 
   .profilter-label {
     flex: 0 0 auto;
-    border-left: 1px solid #d9d9d9;
-    border-top: 1px solid #d9d9d9;
-    border-bottom: 1px solid #d9d9d9;
+    border-left: 1px solid var(--oc-dark-check, #d9d9d9);
+    border-top: 1px solid var(--oc-dark-check, #d9d9d9);
+    border-bottom: 1px solid var(--oc-dark-check, #d9d9d9);
     border-radius: 6px 0 0 6px;
     line-height: 30px;
     padding: 0 10px;
-    background: #f2f1f1;
+    // 暗色：底色在筛选条（elevated）上再叠一层白，形成前缀 chip；亮色回落到原浅灰
+    background: var(--oc-dark-hover, #f2f1f1);
     min-width: fit-content;
     height: 32px;
     box-sizing: border-box;

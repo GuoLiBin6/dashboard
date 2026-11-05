@@ -399,7 +399,7 @@ export default {
     right: 0;
     bottom: 0;
     width: 112px;
-    border-left: 1px solid #f0f0f0;
+    border-left: 1px solid var(--oc-dark-border-strong, #f0f0f0);
     overflow: hidden;
   }
 
@@ -409,8 +409,13 @@ export default {
     min-width: 100%;
     padding: 4px 12px;
     line-height: 1.8;
-    border-top: 1px solid #f0f0f0;
+    border-top: 1px solid var(--oc-dark-border-strong, #f0f0f0);
     white-space: normal;
+
+    // 没有 extra 插槽时不要占位和描边，否则会和 __ranges 的上边框叠成两条横线
+    &:empty {
+      display: none;
+    }
   }
 
   .oc-dt-combined__ranges {
@@ -423,7 +428,7 @@ export default {
     margin: 0;
     padding: 4px 12px;
     list-style: none;
-    border-top: 1px solid #f0f0f0;
+    border-top: 1px solid var(--oc-dark-border-strong, #f0f0f0);
   }
 
   .oc-dt-combined__now-btn {
@@ -432,7 +437,7 @@ export default {
   }
 
   .oc-dt-combined__now--disabled .oc-dt-combined__now-btn {
-    color: rgba(0, 0, 0, 0.25);
+    color: var(--oc-dark-text-disabled, rgba(0, 0, 0, 0.25));
     cursor: not-allowed;
     pointer-events: none;
   }

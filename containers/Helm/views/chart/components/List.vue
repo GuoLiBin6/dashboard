@@ -197,7 +197,7 @@ export default {
   min-width: 0;
 }
 .chart-form-label {
-  color: rgba(0, 0, 0, 0.85);
+  color: var(--oc-card-tile-text, rgba(0, 0, 0, 0.85));
   flex-shrink: 0;
   white-space: nowrap;
 }

@@ -116,8 +116,9 @@ export default {
   .text-wrap {
     height: 200px;
     padding: 24px;
-    background-color: #efefefa1;
-    color: @border-color-base;
+    // 卡片下半部的浅灰底 + 浅灰文字，暗色下会是一块发白的板（变量在 dark.less 赋值）
+    background-color: var(--oc-card-tile-bg, #efefefa1);
+    color: var(--oc-card-tile-text, @border-color-base);
     .primary-btn-wrap {
       bottom: 8px;
       left: 24px;

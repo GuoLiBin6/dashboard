@@ -1014,6 +1014,13 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+/* antdv4：vc-select 的箭头只做 preventDefault，不带展开逻辑（mousedown 不冒泡到
+   .ant-select-selector），导致「点右侧箭头没反应」。让箭头对指针透明，点击直接落到
+   下面的 .ant-select-selector 上，复用其原有的开合逻辑。 */
+.ant-select .ant-select-arrow {
+  pointer-events: none;
+}
+
 .lh-1 {
   line-height: 1;
 }

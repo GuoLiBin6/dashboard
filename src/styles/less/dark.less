@@ -926,6 +926,56 @@ html.oc-dark-mode {
     }
   }
 
+  // ---------- EE 许可证（/licenses）----------
+  // 卡片 / 字段 / 版本列表 / 版本抽屉 / 升级弹窗里写死了浅色面板与文字，
+  // 组件内已统一改为 var(--oc-license-*, 浅色值)，这里只给暗色赋值。
+  // 弹窗与抽屉都挂在 body 上（不在 .licenses-page 内），变量必须定义在根上。
+  --oc-license-border: var(--oc-dark-border);
+  --oc-license-border-strong: var(--oc-dark-border-strong);
+  --oc-license-shell: var(--oc-dark-container);
+  --oc-license-fill: var(--oc-dark-raised);
+  --oc-license-fill-hover: var(--oc-dark-elevated);
+  --oc-license-text: var(--oc-dark-text);
+  --oc-license-text-secondary: var(--oc-dark-text-secondary);
+  --oc-license-text-tertiary: var(--oc-dark-text-tertiary);
+  --oc-license-text-disabled: var(--oc-dark-text-disabled);
+  --oc-license-code-text: var(--oc-dark-text-strong);
+  --oc-license-hover: var(--oc-dark-hover);
+  --oc-license-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.5);
+  --oc-license-item-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --oc-license-pop-shadow: 0 4px 12px rgba(0, 0, 0, 0.55);
+  // 状态徽标：浅色下是「深字 + 极浅底」，暗色下反转为「亮字 + 半透明底」
+  --oc-license-success-text: #95de64;
+  --oc-license-success-bg: rgba(82, 196, 26, 0.16);
+  --oc-license-danger-text: #ff7875;
+  --oc-license-danger-bg: rgba(255, 77, 79, 0.16);
+  --oc-license-link-success: #95de64;
+  --oc-license-notes-bg: rgba(255, 255, 255, 0.04);
+  --oc-license-notes-border: var(--oc-dark-border-strong);
+  --oc-license-notes-text: var(--oc-dark-text-tertiary);
+  --oc-license-mask: rgba(0, 0, 0, 0.45);
+  --oc-license-drawer-shadow: 0 10px 28px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.45);
+
+  // 卡片与页面同为 container 色，靠一圈亮边 + 深投影分层（与用户信息页一致）
+  .license-card {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
+  // ---------- 卡片列表（应用市场 / 镜像导入 / 组件列表 / 卡片详情）----------
+  // PageCardList 的 VerticalCard 下半部写死 rgba(239,239,239,.63) 底 + #d9d9d9 文字，
+  // 暗色下是「亮灰板 + 灰字」，卡片详情页标题 #000 / 描述 #ccc 同理。
+  // 组件内已改为 var(--oc-card-*, 浅色值)，这里只给暗色赋值。
+  --oc-card-tile-bg: var(--oc-dark-raised);
+  --oc-card-tile-text: var(--oc-dark-text-secondary);
+  --oc-card-tile-text-secondary: var(--oc-dark-text-tertiary);
+  --oc-card-detail-title: var(--oc-dark-text);
+  --oc-card-detail-desc: var(--oc-dark-text-tertiary);
+
+  // 卡片底色与页面同为 container，描边取强边框色才有「一块卡片」的轮廓
+  .card-list .card-wrap.ant-card {
+    border-color: var(--oc-dark-border-strong);
+  }
+
   // ---------- 二级菜单 ----------
   // 深色模式统一暗色底（即使侧栏选了浅色主题，避免大块浅灰贴在暗色页旁边）
   .level-2-wrap {
@@ -1878,6 +1928,30 @@ html.oc-dark-mode {
       color: var(--oc-dark-text-tertiary) !important;
     }
   }
+  // ---------- 宿主机资源统计（Host 详情 → 资源统计 tab）----------
+  // 该页由 sections/ProgressCard + RingCard + Top5 组成，前两者底色/文字走 antd token
+  // 与 RingCard 的 JS option（见 RingCard/index.vue），只有 Top5 标题与名称写死浅色底文字
+  .top-wrapper {
+    .title .title-text {
+      color: var(--oc-dark-text) !important;
+    }
+    .progress-item .label {
+      color: var(--oc-dark-text-secondary) !important;
+    }
+    // Top5 比例条不在 a-card 内，轨道底色需单独压暗
+    .ant-progress-line .ant-progress-inner {
+      background-color: var(--oc-progress-trail);
+    }
+  }
+  // 同页 a-card 内的环形/仪表进度条轨道默认 #f5f5f5，暗底上是一整条亮圈
+  .ant-card {
+    .ant-progress-circle-trail {
+      stroke: var(--oc-progress-trail);
+    }
+    .ant-progress-line .ant-progress-inner {
+      background-color: var(--oc-progress-trail);
+    }
+  }
   // 磁贴配置抽屉底部按钮区（BaseDrawer 写死 #eee）
   .base-drawer-footer {
     border-top-color: var(--oc-dark-border);
@@ -1996,6 +2070,98 @@ html.oc-dark-mode {
   .bill-kind-tabs-subtitle,
   .ant-upload-drag-icon .oc-icon {
     color: var(--oc-dark-text-secondary);
+  }
+
+  // 标签编辑区虚线框（Tag / PairsTag 等表单内的 .tag-list，写死 #ddd）
+  .tag-list {
+    border-color: var(--oc-dark-border-strong) !important;
+  }
+
+  // ---------- 标签选择浮层（TagSelect / TagSelectPreDefined）----------
+  // 两个组件内部把 .tag-filter-fixed / .tag-item / .tag-tip / .values-wrap 的底色
+  // 全部写死成 #fff、#F5F6FA、#F9F9FA，暗色下整块浮层发白；浮层挂在 body 上，
+  // 只能用 overlayClassName="tag-overlay" 限定，并加 !important 覆盖 scoped 样式。
+  .tag-overlay {
+    .ant-popover-inner {
+      background: var(--oc-dark-elevated);
+    }
+    .ant-popover-arrow::before {
+      background: var(--oc-dark-elevated) !important;
+    }
+    .ant-popover-inner-content {
+      color: var(--oc-dark-text);
+    }
+    .tag-filter-fixed,
+    .tag-item,
+    .values-wrap {
+      background-color: var(--oc-dark-elevated) !important;
+    }
+    .tag-tip {
+      background-color: var(--oc-dark-raised) !important;
+      color: var(--oc-dark-text-secondary);
+    }
+    // 搜索/筛选条：列表底(#262931)与「抬升面」(#22242b)几乎同色，看不出分隔，
+    // 这里把筛选条压到容器色（更暗 = 凹陷的搜索栏），并补一条强描边下边线
+    .tag-filter-fixed,
+    .tag-value-filter-fixed {
+      background-color: var(--oc-dark-container) !important;
+      border-bottom: 1px solid var(--oc-dark-border-strong);
+    }
+    .tag-filter-fixed .tag-tip,
+    .tag-value-filter-fixed.tag-tip {
+      background-color: var(--oc-dark-container) !important;
+      color: var(--oc-dark-text-secondary);
+    }
+    .tag-item {
+      // 行分隔线：原来写死 #eee，改用 --oc-dark-border(#282a30) 后
+      // 与列表底 --oc-dark-elevated(#262931) 几乎同色，等于看不见；
+      // 这里用白色低透明度，既能在暗底上看出「一行一行」，又不至于抢眼
+      border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+      &:hover {
+        background-color: var(--oc-dark-hover) !important;
+      }
+      &.checked {
+        background-color: var(--oc-dark-selected) !important;
+      }
+      // 「已勾选」勾选图标用主题色，暗底上原生绿/灰都不明显
+      &.checked .check-icon {
+        color: var(--ant-color-primary, #1890ff);
+      }
+      &.disabled {
+        color: var(--oc-dark-text-disabled);
+      }
+    }
+    .values-wrap {
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    }
+    // 不同标签分组之间（无标签 / 用户标签 / 外部标签…）加一条淡淡的分隔线：
+    // 组内行线是 rgba(255,255,255,.08)，组间用略亮一档，只用来区分「换了一组」
+    .tag-list:not(.tag-filter-fixed) + .tag-list:not(.values-wrap) {
+      border-top: 1px solid rgba(255, 255, 255, 0.16);
+    }
+    // 组内最后一行的行线交给上面的组间线，避免两条线叠成「粗线」
+    .tag-list > .tag-item:last-child {
+      border-bottom-color: transparent !important;
+    }
+    // 搜索框是原生 input：color-scheme: dark 下浏览器会画成深灰，
+    // 这里显式接管，让它在筛选条（容器色）上呈现为可见的输入框
+    .val-search input {
+      background: var(--oc-dark-raised);
+      border: 1px solid var(--oc-dark-border-strong);
+      border-radius: 4px;
+      padding: 1px 6px;
+      color: var(--oc-dark-text);
+      &::placeholder {
+        color: var(--oc-dark-text-tertiary);
+      }
+      &:focus {
+        border-color: var(--ant-color-primary, #1890ff);
+      }
+    }
+    // 加载更多 / 没有更多
+    .tag-wrap > div {
+      color: var(--oc-dark-text-secondary);
+    }
   }
 
   // wangeditor（富文本）暗色

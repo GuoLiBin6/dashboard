@@ -370,7 +370,8 @@ export default {
 }
 
 .dmesg-filter {
-  background-color: #fff;
+  // 暗色下 --oc-color-bg-container 有值（浮层色），亮色回落到原白底
+  background-color: var(--oc-color-bg-container, #fff);
   flex-shrink: 0;
   z-index: 1;
   position: relative;
@@ -380,7 +381,8 @@ export default {
   flex: 1;
   overflow-y: auto;
   padding: 16px;
-  background-color: #f5f5f5;
+  // 日志区比筛选条更暗一档，暗色下能看出「凹陷的日志面板」，亮色回落到原 #f5f5f5
+  background-color: var(--oc-dark-container, #f5f5f5);
   min-height: 0;
   position: relative;
 }
@@ -420,13 +422,13 @@ export default {
     align-items: center;
     justify-content: center;
     padding: 16px;
-    color: #999;
+    color: var(--oc-dark-text-tertiary, #999);
   }
 
   .no-more-data {
     text-align: center;
     padding: 16px;
-    color: #999;
+    color: var(--oc-dark-text-tertiary, #999);
     font-size: 12px;
   }
 }

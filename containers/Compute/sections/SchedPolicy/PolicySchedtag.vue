@@ -12,7 +12,7 @@
         :policy-rules="[{ required: true, message: $t('common_256') }]"
         :policyReactInSchedtag="false"
         @change="onItemFieldChange" />
-      <a-button shape="circle" icon="minus" size="small" @click="decrease(item.key, i)" class="mt-2" />
+      <a-button shape="circle" icon="minus" size="small" @click="decrease(item.key, i)" class="mt-2 ml-2" />
     </div>
     <a-button type="primary" shape="circle" icon="plus" size="small" @click="add" />
     <a-button type="link" @click="add">{{$t('add_schedpolicy')}}</a-button>

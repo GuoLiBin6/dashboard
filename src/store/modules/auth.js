@@ -22,6 +22,7 @@ import {
   setLoginModeInStorage,
   checkSessionUser,
   SESSION_LOGIN_USER_KEY,
+  clearAuthCookies,
 } from '@/utils/auth'
 import { SCOPES_MAP } from '@/constants'
 import router from '@/router'
@@ -356,28 +357,35 @@ export default {
       }
     },
     async logout ({ commit, state }, data) {
+      let response = null
+      let reqError = null
       try {
         // http 实例已默认 baseURL='/api'，这里不要重复加 '/api' 前缀
-        const response = await http.post('/v1/auth/logout', data)
-        await commit('LOGOUT')
-        await commit('RESET_COOKIE')
-        await commit('profile/REST_ID', null, { root: true })
-        await commit('common/REST_BILL_CURRENCY', null, { root: true })
-        await commit('scopedPolicy/DEL_DATA', { name: 'sub_hidden_menus' }, { root: true })
-        await commit('monitor/setMonitorResourceAlerts', [], { root: true })
-        const { regions = {} } = state
-        const { is_forget_login_user } = regions
-        if (is_forget_login_user) {
-          await commit('CLEAR_LOGGED_USERS')
-        }
-        await commit('CLEAR_DASHBOARD_CACHE')
-        await commit('app/CLEAR_BILLING_ACCOUNT_CHECK', null, { root: true })
-        // 清除本地用户
-        storage.session.remove(SESSION_LOGIN_USER_KEY)
-        return response.data
+        response = await http.post('/v1/auth/logout', data)
       } catch (error) {
-        throw error
+        // 服务端登出可能失败（例如已有的 token 已失效返回 401），
+        // 但本地登录态必须清理，否则会卡在一直 401 的页面上
+        reqError = error
       }
+      await commit('LOGOUT')
+      await commit('RESET_COOKIE')
+      // yunionauth / scope / tenant / region / sso_idp_id 全部清掉
+      clearAuthCookies()
+      await commit('profile/REST_ID', null, { root: true })
+      await commit('common/REST_BILL_CURRENCY', null, { root: true })
+      await commit('scopedPolicy/DEL_DATA', { name: 'sub_hidden_menus' }, { root: true })
+      await commit('monitor/setMonitorResourceAlerts', [], { root: true })
+      const { regions = {} } = state
+      const { is_forget_login_user } = regions
+      if (is_forget_login_user) {
+        await commit('CLEAR_LOGGED_USERS')
+      }
+      await commit('CLEAR_DASHBOARD_CACHE')
+      await commit('app/CLEAR_BILLING_ACCOUNT_CHECK', null, { root: true })
+      // 清除本地用户
+      storage.session.remove(SESSION_LOGIN_USER_KEY)
+      if (reqError) throw reqError
+      return response && response.data
     },
     /**
      * @description Get user info

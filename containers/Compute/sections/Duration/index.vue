@@ -5,7 +5,7 @@
         <a-radio-button v-for="item in opts" :key="item.key" :value="item.key">{{ item.label }}</a-radio-button>
       </a-radio-group>
     </a-form-model-item>
-    <a-form-model-item v-if="showDuration" prop="duration">
+    <a-form-model-item v-if="showDuration" prop="duration" class="mt-3">
       <duration-input :value="duration" @update:value="onDurationUpdate" />
     </a-form-model-item>
   </div>

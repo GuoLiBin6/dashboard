@@ -4,7 +4,7 @@
  * date: 2018/08/07
  */
 import * as R from 'ramda'
-import { hasPermission, checkSessionUser, decodeToken } from '@/utils/auth'
+import { hasPermission, checkSessionUser, decodeToken, clearAuthCookies, hasDuplicateTokenCookie } from '@/utils/auth'
 import {
   isCE,
   isSAAS,
@@ -26,6 +26,15 @@ Object.values(scopePermissionModules).forEach(mod => {
     scopeBeforeEach = mod.beforeEach
   }
 })
+
+// 升级/迁移域名后可能残留多条同名 yunionauth，后端取到失效的那条会一直 401。
+// store 初始化时已按 cookie 解析过登录态，这里清 cookie 后需同步把 store 登录态重置。
+if (hasDuplicateTokenCookie()) {
+  // eslint-disable-next-line no-console
+  console.warn('[auth] duplicated yunionauth cookie detected, clearing legacy auth')
+  clearAuthCookies()
+  store.commit('auth/LOGOUT')
+}
 
 const toLogin = (to, from, next) => {
   const query = {
@@ -52,13 +61,23 @@ router.beforeEach(async (to, from, next) => {
   try {
     if (token) {
       const tk = decodeToken(token)
-      if (tk && tk.exp && new Date(tk.exp).getTime() < new Date().getTime()) {
+      // 解析失败说明是旧版本/被篡改的 token，留着只会一直 401
+      if (!tk) {
+        clearAuthCookies()
+        store.commit('auth/LOGOUT')
+        return auth ? toLogin(to, from, next) : next()
+      }
+      if (tk.exp && new Date(tk.exp).getTime() < new Date().getTime()) {
         exp = true
         console.log('token expired')
       }
     }
   } catch (error) {
     throw error
+  }
+  if (exp) {
+    clearAuthCookies()
+    store.commit('auth/LOGOUT')
   }
   if (!hasToken || exp) {
     if (auth) {

@@ -28,6 +28,9 @@ import store from '@/store'
 import router from '@/router'
 import i18n, { i18nPlugin } from '@/locales'
 import App from '@/App.vue'
+import http from '@/utils/http'
+import storage from '@/utils/storage'
+import { getTokenFromCookie, clearAuthCookies } from '@/utils/auth'
 import antdGlobalConfig from '@/plugins/antdGlobalConfig'
 import componentsPlugin from '@/components'
 import '@/directives'
@@ -187,8 +190,34 @@ app.use(VXETable, {
 app.use(antdGlobalConfig)
 app.component('downloadExcel', defineAsyncComponent(() => import('vue-json-excel')))
 
+// 本 tab 内已确认过同一 token 就跳过探活，避免每次刷新都多一次请求
+const AUTH_VERIFIED_KEY = '__oc_auth_verified__'
+
+async function ensureAuthValid () {
+  const token = getTokenFromCookie()
+  // 没有 token 的情况交给路由守卫处理
+  if (!token) return
+  if (storage.session.get(AUTH_VERIFIED_KEY) === token) return
+  try {
+    await http.get('/v1/auth/user')
+    storage.session.set(AUTH_VERIFIED_KEY, token)
+  } catch (error) {
+    // 只有 401（token 失效）才清理；超时/网关错误保持原状
+    if (error && error.response && error.response.status === 401) {
+      // eslint-disable-next-line no-console
+      console.warn('[auth] stale token detected on startup, clearing legacy auth')
+      clearAuthCookies()
+      storage.session.remove(AUTH_VERIFIED_KEY)
+      store.commit('auth/LOGOUT')
+    }
+  }
+}
+
 async function start () {
   try {
+    // 升级/迁移后旧 cookie 里的 token 可能已被后端判定失效，
+    // 启动时先探活一次，避免整个页面一路 401（只有 401 才清理，网络/5xx 不动）
+    await ensureAuthValid()
     await Promise.all([
       store.dispatch('app/fetchCompayInfo'),
       store.dispatch('app/fetchWorkflowEnabledKeys', { $t: uuid() }),

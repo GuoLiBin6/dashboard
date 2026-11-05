@@ -39,7 +39,69 @@ export function getTokenFromCookie () {
 }
 
 export function setTokenInCookie (token) {
-  return Cookies.set('yunionauth', token)
+  // 统一写根路径；否则历史上不同 path 写入会留下同名 cookie，
+  // 请求头里出现两条 yunionauth，后端可能取到已失效的一条
+  removeTokenInCookie()
+  return Cookies.set('yunionauth', token, { path: '/' })
+}
+
+// cookie 的 path / domain 无法读取，只能按常见组合逐个尝试删除
+function getPossibleCookiePaths () {
+  const paths = new Set(['/'])
+  if (typeof window !== 'undefined' && window.location) {
+    const segs = (window.location.pathname || '/').split('/').filter(Boolean)
+    let cur = ''
+    segs.forEach((seg) => {
+      cur += `/${seg}`
+      paths.add(cur)
+    })
+  }
+  ;['/api', '/api/v1', '/v1', '/dashboard', '/console', '/web', '/v3'].forEach(p => paths.add(p))
+  return Array.from(paths)
+}
+
+// 后端 Set-Cookie 可能写在父域（.example.com）上，删不掉会一直残留
+function getPossibleCookieDomains () {
+  if (typeof window === 'undefined' || !window.location) return ['']
+  const host = window.location.hostname
+  const domains = new Set([''])
+  domains.add(host)
+  const segs = host.split('.')
+  for (let i = 1; i < segs.length - 1; i++) {
+    domains.add(`.${segs.slice(i).join('.')}`)
+    domains.add(segs.slice(i).join('.'))
+  }
+  return Array.from(domains)
+}
+
+export function removeTokenInCookie () {
+  if (typeof document === 'undefined') return
+  const paths = getPossibleCookiePaths()
+  const domains = getPossibleCookieDomains()
+  Cookies.remove('yunionauth')
+  paths.forEach((path) => {
+    Cookies.remove('yunionauth', { path })
+    domains.forEach((domain) => {
+      if (!domain) return
+      Cookies.remove('yunionauth', { path, domain })
+    })
+  })
+}
+
+// 升级/切域名后可能残留多条同名 token（值不同），需识别出来清掉重新登录
+export function hasDuplicateTokenCookie () {
+  if (typeof document === 'undefined' || !document.cookie) return false
+  return (document.cookie.match(/(?:^|;\s*)yunionauth=/g) || []).length > 1
+}
+
+// 清理所有登录态 cookie（退出登录 / 401 兜底）
+export function clearAuthCookies () {
+  if (typeof document === 'undefined') return
+  removeTokenInCookie()
+  removeScopeInCookie()
+  removeTenantInCookie()
+  removeRegionInCookie()
+  removeSsoIdpIdInCookie()
 }
 
 export function getScopeFromCookie () {

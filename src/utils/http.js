@@ -22,6 +22,7 @@ import {
 } from '@/utils/error'
 
 import { uuid, genReferRouteQuery, isBlob, blobToJson } from '@/utils/utils'
+import { clearAuthCookies, SESSION_LOGIN_USER_KEY } from '@/utils/auth'
 import { SHOW_SYSTEM_RESOURCE } from '@/constants'
 import i18n from '@/locales'
 
@@ -298,12 +299,37 @@ http.interceptors.request.use(
 )
 
 export const needLogout = error => {
-  const isAuth = error.config.url.startsWith('/api/v1/auth')
-  const details = error.response.data && error.response.data.details
-  const isNoTokenClass = error.response.data && error.response.data.class
-  const isNoToken = isNoTokenClass.includes('InvalidCredentialError') || (details && details.includes('No token in header'))
-  const noTotp = details && details.includes('TOTP authentication failed')
+  const url = String(error?.config?.url || '')
+  const baseURL = String(error?.config?.baseURL || '')
+  // config.url 是相对路径（/v1/auth/xxx），baseURL 才是 /api；两处都要兼容
+  const fullUrl = url.startsWith('http') ? url : `${baseURL}${url}`
+  const isAuth = /\/api\/v\d+\/auth\b/.test(fullUrl) || /\/v\d+\/auth\b/.test(url)
+  const data = (error && error.response && error.response.data) || {}
+  const details = typeof data.details === 'string' ? data.details : ''
+  const klass = typeof data.class === 'string' ? data.class : ''
+  const isNoToken = klass.includes('InvalidCredentialError') || details.includes('No token in header')
+  const noTotp = details.includes('TOTP authentication failed')
   return isAuth || isNoToken || noTotp
+}
+
+// 401 兜底：不依赖 /v1/auth/logout 接口（该请求本身也可能 401）
+const redirectToLogin = () => {
+  const current = router.currentRoute.value
+  if (current.meta && current.meta.authPage) return
+  const query = genReferRouteQuery(current)
+  const target = router.resolve({ path: '/auth/login', query })
+  if (window.location.pathname + window.location.search === target.href) return
+  router.replace({ path: '/auth/login', query }).catch(() => {
+    window.location.replace(target.href)
+  })
+}
+
+const forceLogout = () => {
+  clearAuthCookies()
+  try {
+    window.sessionStorage.removeItem(SESSION_LOGIN_USER_KEY)
+  } catch (e) {}
+  redirectToLogin()
 }
 
 /**
@@ -351,13 +377,11 @@ http.interceptors.response.use(
         return Promise.reject(error)
       }
       if (status === 401 && needLogout(error)) {
+        // 登出接口本身可能也 401，失败时直接本地清理避免卡在报错页面
         store.dispatch('auth/logout').then(() => {
-          if (!router.currentRoute.value.meta.authPage) {
-            router.push({
-              path: '/auth/login',
-              query: genReferRouteQuery(router.currentRoute.value),
-            })
-          }
+          redirectToLogin()
+        }).catch(() => {
+          forceLogout()
         })
       }
       // 忽略证书错误

@@ -114,7 +114,7 @@ export default {
   .text-wrap {
     height: 200px;
     padding: 24px;
-    color: @border-color-base;
+    color: var(--oc-card-tile-text, @border-color-base);
     .primary-btn-wrap {
       bottom: 8px;
       left: 24px;

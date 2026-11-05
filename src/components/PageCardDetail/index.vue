@@ -44,11 +44,11 @@ export default {
 .page-card-detail {
   .text-wrap {
     .title {
-      color: #000;
+      color: var(--oc-card-detail-title, #000);
       font-size: 20px;
     }
     .description {
-      color: #ccc;
+      color: var(--oc-card-detail-desc, #ccc);
     }
   }
 }

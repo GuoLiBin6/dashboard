@@ -76,6 +76,10 @@ export default {
     title () {
       return this.options.title
     },
+    // ve-ring 走 canvas 渲染，吃不到 CSS 变量，暗色下只能由 JS 改 option
+    darkMode () {
+      return !!(this.$store && this.$store.getters.darkMode)
+    },
   },
   watch: {
     options: {
@@ -83,6 +87,9 @@ export default {
         this.concatOption(val)
       },
       immediate: true,
+    },
+    darkMode () {
+      this.concatOption(this.options)
     },
   },
   methods: {
@@ -99,6 +106,35 @@ export default {
           ...tempOption.series[0].label.textStyle,
           fontSize: 14,
           lineHeight: 20,
+        }
+      }
+      // 暗色：图例与环心文字要提亮，否则 #333 落在深底上等于看不见；
+      // tooltip 是 DOM 浮层，同样需要跟着换深底，避免暗色下弹出一块白卡。
+      // 亮色分支也要显式给值 —— concatOption 是基于上一次的 ringOption 深拷贝，
+      // 只改暗色分支的话，切回亮色时暗色值会残留。
+      if (this.darkMode) {
+        tempOption.legend.textStyle = { color: 'rgba(255, 255, 255, 0.72)' }
+        tempOption.series[0].label.textStyle = {
+          ...tempOption.series[0].label.textStyle,
+          color: 'rgba(255, 255, 255, 0.88)',
+        }
+        tempOption.tooltip = {
+          ...tempOption.tooltip,
+          backgroundColor: 'rgba(38, 41, 49, 0.94)',
+          borderColor: 'rgba(255, 255, 255, 0.16)',
+          textStyle: { color: 'rgba(255, 255, 255, 0.88)' },
+        }
+      } else {
+        tempOption.legend.textStyle = { color: '#333' }
+        tempOption.series[0].label.textStyle = {
+          ...tempOption.series[0].label.textStyle,
+          color: '#333',
+        }
+        tempOption.tooltip = {
+          ...tempOption.tooltip,
+          backgroundColor: 'rgba(255, 255, 255, 0.9)',
+          borderColor: '#e8e8e8',
+          textStyle: { color: '#333' },
         }
       }
       this.ringOption = tempOption
