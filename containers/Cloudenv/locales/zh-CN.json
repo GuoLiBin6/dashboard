@@ -638,7 +638,7 @@
   "cloudenv.server_change_ip": "更换IP",
   "cloudenv.server_detach_nic": "卸载网卡",
   "cloudenv.text_563": "全选",
-  "cloudenv.text_564": "隐藏系统镜像菜单",
+  "cloudenv.text_564": "隐藏系统应用模板菜单",
   "cloudenv.text_565": "上传",
   "cloudenv.text_566": "镜像市场",
   "cloudenv.text_567": "新建虚拟机",

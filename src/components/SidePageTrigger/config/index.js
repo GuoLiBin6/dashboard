@@ -20,7 +20,7 @@ export default {
   InstanceGroupSidePage: {
     resource: 'instancegroups',
   },
-  // 系统镜像
+  // 系统应用模板
   SystemImageSidePage: {
     resource: 'images',
     apiVersion: 'v1',
