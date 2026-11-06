@@ -676,7 +676,8 @@ export default {
         Object.assign(style, pin)
         // 表头同时 sticky top + left/right
         style.zIndex = 5
-        if (!style.background) style.background = '#fafafa'
+        // sticky 单元格必须有不透明底色；用变量以便暗色模式跟随（浅色回退原值）
+        if (!style.background) style.background = 'var(--oc-dark-raised, #fafafa)'
       }
       return style
     },
@@ -686,7 +687,8 @@ export default {
       const pin = this.pinnedCellStyle(col)
       if (pin) {
         Object.assign(style, pin)
-        if (!style.background) style.background = '#fff'
+        // sticky 单元格必须有不透明底色，否则横向滚动时内容会透出；用变量跟随暗色
+        if (!style.background) style.background = 'var(--oc-dark-container, #fff)'
       }
       if (typeof this.cellStyle === 'function') {
         const column = withColumnProperty(col)
@@ -700,7 +702,7 @@ export default {
       if (pin) {
         Object.assign(style, pin)
         style.zIndex = 4
-        if (!style.background) style.background = '#fafafa'
+        if (!style.background) style.background = 'var(--oc-dark-raised, #fafafa)'
       }
       if (typeof this.footerCellStyle === 'function') {
         const column = withColumnProperty(col)
