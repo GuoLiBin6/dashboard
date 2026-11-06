@@ -114,7 +114,7 @@ export const PERMISSION = {
   k8s_federatedclusterrolebindings_list: ['k8s', 'federatedclusterrolebindings', 'list'],
   // 主机模板
   servertemplates_list: ['compute', 'servertemplates', 'list'],
-  // 弹性伸缩组
+  // 动态伸缩组
   scalinggroups_list: ['compute', 'scalinggroups', 'list'],
   // webapp
   webapps_list: ['compute', 'webapps', 'list'],
@@ -728,14 +728,14 @@ export const PERMISSION = {
   servertemplates_delete: ['compute', 'servertemplates', 'delete'],
   servertemplates_perform_public: ['compute', 'servertemplates', 'perform', 'public'],
   /**
-   * 弹性伸缩组
+   * 动态伸缩组
    */
   scalinggroups_create: ['compute', 'scalinggroups', 'create'],
   scalinggroups_delete: ['compute', 'scalinggroups', 'delete'],
   scalinggroups_perform_enable: ['compute', 'scalinggroups', 'perform', 'enable'],
   scalinggroups_perform_disable: ['compute', 'scalinggroups', 'perform', 'disable'],
   /**
-   * 弹性伸缩组-伸缩策略
+   * 动态伸缩组-伸缩策略
    */
   scalingpolicies_list: ['compute', 'scalingpolicies', 'list'],
   scalingpolicies_create: ['compute', 'scalingpolicies', 'create'],
@@ -1327,7 +1327,7 @@ export const PERMISSION = {
   guestnetworks_list: ['compute', 'guestnetworks', 'list'],
   // 主机安全组
   guestsecgroups_list: ['compute', 'guestsecgroups', 'list'],
-  // 主机弹性伸缩组
+  // 主机动态伸缩组
   scalinggroupguests_list: ['compute', 'scalinggroupguests', 'list'],
   // 宿主机网络
   baremetalnetworks_list: ['compute', 'baremetalnetworks', 'list'],

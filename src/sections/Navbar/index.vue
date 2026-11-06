@@ -142,13 +142,13 @@
     <!-- cloudsheel -->
     <cloud-shell v-if="isAdminMode && enableCloudShell && showMenuMap.cloudshell" class="navbar-item-icon primary-color-hover" />
     <!-- ai -->
-    <div class="navbar-item-icon primary-color ai-icon-wrap" v-if="enableAi && showMenuMap.ai">
+    <!-- <div class="navbar-item-icon primary-color ai-icon-wrap" v-if="enableAi && showMenuMap.ai">
       <a-tooltip :title="mcpAgent?.id ? $t('navbar.button.ai') : $t('common.config_agent')" placement="right">
         <div class="d-flex align-items-center justify-content-center h-100" style="cursor: pointer;" @click="handleOpenAI">
           <icon type="ai" style="font-size: 22px;" class="ai-icon" />
         </div>
       </a-tooltip>
-    </div>
+    </div> -->
     <slot name="behindNavbar" />
     <!-- 更多 -->
     <slot name="morePopover" v-if="showMenuMap.more && (showMenuMap.feature_select || showMenuMap.docs || showMenuMap.about)">
